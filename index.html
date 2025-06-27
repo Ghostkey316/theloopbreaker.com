@@ -5,30 +5,53 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@coinbase/wallet-sdk@3.12.0/dist/coinbase-wallet-sdk.umd.min.js"></script>
   </head>
   <body style="text-align:center; font-family:sans-serif; margin-top:100px; background:#111; color:#00ffcc;">
     <h1>The Loop Breaker</h1>
     <p>Official site of Uncloned — a belief-backed protocol.</p>
     <br />
-    <button id="connectWallet" style="padding:10px 20px; font-size:16px;">Connect Wallet</button>
+    <button onclick="connectWallet()" style="padding:10px 20px; font-size:16px;">Connect Wallet</button>
     <p id="walletAddress" style="margin-top:20px;"></p>
 
     <script>
       async function connectWallet() {
-        if (window.ethereum) {
+        const walletAddressEl = document.getElementById("walletAddress");
+
+        if (typeof window.ethereum !== "undefined") {
+          // MetaMask path
           try {
             const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            document.getElementById("walletAddress").innerText = "Connected: " + accounts[0];
+            walletAddressEl.innerText = "Connected: " + accounts[0];
+            return;
           } catch (error) {
-            document.getElementById("walletAddress").innerText = "Connection failed: " + error.message;
+            walletAddressEl.innerText = "MetaMask error: " + error.message;
           }
-        } else {
-          document.getElementById("walletAddress").innerText = "MetaMask not detected. Please install it.";
+        }
+
+        // Fallback to Coinbase Wallet
+        const CoinbaseWalletSDK = window.CoinbaseWalletSDK;
+        const APP_NAME = "The Loop Breaker";
+        const APP_LOGO_URL = "https://theloopbreaker.com/logo.png";
+        const DEFAULT_ETH_JSONRPC_URL = "https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID";
+        const DEFAULT_CHAIN_ID = 1;
+
+        const coinbaseWallet = new CoinbaseWalletSDK({
+          appName: APP_NAME,
+          appLogoUrl: APP_LOGO_URL,
+          darkMode: true
+        });
+
+        const ethereum = coinbaseWallet.makeWeb3Provider(DEFAULT_ETH_JSONRPC_URL, DEFAULT_CHAIN_ID);
+        const web3 = new Web3(ethereum);
+
+        try {
+          const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+          walletAddressEl.innerText = "Connected: " + accounts[0];
+        } catch (err) {
+          walletAddressEl.innerText = "Coinbase error: " + err.message;
         }
       }
-
-      document.getElementById("connectWallet").addEventListener("click", connectWallet);
     </script>
   </body>
 </html>
-
