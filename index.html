@@ -1,57 +1,114 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>The Loop Breaker</title>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@coinbase/wallet-sdk@3.12.0/dist/coinbase-wallet-sdk.umd.min.js"></script>
-  </head>
-  <body style="text-align:center; font-family:sans-serif; margin-top:100px; background:#111; color:#00ffcc;">
-    <h1>The Loop Breaker</h1>
-    <p>Official site of Uncloned — a belief-backed protocol.</p>
-    <br />
-    <button onclick="connectWallet()" style="padding:10px 20px; font-size:16px;">Connect Wallet</button>
-    <p id="walletAddress" style="margin-top:20px;"></p>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>The Loop Breaker</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #0d0d0d;
+      color: #00ffcc;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
 
-    <script>
-      async function connectWallet() {
-        const walletAddressEl = document.getElementById("walletAddress");
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
 
-        if (typeof window.ethereum !== "undefined") {
-          // MetaMask path
-          try {
-            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            walletAddressEl.innerText = "Connected: " + accounts[0];
-            return;
-          } catch (error) {
-            walletAddressEl.innerText = "MetaMask error: " + error.message;
+    p {
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+      color: #a0a0a0;
+    }
+
+    button {
+      background-color: #00ffcc;
+      color: #000;
+      border: none;
+      padding: 12px 24px;
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #00ccb3;
+    }
+
+    .connected {
+      margin-top: 1.5rem;
+      font-size: 1rem;
+      color: #00ffcc;
+      word-break: break-word;
+    }
+
+    .ghost {
+      margin-top: 0.5rem;
+      font-size: 0.95rem;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <h1>The Loop Breaker</h1>
+  <p>Official site of Uncloned — a belief-backed protocol.</p>
+  <button id="connectButton">Connect Wallet</button>
+  <div class="connected" id="walletAddress"></div>
+  <div class="ghost" id="ghostId"></div>
+
+  <script>
+    const connectButton = document.getElementById('connectButton');
+    const walletAddressDisplay = document.getElementById('walletAddress');
+    const ghostIdDisplay = document.getElementById('ghostId');
+
+    async function connectWallet() {
+      if (typeof window.ethereum !== 'undefined') {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          const walletAddress = accounts[0];
+          walletAddressDisplay.textContent = `Connected: ${walletAddress}`;
+
+          if (walletAddress.toLowerCase() === '0xf6a677de83c407875c9a9115cf100f121f9c4816') {
+            ghostIdDisplay.textContent = 'Verified: Ghostkey-316 👻';
+          } else {
+            ghostIdDisplay.textContent = '';
+          }
+
+        } catch (error) {
+          walletAddressDisplay.textContent = 'Connection denied.';
+          ghostIdDisplay.textContent = '';
+        }
+      } else {
+        walletAddressDisplay.textContent = 'No wallet detected. Use MetaMask or Coinbase Wallet.';
+        ghostIdDisplay.textContent = '';
+      }
+    }
+
+    connectButton.addEventListener('click', connectWallet);
+
+    // Auto-connect if already authorized
+    window.addEventListener('load', async () => {
+      if (typeof window.ethereum !== 'undefined') {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts.length > 0) {
+          const walletAddress = accounts[0];
+          walletAddressDisplay.textContent = `Connected: ${walletAddress}`;
+          if (walletAddress.toLowerCase() === '0xf6a677de83c407875c9a9115cf100f121f9c4816') {
+            ghostIdDisplay.textContent = 'Verified: Ghostkey-316 👻';
           }
         }
-
-        // Fallback to Coinbase Wallet
-        const CoinbaseWalletSDK = window.CoinbaseWalletSDK;
-        const APP_NAME = "The Loop Breaker";
-        const APP_LOGO_URL = "https://theloopbreaker.com/logo.png";
-        const DEFAULT_ETH_JSONRPC_URL = "https://mainnet.infura.io/v3/620d3e1644c84577b6a00583ac658f85";
-        const DEFAULT_CHAIN_ID = 1;
-
-        const coinbaseWallet = new CoinbaseWalletSDK({
-          appName: APP_NAME,
-          appLogoUrl: APP_LOGO_URL,
-          darkMode: true
-        });
-
-        const ethereum = coinbaseWallet.makeWeb3Provider(DEFAULT_ETH_JSONRPC_URL, DEFAULT_CHAIN_ID);
-        const web3 = new Web3(ethereum);
-
-        try {
-          const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-          walletAddressEl.innerText = "Connected: " + accounts[0];
-        } catch (err) {
-          walletAddressEl.innerText = "Coinbase error: " + err.message;
-        }
       }
-    </script>
-  </body>
+    });
+  </script>
+</body>
 </html>
