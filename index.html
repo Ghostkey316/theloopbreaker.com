@@ -1,70 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>UNCLONED</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="icon" href="https://avatars.githubusercontent.com/u/92868236?s=200&v=4" type="image/png">
-</head>
-<body class="bg-black text-white font-sans">
-  <div class="min-h-screen flex flex-col items-center justify-center px-4">
-    <header class="text-center mb-12">
-      <h1 class="text-5xl font-extrabold tracking-wide">UNCLONED</h1>
-      <p class="mt-4 text-lg text-gray-400 italic">Flawed by design. Perfect by consequence.</p>
-    </header>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UNCLONED</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/@coinbase/wallet-sdk"></script>
+  </head>
+  <body class="bg-black text-white font-sans">
+    <div class="min-h-screen flex flex-col items-center justify-center px-4">
+      <header class="text-center mb-12">
+        <h1 class="text-5xl font-extrabold tracking-wide">UNCLONED</h1>
+        <p class="mt-4 text-lg text-gray-400 italic">Flawed by design. Perfect by consequence.</p>
+      </header>
 
-    <main class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl">
-      <!-- NS3 Signal Sync -->
-      <div class="border border-gray-700 rounded-xl p-6 bg-gray-900">
-        <h2 class="text-2xl font-semibold mb-2">🧠 NS3 Signal Sync</h2>
-        <p class="text-gray-400">AI-aligned signal layer. Tap in for early wave disruption and loop awareness.</p>
-      </div>
+      <main class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl">
+        <!-- NS3 Signal Sync (Placeholder) -->
+        <div class="border border-gray-700 rounded-xl p-6 bg-gray-900">
+          <h2 class="text-2xl font-semibold mb-2">🧠 NS3 Signal Sync</h2>
+          <p class="text-gray-400">AI-aligned signal layer. Tap in for early wave disruption and loop awareness.</p>
+        </div>
 
-      <!-- Ghostkey Access with Coinbase Connect -->
-      <div class="border border-gray-700 rounded-xl p-6 bg-gray-900">
-        <h2 class="text-2xl font-semibold mb-2">🛡️ Ghostkey Access</h2>
-        <p class="text-gray-400 mb-4">Private access portal for loyalty-tier contributors. Connect your Coinbase Wallet to verify identity and unlock.</p>
-        <button onclick="connectWallet()" class="bg-blue-600 hover:bg-blue-800 transition px-4 py-2 rounded">Connect Coinbase Wallet</button>
-        <p id="walletAddress" class="mt-3 text-sm text-green-400"></p>
-      </div>
+        <!-- Ghostkey Access with Coinbase Connect -->
+        <div class="border border-gray-700 rounded-xl p-6 bg-gray-900">
+          <h2 class="text-2xl font-semibold mb-2">🔐 Ghostkey Access</h2>
+          <p class="text-gray-400 mb-4">Private access portal for loyalty-tier contributors. Connect your Coinbase Wallet to verify identity and unlock.</p>
+          <button onclick="connectWallet()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+            Connect Coinbase Wallet
+          </button>
+        </div>
 
-      <!-- Loop Disruptor Tracker -->
-      <div class="border border-gray-700 rounded-xl p-6 bg-gray-900 md:col-span-2">
-        <h2 class="text-2xl font-semibold mb-2">📊 Loop Disruptor Tracker</h2>
-        <p class="text-gray-400">Track signal disruptions, ecosystem anomalies, and behavior loops. Real-time feed coming soon.</p>
-      </div>
-    </main>
+        <!-- Loop Disruptor Tracker -->
+        <div class="border border-gray-700 rounded-xl p-6 bg-gray-900 col-span-full">
+          <h2 class="text-2xl font-semibold mb-2">🔄 Loop Disruptor Tracker</h2>
+          <p class="text-gray-400">Track signal disruptions, ecosystem anomalies, and behavior loops. Real-time feed coming soon.</p>
+        </div>
 
-    <footer class="mt-16 text-center text-gray-600 text-sm">
-      <p>Built by Ghostkey-316. Stay human. Stay ahead.</p>
-    </footer>
-  </div>
+        <!-- Vaultfire Uplink -->
+        <div class="border border-gray-700 rounded-xl p-6 bg-gray-900 col-span-full">
+          <h2 class="text-2xl font-semibold mb-2">🔥 Vaultfire Uplink</h2>
+          <p class="text-gray-400">Secure uplink for metadata injection, loyalty signal reinforcement, and belief-layer syncing. Coming soon.</p>
+        </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@coinbase/wallet-sdk@3.3.0/dist/cjs/index.min.js"></script>
-  <script>
-    const APP_NAME = "UNCLONED";
-    const APP_LOGO_URL = "https://avatars.githubusercontent.com/u/92868236?s=200&v=4";
-    const DEFAULT_ETH_JSONRPC_URL = "https://mainnet.infura.io/v3/"; // Add your Infura ID if needed
-    const DEFAULT_CHAIN_ID = 1;
+        <!-- Pulse Grid (Utility Layer Placeholder) -->
+        <div class="border border-gray-700 rounded-xl p-6 bg-gray-900 col-span-full">
+          <h2 class="text-2xl font-semibold mb-2">⚡ Pulse Grid</h2>
+          <p class="text-gray-400">Interactive layer to broadcast community sync, protocol alignment, and drop cadence. Activate when ready.</p>
+        </div>
+      </main>
 
-    const walletLink = new window.WalletLink({
-      appName: APP_NAME,
-      appLogoUrl: APP_LOGO_URL,
-      darkMode: true,
-    });
+      <footer class="mt-20 text-center text-sm text-gray-600">
+        Built by Ghostkey-316. Stay human. Stay ahead.
+      </footer>
+    </div>
 
-    const ethereum = walletLink.makeWeb3Provider(DEFAULT_ETH_JSONRPC_URL, DEFAULT_CHAIN_ID);
-
-    async function connectWallet() {
-      try {
-        const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-        document.getElementById("walletAddress").innerText = `Connected: ${accounts[0]}`;
-      } catch (err) {
-        alert("Wallet connection failed.");
+    <script>
+      async function connectWallet() {
+        try {
+          const walletLink = new CoinbaseWalletSDK.CoinbaseWalletSDK({
+            appName: 'UNCLONED',
+            darkMode: true
+          });
+          const ethereum = walletLink.makeWeb3Provider('https://mainnet.infura.io/v3/YOUR_INFURA_ID', 1);
+          const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+          alert(`Connected wallet: ${accounts[0]}`);
+        } catch (err) {
+          alert('Failed to connect: ' + err.message);
+        }
       }
-    }
-  </script>
-</body>
+    </script>
+  </body>
 </html>
+
 
