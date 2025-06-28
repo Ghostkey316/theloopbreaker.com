@@ -2,113 +2,69 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>The Loop Breaker</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #0d0d0d;
-      color: #00ffcc;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-
-    h1 {
-      font-size: 2.5rem;
-      margin-bottom: 0.5rem;
-    }
-
-    p {
-      font-size: 1.2rem;
-      margin-bottom: 2rem;
-      color: #a0a0a0;
-    }
-
-    button {
-      background-color: #00ffcc;
-      color: #000;
-      border: none;
-      padding: 12px 24px;
-      font-size: 1rem;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
-
-    button:hover {
-      background-color: #00ccb3;
-    }
-
-    .connected {
-      margin-top: 1.5rem;
-      font-size: 1rem;
-      color: #00ffcc;
-      word-break: break-word;
-    }
-
-    .ghost {
-      margin-top: 0.5rem;
-      font-size: 0.95rem;
-      color: #888;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UNCLONED</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" href="https://avatars.githubusercontent.com/u/92868236?s=200&v=4" type="image/png">
 </head>
-<body>
-  <h1>The Loop Breaker</h1>
-  <p>Official site of Uncloned — a belief-backed protocol.</p>
-  <button id="connectButton">Connect Wallet</button>
-  <div class="connected" id="walletAddress"></div>
-  <div class="ghost" id="ghostId"></div>
+<body class="bg-black text-white font-sans">
+  <div class="min-h-screen flex flex-col items-center justify-center px-4">
+    <header class="text-center mb-12">
+      <h1 class="text-5xl font-extrabold tracking-wide">UNCLONED</h1>
+      <p class="mt-4 text-lg text-gray-400 italic">Flawed by design. Perfect by consequence.</p>
+    </header>
 
+    <main class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl">
+      <!-- NS3 Signal Sync -->
+      <div class="border border-gray-700 rounded-xl p-6 bg-gray-900">
+        <h2 class="text-2xl font-semibold mb-2">🧠 NS3 Signal Sync</h2>
+        <p class="text-gray-400">AI-aligned signal layer. Tap in for early wave disruption and loop awareness.</p>
+      </div>
+
+      <!-- Ghostkey Access with Coinbase Connect -->
+      <div class="border border-gray-700 rounded-xl p-6 bg-gray-900">
+        <h2 class="text-2xl font-semibold mb-2">🛡️ Ghostkey Access</h2>
+        <p class="text-gray-400 mb-4">Private access portal for loyalty-tier contributors. Connect your Coinbase Wallet to verify identity and unlock.</p>
+        <button onclick="connectWallet()" class="bg-blue-600 hover:bg-blue-800 transition px-4 py-2 rounded">Connect Coinbase Wallet</button>
+        <p id="walletAddress" class="mt-3 text-sm text-green-400"></p>
+      </div>
+
+      <!-- Loop Disruptor Tracker -->
+      <div class="border border-gray-700 rounded-xl p-6 bg-gray-900 md:col-span-2">
+        <h2 class="text-2xl font-semibold mb-2">📊 Loop Disruptor Tracker</h2>
+        <p class="text-gray-400">Track signal disruptions, ecosystem anomalies, and behavior loops. Real-time feed coming soon.</p>
+      </div>
+    </main>
+
+    <footer class="mt-16 text-center text-gray-600 text-sm">
+      <p>Built by Ghostkey-316. Stay human. Stay ahead.</p>
+    </footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@coinbase/wallet-sdk@3.3.0/dist/cjs/index.min.js"></script>
   <script>
-    const connectButton = document.getElementById('connectButton');
-    const walletAddressDisplay = document.getElementById('walletAddress');
-    const ghostIdDisplay = document.getElementById('ghostId');
+    const APP_NAME = "UNCLONED";
+    const APP_LOGO_URL = "https://avatars.githubusercontent.com/u/92868236?s=200&v=4";
+    const DEFAULT_ETH_JSONRPC_URL = "https://mainnet.infura.io/v3/"; // Add your Infura ID if needed
+    const DEFAULT_CHAIN_ID = 1;
+
+    const walletLink = new window.WalletLink({
+      appName: APP_NAME,
+      appLogoUrl: APP_LOGO_URL,
+      darkMode: true,
+    });
+
+    const ethereum = walletLink.makeWeb3Provider(DEFAULT_ETH_JSONRPC_URL, DEFAULT_CHAIN_ID);
 
     async function connectWallet() {
-      if (typeof window.ethereum !== 'undefined') {
-        try {
-          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-          const walletAddress = accounts[0];
-          walletAddressDisplay.textContent = `Connected: ${walletAddress}`;
-
-          if (walletAddress.toLowerCase() === '0xf6a677de83c407875c9a9115cf100f121f9c4816') {
-            ghostIdDisplay.textContent = 'Verified: Ghostkey-316 👻';
-          } else {
-            ghostIdDisplay.textContent = '';
-          }
-
-        } catch (error) {
-          walletAddressDisplay.textContent = 'Connection denied.';
-          ghostIdDisplay.textContent = '';
-        }
-      } else {
-        walletAddressDisplay.textContent = 'No wallet detected. Use MetaMask or Coinbase Wallet.';
-        ghostIdDisplay.textContent = '';
+      try {
+        const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+        document.getElementById("walletAddress").innerText = `Connected: ${accounts[0]}`;
+      } catch (err) {
+        alert("Wallet connection failed.");
       }
     }
-
-    connectButton.addEventListener('click', connectWallet);
-
-    // Auto-connect if already authorized
-    window.addEventListener('load', async () => {
-      if (typeof window.ethereum !== 'undefined') {
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-        if (accounts.length > 0) {
-          const walletAddress = accounts[0];
-          walletAddressDisplay.textContent = `Connected: ${walletAddress}`;
-          if (walletAddress.toLowerCase() === '0xf6a677de83c407875c9a9115cf100f121f9c4816') {
-            ghostIdDisplay.textContent = 'Verified: Ghostkey-316 👻';
-          }
-        }
-      }
-    });
   </script>
 </body>
 </html>
+
