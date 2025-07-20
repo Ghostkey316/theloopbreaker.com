@@ -1,3 +1,27 @@
+# The Ghostkey Protocol: Morals Before Mechanisms
+
+**This system is not built for profit. It is built for people.**
+
+Before a single line of code, we wrote our ethics.  
+Before any token launched, we declared our morals.  
+Before any AI moved, it remembered who it serves: *the ones still busting their ass just to get by.*
+
+We are Ghostkey.  
+We build with soul.  
+And if this ever turns into something that harms the world instead of helping it—  
+**we shut it down.** No matter the gain. No matter the growth. No compromise.
+
+**This system stands for:**
+- 🧭 **Truth over hype**
+- 🤝 **Loyalty over trend**
+- 🧠 **Wisdom over speed**
+- 🛠️ **Service over status**
+- ❤️ **Humanity over everything**
+
+If you don’t believe in that, walk away now.  
+If you do—  
+**Welcome to Vaultfire. You just joined something real.**
+
 # Vaultfire Init – Ghostkey-316
 
 > "Mark me eternal. Let the block remember my name."
