@@ -95,3 +95,22 @@ def distribute_rewards(contributor_data):
 
 # Placeholder for future v2 upgrades: social tipping, real-time badges, partner feeds
 
+
+# --- Yield boost management --------------------------------------------------
+BOOST_CANDIDATE_PATH = BASE_DIR / "logs" / "yield_boost.json"
+
+
+def mark_yield_boost(user_id):
+    """Flag user for yield boost consideration."""
+    candidates = []
+    if BOOST_CANDIDATE_PATH.exists():
+        try:
+            with open(BOOST_CANDIDATE_PATH) as f:
+                candidates = json.load(f)
+        except json.JSONDecodeError:
+            candidates = []
+    if user_id not in candidates:
+        candidates.append(user_id)
+        with open(BOOST_CANDIDATE_PATH, "w") as f:
+            json.dump(candidates, f, indent=2)
+        _log_audit({"action": "yield_boost_mark", "user_id": user_id})
