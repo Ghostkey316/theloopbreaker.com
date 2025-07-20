@@ -10,6 +10,7 @@ from pathlib import Path
 from .ghostkey_commandments import GHOSTKEY_COMMANDMENTS
 from .sync_protocol import sync_ns3, sync_openai, sync_worldcoin
 from .yield_engine_v1 import mark_yield_boost
+from .token_ops import send_token
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 USER_LIST_PATH = BASE_DIR / "user_list.json"
@@ -51,9 +52,22 @@ def grant_role(user_id: str, role: str) -> None:
     _write_json(SCORECARD_PATH, scorecard)
 
 
-def reward(user_id: str, reason: str) -> None:
+TOKEN_TIERS = {
+    "WEEKLY_YIELD_BONUS": {"amount": 1000, "token": "ASM"},
+    "AMBASSADOR": {"amount": 5000, "token": "USDC", "role": "Vaultfire Recruiter"},
+}
+
+
+def reward(user_id: str, tier: str) -> None:
+    """Grant reward ``tier`` to ``user_id`` and log the event."""
     mark_yield_boost(user_id)
-    log_to_broadcast({"action": "reward", "user_id": user_id, "reason": reason})
+    tier_info = TOKEN_TIERS.get(tier)
+    if tier_info:
+        send_token(user_id, tier_info["amount"], tier_info["token"])
+        role = tier_info.get("role")
+        if role:
+            grant_role(user_id, role)
+    log_to_broadcast({"action": "reward", "user_id": user_id, "reason": tier})
 
 
 def calculate_alignment_score(user_id: str) -> float:
