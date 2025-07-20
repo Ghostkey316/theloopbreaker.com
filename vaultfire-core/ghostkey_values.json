@@ -1,5 +1,11 @@
 {
   "truth_over_hype": "No artificial urgency or fake scarcity in UI",
   "loyalty_over_trend": "Reward long-term engagement more than viral spikes",
-  "service_over_status": "Deprioritize influencer boosts in favor of everyday users"
+  "service_over_status": "Deprioritize influencer boosts in favor of everyday users",
+  "loyalty_multipliers": {
+    "default": 1.0,
+    "origin": 1.1,
+    "veteran": 1.25,
+    "legend": 1.5
+  }
 }
