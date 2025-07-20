@@ -10,6 +10,7 @@ BASE_DIR = Path(__file__).resolve().parents[1]
 EVENT_LOG_PATH = BASE_DIR / "event_log.json"
 SCORECARD_PATH = BASE_DIR / "user_scorecard.json"
 AUDIT_PATH = BASE_DIR / "logs" / "feedback_audit.json"
+HEARTBEAT_PATH = BASE_DIR / "dashboards" / "ghostkey_heartbeat.json"
 
 # Map user actions to score adjustments
 ACTION_VALUE_MAP = {
@@ -110,3 +111,40 @@ def _log_audit(entry):
     entry_with_time = {"timestamp": timestamp, **entry}
     log.append(entry_with_time)
     _write_json(AUDIT_PATH, log)
+
+
+def belief_pulse(user_id):
+    """Return a short status string representing user's belief alignment."""
+    scorecard = _load_json(SCORECARD_PATH, {})
+    metrics = scorecard.get(user_id, {})
+    belief = metrics.get("belief_level", 0)
+    loyalty = metrics.get("loyalty", 0)
+    impact = metrics.get("impact_score", 0)
+    total = belief + loyalty + impact
+
+    audit = _load_json(AUDIT_PATH, [])
+    for entry in audit:
+        if entry.get("user_id") == user_id and entry.get("approved") is False:
+            return "🚫 Ethics Breach"
+
+    if total >= THRESHOLD * 2:
+        return "🔥 On Fire"
+    if total >= THRESHOLD:
+        return "🧭 Aligned"
+    return "😶 Drifted"
+
+
+def update_heartbeat():
+    """Collect belief pulse for all users and append to dashboard file."""
+    scorecard = _load_json(SCORECARD_PATH, {})
+    pulse = {uid: belief_pulse(uid) for uid in scorecard.keys()}
+    pulse["timestamp"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    log = _load_json(HEARTBEAT_PATH, [])
+    log.append(pulse)
+    _write_json(HEARTBEAT_PATH, log)
+    return pulse
+
+
+if __name__ == "__main__":
+    update_heartbeat()
