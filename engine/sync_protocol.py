@@ -96,3 +96,23 @@ def sync_worldcoin(user_id):
     _log_audit({"action": "sync_worldcoin", "user_id": user_id,
                 "verified": verified, "trust_bonus": trust_bonus})
 
+
+def global_sync_pulse(user_list=None):
+    """Run all sync functions for each user in ``user_list``.
+
+    Parameters
+    ----------
+    user_list : list[str] or None
+        Iterable of user identifiers. If ``None`` the list is loaded from
+        ``user_scorecard.json`` keys.
+    """
+    if user_list is None:
+        scorecard = _load_json(SCORECARD_PATH, {})
+        user_list = list(scorecard.keys())
+
+    for user in user_list:
+        sync_ns3(user)
+        sync_openai(user)
+        sync_worldcoin(user)
+
+

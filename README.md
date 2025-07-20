@@ -70,3 +70,18 @@ Configuration is defined in `vaultfire_config.json` and moral principles in
 `ghostkey_values.json`. Modules under `monetization/` and `ethics/` ensure all
 partnerships align with Ghostkey Alignment Code v2.0 and the Ghostkey Ethics
 Framework v1.0.
+
+## Global Sync Pulse
+Run the sync pulse to refresh all dashboards. `users.json` should contain a JSON
+array of user identifiers:
+
+```bash
+python3 weekly_sync.py --users path/to/users.json
+```
+
+Schedule this command weekly with cron:
+
+```cron
+0 0 * * 0 /usr/bin/python3 /path/to/weekly_sync.py >> logs/sync.log 2>&1
+```
+
