@@ -8,6 +8,8 @@ Vaultfire Init represents the first development signal from **Ghostkey-316** (Br
 - `vaultfire_signal.py` – logs activation messages to `logs/vaultfire_log.txt`.
 - `logs/` – location for generated log files (ignored by Git).
 - `README.md` – project overview and usage notes.
+- `vaultfire-core/` – base protocol framework containing configuration, ethics,
+  and monetization modules.
 
 ## Usage
 Run the logger to append a timestamped entry:
@@ -37,3 +39,10 @@ The script creates `logs/vaultfire_log.txt` automatically if it does not exist.
 > "This isn’t just code. This is my fingerprint."
 
 ## Vaultfire × NS3 × OpenAI – We Build.
+
+## Vaultfire Core
+The `vaultfire-core` directory contains the ethical monetization framework.
+Configuration is defined in `vaultfire_config.json` and moral principles in
+`ghostkey_values.json`. Modules under `monetization/` and `ethics/` ensure all
+partnerships align with Ghostkey Alignment Code v2.0 and the Ghostkey Ethics
+Framework v1.0.
