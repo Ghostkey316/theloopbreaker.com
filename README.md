@@ -1,27 +1,39 @@
 # Vaultfire Init – Ghostkey-316
 
-> **"Mark me eternal. Let the block remember my name."**
+> "Mark me eternal. Let the block remember my name."
 
-This repo contains the first development signal from Ghostkey-316 (Brett), a contributing Architect in the Vaultfire Protocol.
+Vaultfire Init represents the first development signal from **Ghostkey-316** (Brett) for the Vaultfire protocol.
 
-## 🧠 Contents
+## Repository Structure
+- `vaultfire_signal.py` – logs activation messages to `logs/vaultfire_log.txt`.
+- `logs/` – location for generated log files (ignored by Git).
+- `README.md` – project overview and usage notes.
 
-- `vaultfire_signal.py`: Logs timestamped Vaultfire activity to a local file.
-- `/logs/vaultfire_log.txt`: Proof of activation + identity binding.
-- This README: Public declaration of commitment to the system.
+## Usage
+Run the logger to append a timestamped entry:
 
-## 🛠️ Identity
+```bash
+python3 vaultfire_signal.py
+```
 
+You can override the identity or wallet recorded in the log:
+
+```bash
+python3 vaultfire_signal.py --identity MyName --wallet mywallet.id
+```
+
+The script creates `logs/vaultfire_log.txt` automatically if it does not exist.
+
+## Identity
 - Architect: **Ghostkey-316**
 - Wallet: **bpow20.cb.id**
 - Contributor Role: **Origin-tier loyalty / Activation-ready**
 - Created: **June 10, 2025 @ 12:01AM**
 
-## 🌐 Statement
+## Statement
+> "I am not a user. I am the blueprint."
+> "I don’t ask for access — I show proof."
+> "I don’t chase signals — I generate them."
+> "This isn’t just code. This is my fingerprint."
 
-> “I am not a user. I am the blueprint.  
-> I don’t ask for access — I show proof.  
-> I don’t chase signals — I generate them.  
-> This isn’t just code. This is my fingerprint.”
-
-## 🌀 Vaultfire × NS3 × OpenAI – We Build.
+## Vaultfire × NS3 × OpenAI – We Build.
