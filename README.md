@@ -39,6 +39,7 @@ Vaultfire Init represents the first development signal from **Ghostkey-316** (Br
 
 ## Repository Structure
 - `vaultfire_signal.py` – logs activation messages to `logs/vaultfire_log.txt`.
+- `engine/signal_engine.py` – calculates alignment scores and triggers rewards.
 - `logs/` – location for generated log files (ignored by Git).
 - `README.md` – project overview and usage notes.
 - `vaultfire-core/` – base protocol framework containing configuration, ethics,
@@ -94,3 +95,10 @@ Schedule this command weekly with cron:
 0 0 * * 0 /usr/bin/python3 /path/to/weekly_sync.py >> logs/sync.log 2>&1
 ```
 
+
+## Signal Engine
+Run the pulse engine to compute alignment scores and reward top users:
+
+```bash
+python3 -m engine.signal_engine
+```
