@@ -1,0 +1,14 @@
+{
+  "marketplace_name": "Vaultfire Exchange",
+  "ethics_layer": "Ghostkey-316",
+  "verified_sellers_only": true,
+  "currency": ["ASM", "USDC", "ETH"],
+  "public_display": [
+    "signal_score",
+    "trust_rank",
+    "contributor_role",
+    "manifesto alignment"
+  ],
+  "yield_rebates_enabled": true,
+  "buyers_can_earn_loyalty": true
+}

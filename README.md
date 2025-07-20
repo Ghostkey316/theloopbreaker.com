@@ -46,6 +46,7 @@ Vaultfire Init represents the first development signal from **Ghostkey-316** (Br
 - `README.md` – project overview and usage notes.
 - `vaultfire-core/` – base protocol framework containing configuration, ethics,
   and monetization modules.
+- `vaultfire-core/marketplace_config.json` – settings for the Vaultfire Exchange marketplace.
 
 ## Usage
 Run the logger to append a timestamped entry:
@@ -78,7 +79,8 @@ The script creates `logs/vaultfire_log.txt` automatically if it does not exist.
 
 ## Vaultfire Core
 The `vaultfire-core` directory contains the ethical monetization framework.
-Configuration is defined in `vaultfire_config.json` and moral principles in
+Configuration is defined in `vaultfire_config.json`, marketplace settings in
+`marketplace_config.json`, and moral principles in
 `ghostkey_values.json`. Modules under `monetization/` and `ethics/` ensure all
 partnerships align with Ghostkey Alignment Code v2.0 and the Ghostkey Ethics
 Framework v1.0.
