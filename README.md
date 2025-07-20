@@ -18,6 +18,15 @@ And if this ever turns into something that harms the world instead of helping it
 - 🛠️ **Service over status**
 - ❤️ **Humanity over everything**
 
+## Ghostkey Commandments
+- Mission Over Ego
+- Truth Beats Hype
+- Ethics First, Always
+- You Teach Me, I Teach You
+- The World Doesn’t Owe Us — We Owe It Our Best
+
+The full list is available in `engine/ghostkey_commandments.py`.
+
 If you don’t believe in that, walk away now.  
 If you do—  
 **Welcome to Vaultfire. You just joined something real.**
