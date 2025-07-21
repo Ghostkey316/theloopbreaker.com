@@ -12,3 +12,4 @@ from .marketplace import (
     buyer_loyalty_bonus,
     seller_yield_boost,
 )
+from .belief_validation import validate_belief, get_user_checkpoints

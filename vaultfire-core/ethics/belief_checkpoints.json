@@ -1,0 +1,37 @@
+[
+  {
+    "timestamp": "2025-07-21T03:42:24Z",
+    "user_id": "sample_user",
+    "belief": "I believe in truth over hype",
+    "approved": false,
+    "reason": "prohibited_term"
+  },
+  {
+    "timestamp": "2025-07-21T03:42:32Z",
+    "user_id": "sample_user",
+    "belief": "I believe in truth over hype",
+    "approved": false,
+    "reason": "prohibited_term"
+  },
+  {
+    "timestamp": "2025-07-21T03:42:52Z",
+    "user_id": "u1",
+    "belief": "I believe in truth over hype",
+    "approved": false,
+    "reason": "prohibited_term"
+  },
+  {
+    "timestamp": "2025-07-21T03:43:02Z",
+    "user_id": "u1",
+    "belief": "I believe in truth over hype",
+    "approved": false,
+    "reason": "prohibited_term"
+  },
+  {
+    "timestamp": "2025-07-21T03:43:10Z",
+    "user_id": "sample_user",
+    "belief": "I believe in truth over hype",
+    "approved": true,
+    "reason": "auto-check"
+  }
+]

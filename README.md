@@ -107,3 +107,12 @@ Run the pulse engine to compute alignment scores and reward top users:
 ```bash
 python3 -m engine.signal_engine
 ```
+
+## Belief Validation
+Use the belief validator to check contributor statements against Ghostkey ethics.
+
+```bash
+python3 engine/belief_validation.py
+```
+
+Results are stored in `vaultfire-core/ethics/belief_checkpoints.json`.
