@@ -114,6 +114,11 @@ API usage. Rewards may be granted with `grant_reward(partner_id, wallet, amount)
 All entries are logged to `logs/partner_usage.json` and mirrored in
 `logs/token_ledger.json`.
 
+Contract-based revenue can be handled automatically using
+`engine.revenue_hooks.record_contract_revenue`. This reads the list of
+wallets from `earners.json`, verifies each one, and distributes the configured
+share of revenue across them.
+
 
 ## Signal Engine
 Run the pulse engine to compute alignment scores and reward top users:
