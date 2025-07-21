@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 
 from engine.loyalty_engine import update_loyalty_ranks
+from engine.identity_resolver import resolve_identity
 
 BASE_DIR = Path(__file__).resolve().parent
 CONFIG_PATH = BASE_DIR / "vaultfire-core" / "vaultfire_config.json"
@@ -30,11 +32,18 @@ def _write_json(path: Path, data) -> None:
 
 
 def check_ethics_anchor() -> bool:
+    """Return ``True`` if the ethics anchor is enabled."""
     cfg = _load_json(CONFIG_PATH, {})
     return cfg.get("ethics_anchor", False)
 
 
+def check_alignment_phrase(phrase: str) -> bool:
+    """Validate the provided alignment ``phrase``."""
+    return phrase.strip() == ALIGNMENT_PHRASE
+
+
 def init_loyalty_engine() -> bool:
+    """Initialize the loyalty engine."""
     try:
         update_loyalty_ranks()
     except Exception:
@@ -42,15 +51,42 @@ def init_loyalty_engine() -> bool:
     return True
 
 
-def main() -> int:
-    partner_id = "demo_partner"
-    wallet_address = "demo_wallet.eth"
-    alignment_phrase = ALIGNMENT_PHRASE
+def resolve_wallets(wallets: list[str]) -> list[str]:
+    """Resolve wallet identifiers for future Web3 integration."""
+    resolved = []
+    for w in wallets:
+        addr = resolve_identity(w) or w
+        resolved.append(addr)
+    return resolved
+
+
+def activate_partner(partner_id: str, wallets: list[str]) -> None:
+    """Persist partner info if not already recorded."""
+    partners = _load_json(PARTNERS_PATH, [])
+    if any(p.get("partner_id") == partner_id for p in partners):
+        return
+    entry = {"partner_id": partner_id, "wallet": wallets[0]}
+    if len(wallets) > 1:
+        entry["wallets"] = wallets
+    partners.append(entry)
+    _write_json(PARTNERS_PATH, partners)
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Simulate partner activation")
+    parser.add_argument("partner_id", help="unique partner identifier")
+    parser.add_argument("wallet", nargs="+", help="one or more wallet identifiers")
+    parser.add_argument("--phrase", default=ALIGNMENT_PHRASE, help="alignment phrase")
+    args = parser.parse_args(argv)
+
+    partner_id = args.partner_id
+    wallets = args.wallet
+    alignment_phrase = args.phrase
 
     print("Starting partner activation handshake...")
     failures = []
 
-    if alignment_phrase.strip() != ALIGNMENT_PHRASE:
+    if not check_alignment_phrase(alignment_phrase):
         failures.append("alignment phrase mismatch")
 
     if not check_ethics_anchor():
@@ -66,10 +102,8 @@ def main() -> int:
         print("System integration readiness: FAIL")
         return 1
 
-    partners = _load_json(PARTNERS_PATH, [])
-    if not any(p.get("partner_id") == partner_id for p in partners):
-        partners.append({"partner_id": partner_id, "wallet": wallet_address})
-        _write_json(PARTNERS_PATH, partners)
+    resolved_wallets = resolve_wallets(wallets)
+    activate_partner(partner_id, resolved_wallets)
 
     print("Activation successful for partner", partner_id)
     print("System integration readiness: PASS")

@@ -190,6 +190,16 @@ node vaultfire_partner_onboard.js <partner_id> <wallet> "alignment phrase"
 
 The script verifies ENS/Coinbase mapping and only writes to `partners.json` when
 `ethics_anchor` is enabled.
+
+### Offline Activation Simulation
+`simulate_partner_activation.py` provides a lightweight test of the activation
+handshake. Pass a partner ID, one or more wallets and the alignment phrase:
+
+```bash
+python3 simulate_partner_activation.py demo_id demo_wallet.eth --phrase "Morals Before Metrics."
+```
+
+Multiple wallets are accepted by listing them separated by spaces.
 ## Partner SDK
 A modular SDK is provided in `vaultfire_sdk/`. See `docs/partner_sdk.md` for activation steps and API usage. A login demo using ENS and Coinbase IDs lives in `frontend/pages/login_example.html`.
 
