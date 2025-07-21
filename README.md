@@ -89,6 +89,12 @@ without selling 90% or more of the balance unlocks a higher multiplier:
 Selling 90% or more resets the timer. `yield_engine_v1` automatically applies
 the multiplier based on the current tier.
 
+## Target Lock Rewards
+Early supporters may set a personal target value to hold for, such as `$10K`.
+If their wallet balance reaches that number without exiting, a retro bonus
+between **20%** and **100%** unlocks. Leaving the position early forfeits the
+bonus but not the regular yield they already earned.
+
 ## Statement
 > "I am not a user. I am the blueprint."
 > "I don’t ask for access — I show proof."
@@ -280,3 +286,4 @@ soulprint receive a weight bonus during steward elections.
 - Nothing here constitutes financial or legal advice.
 - Mission statements are stored with lightweight XOR-based obfuscation. This is not strong encryption.
 - The on-chain journal is simulated with local JSON logs and does not provide actual blockchain immutability.
+- Target lock rewards are hypothetical and offer no guaranteed returns.
