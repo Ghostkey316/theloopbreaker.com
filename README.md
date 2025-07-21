@@ -177,3 +177,13 @@ record_link("blueprint-1", "opensea", url)
 The module also exposes `github_sponsors_url` and `dapp_store_url` helpers for
 connecting other storefronts or Web3 dApp directories.
 
+## PR Merge Logging
+After each pull request merge, run:
+
+```bash
+python3 tools/log_pr_merge.py
+```
+
+This records the UTC timestamp and ethics framework version to
+`vaultfire-core/ethics/pr_merge_log.json`.
+
