@@ -107,6 +107,13 @@ Schedule this command weekly with cron:
 0 0 * * 0 /usr/bin/python3 /path/to/weekly_sync.py >> logs/sync.log 2>&1
 ```
 
+## Partner Monetization Hooks
+Partners can track usage and payouts with functions in `engine.partner_hooks`.
+Use `record_usage(partner_id, feature, tokens, wallet)` to deduct tokens for
+API usage. Rewards may be granted with `grant_reward(partner_id, wallet, amount)`.
+All entries are logged to `logs/partner_usage.json` and mirrored in
+`logs/token_ledger.json`.
+
 
 ## Signal Engine
 Run the pulse engine to compute alignment scores and reward top users:
