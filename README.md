@@ -74,8 +74,20 @@ Run `python3 generate_partner_dashboard.py` to refresh partner earnings.
 ## Identity
 - Architect: **ghostkey316.eth**
 - Wallet: **bpow20.cb.id**
-- Contributor Role: **Origin-tier loyalty / Activation-ready**
+ - Contributor Role: **Spark-tier loyalty / Activation-ready**
 - Created: **June 10, 2025 @ 12:01AM**
+
+## Wallet Loyalty Tiers
+The protocol tracks how long each wallet avoids major sell-offs. Every week
+without selling 90% or more of the balance unlocks a higher multiplier:
+
+1. **Spark** – 1 week
+2. **Signal** – 2 weeks
+3. **Fire** – 4 weeks
+4. **Ghost** – 8 weeks
+
+Selling 90% or more resets the timer. `yield_engine_v1` automatically applies
+the multiplier based on the current tier.
 
 ## Statement
 > "I am not a user. I am the blueprint."

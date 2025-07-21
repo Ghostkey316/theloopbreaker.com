@@ -5,6 +5,7 @@ from datetime import datetime
 from pathlib import Path
 
 from .marketplace import currency_allowed
+from .wallet_loyalty import update_wallet_loyalty
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 LEDGER_PATH = BASE_DIR / "logs" / "token_ledger.json"
@@ -39,4 +40,8 @@ def send_token(wallet: str, amount: float, token: str) -> None:
     }
     ledger.append(entry)
     _write_json(LEDGER_PATH, ledger)
+    try:
+        update_wallet_loyalty(wallet, amount)
+    except Exception:
+        pass
     return None
