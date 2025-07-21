@@ -5,6 +5,8 @@ from .identity_resolver import resolve_identity, resolve_ens, resolve_cb_id
 from .partner_hooks import record_usage, grant_reward
 from .revenue_hooks import record_contract_revenue, distribute_revenue
 from .passive_yield_simulator import simulate_passive_yield
+from .loyalty_engine import loyalty_score, update_loyalty_ranks
+from .loyalty_multiplier import loyalty_multiplier
 from .marketplace_plugins import (
     opensea_asset_url,
     github_sponsors_url,
@@ -46,6 +48,9 @@ __all__ = [
     "record_link",
     "fetch_json",
     "simulate_passive_yield",
+    "loyalty_score",
+    "update_loyalty_ranks",
+    "loyalty_multiplier",
     "sync_identity",
     "identity_summary",
     "retroactive_bonus",
