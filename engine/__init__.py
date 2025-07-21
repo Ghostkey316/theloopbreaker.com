@@ -30,6 +30,7 @@ from .shutdown_manager import (
     cast_vote as cast_shutdown_vote,
     tally_votes as tally_shutdown_votes,
 )
+from .signal_reward import reward_signal_event
 
 __all__ = [
     "resolve_identity",
@@ -57,4 +58,5 @@ __all__ = [
     "initiate_shutdown_vote",
     "cast_shutdown_vote",
     "tally_shutdown_votes",
+    "reward_signal_event",
 ]
