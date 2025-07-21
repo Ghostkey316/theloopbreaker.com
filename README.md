@@ -141,3 +141,17 @@ negative ratings decrease it.
 python3 engine/alignment_feedback.py --user alice --decision chat42 --rating 5 \
     --comment "Handled my request respectfully"
 ```
+
+## Onboarding API
+New Flask endpoints allow onboarding partners, contributors, and earners.
+Run the server:
+```bash
+python3 onboarding_api.py
+```
+
+### Endpoints
+- `POST /onboard/partner` – body `{"partner_id": "id", "wallet": "addr"}`
+- `POST /onboard/contributor` – body `{"user_id": "id", "wallet": "addr"}`
+- `POST /onboard/earner` – body `{"wallet": "addr"}`
+- `GET /status` – health check.
+
