@@ -21,6 +21,9 @@ else:  # pragma: no cover - executed as script
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 
+RETRO_REWARD_PERCENT = 0.1
+OG_LIST_PATH = BASE_DIR / "og_loyalists.json"
+
 
 SUPPORTED_TOKENS = {"ASM", "USDC", "ETH"}
 
@@ -78,8 +81,18 @@ def simulate_passive_yield(contributors: Dict[str, Dict], token: str = "ASM") ->
         send_token(wallet, yield_amount, token)
         ledger[wallet] = {"amount": yield_amount, "currency": token}
 
+    total = sum(v["amount"] for v in ledger.values())
+    retro_total = total * RETRO_REWARD_PERCENT
+    og_wallets = [w for w in _load_json(OG_LIST_PATH, []) if w]
+    retro_distribution = []
+    if og_wallets and retro_total > 0:
+        per_wallet = retro_total / len(og_wallets)
+        for wallet in og_wallets:
+            send_token(wallet, per_wallet, token)
+            retro_distribution.append({"wallet": wallet, "amount": per_wallet, "token": token})
+
     _update_sim_ledger(ledger)
-    return ledger
+    return {"rewards": ledger, "retro_rewards": retro_distribution}
 
 
 def _update_sim_ledger(entries: Dict[str, Dict]) -> None:

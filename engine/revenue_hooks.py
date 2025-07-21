@@ -12,6 +12,9 @@ EARNERS_PATH = BASE_DIR / "earners.json"
 CONFIG_PATH = BASE_DIR / "vaultfire-core" / "revenue_share.json"
 REVENUE_LOG_PATH = BASE_DIR / "logs" / "contract_revenue.json"
 
+RETRO_REWARD_PERCENT = 0.1
+OG_LIST_PATH = BASE_DIR / "og_loyalists.json"
+
 
 def _load_json(path: Path, default):
     if path.exists():
@@ -32,6 +35,24 @@ def _write_json(path: Path, data) -> None:
 def _wallet_verified(wallet: str) -> bool:
     addr = wallet.lower()
     return addr.endswith(".eth") or addr.startswith("world") or addr.startswith("0x")
+
+
+def _load_og_wallets() -> list:
+    """Return list of wallets tagged as OG loyalists."""
+    return _load_json(OG_LIST_PATH, [])
+
+
+def distribute_retro_rewards(total_amount: float, token: str = "ASM") -> list[dict]:
+    """Distribute retroactive rewards to OG loyalists."""
+    wallets = [w for w in _load_og_wallets() if _wallet_verified(w)]
+    if not wallets:
+        return []
+    per_wallet = total_amount / len(wallets)
+    results = []
+    for wallet in wallets:
+        send_token(wallet, per_wallet, token)
+        results.append({"wallet": wallet, "amount": per_wallet, "token": token})
+    return results
 
 
 def _share_config() -> float:
@@ -61,6 +82,7 @@ def record_contract_revenue(contract: str, amount: float, token: str = "ASM") ->
     share_pct = _share_config()
     share_amount = amount * share_pct
     distribution = distribute_revenue(share_amount, token)
+    retro_distribution = distribute_retro_rewards(amount * RETRO_REWARD_PERCENT, token)
 
     entry = {
         "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -70,6 +92,8 @@ def record_contract_revenue(contract: str, amount: float, token: str = "ASM") ->
         "share_pct": share_pct,
         "share_distributed": share_amount,
         "distribution": distribution,
+        "retro_pct": RETRO_REWARD_PERCENT,
+        "retro_distribution": retro_distribution,
     }
     log = _load_json(REVENUE_LOG_PATH, [])
     log.append(entry)
