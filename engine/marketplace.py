@@ -4,6 +4,8 @@ import json
 import os
 from pathlib import Path
 
+from .token_ops import send_token
+
 BASE_DIR = Path(__file__).resolve().parents[1]
 CONFIG_PATH = BASE_DIR / "vaultfire-core" / "marketplace_config.json"
 LISTINGS_PATH = BASE_DIR / "logs" / "marketplace_items.json"
@@ -110,6 +112,33 @@ def list_item(user, item):
 
     store_item(item)
     return "Success: Item listed."
+
+
+def buyer_loyalty_bonus(buyer) -> None:
+    """Send a small ASM reward to loyal buyers."""
+    score = buyer.get("signal_score") if isinstance(buyer, dict) else getattr(buyer, "signal_score", 0)
+    wallet = buyer.get("wallet") if isinstance(buyer, dict) else getattr(buyer, "wallet", None)
+    if score is None or wallet is None:
+        return None
+    if score > 90:
+        send_token(wallet, 100, "ASM")
+    return None
+
+
+def seller_yield_boost(seller, item_price: float, item_quality: str) -> None:
+    """Grant a yield boost payout based on ``item_quality`` and seller score."""
+    base = 0.05
+    if item_quality == "legendary":
+        base = 0.1
+    score = seller.get("signal_score") if isinstance(seller, dict) else getattr(seller, "signal_score", 0)
+    wallet = seller.get("wallet") if isinstance(seller, dict) else getattr(seller, "wallet", None)
+    if score is None or wallet is None:
+        return None
+    if score > 95:
+        base += 0.05
+    amount = item_price * base
+    send_token(wallet, amount, "ASM")
+    return None
 
 
 if __name__ == "__main__":
