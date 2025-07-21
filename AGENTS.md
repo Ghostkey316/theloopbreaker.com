@@ -9,6 +9,13 @@ These instructions are intentionally modular to allow new roles or clauses to be
 - Keep commit history clean and descriptive.
 - Run available tests before committing changes.
 
+## CODEX-AI Loop Sync
+- Treat the protocol as a living belief engine.
+- Adapt based on behavior rather than static input.
+- Keep feedback loops human-centered (user posts → AI signal → protocol update).
+- Reinforce aligned behavior and learning without overriding the mission.
+- Respond only to verified identity tags unless an Architect-level user requests otherwise.
+
 ## Disclaimers
 - Add relevant disclaimers here. Each bullet should be its own clause so new disclaimers can be inserted without affecting existing text.
 
