@@ -237,3 +237,7 @@ Supported tokens are `ASM`, `USDC`, and `ETH`.
 
 ## Design DNA
 The project includes a short guide in `docs/design_culture.md` detailing the 90s-inspired look and our ethics-first approach to branding. It also covers simple UX principles and how to write human messages throughout the interface.
+
+## Disclaimers
+- This repository is experimental software provided for learning and discussion.
+- Nothing here constitutes financial or legal advice.
