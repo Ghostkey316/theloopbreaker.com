@@ -8,6 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent
 ETHICS_PATH = BASE_DIR / "ethics" / "core.mdx"
 CONFIG_PATH = BASE_DIR / "vaultfire-core" / "vaultfire_config.json"
 SNAPSHOT_PATH = BASE_DIR / "dashboards" / "contributor_snapshot.json"
+BINDINGS_PATH = BASE_DIR / "dashboards" / "contributor_bindings.json"
 USER_LIST_PATH = BASE_DIR / "user_list.json"
 SCORECARD_PATH = BASE_DIR / "user_scorecard.json"
 
@@ -58,14 +59,16 @@ def check_contributor_bindings() -> list[str]:
     if user_ids is None:
         errors.append("user_list.json missing or invalid")
         user_ids = []
-    scorecard = _load_json(SCORECARD_PATH, {})
+    bindings = _load_json(BINDINGS_PATH, {})
     for user in user_ids:
-        wallet = scorecard.get(user, {}).get("wallet")
-        if not wallet:
-            errors.append(f"no wallet for user {user}")
+        entry = bindings.get(user)
+        if not entry:
+            errors.append(f"no binding for user {user}")
             continue
-        if resolve_identity(wallet) is None:
-            errors.append(f"unresolved identity: {wallet} ({user})")
+        if "contributor_xp" not in entry:
+            errors.append(f"xp missing for {user}")
+        if "loyalty_multiplier" not in entry:
+            errors.append(f"multiplier missing for {user}")
     return errors
 
 

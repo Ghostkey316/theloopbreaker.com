@@ -17,5 +17,7 @@
     "tier": "default",
     "score": 0.0
   },
+  "contributor_xp": 0,
+  "loyalty_multiplier": 1.0,
   "system_phase": "Vaultfire Init"
 }
