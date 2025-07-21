@@ -1,1 +1,6 @@
-[]
+[
+  {
+    "partner_id": "sandbox_partner",
+    "wallet": "bpow20.cb.id"
+  }
+]
