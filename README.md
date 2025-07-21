@@ -190,6 +190,9 @@ node vaultfire_partner_onboard.js <partner_id> <wallet> "alignment phrase"
 
 The script verifies ENS/Coinbase mapping and only writes to `partners.json` when
 `ethics_anchor` is enabled.
+## Partner SDK
+A modular SDK is provided in `vaultfire_sdk/`. See `docs/partner_sdk.md` for activation steps and API usage. A login demo using ENS and Coinbase IDs lives in `frontend/pages/login_example.html`.
+
 
 ## Alignment Key Access
 Partners who embody Ghostkey values can unlock additional features by
