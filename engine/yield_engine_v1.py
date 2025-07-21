@@ -6,6 +6,7 @@ from pathlib import Path
 from datetime import datetime
 
 from .loyalty_engine import loyalty_score
+from .token_ops import send_token
 
 # Paths to data and config files
 BASE_DIR = Path(__file__).resolve().parents[1]
@@ -18,6 +19,8 @@ AUDIT_LOG_PATH = BASE_DIR / "vaultfire-core" / "ethics" / "morals_audit_log.json
 PASSIVE_LEDGER_PATH = BASE_DIR / "logs" / "passive_yield.json"
 CERTIFIED_TIERS = {"origin", "veteran", "legend"}
 PASSIVE_RATE = 0.02
+RETRO_REWARD_PERCENT = 0.1
+OG_LIST_PATH = BASE_DIR / "og_loyalists.json"
 
 
 def _load_json(path):
@@ -166,7 +169,18 @@ def distribute_rewards(contributor_data):
         _log_audit({"action": "reward", "user_id": user_id,
                     "wallet": wallet, "approved": True,
                     "amount": amount})
-    return ledger
+
+    total = sum(v["amount"] for v in ledger.values())
+    retro_total = total * RETRO_REWARD_PERCENT
+    og_wallets = [w for w in _load_json(OG_LIST_PATH, []) if _wallet_verified(w)]
+    retro_distribution = []
+    if og_wallets and retro_total > 0:
+        per_wallet = retro_total / len(og_wallets)
+        for wallet in og_wallets:
+            send_token(wallet, per_wallet, "ASM")
+            retro_distribution.append({"wallet": wallet, "amount": per_wallet, "token": "ASM"})
+
+    return {"rewards": ledger, "retro_rewards": retro_distribution}
 
 
 # Placeholder for future v2 upgrades: social tipping, real-time badges, partner feeds

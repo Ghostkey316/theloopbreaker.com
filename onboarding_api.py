@@ -10,6 +10,7 @@ PARTNERS_PATH = BASE_DIR / "partners.json"
 CONTRIBUTORS_PATH = BASE_DIR / "user_list.json"
 EARNERS_PATH = BASE_DIR / "earners.json"
 SCORECARD_PATH = BASE_DIR / "user_scorecard.json"
+OG_LIST_PATH = BASE_DIR / "og_loyalists.json"
 
 
 def _load_json(path: Path, default):
@@ -32,13 +33,19 @@ def onboard_partner():
     data = request.get_json(silent=True) or {}
     partner_id = data.get("partner_id")
     wallet = data.get("wallet")
+    og_flag = data.get("og_loyalist", False)
     if not partner_id or not wallet:
         return jsonify({"error": "partner_id and wallet required"}), 400
     partners = _load_json(PARTNERS_PATH, [])
     if any(p.get("partner_id") == partner_id for p in partners):
         return jsonify({"message": "partner already exists"}), 200
-    partners.append({"partner_id": partner_id, "wallet": wallet})
+    partners.append({"partner_id": partner_id, "wallet": wallet, "og_loyalist": og_flag})
     _write_json(PARTNERS_PATH, partners)
+    if og_flag:
+        og_list = _load_json(OG_LIST_PATH, [])
+        if wallet not in og_list:
+            og_list.append(wallet)
+            _write_json(OG_LIST_PATH, og_list)
     return jsonify({"message": "partner onboarded"}), 201
 
 

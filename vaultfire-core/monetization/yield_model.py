@@ -6,6 +6,8 @@ from pathlib import Path
 
 CONFIG_PATH = Path(__file__).resolve().parents[1] / "vaultfire_config.json"
 
+RETRO_REWARD_PERCENT = 0.1
+
 POINTS = {
     "mission_complete": 10,
     "help_new_user": 5,
