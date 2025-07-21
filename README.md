@@ -63,12 +63,16 @@ You can override the identity or wallet recorded in the log:
 python3 vaultfire_signal.py --identity MyName --wallet mywallet.id
 ```
 
+The logger now uses an identity resolver for ENS and Coinbase IDs. When you
+log with `ghostkey316.eth` or `bpow20.cb.id`, the script records the underlying
+wallet address alongside the identifier.
+
 The script creates `logs/vaultfire_log.txt` automatically if it does not exist.
 
 Run `python3 generate_partner_dashboard.py` to refresh partner earnings.
 
 ## Identity
-- Architect: **Ghostkey-316**
+- Architect: **ghostkey316.eth**
 - Wallet: **bpow20.cb.id**
 - Contributor Role: **Origin-tier loyalty / Activation-ready**
 - Created: **June 10, 2025 @ 12:01AM**
