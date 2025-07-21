@@ -78,4 +78,10 @@ def loyalty_multiplier(wallet: str) -> float:
     tier = wallet_tier(wallet)
     values = _load_json(VALUES_PATH, {})
     mults = values.get("loyalty_multipliers", {})
-    return mults.get(tier, mults.get("default", 1.0))
+    mult = mults.get(tier, mults.get("default", 1.0))
+    try:
+        from .wallet_bonding import bond_multiplier
+        mult *= bond_multiplier(wallet)
+    except Exception:
+        pass
+    return mult
