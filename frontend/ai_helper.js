@@ -1,3 +1,4 @@
+// Reference: ethics/core.mdx
 class ChatAssistant {
   constructor({ mode, prompt, context }) {
     this.mode = mode || 'Vaultfire';

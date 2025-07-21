@@ -1,3 +1,4 @@
+# Reference: ethics/core.mdx
 """Partner integration hooks for token-based usage."""
 
 from datetime import datetime

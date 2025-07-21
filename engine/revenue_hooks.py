@@ -1,3 +1,4 @@
+# Reference: ethics/core.mdx
 """Revenue distribution hooks for on-chain contracts."""
 
 import json

@@ -1,3 +1,4 @@
+// Reference: ethics/core.mdx
 // Pull ghostkey_heartbeat.json and display community metrics
 
 /*

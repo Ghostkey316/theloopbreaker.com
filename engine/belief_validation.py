@@ -1,3 +1,4 @@
+# Reference: ethics/core.mdx
 """Belief validation with ethical checkpointing."""
 
 import json

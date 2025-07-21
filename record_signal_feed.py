@@ -1,3 +1,4 @@
+# Reference: ethics/core.mdx
 """Update signal feed with scoreboard information."""
 
 import json

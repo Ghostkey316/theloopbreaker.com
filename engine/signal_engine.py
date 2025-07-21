@@ -1,3 +1,4 @@
+# Reference: ethics/core.mdx
 from __future__ import annotations
 
 """Pulse Engine v1.0 — Tracks trust, sync, rewards, and invites."""

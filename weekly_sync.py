@@ -1,3 +1,4 @@
+# Reference: ethics/core.mdx
 """Run global sync pulse for all users."""
 
 import argparse

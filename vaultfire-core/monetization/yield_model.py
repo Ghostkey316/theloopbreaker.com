@@ -1,3 +1,4 @@
+# Reference: ethics/core.mdx
 """Behavioral yield distribution model for Vaultfire Core."""
 
 import json

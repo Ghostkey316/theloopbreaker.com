@@ -1,3 +1,4 @@
+// Reference: ethics/core.mdx
 async function loadJSON(path) {
   const res = await fetch(path).catch(() => null);
   if (!res || !res.ok) return null;
