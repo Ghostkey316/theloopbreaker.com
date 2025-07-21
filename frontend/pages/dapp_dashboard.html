@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vaultfire DApp Hub</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Courier New', monospace;
+      background: #000;
+      color: #0ff;
+    }
+    .theme-dark {
+      background: #001;
+      color: #0ff;
+    }
+    .theme-dark header {
+      background: #000;
+    }
+    header {
+      background: #222;
+      color: #0ff;
+      padding: 20px;
+      text-align: center;
+      border-bottom: 2px solid #0ff;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2em;
+      text-shadow: 0 0 8px #0ff;
+    }
+    section {
+      padding: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 6px 10px;
+      border: 1px solid #0ff;
+    }
+    #ledger {
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transition: max-height 0.7s ease, opacity 0.7s ease;
+    }
+    #ledger.visible {
+      max-height: 500px;
+      opacity: 1;
+    }
+    .vote {
+      cursor: pointer;
+      margin: 0 5px;
+      color: #ff1493;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Vaultfire DApp Hub</h1>
+    <button id="themeToggle">Toggle Theme</button>
+  </header>
+
+  <section id="leaderboard">
+    <h3>Contributor Leaderboard</h3>
+    <table>
+      <thead>
+        <tr><th>User</th><th>Score</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section id="ethics">
+    <h3>Real-Time Ethics Scores</h3>
+    <table>
+      <thead>
+        <tr><th>User</th><th>Ethics</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section id="ledgerSection">
+    <h3>Token Ledger</h3>
+    <button id="revealLedger">Reveal Ledger</button>
+    <div id="ledger"></div>
+  </section>
+
+  <section id="proposal">
+    <h3>Partner Proposal Voting</h3>
+    <div id="proposalList"></div>
+    <h4>Propose Partner</h4>
+    <input id="newPartnerId" placeholder="partner id" />
+    <input id="newPartnerWallet" placeholder="wallet" />
+    <button id="addPartner">Add</button>
+  </section>
+
+  <script src="../vaultfire_confirm.js"></script>
+  <script src="dapp_dashboard.js"></script>
+</body>
+</html>
