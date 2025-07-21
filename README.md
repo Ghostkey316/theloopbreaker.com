@@ -189,6 +189,19 @@ record_link("blueprint-1", "opensea", url)
 The module also exposes `github_sponsors_url` and `dapp_store_url` helpers for
 connecting other storefronts or Web3 dApp directories.
 
+## Contributor Identity Sync
+The module `engine.contributor_identity` links wallets, social handles and
+behavior patterns into a single profile. Reputation multipliers and access
+levels are derived from this profile.
+
+```bash
+python3 -m engine.contributor_identity --user alice \
+    --wallet alice.eth --social twitter=@alice
+```
+
+Calling `identity_summary("alice")` returns the multiplier and recommended
+retroactive bonus.
+
 ## PR Merge Logging
 After each pull request merge, run:
 
