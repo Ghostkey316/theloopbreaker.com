@@ -5,6 +5,7 @@ from datetime import datetime
 
 from vaultfire_signal import log_vaultfire_status
 from .yield_engine_v1 import mark_yield_boost
+from .belief_validation import validate_belief
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 EVENT_LOG_PATH = BASE_DIR / "event_log.json"
@@ -17,6 +18,7 @@ ACTION_VALUE_MAP = {
     "mission_complete": {"belief_level": 1, "impact_score": 3},
     "help_new_user": {"loyalty": 2},
     "ethical_action": {"belief_level": 1, "loyalty": 1, "impact_score": 1},
+    "submit_belief": {},
 }
 
 THRESHOLD = 10
@@ -52,6 +54,14 @@ def track_behavior(event):
     increments = ACTION_VALUE_MAP.get(action, {})
     for key, inc in increments.items():
         user_scores[key] = user_scores.get(key, 0) + inc
+
+    belief = event.get("belief")
+    if belief:
+        approved = validate_belief(uid, belief)
+        _log_audit({"action": "belief_validation", "user_id": uid,
+                    "belief": belief, "approved": approved})
+        if approved:
+            user_scores["belief_level"] = user_scores.get("belief_level", 0) + 1
 
     scorecard[uid] = user_scores
     _write_json(SCORECARD_PATH, scorecard)
