@@ -44,6 +44,7 @@ Vaultfire Init represents the first development signal from **Ghostkey-316** (Br
 - `logs/` – location for generated log files (ignored by Git). This now includes
   `token_ledger.json` which tracks token rewards when partnerships enable direct
   payouts.
+- `generate_partner_dashboard.py` – builds `dashboards/partner_earnings.json` summarizing contributor earnings.
 - `README.md` – project overview and usage notes.
 - `vaultfire-core/` – base protocol framework containing configuration, ethics,
   and monetization modules.
@@ -63,6 +64,8 @@ python3 vaultfire_signal.py --identity MyName --wallet mywallet.id
 ```
 
 The script creates `logs/vaultfire_log.txt` automatically if it does not exist.
+
+Run `python3 generate_partner_dashboard.py` to refresh partner earnings.
 
 ## Identity
 - Architect: **Ghostkey-316**

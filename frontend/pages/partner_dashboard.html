@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Partner Earnings Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    header { background: #222; color: white; padding: 20px; text-align: center; }
+    header h1 { margin: 0; font-size: 1.8em; }
+    header button { margin-left: 20px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px 12px; border: 1px solid #ccc; }
+    section { padding:20px; }
+    .theme-dark { background:#111; color:#eee; }
+    .theme-dark header { background:#000; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Partner Earnings Dashboard</h1>
+    <button id="themeToggle">Toggle Theme</button>
+  </header>
+
+  <section>
+    <table id="earningsTable">
+      <thead>
+        <tr><th>Wallet</th><th>Earnings</th><th>Last Payment</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section id="aiHelper">
+    <h3>AI Helper</h3>
+    <div id="aiHelperContainer"></div>
+  </section>
+
+  <script src="../ai_helper.js"></script>
+  <script src="partner_dashboard.js"></script>
+  <script>
+    const helper = new ChatAssistant({ mode: 'Vaultfire', prompt: 'Ask about your earnings' });
+    helper.init(document.getElementById('aiHelperContainer'));
+  </script>
+</body>
+</html>
