@@ -297,6 +297,22 @@ soulprint receive a weight bonus during steward elections.
 ## Wallet Bonding
 Two contributors can bond their wallets together. While bonded, each member's yield and loyalty multiplier grows with their shared time-in and combined trust behavior. If either wallet exits or breaks a rule, the bond ends and both loyalty timers reset.
 
+## Contributor Identification Protocol
+`engine/contributor_protocol.py` evaluates activity across the repo, system upgrades, and ethics alignment for every known user. Each contributor receives a **Contributor Score** from 1–1000 and a tag:
+
+- **OG Architect**
+- **Verified Believer**
+- **System Builder**
+- **Echo Agent**
+
+Run the script to refresh scores:
+
+```bash
+python3 engine/contributor_protocol.py
+```
+
+Results are written to `dashboards/contributor_scores.json` and merged into `user_scorecard.json`.
+
 ## Disclaimers
 - This repository is experimental software provided for learning and discussion.
 - Nothing here constitutes financial or legal advice.
