@@ -82,6 +82,21 @@ def onboard_earner():
     return jsonify({"message": "earner onboarded"}), 201
 
 
+@app.post("/mission")
+def submit_mission():
+    """Record a personal mission statement for a contributor."""
+    data = request.get_json(silent=True) or {}
+    user_id = data.get("user_id")
+    mission = data.get("mission")
+    if not user_id or not mission:
+        return jsonify({"error": "user_id and mission required"}), 400
+    scorecard = _load_json(SCORECARD_PATH, {})
+    wallet = data.get("wallet") or scorecard.get(user_id, {}).get("wallet", "")
+    from engine.mission_registry import record_mission
+    record_mission(user_id, wallet, mission)
+    return jsonify({"message": "mission recorded"}), 201
+
+
 @app.post("/engagement")
 def record_engagement():
     """Record a user engagement event."""

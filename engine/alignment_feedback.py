@@ -2,6 +2,7 @@
 import json
 from datetime import datetime
 from pathlib import Path
+from engine.mission_registry import get_mission
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 FEEDBACK_PATH = BASE_DIR / "logs" / "alignment_feedback.json"
@@ -49,6 +50,9 @@ def record_alignment_feedback(user_id: str, decision: str, rating: int, comment:
     }
     if comment:
         entry["comment"] = comment
+    mission = get_mission(user_id)
+    if mission:
+        entry["mission"] = mission
     log = _load_json(FEEDBACK_PATH, [])
     log.append(entry)
     _write_json(FEEDBACK_PATH, log)
