@@ -18,4 +18,5 @@ We are here to serve contributors who act with integrity. The project belongs to
 ## Disclaimers
 - This manifesto is a personal statement from Ghostkey-316 and does not create legal obligations.
 - Participation in Vaultfire does not guarantee financial gain or permanent access.
+- Materials are provided "as is" with no promise of fitness for a particular purpose.
 

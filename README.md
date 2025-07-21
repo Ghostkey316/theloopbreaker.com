@@ -335,3 +335,6 @@ Results are written to `dashboards/contributor_scores.json` and merged into `use
 - The on-chain journal is simulated with local JSON logs and does not provide actual blockchain immutability.
 - Target lock rewards are hypothetical and offer no guaranteed returns.
 - Wallet bonding is simulated locally and does not create any on-chain obligation.
+- Use at your own risk; the maintainers provide no warranty.
+- Local JSON files are not meant for secure or permanent storage.
+- All contributions must respect the Ghostkey Commandments and ethics guidelines.
