@@ -305,6 +305,19 @@ python3 engine/engagement_tracker.py mywallet.eth --reveal
 
 The onboarding API exposes `/engagement` for recording events and `/credit/<id>` to fetch the current score. No token purchase is required to qualify for rewards.
 
+## Vaultfire Credits
+`engine/vaultfire_credits.py` keeps a running total of credits for each ENS name
+or Coinbase ID. Credits combine contributor XP with the number of verified
+prompts a user submits. Balances are stored in `logs/vaultfire_credits.json`.
+
+Check a contributor's balance:
+
+```bash
+python3 engine/vaultfire_credits.py ghostkey316
+```
+
+The onboarding API exposes `/vaultfire_credits/<id>` to query these totals.
+
 
 ## Design DNA
 The project includes a short guide in `docs/design_culture.md` detailing the 90s-inspired look and our ethics-first approach to branding. It also covers simple UX principles and how to write human messages throughout the interface.
