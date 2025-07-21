@@ -18,6 +18,12 @@ from .contributor_identity import (
     retroactive_bonus,
 )
 from .self_audit import run_self_audit
+from .target_lock import (
+    set_target_lock,
+    exit_target_lock,
+    update_value as update_target_value,
+    claim_bonus as claim_target_bonus,
+)
 
 __all__ = [
     "resolve_identity",
@@ -37,4 +43,8 @@ __all__ = [
     "identity_summary",
     "retroactive_bonus",
     "run_self_audit",
+    "set_target_lock",
+    "exit_target_lock",
+    "update_target_value",
+    "claim_target_bonus",
 ]
