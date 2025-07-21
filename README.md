@@ -234,6 +234,21 @@ python3 engine/passive_yield_simulator.py --data path/to/contributors.json --tok
 
 Supported tokens are `ASM`, `USDC`, and `ETH`.
 
+## Off-Chain Engagement Tracker
+The module `engine/engagement_tracker.py` records likes, shares, scroll depth and reading time for any wallet or biometric identifier. Engagement data lives in `logs/engagement_data.json` with hashed IDs so metrics stay private. Use the tracker from the command line:
+
+```bash
+python3 engine/engagement_tracker.py mywallet.eth likes --value 1
+```
+
+Reveal a user's invisible credit when a reward is triggered:
+
+```bash
+python3 engine/engagement_tracker.py mywallet.eth --reveal
+```
+
+The onboarding API exposes `/engagement` for recording events and `/credit/<id>` to fetch the current score. No token purchase is required to qualify for rewards.
+
 
 ## Design DNA
 The project includes a short guide in `docs/design_culture.md` detailing the 90s-inspired look and our ethics-first approach to branding. It also covers simple UX principles and how to write human messages throughout the interface.
