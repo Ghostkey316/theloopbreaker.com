@@ -1,10 +1,12 @@
 {
   "ghostkey316": {
     "contributor_score": 15,
-    "contributor_tag": "Echo Agent"
+    "contributor_tag": "Echo Agent",
+    "wallet": "ghostkey316.eth"
   },
   "sample_user": {
     "contributor_score": 5,
-    "contributor_tag": "Echo Agent"
+    "contributor_tag": "Echo Agent",
+    "wallet": "sample.eth"
   }
 }

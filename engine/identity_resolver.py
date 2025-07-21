@@ -6,6 +6,7 @@ from typing import Optional
 
 ENS_MAP = {
     "ghostkey316.eth": "0x9abCDEF1234567890abcdefABCDEF1234567890",
+    "sample.eth": "0x0000000000000000000000000000000000000001",
 }
 
 CB_ID_MAP = {
