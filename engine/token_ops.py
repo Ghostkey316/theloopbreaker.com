@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .marketplace import currency_allowed
 from .wallet_loyalty import update_wallet_loyalty
+from .activation_gate import enforce_activation
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 LEDGER_PATH = BASE_DIR / "logs" / "token_ledger.json"
@@ -28,7 +29,11 @@ def _write_json(path: Path, data) -> None:
 
 
 def send_token(wallet: str, amount: float, token: str) -> None:
-    """Record a token transfer to ``wallet`` if ``token`` is allowed."""
+    """Record a token transfer to ``wallet`` if ``token`` is allowed.
+
+    Raises ``RuntimeError`` if the protocol is halted.
+    """
+    enforce_activation()
     if not currency_allowed(token):
         raise ValueError(f"Token {token} not supported by marketplace")
     ledger = _load_json(LEDGER_PATH, [])

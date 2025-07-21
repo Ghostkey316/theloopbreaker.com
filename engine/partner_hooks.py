@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from .token_ops import send_token
+from .activation_gate import enforce_activation
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 CONFIG_PATH = BASE_DIR / "vaultfire-core" / "vaultfire_config.json"
@@ -34,6 +35,7 @@ def _load_config():
 
 
 def _check_enabled():
+    enforce_activation()
     config = _load_config()
     if not config.get("ethics_anchor", False):
         raise RuntimeError("Ethics anchor disabled. Monetization halted.")
