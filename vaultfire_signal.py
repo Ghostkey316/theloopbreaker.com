@@ -4,14 +4,20 @@ from datetime import datetime
 import os
 import argparse
 
-DEFAULT_IDENTITY = "Ghostkey-316"
+from engine.identity_resolver import resolve_identity
+
+DEFAULT_IDENTITY = "ghostkey316.eth"
 DEFAULT_WALLET = "bpow20.cb.id"
 
 
 def log_vaultfire_status(identity=DEFAULT_IDENTITY, wallet=DEFAULT_WALLET):
     """Write a timestamped activation message to the log file."""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    status = f"Vaultfire status: ACTIVE | Identity: {identity} | Wallet: {wallet}"
+    resolved = resolve_identity(wallet) or "unknown"
+    status = (
+        f"Vaultfire status: ACTIVE | Identity: {identity} | Wallet: {wallet}"
+        f" ({resolved})"
+    )
     log_entry = f"[{timestamp}] {status}\n"
 
     os.makedirs("logs", exist_ok=True)
