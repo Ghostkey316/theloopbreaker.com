@@ -7,6 +7,7 @@ from datetime import datetime
 
 from .loyalty_engine import loyalty_score
 from .token_ops import send_token
+from .mission_registry import get_mission
 
 # Paths to data and config files
 BASE_DIR = Path(__file__).resolve().parents[1]
@@ -168,11 +169,15 @@ def distribute_rewards(contributor_data):
         wallet = info.get("wallet")
         behavior = info.get("behavior", [])
         amount = calculate_yield(user_id, wallet, behavior)
-        ledger[wallet] = {
+        mission = get_mission(user_id)
+        entry = {
             "amount": amount,
             "currency": "ASM",
             "morals_approved": True,
         }
+        if mission:
+            entry["mission_echo"] = mission
+        ledger[wallet] = entry
         _log_audit({"action": "reward", "user_id": user_id,
                     "wallet": wallet, "approved": True,
                     "amount": amount})

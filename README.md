@@ -272,3 +272,4 @@ The `engine/governance.py` module handles steward elections and proposal freezes
 ## Disclaimers
 - This repository is experimental software provided for learning and discussion.
 - Nothing here constitutes financial or legal advice.
+- Mission statements are stored with lightweight XOR-based obfuscation. This is not strong encryption.
