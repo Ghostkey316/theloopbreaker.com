@@ -1,3 +1,4 @@
+# Reference: ethics/core.mdx
 """Marketplace configuration utilities."""
 
 import json

@@ -1,3 +1,4 @@
+# Reference: ethics/core.mdx
 """Resolve identities for ENS and Coinbase Wallet IDs."""
 
 from functools import lru_cache

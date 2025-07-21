@@ -1,3 +1,4 @@
+# Reference: ethics/core.mdx
 """Loyalty Engine with tiered behavior multipliers."""
 
 import json

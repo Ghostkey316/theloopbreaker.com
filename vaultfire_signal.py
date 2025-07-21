@@ -1,3 +1,4 @@
+# Reference: ethics/core.mdx
 """Simple Vaultfire activation logger."""
 
 from datetime import datetime

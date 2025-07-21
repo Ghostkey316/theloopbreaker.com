@@ -1,3 +1,4 @@
+// Reference: ethics/core.mdx
 const fs = require('fs');
 const path = require('path');
 

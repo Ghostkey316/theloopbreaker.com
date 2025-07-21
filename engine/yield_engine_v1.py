@@ -1,3 +1,4 @@
+# Reference: ethics/core.mdx
 """Yield Engine v1 for Vaultfire."""
 
 import json

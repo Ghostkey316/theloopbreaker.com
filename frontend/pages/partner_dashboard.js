@@ -1,3 +1,4 @@
+// Reference: ethics/core.mdx
 async function loadDashboard() {
   const res = await fetch('../../dashboards/partner_earnings.json').catch(() => null);
   if (!res || !res.ok) return [];

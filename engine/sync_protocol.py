@@ -1,3 +1,4 @@
+# Reference: ethics/core.mdx
 """Sync functions for belief alignment with external systems."""
 
 import json

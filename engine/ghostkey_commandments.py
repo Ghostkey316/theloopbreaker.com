@@ -1,3 +1,4 @@
+# Reference: ethics/core.mdx
 """Ghostkey Commandments for quick reference."""
 
 GHOSTKEY_COMMANDMENTS = [

@@ -1,3 +1,4 @@
+# Reference: ethics/core.mdx
 """External marketplace integration utilities for Vaultfire."""
 
 import json

@@ -1,3 +1,4 @@
+# Reference: ethics/core.mdx
 """Vaultfire engine package."""
 
 from .identity_resolver import resolve_identity, resolve_ens, resolve_cb_id
