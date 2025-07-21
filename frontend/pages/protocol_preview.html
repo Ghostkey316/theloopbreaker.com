@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vaultfire Protocol Preview</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    header { background: #222; color: white; padding: 20px; text-align: center; }
+    header h1 { margin: 0; font-size: 1.8em; }
+    header button { margin-left: 20px; }
+    section { padding: 20px; }
+    ul { padding-left: 20px; }
+    .value { margin-bottom: 5px; }
+    .theme-dark { background:#111; color:#eee; }
+    .theme-dark header { background:#000; }
+    .visuals { display:flex; gap:10px; }
+    .box { width:80px; height:80px; border-radius:8px; }
+    .box.teal { background:#00f5f5; }
+    .box.pink { background:#ff1493; }
+    .box.purple { background:#800080; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Vaultfire Protocol Preview</h1>
+    <button id="themeToggle">Toggle Theme</button>
+  </header>
+
+  <section id="identity">
+    <h3>Ghostkey-316 Identity</h3>
+    <pre id="identityData"></pre>
+  </section>
+
+  <section id="values">
+    <h3>Core Values</h3>
+    <ul id="valueList"></ul>
+  </section>
+
+  <section id="loyalty">
+    <h3>Loyalty Rewards Logic</h3>
+    <pre id="loyaltyInfo"></pre>
+  </section>
+
+  <section id="partner">
+    <h3>Partner Alignment</h3>
+    <p>Partners must respect the Ghostkey Ethics Framework and follow the guidance in <code>vaultfire-core/monetization/partner_ready.md</code>.</p>
+  </section>
+
+  <section id="visuals">
+    <h3>Sample Visuals</h3>
+    <div class="visuals">
+      <div class="box teal"></div>
+      <div class="box pink"></div>
+      <div class="box purple"></div>
+    </div>
+  </section>
+
+  <script src="../vaultfire_confirm.js"></script>
+  <script src="protocol_preview.js"></script>
+</body>
+</html>
