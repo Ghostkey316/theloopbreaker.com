@@ -11,12 +11,16 @@ activation utilities so external projects can integrate quickly.
    python3 -m vaultfire_sdk
    ```
 
+For offline automation, run `activation_hook.py` with a JSON file or `-` for
+stdin. The script outputs a pass/fail status object.
+
 ## API Routes
 - `POST /onboard/partner`
 - `POST /onboard/contributor`
 - `POST /onboard/earner`
 - `POST /mission`
 - `POST /engagement`
+- `POST /activate/simulate`
 - `GET /credit/<identifier>`
 - `GET /vaultfire_credits/<user_id>`
 - `GET /status`

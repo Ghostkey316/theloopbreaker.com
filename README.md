@@ -200,6 +200,27 @@ python3 simulate_partner_activation.py demo_id demo_wallet.eth --phrase "Morals 
 ```
 
 Multiple wallets are accepted by listing them separated by spaces.
+
+To use a JSON payload offline, pipe it to `activation_hook.py`:
+
+```bash
+echo '{"partner_id": "demo_id", "wallets": ["demo_wallet.eth"], "phrase": "Morals Before Metrics."}' \
+  | python3 activation_hook.py -
+```
+
+### Activation Simulation API
+POST `/activate/simulate` accepts a JSON body containing `partner_id`, a list of
+`wallets`, and an optional `phrase`. The endpoint returns a status object for UI
+rendering:
+
+```bash
+curl -X POST http://localhost:5000/activate/simulate \
+  -H "Content-Type: application/json" \
+  -d '{"partner_id": "demo_id", "wallets": ["demo_wallet.eth"],
+       "phrase": "Morals Before Metrics."}'
+```
+
+The response indicates `PASS` or `FAIL` and lists any failures.
 ## Partner SDK
 A modular SDK is provided in `vaultfire_sdk/`. See `docs/partner_sdk.md` for activation steps and API usage. A login demo using ENS and Coinbase IDs lives in `frontend/pages/login_example.html`.
 
