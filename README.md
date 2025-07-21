@@ -207,6 +207,16 @@ record_link("blueprint-1", "opensea", url)
 The module also exposes `github_sponsors_url` and `dapp_store_url` helpers for
 connecting other storefronts or Web3 dApp directories.
 
+## Ethics Filter for Listings
+The module `engine.ethics_filter` scores each marketplace item in real time. Scores cover **Transparency**, **Truthfulness**, **User Care**, and **Fair Rewards** using `wallet_insights.json`, `community_reviews.json`, and `tokenomics_fairness.json`.
+
+```bash
+python3 -m engine.ethics_filter
+```
+
+Running the module refreshes `marketplace_ranked.json` so high-ethics listings appear first.
+
+
 ## Contributor Identity Sync
 The module `engine.contributor_identity` links wallets, social handles and
 behavior patterns into a single profile. Reputation multipliers and access
