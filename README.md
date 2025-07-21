@@ -268,8 +268,15 @@ The project includes a short guide in `docs/design_culture.md` detailing the 90s
 ## Governance
 The `engine/governance.py` module handles steward elections and proposal freezes. See `docs/governance.md` for details.
 
+## Soulprint Journal
+Contributors may append immutable entries to `journals/<id>.json` using the
+`engine.soul_journal` module. Each entry records a timestamp and text. The hash
+of all entries forms a contributor's **soulprint**. Voters with an active
+soulprint receive a weight bonus during steward elections.
+
 
 ## Disclaimers
 - This repository is experimental software provided for learning and discussion.
 - Nothing here constitutes financial or legal advice.
 - Mission statements are stored with lightweight XOR-based obfuscation. This is not strong encryption.
+- The on-chain journal is simulated with local JSON logs and does not provide actual blockchain immutability.

@@ -8,6 +8,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List
 
+from .soul_journal import has_active_soulprint
+
 BASE_DIR = Path(__file__).resolve().parents[1]
 GOV_DIR = BASE_DIR / "governance"
 STEWARD_VOTES_PATH = GOV_DIR / "steward_votes.json"
@@ -44,19 +46,25 @@ def nominate_steward(user_id: str) -> None:
 
 
 def vote_steward(voter_id: str, candidate_id: str) -> None:
-    """Record ``voter_id``'s vote for ``candidate_id``."""
+    """Record ``voter_id``'s vote for ``candidate_id`` with optional weight."""
     votes = _load_json(STEWARD_VOTES_PATH, {})
     for cand in votes.values():
-        if voter_id in cand:
-            return  # one vote per voter
-    votes.setdefault(candidate_id, []).append(voter_id)
+        for rec in cand:
+            if rec.get("voter") == voter_id:
+                return  # one vote per voter
+    weight = 2.0 if has_active_soulprint(voter_id) else 1.0
+    votes.setdefault(candidate_id, []).append({"voter": voter_id, "weight": weight})
     _write_json(STEWARD_VOTES_PATH, votes)
 
 
 def elect_stewards() -> List[str]:
-    """Elect top three candidates by vote count."""
-    votes: Dict[str, List[str]] = _load_json(STEWARD_VOTES_PATH, {})
-    ranked = sorted(votes.items(), key=lambda x: len(x[1]), reverse=True)
+    """Elect top three candidates weighted by vote strength."""
+    raw: Dict[str, List[Dict]] = _load_json(STEWARD_VOTES_PATH, {})
+    totals = {
+        cand: sum(rec.get("weight", 1.0) for rec in lst)
+        for cand, lst in raw.items()
+    }
+    ranked = sorted(totals.items(), key=lambda x: x[1], reverse=True)
     winners = [c for c, _ in ranked[:3]]
     _write_json(STEWARDS_PATH, winners)
     return winners
