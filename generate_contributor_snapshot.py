@@ -4,6 +4,8 @@ from pathlib import Path
 
 from engine.identity_resolver import resolve_identity
 from engine.loyalty_engine import loyalty_score
+from engine.contributor_xp import xp_score
+from engine.loyalty_multiplier import loyalty_multiplier as user_loyalty_multiplier
 
 BASE_DIR = Path(__file__).resolve().parent
 CORE_PATH = BASE_DIR / "ethics" / "core.mdx"
@@ -36,6 +38,8 @@ def build_snapshot(user_id: str = DEFAULT_USER_ID) -> dict:
     wallet = DEFAULT_WALLET
     resolved_wallet = resolve_identity(wallet) or "unknown"
     loyalty = loyalty_score(user_id)
+    xp_info = xp_score(user_id)
+    loyalty_mult = user_loyalty_multiplier(user_id)
     moral_values = parse_moral_framework(CORE_PATH)
     sig_hash = hashlib.sha256(f"{ens}-{wallet}".encode()).hexdigest()[:10]
 
@@ -47,6 +51,8 @@ def build_snapshot(user_id: str = DEFAULT_USER_ID) -> dict:
         "visual_signature": f"signature-{sig_hash}",
         "moral_framework": moral_values,
         "loyalty_status": loyalty,
+        "contributor_xp": xp_info["xp"],
+        "loyalty_multiplier": loyalty_mult,
         "system_phase": "Vaultfire Init",
     }
 

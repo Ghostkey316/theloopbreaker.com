@@ -1,0 +1,14 @@
+{
+  "ghostkey316": {
+    "wallet": "ghostkey316.eth",
+    "resolved_wallet": "0x9abCDEF1234567890abcdefABCDEF1234567890",
+    "contributor_xp": 0,
+    "loyalty_multiplier": 1.0
+  },
+  "sample_user": {
+    "wallet": "sample.eth",
+    "resolved_wallet": "0x0000000000000000000000000000000000000001",
+    "contributor_xp": 0,
+    "loyalty_multiplier": 1.0
+  }
+}
