@@ -17,6 +17,7 @@ from .contributor_identity import (
     identity_summary,
     retroactive_bonus,
 )
+from .self_audit import run_self_audit
 
 __all__ = [
     "resolve_identity",
@@ -35,4 +36,5 @@ __all__ = [
     "sync_identity",
     "identity_summary",
     "retroactive_bonus",
+    "run_self_audit",
 ]
