@@ -1,0 +1,21 @@
+{
+  "title": "Ghostkey-316: The Ethics Origin",
+  "ens": "ghostkey316.eth",
+  "wallet": "bpow20.cb.id",
+  "resolved_wallet": "cb1qexampleaddress0000000000000000000000",
+  "visual_signature": "signature-df681d19e6",
+  "moral_framework": [
+    "**Truth over hype** \u2013 never create fake urgency or scarcity.",
+    "**Loyalty over trend** \u2013 reward sustained contribution more than short\u2011term buzz.",
+    "**Wisdom over speed** \u2013 prioritize careful decision making.",
+    "**Service over status** \u2013 design for everyday users before influencers.",
+    "**Humanity over everything** \u2013 shut it down if the system causes harm."
+  ],
+  "loyalty_status": {
+    "user_id": "ghostkey316",
+    "base": 0,
+    "tier": "default",
+    "score": 0.0
+  },
+  "system_phase": "Vaultfire Init"
+}
