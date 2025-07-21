@@ -1,0 +1,47 @@
+[
+  {
+    "id": "tool_ai_booster",
+    "name": "AI Booster Tool",
+    "price": 100,
+    "currency": "ASM",
+    "category": "Verified Vaultfire Tools",
+    "seller": {
+      "name": "ghostkey316",
+      "signal_score": 97,
+      "avatar": ""
+    },
+    "ethics_rank": "A",
+    "signal": 98,
+    "ethics_verified": true
+  },
+  {
+    "id": "prompt_pack_01",
+    "name": "Productivity Prompt Pack",
+    "price": 25,
+    "currency": "USDC",
+    "category": "Prompt Blueprints",
+    "seller": {
+      "name": "builder__loop",
+      "signal_score": 92,
+      "avatar": ""
+    },
+    "ethics_rank": "A",
+    "signal": 89,
+    "ethics_verified": true
+  },
+  {
+    "id": "basic_prompts_pack",
+    "name": "Basic Prompts Pack",
+    "price": 5,
+    "currency": "USDC",
+    "category": "Prompt Blueprints",
+    "seller": {
+      "name": "low_score_vendor",
+      "signal_score": 75,
+      "avatar": ""
+    },
+    "ethics_rank": "B",
+    "signal": 70,
+    "ethics_verified": false
+  }
+]
