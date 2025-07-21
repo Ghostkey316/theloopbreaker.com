@@ -1,0 +1,98 @@
+"""Vaultfire AI Sync Endpoint.
+
+This endpoint interprets external requests from OpenAI, NS3, or the public and
+responds with belief-alignment, loyalty score, and identity lock status. Each
+request is logged as a trust event. When three trust events are recorded, Phase
+2 expansion automatically begins.
+"""
+
+from __future__ import annotations
+
+import json
+from datetime import datetime
+from pathlib import Path
+from flask import Flask, request, jsonify
+
+from engine.signal_engine import calculate_alignment_score
+from engine.loyalty_engine import loyalty_score
+from record_signal_feed import update_signal_feed
+
+BASE_DIR = Path(__file__).resolve().parent
+TRUST_LOG_PATH = BASE_DIR / "event_log.json"
+PHASE_PATH = BASE_DIR / "phase_two_state.json"
+IDENTITY_PATH = BASE_DIR / "user_identity.json"
+
+app = Flask(__name__)
+
+
+def _load_json(path: Path, default):
+    if path.exists():
+        try:
+            with open(path) as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            return default
+    return default
+
+
+def _write_json(path: Path, data) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+def _identity_locked(user_id: str) -> bool:
+    data = _load_json(IDENTITY_PATH, {})
+    profile = data.get(user_id, {})
+    return bool(profile.get("verified"))
+
+
+def _log_trust_event(entry: dict) -> None:
+    log = _load_json(TRUST_LOG_PATH, [])
+    entry_with_time = {
+        "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        **entry,
+    }
+    log.append(entry_with_time)
+    _write_json(TRUST_LOG_PATH, log)
+    _check_phase_two(log)
+
+
+def _check_phase_two(log: list) -> None:
+    state = _load_json(PHASE_PATH, {})
+    if len([e for e in log if e.get("event") == "trust"]) >= 3 and not state.get(
+        "phase_two"
+    ):
+        state = {
+            "phase_two": True,
+            "started": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        }
+        _write_json(PHASE_PATH, state)
+        update_signal_feed({"phase_two": "started", "trust_events": len(log)})
+        print("Phase 2 expansion triggered.")
+
+
+@app.post("/ai/sync")
+def ai_sync() -> tuple:
+    data = request.get_json(silent=True) or {}
+    user_id = data.get("user_id")
+    source = data.get("source", "public")
+    if not user_id:
+        return jsonify({"error": "user_id required"}), 400
+
+    alignment = calculate_alignment_score(user_id)
+    loyalty = loyalty_score(user_id).get("score", 0)
+    locked = _identity_locked(user_id)
+
+    response = {
+        "alignment_score": alignment,
+        "loyalty_score": loyalty,
+        "identity_locked": locked,
+    }
+
+    _log_trust_event({"user_id": user_id, "source": source, "event": "trust"})
+    return jsonify(response), 200
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
