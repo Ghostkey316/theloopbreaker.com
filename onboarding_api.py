@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 from flask import Flask, request, jsonify
+from simulate_partner_activation import simulate_activation, ALIGNMENT_PHRASE
 
 app = Flask(__name__)
 BASE_DIR = Path(__file__).resolve().parent
@@ -26,6 +27,22 @@ def _load_json(path: Path, default):
 def _write_json(path: Path, data) -> None:
     with open(path, "w") as f:
         json.dump(data, f, indent=2)
+
+
+@app.post("/activate/simulate")
+def simulate_activation_endpoint():
+    """Run partner activation simulation and return status."""
+    data = request.get_json(silent=True) or {}
+    partner_id = data.get("partner_id")
+    wallets = data.get("wallets", [])
+    phrase = data.get("phrase", ALIGNMENT_PHRASE)
+
+    if not partner_id or not wallets:
+        return jsonify({"error": "partner_id and wallets required"}), 400
+
+    result = simulate_activation(partner_id, wallets, phrase)
+    status = 200 if result["success"] else 400
+    return jsonify(result), status
 
 
 @app.post("/onboard/partner")

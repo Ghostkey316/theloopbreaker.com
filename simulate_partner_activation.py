@@ -15,6 +15,35 @@ PARTNERS_PATH = BASE_DIR / "partners.json"
 ALIGNMENT_PHRASE = "Morals Before Metrics."
 
 
+def simulate_activation(partner_id: str, wallets: list[str],
+                        phrase: str = ALIGNMENT_PHRASE) -> dict:
+    """Run activation checks and return a result object."""
+    failures: list[str] = []
+
+    if not check_alignment_phrase(phrase):
+        failures.append("alignment phrase mismatch")
+
+    if not check_ethics_anchor():
+        failures.append("ethics_anchor disabled")
+
+    if not init_loyalty_engine():
+        failures.append("loyalty_engine initialization failed")
+
+    success = not failures
+    resolved_wallets = resolve_wallets(wallets) if success else wallets
+    if success:
+        activate_partner(partner_id, resolved_wallets)
+
+    return {
+        "partner_id": partner_id,
+        "wallets": resolved_wallets,
+        "phrase": phrase,
+        "success": success,
+        "failures": failures,
+        "status": "PASS" if success else "FAIL",
+    }
+
+
 def _load_json(path: Path, default):
     if path.exists():
         try:
@@ -84,26 +113,14 @@ def main(argv: list[str] | None = None) -> int:
     alignment_phrase = args.phrase
 
     print("Starting partner activation handshake...")
-    failures = []
+    result = simulate_activation(partner_id, wallets, alignment_phrase)
 
-    if not check_alignment_phrase(alignment_phrase):
-        failures.append("alignment phrase mismatch")
-
-    if not check_ethics_anchor():
-        failures.append("ethics_anchor disabled")
-
-    if not init_loyalty_engine():
-        failures.append("loyalty_engine initialization failed")
-
-    if failures:
+    if not result["success"]:
         print("Activation failed due to:")
-        for msg in failures:
+        for msg in result["failures"]:
             print(f"- {msg}")
         print("System integration readiness: FAIL")
         return 1
-
-    resolved_wallets = resolve_wallets(wallets)
-    activate_partner(partner_id, resolved_wallets)
 
     print("Activation successful for partner", partner_id)
     print("System integration readiness: PASS")
