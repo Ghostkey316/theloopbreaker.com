@@ -265,6 +265,21 @@ python3 engine/passive_yield_simulator.py --data path/to/contributors.json --tok
 
 Supported tokens are `ASM`, `USDC`, and `ETH`.
 
+## Yield Protocol Prep
+The script `engine/yield_protocol_prep.py` checks every contributor for
+eligibility to join tier‑1 income streaming. Users are opted in by default unless
+their entry in `yield_prefs.json` sets `"opt_out": true`.
+
+Run the check:
+
+```bash
+python3 engine/yield_protocol_prep.py
+```
+
+When the conditions are met, the script triggers the passive yield hook and
+updates `dashboards/wallet_insights.json` with the resolved ENS or Coinbase
+metadata.
+
 ## Off-Chain Engagement Tracker
 The module `engine/engagement_tracker.py` records likes, shares, scroll depth and reading time for any wallet or biometric identifier. Engagement data lives in `logs/engagement_data.json` with hashed IDs so metrics stay private. Use the tracker from the command line:
 
