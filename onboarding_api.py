@@ -82,6 +82,28 @@ def onboard_earner():
     return jsonify({"message": "earner onboarded"}), 201
 
 
+@app.post("/engagement")
+def record_engagement():
+    """Record a user engagement event."""
+    data = request.get_json(silent=True) or {}
+    identifier = data.get("identifier")
+    event = data.get("event")
+    value = float(data.get("value", 1))
+    if not identifier or not event:
+        return jsonify({"error": "identifier and event required"}), 400
+    from engine.engagement_tracker import record_event
+    record_event(identifier, event, value)
+    return jsonify({"message": "event recorded"}), 201
+
+
+@app.get("/credit/<identifier>")
+def reveal_credit(identifier):
+    """Reveal invisible credit score for identifier."""
+    from engine.engagement_tracker import reveal_credit
+    info = reveal_credit(identifier)
+    return jsonify(info)
+
+
 @app.get("/status")
 def status():
     return jsonify({"status": "ok"})
