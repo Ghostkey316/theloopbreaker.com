@@ -1,0 +1,6 @@
+{
+  "wallet_auth_hook": true,
+  "ethics_gate": true,
+  "signature_verification": true,
+  "xp_token_bridge": true
+}
