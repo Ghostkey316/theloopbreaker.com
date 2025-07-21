@@ -199,3 +199,13 @@ Run the sandbox:
 python3 sandbox_belieftech.py
 ```
 
+## Passive Yield Simulator
+Use `engine/passive_yield_simulator.py` to generate passive yield payouts for
+contributors. Provide a JSON file mapping user IDs to engagement data.
+
+```bash
+python3 engine/passive_yield_simulator.py --data path/to/contributors.json --token ASM
+```
+
+Supported tokens are `ASM`, `USDC`, and `ETH`.
+

@@ -1,0 +1,12 @@
+{
+  "alice": {
+    "wallet": "alice.eth",
+    "engagement": 5,
+    "behavior": ["mission_complete", "help_new_user"]
+  },
+  "bob": {
+    "wallet": "bob.eth",
+    "engagement": 2,
+    "behavior": ["ethical_action"]
+  }
+}

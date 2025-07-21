@@ -4,6 +4,7 @@
 from .identity_resolver import resolve_identity, resolve_ens, resolve_cb_id
 from .partner_hooks import record_usage, grant_reward
 from .revenue_hooks import record_contract_revenue, distribute_revenue
+from .passive_yield_simulator import simulate_passive_yield
 from .marketplace_plugins import (
     opensea_asset_url,
     github_sponsors_url,
@@ -25,4 +26,5 @@ __all__ = [
     "dapp_store_url",
     "record_link",
     "fetch_json",
+    "simulate_passive_yield",
 ]
