@@ -24,6 +24,7 @@ from .target_lock import (
     update_value as update_target_value,
     claim_bonus as claim_target_bonus,
 )
+from .ethics_filter import rank_listings
 
 __all__ = [
     "resolve_identity",
@@ -47,4 +48,5 @@ __all__ = [
     "exit_target_lock",
     "update_target_value",
     "claim_target_bonus",
+    "rank_listings",
 ]

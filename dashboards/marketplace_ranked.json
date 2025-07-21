@@ -1,0 +1,62 @@
+[
+  {
+    "id": "tool_ai_booster",
+    "name": "AI Booster Tool",
+    "price": 100,
+    "currency": "ASM",
+    "category": "Verified Vaultfire Tools",
+    "seller": {
+      "name": "ghostkey316",
+      "signal_score": 97,
+      "avatar": ""
+    },
+    "ethics_rank": "A",
+    "signal": 98,
+    "ethics_verified": true,
+    "transparency": 1.0,
+    "truthfulness": 0.93,
+    "user_care": 0.28,
+    "fair_rewards": 1.0,
+    "ethics_score": 80.33
+  },
+  {
+    "id": "prompt_pack_01",
+    "name": "Productivity Prompt Pack",
+    "price": 25,
+    "currency": "USDC",
+    "category": "Prompt Blueprints",
+    "seller": {
+      "name": "builder__loop",
+      "signal_score": 92,
+      "avatar": ""
+    },
+    "ethics_rank": "A",
+    "signal": 89,
+    "ethics_verified": true,
+    "transparency": 1.0,
+    "truthfulness": 0.87,
+    "user_care": 0.26,
+    "fair_rewards": 0.8,
+    "ethics_score": 73.17
+  },
+  {
+    "id": "basic_prompts_pack",
+    "name": "Basic Prompts Pack",
+    "price": 5,
+    "currency": "USDC",
+    "category": "Prompt Blueprints",
+    "seller": {
+      "name": "low_score_vendor",
+      "signal_score": 75,
+      "avatar": ""
+    },
+    "ethics_rank": "B",
+    "signal": 70,
+    "ethics_verified": false,
+    "transparency": 0.0,
+    "truthfulness": 0.33,
+    "user_care": 0.1,
+    "fair_rewards": 0.4,
+    "ethics_score": 20.83
+  }
+]
