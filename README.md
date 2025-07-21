@@ -281,9 +281,13 @@ of all entries forms a contributor's **soulprint**. Voters with an active
 soulprint receive a weight bonus during steward elections.
 
 
+## Wallet Bonding
+Two contributors can bond their wallets together. While bonded, each member's yield and loyalty multiplier grows with their shared time-in and combined trust behavior. If either wallet exits or breaks a rule, the bond ends and both loyalty timers reset.
+
 ## Disclaimers
 - This repository is experimental software provided for learning and discussion.
 - Nothing here constitutes financial or legal advice.
 - Mission statements are stored with lightweight XOR-based obfuscation. This is not strong encryption.
 - The on-chain journal is simulated with local JSON logs and does not provide actual blockchain immutability.
 - Target lock rewards are hypothetical and offer no guaranteed returns.
+- Wallet bonding is simulated locally and does not create any on-chain obligation.

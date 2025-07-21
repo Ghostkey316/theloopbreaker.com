@@ -58,7 +58,15 @@ def loyalty_score(user_id: str) -> dict:
     base = data.get("loyalty", 0)
     tier = _determine_tier(base)
     multiplier = _tier_multiplier(tier)
-    score = base * multiplier
+    wallet = data.get("wallet")
+    bond_mult = 1.0
+    if wallet:
+        try:
+            from .wallet_bonding import bond_multiplier
+            bond_mult = bond_multiplier(wallet)
+        except Exception:
+            pass
+    score = base * multiplier * bond_mult
     return {"user_id": user_id, "base": base, "tier": tier, "score": score}
 
 
