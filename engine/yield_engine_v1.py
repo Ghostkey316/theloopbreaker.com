@@ -4,12 +4,19 @@ import json
 from pathlib import Path
 from datetime import datetime
 
+from .loyalty_engine import loyalty_score
+
 # Paths to data and config files
 BASE_DIR = Path(__file__).resolve().parents[1]
 VALUES_PATH = BASE_DIR / "vaultfire-core" / "ghostkey_values.json"
 TRIGGER_PATH = BASE_DIR / "vaultfire-core" / "monetization" / "trigger_events.json"
 CONFIG_PATH = BASE_DIR / "vaultfire-core" / "vaultfire_config.json"
 AUDIT_LOG_PATH = BASE_DIR / "vaultfire-core" / "ethics" / "morals_audit_log.json"
+
+# Passive yield configuration
+PASSIVE_LEDGER_PATH = BASE_DIR / "logs" / "passive_yield.json"
+CERTIFIED_TIERS = {"origin", "veteran", "legend"}
+PASSIVE_RATE = 0.02
 
 
 def _load_json(path):
@@ -46,6 +53,74 @@ def _log_audit(entry):
     log.append(entry_with_time)
     with open(AUDIT_LOG_PATH, "w") as f:
         json.dump(log, f, indent=2)
+
+
+# --- Loyalty certification & passive yield ---------------------------------
+
+def loyalty_certified(user_id: str) -> bool:
+    """Return ``True`` if ``user_id`` qualifies for loyalty certification."""
+    info = loyalty_score(user_id)
+    return info.get("tier") in CERTIFIED_TIERS
+
+
+def calculate_passive_yield(user_id: str, wallet_address: str) -> float:
+    """Return passive yield amount for ``user_id`` if certified."""
+    info = loyalty_score(user_id)
+    if info.get("tier") not in CERTIFIED_TIERS:
+        return 0.0
+    amount = info.get("score", 0) * PASSIVE_RATE
+    if _wallet_verified(wallet_address):
+        amount *= 1.1
+    return amount
+
+
+def distribute_passive_yield(contributor_data: dict) -> dict:
+    """Generate passive yield ledger for loyalty-certified contributors."""
+    config = _load_json(CONFIG_PATH)
+    if not config.get("ethics_anchor", False):
+        _log_audit({"action": "distribute_passive_yield", "approved": False,
+                    "reason": "ethics_anchor disabled"})
+        return {}
+
+    ledger = {}
+    for user_id, info in contributor_data.items():
+        wallet = info.get("wallet")
+        if not wallet or not loyalty_certified(user_id):
+            continue
+        amount = calculate_passive_yield(user_id, wallet)
+        if amount <= 0:
+            continue
+        ledger[wallet] = {
+            "amount": amount,
+            "currency": "ASM",
+            "morals_approved": True,
+        }
+        _log_audit({
+            "action": "passive_yield",
+            "user_id": user_id,
+            "wallet": wallet,
+            "amount": amount,
+            "approved": True,
+        })
+
+    _update_passive_ledger(ledger)
+    return ledger
+
+
+def _update_passive_ledger(entries: dict) -> None:
+    """Append ``entries`` to the passive yield ledger."""
+    ledger = []
+    if PASSIVE_LEDGER_PATH.exists():
+        try:
+            with open(PASSIVE_LEDGER_PATH) as f:
+                ledger = json.load(f)
+        except json.JSONDecodeError:
+            ledger = []
+    timestamp = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    for wallet, data in entries.items():
+        ledger.append({"timestamp": timestamp, "wallet": wallet, **data})
+    with open(PASSIVE_LEDGER_PATH, "w") as f:
+        json.dump(ledger, f, indent=2)
 
 
 # --- Yield Calculation ------------------------------------------------------
