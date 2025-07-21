@@ -123,3 +123,14 @@ python3 engine/belief_validation.py
 ```
 
 Results are stored in `vaultfire-core/ethics/belief_checkpoints.json`.
+
+## Alignment Feedback
+Community members can now rate AI decisions directly. Use
+`engine/alignment_feedback.py` to record a rating between 1 and 5 for any
+decision ID. Positive ratings nudge the `trust_behavior` metric upward while
+negative ratings decrease it.
+
+```bash
+python3 engine/alignment_feedback.py --user alice --decision chat42 --rating 5 \
+    --comment "Handled my request respectfully"
+```
