@@ -12,6 +12,11 @@ from .marketplace_plugins import (
     record_link,
     fetch_json,
 )
+from .contributor_identity import (
+    sync_identity,
+    identity_summary,
+    retroactive_bonus,
+)
 
 __all__ = [
     "resolve_identity",
@@ -27,4 +32,7 @@ __all__ = [
     "record_link",
     "fetch_json",
     "simulate_passive_yield",
+    "sync_identity",
+    "identity_summary",
+    "retroactive_bonus",
 ]
