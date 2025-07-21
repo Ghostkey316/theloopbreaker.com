@@ -181,6 +181,16 @@ python3 onboarding_api.py
 - `POST /onboard/earner` – body `{"wallet": "addr"}`
 - `GET /status` – health check.
 
+### CLI Partner Onboarding
+Use `vaultfire_partner_onboard.js` to onboard a partner from the command line:
+
+```bash
+node vaultfire_partner_onboard.js <partner_id> <wallet> "alignment phrase"
+```
+
+The script verifies ENS/Coinbase mapping and only writes to `partners.json` when
+`ethics_anchor` is enabled.
+
 ## Alignment Key Access
 Partners who embody Ghostkey values can unlock additional features by
 providing the phrase **"Morals Before Metrics."** Run the alignment key
