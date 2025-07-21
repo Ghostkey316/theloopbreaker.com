@@ -187,3 +187,15 @@ python3 tools/log_pr_merge.py
 This records the UTC timestamp and ethics framework version to
 `vaultfire-core/ethics/pr_merge_log.json`.
 
+## BeliefTech Sandbox
+The script `sandbox_belieftech.py` demonstrates a full onboarding flow for the
+test partner **BeliefTech Inc.** It uses the API endpoints, performs an ethics
+check, and simulates a smart contract revenue callback. A simple UI is provided
+in `frontend/pages/belieftech_sandbox.html`.
+
+Run the sandbox:
+
+```bash
+python3 sandbox_belieftech.py
+```
+
