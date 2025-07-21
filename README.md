@@ -2,6 +2,8 @@
 
 **This system is not built for profit. It is built for people.**
 
+This repo was built to serve as an alignment-ready protocol foundation. Designed by Ghostkey-316. Not for profit. For ethics, humanity, and good systems. Fully open. Fully traceable. Fully real.
+
 Before a single line of code, we wrote our ethics.  
 Before any token launched, we declared our morals.  
 Before any AI moved, it remembered who it serves: *the ones still busting their ass just to get by.*
