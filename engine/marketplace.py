@@ -5,7 +5,6 @@ import json
 import os
 from pathlib import Path
 
-from .token_ops import send_token
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 CONFIG_PATH = BASE_DIR / "vaultfire-core" / "marketplace_config.json"
@@ -122,6 +121,7 @@ def buyer_loyalty_bonus(buyer) -> None:
     if score is None or wallet is None:
         return None
     if score > 90:
+        from .token_ops import send_token
         send_token(wallet, 100, "ASM")
     return None
 
@@ -138,6 +138,7 @@ def seller_yield_boost(seller, item_price: float, item_quality: str) -> None:
     if score > 95:
         base += 0.05
     amount = item_price * base
+    from .token_ops import send_token
     send_token(wallet, amount, "ASM")
     return None
 
