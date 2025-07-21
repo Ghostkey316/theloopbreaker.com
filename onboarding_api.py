@@ -119,6 +119,16 @@ def reveal_credit(identifier):
     return jsonify(info)
 
 
+@app.get("/vaultfire_credits/<user_id>")
+def get_vaultfire_credits(user_id):
+    """Return Vaultfire credit balance for ``user_id``."""
+    from engine.vaultfire_credits import update_credit, credit_balance
+
+    update_credit(user_id)
+    balance = credit_balance(user_id)
+    return jsonify({"user_id": user_id, "credits": balance})
+
+
 @app.get("/status")
 def status():
     return jsonify({"status": "ok"})
