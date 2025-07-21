@@ -1,0 +1,57 @@
+{
+  "timestamp": "2025-07-21T22:44:10Z",
+  "version": "1.0",
+  "modules": [
+    "activation_gate",
+    "alignment_feedback",
+    "belief_validation",
+    "contributor_identity",
+    "contributor_protocol",
+    "contributor_xp",
+    "engagement_tracker",
+    "ethics_filter",
+    "feedback_loop",
+    "ghostkey_commandments",
+    "governance",
+    "identity_resolver",
+    "loyalty_engine",
+    "loyalty_multiplier",
+    "marketplace",
+    "marketplace_plugins",
+    "mission_registry",
+    "partner_hooks",
+    "passive_yield_simulator",
+    "revenue_hooks",
+    "reward_guard",
+    "self_audit",
+    "shutdown_manager",
+    "signal_engine",
+    "signal_reward",
+    "soul_journal",
+    "sync_protocol",
+    "target_lock",
+    "token_ops",
+    "truth_guard",
+    "vaultfire_credits",
+    "wallet_bonding",
+    "wallet_loyalty",
+    "yield_engine_v1",
+    "yield_protocol_prep"
+  ],
+  "ethics_config": {
+    "system_name": "Vaultfire",
+    "ethics_anchor": true,
+    "monetization_mode": "Behavioral Yield + Contributor Split",
+    "public_visibility": "controlled",
+    "partner_hooks_enabled": true,
+    "wallet_auth_hook": true,
+    "fail_safe": "Hard shutdown on ethics breach"
+  },
+  "partners": [
+    {
+      "partner_id": "sandbox_partner",
+      "aligned": false
+    }
+  ],
+  "ethics_checksum": "8801d07cebc9f0c000a7efef197e51cb0db95536715fe5d89d4bd70d7e53da25"
+}
