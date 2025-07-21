@@ -30,11 +30,18 @@ def _load_json(path):
 
 # --- Loyalty and verification helpers --------------------------------------
 
-def _load_multiplier(user_id):
-    """Return loyalty multiplier for the given user_id."""
+def _load_multiplier(user_id, wallet=None):
+    """Return combined loyalty multiplier for ``user_id`` and wallet."""
     values = _load_json(VALUES_PATH)
     multipliers = values.get("loyalty_multipliers", {})
-    return multipliers.get(user_id, multipliers.get("default", 1.0))
+    base = multipliers.get(user_id, multipliers.get("default", 1.0))
+    if wallet:
+        try:
+            from .wallet_loyalty import loyalty_multiplier
+            base *= loyalty_multiplier(wallet)
+        except Exception:
+            pass
+    return base
 
 
 def _wallet_verified(wallet_address):
@@ -133,7 +140,7 @@ def calculate_yield(user_id, wallet_address, behavior_log):
     """Calculate weekly yield for a contributor."""
     triggers = set(_load_json(TRIGGER_PATH))
     base_score = sum(1 for event in behavior_log if event in triggers)
-    multiplier = _load_multiplier(user_id)
+    multiplier = _load_multiplier(user_id, wallet_address)
     yield_score = base_score * multiplier
     if _wallet_verified(wallet_address):
         yield_score *= 1.15  # verification boost

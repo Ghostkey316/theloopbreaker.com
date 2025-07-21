@@ -4,6 +4,10 @@
   "service_over_status": "Deprioritize influencer boosts in favor of everyday users",
   "loyalty_multipliers": {
     "default": 1.0,
+    "spark": 1.05,
+    "signal": 1.1,
+    "fire": 1.25,
+    "ghost": 1.5,
     "origin": 1.1,
     "veteran": 1.25,
     "legend": 1.5
