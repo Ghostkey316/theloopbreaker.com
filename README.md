@@ -160,6 +160,18 @@ python3 onboarding_api.py
 - `POST /onboard/earner` – body `{"wallet": "addr"}`
 - `GET /status` – health check.
 
+## Alignment Key Access
+Partners who embody Ghostkey values can unlock additional features by
+providing the phrase **"Morals Before Metrics."** Run the alignment key
+utility with your partner ID and the phrase:
+
+```bash
+python3 alignment_key.py <partner_id> "Morals Before Metrics."
+```
+
+If the phrase matches, the partner entry is marked as `aligned` and a
+yield boost is queued for that ID.
+
 ## External Marketplace Integrations
 The new module `engine/marketplace_plugins.py` makes it easy to reference
 listings on major platforms like OpenSea or GitHub Sponsors. Links are stored in
