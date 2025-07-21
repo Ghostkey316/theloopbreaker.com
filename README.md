@@ -40,6 +40,7 @@ Vaultfire Init represents the first development signal from **Ghostkey-316** (Br
 ## Repository Structure
 - `vaultfire_signal.py` – logs activation messages to `logs/vaultfire_log.txt`.
 - `engine/signal_engine.py` – calculates alignment scores and triggers rewards.
+- `engine/loyalty_engine.py` – ranks contributors using tiered behavior multipliers.
 - `logs/` – location for generated log files (ignored by Git). This now includes
   `token_ledger.json` which tracks token rewards when partnerships enable direct
   payouts.
