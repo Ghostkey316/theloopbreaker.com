@@ -77,6 +77,9 @@ def elect_stewards() -> List[str]:
 ETHICAL_VALUES = {"truth", "loyalty", "transparency"}
 DECISION_DELAY_HOURS = 24
 
+# Shutdown triggers
+SHUTDOWN_REASONS = {"system_abuse", "false_belief", "partner_corruption"}
+
 
 def submit_proposal(author: str, description: str) -> Dict:
     """Create a new proposal in pending state."""
@@ -140,6 +143,18 @@ def review_flags(min_delay_hours: int = DECISION_DELAY_HOURS) -> List[str]:
     return changed
 
 
+# ---------------------------------------------------------------------------
+# Shutdown vote helpers
+# ---------------------------------------------------------------------------
+
+def propose_shutdown(reason: str) -> dict:
+    """Trigger a shutdown vote for ``reason``."""
+    if reason not in SHUTDOWN_REASONS:
+        raise ValueError("invalid reason")
+    from .shutdown_manager import initiate_shutdown_vote
+    return initiate_shutdown_vote(reason)
+
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Governance utilities")
@@ -156,6 +171,15 @@ if __name__ == "__main__":
     p_flag.add_argument("reason")
     p_flag.add_argument("--id", help="flagger id")
 
+    p_shutdown = sub.add_parser("shutdown")
+    p_shutdown.add_argument("reason", choices=list(SHUTDOWN_REASONS))
+
+    p_vote = sub.add_parser("vote-shutdown")
+    p_vote.add_argument("steward")
+    p_vote.add_argument("vote", choices=["yes", "no"])
+
+    sub.add_parser("tally-shutdown")
+
     args = parser.parse_args()
     if args.cmd == "elect":
         print(json.dumps(elect_stewards(), indent=2))
@@ -164,5 +188,13 @@ if __name__ == "__main__":
     elif args.cmd == "flag":
         flag_proposal(args.pid, args.reason, anonymous=not bool(args.id))
         review_flags()
+    elif args.cmd == "shutdown":
+        print(json.dumps(propose_shutdown(args.reason), indent=2))
+    elif args.cmd == "vote-shutdown":
+        from .shutdown_manager import cast_vote
+        cast_vote(args.steward, args.vote == "yes")
+    elif args.cmd == "tally-shutdown":
+        from .shutdown_manager import tally_votes
+        print(json.dumps({"approved": tally_votes()}, indent=2))
     else:
         parser.print_help()

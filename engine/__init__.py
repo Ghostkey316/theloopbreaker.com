@@ -25,6 +25,11 @@ from .target_lock import (
     claim_bonus as claim_target_bonus,
 )
 from .ethics_filter import rank_listings
+from .shutdown_manager import (
+    initiate_shutdown_vote,
+    cast_vote as cast_shutdown_vote,
+    tally_votes as tally_shutdown_votes,
+)
 
 __all__ = [
     "resolve_identity",
@@ -49,4 +54,7 @@ __all__ = [
     "update_target_value",
     "claim_target_bonus",
     "rank_listings",
+    "initiate_shutdown_vote",
+    "cast_shutdown_vote",
+    "tally_shutdown_votes",
 ]
