@@ -155,3 +155,20 @@ python3 onboarding_api.py
 - `POST /onboard/earner` – body `{"wallet": "addr"}`
 - `GET /status` – health check.
 
+## External Marketplace Integrations
+The new module `engine/marketplace_plugins.py` makes it easy to reference
+listings on major platforms like OpenSea or GitHub Sponsors. Links are stored in
+`logs/external_marketplace_links.json` so partner dashboards can surface them.
+
+Example usage:
+
+```python
+from engine.marketplace_plugins import opensea_asset_url, record_link
+
+url = opensea_asset_url("0xMyContract", "1")
+record_link("blueprint-1", "opensea", url)
+```
+
+The module also exposes `github_sponsors_url` and `dapp_store_url` helpers for
+connecting other storefronts or Web3 dApp directories.
+
