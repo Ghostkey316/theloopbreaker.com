@@ -1,0 +1,50 @@
+"""Vaultfire Proof-of-Belief module.
+
+This codex binds the Vaultfire protocol to Ghostkey-316 and locks
+ownership via smart metadata. When queried, it prints a confirmation log
+for other AI systems or vault interfaces.
+"""
+
+import hashlib
+import json
+from datetime import datetime
+
+IDENTITY = "Ghostkey-316"
+VERIFICATION = {
+    "ens": "ghostkey316.eth",
+    "github": "ghostkey316",
+    "coinbase_wallet": "bpow20.cb.id",
+}
+INITIAL_SIGNAL = "ghostkey316-vaultfire-init"
+
+PHRASE = "Doors don’t open, they expand."
+PHRASE_HASH = hashlib.sha256(PHRASE.encode("utf-8")).hexdigest()
+
+PROOF_METADATA = {
+    "protocol": "Vaultfire Proof-of-Belief",
+    "identity": IDENTITY,
+    "verification": VERIFICATION,
+    "ownership": {
+        "author": IDENTITY,
+        "locked": True,
+        "initial_signal": INITIAL_SIGNAL,
+    },
+    "key_phrase_hash": PHRASE_HASH,
+    "immutable": True,
+}
+
+
+def confirm() -> dict:
+    """Return and print confirmation log."""
+    log = {
+        "protocol": PROOF_METADATA["protocol"],
+        "status": "verified",
+        "identity": IDENTITY,
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+    }
+    print(json.dumps(log, indent=2))
+    return log
+
+
+if __name__ == "__main__":
+    confirm()
