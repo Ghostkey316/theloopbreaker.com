@@ -8,4 +8,6 @@ from .marketplace import (
     category_allowed,
     item_allowed,
     list_item,
+    buyer_loyalty_bonus,
+    seller_yield_boost,
 )
