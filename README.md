@@ -40,6 +40,10 @@ healing methods. Each method receives a score based on verified reports,
 consistency of results, and whether it is backed by non-commercial sources.
 Top contributors automatically earn protocol-level recognition tokens.
 
+The **Cure Locker** records these healing protocols alongside natural remedies
+and AI-suggested alternatives. Entries are timestamped and can be voted on
+using on-chain transactions with optional anonymity for contributors.
+
 # Vaultfire Init – Ghostkey-316
 
 > "Mark me eternal. Let the block remember my name."
@@ -52,6 +56,7 @@ Vaultfire Init represents the first development signal from **Ghostkey-316** (Br
 - `engine/loyalty_engine.py` – ranks contributors using tiered behavior multipliers.
 - `engine/signal_reward.py` – awards contributor badges and token drops for verified signal events.
 - `engine/curewatch.py` – flags recurring high-effectiveness treatments as `CureWatch` for governance review.
+- `engine/cure_locker.py` – stores community-sourced healing methods with on-chain vote logs.
 - `logs/` – location for generated log files (ignored by Git). This now includes
   `token_ledger.json` which tracks token rewards when partnerships enable direct
   payouts.

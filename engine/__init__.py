@@ -46,6 +46,7 @@ from .wellness_oracle import (
 )
 from .healing_trust_engine import rank_healing_methods, reward_top_contributors
 from .curewatch import flag_effective_patterns
+from .cure_locker import submit_cure, list_cures, vote_cure, tally_votes
 from .gaming_layer import create_session, join_session, end_session
 from .avatar_sync import sync_avatar, get_avatar
 from .inventory_storage import add_item, list_items
@@ -97,6 +98,10 @@ __all__ = [
     "rank_healing_methods",
     "reward_top_contributors",
     "flag_effective_patterns",
+    "submit_cure",
+    "list_cures",
+    "vote_cure",
+    "tally_votes",
     "create_session",
     "join_session",
     "end_session",
