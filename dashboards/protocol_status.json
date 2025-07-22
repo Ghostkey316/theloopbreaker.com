@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-07-21T22:44:10Z",
+  "timestamp": "2025-07-22T04:20:25Z",
   "version": "1.0",
   "modules": [
     "activation_gate",
@@ -9,9 +9,11 @@
     "contributor_protocol",
     "contributor_xp",
     "engagement_tracker",
+    "ens_sync_status",
     "ethics_filter",
     "feedback_loop",
     "ghostkey_commandments",
+    "ghostscore_engine",
     "governance",
     "identity_resolver",
     "loyalty_engine",
