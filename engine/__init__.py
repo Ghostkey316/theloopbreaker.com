@@ -35,6 +35,8 @@ from .shutdown_manager import (
 from .signal_reward import reward_signal_event
 from .ens_sync_status import read_sync_status
 from .public_health_matcher import match_symptom
+from .biofeedback import record_biofeedback, fetch_from_provider, get_latest_biofeedback
+from .health_node import recommendations as health_recommendations
 
 __all__ = [
     "resolve_identity",
@@ -68,4 +70,8 @@ __all__ = [
     "reward_signal_event",
     "read_sync_status",
     "match_symptom",
+    "record_biofeedback",
+    "fetch_from_provider",
+    "get_latest_biofeedback",
+    "health_recommendations",
 ]

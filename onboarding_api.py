@@ -129,6 +129,20 @@ def record_engagement():
     return jsonify({"message": "event recorded"}), 201
 
 
+@app.post("/biofeedback")
+def ingest_biofeedback():
+    """Record biofeedback metrics from a provider."""
+    data = request.get_json(silent=True) or {}
+    identifier = data.get("identifier")
+    provider = data.get("provider")
+    metrics = data.get("metrics")
+    if not identifier or not provider or not isinstance(metrics, dict):
+        return jsonify({"error": "identifier, provider and metrics required"}), 400
+    from engine.biofeedback import record_biofeedback
+    record_biofeedback(identifier, provider, metrics)
+    return jsonify({"message": "biofeedback recorded"}), 201
+
+
 @app.get("/credit/<identifier>")
 def reveal_credit(identifier):
     """Reveal invisible credit score for identifier."""
@@ -145,6 +159,14 @@ def get_vaultfire_credits(user_id):
     update_credit(user_id)
     balance = credit_balance(user_id)
     return jsonify({"user_id": user_id, "credits": balance})
+
+
+@app.get("/health/recommendations/<identifier>")
+def health_recommendations(identifier):
+    """Return real-time health suggestions for ``identifier``."""
+    from engine.health_node import recommendations
+    recs = recommendations(identifier)
+    return jsonify({"recommendations": recs})
 
 
 @app.get("/ens_sync_status")
