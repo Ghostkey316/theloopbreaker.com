@@ -48,7 +48,7 @@ Vaultfire Init represents the first development signal from **Ghostkey-316** (Br
   `token_ledger.json` which tracks token rewards when partnerships enable direct
   payouts.
 - `generate_partner_dashboard.py` – builds `dashboards/partner_earnings.json` summarizing contributor earnings.
-- `ens_sync_status.py` – reads `logs/sync_audit.json` for the latest sync entry of an ENS name.
+- `ens_sync_status.py` – reads `logs/sync_audit.json` for the latest sync entry of an ENS name. Optional flags allow resync simulation and belief logging.
 - `README.md` – project overview and usage notes.
 - `vaultfire-core/` – base protocol framework containing configuration, ethics,
   and monetization modules.
@@ -79,6 +79,12 @@ Check sync status for an ENS name:
 
 ```bash
 python3 ens_sync_status.py ghostkey316.eth
+```
+
+Use optional flags to force a resync and log your belief phrase:
+
+```bash
+python3 ens_sync_status.py ghostkey316.eth --force-sync --belief "Morals Before Metrics."
 ```
 
 ## Identity
