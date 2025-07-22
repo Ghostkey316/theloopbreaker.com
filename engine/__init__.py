@@ -60,6 +60,7 @@ from .health_sync_engine import (
     get_journal_entries,
 )
 from .modding_layer import create_module, list_modules, upvote_module
+from .auto_mirror_airdrop import scan_public_activity, execute_airdrop, run_airdrop
 
 __all__ = [
     "resolve_identity",
@@ -128,4 +129,8 @@ __all__ = [
     "create_module",
     "list_modules",
     "upvote_module",
+    "scan_public_activity",
+    "execute_airdrop",
+    "run_airdrop",
 ]
+
