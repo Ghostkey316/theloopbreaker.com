@@ -5,6 +5,7 @@ This script performs a full protocol fork with identity sync, belief injection, 
 import argparse
 import subprocess
 import datetime
+import hashlib
 
 def main():
     parser = argparse.ArgumentParser(description="Codex Fork Utility")
@@ -28,6 +29,10 @@ def main():
     if args.validate_all:
         print("🛡️ Validating system integrity…")
         subprocess.run(['python3', 'system_integrity_check.py', '--test-mode', '--silent'])
+
+    with open(__file__, 'rb') as f:
+        file_hash = hashlib.sha256(f.read()).hexdigest()
+    print(f"🧾 Fork hash: {file_hash}")
 
     now = datetime.datetime.utcnow()
     print(f"\n📦 Fork completed at {now.isoformat()} UTC")
