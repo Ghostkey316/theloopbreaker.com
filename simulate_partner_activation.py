@@ -74,8 +74,8 @@ def check_ethics_anchor() -> bool:
 
 
 def check_alignment_phrase(phrase: str) -> bool:
-    """Validate the provided alignment ``phrase``."""
-    return phrase.strip() == ALIGNMENT_PHRASE
+    """Validate the provided alignment ``phrase`` (case-insensitive)."""
+    return phrase.strip().lower() == ALIGNMENT_PHRASE.lower()
 
 
 def init_loyalty_engine() -> bool:
