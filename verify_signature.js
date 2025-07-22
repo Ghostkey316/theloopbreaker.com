@@ -6,11 +6,22 @@
 // Returns true if signature valid, message contains the confirmation text,
 // the XP matches, and timestamp has not expired.
 
-const { ethers } = require('ethers');
+let ethers;
+try {
+  ({ ethers } = require('ethers'));
+} catch (err) {
+  // Fall back gracefully when library is missing
+  ethers = null;
+}
 
 function verifyVaultfireSignature({ message, signature, wallet, xp }) {
   if (typeof message !== 'string' || typeof signature !== 'string' || typeof wallet !== 'string') {
     throw new Error('Invalid arguments');
+  }
+
+  if (!ethers) {
+    console.warn('ethers dependency missing, skipping signature verification');
+    return false;
   }
 
   if (!message.includes('Vaultfire XP Confirmation')) {
@@ -25,7 +36,7 @@ function verifyVaultfireSignature({ message, signature, wallet, xp }) {
   const xpMatch = message.match(/xp=(\d+)/i);
   if (!xpMatch) return false;
   const msgXp = parseInt(xpMatch[1], 10);
-  if (msgXp !== xp) return false;
+  if (Number.isNaN(msgXp) || msgXp !== Number(xp)) return false;
 
   let recovered;
   try {
