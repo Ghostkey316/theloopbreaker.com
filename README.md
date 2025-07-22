@@ -135,6 +135,12 @@ without selling 90% or more of the balance unlocks a higher multiplier:
 Selling 90% or more resets the timer. `yield_engine_v1` automatically applies
 the multiplier based on the current tier.
 
+## Dynamic APR
+`yield_engine_v1` now uses an onchain score oracle to adjust APR for each wallet.
+Scores track belief alignment, consistency, and community impact. The final APR
+multiplier is stored in `dashboards/onchain_scores.json` and applied during
+weekly reward calculations.
+
 ## Target Lock Rewards
 Early supporters may set a personal target value to hold for, such as `$10K`.
 If their wallet balance reaches that number without exiting, a retro bonus
