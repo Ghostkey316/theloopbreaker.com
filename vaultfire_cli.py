@@ -2,23 +2,35 @@ import argparse
 import json
 from pathlib import Path
 import zipfile
-from web3 import Web3
+try:
+    from web3 import Web3  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    Web3 = None
+
+try:
+    from ens import ENS  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    ENS = None
 
 from engine.self_audit import run_self_audit
 from simulate_partner_activation import activation_hook, ALIGNMENT_PHRASE
 from system_integrity_check import run_integrity_check
-from update_ens_text_records import (
-    get_web3,
-    load_text_records,
-    diff_records,
-    update_records,
-    FIELDS,
-)
-from ens import ENS
+
 
 
 def cmd_sync_ens(args: argparse.Namespace) -> None:
     """Sync ENS text records for the given name."""
+    if Web3 is None or ENS is None:
+        print("web3 and ens packages required for ENS sync")
+        return
+    from update_ens_text_records import (
+        get_web3,
+        load_text_records,
+        diff_records,
+        update_records,
+        FIELDS,
+    )
+
     w3 = get_web3()
     ns = ENS.from_web3(w3)
     current = load_text_records(ns, args.name, FIELDS.keys())
@@ -85,8 +97,16 @@ def _write_json(path: Path, data) -> None:
 
 def cmd_unlock_access(args: argparse.Namespace) -> None:
     """Verify NFT ownership and enable access hooks."""
+    if Web3 is None:
+        print("web3 package required for unlock")
+        return
+    from update_ens_text_records import get_web3
+
     w3 = get_web3()
-    contract = w3.eth.contract(address=Web3.to_checksum_address(args.contract), abi=json.loads(Path(args.abi).read_text()))
+    contract = w3.eth.contract(
+        address=Web3.to_checksum_address(args.contract),
+        abi=json.loads(Path(args.abi).read_text())
+    )
     balance = contract.functions.balanceOf(Web3.to_checksum_address(args.wallet)).call()
     if balance > 0:
         cfg_path = Path("vaultfire_crypto_hooks.json")
