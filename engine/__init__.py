@@ -38,6 +38,7 @@ from .public_health_matcher import match_symptom
 from .biofeedback import record_biofeedback, fetch_from_provider, get_latest_biofeedback
 from .health_node import recommendations as health_recommendations
 from .healing_trust_engine import rank_healing_methods, reward_top_contributors
+from .curewatch import flag_effective_patterns
 
 __all__ = [
     "resolve_identity",
@@ -77,4 +78,5 @@ __all__ = [
     "health_recommendations",
     "rank_healing_methods",
     "reward_top_contributors",
+    "flag_effective_patterns",
 ]
