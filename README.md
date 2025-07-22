@@ -476,6 +476,12 @@ python3 engine/contributor_protocol.py
 
 Results are written to `dashboards/contributor_scores.json` and merged into `user_scorecard.json`.
 
+## Global Path Atlas
+Run `python3 generate_path_atlas.py` to build `dashboards/path_atlas.json` summarizing
+each contributor's chosen life path. Open `frontend/pages/global_path_atlas.html`
+in a browser to visualize how participants align around common purpose arcs and
+connect with peers to co-build missions.
+
 ## Disclaimers
 - This repository is experimental software provided for learning and discussion.
 - Nothing here constitutes financial or legal advice.
