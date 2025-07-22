@@ -65,6 +65,7 @@ from .purpose_engine import (
     record_traits,
     discover_purpose,
     generate_purpose_quest,
+    adaptive_purpose_quest,
     suggest_partner_communities,
     tailor_experience,
     analyze_actions,
@@ -74,6 +75,7 @@ from .purpose_engine import (
 )
 from .synced_soul_compass import update_soul_compass
 from .archetype_mirror import train_archetype_guide, get_archetype_guide
+from .reflection_layer import update_emotional_state, emotion_trend
 
 __all__ = [
     "resolve_identity",
@@ -148,6 +150,7 @@ __all__ = [
     "record_traits",
     "discover_purpose",
     "generate_purpose_quest",
+    "adaptive_purpose_quest",
     "suggest_partner_communities",
     "tailor_experience",
     "analyze_actions",
@@ -157,5 +160,7 @@ __all__ = [
     "update_soul_compass",
     "train_archetype_guide",
     "get_archetype_guide",
+    "update_emotional_state",
+    "emotion_trend",
 ]
 

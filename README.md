@@ -58,6 +58,8 @@ evolution trees.
 The new **Synced Soul Compass** layers in wellness stats, game behavior and
 crypto stewardship to adjust guidance and unlock context-specific quests or
 reflection prompts.
+An additional **Reflection Layer** tags the emotional tone of journal entries
+and interactions, storing private patterns that influence future quests.
 
 # Vaultfire Init – Ghostkey-316
 
@@ -73,6 +75,7 @@ Vaultfire Init represents the first development signal from **Ghostkey-316** (Br
 - `engine/curewatch.py` – flags recurring high-effectiveness treatments as `CureWatch` for governance review.
 - `engine/cure_locker.py` – stores community-sourced healing methods with on-chain vote logs.
 - `engine/archetype_mirror.py` – trains an AI guide from actions, beliefs and journal style.
+- `engine/reflection_layer.py` – tracks encrypted emotion tags and trends.
 - `logs/` – location for generated log files (ignored by Git). This now includes
   `token_ledger.json` which tracks token rewards when partnerships enable direct
   payouts.
