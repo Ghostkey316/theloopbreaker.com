@@ -223,6 +223,11 @@ python3 onboarding_api.py
 - `POST /case-study` – body `{"condition": "cough", "treatment": "Herbal Tea", "notes": "...", "pseudonym": "anon"}`
 - `GET /case-studies?condition=cough` – list recorded case studies.
 - `POST /arcade/event` – log game outcomes and loyalty boosts.
+- `POST /wellness/sleep` – body `{"identifier": "id", "hours": 7.5}`
+- `POST /wellness/hydration` – body `{"identifier": "id", "amount": 0.5}` (liters)
+- `POST /wellness/check-in` – body `{"identifier": "id", "mood": 3, "note": "feeling good"}`
+- `GET /wellness/oracle/<id>` – AI-guided wellness advice.
+- `GET /wellness/quest/<id>` – behavior-based health quest.
 
 ### CLI Partner Onboarding
 Use `vaultfire_partner_onboard.js` to onboard a partner from the command line:

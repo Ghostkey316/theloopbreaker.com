@@ -144,6 +144,62 @@ def ingest_biofeedback():
     return jsonify({"message": "biofeedback recorded"}), 201
 
 
+@app.post("/wellness/sleep")
+def log_sleep():
+    """Record nightly sleep hours."""
+    data = request.get_json(silent=True) or {}
+    identifier = data.get("identifier")
+    hours = float(data.get("hours", 0))
+    if not identifier or hours <= 0:
+        return jsonify({"error": "identifier and hours required"}), 400
+    from engine.wellness_oracle import record_sleep
+    record_sleep(identifier, hours)
+    return jsonify({"message": "sleep logged"}), 201
+
+
+@app.post("/wellness/hydration")
+def log_hydration():
+    """Record hydration amount in liters."""
+    data = request.get_json(silent=True) or {}
+    identifier = data.get("identifier")
+    amount = float(data.get("amount", 0))
+    if not identifier or amount <= 0:
+        return jsonify({"error": "identifier and amount required"}), 400
+    from engine.wellness_oracle import record_hydration
+    record_hydration(identifier, amount)
+    return jsonify({"message": "hydration logged"}), 201
+
+
+@app.post("/wellness/check-in")
+def mental_check_in():
+    """Record a mental wellness check-in."""
+    data = request.get_json(silent=True) or {}
+    identifier = data.get("identifier")
+    mood = int(data.get("mood", 0))
+    note = data.get("note", "")
+    if not identifier:
+        return jsonify({"error": "identifier required"}), 400
+    from engine.wellness_oracle import record_checkin
+    record_checkin(identifier, mood, note)
+    return jsonify({"message": "check-in recorded"}), 201
+
+
+@app.get("/wellness/oracle/<identifier>")
+def wellness_oracle(identifier):
+    """Return wellness guidance for ``identifier``."""
+    from engine.wellness_oracle import wellness_guidance
+    guidance = wellness_guidance(identifier)
+    return jsonify({"guidance": guidance})
+
+
+@app.get("/wellness/quest/<identifier>")
+def wellness_quest(identifier):
+    """Generate a behavior-linked health quest."""
+    from engine.wellness_oracle import generate_health_quest
+    quest = generate_health_quest(identifier)
+    return jsonify({"quest": quest})
+
+
 @app.post("/case-study")
 def submit_case_study_route():
     """Store an anonymized natural treatment case study."""

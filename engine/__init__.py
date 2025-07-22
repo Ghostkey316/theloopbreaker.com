@@ -37,6 +37,13 @@ from .ens_sync_status import read_sync_status
 from .public_health_matcher import match_symptom
 from .biofeedback import record_biofeedback, fetch_from_provider, get_latest_biofeedback
 from .health_node import recommendations as health_recommendations
+from .wellness_oracle import (
+    record_sleep,
+    record_hydration,
+    record_checkin,
+    wellness_guidance,
+    generate_health_quest,
+)
 from .healing_trust_engine import rank_healing_methods, reward_top_contributors
 from .curewatch import flag_effective_patterns
 from .gaming_layer import create_session, join_session, end_session
@@ -81,6 +88,11 @@ __all__ = [
     "record_biofeedback",
     "fetch_from_provider",
     "get_latest_biofeedback",
+    "record_sleep",
+    "record_hydration",
+    "record_checkin",
+    "wellness_guidance",
+    "generate_health_quest",
     "health_recommendations",
     "rank_healing_methods",
     "reward_top_contributors",
