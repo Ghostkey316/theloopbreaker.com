@@ -8,6 +8,7 @@ from pathlib import Path
 
 from engine.loyalty_engine import update_loyalty_ranks
 from engine.identity_resolver import resolve_identity
+from system_integrity_check import run_integrity_check
 
 BASE_DIR = Path(__file__).resolve().parent
 CONFIG_PATH = BASE_DIR / "vaultfire-core" / "vaultfire_config.json"
@@ -16,7 +17,8 @@ ALIGNMENT_PHRASE = "Morals Before Metrics."
 
 
 def simulate_activation(partner_id: str, wallets: list[str],
-                        phrase: str = ALIGNMENT_PHRASE) -> dict:
+                        phrase: str = ALIGNMENT_PHRASE,
+                        test_mode: bool = False) -> dict:
     """Run activation checks and return a result object."""
     failures: list[str] = []
 
@@ -31,7 +33,7 @@ def simulate_activation(partner_id: str, wallets: list[str],
 
     success = not failures
     resolved_wallets = resolve_wallets(wallets) if success else wallets
-    if success:
+    if success and not test_mode:
         activate_partner(partner_id, resolved_wallets)
 
     return {
@@ -101,29 +103,66 @@ def activate_partner(partner_id: str, wallets: list[str]) -> None:
     _write_json(PARTNERS_PATH, partners)
 
 
+def activation_hook(partner_id: str, wallets: list[str],
+                    phrase: str = ALIGNMENT_PHRASE,
+                    silent: bool = False,
+                    test_mode: bool = False) -> dict:
+    """Run activation and integrity checks and return a result object."""
+    activation = simulate_activation(partner_id, wallets, phrase, test_mode)
+    integrity = run_integrity_check()
+    errors = activation["failures"][:]
+    for section, msgs in integrity.items():
+        errors.extend(f"{section}: {m}" for m in msgs)
+    status = "PASS" if not errors else "FAIL"
+    result = {
+        "partner_id": partner_id,
+        "wallets": activation["wallets"],
+        "status": status,
+        "errors": errors,
+        "activation": activation,
+        "integrity": integrity,
+    }
+    if not silent:
+        print(json.dumps(result, indent=2))
+    return result
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Simulate partner activation")
     parser.add_argument("partner_id", help="unique partner identifier")
     parser.add_argument("wallet", nargs="+", help="one or more wallet identifiers")
     parser.add_argument("--phrase", default=ALIGNMENT_PHRASE, help="alignment phrase")
+    parser.add_argument("--silent", action="store_true", help="suppress console output")
+    parser.add_argument("--test-mode", action="store_true", help="do not persist changes")
+    parser.add_argument("--hook", action="store_true", help="return JSON activation hook output")
     args = parser.parse_args(argv)
 
     partner_id = args.partner_id
     wallets = args.wallet
     alignment_phrase = args.phrase
+    silent = args.silent
+    test_mode = args.test_mode
 
-    print("Starting partner activation handshake...")
-    result = simulate_activation(partner_id, wallets, alignment_phrase)
+    if args.hook:
+        result = activation_hook(partner_id, wallets, alignment_phrase,
+                                 silent=silent, test_mode=test_mode)
+        return 0 if result["status"] == "PASS" else 1
+
+    if not silent:
+        print("Starting partner activation handshake...")
+    result = simulate_activation(partner_id, wallets, alignment_phrase, test_mode)
 
     if not result["success"]:
-        print("Activation failed due to:")
-        for msg in result["failures"]:
-            print(f"- {msg}")
-        print("System integration readiness: FAIL")
+        if not silent:
+            print("Activation failed due to:")
+            for msg in result["failures"]:
+                print(f"- {msg}")
+            print("System integration readiness: FAIL")
         return 1
 
-    print("Activation successful for partner", partner_id)
-    print("System integration readiness: PASS")
+    if not silent:
+        print("Activation successful for partner", partner_id)
+        print("System integration readiness: PASS")
     return 0
 
 
