@@ -1,8 +1,8 @@
 const FIELDS = {
   vaultfire_sync: 'true',
-  ghostkey_id: 'Ghostkey-316',
   loyalty_tier: 'Legacy Tier',
-  status: 'Active Contributor'
+  contributor_id: 'Ghostkey-316',
+  status: 'Active'
 };
 
 function App() {
