@@ -37,6 +37,7 @@ from .ens_sync_status import read_sync_status
 from .public_health_matcher import match_symptom
 from .biofeedback import record_biofeedback, fetch_from_provider, get_latest_biofeedback
 from .health_node import recommendations as health_recommendations
+from .healing_trust_engine import rank_healing_methods, reward_top_contributors
 
 __all__ = [
     "resolve_identity",
@@ -74,4 +75,6 @@ __all__ = [
     "fetch_from_provider",
     "get_latest_biofeedback",
     "health_recommendations",
+    "rank_healing_methods",
+    "reward_top_contributors",
 ]

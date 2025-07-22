@@ -1,0 +1,23 @@
+[
+  {
+    "method": "Cold Shower Therapy",
+    "verified_reports": 10,
+    "consistent_results": 0.7,
+    "non_commercial_backing": true,
+    "contributor": "alice.eth"
+  },
+  {
+    "method": "Herbal Steam Inhalation",
+    "verified_reports": 5,
+    "consistent_results": 0.6,
+    "non_commercial_backing": true,
+    "contributor": "bob.eth"
+  },
+  {
+    "method": "Sound Bath Meditation",
+    "verified_reports": 2,
+    "consistent_results": 0.4,
+    "non_commercial_backing": false,
+    "contributor": "carol.eth"
+  }
+]
