@@ -28,3 +28,11 @@ game outcomes are cached locally under this guest ID. Once the player confirms
 their identity through ENS or a partner protocol, calling
 `overlay_ens(guest_id, "name.eth")` merges the cached progress into the final
 profile.
+
+### Modding Layer
+
+The `vaultfire_modding` package lets community members design new game modules
+based on selected belief systems. Modules register a belief theme and an array of
+quest identifiers. A simple visual editor is provided under `frontend/pages/modding_editor.html`.
+Created modules can be upvoted, and each upvote grants a small loyalty boost to
+the voter via `engine.modding_layer.upvote_module`.

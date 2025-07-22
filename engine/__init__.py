@@ -59,6 +59,7 @@ from .health_sync_engine import (
     link_journal_entry,
     get_journal_entries,
 )
+from .modding_layer import create_module, list_modules, upvote_module
 
 __all__ = [
     "resolve_identity",
@@ -124,4 +125,7 @@ __all__ = [
     "get_wearable_data",
     "link_journal_entry",
     "get_journal_entries",
+    "create_module",
+    "list_modules",
+    "upvote_module",
 ]
