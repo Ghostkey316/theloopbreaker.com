@@ -192,6 +192,23 @@ def health_recommendations(identifier):
     return jsonify({"recommendations": recs})
 
 
+@app.post("/arcade/event")
+def record_arcade_event():
+    """Log gameplay outcomes and update loyalty."""
+    data = request.get_json(silent=True) or {}
+    user_id = data.get("user_id")
+    game_id = data.get("game_id")
+    outcome = data.get("outcome", {})
+    achievements = data.get("achievements") or []
+    loyalty = float(data.get("loyalty", 0))
+    if not user_id or not game_id:
+        return jsonify({"error": "user_id and game_id required"}), 400
+    from engine.game_logger import log_outcome
+    entry = log_outcome(user_id, game_id, outcome, achievements, loyalty)
+    return jsonify(entry), 201
+
+
+
 @app.get("/ens_sync_status")
 def ens_sync_status_route():
     """Return last Vaultfire sync audit entry for an ENS name."""

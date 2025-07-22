@@ -11,3 +11,10 @@ The gaming layer provides reusable helpers so developers can launch multiplayer 
 - **ENS overlays** – map a player ID to an ENS name for consistent identity display.
 
 The `vaultfire_gaming` package exposes a small SDK with a `VaultfireGameSDK` class for easy integration.
+
+### Arcade Launcher
+
+The `vaultfire_arcade` package builds on these helpers with an `ArcadeLauncher`
+class. Registered minigames and puzzle modules can be launched from a simple
+interface and will automatically log learning outcomes, achievements and loyalty
+boosts back to the user's on-chain profile.
