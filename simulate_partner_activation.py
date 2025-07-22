@@ -22,6 +22,11 @@ def simulate_activation(partner_id: str, wallets: list[str],
     """Run activation checks and return a result object."""
     failures: list[str] = []
 
+    if not partner_id:
+        failures.append("partner_id missing")
+    if not wallets:
+        failures.append("wallets missing")
+
     if not check_alignment_phrase(phrase):
         failures.append("alignment phrase mismatch")
 
