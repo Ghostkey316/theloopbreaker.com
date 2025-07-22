@@ -5,7 +5,8 @@ from __future__ import annotations
 import importlib
 import json
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
+from uuid import uuid4
 
 from vaultfire_gaming import VaultfireGameSDK
 from engine.game_logger import log_outcome
@@ -27,10 +28,25 @@ def _load_games() -> Dict[str, dict]:
 class ArcadeLauncher:
     """Simple launcher that runs registered games and logs outcomes."""
 
-    def __init__(self, user_id: str):
-        self.user_id = user_id
+    def __init__(self, user_id: Optional[str] = None):
+        if user_id:
+            self.user_id = user_id
+            self.is_guest = False
+        else:
+            self.user_id = f"guest-{uuid4().hex}"
+            self.is_guest = True
         self.sdk = VaultfireGameSDK("VaultfireArcade")
         self.games = _load_games()
+
+    def merge_progress(self, new_user_id: str) -> None:
+        """Merge guest session data into ``new_user_id``."""
+        if not self.is_guest or not new_user_id:
+            return
+        from .guest_progress import merge_guest_progress
+
+        merge_guest_progress(self.user_id, new_user_id)
+        self.user_id = new_user_id
+        self.is_guest = False
 
     def list_games(self) -> List[str]:
         return list(self.games.keys())
