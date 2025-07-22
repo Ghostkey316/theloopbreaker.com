@@ -72,6 +72,7 @@ from .purpose_engine import (
     simulate_life_path,
     commit_life_path,
 )
+from .synced_soul_compass import update_soul_compass
 
 __all__ = [
     "resolve_identity",
@@ -152,5 +153,6 @@ __all__ = [
     "moral_memory_mirror",
     "simulate_life_path",
     "commit_life_path",
+    "update_soul_compass",
 ]
 
