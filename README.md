@@ -426,3 +426,4 @@ Results are written to `dashboards/contributor_scores.json` and merged into `use
 - Local JSON files are not meant for secure or permanent storage.
 - All contributions must respect the Ghostkey Commandments and ethics guidelines.
 - The Contributor Unlock Key NFT is a demo access mechanism on Base and does not provide production-grade security.
+- Health-related features are informational only and do not replace professional medical advice.

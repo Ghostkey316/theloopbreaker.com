@@ -34,6 +34,7 @@ from .shutdown_manager import (
 )
 from .signal_reward import reward_signal_event
 from .ens_sync_status import read_sync_status
+from .public_health_matcher import match_symptom
 
 __all__ = [
     "resolve_identity",
@@ -66,4 +67,5 @@ __all__ = [
     "tally_shutdown_votes",
     "reward_signal_event",
     "read_sync_status",
+    "match_symptom",
 ]
