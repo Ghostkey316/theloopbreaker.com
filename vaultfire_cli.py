@@ -85,10 +85,13 @@ def cmd_partner_export(args: argparse.Namespace) -> None:
     data = {
         "wallet": args.wallet,
         "ethic": args.inject_ethic,
-        "encoded_metrics": "VFv1.0::C316::Vaultfire-Partner-Ready",
-        "timestamp": int(time.time()),
-        "version": "codex_fork_1.0",
     }
+    if args.encode_metrics:
+        data["encoded_metrics"] = "VFv1.0::C316::VaultfireProtocol"
+    else:
+        data["encoded_metrics"] = None
+    data["timestamp"] = int(time.time())
+    data["version"] = "codex_fork_1.0"
     out_path = Path(args.output)
     try:
         out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -166,6 +169,7 @@ def main(argv: list[str] | None = None) -> int:
     p_export = sub.add_parser("partner-export", help="Export partner data")
     p_export.add_argument("--wallet", required=True, help="Wallet address")
     p_export.add_argument("--inject-ethic", required=True, help="Ethics statement")
+    p_export.add_argument("--encode-metrics", action="store_true", help="Include encoded metrics")
     p_export.add_argument("--output", required=True, help="Output JSON file")
     p_export.set_defaults(func=cmd_partner_export)
 
