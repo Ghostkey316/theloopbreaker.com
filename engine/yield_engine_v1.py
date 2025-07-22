@@ -1,5 +1,5 @@
 # Reference: ethics/core.mdx
-"""Yield Engine v1 for Vaultfire."""
+"""Yield Engine v1 for Vaultfire with dynamic APR."""
 
 import json
 from pathlib import Path
@@ -8,6 +8,7 @@ from datetime import datetime
 from .loyalty_engine import loyalty_score
 from .token_ops import send_token
 from .mission_registry import get_mission
+from .score_oracle import fetch_scores, apr_multiplier
 
 # Paths to data and config files
 BASE_DIR = Path(__file__).resolve().parents[1]
@@ -22,6 +23,7 @@ CERTIFIED_TIERS = {"origin", "veteran", "legend"}
 PASSIVE_RATE = 0.02
 RETRO_REWARD_PERCENT = 0.1
 OG_LIST_PATH = BASE_DIR / "og_loyalists.json"
+BASE_APR = 0.05
 
 
 def _load_json(path):
@@ -49,6 +51,12 @@ def _wallet_verified(wallet_address):
     """Very lightweight ENS/World ID check."""
     address = wallet_address.lower()
     return address.endswith(".eth") or address.startswith("world")
+
+
+def _dynamic_apr(user_id: str) -> float:
+    """Return dynamic APR based on onchain scores."""
+    scores = fetch_scores(user_id)
+    return BASE_APR * apr_multiplier(scores)
 
 
 def _log_audit(entry):
@@ -145,7 +153,8 @@ def calculate_yield(user_id, wallet_address, behavior_log):
     yield_score = base_score * multiplier
     if _wallet_verified(wallet_address):
         yield_score *= 1.15  # verification boost
-    return yield_score
+    apr = _dynamic_apr(user_id)
+    return yield_score * apr
 
 
 # --- Distribution -----------------------------------------------------------
