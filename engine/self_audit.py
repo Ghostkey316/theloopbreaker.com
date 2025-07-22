@@ -6,8 +6,17 @@ from __future__ import annotations
 import json
 from datetime import datetime, timedelta
 from pathlib import Path
+import sys
 
-from .truth_guard import HYPE_PATTERNS, PROFIT_PATTERNS, MANIPULATION_PATTERNS
+try:  # Support running as a script without the package context
+    from .truth_guard import HYPE_PATTERNS, PROFIT_PATTERNS, MANIPULATION_PATTERNS
+except ImportError:  # pragma: no cover - graceful fallback
+    sys.path.append(str(Path(__file__).resolve().parents[1]))
+    from engine.truth_guard import (
+        HYPE_PATTERNS,
+        PROFIT_PATTERNS,
+        MANIPULATION_PATTERNS,
+    )
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 LEDGER_PATH = BASE_DIR / "logs" / "token_ledger.json"
