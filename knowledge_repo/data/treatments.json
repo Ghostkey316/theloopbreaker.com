@@ -1,0 +1,16 @@
+[
+  {
+    "condition": "cough",
+    "treatment": "Honey Lemon Tea",
+    "ingredients": ["honey", "lemon", "warm water"],
+    "effectiveness_score": 0.6,
+    "source": "https://pubmed.ncbi.nlm.nih.gov/PMC3611628/"
+  },
+  {
+    "condition": "headache",
+    "treatment": "Peppermint Oil Massage",
+    "ingredients": ["peppermint oil"],
+    "effectiveness_score": 0.5,
+    "source": "Community submission"
+  }
+]
