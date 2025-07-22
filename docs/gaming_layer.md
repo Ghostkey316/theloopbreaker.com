@@ -10,6 +10,8 @@ The gaming layer provides reusable helpers so developers can launch multiplayer 
 - **Mirrored avatars** – contract events adjust stats, traits and questline.
 - **On-chain inventory** – record blockchain items per player and fetch them later.
 - **ENS overlays** – map a player ID to an ENS name for consistent identity display.
+- **Replay records** – log player decisions and actions, hash them on-chain and
+  tie the replay to their identity for future verification and awards.
 
 The `vaultfire_gaming` package exposes a small SDK with a `VaultfireGameSDK` class for easy integration.
 
