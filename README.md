@@ -44,6 +44,12 @@ The **Cure Locker** records these healing protocols alongside natural remedies
 and AI-suggested alternatives. Entries are timestamped and can be voted on
 using on-chain transactions with optional anonymity for contributors.
 
+## Purpose Engine
+An AI-powered module guides contributors to define their personal mission. It
+stores key traits for each user, generates purpose quests and recommends partner
+communities to join. The engine also suggests which Vaultfire modules to
+highlight so the experience adapts to their goals.
+
 # Vaultfire Init – Ghostkey-316
 
 > "Mark me eternal. Let the block remember my name."

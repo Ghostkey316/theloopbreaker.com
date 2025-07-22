@@ -61,6 +61,13 @@ from .health_sync_engine import (
 )
 from .modding_layer import create_module, list_modules, upvote_module
 from .auto_mirror_airdrop import scan_public_activity, execute_airdrop, run_airdrop
+from .purpose_engine import (
+    record_traits,
+    discover_purpose,
+    generate_purpose_quest,
+    suggest_partner_communities,
+    tailor_experience,
+)
 
 __all__ = [
     "resolve_identity",
@@ -132,5 +139,10 @@ __all__ = [
     "scan_public_activity",
     "execute_airdrop",
     "run_airdrop",
+    "record_traits",
+    "discover_purpose",
+    "generate_purpose_quest",
+    "suggest_partner_communities",
+    "tailor_experience",
 ]
 
