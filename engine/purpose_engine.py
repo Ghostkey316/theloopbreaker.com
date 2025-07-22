@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import random
+import hashlib
 from pathlib import Path
 from datetime import datetime
 from typing import List, Dict
@@ -10,6 +11,11 @@ from typing import List, Dict
 BASE_DIR = Path(__file__).resolve().parents[1]
 PURPOSE_PATH = BASE_DIR / "logs" / "purpose_profiles.json"
 PARTNERS_PATH = BASE_DIR / "partners.json"
+SCORECARD_PATH = BASE_DIR / "user_scorecard.json"
+ENGAGEMENT_PATH = BASE_DIR / "logs" / "engagement_data.json"
+EVENT_LOG_PATH = BASE_DIR / "event_log.json"
+MORAL_MEMORY_PATH = BASE_DIR / "logs" / "moral_memory.json"
+FINGERPRINT_PATH = BASE_DIR / "logs" / "behavioral_fingerprint.json"
 
 
 def _load_json(path: Path, default):
@@ -89,10 +95,70 @@ def tailor_experience(user_id: str) -> Dict:
     return {"user_id": user_id, "features": features}
 
 
+def _hash_identifier(identifier: str) -> str:
+    return hashlib.sha256(identifier.encode()).hexdigest()
+
+
+def analyze_actions(user_id: str) -> Dict[str, float]:
+    """Analyze onchain and offchain actions for ``user_id``."""
+    events = _load_json(EVENT_LOG_PATH, [])
+    onchain = len([e for e in events if e.get("user_id") == user_id])
+
+    engagement = _load_json(ENGAGEMENT_PATH, {})
+    metrics = engagement.get(_hash_identifier(user_id), {})
+    offchain = float(sum(metrics.get(k, 0) for k in metrics.keys()))
+
+    return {"onchain_actions": onchain, "offchain_score": offchain}
+
+
+def _generate_behavioral_fingerprint(history: List[Dict]) -> Dict:
+    if not history:
+        return {"alignment_avg": 0.0, "action_score": 0.0, "fingerprint": ""}
+
+    align_avg = sum(e.get("alignment", 0.0) for e in history) / len(history)
+    action_score = sum(
+        e.get("actions", {}).get("onchain_actions", 0) +
+        e.get("actions", {}).get("offchain_score", 0.0)
+        for e in history
+    )
+    token = f"{align_avg:.2f}:{action_score:.2f}"
+    fingerprint = hashlib.sha256(token.encode()).hexdigest()
+    return {
+        "alignment_avg": align_avg,
+        "action_score": action_score,
+        "fingerprint": fingerprint,
+    }
+
+
+def moral_memory_mirror(user_id: str) -> Dict:
+    """Update memory history and return the behavioral fingerprint."""
+    actions = analyze_actions(user_id)
+    scorecard = _load_json(SCORECARD_PATH, {})
+    alignment = scorecard.get(user_id, {}).get("alignment_score", 0.0)
+
+    memory = _load_json(MORAL_MEMORY_PATH, {})
+    history = memory.get(user_id, [])
+    history.append({
+        "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "alignment": alignment,
+        "actions": actions,
+    })
+    memory[user_id] = history[-50:]
+    _write_json(MORAL_MEMORY_PATH, memory)
+
+    fingerprint = _generate_behavioral_fingerprint(memory[user_id])
+    data = _load_json(FINGERPRINT_PATH, {})
+    data[user_id] = fingerprint
+    _write_json(FINGERPRINT_PATH, data)
+    return fingerprint
+
+
 __all__ = [
     "record_traits",
     "discover_purpose",
     "generate_purpose_quest",
     "suggest_partner_communities",
     "tailor_experience",
+    "analyze_actions",
+    "moral_memory_mirror",
 ]

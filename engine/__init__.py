@@ -67,6 +67,8 @@ from .purpose_engine import (
     generate_purpose_quest,
     suggest_partner_communities,
     tailor_experience,
+    analyze_actions,
+    moral_memory_mirror,
 )
 
 __all__ = [
@@ -144,5 +146,7 @@ __all__ = [
     "generate_purpose_quest",
     "suggest_partner_communities",
     "tailor_experience",
+    "analyze_actions",
+    "moral_memory_mirror",
 ]
 
