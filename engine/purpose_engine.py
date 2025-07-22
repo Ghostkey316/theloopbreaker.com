@@ -8,6 +8,8 @@ from pathlib import Path
 from datetime import datetime
 from typing import List, Dict
 
+from .reflection_layer import emotion_trend
+
 BASE_DIR = Path(__file__).resolve().parents[1]
 PURPOSE_PATH = BASE_DIR / "logs" / "purpose_profiles.json"
 PARTNERS_PATH = BASE_DIR / "partners.json"
@@ -105,6 +107,20 @@ def generate_purpose_quest(user_id: str) -> str:
     data[user_id] = entry
     _write_json(PURPOSE_PATH, data)
     return quest
+
+
+def adaptive_purpose_quest(user_id: str, key: str) -> str:
+    """Generate a quest influenced by the user's recent emotions."""
+    base = generate_purpose_quest(user_id)
+    trends = emotion_trend(user_id, key)
+    if not trends:
+        return base
+    dominant = max(trends, key=trends.get)
+    if dominant in {"fear", "doubt"}:
+        return base + " Reflect on your concerns and take a small supportive step."
+    if dominant in {"joy", "confidence"}:
+        return base + " Your optimism is a strength—share it with a peer."
+    return base
 
 
 def suggest_partner_communities(user_id: str, count: int = 3) -> List[str]:
@@ -211,6 +227,7 @@ __all__ = [
     "record_traits",
     "discover_purpose",
     "generate_purpose_quest",
+    "adaptive_purpose_quest",
     "suggest_partner_communities",
     "tailor_experience",
     "analyze_actions",
