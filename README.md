@@ -66,6 +66,7 @@ Vaultfire Init represents the first development signal from **Ghostkey-316** (Br
 - `vaultfire-core/` – base protocol framework containing configuration, ethics,
   and monetization modules.
 - `vaultfire-core/marketplace_config.json` – settings for the Vaultfire Exchange marketplace.
+- `contracts/SwapGate.sol` – low-fee gateway for swapping Vaultfire tokens into ETH, USDC, or SOL with optional KYC bypass for trusted IDs.
 
 ## Usage
 Run the logger to append a timestamped entry:
@@ -477,3 +478,4 @@ Results are written to `dashboards/contributor_scores.json` and merged into `use
 - Health sync data is locally encrypted with user keys and has not undergone security review.
 - Modding modules are stored locally and not reviewed for security or content.
 - Loyalty boosts from upvotes carry no monetary value.
+- The SwapGate contract is a demo only and does not provide production-grade liquidity or bridging.
