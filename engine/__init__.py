@@ -76,6 +76,12 @@ from .purpose_engine import (
 from .synced_soul_compass import update_soul_compass
 from .archetype_mirror import train_archetype_guide, get_archetype_guide
 from .reflection_layer import update_emotional_state, emotion_trend
+from .gamified_yield_layer import (
+    get_daily_tasks,
+    complete_task,
+    quest_card,
+    add_streak_protection,
+)
 
 __all__ = [
     "resolve_identity",
@@ -162,5 +168,9 @@ __all__ = [
     "get_archetype_guide",
     "update_emotional_state",
     "emotion_trend",
+    "get_daily_tasks",
+    "complete_task",
+    "quest_card",
+    "add_streak_protection",
 ]
 

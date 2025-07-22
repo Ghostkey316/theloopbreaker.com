@@ -76,6 +76,7 @@ Vaultfire Init represents the first development signal from **Ghostkey-316** (Br
 - `engine/cure_locker.py` – stores community-sourced healing methods with on-chain vote logs.
 - `engine/archetype_mirror.py` – trains an AI guide from actions, beliefs and journal style.
 - `engine/reflection_layer.py` – tracks encrypted emotion tags and trends.
+- `engine/gamified_yield_layer.py` – tracks quest streaks and converts XP into vault points.
 - `logs/` – location for generated log files (ignored by Git). This now includes
   `token_ledger.json` which tracks token rewards when partnerships enable direct
   payouts.
