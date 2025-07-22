@@ -55,6 +55,9 @@ contributor's Vaultfire profile. A new **Forkable Life Path** module lets users
 simulate and commit to themed missions — leader, builder, healer, protector,
 artist and teacher. Each path unlocks unique quests, alliances and long-term
 evolution trees.
+The new **Synced Soul Compass** layers in wellness stats, game behavior and
+crypto stewardship to adjust guidance and unlock context-specific quests or
+reflection prompts.
 
 # Vaultfire Init – Ghostkey-316
 
