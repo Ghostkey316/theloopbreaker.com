@@ -229,7 +229,7 @@ handshake. Pass a partner ID, one or more wallets and the alignment phrase:
 python3 simulate_partner_activation.py demo_id demo_wallet.eth --phrase "Morals Before Metrics."
 ```
 
-Multiple wallets are accepted by listing them separated by spaces.
+The `partner_id` and at least one wallet are required. Multiple wallets are accepted by listing them separated by spaces.
 
 To use a JSON payload offline, pipe it to `activation_hook.py`:
 
