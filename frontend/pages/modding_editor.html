@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vaultfire Modding Editor</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding:20px; }
+    textarea { width:100%; height:100px; }
+  </style>
+</head>
+<body>
+  <h1>Modding Editor</h1>
+  <label>Module ID: <input id="modId"></label><br><br>
+  <label>Belief System: <input id="belief"></label><br><br>
+  <label>Quests (one per line):</label><br>
+  <textarea id="quests"></textarea><br>
+  <button id="saveBtn">Create Module</button>
+  <pre id="result"></pre>
+  <script src="modding_editor.js"></script>
+</body>
+</html>

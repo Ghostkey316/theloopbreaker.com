@@ -458,3 +458,5 @@ Results are written to `dashboards/contributor_scores.json` and merged into `use
 - Biofeedback integrations do not store raw data and respect device permissions.
 - Case study submissions are anonymized and stored publicly for research.
 - Health sync data is locally encrypted with user keys and has not undergone security review.
+- Modding modules are stored locally and not reviewed for security or content.
+- Loyalty boosts from upvotes carry no monetary value.
