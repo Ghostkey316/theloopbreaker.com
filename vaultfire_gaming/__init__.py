@@ -2,6 +2,7 @@
 
 from engine.gaming_layer import create_session, join_session, end_session
 from engine.avatar_sync import sync_avatar, get_avatar
+from engine.avatar_mirror import record_avatar_event, get_mirrored_profile
 from engine.inventory_storage import add_item, list_items
 from engine.ens_overlay import overlay_identity, resolve_overlay
 
@@ -11,6 +12,8 @@ __all__ = [
     "end_session",
     "sync_avatar",
     "get_avatar",
+    "record_avatar_event",
+    "get_mirrored_profile",
     "add_item",
     "list_items",
     "overlay_identity",
@@ -35,6 +38,9 @@ class VaultfireGameSDK:
     def sync_avatar(self, user_id: str, avatar_url: str):
         return sync_avatar(user_id, avatar_url)
 
+    def mirror_event(self, user_id: str, event_type: str, data: dict):
+        return record_avatar_event(user_id, event_type, data)
+
     def record_item(self, user_id: str, item_id: str, tx_hash: str):
         return add_item(user_id, item_id, tx_hash)
 
@@ -43,6 +49,9 @@ class VaultfireGameSDK:
 
     def avatar(self, user_id: str):
         return get_avatar(user_id)
+
+    def mirrored_profile(self, user_id: str):
+        return get_mirrored_profile(user_id)
 
     def items(self, user_id: str):
         return list_items(user_id)

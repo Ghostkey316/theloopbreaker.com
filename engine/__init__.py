@@ -44,6 +44,7 @@ from .avatar_sync import sync_avatar, get_avatar
 from .inventory_storage import add_item, list_items
 from .ens_overlay import overlay_identity, resolve_overlay
 from .game_logger import log_outcome
+from .avatar_mirror import record_avatar_event, get_mirrored_profile
 
 __all__ = [
     "resolve_identity",
@@ -94,4 +95,6 @@ __all__ = [
     "overlay_identity",
     "resolve_overlay",
     "log_outcome",
+    "record_avatar_event",
+    "get_mirrored_profile",
 ]
