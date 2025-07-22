@@ -276,6 +276,7 @@ curl -X POST http://localhost:5000/activate/simulate \
 The response indicates `PASS` or `FAIL` and lists any failures.
 ## Partner SDK
 A modular SDK is provided in `vaultfire_sdk/`. See `docs/partner_sdk.md` for activation steps and API usage. A login demo using ENS and Coinbase IDs lives in `frontend/pages/login_example.html`.
+The Partner Port layer for third-party games is documented in `docs/partner_port_sdk.md`.
 
 
 ## Alignment Key Access
