@@ -2,6 +2,7 @@ import argparse
 import json
 from pathlib import Path
 import zipfile
+from web3 import Web3
 
 from engine.self_audit import run_self_audit
 from simulate_partner_activation import activation_hook, ALIGNMENT_PHRASE
@@ -66,6 +67,37 @@ def cmd_export_logs(args: argparse.Namespace) -> None:
     print(f"Logs exported to {out_path}")
 
 
+def _load_json(path: Path, default):
+    if path.exists():
+        try:
+            with open(path) as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            return default
+    return default
+
+
+def _write_json(path: Path, data) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+def cmd_unlock_access(args: argparse.Namespace) -> None:
+    """Verify NFT ownership and enable access hooks."""
+    w3 = get_web3()
+    contract = w3.eth.contract(address=Web3.to_checksum_address(args.contract), abi=json.loads(Path(args.abi).read_text()))
+    balance = contract.functions.balanceOf(Web3.to_checksum_address(args.wallet)).call()
+    if balance > 0:
+        cfg_path = Path("vaultfire_crypto_hooks.json")
+        cfg = _load_json(cfg_path, {})
+        cfg["nft_access_unlocked"] = True
+        _write_json(cfg_path, cfg)
+        print("Access unlocked for", args.wallet)
+    else:
+        print("NFT not found for", args.wallet)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="vaultfire-cli", description="Vaultfire multi-tool")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -90,6 +122,12 @@ def main(argv: list[str] | None = None) -> int:
     p_logs = sub.add_parser("export-logs", help="Export logs as zip")
     p_logs.add_argument("--output", default="logs.zip", help="Output zip file")
     p_logs.set_defaults(func=cmd_export_logs)
+
+    p_unlock = sub.add_parser("unlock", help="Unlock access via NFT")
+    p_unlock.add_argument("contract", help="ContributorUnlockKey contract")
+    p_unlock.add_argument("abi", help="Path to contract ABI JSON")
+    p_unlock.add_argument("wallet", help="Wallet address to check")
+    p_unlock.set_defaults(func=cmd_unlock_access)
 
     args = parser.parse_args(argv)
     args.func(args)
