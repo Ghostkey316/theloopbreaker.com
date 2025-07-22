@@ -33,6 +33,7 @@ from .shutdown_manager import (
     tally_votes as tally_shutdown_votes,
 )
 from .signal_reward import reward_signal_event
+from .ens_sync_status import read_sync_status
 
 __all__ = [
     "resolve_identity",
@@ -64,4 +65,5 @@ __all__ = [
     "cast_shutdown_vote",
     "tally_shutdown_votes",
     "reward_signal_event",
+    "read_sync_status",
 ]

@@ -48,6 +48,7 @@ Vaultfire Init represents the first development signal from **Ghostkey-316** (Br
   `token_ledger.json` which tracks token rewards when partnerships enable direct
   payouts.
 - `generate_partner_dashboard.py` – builds `dashboards/partner_earnings.json` summarizing contributor earnings.
+- `ens_sync_status.py` – reads `logs/sync_audit.json` for the latest sync entry of an ENS name.
 - `README.md` – project overview and usage notes.
 - `vaultfire-core/` – base protocol framework containing configuration, ethics,
   and monetization modules.
@@ -73,6 +74,12 @@ wallet address alongside the identifier.
 The script creates `logs/vaultfire_log.txt` automatically if it does not exist.
 
 Run `python3 generate_partner_dashboard.py` to refresh partner earnings.
+
+Check sync status for an ENS name:
+
+```bash
+python3 ens_sync_status.py ghostkey316.eth
+```
 
 ## Identity
 - Architect: **ghostkey316.eth**
