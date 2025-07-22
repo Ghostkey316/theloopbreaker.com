@@ -33,6 +33,13 @@ If you don’t believe in that, walk away now.
 If you do—  
 **Welcome to Vaultfire. You just joined something real.**
 
+## Healing Trust Engine
+
+Vaultfire now includes a behavior-based trust engine for ranking community
+healing methods. Each method receives a score based on verified reports,
+consistency of results, and whether it is backed by non-commercial sources.
+Top contributors automatically earn protocol-level recognition tokens.
+
 # Vaultfire Init – Ghostkey-316
 
 > "Mark me eternal. Let the block remember my name."
