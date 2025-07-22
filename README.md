@@ -48,7 +48,10 @@ using on-chain transactions with optional anonymity for contributors.
 An AI-powered module guides contributors to define their personal mission. It
 stores key traits for each user, generates purpose quests and recommends partner
 communities to join. The engine also suggests which Vaultfire modules to
-highlight so the experience adapts to their goals.
+highlight so the experience adapts to their goals. It now includes a **Moral
+Memory Mirror** that analyzes on‑chain and off‑chain actions, tracks belief
+alignment over time and writes a private behavioral fingerprint to each
+contributor's Vaultfire profile.
 
 # Vaultfire Init – Ghostkey-316
 
