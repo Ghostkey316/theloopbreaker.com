@@ -72,6 +72,7 @@ Vaultfire Init represents the first development signal from **Ghostkey-316** (Br
 - `engine/signal_reward.py` – awards contributor badges and token drops for verified signal events.
 - `engine/curewatch.py` – flags recurring high-effectiveness treatments as `CureWatch` for governance review.
 - `engine/cure_locker.py` – stores community-sourced healing methods with on-chain vote logs.
+- `engine/archetype_mirror.py` – trains an AI guide from actions, beliefs and journal style.
 - `logs/` – location for generated log files (ignored by Git). This now includes
   `token_ledger.json` which tracks token rewards when partnerships enable direct
   payouts.

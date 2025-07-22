@@ -73,6 +73,7 @@ from .purpose_engine import (
     commit_life_path,
 )
 from .synced_soul_compass import update_soul_compass
+from .archetype_mirror import train_archetype_guide, get_archetype_guide
 
 __all__ = [
     "resolve_identity",
@@ -154,5 +155,7 @@ __all__ = [
     "simulate_life_path",
     "commit_life_path",
     "update_soul_compass",
+    "train_archetype_guide",
+    "get_archetype_guide",
 ]
 
