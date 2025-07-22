@@ -43,6 +43,7 @@ from .gaming_layer import create_session, join_session, end_session
 from .avatar_sync import sync_avatar, get_avatar
 from .inventory_storage import add_item, list_items
 from .ens_overlay import overlay_identity, resolve_overlay
+from .game_logger import log_outcome
 
 __all__ = [
     "resolve_identity",
@@ -92,4 +93,5 @@ __all__ = [
     "list_items",
     "overlay_identity",
     "resolve_overlay",
+    "log_outcome",
 ]

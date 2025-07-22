@@ -1,0 +1,10 @@
+{
+  "puzzle_demo": {
+    "title": "Pattern Puzzle", 
+    "module": "vaultfire_arcade.minigames.puzzle_demo"
+  },
+  "learning_bot": {
+    "title": "Learning Bot", 
+    "module": "vaultfire_arcade.minigames.learning_bot"
+  }
+}
