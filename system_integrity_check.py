@@ -100,6 +100,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.activation_hook:
+        if not args.partner_id or not args.wallets:
+            parser.error("--activation-hook requires --partner-id and --wallet")
         from simulate_partner_activation import activation_hook
         result = activation_hook(
             args.partner_id or "",
