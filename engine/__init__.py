@@ -39,6 +39,10 @@ from .biofeedback import record_biofeedback, fetch_from_provider, get_latest_bio
 from .health_node import recommendations as health_recommendations
 from .healing_trust_engine import rank_healing_methods, reward_top_contributors
 from .curewatch import flag_effective_patterns
+from .gaming_layer import create_session, join_session, end_session
+from .avatar_sync import sync_avatar, get_avatar
+from .inventory_storage import add_item, list_items
+from .ens_overlay import overlay_identity, resolve_overlay
 
 __all__ = [
     "resolve_identity",
@@ -79,4 +83,13 @@ __all__ = [
     "rank_healing_methods",
     "reward_top_contributors",
     "flag_effective_patterns",
+    "create_session",
+    "join_session",
+    "end_session",
+    "sync_avatar",
+    "get_avatar",
+    "add_item",
+    "list_items",
+    "overlay_identity",
+    "resolve_overlay",
 ]
