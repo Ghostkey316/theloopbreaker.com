@@ -399,6 +399,16 @@ python3 engine/engagement_tracker.py mywallet.eth --reveal
 
 The onboarding API exposes `/engagement` for recording events and `/credit/<id>` to fetch the current score. No token purchase is required to qualify for rewards.
 
+## Auto-Mirror Airdrop Engine
+`engine/auto_mirror_airdrop.py` scans Farcaster, Lens, NS3 and Gitcoin for posts that echo Vaultfire belief phrases. Matching wallets automatically receive an ASM token reward, recorded in `logs/airdrop_log.json`.
+
+Run the engine manually:
+
+```bash
+python3 engine/auto_mirror_airdrop.py
+```
+
+
 ## Vaultfire Credits
 `engine/vaultfire_credits.py` keeps a running total of credits for each ENS name
 or Coinbase ID. Credits combine contributor XP with the number of verified
