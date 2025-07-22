@@ -1,4 +1,5 @@
 import json
+import argparse
 from pathlib import Path
 
 from engine.identity_resolver import resolve_identity
@@ -11,6 +12,8 @@ SNAPSHOT_PATH = BASE_DIR / "dashboards" / "contributor_snapshot.json"
 BINDINGS_PATH = BASE_DIR / "dashboards" / "contributor_bindings.json"
 USER_LIST_PATH = BASE_DIR / "user_list.json"
 SCORECARD_PATH = BASE_DIR / "user_scorecard.json"
+
+ALIGNMENT_PHRASE = "Morals Before Metrics."
 
 
 def _load_json(path: Path, default):
@@ -81,14 +84,49 @@ def run_integrity_check() -> dict:
     }
 
 
-if __name__ == "__main__":
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Run system integrity checks")
+    parser.add_argument("--activation-hook", action="store_true",
+                        help="invoke universal activation hook")
+    parser.add_argument("--partner-id")
+    parser.add_argument("--wallet", action="append", dest="wallets",
+                        help="wallet identifier, may be repeated")
+    parser.add_argument("--phrase", default=ALIGNMENT_PHRASE,
+                        help="alignment phrase")
+    parser.add_argument("--silent", action="store_true",
+                        help="suppress console output")
+    parser.add_argument("--test-mode", action="store_true",
+                        help="do not persist changes")
+    args = parser.parse_args(argv)
+
+    if args.activation_hook:
+        from simulate_partner_activation import activation_hook
+        result = activation_hook(
+            args.partner_id or "",
+            args.wallets or [],
+            args.phrase,
+            silent=True,
+            test_mode=args.test_mode,
+        )
+        if not args.silent:
+            print(json.dumps(result, indent=2))
+        return 0 if result["status"] == "PASS" else 1
+
     result = run_integrity_check()
     print(json.dumps(result, indent=2))
     issues = [msg for msgs in result.values() for msg in msgs]
     if issues:
-        print("Integrity check issues detected:")
-        for category, msgs in result.items():
-            for msg in msgs:
-                print(f"- {category}: {msg}")
+        if not args.silent:
+            print("Integrity check issues detected:")
+            for category, msgs in result.items():
+                for msg in msgs:
+                    print(f"- {category}: {msg}")
+        return 1
     else:
-        print("All systems operational")
+        if not args.silent:
+            print("All systems operational")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
