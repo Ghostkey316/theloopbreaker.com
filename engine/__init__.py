@@ -53,6 +53,12 @@ from .inventory_storage import add_item, list_items
 from .ens_overlay import overlay_identity, resolve_overlay
 from .game_logger import log_outcome
 from .avatar_mirror import record_avatar_event, get_mirrored_profile
+from .health_sync_engine import (
+    link_wearable_data,
+    get_wearable_data,
+    link_journal_entry,
+    get_journal_entries,
+)
 
 __all__ = [
     "resolve_identity",
@@ -114,4 +120,8 @@ __all__ = [
     "log_outcome",
     "record_avatar_event",
     "get_mirrored_profile",
+    "link_wearable_data",
+    "get_wearable_data",
+    "link_journal_entry",
+    "get_journal_entries",
 ]

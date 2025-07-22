@@ -418,6 +418,11 @@ Contributors may append immutable entries to `journals/<id>.json` using the
 of all entries forms a contributor's **soulprint**. Voters with an active
 soulprint receive a weight bonus during steward elections.
 
+## Health Sync Engine
+`engine/health_sync_engine.py` optionally links wearable metrics or encrypted journal
+entries to a contributor's profile. Data is stored locally using a user-supplied
+key and grants small wellness point rewards.
+
 
 ## Wallet Bonding
 Two contributors can bond their wallets together. While bonded, each member's yield and loyalty multiplier grows with their shared time-in and combined trust behavior. If either wallet exits or breaks a rule, the bond ends and both loyalty timers reset.
@@ -452,3 +457,4 @@ Results are written to `dashboards/contributor_scores.json` and merged into `use
 - Health-related features are informational only and do not replace professional medical advice.
 - Biofeedback integrations do not store raw data and respect device permissions.
 - Case study submissions are anonymized and stored publicly for research.
+- Health sync data is locally encrypted with user keys and has not undergone security review.
