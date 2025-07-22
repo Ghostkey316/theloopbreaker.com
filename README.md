@@ -86,6 +86,23 @@ Use optional flags to force a resync and log your belief phrase:
 ```bash
 python3 ens_sync_status.py ghostkey316.eth --force-sync --belief "Morals Before Metrics."
 ```
+### Multi-Tool CLI
+Use `vaultfire_cli.py` to run common protocol tasks from a single command.
+
+```bash
+python3 vaultfire_cli.py sync-ens ghostkey316.eth
+python3 vaultfire_cli.py partner-audit
+python3 vaultfire_cli.py belief-onboard demo_id demo_wallet.eth
+python3 vaultfire_cli.py monitor-integrity
+python3 vaultfire_cli.py export-logs --output vf_logs.zip
+```
+
+Bundle with PyInstaller for a standalone binary:
+
+```bash
+pyinstaller --onefile vaultfire_cli.py
+```
+
 
 ## Identity
 - Architect: **ghostkey316.eth**
