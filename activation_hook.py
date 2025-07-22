@@ -11,9 +11,12 @@ from simulate_partner_activation import simulate_activation, ALIGNMENT_PHRASE
 
 
 def _load_input(path: str) -> dict[str, Any]:
-    if path == "-":
-        return json.load(sys.stdin)
-    return json.load(Path(path).open())
+    try:
+        if path == "-":
+            return json.load(sys.stdin)
+        return json.load(Path(path).open())
+    except (FileNotFoundError, json.JSONDecodeError) as exc:
+        raise ValueError(f"invalid input: {exc}") from exc
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -22,7 +25,11 @@ def main(argv: list[str] | None = None) -> int:
         print("Usage: activation_hook.py <input_json or ->")
         return 1
 
-    data = _load_input(argv[0])
+    try:
+        data = _load_input(argv[0])
+    except ValueError as exc:
+        print(exc)
+        return 1
     partner_id = data.get("partner_id")
     wallets = data.get("wallets", [])
     phrase = data.get("phrase", ALIGNMENT_PHRASE)
