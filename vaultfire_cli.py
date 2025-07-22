@@ -1,6 +1,7 @@
 import argparse
 import json
 from pathlib import Path
+import time
 import zipfile
 try:
     from web3 import Web3  # type: ignore
@@ -79,6 +80,25 @@ def cmd_export_logs(args: argparse.Namespace) -> None:
     print(f"Logs exported to {out_path}")
 
 
+def cmd_partner_export(args: argparse.Namespace) -> None:
+    """Write a partner export JSON payload."""
+    data = {
+        "wallet": args.wallet,
+        "ethic": args.inject_ethic,
+        "encoded_metrics": "VFv1.0::C316::Vaultfire-Partner-Ready",
+        "timestamp": int(time.time()),
+        "version": "codex_fork_1.0",
+    }
+    out_path = Path(args.output)
+    try:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(out_path, "w") as f:
+            json.dump(data, f, indent=2)
+        print(f"Partner export written to {out_path}")
+    except Exception as exc:
+        print(f"Failed to write partner export: {exc}")
+
+
 def _load_json(path: Path, default):
     if path.exists():
         try:
@@ -142,6 +162,12 @@ def main(argv: list[str] | None = None) -> int:
     p_logs = sub.add_parser("export-logs", help="Export logs as zip")
     p_logs.add_argument("--output", default="logs.zip", help="Output zip file")
     p_logs.set_defaults(func=cmd_export_logs)
+
+    p_export = sub.add_parser("partner-export", help="Export partner data")
+    p_export.add_argument("--wallet", required=True, help="Wallet address")
+    p_export.add_argument("--inject-ethic", required=True, help="Ethics statement")
+    p_export.add_argument("--output", required=True, help="Output JSON file")
+    p_export.set_defaults(func=cmd_partner_export)
 
     p_unlock = sub.add_parser("unlock", help="Unlock access via NFT")
     p_unlock.add_argument("contract", help="ContributorUnlockKey contract")
