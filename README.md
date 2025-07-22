@@ -212,6 +212,8 @@ python3 onboarding_api.py
 - `GET /status` – health check.
 - `POST /biofeedback` – body `{"identifier": "id", "provider": "fitbit", "metrics": {"hrv": 60}}`
 - `GET /health/recommendations/<id>` – personalized suggestions.
+- `POST /case-study` – body `{"condition": "cough", "treatment": "Herbal Tea", "notes": "...", "pseudonym": "anon"}`
+- `GET /case-studies?condition=cough` – list recorded case studies.
 
 ### CLI Partner Onboarding
 Use `vaultfire_partner_onboard.js` to onboard a partner from the command line:
@@ -430,3 +432,4 @@ Results are written to `dashboards/contributor_scores.json` and merged into `use
 - The Contributor Unlock Key NFT is a demo access mechanism on Base and does not provide production-grade security.
 - Health-related features are informational only and do not replace professional medical advice.
 - Biofeedback integrations do not store raw data and respect device permissions.
+- Case study submissions are anonymized and stored publicly for research.

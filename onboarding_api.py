@@ -4,6 +4,7 @@ from pathlib import Path
 from flask import Flask, request, jsonify
 from simulate_partner_activation import simulate_activation, ALIGNMENT_PHRASE
 from engine.ens_sync_status import read_sync_status
+from engine.case_studies import submit_case_study, list_case_studies
 
 app = Flask(__name__)
 BASE_DIR = Path(__file__).resolve().parent
@@ -141,6 +142,28 @@ def ingest_biofeedback():
     from engine.biofeedback import record_biofeedback
     record_biofeedback(identifier, provider, metrics)
     return jsonify({"message": "biofeedback recorded"}), 201
+
+
+@app.post("/case-study")
+def submit_case_study_route():
+    """Store an anonymized natural treatment case study."""
+    data = request.get_json(silent=True) or {}
+    condition = data.get("condition")
+    treatment = data.get("treatment")
+    notes = data.get("notes", "")
+    pseudonym = data.get("pseudonym")
+    if not condition or not treatment:
+        return jsonify({"error": "condition and treatment required"}), 400
+    entry = submit_case_study(condition, treatment, notes, pseudonym)
+    return jsonify(entry), 201
+
+
+@app.get("/case-studies")
+def list_case_studies_route():
+    """Return stored case studies."""
+    condition = request.args.get("condition")
+    entries = list_case_studies(condition)
+    return jsonify({"entries": entries})
 
 
 @app.get("/credit/<identifier>")
