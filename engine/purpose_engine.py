@@ -16,6 +16,40 @@ ENGAGEMENT_PATH = BASE_DIR / "logs" / "engagement_data.json"
 EVENT_LOG_PATH = BASE_DIR / "event_log.json"
 MORAL_MEMORY_PATH = BASE_DIR / "logs" / "moral_memory.json"
 FINGERPRINT_PATH = BASE_DIR / "logs" / "behavioral_fingerprint.json"
+LIFE_PATHS_STATE_PATH = BASE_DIR / "logs" / "life_path_state.json"
+
+LIFE_PATHS: Dict[str, Dict[str, List[str]]] = {
+    "leader": {
+        "quests": ["rally a team", "draft a vision"],
+        "alliances": ["governance circle"],
+        "evolution": ["strategist", "visionary", "architect"],
+    },
+    "builder": {
+        "quests": ["prototype a tool", "improve infrastructure"],
+        "alliances": ["makers guild"],
+        "evolution": ["engineer", "architect", "master builder"],
+    },
+    "healer": {
+        "quests": ["share a remedy", "host a wellness check"],
+        "alliances": ["curewatch network"],
+        "evolution": ["mentor", "sage", "lifekeeper"],
+    },
+    "protector": {
+        "quests": ["secure a resource", "safeguard a peer"],
+        "alliances": ["guardian core"],
+        "evolution": ["warden", "shield", "legend"],
+    },
+    "artist": {
+        "quests": ["create a piece", "collaborate on a mural"],
+        "alliances": ["creative collective"],
+        "evolution": ["storyteller", "influencer", "cultural beacon"],
+    },
+    "teacher": {
+        "quests": ["share a lesson", "mentor an apprentice"],
+        "alliances": ["knowledge guild"],
+        "evolution": ["guide", "master", "luminary"],
+    },
+}
 
 
 def _load_json(path: Path, default):
@@ -95,6 +129,26 @@ def tailor_experience(user_id: str) -> Dict:
     return {"user_id": user_id, "features": features}
 
 
+def simulate_life_path(path: str) -> Dict:
+    """Preview quests, alliances and evolution for ``path``."""
+    info = LIFE_PATHS.get(path)
+    if not info:
+        raise ValueError("unknown life path")
+    return {"path": path, **info}
+
+
+def commit_life_path(user_id: str, path: str) -> Dict:
+    """Commit ``user_id`` to a life path and persist the choice."""
+    info = simulate_life_path(path)
+    state = _load_json(LIFE_PATHS_STATE_PATH, {})
+    state[user_id] = {
+        "path": path,
+        "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+    _write_json(LIFE_PATHS_STATE_PATH, state)
+    return {"user_id": user_id, **info}
+
+
 def _hash_identifier(identifier: str) -> str:
     return hashlib.sha256(identifier.encode()).hexdigest()
 
@@ -161,4 +215,6 @@ __all__ = [
     "tailor_experience",
     "analyze_actions",
     "moral_memory_mirror",
+    "simulate_life_path",
+    "commit_life_path",
 ]

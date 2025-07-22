@@ -51,7 +51,10 @@ communities to join. The engine also suggests which Vaultfire modules to
 highlight so the experience adapts to their goals. It now includes a **Moral
 Memory Mirror** that analyzes on‑chain and off‑chain actions, tracks belief
 alignment over time and writes a private behavioral fingerprint to each
-contributor's Vaultfire profile.
+contributor's Vaultfire profile. A new **Forkable Life Path** module lets users
+simulate and commit to themed missions — leader, builder, healer, protector,
+artist and teacher. Each path unlocks unique quests, alliances and long-term
+evolution trees.
 
 # Vaultfire Init – Ghostkey-316
 
