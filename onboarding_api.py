@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 from flask import Flask, request, jsonify
 from simulate_partner_activation import simulate_activation, ALIGNMENT_PHRASE
+from engine.ens_sync_status import read_sync_status
 
 app = Flask(__name__)
 BASE_DIR = Path(__file__).resolve().parent
@@ -144,6 +145,16 @@ def get_vaultfire_credits(user_id):
     update_credit(user_id)
     balance = credit_balance(user_id)
     return jsonify({"user_id": user_id, "credits": balance})
+
+
+@app.get("/ens_sync_status")
+def ens_sync_status_route():
+    """Return last Vaultfire sync audit entry for an ENS name."""
+    ens_name = request.args.get("ens", "")
+    if not ens_name:
+        return jsonify({"error": "ens parameter required"}), 400
+    info = read_sync_status(ens_name)
+    return jsonify(info or {})
 
 
 @app.get("/status")
