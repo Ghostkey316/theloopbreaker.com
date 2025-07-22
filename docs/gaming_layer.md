@@ -19,3 +19,12 @@ The `vaultfire_arcade` package builds on these helpers with an `ArcadeLauncher`
 class. Registered minigames and puzzle modules can be launched from a simple
 interface and will automatically log learning outcomes, achievements and loyalty
 boosts back to the user's on-chain profile.
+
+#### Guest Mode
+
+`ArcadeLauncher` now accepts an optional `user_id`. When omitted, a guest
+identifier is generated so visitors can play without connecting a wallet. All
+game outcomes are cached locally under this guest ID. Once the player confirms
+their identity through ENS or a partner protocol, calling
+`overlay_ens(guest_id, "name.eth")` merges the cached progress into the final
+profile.

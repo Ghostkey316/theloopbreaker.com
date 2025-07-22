@@ -5,6 +5,7 @@ from engine.avatar_sync import sync_avatar, get_avatar
 from engine.avatar_mirror import record_avatar_event, get_mirrored_profile
 from engine.inventory_storage import add_item, list_items
 from engine.ens_overlay import overlay_identity, resolve_overlay
+from vaultfire_arcade.guest_progress import merge_guest_progress
 
 __all__ = [
     "create_session",
@@ -45,7 +46,10 @@ class VaultfireGameSDK:
         return add_item(user_id, item_id, tx_hash)
 
     def overlay_ens(self, user_id: str, ens_name: str):
-        return overlay_identity(user_id, ens_name)
+        result = overlay_identity(user_id, ens_name)
+        if user_id.startswith("guest-"):
+            merge_guest_progress(user_id, ens_name)
+        return result
 
     def avatar(self, user_id: str):
         return get_avatar(user_id)
