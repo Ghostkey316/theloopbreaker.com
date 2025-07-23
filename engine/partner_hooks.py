@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .token_ops import send_token
 from .activation_gate import enforce_activation
+from .immutable_log import append_entry
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 CONFIG_PATH = BASE_DIR / "vaultfire-core" / "vaultfire_config.json"
@@ -66,6 +67,7 @@ def record_usage(partner_id: str, feature: str, tokens: float, wallet: str,
     _write_json(USAGE_LOG_PATH, log)
     # Deduct tokens by recording a negative ledger entry
     send_token(wallet, -tokens, token)
+    append_entry("partner_usage", entry)
     return entry
 
 
@@ -84,4 +86,5 @@ def grant_reward(partner_id: str, wallet: str, amount: float,
     log = _load_json(USAGE_LOG_PATH, [])
     log.append(entry)
     _write_json(USAGE_LOG_PATH, log)
+    append_entry("partner_reward", entry)
     return entry
