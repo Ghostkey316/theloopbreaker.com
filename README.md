@@ -65,6 +65,9 @@ to yield bonuses. Users who opt in can log carbon offsets, efficient device
 usage or sustainability pledges. Completing eco-positive tasks adds
 multipliers inside the Purpose Engine, unlocks a Planetkeeper badge and may
 publish their impact to an optional public dashboard.
+The new **Belief Graph** maps each user's values, recorded decisions, posts and
+completed quests. This dynamic network powers social matching, aligns
+discussions and feeds trust calculations.
 
 # Vaultfire Init – Ghostkey-316
 
