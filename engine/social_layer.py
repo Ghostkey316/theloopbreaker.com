@@ -169,6 +169,8 @@ def post_signal(
     mirror_prompt: Optional[str] = None,
     loop: str = "believe",
     stake: float = 0.0,
+    track: Optional[str] = None,
+    playlist: Optional[str] = None,
 ) -> Dict:
     """Record a structured signal from ``sender`` to ``recipient``."""
     signals: Dict[str, Dict[str, List[Dict]]] = _load_json(SIGNALS_PATH, {})
@@ -186,6 +188,10 @@ def post_signal(
     }
     if stake:
         entry["stake"] = stake
+    if track:
+        entry["track"] = track
+    if playlist:
+        entry["playlist"] = playlist
     signals.setdefault(loop, {}).setdefault(f"tier{tier}", []).append(entry)
     _write_json(SIGNALS_PATH, signals)
 
@@ -277,6 +283,8 @@ if __name__ == "__main__":
     p_signal.add_argument("belief")
     p_signal.add_argument("--mirror")
     p_signal.add_argument("--loop", default="believe")
+    p_signal.add_argument("--track")
+    p_signal.add_argument("--playlist")
 
     p_comp = sub.add_parser("comp")
     p_comp.add_argument("comp_id")
@@ -310,6 +318,8 @@ if __name__ == "__main__":
                     args.belief,
                     args.mirror,
                     args.loop,
+                    track=args.track,
+                    playlist=args.playlist,
                 ),
                 indent=2,
             )
