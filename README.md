@@ -90,6 +90,7 @@ Vaultfire Init represents the first development signal from **Ghostkey-316** (Br
 - `engine/fit_sync.py` – logs workouts and team challenges with Proof of Sweat.
 - `engine/music_layer.py` – builds music identity profiles and AI‑curated playlists.
 - `engine/life_xp_module.py` – rewards growth activities and syncs with Vaultlink.
+- `engine/life_yield_engine.py` – converts verifiable life actions into token yield with behavior scoring.
 - `engine/planetkeeper.py` – records eco-positive behavior for optional yield multipliers.
 - `engine/squad_layer.py` – tracks squad XP, quests and multipliers.
 - `engine/mirror_room.py` – topic-based spaces that sync with memory and loop history.
@@ -590,3 +591,5 @@ restoration when corruption is detected.
 - Synced Circles groups are AI-generated suggestions and may not remain private.
 - Music identity data is stored locally and may be cleared without notice.
 - Music NFTs and playlists generated here offer no financial guarantees.
+- Life Yield Engine rewards rely on local behavior logs and linked wallets;
+  payouts are experimental and not guaranteed.
