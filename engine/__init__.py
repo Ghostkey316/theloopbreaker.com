@@ -68,6 +68,7 @@ from .genesync import (
 )
 from .modding_layer import create_module, list_modules, upvote_module
 from .auto_mirror_airdrop import scan_public_activity, execute_airdrop, run_airdrop
+from .signal_scout import scan_signals
 from .planetkeeper import (
     opt_in as planetkeeper_opt_in,
     is_opted_in as planetkeeper_enabled,
@@ -288,6 +289,7 @@ __all__ = [
     "scan_public_activity",
     "execute_airdrop",
     "run_airdrop",
+    "scan_signals",
     "record_traits",
     "discover_purpose",
     "generate_purpose_quest",
