@@ -583,3 +583,4 @@ restoration when corruption is detected.
 - The system watchdog logs resource metrics and attempts self-repair but cannot
   guarantee recovery from all failures.
 - Mirror Room conversations are stored locally and are not end-to-end encrypted.
+- Synced Circles groups are AI-generated suggestions and may not remain private.
