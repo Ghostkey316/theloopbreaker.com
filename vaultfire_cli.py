@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import time
 import zipfile
+import base64
 try:
     from web3 import Web3  # type: ignore
 except Exception:  # pragma: no cover - optional dependency
@@ -16,6 +17,7 @@ except Exception:  # pragma: no cover - optional dependency
 from engine.self_audit import run_self_audit
 from simulate_partner_activation import activation_hook, ALIGNMENT_PHRASE
 from system_integrity_check import run_integrity_check
+from engine.health_sync_engine import encrypt_data
 
 
 
@@ -74,7 +76,7 @@ def cmd_watchdog(args: argparse.Namespace) -> None:
 
 
 def cmd_export_logs(args: argparse.Namespace) -> None:
-    """Archive the logs directory into a zip file."""
+    """Archive the logs directory into a zip file. Optionally encrypt."""
     logs_dir = Path("logs")
     if not logs_dir.exists():
         print("logs directory does not exist")
@@ -84,7 +86,11 @@ def cmd_export_logs(args: argparse.Namespace) -> None:
         for path in logs_dir.rglob("*"):
             if path.is_file():
                 zf.write(path, path.relative_to(logs_dir))
-    print(f"Logs exported to {out_path}")
+    if args.key:
+        enc_path = _encrypt_file(out_path, args.key)
+        print(f"Logs exported to {enc_path} (encrypted)")
+    else:
+        print(f"Logs exported to {out_path}")
 
 
 def cmd_partner_export(args: argparse.Namespace) -> None:
@@ -123,6 +129,16 @@ def _write_json(path: Path, data) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
         json.dump(data, f, indent=2)
+
+
+def _encrypt_file(path: Path, key: str) -> Path:
+    """Encrypt the file at ``path`` using ``key`` and return new path."""
+    data_b64 = base64.urlsafe_b64encode(path.read_bytes()).decode()
+    token = encrypt_data(data_b64, key)
+    enc_path = path.with_suffix(path.suffix + ".enc")
+    with open(enc_path, "w") as f:
+        f.write(token)
+    return enc_path
 
 
 def cmd_unlock_access(args: argparse.Namespace) -> None:
@@ -178,6 +194,7 @@ def main(argv: list[str] | None = None) -> int:
 
     p_logs = sub.add_parser("export-logs", help="Export logs as zip")
     p_logs.add_argument("--output", default="logs.zip", help="Output zip file")
+    p_logs.add_argument("--key", help="Encryption key")
     p_logs.set_defaults(func=cmd_export_logs)
 
     p_export = sub.add_parser("partner-export", help="Export partner data")
