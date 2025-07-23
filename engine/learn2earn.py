@@ -12,6 +12,7 @@ from .life_yield_engine import record_life_action, calculate_life_yield
 from .token_ops import send_token
 from .social_layer import post_signal
 from .gamified_yield_layer import complete_task
+from .reflection_layer import emotion_trend
 from .fit_sync import record_workout_sync
 from .play2earn import record_session
 
@@ -43,14 +44,36 @@ def _log(user_id: str, key: str, entry: Dict) -> None:
     _write_json(LOG_PATH, data)
 
 
-def log_quiz(user_id: str, quiz_id: str, score: float) -> Dict:
-    """Record quiz result scaled by reputation."""
+def _mood_multiplier(user_id: str, key: str) -> float:
+    """Return multiplier based on recent emotions."""
+    trends = emotion_trend(user_id, key)
+    if not trends:
+        return 1.0
+    joy = trends.get("joy", 0.0)
+    doubt = trends.get("doubt", 0.0)
+    return 1.0 + joy - doubt
+
+
+def _next_difficulty(score: float) -> str:
+    if score > 0.8:
+        return "hard"
+    if score < 0.5:
+        return "easy"
+    return "medium"
+
+
+def log_quiz(user_id: str, quiz_id: str, score: float, key: str | None = None) -> Dict:
+    """Record quiz result scaled by reputation and emotional state."""
     mult = learning_multiplier(user_id)
+    if key:
+        mult *= _mood_multiplier(user_id, key)
     xp = round(score * mult, 2)
+    difficulty = _next_difficulty(score)
     entry = {
         "quiz": quiz_id,
         "score": score,
         "xp": xp,
+        "difficulty": difficulty,
         "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
     _log(user_id, "quizzes", entry)
@@ -93,4 +116,4 @@ def complete_lesson(
     return entry
 
 
-__all__ = ["log_quiz", "complete_lesson"]
+__all__ = ["log_quiz", "complete_lesson", "_next_difficulty"]

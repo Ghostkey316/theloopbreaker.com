@@ -190,6 +190,26 @@ def commit_life_path(user_id: str, path: str) -> Dict:
     return {"user_id": user_id, **info}
 
 
+def daily_path_trigger(user_id: str) -> str:
+    """Return today's quest suggestion for the user's path."""
+    state = _load_json(LIFE_PATHS_STATE_PATH, {})
+    path = state.get(user_id, {}).get("path")
+    if not path:
+        return generate_purpose_quest(user_id)
+    quests = LIFE_PATHS.get(path, {}).get("quests", [])
+    if not quests:
+        return generate_purpose_quest(user_id)
+    return f"Daily Path Quest: {random.choice(quests)}"
+
+
+def self_alignment_check(user_id: str) -> float:
+    """Return alignment delta between actions and mission."""
+    mission = _load_json(PURPOSE_PATH, {}).get(user_id, {}).get("mission", "")
+    actions = analyze_actions(user_id)
+    alignment = actions.get("offchain_score", 0) - len(mission.split()) * 0.1
+    return round(alignment, 2)
+
+
 def _hash_identifier(identifier: str) -> str:
     return hashlib.sha256(identifier.encode()).hexdigest()
 
@@ -257,6 +277,8 @@ __all__ = [
     "tailor_experience",
     "analyze_actions",
     "moral_memory_mirror",
+    "daily_path_trigger",
+    "self_alignment_check",
     "simulate_life_path",
     "commit_life_path",
     "gene_risk_level",

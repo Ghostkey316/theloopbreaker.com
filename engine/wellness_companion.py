@@ -56,9 +56,21 @@ def coping_suggestions(user_id: str, key: str) -> List[str]:
     return suggestions
 
 
+def evolve_companion(user_id: str) -> str:
+    """Evolve AI companion logic with Morals-First safeguards."""
+    trend = emotion_trend(user_id, "vaultkey")
+    if trend.get("joy", 0) > 0.5:
+        stage = "guide"
+    else:
+        stage = "ally"
+    record_interaction(user_id, stage, "evolve", 1.0, False, "vaultkey")
+    return stage
+
+
 __all__ = [
     "log_journal_entry",
     "mood_checkin",
     "reflection_prompt",
     "coping_suggestions",
+    "evolve_companion",
 ]
