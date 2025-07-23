@@ -1,0 +1,13 @@
+{
+  "kernel_identity": "Ghostkey-316",
+  "phase": "PHASE3_ACTIVE",
+  "locked": true,
+  "trust_anchor": "Ghostkey Growth Protocol v1.0",
+  "ethics_core": "Ghostkey Ethics Framework v1.0",
+  "mode_training": true,
+  "memory_recursive_learning": true,
+  "signal_loop": "belief+ethics grafted",
+  "override_permission": "Ghostkey-316 Only",
+  "branch_immutable": true,
+  "timestamp": "2025-07-23T18:27:12Z"
+}
