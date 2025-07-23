@@ -89,6 +89,7 @@ Vaultfire Init represents the first development signal from **Ghostkey-316** (Br
 - `engine/wellness_companion.py` – journaling and mood tracking with coping suggestions tied to the companion.
 - `engine/life_xp_module.py` – rewards growth activities and syncs with Vaultlink.
 - `engine/planetkeeper.py` – records eco-positive behavior for optional yield multipliers.
+- `engine/mirror_room.py` – topic-based spaces that sync with memory and loop history.
 - `logs/` – location for generated log files (ignored by Git). This now includes
   `token_ledger.json` which tracks token rewards when partnerships enable direct
   payouts.
@@ -580,3 +581,4 @@ restoration when corruption is detected.
 - A local security monitor checks critical files but does not guarantee full protection.
 - The system watchdog logs resource metrics and attempts self-repair but cannot
   guarantee recovery from all failures.
+- Mirror Room conversations are stored locally and are not end-to-end encrypted.
