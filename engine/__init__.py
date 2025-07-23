@@ -201,6 +201,15 @@ from .twitch_layer import (
 from .ar_missions import register_marker, scan_marker
 from .wager_engine import start_battle, record_result
 from .synergy_manager import record_synergy
+from .codex_overdrive_v2 import (
+    MoralIntelligenceCoreV2,
+    LifeMirrorEngine,
+    AmbientXPSync,
+    SocialAlchemySystem,
+    LearningForgeMode,
+    CodexSelfHealingLayer,
+    LegacyTracker,
+)
 
 __all__ = [
     "resolve_identity",
@@ -387,5 +396,12 @@ __all__ = [
     "log_quiz",
     "complete_lesson",
     "record_synergy",
+    "MoralIntelligenceCoreV2",
+    "LifeMirrorEngine",
+    "AmbientXPSync",
+    "SocialAlchemySystem",
+    "LearningForgeMode",
+    "CodexSelfHealingLayer",
+    "LegacyTracker",
 ]
 
