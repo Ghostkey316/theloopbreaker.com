@@ -19,6 +19,7 @@ from .contributor_identity import (
     identity_summary,
     retroactive_bonus,
 )
+from .did_manager import create_did, load_did, verify_biometric
 from .self_audit import run_self_audit
 from .target_lock import (
     set_target_lock,
@@ -128,6 +129,9 @@ __all__ = [
     "sync_identity",
     "identity_summary",
     "retroactive_bonus",
+    "create_did",
+    "load_did",
+    "verify_biometric",
     "run_self_audit",
     "set_target_lock",
     "exit_target_lock",
