@@ -131,6 +131,12 @@ from .social_layer import (
     create_competition,
     record_result,
 )
+from .synced_circles import (
+    opt_in,
+    opt_out,
+    link_profile_data,
+    curate_circles,
+)
 from .squad_layer import (
     record_xp,
     issue_squad_quest,
@@ -277,6 +283,10 @@ __all__ = [
     "graph_similarity",
     "match_users",
     "trust_metric",
+    "opt_in",
+    "opt_out",
+    "link_profile_data",
+    "curate_circles",
     "record_xp",
     "issue_squad_quest",
     "complete_squad_quest",
