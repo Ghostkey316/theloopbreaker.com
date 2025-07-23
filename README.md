@@ -83,6 +83,7 @@ Vaultfire Init represents the first development signal from **Ghostkey-316** (Br
 - `engine/reflection_layer.py` – tracks encrypted emotion tags and trends.
 - `engine/gamified_yield_layer.py` – tracks quest streaks and converts XP into vault points.
 - `engine/vaultlink.py` – modular AI companion that evolves with each user.
+- `engine/wellness_companion.py` – journaling and mood tracking with coping suggestions tied to the companion.
 - `engine/life_xp_module.py` – rewards growth activities and syncs with Vaultlink.
 - `engine/planetkeeper.py` – records eco-positive behavior for optional yield multipliers.
 - `logs/` – location for generated log files (ignored by Git). This now includes
