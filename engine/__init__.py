@@ -379,5 +379,7 @@ __all__ = [
     "scan_marker",
     "start_battle",
     "record_result",
+    "log_quiz",
+    "complete_lesson",
 ]
 
