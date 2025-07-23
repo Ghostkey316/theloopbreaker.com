@@ -59,6 +59,12 @@ from .health_sync_engine import (
     link_journal_entry,
     get_journal_entries,
 )
+from .genesync import (
+    link_gene_metrics,
+    get_gene_metrics,
+    gene_risk_level,
+    GENESYNC_WARNING,
+)
 from .modding_layer import create_module, list_modules, upvote_module
 from .auto_mirror_airdrop import scan_public_activity, execute_airdrop, run_airdrop
 from .purpose_engine import (
@@ -147,6 +153,10 @@ __all__ = [
     "get_wearable_data",
     "link_journal_entry",
     "get_journal_entries",
+    "link_gene_metrics",
+    "get_gene_metrics",
+    "gene_risk_level",
+    "GENESYNC_WARNING",
     "create_module",
     "list_modules",
     "upvote_module",
