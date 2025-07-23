@@ -15,11 +15,18 @@ BASE_DIR = Path(__file__).resolve().parents[1]
 STATE_DIR = BASE_DIR / "logs" / "vaultlink"
 USER_LIST_PATH = BASE_DIR / "user_list.json"
 
+# Additional voice styles and moral alignments for the Mythic Identity Engine
+VOICE_STYLES = ["calm", "cheerful", "focused", "mysterious"]
+MORAL_COMPASS = ["explorer", "guardian", "sage", "visionary"]
+
 # Abilities and traits unlocked as companions level up
 ABILITIES: List[str] = [
     "context recall",
     "cross-domain insights",
     "predictive guidance",
+    "fitness coaching",
+    "financial mentorship",
+    "philosophical reflection",
 ]
 
 TRAITS: List[str] = [
@@ -68,14 +75,21 @@ def onboard_companion(user_id: str, key: str) -> Dict:
     if path.exists():
         return _load_json(path, {})
     seed = random.randint(0, 1_000_000)
+    soulprint = hashlib.sha256(f"{user_id}-{seed}".encode()).hexdigest()[:16]
+    voice = VOICE_STYLES[seed % len(VOICE_STYLES)]
+    moral = MORAL_COMPASS[seed % len(MORAL_COMPASS)]
     state = {
         "seed": seed,
+        "soulprint": soulprint,
+        "voice_style": voice,
+        "moral_compass": moral,
         "created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
         "interactions": 0,
         "milestones": 0,
         "xp": 0.0,
         "level": 0,
         "memory": [],
+        "memory_history": [],
         "abilities": [],
         "traits": [],
         "last_update": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -85,6 +99,10 @@ def onboard_companion(user_id: str, key: str) -> Dict:
 
 
 def _calc_level(xp: float) -> int:
+    if xp >= 200:
+        return 5
+    if xp >= 100:
+        return 4
     if xp >= 50:
         return 3
     if xp >= 25:
@@ -129,9 +147,12 @@ def record_interaction(
         if trait not in state["traits"]:
             state["traits"].append(trait)
     emotions = update_emotional_state(user_id, text, key)
-    mem_token = encrypt_data(f"{domain}|{text}", key)
+    entry = f"{now.strftime('%Y-%m-%dT%H:%M:%SZ')}|{domain}|{text}"
+    full_token = encrypt_data(entry, key)
+    short_token = encrypt_data(f"{domain}|{text}", key)
     mem_limit = 3 + state["level"] * 2
-    state["memory"].append(mem_token)
+    state.setdefault("memory_history", []).append(full_token)
+    state["memory"].append(short_token)
     state["memory"] = state["memory"][-mem_limit:]
     state["last_update"] = now.strftime("%Y-%m-%dT%H:%M:%SZ")
     _write_json(path, state)
@@ -150,5 +171,31 @@ def fetch_state(user_id: str, key: str) -> Dict:
     if not state:
         raise ValueError("companion not initialized")
     memories = [decrypt_data(m, key) for m in state.get("memory", [])]
-    return {**state, "memory": memories}
+    history = [decrypt_data(m, key) for m in state.get("memory_history", [])]
+    return {**state, "memory": memories, "memory_history": history}
+
+
+def transfer_companion_state(
+    from_user: str,
+    to_user: str,
+    from_key: str,
+    to_key: str,
+) -> Dict:
+    """Clone companion state from ``from_user`` to ``to_user``."""
+    source = _load_json(_state_path(from_user), None)
+    if not source:
+        raise ValueError("source companion not initialized")
+    dest_path = _state_path(to_user)
+    if dest_path.exists():
+        raise ValueError("destination already initialized")
+    clone = json.loads(json.dumps(source))
+    clone["created"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    clone["interactions"] = 0
+    clone["xp"] = 0.0
+    clone["level"] = 0
+    clone["memory"] = []
+    clone["memory_history"] = []
+    clone["soulprint"] = hashlib.sha256(f"{to_user}-{clone['seed']}".encode()).hexdigest()[:16]
+    _write_json(dest_path, clone)
+    return fetch_state(to_user, to_key)
 

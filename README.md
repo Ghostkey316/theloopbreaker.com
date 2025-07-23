@@ -520,3 +520,4 @@ connect with peers to co-build missions.
 - Loyalty boosts from upvotes carry no monetary value.
 - The SwapGate contract is a demo only and does not provide production-grade liquidity or bridging.
 - Vaultlink memory slots use simple encryption and are not intended for sensitive information.
+- Vaultlink Ascension Mode is experimental and may change without notice.
