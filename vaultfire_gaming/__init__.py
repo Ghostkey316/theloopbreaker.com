@@ -6,6 +6,13 @@ from engine.avatar_mirror import record_avatar_event, get_mirrored_profile
 from engine.inventory_storage import add_item, list_items
 from engine.ens_overlay import overlay_identity, resolve_overlay
 from engine.game_replay import record_replay_action, finalize_replay
+from engine.play2earn import (
+    connect_game_account,
+    linked_accounts,
+    record_session,
+    belief_mission,
+    leaderboard as p2e_leaderboard,
+)
 from vaultfire_arcade.guest_progress import merge_guest_progress
 
 __all__ = [
@@ -22,6 +29,11 @@ __all__ = [
     "resolve_overlay",
     "record_replay_action",
     "finalize_replay",
+    "connect_game_account",
+    "linked_accounts",
+    "record_session",
+    "belief_mission",
+    "p2e_leaderboard",
 ]
 
 class VaultfireGameSDK:
@@ -71,3 +83,36 @@ class VaultfireGameSDK:
 
     def ens(self, user_id: str):
         return resolve_overlay(user_id)
+
+    # --- Play2Earn helpers -------------------------------------------------
+
+    def connect_account(self, user_id: str, platform: str, account_id: str):
+        return connect_game_account(user_id, platform, account_id)
+
+    def record_play(
+        self,
+        user_id: str,
+        game_id: str,
+        platform: str,
+        duration: float,
+        achievements: list[str] | None = None,
+        team: list[str] | None = None,
+        game_type: str | None = None,
+        skill_score: float = 1.0,
+    ):
+        return record_session(
+            user_id,
+            game_id,
+            platform,
+            duration,
+            achievements,
+            team,
+            game_type,
+            skill_score,
+        )
+
+    def belief_mission(self, user_id: str, wallet: str, text: str, game_id: str):
+        return belief_mission(user_id, wallet, text, game_id)
+
+    def leaderboard(self, top_n: int = 10):
+        return p2e_leaderboard(top_n)
