@@ -461,6 +461,10 @@ soulprint receive a weight bonus during steward elections.
 entries to a contributor's profile. Data is stored locally using a user-supplied
 key and grants small wellness point rewards.
 
+`engine/genesync.py` extends the health layer with an opt-in GeneSync module for
+importing anonymized genetic metrics. The data is encrypted and used only to
+personalize health quests and tips.
+
 
 ## Wallet Bonding
 Two contributors can bond their wallets together. While bonded, each member's yield and loyalty multiplier grows with their shared time-in and combined trust behavior. If either wallet exits or breaks a rule, the bond ends and both loyalty timers reset.
@@ -502,6 +506,9 @@ connect with peers to co-build missions.
 - Biofeedback integrations do not store raw data and respect device permissions.
 - Case study submissions are anonymized and stored publicly for research.
 - Health sync data is locally encrypted with user keys and has not undergone security review.
+- GeneSync integration is optional and stores only anonymized metrics off-chain.
+- No genetic data is ever recorded on-chain.
+- Genetic insights do not replace professional medical or genetic counseling.
 - Modding modules are stored locally and not reviewed for security or content.
 - Loyalty boosts from upvotes carry no monetary value.
 - The SwapGate contract is a demo only and does not provide production-grade liquidity or bridging.

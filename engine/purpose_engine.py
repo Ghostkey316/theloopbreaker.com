@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import List, Dict
 
 from .reflection_layer import emotion_trend
+from .genesync import gene_risk_level
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 PURPOSE_PATH = BASE_DIR / "logs" / "purpose_profiles.json"
@@ -113,13 +114,19 @@ def adaptive_purpose_quest(user_id: str, key: str) -> str:
     """Generate a quest influenced by the user's recent emotions."""
     base = generate_purpose_quest(user_id)
     trends = emotion_trend(user_id, key)
-    if not trends:
-        return base
-    dominant = max(trends, key=trends.get)
-    if dominant in {"fear", "doubt"}:
-        return base + " Reflect on your concerns and take a small supportive step."
-    if dominant in {"joy", "confidence"}:
-        return base + " Your optimism is a strength—share it with a peer."
+    if trends:
+        dominant = max(trends, key=trends.get)
+        if dominant in {"fear", "doubt"}:
+            base += " Reflect on your concerns and take a small supportive step."
+        elif dominant in {"joy", "confidence"}:
+            base += " Your optimism is a strength—share it with a peer."
+
+    risk = gene_risk_level(user_id, key)
+    if risk == "high":
+        base += " GeneSync alert: schedule a check-up and prioritize rest."
+    elif risk == "medium":
+        base += " GeneSync note: maintain balanced nutrition this week."
+
     return base
 
 
@@ -234,4 +241,5 @@ __all__ = [
     "moral_memory_mirror",
     "simulate_life_path",
     "commit_life_path",
+    "gene_risk_level",
 ]
