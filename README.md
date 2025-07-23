@@ -593,3 +593,5 @@ restoration when corruption is detected.
 - Music NFTs and playlists generated here offer no financial guarantees.
 - Life Yield Engine rewards rely on local behavior logs and linked wallets;
   payouts are experimental and not guaranteed.
+- Learn2Earn module is experimental; quiz rewards depend on local records and
+  do not guarantee any asset transfer.
