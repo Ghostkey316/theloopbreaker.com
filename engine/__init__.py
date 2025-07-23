@@ -108,6 +108,12 @@ from .vaultlink import (
     fetch_state as fetch_vaultlink_state,
 )
 from .immutable_log import append_entry as log_immutable
+from .earning_module import (
+    reward_engagement,
+    reward_microtask,
+    reward_idea,
+    reward_layer_build,
+)
 
 __all__ = [
     "resolve_identity",
@@ -220,6 +226,10 @@ __all__ = [
     "onboard_companion",
     "record_interaction",
     "fetch_vaultlink_state",
+    "reward_engagement",
+    "reward_microtask",
+    "reward_idea",
+    "reward_layer_build",
     "log_immutable",
 ]
 
