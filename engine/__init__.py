@@ -175,6 +175,16 @@ from .play2earn import (
     belief_mission,
     leaderboard as play2earn_leaderboard,
 )
+from .twitch_layer import (
+    connect_twitch_account,
+    start_stream,
+    end_stream,
+    overlay_challenge,
+    tip_streamer,
+    loyalty_board,
+)
+from .ar_missions import register_marker, scan_marker
+from .wager_engine import start_battle, record_result
 
 __all__ = [
     "resolve_identity",
@@ -337,5 +347,15 @@ __all__ = [
     "record_session",
     "belief_mission",
     "play2earn_leaderboard",
+    "connect_twitch_account",
+    "start_stream",
+    "end_stream",
+    "overlay_challenge",
+    "tip_streamer",
+    "loyalty_board",
+    "register_marker",
+    "scan_marker",
+    "start_battle",
+    "record_result",
 ]
 

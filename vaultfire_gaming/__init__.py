@@ -13,6 +13,16 @@ from engine.play2earn import (
     belief_mission,
     leaderboard as p2e_leaderboard,
 )
+from engine.twitch_layer import (
+    connect_twitch_account,
+    start_stream,
+    end_stream,
+    overlay_challenge,
+    tip_streamer,
+    loyalty_board,
+)
+from engine.ar_missions import register_marker, scan_marker
+from engine.wager_engine import start_battle, record_result
 from vaultfire_arcade.guest_progress import merge_guest_progress
 
 __all__ = [
@@ -34,6 +44,16 @@ __all__ = [
     "record_session",
     "belief_mission",
     "p2e_leaderboard",
+    "connect_twitch_account",
+    "start_stream",
+    "end_stream",
+    "overlay_challenge",
+    "tip_streamer",
+    "loyalty_board",
+    "register_marker",
+    "scan_marker",
+    "start_battle",
+    "record_result",
 ]
 
 class VaultfireGameSDK:
@@ -116,3 +136,39 @@ class VaultfireGameSDK:
 
     def leaderboard(self, top_n: int = 10):
         return p2e_leaderboard(top_n)
+
+    # --- Twitch helpers -----------------------------------------------------
+
+    def connect_twitch(self, user_id: str, handle: str):
+        return connect_twitch_account(user_id, handle)
+
+    def start_stream(self, handle: str):
+        return start_stream(handle)
+
+    def end_stream(self, handle: str):
+        return end_stream(handle)
+
+    def overlay_challenge(self, stream_id: str, text: str):
+        return overlay_challenge(stream_id, text)
+
+    def tip_streamer(self, from_user: str, to_user: str, amount: float, token: str = "LOYAL"):
+        return tip_streamer(from_user, to_user, amount, token)
+
+    def loyalty_board(self, top_n: int = 10):
+        return loyalty_board(top_n)
+
+    # --- AR missions --------------------------------------------------------
+
+    def register_marker(self, marker_id: str, belief_text: str, reward: int = 1):
+        return register_marker(marker_id, belief_text, reward)
+
+    def scan_marker(self, user_id: str, marker_id: str):
+        return scan_marker(user_id, marker_id)
+
+    # --- Wager battles ------------------------------------------------------
+
+    def start_battle(self, game_id: str, players: list[str], amount: float, token: str = "LOYAL"):
+        return start_battle(game_id, players, amount, token)
+
+    def record_battle(self, battle_id: str, winner: str):
+        return record_result(battle_id, winner)
