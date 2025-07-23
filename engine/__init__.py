@@ -120,6 +120,16 @@ from .earning_module import (
     reward_idea,
     reward_layer_build,
 )
+from .social_layer import (
+    create_squad,
+    add_member,
+    remove_member,
+    submit_idea,
+    vote_idea,
+    exchange_signal,
+    create_competition,
+    record_result,
+)
 
 __all__ = [
     "resolve_identity",
@@ -241,5 +251,13 @@ __all__ = [
     "reward_idea",
     "reward_layer_build",
     "log_immutable",
+    "create_squad",
+    "add_member",
+    "remove_member",
+    "submit_idea",
+    "vote_idea",
+    "exchange_signal",
+    "create_competition",
+    "record_result",
 ]
 
