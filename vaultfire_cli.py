@@ -66,6 +66,13 @@ def cmd_monitor_integrity(_: argparse.Namespace) -> None:
     print(json.dumps(result, indent=2))
 
 
+def cmd_watchdog(args: argparse.Namespace) -> None:
+    """Run the system watchdog loop."""
+    from system_watchdog import monitor
+
+    monitor(args.interval, repair=not args.no_repair)
+
+
 def cmd_export_logs(args: argparse.Namespace) -> None:
     """Archive the logs directory into a zip file."""
     logs_dir = Path("logs")
@@ -161,6 +168,13 @@ def main(argv: list[str] | None = None) -> int:
 
     p_integrity = sub.add_parser("monitor-integrity", help="Run integrity checks")
     p_integrity.set_defaults(func=cmd_monitor_integrity)
+
+    p_watchdog = sub.add_parser("watchdog", help="Run system watchdog")
+    p_watchdog.add_argument("--interval", type=int, default=60,
+                            help="Polling interval in seconds")
+    p_watchdog.add_argument("--no-repair", action="store_true",
+                            help="Disable automatic restoration")
+    p_watchdog.set_defaults(func=cmd_watchdog)
 
     p_logs = sub.add_parser("export-logs", help="Export logs as zip")
     p_logs.add_argument("--output", default="logs.zip", help="Output zip file")

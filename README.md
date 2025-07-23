@@ -507,6 +507,11 @@ connect with peers to co-build missions.
 Run `python3 security_monitor.py --set-baseline` once to record baseline file hashes.
 Future runs will detect changes and restore originals if needed using `--repair`.
 
+## System Watchdog
+Run `python3 system_watchdog.py` to continuously log CPU, memory, and disk usage
+while also checking the security baseline. Use `--no-repair` to disable automatic
+restoration when corruption is detected.
+
 ## Disclaimers
 - This repository is experimental software provided for learning and discussion.
 - Nothing here constitutes financial or legal advice.
@@ -531,3 +536,5 @@ Future runs will detect changes and restore originals if needed using `--repair`
 - Vaultlink memory slots use simple encryption and are not intended for sensitive information.
 - Vaultlink Ascension Mode is experimental and may change without notice.
 - A local security monitor checks critical files but does not guarantee full protection.
+- The system watchdog logs resource metrics and attempts self-repair but cannot
+  guarantee recovery from all failures.
