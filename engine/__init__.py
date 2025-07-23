@@ -99,6 +99,8 @@ from .gamified_yield_layer import (
     quest_card,
     add_streak_protection,
 )
+from .fit_ai_coach import record_workout, coach_feedback
+from .vaultwear import sync_wearable
 
 __all__ = [
     "resolve_identity",
@@ -202,5 +204,8 @@ __all__ = [
     "carbon_offset_status",
     "energy_device_report",
     "pledge_commitment",
+    "record_workout",
+    "coach_feedback",
+    "sync_wearable",
 ]
 
