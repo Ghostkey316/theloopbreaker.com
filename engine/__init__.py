@@ -101,6 +101,11 @@ from .gamified_yield_layer import (
 )
 from .fit_ai_coach import record_workout, coach_feedback
 from .vaultwear import sync_wearable
+from .vaultlink import (
+    onboard_companion,
+    record_interaction,
+    fetch_state as fetch_vaultlink_state,
+)
 
 __all__ = [
     "resolve_identity",
@@ -207,5 +212,8 @@ __all__ = [
     "record_workout",
     "coach_feedback",
     "sync_wearable",
+    "onboard_companion",
+    "record_interaction",
+    "fetch_vaultlink_state",
 ]
 

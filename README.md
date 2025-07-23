@@ -82,6 +82,7 @@ Vaultfire Init represents the first development signal from **Ghostkey-316** (Br
 - `engine/archetype_mirror.py` – trains an AI guide from actions, beliefs and journal style.
 - `engine/reflection_layer.py` – tracks encrypted emotion tags and trends.
 - `engine/gamified_yield_layer.py` – tracks quest streaks and converts XP into vault points.
+- `engine/vaultlink.py` – modular AI companion that evolves with each user.
 - `engine/planetkeeper.py` – records eco-positive behavior for optional yield multipliers.
 - `logs/` – location for generated log files (ignored by Git). This now includes
   `token_ledger.json` which tracks token rewards when partnerships enable direct
@@ -518,3 +519,4 @@ connect with peers to co-build missions.
 - Modding modules are stored locally and not reviewed for security or content.
 - Loyalty boosts from upvotes carry no monetary value.
 - The SwapGate contract is a demo only and does not provide production-grade liquidity or bridging.
+- Vaultlink memory slots use simple encryption and are not intended for sensitive information.
