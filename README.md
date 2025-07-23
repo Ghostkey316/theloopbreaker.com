@@ -60,6 +60,11 @@ crypto stewardship to adjust guidance and unlock context-specific quests or
 reflection prompts.
 An additional **Reflection Layer** tags the emotional tone of journal entries
 and interactions, storing private patterns that influence future quests.
+The optional **Planetkeeper Module** tracks eco-friendly actions and links them
+to yield bonuses. Users who opt in can log carbon offsets, efficient device
+usage or sustainability pledges. Completing eco-positive tasks adds
+multipliers inside the Purpose Engine, unlocks a Planetkeeper badge and may
+publish their impact to an optional public dashboard.
 
 # Vaultfire Init – Ghostkey-316
 
@@ -77,6 +82,7 @@ Vaultfire Init represents the first development signal from **Ghostkey-316** (Br
 - `engine/archetype_mirror.py` – trains an AI guide from actions, beliefs and journal style.
 - `engine/reflection_layer.py` – tracks encrypted emotion tags and trends.
 - `engine/gamified_yield_layer.py` – tracks quest streaks and converts XP into vault points.
+- `engine/planetkeeper.py` – records eco-positive behavior for optional yield multipliers.
 - `logs/` – location for generated log files (ignored by Git). This now includes
   `token_ledger.json` which tracks token rewards when partnerships enable direct
   payouts.

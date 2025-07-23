@@ -61,6 +61,17 @@ from .health_sync_engine import (
 )
 from .modding_layer import create_module, list_modules, upvote_module
 from .auto_mirror_airdrop import scan_public_activity, execute_airdrop, run_airdrop
+from .planetkeeper import (
+    opt_in as planetkeeper_opt_in,
+    is_opted_in as planetkeeper_enabled,
+    record_eco_action,
+    eco_multiplier,
+    award_planetkeeper_badge,
+    public_impact as planetkeeper_public,
+    carbon_offset_status,
+    energy_device_report,
+    pledge_commitment,
+)
 from .purpose_engine import (
     record_traits,
     discover_purpose,
@@ -172,5 +183,14 @@ __all__ = [
     "complete_task",
     "quest_card",
     "add_streak_protection",
+    "planetkeeper_opt_in",
+    "planetkeeper_enabled",
+    "record_eco_action",
+    "eco_multiplier",
+    "award_planetkeeper_badge",
+    "planetkeeper_public",
+    "carbon_offset_status",
+    "energy_device_report",
+    "pledge_commitment",
 ]
 
