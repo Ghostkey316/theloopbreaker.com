@@ -11,6 +11,18 @@ from typing import List, Dict
 from .reflection_layer import emotion_trend
 from .genesync import gene_risk_level
 
+try:
+    from .planetkeeper import eco_multiplier, is_opted_in, award_planetkeeper_badge
+except Exception:  # module is optional
+    def eco_multiplier(user_id: str) -> float:
+        return 1.0
+
+    def is_opted_in(user_id: str) -> bool:
+        return False
+
+    def award_planetkeeper_badge(user_id: str) -> None:
+        return None
+
 BASE_DIR = Path(__file__).resolve().parents[1]
 PURPOSE_PATH = BASE_DIR / "logs" / "purpose_profiles.json"
 PARTNERS_PATH = BASE_DIR / "partners.json"
@@ -101,6 +113,12 @@ def generate_purpose_quest(user_id: str) -> str:
     if not mission:
         mission = "clarify your personal purpose"
     quest = f"Purpose Quest: Take one action today to {mission.lower()}"
+    if is_opted_in(user_id):
+        mult = eco_multiplier(user_id)
+        if mult > 1.0:
+            quest += f" (Planetkeeper x{mult:.2f})"
+        if mult >= 1.5:
+            award_planetkeeper_badge(user_id)
     entry = data.get(user_id, {})
     quests = entry.get("quests", [])
     quests.append({"timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"), "quest": quest})
