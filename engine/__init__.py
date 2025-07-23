@@ -168,6 +168,13 @@ from .belief_graph import (
     match_users,
     trust_metric,
 )
+from .play2earn import (
+    connect_game_account,
+    linked_accounts,
+    record_session,
+    belief_mission,
+    leaderboard as play2earn_leaderboard,
+)
 
 __all__ = [
     "resolve_identity",
@@ -325,5 +332,10 @@ __all__ = [
     "mission_reward",
     "squad_wallet",
     "record_belief_action",
+    "connect_game_account",
+    "linked_accounts",
+    "record_session",
+    "belief_mission",
+    "play2earn_leaderboard",
 ]
 
