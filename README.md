@@ -498,6 +498,10 @@ each contributor's chosen life path. Open `frontend/pages/global_path_atlas.html
 in a browser to visualize how participants align around common purpose arcs and
 connect with peers to co-build missions.
 
+## Security Monitor
+Run `python3 security_monitor.py --set-baseline` once to record baseline file hashes.
+Future runs will detect changes and restore originals if needed using `--repair`.
+
 ## Disclaimers
 - This repository is experimental software provided for learning and discussion.
 - Nothing here constitutes financial or legal advice.
@@ -521,3 +525,4 @@ connect with peers to co-build missions.
 - The SwapGate contract is a demo only and does not provide production-grade liquidity or bridging.
 - Vaultlink memory slots use simple encryption and are not intended for sensitive information.
 - Vaultlink Ascension Mode is experimental and may change without notice.
+- A local security monitor checks critical files but does not guarantee full protection.

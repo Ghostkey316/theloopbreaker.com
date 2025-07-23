@@ -10,9 +10,17 @@ const CB_ID_MAP: Record<string, string> = {
 const ALLOWED_DOMAINS = ['.eth', '.cb.id'];
 const FALLBACK_DOMAIN = 'vaultfire.eth';
 
+function isValidIdentifier(name: string): boolean {
+  return /^[a-z0-9.-]+$/.test(name) && !(/[\\s\/]/.test(name));
+}
+
 export function authenticateWallet(identifier: string, acceptedDomains: string[] = ALLOWED_DOMAINS): string {
   let name = identifier.trim().toLowerCase();
   const hasDomain = /\.[^\.\s]+$/.test(name);
+
+  if (!isValidIdentifier(name)) {
+    throw new Error('Invalid wallet identifier');
+  }
 
   if (hasDomain) {
     if (!acceptedDomains.some(domain => name.endsWith(domain))) {
@@ -30,6 +38,9 @@ export function authenticateWallet(identifier: string, acceptedDomains: string[]
 }
 
 export function resolveAddress(identifier: string): string | null {
+  if (!isValidIdentifier(identifier.trim().toLowerCase())) {
+    return null;
+  }
   const wallet = authenticateWallet(identifier);
   if (wallet.endsWith('.eth')) {
     return ENS_MAP[wallet] || null;
