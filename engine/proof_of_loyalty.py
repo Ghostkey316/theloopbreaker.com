@@ -8,7 +8,9 @@ from pathlib import Path
 from typing import Dict
 
 from .token_ops import send_token
-from .vaultfire_signal_parser import parse_signal
+# ``vaultfire_signal_parser`` lives at the repo root rather than within
+# ``engine`` so import it as a top-level module.
+from vaultfire_signal_parser import parse_signal
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 LOG_PATH = BASE_DIR / "logs" / "proof_of_loyalty.json"
