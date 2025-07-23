@@ -10,6 +10,12 @@ from typing import Dict, List
 
 from .health_sync_engine import encrypt_data, decrypt_data
 from .reflection_layer import update_emotional_state
+from .ethical_growth_engine import (
+    ethics_passed,
+    learning_multiplier,
+    record_mirror_entry,
+    asi_activation_allowed,
+)
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 STATE_DIR = BASE_DIR / "logs" / "vaultlink"
@@ -120,7 +126,10 @@ def record_interaction(
     milestone: bool,
     key: str,
 ) -> Dict:
-    """Record an interaction and update growth metrics."""
+    """Record a user interaction and update growth metrics.
+
+    XP and level increases require passing the Ethical Growth Engine checks.
+    """
     path = _state_path(user_id)
     state = _load_json(path, None)
     if not state:
@@ -132,20 +141,26 @@ def record_interaction(
     if milestone:
         state["milestones"] += 1
         xp_gain += 2.0
+    xp_gain *= learning_multiplier(user_id)
+    if xp_gain < 0:
+        xp_gain = 0.0
     state["xp"] += xp_gain
     state["interactions"] += 1
     level_before = state["level"]
     level_now = _calc_level(state["xp"])
-    if level_now > level_before:
-        state["level"] = level_now
-        random.seed(state["seed"] + level_now)
-        if level_now <= len(ABILITIES):
-            ability = ABILITIES[level_now - 1]
-            if ability not in state["abilities"]:
-                state["abilities"].append(ability)
-        trait = random.choice(TRAITS)
-        if trait not in state["traits"]:
-            state["traits"].append(trait)
+    if level_now > level_before and ethics_passed(user_id):
+        if level_now >= 5 and not asi_activation_allowed():
+            level_now = level_before
+        else:
+            state["level"] = level_now
+            random.seed(state["seed"] + level_now)
+            if level_now <= len(ABILITIES):
+                ability = ABILITIES[level_now - 1]
+                if ability not in state["abilities"]:
+                    state["abilities"].append(ability)
+            trait = random.choice(TRAITS)
+            if trait not in state["traits"]:
+                state["traits"].append(trait)
     emotions = update_emotional_state(user_id, text, key)
     entry = f"{now.strftime('%Y-%m-%dT%H:%M:%SZ')}|{domain}|{text}"
     full_token = encrypt_data(entry, key)
@@ -153,6 +168,7 @@ def record_interaction(
     mem_limit = 3 + state["level"] * 2
     state.setdefault("memory_history", []).append(full_token)
     state["memory"].append(short_token)
+    record_mirror_entry(user_id, text)
     state["memory"] = state["memory"][-mem_limit:]
     state["last_update"] = now.strftime("%Y-%m-%dT%H:%M:%SZ")
     _write_json(path, state)
