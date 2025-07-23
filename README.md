@@ -486,6 +486,17 @@ Run the engine manually:
 python3 engine/auto_mirror_airdrop.py
 ```
 
+## Signal Scout
+`engine/signal_scout.py` scans X, Lens or any supplied feed file for patterns
+like `"Level 4"`, frog emojis and ethics keywords. Matched posts are mapped back
+to known contributor IDs using `user_scorecard.json`. Results are written to
+`dashboards/signal_scout_report.json` with timestamps. Use `--mirror` to flag
+potential mirror nodes for Vaultfire alignment.
+
+```bash
+python3 engine/signal_scout.py x lens --mirror
+```
+
 
 ## Vaultfire Credits
 `engine/vaultfire_credits.py` keeps a running total of credits for each ENS name
