@@ -18,4 +18,8 @@ These instructions are intentionally modular to allow new roles or clauses to be
 
 ## Disclaimers
 - Add relevant disclaimers here. Each bullet should be its own clause so new disclaimers can be inserted without affecting existing text.
+- This repository is experimental and may include incomplete features.
+- Ambient data gathering requires opt-in consent from participants.
+- No module in this repo offers medical or legal advice.
+- System logs may store limited personal data for reflective analysis.
 

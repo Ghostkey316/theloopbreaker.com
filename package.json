@@ -7,13 +7,12 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "jest"
+    "test": "node scripts/run_tests.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs"
-  ,
+  "type": "commonjs",
   "devDependencies": {
     "jest": "^29.6.1"
   }
