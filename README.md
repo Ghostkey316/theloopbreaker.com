@@ -606,3 +606,4 @@ restoration when corruption is detected.
   payouts are experimental and not guaranteed.
 - Learn2Earn module is experimental; quiz rewards depend on local records and
   do not guarantee any asset transfer.
+- `vaultfire-cli` manages local protocol files and never stores private keys.
