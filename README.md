@@ -153,6 +153,13 @@ python3 vaultfire_cli.py monitor-integrity
 python3 vaultfire_cli.py export-logs --output vf_logs.zip
 ```
 
+Plugins placed in `vaultfire_cli_plugins` extend the tool. Use the new
+reward forecaster to estimate weekly rewards:
+
+```bash
+python3 vaultfire_cli_tool.py forecast-rewards --wallet demo_wallet.eth
+```
+
 Bundle with PyInstaller for a standalone binary:
 
 ```bash
