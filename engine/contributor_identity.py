@@ -18,6 +18,7 @@ else:  # pragma: no cover - executed as script
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 IDENTITY_PATH = BASE_DIR / "user_identity.json"
+LEDGER_PATH = BASE_DIR / "logs" / "token_ledger.json"
 
 
 def _load_json(path: Path, default):
@@ -70,7 +71,7 @@ def sync_identity(user_id: str, wallet: Optional[str] = None,
 
     data[user_id] = profile
     _write_json(IDENTITY_PATH, data)
-    return profile
+    return identity_summary(user_id)
 
 
 # ---------------------------------------------------------------------------
@@ -95,12 +96,17 @@ def _access_level(multiplier: float) -> str:
 def identity_summary(user_id: str) -> Dict:
     data = _load_json(IDENTITY_PATH, {})
     profile = data.get(user_id, {"wallets": [], "socials": {}, "behavior_score": 0, "history": [], "verified": []})
+    ledger = _load_json(LEDGER_PATH, [])
+    rewards = {}
+    for w in profile.get("wallets", []):
+        rewards[w] = sum(e.get("amount", 0) for e in ledger if e.get("wallet") == w)
     multiplier = _reputation_multiplier(profile)
     summary = {
         "user_id": user_id,
         "wallets": profile.get("wallets", []),
         "socials": profile.get("socials", {}),
         "behavior_score": profile.get("behavior_score", 0),
+        "rewards": rewards,
         "reputation_multiplier": multiplier,
         "access_level": _access_level(multiplier),
     }

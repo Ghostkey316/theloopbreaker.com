@@ -128,6 +128,8 @@ from .social_layer import (
     vote_idea,
     post_signal,
     exchange_signal,
+    stake_thread,
+    release_stake,
     create_competition,
     record_result,
 )
@@ -137,6 +139,13 @@ from .squad_layer import (
     complete_squad_quest,
     squad_multiplier,
 )
+from .squad_wallets import (
+    create_squad_wallet,
+    record_earning,
+    mission_reward,
+    squad_wallet,
+)
+from .proof_of_loyalty import record_belief_action
 from .belief_graph import (
     build_belief_graph,
     graph_similarity,
@@ -271,6 +280,8 @@ __all__ = [
     "vote_idea",
     "post_signal",
     "exchange_signal",
+    "stake_thread",
+    "release_stake",
     "create_competition",
     "record_result",
     "build_belief_graph",
@@ -281,5 +292,10 @@ __all__ = [
     "issue_squad_quest",
     "complete_squad_quest",
     "squad_multiplier",
+    "create_squad_wallet",
+    "record_earning",
+    "mission_reward",
+    "squad_wallet",
+    "record_belief_action",
 ]
 

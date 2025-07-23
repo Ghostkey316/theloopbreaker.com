@@ -7,6 +7,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from .token_ops import send_token
+
 BASE_DIR = Path(__file__).resolve().parents[1]
 SOCIAL_DIR = BASE_DIR / "logs" / "social"
 SQUADS_PATH = SOCIAL_DIR / "squads.json"
@@ -14,6 +16,7 @@ IDEAS_PATH = SOCIAL_DIR / "ideas.json"
 SIGNALS_PATH = SOCIAL_DIR / "signals.json"
 SCORECARD_PATH = BASE_DIR / "user_scorecard.json"
 COMPETE_PATH = SOCIAL_DIR / "competitions.json"
+STAKE_PATH = SOCIAL_DIR / "staked_threads.json"
 
 
 def _load_json(path: Path, default):
@@ -30,6 +33,39 @@ def _write_json(path: Path, data) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
         json.dump(data, f, indent=2)
+
+
+def _user_wallet(user_id: str) -> Optional[str]:
+    data = _load_json(SCORECARD_PATH, {})
+    return data.get(user_id, {}).get("wallet")
+
+
+def stake_thread(thread_id: str, wallet: str, amount: float) -> None:
+    state = _load_json(STAKE_PATH, {})
+    rec = state.get(thread_id, {"total": 0, "wallet": wallet})
+    rec["total"] += amount
+    state[thread_id] = rec
+    _write_json(STAKE_PATH, state)
+    try:
+        send_token(wallet, -abs(amount), "ASM")
+    except Exception:
+        pass
+
+
+def release_stake(thread_id: str, success: bool = True) -> None:
+    state = _load_json(STAKE_PATH, {})
+    rec = state.get(thread_id)
+    if not rec:
+        return
+    amount = rec.get("total", 0)
+    wallet = rec.get("wallet")
+    if success and wallet:
+        try:
+            send_token(wallet, amount, "ASM")
+        except Exception:
+            pass
+    state.pop(thread_id, None)
+    _write_json(STAKE_PATH, state)
 
 
 def _alignment_tier(user_id: str) -> int:
@@ -132,6 +168,7 @@ def post_signal(
     belief: str,
     mirror_prompt: Optional[str] = None,
     loop: str = "believe",
+    stake: float = 0.0,
 ) -> Dict:
     """Record a structured signal from ``sender`` to ``recipient``."""
     signals: Dict[str, Dict[str, List[Dict]]] = _load_json(SIGNALS_PATH, {})
@@ -147,8 +184,24 @@ def post_signal(
         "tier": tier,
         "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
+    if stake:
+        entry["stake"] = stake
     signals.setdefault(loop, {}).setdefault(f"tier{tier}", []).append(entry)
     _write_json(SIGNALS_PATH, signals)
+
+    if stake:
+        try:
+            w = _user_wallet(sender) or sender
+            send_token(w, -abs(stake), "ASM")
+        except Exception:
+            pass
+
+    rec_wallet = _load_json(SCORECARD_PATH, {}).get(recipient, {}).get("wallet")
+    if rec_wallet:
+        try:
+            send_token(rec_wallet, 0.01, "ASM")
+        except Exception:
+            pass
     return entry
 
 

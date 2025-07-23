@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Dict, List
 
 from .soul_journal import has_active_soulprint
+from .contributor_identity import identity_summary
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 GOV_DIR = BASE_DIR / "governance"
@@ -52,7 +53,10 @@ def vote_steward(voter_id: str, candidate_id: str) -> None:
         for rec in cand:
             if rec.get("voter") == voter_id:
                 return  # one vote per voter
-    weight = 2.0 if has_active_soulprint(voter_id) else 1.0
+    rep = identity_summary(voter_id).get("reputation_multiplier", 1.0)
+    weight = rep
+    if has_active_soulprint(voter_id):
+        weight += 1.0
     votes.setdefault(candidate_id, []).append({"voter": voter_id, "weight": weight})
     _write_json(STEWARD_VOTES_PATH, votes)
 
