@@ -87,6 +87,7 @@ Vaultfire Init represents the first development signal from **Ghostkey-316** (Br
 - `engine/gamified_yield_layer.py` – tracks quest streaks and converts XP into vault points.
 - `engine/vaultlink.py` – modular AI companion that evolves with each user.
 - `engine/wellness_companion.py` – journaling and mood tracking with coping suggestions tied to the companion.
+- `engine/music_layer.py` – builds music identity profiles and AI‑curated playlists.
 - `engine/life_xp_module.py` – rewards growth activities and syncs with Vaultlink.
 - `engine/planetkeeper.py` – records eco-positive behavior for optional yield multipliers.
 - `engine/squad_layer.py` – tracks squad XP, quests and multipliers.
@@ -584,3 +585,5 @@ restoration when corruption is detected.
   guarantee recovery from all failures.
 - Mirror Room conversations are stored locally and are not end-to-end encrypted.
 - Synced Circles groups are AI-generated suggestions and may not remain private.
+- Music identity data is stored locally and may be cleared without notice.
+- Music NFTs and playlists generated here offer no financial guarantees.

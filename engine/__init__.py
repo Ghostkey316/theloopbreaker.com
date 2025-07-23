@@ -113,6 +113,16 @@ from .wellness_companion import (
     reflection_prompt,
     coping_suggestions,
 )
+from .music_layer import (
+    connect_service,
+    pull_top_tracks,
+    build_music_identity,
+    attach_track_to_signal,
+    record_memory_track,
+    get_memory_tracks,
+    issue_music_nft,
+    ai_curated_playlist,
+)
 from .immutable_log import append_entry as log_immutable
 from .earning_module import (
     reward_engagement,
@@ -294,6 +304,14 @@ __all__ = [
     "graph_similarity",
     "match_users",
     "trust_metric",
+    "connect_service",
+    "pull_top_tracks",
+    "build_music_identity",
+    "attach_track_to_signal",
+    "record_memory_track",
+    "get_memory_tracks",
+    "issue_music_nft",
+    "ai_curated_playlist",
     "opt_in",
     "opt_out",
     "link_profile_data",
