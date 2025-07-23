@@ -159,6 +159,13 @@ Bundle with PyInstaller for a standalone binary:
 pyinstaller --onefile vaultfire_cli.py
 ```
 
+For a smaller archive that includes only selected modules, use
+`build_cli_bundle.py`:
+
+```bash
+python3 build_cli_bundle.py --output vf_cli.zip --include live_training,immutable_log
+```
+
 
 ## Identity
 - Architect: **ghostkey316.eth**
