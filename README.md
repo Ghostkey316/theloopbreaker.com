@@ -87,6 +87,7 @@ Vaultfire Init represents the first development signal from **Ghostkey-316** (Br
 - `engine/gamified_yield_layer.py` – tracks quest streaks and converts XP into vault points.
 - `engine/vaultlink.py` – modular AI companion that evolves with each user.
 - `engine/wellness_companion.py` – journaling and mood tracking with coping suggestions tied to the companion.
+- `engine/fit_sync.py` – logs workouts and team challenges with Proof of Sweat.
 - `engine/music_layer.py` – builds music identity profiles and AI‑curated playlists.
 - `engine/life_xp_module.py` – rewards growth activities and syncs with Vaultlink.
 - `engine/planetkeeper.py` – records eco-positive behavior for optional yield multipliers.
@@ -572,6 +573,8 @@ restoration when corruption is detected.
 - Biofeedback integrations do not store raw data and respect device permissions.
 - Case study submissions are anonymized and stored publicly for research.
 - Health sync data is locally encrypted with user keys and has not undergone security review.
+- FitSync connectors are prototypes and do not communicate with official APIs.
+- Proof-of-sweat checks are basic and not resistant to spoofing.
 - GeneSync integration is optional and stores only anonymized metrics off-chain.
 - No genetic data is ever recorded on-chain.
 - Genetic insights do not replace professional medical or genetic counseling.

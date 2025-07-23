@@ -101,6 +101,13 @@ from .gamified_yield_layer import (
     add_streak_protection,
 )
 from .fit_ai_coach import record_workout, coach_feedback
+from .fit_sync import (
+    register_validator,
+    connect_provider,
+    record_workout_sync,
+    start_team_challenge,
+    record_team_progress,
+)
 from .vaultwear import sync_wearable
 from .vaultlink import (
     onboard_companion,
@@ -293,6 +300,11 @@ __all__ = [
     "pledge_commitment",
     "record_workout",
     "coach_feedback",
+    "register_validator",
+    "connect_provider",
+    "record_workout_sync",
+    "start_team_challenge",
+    "record_team_progress",
     "sync_wearable",
     "onboard_companion",
     "record_interaction",
