@@ -370,6 +370,23 @@ python3 -m engine.contributor_identity --user alice \
 Calling `identity_summary("alice")` returns the multiplier and recommended
 retroactive bonus.
 
+## Decentralized Identity (DID) Framework
+The module `engine.did_manager` creates W3C style DID documents using a
+lightweight `did:vault` method. Private keys are encrypted with the same XOR
+scheme as the health sync engine so identities remain portable and recoverable.
+You can optionally attach a hashed fingerprint or retina scan for vault‑grade
+authentication.
+
+Example usage:
+
+```bash
+python3 -m engine.did_manager --create --user alice --key secret --biometric my_fingerprint
+python3 -m engine.did_manager --show --user alice --key secret
+```
+
+The helper `verify_biometric(user_id, biometric, key)` checks the stored hash
+against new biometric data.
+
 ## PR Merge Logging
 After each pull request merge, run:
 
