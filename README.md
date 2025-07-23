@@ -530,12 +530,13 @@ python3 engine/contributor_protocol.py
 Results are written to `dashboards/contributor_scores.json` and merged into `user_scorecard.json`.
 
 ## Social Layer
-`engine/social_layer.py` lets contributors form squads, vote on shared ideas, exchange quick signals and record friendly competitions.
+`engine/social_layer.py` lets contributors form squads, vote on shared ideas, exchange structured **Signals** and record friendly competitions.
 
 ```python
-from engine.social_layer import create_squad, submit_idea
+from engine.social_layer import create_squad, submit_idea, post_signal
 create_squad("alpha", "alice")
 submit_idea("alpha", "alice", "Launch weekly sim races")
+post_signal("alice", "bob", "share", "joy", "Let's race", loop="act")
 ```
 
 ## Global Path Atlas
