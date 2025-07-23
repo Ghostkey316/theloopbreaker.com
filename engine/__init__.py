@@ -100,6 +100,12 @@ from .gamified_yield_layer import (
     quest_card,
     add_streak_protection,
 )
+from .life_yield_engine import (
+    record_life_action,
+    behavior_score,
+    calculate_life_yield,
+    distribute_life_yield,
+)
 from .fit_ai_coach import record_workout, coach_feedback
 from .fit_sync import (
     register_validator,
@@ -317,6 +323,10 @@ __all__ = [
     "reward_microtask",
     "reward_idea",
     "reward_layer_build",
+    "record_life_action",
+    "behavior_score",
+    "calculate_life_yield",
+    "distribute_life_yield",
     "log_immutable",
     "create_squad",
     "add_member",
