@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vaultcore Mission Dashboard</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Courier New', monospace;
+      background: #000;
+      color: #0ff;
+    }
+    .theme-dark {
+      background: #001;
+      color: #0ff;
+    }
+    header {
+      background: #222;
+      color: #0ff;
+      padding: 20px;
+      text-align: center;
+      border-bottom: 2px solid #0ff;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 6px 10px;
+      border: 1px solid #0ff;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Mission Tracker</h1>
+    <button id="themeToggle">Toggle Theme</button>
+  </header>
+
+  <section id="missions">
+    <h3>Daily Missions</h3>
+    <table id="missionTable">
+      <thead><tr><th>User</th><th>Mission</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section id="points">
+    <h3>Vault Points</h3>
+    <table id="pointsTable">
+      <thead><tr><th>User</th><th>Total Points</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <script src="mission_dashboard.js"></script>
+</body>
+</html>
