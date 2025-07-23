@@ -77,7 +77,6 @@ def loyalty_enhanced_score(
     frequency: Optional[int] = None,
     life_impact: Optional[float] = None,
 ) -> dict:
-__all__ = ["loyalty_score", "update_loyalty_ranks", "loyalty_enhanced_score"]
     """Return loyalty score adjusted by mood and impact metrics."""
     info = loyalty_score(user_id)
     bonus = 0.0
@@ -99,6 +98,13 @@ def update_loyalty_ranks() -> list[dict]:
     _write_json(LOYALTY_RANKS_PATH, ranks)
     _log({"action": "update_ranks", "count": len(ranks)})
     return ranks
+
+
+__all__ = [
+    "loyalty_score",
+    "update_loyalty_ranks",
+    "loyalty_enhanced_score",
+]
 
 
 if __name__ == "__main__":
