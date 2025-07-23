@@ -5,6 +5,8 @@ from datetime import datetime
 import os
 import argparse
 
+from engine.immutable_log import append_entry
+
 from engine.identity_resolver import resolve_identity
 
 DEFAULT_IDENTITY = "ghostkey316.eth"
@@ -25,6 +27,11 @@ def log_vaultfire_status(identity=DEFAULT_IDENTITY, wallet=DEFAULT_WALLET):
 
     with open("logs/vaultfire_log.txt", "a") as log_file:
         log_file.write(log_entry)
+
+    append_entry(
+        "vaultfire_status",
+        {"identity": identity, "wallet": wallet, "resolved": resolved},
+    )
 
     print(log_entry.strip())
 

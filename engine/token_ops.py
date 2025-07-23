@@ -7,6 +7,7 @@ from pathlib import Path
 from .marketplace import currency_allowed
 from .wallet_loyalty import update_wallet_loyalty
 from .activation_gate import enforce_activation
+from .immutable_log import append_entry
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 LEDGER_PATH = BASE_DIR / "logs" / "token_ledger.json"
@@ -49,4 +50,5 @@ def send_token(wallet: str, amount: float, token: str) -> None:
         update_wallet_loyalty(wallet, amount)
     except Exception:
         pass
+    append_entry("token_transfer", entry)
     return None

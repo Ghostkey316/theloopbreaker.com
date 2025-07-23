@@ -106,6 +106,7 @@ from .vaultlink import (
     record_interaction,
     fetch_state as fetch_vaultlink_state,
 )
+from .immutable_log import append_entry as log_immutable
 
 __all__ = [
     "resolve_identity",
@@ -215,5 +216,6 @@ __all__ = [
     "onboard_companion",
     "record_interaction",
     "fetch_vaultlink_state",
+    "log_immutable",
 ]
 

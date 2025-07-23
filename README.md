@@ -87,6 +87,8 @@ Vaultfire Init represents the first development signal from **Ghostkey-316** (Br
 - `logs/` – location for generated log files (ignored by Git). This now includes
   `token_ledger.json` which tracks token rewards when partnerships enable direct
   payouts.
+- `immutable_log.jsonl` – append-only ledger that links each entry by hash. If
+  IPFS is available, entries are pinned for decentralized verification.
 - `generate_partner_dashboard.py` – builds `dashboards/partner_earnings.json` summarizing contributor earnings.
 - `ens_sync_status.py` – reads `logs/sync_audit.json` for the latest sync entry of an ENS name. Optional flags allow resync simulation and belief logging.
 - `README.md` – project overview and usage notes.
@@ -113,6 +115,9 @@ log with `ghostkey316.eth` or `bpow20.cb.id`, the script records the underlying
 wallet address alongside the identifier.
 
 The script creates `logs/vaultfire_log.txt` automatically if it does not exist.
+Each activation also appends a signed record to `immutable_log.jsonl`. This
+ledger links entries by cryptographic hash and optionally stores them on IPFS
+when the client library is available.
 
 Run `python3 generate_partner_dashboard.py` to refresh partner earnings.
 

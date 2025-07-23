@@ -7,6 +7,7 @@ from datetime import datetime
 from vaultfire_signal import log_vaultfire_status
 from .yield_engine_v1 import mark_yield_boost
 from .belief_validation import validate_belief
+from .immutable_log import append_entry
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 EVENT_LOG_PATH = BASE_DIR / "event_log.json"
@@ -122,6 +123,7 @@ def _log_audit(entry):
     entry_with_time = {"timestamp": timestamp, **entry}
     log.append(entry_with_time)
     _write_json(AUDIT_PATH, log)
+    append_entry("audit_event", entry_with_time)
 
 
 def belief_pulse(user_id):
