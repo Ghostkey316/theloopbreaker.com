@@ -4,6 +4,7 @@
 import json
 from pathlib import Path
 from datetime import datetime
+from typing import Optional
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 SCORECARD_PATH = BASE_DIR / "user_scorecard.json"
@@ -68,6 +69,27 @@ def loyalty_score(user_id: str) -> dict:
             pass
     score = base * multiplier * bond_mult
     return {"user_id": user_id, "base": base, "tier": tier, "score": score}
+
+
+def loyalty_enhanced_score(
+    user_id: str,
+    mood: Optional[int] = None,
+    frequency: Optional[int] = None,
+    life_impact: Optional[float] = None,
+) -> dict:
+__all__ = ["loyalty_score", "update_loyalty_ranks", "loyalty_enhanced_score"]
+    """Return loyalty score adjusted by mood and impact metrics."""
+    info = loyalty_score(user_id)
+    bonus = 0.0
+    if mood is not None:
+        bonus += max(min(mood - 3, 2), -2) * 5
+    if frequency is not None:
+        bonus += min(frequency, 30) * 0.2
+    if life_impact is not None:
+        bonus += life_impact * 10
+    info["score"] += bonus
+    info["bonus"] = bonus
+    return info
 
 
 def update_loyalty_ranks() -> list[dict]:

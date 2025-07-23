@@ -11,6 +11,11 @@ import json
 from pathlib import Path
 from datetime import datetime
 
+try:
+    import psutil  # type: ignore
+except Exception:  # pragma: no cover - optional
+    psutil = None
+
 BASE_DIR = Path(__file__).resolve().parent
 BASELINE_PATH = BASE_DIR / "vaultfire-core" / "security_baseline.json"
 BACKUP_DIR = BASE_DIR / "vaultfire-core" / "baseline_backups"
@@ -36,6 +41,28 @@ def _write_json(path: Path, data) -> None:
 def _hash_file(path: Path) -> str:
     data = path.read_bytes()
     return hashlib.sha256(data).hexdigest()
+
+
+def audit_connections() -> list[dict]:
+    """Return list of active network connections."""
+    results: list[dict] = []
+    if psutil is None:
+        return results
+    for conn in psutil.net_connections(kind="tcp"):
+        if conn.raddr:
+            results.append({
+                "laddr": f"{conn.laddr.ip}:{conn.laddr.port}",
+                "raddr": f"{conn.raddr.ip}:{conn.raddr.port}",
+                "status": conn.status,
+            })
+    if results:
+        log = _load_json(LOG_PATH, [])
+        ts = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+        for r in results:
+            r["timestamp"] = ts
+            log.append(r)
+        _write_json(LOG_PATH, log)
+    return results
 
 
 def set_baseline(files: list[Path]) -> None:

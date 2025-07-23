@@ -89,6 +89,8 @@ from .purpose_engine import (
     analyze_actions,
     moral_memory_mirror,
     simulate_life_path,
+    daily_path_trigger,
+    self_alignment_check,
     commit_life_path,
 )
 from .synced_soul_compass import update_soul_compass
@@ -198,6 +200,7 @@ from .twitch_layer import (
 )
 from .ar_missions import register_marker, scan_marker
 from .wager_engine import start_battle, record_result
+from .synergy_manager import record_synergy
 
 __all__ = [
     "resolve_identity",
@@ -287,6 +290,8 @@ __all__ = [
     "simulate_life_path",
     "commit_life_path",
     "update_soul_compass",
+    "daily_path_trigger",
+    "self_alignment_check",
     "train_archetype_guide",
     "get_archetype_guide",
     "update_emotional_state",
@@ -381,5 +386,6 @@ __all__ = [
     "record_result",
     "log_quiz",
     "complete_lesson",
+    "record_synergy",
 ]
 

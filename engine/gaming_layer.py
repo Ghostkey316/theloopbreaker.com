@@ -29,7 +29,12 @@ def _write_json(path: Path, data) -> None:
         json.dump(data, f, indent=2)
 
 
-def create_session(game_id: str, creator: str, metadata: Optional[Dict] = None) -> Dict:
+def create_session(
+    game_id: str,
+    creator: str,
+    metadata: Optional[Dict] = None,
+    stream_handle: str | None = None,
+) -> Dict:
     """Create a new game session and return the record."""
     sessions: List[Dict] = _load_json(SESSIONS_PATH, [])
     session = {
@@ -40,6 +45,13 @@ def create_session(game_id: str, creator: str, metadata: Optional[Dict] = None) 
         "created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
         "active": True,
     }
+    if stream_handle:
+        try:
+            from .twitch_layer import start_stream
+            start_stream(stream_handle)
+            session["stream"] = stream_handle
+        except Exception:
+            session["stream"] = stream_handle
     sessions.append(session)
     _write_json(SESSIONS_PATH, sessions)
     return session
@@ -64,6 +76,12 @@ def end_session(game_id: str, reward_per_player: float = 0.0, token: str = "ASM"
         if session.get("game_id") == game_id and session.get("active"):
             session["active"] = False
             session["ended"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+            if session.get("stream"):
+                try:
+                    from .twitch_layer import end_stream
+                    end_stream(session["stream"])
+                except Exception:
+                    pass
             _write_json(SESSIONS_PATH, sessions)
             if reward_per_player > 0:
                 for player in session.get("players", []):

@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from .token_ops import send_token
+from .music_layer import attach_track_to_signal
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 SOCIAL_DIR = BASE_DIR / "logs" / "social"
@@ -214,6 +215,12 @@ def post_signal(
 def exchange_signal(sender: str, recipient: str, signal: str) -> Dict:
     """Backward compatible wrapper for plain text signals."""
     return post_signal(sender, recipient, "general", "neutral", signal)
+
+
+def share_track(sender: str, recipient: str, track_id: str) -> Dict:
+    """Share a music track and sync with the social feed."""
+    attach_track_to_signal(track_id, track_id)
+    return post_signal(sender, recipient, "music", "positive", track_id, track=track_id)
 
 
 # ---------------------------------------------------------------------------
