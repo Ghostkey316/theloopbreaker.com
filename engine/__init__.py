@@ -130,6 +130,12 @@ from .social_layer import (
     create_competition,
     record_result,
 )
+from .belief_graph import (
+    build_belief_graph,
+    graph_similarity,
+    match_users,
+    trust_metric,
+)
 
 __all__ = [
     "resolve_identity",
@@ -259,5 +265,9 @@ __all__ = [
     "exchange_signal",
     "create_competition",
     "record_result",
+    "build_belief_graph",
+    "graph_similarity",
+    "match_users",
+    "trust_metric",
 ]
 
