@@ -131,6 +131,12 @@ from .social_layer import (
     create_competition,
     record_result,
 )
+from .squad_layer import (
+    record_xp,
+    issue_squad_quest,
+    complete_squad_quest,
+    squad_multiplier,
+)
 from .belief_graph import (
     build_belief_graph,
     graph_similarity,
@@ -271,5 +277,9 @@ __all__ = [
     "graph_similarity",
     "match_users",
     "trust_metric",
+    "record_xp",
+    "issue_squad_quest",
+    "complete_squad_quest",
+    "squad_multiplier",
 ]
 
