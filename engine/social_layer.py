@@ -12,6 +12,7 @@ SOCIAL_DIR = BASE_DIR / "logs" / "social"
 SQUADS_PATH = SOCIAL_DIR / "squads.json"
 IDEAS_PATH = SOCIAL_DIR / "ideas.json"
 SIGNALS_PATH = SOCIAL_DIR / "signals.json"
+SCORECARD_PATH = BASE_DIR / "user_scorecard.json"
 COMPETE_PATH = SOCIAL_DIR / "competitions.json"
 
 
@@ -29,6 +30,13 @@ def _write_json(path: Path, data) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
         json.dump(data, f, indent=2)
+
+
+def _alignment_tier(user_id: str) -> int:
+    """Return alignment tier for ``user_id`` based on score."""
+    data = _load_json(SCORECARD_PATH, {})
+    score = data.get(user_id, {}).get("alignment_score", 0)
+    return 1 if score >= 200 else 0
 
 
 # ---------------------------------------------------------------------------
@@ -116,18 +124,37 @@ def vote_idea(idea_id: str, voter: str) -> bool:
 # Signals
 # ---------------------------------------------------------------------------
 
-def exchange_signal(sender: str, recipient: str, signal: str) -> Dict:
-    """Record a signal exchange from ``sender`` to ``recipient``."""
-    signals: List[Dict] = _load_json(SIGNALS_PATH, [])
+def post_signal(
+    sender: str,
+    recipient: str,
+    intent: str,
+    emotion: str,
+    belief: str,
+    mirror_prompt: Optional[str] = None,
+    loop: str = "believe",
+) -> Dict:
+    """Record a structured signal from ``sender`` to ``recipient``."""
+    signals: Dict[str, Dict[str, List[Dict]]] = _load_json(SIGNALS_PATH, {})
+    tier = _alignment_tier(sender)
     entry = {
         "from": sender,
         "to": recipient,
-        "signal": signal,
+        "intent": intent,
+        "emotion": emotion,
+        "belief": belief,
+        "mirror_prompt": mirror_prompt,
+        "loop": loop,
+        "tier": tier,
         "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
-    signals.append(entry)
+    signals.setdefault(loop, {}).setdefault(f"tier{tier}", []).append(entry)
     _write_json(SIGNALS_PATH, signals)
     return entry
+
+
+def exchange_signal(sender: str, recipient: str, signal: str) -> Dict:
+    """Backward compatible wrapper for plain text signals."""
+    return post_signal(sender, recipient, "general", "neutral", signal)
 
 
 # ---------------------------------------------------------------------------
@@ -192,7 +219,11 @@ if __name__ == "__main__":
     p_signal = sub.add_parser("signal")
     p_signal.add_argument("sender")
     p_signal.add_argument("recipient")
-    p_signal.add_argument("text")
+    p_signal.add_argument("intent")
+    p_signal.add_argument("emotion")
+    p_signal.add_argument("belief")
+    p_signal.add_argument("--mirror")
+    p_signal.add_argument("--loop", default="believe")
 
     p_comp = sub.add_parser("comp")
     p_comp.add_argument("comp_id")
@@ -216,7 +247,20 @@ if __name__ == "__main__":
     elif args.cmd == "vote":
         vote_idea(args.idea_id, args.voter)
     elif args.cmd == "signal":
-        print(json.dumps(exchange_signal(args.sender, args.recipient, args.text), indent=2))
+        print(
+            json.dumps(
+                post_signal(
+                    args.sender,
+                    args.recipient,
+                    args.intent,
+                    args.emotion,
+                    args.belief,
+                    args.mirror,
+                    args.loop,
+                ),
+                indent=2,
+            )
+        )
     elif args.cmd == "comp":
         meta = json.loads(args.meta) if args.meta else None
         print(json.dumps(create_competition(args.comp_id, args.participants, meta), indent=2))
