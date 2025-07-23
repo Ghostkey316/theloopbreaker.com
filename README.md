@@ -473,6 +473,16 @@ python3 engine/vaultfire_credits.py ghostkey316
 The onboarding API exposes `/vaultfire_credits/<id>` to query these totals.
 
 
+## Earning Module
+`engine/earning_module.py` rewards contributors for meaningful engagement,
+microtask completion, idea contributions and building new layers. Rewards are
+sent to the contributor's resolved wallet and scaled by on-chain reputation.
+
+```python
+from engine.earning_module import reward_microtask
+reward_microtask("alice", "alice.eth", "task-1")
+```
+
 ## Design DNA
 The project includes a short guide in `docs/design_culture.md` detailing the 90s-inspired look and our ethics-first approach to branding. It also covers simple UX principles and how to write human messages throughout the interface.
 
