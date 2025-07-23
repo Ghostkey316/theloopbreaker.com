@@ -107,6 +107,12 @@ from .vaultlink import (
     record_interaction,
     fetch_state as fetch_vaultlink_state,
 )
+from .wellness_companion import (
+    log_journal_entry,
+    mood_checkin,
+    reflection_prompt,
+    coping_suggestions,
+)
 from .immutable_log import append_entry as log_immutable
 from .earning_module import (
     reward_engagement,
@@ -226,6 +232,10 @@ __all__ = [
     "onboard_companion",
     "record_interaction",
     "fetch_vaultlink_state",
+    "log_journal_entry",
+    "mood_checkin",
+    "reflection_prompt",
+    "coping_suggestions",
     "reward_engagement",
     "reward_microtask",
     "reward_idea",
