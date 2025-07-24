@@ -5,6 +5,17 @@ from flask import Flask, request, jsonify
 from simulate_partner_activation import simulate_activation, ALIGNMENT_PHRASE
 from engine.ens_sync_status import read_sync_status
 from engine.case_studies import submit_case_study, list_case_studies
+from partner_modules import (
+    get_audit_logs,
+    record_audit_log,
+    export_dashboard_csv,
+    calculate_partner_share,
+    payout_revenue,
+    launch_sandbox,
+    generate_openapi,
+    set_theme,
+    preview_theme,
+)
 
 app = Flask(__name__)
 BASE_DIR = Path(__file__).resolve().parent
@@ -278,6 +289,59 @@ def ens_sync_status_route():
 @app.get("/status")
 def status():
     return jsonify({"status": "ok"})
+
+
+@app.get("/partner/verifiability")
+def partner_verifiability():
+    """Return combined verifiability logs."""
+    logs = get_audit_logs(None)
+    return jsonify({"logs": logs})
+
+
+@app.post("/partner/revenue/preview")
+def partner_revenue_preview():
+    """Calculate revenue share for partner."""
+    data = request.get_json(silent=True) or {}
+    partner_id = data.get("partner_id")
+    amount = float(data.get("amount", 0))
+    if not partner_id:
+        return jsonify({"error": "partner_id required"}), 400
+    share = calculate_partner_share(partner_id, amount)
+    return jsonify({"share": share})
+
+
+@app.post("/partner/sandbox")
+def partner_sandbox():
+    """Launch a sandbox for partner."""
+    data = request.get_json(silent=True) or {}
+    partner_id = data.get("partner_id")
+    if not partner_id:
+        return jsonify({"error": "partner_id required"}), 400
+    entry = launch_sandbox(partner_id)
+    return jsonify(entry), 201
+
+
+@app.get("/partner/devkit/spec")
+def partner_devkit_spec():
+    """Return generated OpenAPI specification."""
+    spec = generate_openapi(app)
+    return jsonify(spec)
+
+
+@app.post("/partner/themeforge")
+def partner_themeforge():
+    """Set and preview partner theme."""
+    data = request.get_json(silent=True) or {}
+    partner_id = data.get("partner_id")
+    theme = data.get("theme", {})
+    if not partner_id:
+        return jsonify({"error": "partner_id required"}), 400
+    try:
+        set_theme(partner_id, theme)
+        record_audit_log({"partner_id": partner_id, "event": "theme_update"})
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify(preview_theme(partner_id))
 
 
 if __name__ == "__main__":
