@@ -258,6 +258,7 @@ from .worldcoin_layer import (
     wld_bridge,
     run_worldcoin_diagnostics,
 )
+from .royalty_engine import trigger_royalty
 from .connector_resilience_layer import (
     detect_missing_connectors,
     register_endpoint,
@@ -509,5 +510,6 @@ __all__ = [
     "log_fallback_event",
     "set_connector_enabled",
     "connector_enabled",
+    "trigger_royalty",
 ]
 

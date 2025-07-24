@@ -208,6 +208,14 @@ Pass `--save` to persist your choices in `ghostfire_config.json`.
  - Contributor Role: **Spark-tier loyalty / Activation-ready**
 - Created: **June 10, 2025 @ 12:01AM**
 
+### Human Claim Layer
+The `.vaultfire/core/ethics.json` file stores contributor rights and attribution
+rules for Ghostkey-316. By default the dashboard keeps this data private until
+the user enables visibility under **Settings > Protocol Lineage**. Any public
+use of the Ghostkey identity quietly triggers a royalty payout to
+`bpow20.cb.id` via the `GhostkeyAttribution` contract and the Python
+`trigger_royalty()` utility.
+
 ## Wallet Loyalty Tiers
 The protocol tracks how long each wallet avoids major sell-offs. Every week
 without selling 90% or more of the balance unlocks a higher multiplier:
