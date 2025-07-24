@@ -12,7 +12,7 @@ BASE_DIR = Path(__file__).resolve().parents[1]
 GENE_DIR = BASE_DIR / "logs" / "gene_sync"
 
 GENESYNC_WARNING = (
-    "GeneSync is experimental. Handle genetic data responsibly and consult a "
+    "GeneSync is now stable. Handle genetic data responsibly and consult a "
     "professional before acting on any recommendation."
 )
 

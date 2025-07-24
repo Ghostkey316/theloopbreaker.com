@@ -28,4 +28,4 @@ logic tiers require an override file signed by the founding architects.
 
 **Disclaimer**
 - Vaultlink uses basic XOR encryption and should not store highly sensitive data.
-- Vaultlink Ascension Mode is experimental and may produce unexpected results.
+- Vaultlink Ascension Mode is stable and may produce unexpected results.

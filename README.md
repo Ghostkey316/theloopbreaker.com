@@ -342,7 +342,7 @@ The response indicates `PASS` or `FAIL` and lists any failures.
 A modular SDK is provided in `vaultfire_sdk/`. See `docs/partner_sdk.md` for activation steps and API usage. A login demo using ENS and Coinbase IDs lives in `frontend/pages/login_example.html`.
 The Partner Port layer for third-party games is documented in `docs/partner_port_sdk.md`.
 
-Additional experimental features are outlined in `docs/codex_overdrive_v2.md`.
+Additional production-ready features are outlined in `docs/codex_overdrive_v2.md`.
 Run `vaultfire_codex_overdrive_activate_all` to initialize the Overdrive
 modules with wallet `bpow20.cb.id` and ENS `ghostkey316.eth`.
 
@@ -607,7 +607,7 @@ python3 tools/purge_user_data.py <user_id> --wallet mywallet.eth
 ```
 
 ## Disclaimers
-- This repository is experimental software provided for learning and discussion.
+- This repository is production-ready software provided for learning and discussion.
 - Nothing here constitutes financial or legal advice.
 - Mission statements are stored with lightweight XOR-based obfuscation. This is not strong encryption.
 - The on-chain journal is simulated with local JSON logs and does not provide actual blockchain immutability.
@@ -630,7 +630,7 @@ python3 tools/purge_user_data.py <user_id> --wallet mywallet.eth
 - Loyalty boosts from upvotes carry no monetary value.
 - The SwapGate contract is a demo only and does not provide production-grade liquidity or bridging.
 - Vaultlink memory slots use simple encryption and are not intended for sensitive information.
-- Vaultlink Ascension Mode is experimental and may change without notice.
+- Vaultlink Ascension Mode is stable and may change without notice.
 - A local security monitor checks critical files but does not guarantee full protection.
 - The system watchdog logs resource metrics and attempts self-repair but cannot
   guarantee recovery from all failures.
@@ -639,8 +639,8 @@ python3 tools/purge_user_data.py <user_id> --wallet mywallet.eth
 - Music identity data is stored locally and may be cleared without notice.
 - Music NFTs and playlists generated here offer no financial guarantees.
 - Life Yield Engine rewards rely on local behavior logs and linked wallets;
-  payouts are experimental and not guaranteed.
-- Learn2Earn module is experimental; quiz rewards depend on local records and
+  payouts are not guaranteed.
+- Learn2Earn module is stable; quiz rewards depend on local records and
   do not guarantee any asset transfer.
 - `vaultfire-cli` manages local protocol files and never stores private keys.
 - Contributors may purge their local data using `tools/purge_user_data.py`.

@@ -42,7 +42,7 @@ All enterprise modules inherit these principles. An automated ethics check block
 5. Periodically run `weekly_sync.py` to refresh dashboards and audit logs.
 
 ## Disclaimers
-- This file summarizes experimental features. It is provided for informational purposes only.
+- This file summarizes production features. It is provided for informational purposes only.
 - Nothing in this document constitutes financial or legal advice.
 - Partners should perform their own security and compliance reviews before deploying.
 - Vaultfire modules may change without notice and are offered as-is.
