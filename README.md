@@ -579,6 +579,15 @@ each contributor's chosen life path. Open `frontend/pages/global_path_atlas.html
 in a browser to visualize how participants align around common purpose arcs and
 connect with peers to co-build missions.
 
+## Activation Checklist
+Run these steps to verify your local instance is ready for partner plugins:
+
+1. `python3 system_integrity_check.py` – confirm ethics and configuration files.
+2. `python3 vaultfire_system_ready.py --partner-mode <wallet>` – generate a partner fork and write `vaultfire_ready.flag`.
+3. `node vaultfire_partner_onboard.js demo <wallet> "Morals Before Metrics."` – test the CLI onboarding flow.
+
+If all commands succeed without errors, the protocol is ready for activation.
+
 ## Security Monitor
 Run `python3 security_monitor.py --set-baseline` once to record baseline file hashes.
 Future runs will detect changes and restore originals if needed using `--repair`.

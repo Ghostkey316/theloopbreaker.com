@@ -22,4 +22,8 @@ These instructions are intentionally modular to allow new roles or clauses to be
 - Ambient data gathering requires opt-in consent from participants.
 - No module in this repo offers medical or legal advice.
 - System logs may store limited personal data for reflective analysis.
+- Partnerships are experimental and integration examples may not work in
+  production.
+- Plugin support is provided as-is with no guarantee of compatibility or
+  continued maintenance.
 
