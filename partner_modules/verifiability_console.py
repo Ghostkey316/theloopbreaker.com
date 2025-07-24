@@ -7,7 +7,10 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-import psutil
+try:
+    import psutil  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    psutil = None
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 LOG_DIR = BASE_DIR / "logs"
@@ -69,7 +72,10 @@ def log_bug_check(module: str, passed: bool, notes: str = "") -> None:
 
 def uptime_status() -> dict:
     """Return system uptime in seconds."""
-    uptime = int(datetime.utcnow().timestamp() - psutil.boot_time())
+    if psutil is not None:
+        uptime = int(datetime.utcnow().timestamp() - psutil.boot_time())
+    else:
+        uptime = 0
     status = {"uptime_seconds": uptime}
     _write_json(UPTIME_PATH, status)
     return status
