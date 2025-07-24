@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from flask import Flask
+try:
+    from flask import Flask
+except Exception:  # pragma: no cover - optional dependency
+    Flask = None  # type: ignore
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 DOCS_PATH = BASE_DIR / "docs" / "openapi.json"
@@ -13,6 +16,8 @@ SDK_DIR = BASE_DIR / "partner_modules" / "sdk"
 
 def generate_openapi(app: Flask) -> dict:
     """Generate a minimal OpenAPI spec from Flask routes."""
+    if Flask is None:
+        raise RuntimeError("Flask not available")
     spec = {"openapi": "3.0.0", "info": {"title": "Vaultfire API", "version": "1.0"}, "paths": {}}
     for rule in app.url_map.iter_rules():
         if rule.endpoint == "static":
