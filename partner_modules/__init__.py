@@ -22,6 +22,29 @@ from .sandbox_launcher import (
 )
 from .devkit import generate_openapi, sdk_stub_paths
 from .themeforge import set_theme, preview_theme
+from .legal_compliance import (
+    view_contract,
+    generate_terms,
+    generate_privacy_policy,
+    set_region,
+    region_mode,
+    content_allowed,
+)
+from .multi_identity import (
+    link_wallet,
+    assign_handle,
+    add_tag,
+    identity_cluster,
+    cluster_analytics,
+)
+from .dynamic_kpi import record_event as record_kpi_event, generate_dashboard
+from .partner_demo import (
+    start_demo,
+    simulate_activity,
+    walkthrough_steps,
+    cleanup_expired as cleanup_demos,
+)
+from .addon_config import set_addon_enabled, addon_enabled
 
 __all__ = [
     "record_audit_log",
@@ -42,4 +65,23 @@ __all__ = [
     "sdk_stub_paths",
     "set_theme",
     "preview_theme",
+    "view_contract",
+    "generate_terms",
+    "generate_privacy_policy",
+    "set_region",
+    "region_mode",
+    "content_allowed",
+    "link_wallet",
+    "assign_handle",
+    "add_tag",
+    "identity_cluster",
+    "cluster_analytics",
+    "record_kpi_event",
+    "generate_dashboard",
+    "start_demo",
+    "simulate_activity",
+    "walkthrough_steps",
+    "cleanup_demos",
+    "set_addon_enabled",
+    "addon_enabled",
 ]

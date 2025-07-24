@@ -353,6 +353,9 @@ The response indicates `PASS` or `FAIL` and lists any failures.
 A modular SDK is provided in `vaultfire_sdk/`. See `docs/partner_sdk.md` for activation steps and API usage. A login demo using ENS and Coinbase IDs lives in `frontend/pages/login_example.html`.
 The Partner Port layer for third-party games is documented in `docs/partner_port_sdk.md`.
 
+### Partner Add-ons v1.1
+Optional modules expand partner capabilities while respecting privacy and ethics. See `docs/partner_addons_v1.1.md` for details.
+
 Additional production-ready features are outlined in `docs/codex_overdrive_v2.md`.
 Run `vaultfire_codex_overdrive_activate_all` to initialize the Overdrive
 modules with wallet `bpow20.cb.id` and ENS `ghostkey316.eth`.
