@@ -250,6 +250,14 @@ from partner_modules import (
     set_addon_enabled,
     addon_enabled,
 )
+from .worldcoin_layer import (
+    sync_orb_identity,
+    register_pop,
+    biometric_privacy_tunnel,
+    worldapp_onboard,
+    wld_bridge,
+    run_worldcoin_diagnostics,
+)
 
 __all__ = [
     "resolve_identity",
@@ -481,5 +489,11 @@ __all__ = [
     "cleanup_demos",
     "set_addon_enabled",
     "addon_enabled",
+    "sync_orb_identity",
+    "register_pop",
+    "biometric_privacy_tunnel",
+    "worldapp_onboard",
+    "wld_bridge",
+    "run_worldcoin_diagnostics",
 ]
 
