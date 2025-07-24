@@ -219,6 +219,7 @@ Configuration is defined in `vaultfire_config.json`, marketplace settings in
 `ghostkey_values.json`. Modules under `monetization/` and `ethics/` ensure all
 partnerships align with Ghostkey Alignment Code v2.0 and the Ghostkey Ethics
 Framework v1.0.
+Enterprise partners can consult `docs/enterprise_protocol.md` for integration guidance.
 
 ## Global Sync Pulse
 Run the sync pulse to refresh all dashboards. `users.json` should contain a JSON
