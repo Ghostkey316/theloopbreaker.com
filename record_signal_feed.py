@@ -3,10 +3,11 @@
 
 import json
 import os
+import asyncio
 from datetime import datetime
 from pathlib import Path
 
-from engine.noise_filter import filter_feed
+from engine.noise_filter import filter_feed_async
 
 BASE_DIR = Path(__file__).resolve().parent
 FEED_PATH = BASE_DIR / "dashboards" / "signal_feed.json"
@@ -34,7 +35,7 @@ def update_signal_feed(entry: dict, *, run_filter: bool = True) -> dict:
     log.append(entry_with_time)
     _write_json(FEED_PATH, log)
     if run_filter:
-        filter_feed()
+        asyncio.run(filter_feed_async())
     return entry_with_time
 
 

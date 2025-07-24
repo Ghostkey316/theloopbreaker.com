@@ -311,6 +311,18 @@ python3 engine/alignment_feedback.py --user alice --decision chat42 --rating 5 \
     --comment "Handled my request respectfully"
 ```
 
+## Signal Shield (AI Quality Layer)
+Vaultfire now includes an asynchronous filter called the **Signal Shield**. It
+categorizes every signal into one of five groups — `signal`, `contribution`,
+`surface`, `noise` and `malicious`. Signals from high-trust contributors bypass
+standard thresholds while low-value or toxic posts are suppressed. The
+suppressed feed can be reviewed with *Ghostkey Vision* for governance tuning.
+Run the filter manually:
+
+```bash
+python3 engine/noise_filter.py
+```
+
 ## Onboarding API
 New Flask endpoints allow onboarding partners, contributors, and earners.
 Run the server:
