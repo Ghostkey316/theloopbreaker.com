@@ -1,0 +1,14 @@
+{
+  "decouple_all": true,
+  "onioncloak": true,
+  "zkproof": true,
+  "ghostmode": true,
+  "hide_ens": true,
+  "hide_wallet": true,
+  "alias_refresh": false,
+  "authorize": false,
+  "integrity_check": true,
+  "vaultsecure": true,
+  "burntrail": false,
+  "reveal": false
+}

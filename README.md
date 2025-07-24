@@ -174,6 +174,17 @@ python3 build_cli_bundle.py --output vf_cli.zip --include live_training,immutabl
 ```
 
 
+## Ghostfire Shield v1.0
+The privacy layer defaults to full stealth. Run an integrity scan:
+
+```bash
+python3 ghostfire_shield.py --integrity-check
+```
+
+Toggle modules with flags like `--decouple-all`, `--onioncloak`, `--zkproof` and `--ghostmode`.
+Pass `--save` to persist your choices in `ghostfire_config.json`.
+
+
 ## Identity
 - Architect: **ghostkey316.eth**
 - Wallet: **bpow20.cb.id**
