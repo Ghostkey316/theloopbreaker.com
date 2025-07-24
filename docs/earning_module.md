@@ -12,4 +12,4 @@ reward_engagement("alice", "alice.eth", score=2.5)
 
 **Disclaimers**
 - Rewards are recorded locally in `logs/earning_log.json` and may be purged.
-- On-chain scores come from an experimental oracle and may be inaccurate.
+- On-chain scores come from a stable oracle and may be inaccurate.
