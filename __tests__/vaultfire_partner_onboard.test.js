@@ -36,7 +36,9 @@ beforeEach(() => {
 
 test('resolveIdentity validates ENS and cb.id addresses', () => {
   expect(resolveIdentity('ghostkey316.eth')).toBe('0x9abCDEF1234567890abcdefABCDEF1234567890');
+  expect(resolveIdentity('GhostKey316.ETH')).toBe('0x9abCDEF1234567890abcdefABCDEF1234567890');
   expect(resolveIdentity('bpow20.cb.id')).toBe('cb1qexampleaddress0000000000000000000000');
+  expect(resolveIdentity('BPOW20.CB.ID')).toBe('cb1qexampleaddress0000000000000000000000');
   expect(resolveIdentity('unknown.eth')).toBeNull();
 });
 

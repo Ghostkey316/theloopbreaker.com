@@ -15,11 +15,12 @@ const CB_ID_MAP = {
 };
 
 function resolveIdentity(identifier) {
-  if (identifier.endsWith('.eth')) {
-    return ENS_MAP[identifier.toLowerCase()] || null;
+  const id = identifier.toLowerCase();
+  if (id.endsWith('.eth')) {
+    return ENS_MAP[id] || null;
   }
-  if (identifier.endsWith('.cb.id')) {
-    return CB_ID_MAP[identifier.toLowerCase()] || null;
+  if (id.endsWith('.cb.id')) {
+    return CB_ID_MAP[id] || null;
   }
   return null;
 }

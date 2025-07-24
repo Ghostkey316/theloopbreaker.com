@@ -28,8 +28,9 @@ def resolve_cb_id(name: str) -> Optional[str]:
 
 def resolve_identity(identifier: str) -> Optional[str]:
     """Resolve ``identifier`` to a wallet address."""
-    if identifier.endswith(".eth"):
-        return resolve_ens(identifier)
-    if identifier.endswith(".cb.id"):
-        return resolve_cb_id(identifier)
+    ident = identifier.lower()
+    if ident.endswith(".eth"):
+        return resolve_ens(ident)
+    if ident.endswith(".cb.id"):
+        return resolve_cb_id(ident)
     return None
