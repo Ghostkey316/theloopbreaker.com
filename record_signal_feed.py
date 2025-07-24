@@ -6,6 +6,8 @@ import os
 from datetime import datetime
 from pathlib import Path
 
+from engine.noise_filter import filter_feed
+
 BASE_DIR = Path(__file__).resolve().parent
 FEED_PATH = BASE_DIR / "dashboards" / "signal_feed.json"
 
@@ -26,11 +28,13 @@ def _write_json(path: Path, data) -> None:
         json.dump(data, f, indent=2)
 
 
-def update_signal_feed(entry: dict) -> dict:
+def update_signal_feed(entry: dict, *, run_filter: bool = True) -> dict:
     log = _load_json(FEED_PATH, [])
     entry_with_time = {"timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"), **entry}
     log.append(entry_with_time)
     _write_json(FEED_PATH, log)
+    if run_filter:
+        filter_feed()
     return entry_with_time
 
 
