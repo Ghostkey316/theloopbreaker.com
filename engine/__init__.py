@@ -258,6 +258,14 @@ from .worldcoin_layer import (
     wld_bridge,
     run_worldcoin_diagnostics,
 )
+from .connector_resilience_layer import (
+    detect_missing_connectors,
+    register_endpoint,
+    manual_sync,
+    log_fallback_event,
+    set_connector_enabled,
+    connector_enabled,
+)
 
 __all__ = [
     "resolve_identity",
@@ -495,5 +503,11 @@ __all__ = [
     "worldapp_onboard",
     "wld_bridge",
     "run_worldcoin_diagnostics",
+    "detect_missing_connectors",
+    "register_endpoint",
+    "manual_sync",
+    "log_fallback_event",
+    "set_connector_enabled",
+    "connector_enabled",
 ]
 

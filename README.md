@@ -173,6 +173,23 @@ For a smaller archive that includes only selected modules, use
 python3 build_cli_bundle.py --output vf_cli.zip --include live_training,immutable_log
 ```
 
+### Connector Resilience Layer
+Use the new fallback module when native connectors are unavailable. Check the current status or run a manual sync from the CLI:
+
+```bash
+python3 vaultfire_cli.py check-connectors
+python3 vaultfire_cli.py register-endpoint openai https://my.fallback/api
+python3 vaultfire_cli.py manual-sync openai payload.json --signature SIG --source demo
+```
+
+Toggle a connector on or off at any time:
+
+```bash
+python3 vaultfire_cli.py toggle-connector openai --disable
+```
+
+The Connector Resilience Layer validates payload format, source, and signature while respecting all existing encryption rules. It is built with future Worldcoin integrations in mind.
+
 
 ## Ghostfire Shield v1.0
 The privacy layer defaults to full stealth. Run an integrity scan:
