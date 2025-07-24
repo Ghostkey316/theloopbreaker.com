@@ -588,6 +588,14 @@ Run `python3 system_watchdog.py` to continuously log CPU, memory, and disk usage
 while also checking the security baseline. Use `--no-repair` to disable automatic
 restoration when corruption is detected.
 
+## Data Removal
+Participants may request deletion of their local records. Use
+`purge_user_data.py` to wipe references from common logs:
+
+```bash
+python3 tools/purge_user_data.py <user_id> --wallet mywallet.eth
+```
+
 ## Disclaimers
 - This repository is experimental software provided for learning and discussion.
 - Nothing here constitutes financial or legal advice.
@@ -625,3 +633,4 @@ restoration when corruption is detected.
 - Learn2Earn module is experimental; quiz rewards depend on local records and
   do not guarantee any asset transfer.
 - `vaultfire-cli` manages local protocol files and never stores private keys.
+- Contributors may purge their local data using `tools/purge_user_data.py`.
