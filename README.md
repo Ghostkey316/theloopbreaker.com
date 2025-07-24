@@ -662,3 +662,4 @@ python3 tools/purge_user_data.py <user_id> --wallet mywallet.eth
 - Partners are responsible for their own compliance review before activating these modules.
 - Vaultfire modules may change without notice and are provided as-is.
 - Plugin support is provided as-is with no guarantee of compatibility or continued maintenance.
+\n## Final Modules\nVaultfire v1.0 introduces companion APIs, brand tools, on-chain audits, a failsafe recovery layer, and a proof-of-alignment badge system. These modules round out partner onboarding and ecosystem readiness.

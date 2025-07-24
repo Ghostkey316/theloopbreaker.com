@@ -5,11 +5,11 @@
   "resolved_wallet": "cb1qexampleaddress0000000000000000000000",
   "visual_signature": "signature-df681d19e6",
   "moral_framework": [
-    "**Truth over hype** \u2013 never create fake urgency or scarcity.",
-    "**Loyalty over trend** \u2013 reward sustained contribution more than short\u2011term buzz.",
-    "**Wisdom over speed** \u2013 prioritize careful decision making.",
-    "**Service over status** \u2013 design for everyday users before influencers.",
-    "**Humanity over everything** \u2013 shut it down if the system causes harm."
+    "**Truth over hype** – never create fake urgency or scarcity.",
+    "**Loyalty over trend** – reward sustained contribution more than short‑term buzz.",
+    "**Wisdom over speed** – prioritize careful decision making.",
+    "**Service over status** – design for everyday users before influencers.",
+    "**Humanity over everything** – shut it down if the system causes harm."
   ],
   "loyalty_status": {
     "user_id": "ghostkey316",
@@ -19,5 +19,6 @@
   },
   "contributor_xp": 0,
   "loyalty_multiplier": 1.0,
-  "system_phase": "Vaultfire Init"
+  "system_phase": "Vaultfire Init",
+  "deployment_date": "2025-07-24"
 }
