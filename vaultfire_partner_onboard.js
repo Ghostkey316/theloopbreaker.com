@@ -16,6 +16,9 @@ const CB_ID_MAP = {
 
 function resolveIdentity(identifier) {
   const id = identifier.toLowerCase();
+  if (/^0x[a-f0-9]{40}$/.test(id)) {
+    return id;
+  }
   if (id.endsWith('.eth')) {
     return ENS_MAP[id] || null;
   }

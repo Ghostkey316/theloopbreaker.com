@@ -40,6 +40,7 @@ test('resolveIdentity validates ENS and cb.id addresses', () => {
   expect(resolveIdentity('bpow20.cb.id')).toBe('cb1qexampleaddress0000000000000000000000');
   expect(resolveIdentity('BPOW20.CB.ID')).toBe('cb1qexampleaddress0000000000000000000000');
   expect(resolveIdentity('unknown.eth')).toBeNull();
+  expect(resolveIdentity('0x000000000000000000000000000000000000dead')).toBe('0x000000000000000000000000000000000000dead');
 });
 
 test('ethicsEnabled reads config flag', () => {
