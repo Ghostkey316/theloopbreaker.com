@@ -26,6 +26,7 @@ except Exception:  # pragma: no cover - optional core
 from vaultfire_fork_v2 import encrypt_data  # type: ignore
 from engine.proof_of_loyalty import record_belief_action
 from engine.loyalty_engine import loyalty_enhanced_score
+import ghostseat
 
 
 TEAM_MAP_PATH = Path("team_fan_map.json")
@@ -39,6 +40,11 @@ SHOUTCAST_LOG_PATH = Path("fan_shoutcast_log.json")
 CLIP_LOG_PATH = Path("vaultfire_clip_registry.json")
 NFT_MAP_PATH = Path("sports_nft_map.json")
 ATHLETE_NODE_PATH = Path("athlete_node_log.json")
+WATCH_LOG_PATH = Path("fan_watch_log.csv")
+GHOSTSEAT_REGISTRY_PATH = ghostseat.GHOSTSEAT_REGISTRY_PATH
+GHOSTSEAT_REACT_LOG_PATH = ghostseat.GHOSTSEAT_REACT_LOG_PATH
+GAME_BOND_TRACKER_PATH = ghostseat.GAME_BOND_TRACKER_PATH
+FAN_CRED_LOG_PATH = Path("fan_cred_log.csv")
 
 SANDBOX = False
 TESTMODE = False
@@ -78,6 +84,15 @@ def _append_csv(path: Path, row: List[str], header: List[str]) -> None:
         if not exists:
             writer.writerow(header)
         writer.writerow(row)
+
+
+def add_cred(identity: str, action: str, value: int, detail: str) -> None:
+    """Append a fan cred entry."""
+    _append_csv(
+        FAN_CRED_LOG_PATH,
+        [datetime.utcnow().isoformat(), identity, action, str(value), detail],
+        ["timestamp", "identity", "action", "value", "detail"],
+    )
 
 
 def _sync_schedule(team: str, fallback: str | None = None) -> Dict:
@@ -236,6 +251,72 @@ def cmd_clip(args: argparse.Namespace) -> None:
     print("Clip archived")
 
 
+def cmd_watch_mode(args: argparse.Namespace) -> None:
+    """Log game watch-mode session and assign Ghostseat."""
+    mode = ""
+    if args.stadium:
+        mode = "stadium"
+    elif args.home_tv:
+        mode = "home-tv"
+    elif args.vr_stream:
+        mode = "vr-stream"
+    else:
+        print("Select a watch mode flag")
+        return
+
+    seat_id = ghostseat.assign_seat(args.identity, args.team)
+    duration = input("Duration minutes (optional): ").strip()
+    outcome = input("Game outcome: ").strip()
+    full_game = input("Watched full game? (y/n): ").strip().lower().startswith("y")
+    prediction_correct = input("Prediction correct? (y/n): ").strip().lower().startswith("y")
+
+    row = [
+        args.identity,
+        mode,
+        args.team,
+        datetime.utcnow().isoformat(),
+        duration,
+        outcome,
+    ]
+    _append_csv(
+        WATCH_LOG_PATH,
+        row,
+        ["identity", "mode", "team", "timestamp", "duration", "outcome"],
+    )
+
+    if full_game and outcome.lower() == "win":
+        add_cred(args.identity, "i_was_there", 20, args.team)
+        if args.nft_mode:
+            reg = _load_json(GHOSTSEAT_REGISTRY_PATH, {})
+            for e in reg.get(args.identity, []):
+                if e.get("seat_id") == seat_id:
+                    e["nft_badge"] = True
+            _write_json(GHOSTSEAT_REGISTRY_PATH, reg)
+
+    if prediction_correct:
+        from engine.loyalty_multiplier import loyalty_multiplier
+
+        mult = loyalty_multiplier(args.identity)
+        ghostseat.record_bond(args.identity, args.team, outcome)
+        print(f"Vaultfire multiplier: {mult}")
+
+    print(f"Ghostseat ID assigned: {seat_id}")
+
+
+def cmd_cheer(args: argparse.Namespace) -> None:
+    message = args.message or input("Cheer: ").strip()
+    ghostseat.log_reaction(args.identity, args.seat_id, message)
+    record_belief_action(args.identity, args.identity, message)
+    print("Cheer recorded")
+
+
+def cmd_react(args: argparse.Namespace) -> None:
+    reaction = args.reaction or input("Reaction: ").strip()
+    ghostseat.log_reaction(args.identity, args.seat_id, reaction)
+    record_belief_action(args.identity, args.identity, reaction)
+    print("Reaction logged")
+
+
 def cmd_signal_athlete(args: argparse.Namespace) -> None:
     log: List[Dict[str, Any]] = _load_json(ATHLETE_NODE_PATH, [])
     entry = {
@@ -329,6 +410,27 @@ def main(argv: List[str] | None = None) -> int:
     p_clip.add_argument("link")
     p_clip.add_argument("--sentiment", default="")
     p_clip.set_defaults(func=cmd_clip)
+
+    p_watch = sub.add_parser("watch-mode", help="Log watch mode attendance")
+    p_watch.add_argument("identity")
+    p_watch.add_argument("team")
+    p_watch.add_argument("--stadium", action="store_true")
+    p_watch.add_argument("--home-tv", action="store_true")
+    p_watch.add_argument("--vr-stream", action="store_true")
+    p_watch.add_argument("--nft-mode", action="store_true")
+    p_watch.set_defaults(func=cmd_watch_mode)
+
+    p_cheer = sub.add_parser("cheer", help="Cheer during watch mode")
+    p_cheer.add_argument("identity")
+    p_cheer.add_argument("seat_id")
+    p_cheer.add_argument("--message")
+    p_cheer.set_defaults(func=cmd_cheer)
+
+    p_react = sub.add_parser("react", help="React to game event")
+    p_react.add_argument("identity")
+    p_react.add_argument("seat_id")
+    p_react.add_argument("--reaction")
+    p_react.set_defaults(func=cmd_react)
 
     p_signal = sub.add_parser("signal-athlete", help="Send athlete message")
     p_signal.add_argument("identity")
