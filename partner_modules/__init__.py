@@ -1,4 +1,7 @@
-"""Partner onboarding modules."""
+"""Partner onboarding modules with optional plugin support."""
+
+from importlib import import_module
+from pathlib import Path
 
 from .verifiability_console import (
     record_audit_log,
@@ -85,3 +88,19 @@ __all__ = [
     "set_addon_enabled",
     "addon_enabled",
 ]
+
+# -----------------------------------------------------
+# Optional partner plugins
+# -----------------------------------------------------
+PLUGIN_DIR = Path(__file__).resolve().parents[1] / "partner_plugins"
+if PLUGIN_DIR.exists():
+    for path in PLUGIN_DIR.glob("*.py"):
+        if path.stem == "__init__":
+            continue
+        try:
+            mod = import_module(f"partner_plugins.{path.stem}")
+            for name in getattr(mod, "__all__", []):
+                globals()[name] = getattr(mod, name)
+                __all__.append(name)
+        except Exception:
+            continue

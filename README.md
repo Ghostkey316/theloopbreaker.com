@@ -620,6 +620,22 @@ Run these steps to verify your local instance is ready for partner plugins:
 
 If all commands succeed without errors, the protocol is ready for activation.
 
+## Public Partner Plug-in Interface
+Partner integrations can extend Vaultfire without modifying core files. Place
+modules in the new `partner_plugins` directory and they will load automatically
+alongside built-in partner modules. Default plugins provide optional helpers for
+OpenAI, Assemble AI, Worldcoin biometric sync and an ENS cloak toggle.
+
+Example usage:
+
+```python
+from partner_plugins import summarize_text, transcribe_audio, verify_worldcoin,
+    toggle_public_display
+
+print(summarize_text("Welcome to Vaultfire")['summary'])
+toggle_public_display(False)  # hide ENS and wallet by default
+```
+
 ## Security Monitor
 Run `python3 security_monitor.py --set-baseline` once to record baseline file hashes.
 Future runs will detect changes and restore originals if needed using `--repair`.
