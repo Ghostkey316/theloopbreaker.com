@@ -26,4 +26,7 @@ These instructions are intentionally modular to allow new roles or clauses to be
   production.
 - Plugin support is provided as-is with no guarantee of compatibility or
   continued maintenance.
+- Partners must perform their own compliance review before deploying.
+- Vaultfire modules may change without notice and are provided as-is.
+- Nothing in this repository constitutes financial advice.
 

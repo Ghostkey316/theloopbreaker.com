@@ -644,3 +644,7 @@ python3 tools/purge_user_data.py <user_id> --wallet mywallet.eth
   do not guarantee any asset transfer.
 - `vaultfire-cli` manages local protocol files and never stores private keys.
 - Contributors may purge their local data using `tools/purge_user_data.py`.
+- Ambient data gathering requires opt-in consent from participants.
+- Partners are responsible for their own compliance review before activating these modules.
+- Vaultfire modules may change without notice and are provided as-is.
+- Plugin support is provided as-is with no guarantee of compatibility or continued maintenance.
