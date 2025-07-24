@@ -267,6 +267,7 @@ from .connector_resilience_layer import (
     set_connector_enabled,
     connector_enabled,
 )
+from .noise_filter import filter_feed
 
 __all__ = [
     "resolve_identity",
@@ -511,5 +512,6 @@ __all__ = [
     "set_connector_enabled",
     "connector_enabled",
     "trigger_royalty",
+    "filter_feed",
 ]
 
