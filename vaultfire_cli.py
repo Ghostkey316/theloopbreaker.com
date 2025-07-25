@@ -141,6 +141,30 @@ def _encrypt_file(path: Path, key: str) -> Path:
     return enc_path
 
 
+def cmd_media(args: argparse.Namespace) -> None:
+    """Run media generation subcommands."""
+    from final_modules import vaultfire_media as vm
+
+    if args.image:
+        result = vm.generate_image(args.image, args.wallet)
+        print(json.dumps(result, indent=2))
+    elif args.voice:
+        text = vm.transcribe_audio(args.voice)
+        if args.respond:
+            output = {"response": vm.voice_response(text)}
+        elif args.visualize:
+            output = vm.generate_image(text, args.wallet)
+        else:
+            output = {"transcript": text}
+        print(json.dumps(output, indent=2))
+    elif args.video:
+        result = vm.analyze_video(args.video)
+        print(json.dumps(result, indent=2))
+    elif args.ai_avatar:
+        result = vm.build_avatar(args.wallet)
+        print(json.dumps(result, indent=2))
+
+
 def cmd_unlock_access(args: argparse.Namespace) -> None:
     """Verify NFT ownership and enable access hooks."""
     if Web3 is None:
@@ -209,6 +233,16 @@ def main(argv: list[str] | None = None) -> int:
     p_unlock.add_argument("abi", help="Path to contract ABI JSON")
     p_unlock.add_argument("wallet", help="Wallet address to check")
     p_unlock.set_defaults(func=cmd_unlock_access)
+
+    p_media = sub.add_parser("media", help="Vaultfire media tools")
+    p_media.add_argument("--wallet", default="bpow20.cb.id", help="Wallet")
+    p_media.add_argument("--image")
+    p_media.add_argument("--voice")
+    p_media.add_argument("--respond", action="store_true")
+    p_media.add_argument("--visualize", action="store_true")
+    p_media.add_argument("--video")
+    p_media.add_argument("--ai-avatar", action="store_true")
+    p_media.set_defaults(func=cmd_media)
 
     args = parser.parse_args(argv)
     args.func(args)
