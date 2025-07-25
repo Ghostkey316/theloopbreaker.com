@@ -7,6 +7,8 @@ Vaultfire Init is the reference implementation of the Ghostkey protocol. It prov
 - **Cure Locker** – stores community-sourced healing methods with vote logs
 - **Trust Engine** – records engagement and reputation in a transparent ledger
 - **Plugin Architecture** – drop-in modules for external services or custom tools
+- **Signal Fusion Engine** – merges local and partner signal vectors for replay
+- **Vault License Shell** – validates alignment state and overlay sync
 
 ## Repository Layout
 - `engine/` – core protocol logic such as signal processing and reward engines

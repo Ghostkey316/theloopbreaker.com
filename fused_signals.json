@@ -1,0 +1,22 @@
+[
+  {
+    "ghost_id": "g1",
+    "session_id": "s1",
+    "vector": [
+      0.333,
+      0,
+      0.667,
+      0
+    ]
+  },
+  {
+    "ghost_id": "g2",
+    "session_id": "s2",
+    "vector": [
+      0,
+      1,
+      0,
+      0
+    ]
+  }
+]
