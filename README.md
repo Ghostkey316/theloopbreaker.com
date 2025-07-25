@@ -395,6 +395,7 @@ The Partner Port layer for third-party games is documented in `docs/partner_port
 Optional modules expand partner capabilities while respecting privacy and ethics. See `docs/partner_addons_v1.1.md` for details.
 
 Additional production-ready features are outlined in `docs/codex_overdrive_v2.md`.
+Retail experiences can enable `docs/retail_revival_mode.md` for offline-friendly storytelling and loyalty syncing.
 Run `vaultfire_codex_overdrive_activate_all` to initialize the Overdrive
 modules with wallet `bpow20.cb.id` and ENS `ghostkey316.eth`.
 

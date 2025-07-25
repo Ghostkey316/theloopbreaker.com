@@ -5,6 +5,15 @@ from .brandkit_portal import generate_brandkit, register_partner_link
 from .smart_contract_audit import audit_contracts
 from .failsafe_recovery import request_recovery, privacy_wipe
 from .alignment_badge import issue_badge
+from .retail_revival_mode import (
+    set_retail_revival_enabled,
+    retail_revival_enabled,
+    offline_prompt,
+    nostalgia_overlay,
+    retail_story_snippet,
+    record_visit,
+    visit_history,
+)
 
 __all__ = [
     "companion_app",
@@ -14,4 +23,11 @@ __all__ = [
     "request_recovery",
     "privacy_wipe",
     "issue_badge",
+    "set_retail_revival_enabled",
+    "retail_revival_enabled",
+    "offline_prompt",
+    "nostalgia_overlay",
+    "retail_story_snippet",
+    "record_visit",
+    "visit_history",
 ]
