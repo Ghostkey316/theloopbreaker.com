@@ -10,5 +10,6 @@
   "integrity_check": true,
   "vaultsecure": true,
   "burntrail": false,
-  "reveal": false
+  "reveal": false,
+  "agent_feedback": true
 }

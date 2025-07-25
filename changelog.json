@@ -23,5 +23,10 @@
     "timestamp": "2025-07-25T02:16:21Z",
     "change": "vaultfire_module_retail_revival_v1",
     "update_block": "PENDING_PUSH"
+  },
+  {
+    "timestamp": "2025-07-25T23:27:29Z",
+    "change": "Vaultfire v1.4.1: Signal Compass emotional cue mapping and Code-of-You overlay",
+    "update_block": "PENDING_PUSH"
   }
 ]
