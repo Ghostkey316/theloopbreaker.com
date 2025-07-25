@@ -58,7 +58,16 @@ def _write_manifest(wallet: str, object_id: str, entry: Dict) -> None:
     manifest.write_text(json.dumps(data, indent=2))
 
 
-def create_object(prompt: str, fmt: str = "gltf", wallet: str = DEFAULT_WALLET) -> Dict:
+def create_object(
+    prompt: str,
+    fmt: str = "gltf",
+    wallet: str = DEFAULT_WALLET,
+    *,
+    tokenizable: bool = False,
+    watermark: bool = False,
+    timed_reveal: bool = False,
+    partner_lock: bool = False,
+) -> Dict:
     """Create a 3D model from ``prompt`` and record it in the manifest."""
     object_id = uuid.uuid4().hex[:8]
     belief_id = uuid.uuid4().hex[:12]
@@ -68,6 +77,8 @@ def create_object(prompt: str, fmt: str = "gltf", wallet: str = DEFAULT_WALLET) 
     model_path = obj_dir / f"model.{fmt}"
     model_path.write_bytes(data)
 
+    token = uuid.uuid4().hex if tokenizable else None
+
     record = {
         "belief_id": belief_id,
         "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -76,7 +87,13 @@ def create_object(prompt: str, fmt: str = "gltf", wallet: str = DEFAULT_WALLET) 
         "file": str(model_path.relative_to(BASE_DIR.parent)),
         "format": fmt,
         "prompt": prompt,
+        "tokenizable": tokenizable,
+        "watermark": watermark,
+        "timed_reveal": timed_reveal,
+        "partner_lock": partner_lock,
     }
+    if tokenizable:
+        record["token"] = token
     _write_manifest(wallet, object_id, record)
     return record
 
