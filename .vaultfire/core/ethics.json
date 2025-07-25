@@ -4,5 +4,8 @@
   "wallet": "bpow20.cb.id",
   "github": "github.com/Ghostkey316",
   "attribution_required": true,
-  "default_visibility": "private"
+  "default_visibility": "private",
+  "embedded_ethics": [
+    "vaultfire-core/ethics/eternal_compassion_truth_001.json"
+  ]
 }
