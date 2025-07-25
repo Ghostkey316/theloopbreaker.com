@@ -1,0 +1,23 @@
+{
+  "version": "vaultfire_v1.0.3",
+  "description": "Stable build with MirrorForge 3D output, belief_fork_customizer, and partner-level iframe/lock controls.",
+  "modules": [
+    "vaultfire_core",
+    "ns3_bridge_sync",
+    "ghostkey_ai_trader",
+    "mirrorforge",
+    "belief_fork_customizer",
+    "partner_plugins",
+    "web_mirror_viewer"
+  ],
+  "test_status": {
+    "python": "\u2705 all unit tests passed",
+    "js": "\ud83d\udfe1 fallback sim used (jest not installed)"
+  },
+  "forks_enabled": true,
+  "partner_mode": true,
+  "ghostkey_id": "ghostkey316.eth",
+  "wallet": "bpow20.cb.id",
+  "timestamp": "2025-07-25T13:01:00-04:00",
+  "checksum": "d11fcabf72d2eea2e77b6efb19a0990623edb377f5528c429d9024652f5eef28"
+}
