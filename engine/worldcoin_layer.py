@@ -15,7 +15,10 @@ from .contributor_identity import sync_identity, identity_summary
 from partner_modules.multi_identity import add_tag
 
 BASE_DIR = Path(__file__).resolve().parents[1]
+# persistent event log of worldcoin actions
 LOG_PATH = BASE_DIR / "logs" / "worldcoin_sync.json"
+# metadata store for worldcoin user information
+META_PATH = BASE_DIR / "logs" / "worldcoin_meta.json"
 
 
 def _load_json(path: Path, default):
@@ -53,11 +56,11 @@ def _log_event(user_id: str, event: str, extra: dict | None = None) -> None:
 
 def sync_orb_identity(user_id: str, world_id: str, verified: bool) -> dict:
     """Record Worldcoin Orb verification status and sync user metadata."""
-    data = _load_json(LOG_PATH, {})
+    data = _load_json(META_PATH, {})
     meta = data.get(user_id, {})
     meta.update({"world_id": world_id, "orb_verified": bool(verified)})
     data[user_id] = meta
-    _write_json(LOG_PATH, data)
+    _write_json(META_PATH, data)
     sync_identity(user_id, behaviors=["worldcoin_orb"])
     if verified:
         sync_identity(user_id, wallet=world_id)
@@ -108,7 +111,7 @@ def worldapp_onboard(user_id: str, locale: str, wallet: str, world_id: str) -> d
 
 def wld_bridge(user_id: str, amount: float, action: str) -> dict:
     """Record WLD token actions for contributions, voting, or tips."""
-    data = _load_json(LOG_PATH, {})
+    data = _load_json(META_PATH, {})
     meta = data.setdefault(user_id, {})
     history = meta.setdefault("wld_history", [])
     entry = {
@@ -119,14 +122,14 @@ def wld_bridge(user_id: str, amount: float, action: str) -> dict:
     history.append(entry)
     meta["wld_history"] = history
     data[user_id] = meta
-    _write_json(LOG_PATH, data)
+    _write_json(META_PATH, data)
     _log_event(user_id, "wld_bridge", {"action": action, "amount": amount})
     return {"user_id": user_id, "history": history}
 
 
 def run_worldcoin_diagnostics() -> dict:
     """Simple diagnostics ensuring no biometric payloads are stored."""
-    data = _load_json(LOG_PATH, {})
+    data = _load_json(META_PATH, {})
     issues = []
     for uid, meta in data.items():
         if "biometric" in json.dumps(meta):
