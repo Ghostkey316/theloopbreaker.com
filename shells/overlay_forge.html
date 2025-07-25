@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Overlay Forge</title>
+  <style>
+    body { font-family: sans-serif; padding: 1em; }
+    #status { margin-top: 1em; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>LocalForge Access Gateway</h1>
+  <div id="status">Loading...</div>
+  <script>
+    async function load(){
+      try{
+        const cfg = await fetch('../configs/vaultfire_config.json').then(r=>r.json());
+        const id = cfg.partner_id || 'unknown';
+        document.getElementById('status').textContent = 'LocalForge active for '+id;
+      }catch(e){
+        document.getElementById('status').textContent = 'Config missing';
+      }
+    }
+    load();
+  </script>
+</body>
+</html>
