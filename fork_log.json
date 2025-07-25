@@ -1,0 +1,9 @@
+[
+  {
+    "session_id": "s1",
+    "ghost_id": "g1",
+    "belief_fork_id": "fork1",
+    "choice": "A",
+    "timestamp": 1753478557764
+  }
+]
