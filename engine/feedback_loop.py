@@ -14,6 +14,8 @@ EVENT_LOG_PATH = BASE_DIR / "event_log.json"
 SCORECARD_PATH = BASE_DIR / "user_scorecard.json"
 AUDIT_PATH = BASE_DIR / "logs" / "feedback_audit.json"
 HEARTBEAT_PATH = BASE_DIR / "dashboards" / "ghostkey_heartbeat.json"
+CONFIG_PATH = BASE_DIR / "ghostfire_config.json"
+SIGNAL_COMPASS_PATH = BASE_DIR / "signal_compass.json"
 
 # Map user actions to score adjustments
 ACTION_VALUE_MAP = {
@@ -42,6 +44,32 @@ def _write_json(path, data):
         json.dump(data, f, indent=2)
 
 
+def _load_config():
+    return _load_json(CONFIG_PATH, {})
+
+
+CONFIG = _load_config()
+ENABLE_AGENT_FEEDBACK = CONFIG.get("agent_feedback", False)
+
+
+def _adjust_behavior(user_id: str) -> None:
+    if not ENABLE_AGENT_FEEDBACK:
+        return
+    compass = _load_json(SIGNAL_COMPASS_PATH, [])
+    vectors = [c["vector"] for c in compass if c.get("ghost_id") == user_id]
+    if not vectors:
+        return
+    avg = [sum(v[i] for v in vectors) / len(vectors) for i in range(4)]
+    scorecard = _load_json(SCORECARD_PATH, {})
+    metrics = scorecard.get(user_id, {"belief_level": 0, "loyalty": 0, "impact_score": 0})
+    if avg[2] - avg[1] > 0.2:
+        metrics["belief_level"] = metrics.get("belief_level", 0) + 1
+    if avg[3] > avg[0]:
+        metrics["loyalty"] = max(0, metrics.get("loyalty", 0) - 1)
+    scorecard[user_id] = metrics
+    _write_json(SCORECARD_PATH, scorecard)
+
+
 def track_behavior(event):
     """Record a single user event and update scorecard."""
     events = _load_json(EVENT_LOG_PATH, [])
@@ -67,6 +95,8 @@ def track_behavior(event):
 
     scorecard[uid] = user_scores
     _write_json(SCORECARD_PATH, scorecard)
+
+    _adjust_behavior(uid)
 
     _log_audit({"event": event, "signals": _signals_from_increment(increments), "score": user_scores})
 

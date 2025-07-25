@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Code of You</title>
+  <style>
+    body { background:#111; color:#0f0; font-family:monospace; margin:0; padding:10px; }
+    table { border-collapse:collapse; width:100%; }
+    th, td { border:1px solid #0f0; padding:4px; }
+  </style>
+</head>
+<body>
+  <h2>Identity Mirror</h2>
+  <table id="mirror">
+    <thead><tr><th>Agent</th><th>Traits</th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <script>
+    async function loadData(){
+      const mem = await fetch('memory_log.json').then(r=>r.json()).catch(()=>[]);
+      const scores = await fetch('user_scorecard.json').then(r=>r.json()).catch(()=>({}));
+      const signals = await fetch('signal_compass.json').then(r=>r.json()).catch(()=>[]);
+      const map = {};
+      mem.forEach(e=>{
+        map[e.ghost_id]=map[e.ghost_id]||{sessions:new Set()};
+        map[e.ghost_id].sessions.add(e.session_id);
+      });
+      const tbody=document.querySelector('#mirror tbody');
+      tbody.innerHTML='';
+      Object.keys(map).forEach(id=>{
+        const sc=scores[id]||{};
+        const sig=signals.find(s=>s.ghost_id===id);
+        const vec=sig?sig.vector:[0,0,0,0];
+        const traits=`score:${sc.contributor_score||0} | signal:${vec.join(',')}`;
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td>${id}</td><td>${traits}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+    loadData();
+  </script>
+</body>
+</html>

@@ -4,14 +4,21 @@
   <meta charset="UTF-8">
   <title>Observer Hub</title>
   <style>
-    body { background:#000; color:#0f0; font-family:monospace; }
+    body { background:#000; color:#0f0; font-family:monospace; margin-right:30%; }
     table { border-collapse: collapse; width:100%; }
     th, td { border:1px solid #0f0; padding:4px; }
     tr.high { background:#040; }
+    tr.belief { background:#060; }
+    tr.fractured { background:#600; }
+    #panel { position:fixed; right:0; top:0; bottom:0; width:30%; border-left:1px solid #0f0; }
   </style>
 </head>
 <body>
   <h1>Global Belief Map</h1>
+  <label><input type="checkbox" id="signalToggle"> Signal View</label>
+  <div id="panel">
+    <iframe src="code_of_you.html" style="width:100%;height:100%;border:none;"></iframe>
+  </div>
   <table id="forkTable">
     <thead><tr><th>Ghost</th><th>Fork</th><th>Alignment</th></tr></thead>
     <tbody></tbody>
@@ -20,9 +27,10 @@
     const ETHICS_WORDS = ['truth','loyalty','wisdom','service','humanity'];
     function vec(text){const t=text.toLowerCase().split(/[^a-z0-9]+/);return ETHICS_WORDS.map(w=>t.filter(x=>x===w).length);} 
     function cos(a,b){const dot=a.reduce((s,v,i)=>s+v*b[i],0);const ma=Math.sqrt(a.reduce((s,v)=>s+v*v,0));const mb=Math.sqrt(b.reduce((s,v)=>s+v*v,0));return ma&&mb?dot/(ma*mb):0;}
-    async function load(){
+    async function load(signal=false){
       const mem = await fetch('memory_log.json').then(r=>r.json()).catch(()=>[]);
       const forks = await fetch('fork_log.json').then(r=>r.json()).catch(()=>[]);
+      const compass = signal? await fetch('signal_compass.json').then(r=>r.json()).catch(()=>[]): [];
       const body=document.querySelector('#forkTable tbody');
       body.innerHTML='';
       forks.forEach(f=>{
@@ -31,11 +39,21 @@
         const score=cos(vec(text),ETHICS_WORDS.map(()=>1));
         const tr=document.createElement('tr');
         if(score>0.75) tr.classList.add('high');
+        if(signal){
+          const sig=compass.find(s=>s.session_id===f.session_id);
+          if(sig){
+            const v=sig.vector;
+            if(v[2]-v[1]>0.3) tr.classList.add('belief');
+            if(v[1]>v[2] && v[3]>v[0]) tr.classList.add('fractured');
+          }
+        }
         tr.innerHTML=`<td>${f.ghost_id}</td><td>${f.belief_fork_id}</td><td>${(score*100).toFixed(1)}%</td>`;
         body.appendChild(tr);
       });
     }
-    load();
+    const toggle=document.getElementById('signalToggle');
+    toggle.addEventListener('change',()=>load(toggle.checked));
+    load(false);
   </script>
 </body>
 </html>
