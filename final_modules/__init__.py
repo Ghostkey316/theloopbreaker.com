@@ -14,6 +14,13 @@ from .retail_revival_mode import (
     record_visit,
     visit_history,
 )
+from .vaultfire_media import (
+    generate_image,
+    transcribe_audio,
+    voice_response,
+    analyze_video,
+    build_avatar,
+)
 
 __all__ = [
     "companion_app",
@@ -30,4 +37,9 @@ __all__ = [
     "retail_story_snippet",
     "record_visit",
     "visit_history",
+    "generate_image",
+    "transcribe_audio",
+    "voice_response",
+    "analyze_video",
+    "build_avatar",
 ]
