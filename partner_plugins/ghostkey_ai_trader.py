@@ -62,7 +62,14 @@ class GhostkeyAITrader:
 
     def detect_signals(self, market_data: Dict) -> List[str]:
         """Placeholder signal detector."""
-        return ["buy"] if market_data.get("trend") == "up" else ["sell"]
+        signals = ["buy"] if market_data.get("trend") == "up" else ["sell"]
+        try:  # optional core integration
+            import vaultfire_core
+            if hasattr(vaultfire_core, "protocol_notify"):
+                vaultfire_core.protocol_notify("trade_signal", {"signals": signals})
+        except Exception:
+            pass
+        return signals
 
     def _write_audit(self) -> None:
         AUDIT_LOG.parent.mkdir(parents=True, exist_ok=True)
@@ -71,18 +78,33 @@ class GhostkeyAITrader:
 
     def execute_trade(self, wallet: str, trade: Dict) -> Dict:
         """Record trade if wallet verified and trader active."""
-        if not self.opt_in or self.paused:
-            raise RuntimeError("Trader not active")
-        if not self.verify_wallet(wallet):
-            raise RuntimeError("Unverified wallet")
-        record = {
-            "wallet": wallet,
-            "trade": trade,
-            "timestamp": datetime.utcnow().isoformat() + "Z",
-        }
-        self.audit.append(record)
-        self._write_audit()
-        return record
+        try:
+            if not self.opt_in or self.paused:
+                raise RuntimeError("Trader not active")
+            if not self.verify_wallet(wallet):
+                raise RuntimeError("Unverified wallet")
+            record = {
+                "wallet": wallet,
+                "trade": trade,
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+            }
+            self.audit.append(record)
+            self._write_audit()
+            try:
+                import vaultfire_core
+                if hasattr(vaultfire_core, "protocol_notify"):
+                    vaultfire_core.protocol_notify("trade_executed", record)
+            except Exception:
+                pass
+            return record
+        except Exception as e:
+            try:
+                import vaultfire_core
+                if hasattr(vaultfire_core, "protocol_notify"):
+                    vaultfire_core.protocol_notify("error", {"error": str(e)})
+            except Exception:
+                pass
+            raise
 
     def get_audit_log(self) -> List[Dict]:
         return list(self.audit)
