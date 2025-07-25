@@ -18,8 +18,9 @@ Vaultfire Init is the reference implementation of the Ghostkey protocol. It prov
 ## Quick Start
 1. Install Python 3.10+ and Node.js
 2. Run `python3 system_integrity_check.py` to validate configuration
-3. Execute `python3 vaultfire_system_ready.py --partner-mode <wallet>` to create a partner fork
-4. Test the CLI onboarding with `node vaultfire_partner_onboard.js demo <wallet> "Morals Before Metrics."`
+3. Execute `python3 run_full_system_validation.py` for a full readiness report
+4. Execute `python3 vaultfire_system_ready.py --partner-mode <wallet>` to create a partner fork
+5. Test the CLI onboarding with `node vaultfire_partner_onboard.js demo <wallet> "Morals Before Metrics."`
 
 ## Plug-in System
 Place additional modules in `partner_plugins` to extend Vaultfire without modifying the core. Example helpers demonstrate text summarization and audio transcription. These examples are for demonstration only and do not represent an official partnership with any third-party service.
