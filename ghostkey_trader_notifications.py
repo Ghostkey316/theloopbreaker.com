@@ -15,9 +15,13 @@ from pathlib import Path
 from typing import Any, Dict
 
 BASE_DIR = Path(__file__).resolve().parent
-SETTINGS_PATH = Path(
-    os.environ.get("VF_USER_SETTINGS_PATH", str(BASE_DIR / "vaultfire_user_settings.json"))
-)
+
+
+def _get_settings_path() -> Path:
+    """Return settings path respecting VF_USER_SETTINGS_PATH at call time."""
+    return Path(
+        os.environ.get("VF_USER_SETTINGS_PATH", str(BASE_DIR / "vaultfire_user_settings.json"))
+    )
 LOG_PATH = BASE_DIR / "logs" / "trader_notify_log.json"
 EMAIL_LOG_PATH = BASE_DIR / "logs" / "trader_email_log.json"
 DEFAULT_SETTINGS = {
@@ -68,10 +72,22 @@ def _send_webhook(url: str, payload: Dict) -> None:
         pass
 
 
+def validate_notification_payload(payload: Dict) -> bool:
+    """Ensure notification payload contains basic expected fields."""
+    required_keys = ["ticker", "action", "confidence"]
+    return all(key in payload for key in required_keys)
+
+
 def notify_event(event: str, payload: Dict) -> Dict:
-    settings = _load_json(SETTINGS_PATH, DEFAULT_SETTINGS)
+    settings = _load_json(_get_settings_path(), DEFAULT_SETTINGS)
     if not settings.get("notify_trader_activity"):
         return {"sent": False}
+    if not validate_notification_payload(payload):
+        payload = {
+            "ticker": payload.get("ticker") or payload.get("symbol", ""),
+            "action": payload.get("action", "unknown"),
+            "confidence": payload.get("confidence", 0.0),
+        }
     channel = settings.get("notification_channel", "log_to_terminal")
     message = _format_message(event, payload)
     entry = {
@@ -94,4 +110,4 @@ def notify_event(event: str, payload: Dict) -> Dict:
     return entry
 
 
-__all__ = ["notify_event"]
+__all__ = ["notify_event", "validate_notification_payload"]
