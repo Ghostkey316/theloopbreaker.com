@@ -47,5 +47,20 @@ class NotifyTest(unittest.TestCase):
                 self.assertEqual(req.full_url, "http://localhost/test")
                 self.assertEqual(payload["id"], "Ghostkey-316")
 
+    def test_valid_notification_format(self):
+        sample_payload = {
+            "ticker": "ETH",
+            "action": "buy",
+            "confidence": 0.91,
+        }
+        self.assertTrue(gtn.validate_notification_payload(sample_payload))
+
+    def test_invalid_notification_format(self):
+        incomplete_payload = {
+            "ticker": "ETH",
+            "action": "sell",
+        }
+        self.assertFalse(gtn.validate_notification_payload(incomplete_payload))
+
 if __name__ == "__main__":
     unittest.main()
