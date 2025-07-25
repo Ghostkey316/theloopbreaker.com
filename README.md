@@ -658,6 +658,17 @@ print(summarize_text("Welcome to Vaultfire")['summary'])
 toggle_public_display(False)  # hide ENS and wallet by default
 ```
 
+`Ghostkey AI Trader v1.0` is available as a sandboxed partner plug-in. It only
+activates after an explicit opt-in and logs every trade for review. Example:
+
+```python
+from partner_plugins import GhostkeyAITrader
+
+trader = GhostkeyAITrader(lambda w: w == "mywallet")
+trader.activate()
+result = trader.execute_trade("mywallet", {"pair": "ETH/USD", "amount": 1})
+```
+
 ## Security Monitor
 Run `python3 security_monitor.py --set-baseline` once to record baseline file hashes.
 Future runs will detect changes and restore originals if needed using `--repair`.
