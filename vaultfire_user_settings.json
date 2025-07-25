@@ -1,0 +1,5 @@
+{
+  "notify_trader_activity": true,
+  "notification_channel": "log_to_terminal",
+  "webhook_url": "http://localhost:8060/notify"
+}
