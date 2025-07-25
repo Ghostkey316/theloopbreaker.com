@@ -129,6 +129,7 @@ from .wellness_companion import (
     reflection_prompt,
     coping_suggestions,
 )
+from .sparkstarter_layer import set_mode, set_preferences, next_ping
 from .music_layer import (
     connect_service,
     pull_top_tracks,
@@ -394,6 +395,9 @@ __all__ = [
     "coping_suggestions",
     "reward_engagement",
     "reward_microtask",
+    "set_mode",
+    "set_preferences",
+    "next_ping",
     "reward_idea",
     "reward_layer_build",
     "record_life_action",
