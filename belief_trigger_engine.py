@@ -68,11 +68,22 @@ def send_webhook(url: str, payload: dict) -> None:
         pass
 
 
-def send_to_webhook(url: str | None, wallet: str, tier: str, score: int) -> None:
+def send_to_webhook(
+    url: str | None,
+    wallet: str,
+    tier: str,
+    score: int,
+    timestamp: str,
+) -> None:
     """Send activation data to ``url`` if provided."""
     if not url:
         return
-    payload = {"wallet": wallet, "tier": tier, "score": score}
+    payload = {
+        "wallet": wallet,
+        "tier": tier,
+        "score": score,
+        "timestamp": timestamp,
+    }
     send_webhook(url, payload)
 
 
@@ -212,7 +223,7 @@ def activate_belief_reward(
     if chain_log:
         log_chain_event(wallet_id, tier, score, result["timestamp"])
     if webhook:
-        send_to_webhook(webhook, wallet_id, tier, score)
+        send_to_webhook(webhook, wallet_id, tier, score, result["timestamp"])
     return result
 
 
@@ -269,7 +280,7 @@ def evaluate_wallet(
             if chain_log:
                 log_chain_event(wallet_id, tier, score, result["timestamp"])
             if webhook:
-                send_to_webhook(webhook, wallet_id, tier, score)
+                send_to_webhook(webhook, wallet_id, tier, score, result["timestamp"])
     return result
 
 

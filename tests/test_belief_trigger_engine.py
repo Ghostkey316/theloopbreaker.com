@@ -52,6 +52,7 @@ class BeliefTriggerEngineTest(unittest.TestCase):
             self.assertEqual(mock_url.call_count, 1)
             request_obj = mock_url.call_args[0][0]
             payload = json.loads(request_obj.data.decode('utf-8'))
+            self.assertEqual(list(payload.keys()), ['wallet', 'tier', 'score', 'timestamp'])
             self.assertEqual(payload['wallet'], 'spark_wallet')
             self.assertEqual(payload['tier'], 'Spark')
             self.assertEqual(payload['score'], 10)
@@ -65,6 +66,8 @@ class BeliefTriggerEngineTest(unittest.TestCase):
         for key, value in expected.items():
             self.assertEqual(chain_data[0][key], value)
         self.assertIn('timestamp', chain_data[0])
+        self.assertEqual(payload['timestamp'], chain_data[0]['timestamp'])
+        self.assertEqual(list(chain_data[0].keys()), ['wallet', 'tier', 'score', 'timestamp'])
 
     def test_no_chain_no_webhook(self):
         with patch('urllib.request.urlopen') as mock_url:
@@ -82,6 +85,13 @@ class BeliefTriggerEngineTest(unittest.TestCase):
         self.assertEqual(entry['tier'], 'loyalty')
         self.assertEqual(entry['score'], 65)
         self.assertIn('timestamp', entry)
+        self.assertEqual(list(entry.keys()), ['wallet', 'tier', 'score', 'timestamp'])
+
+    def test_activate_reward_no_chain_without_flag(self):
+        from belief_trigger_engine import activate_belief_reward
+
+        activate_belief_reward('flame_wallet', 65, chain_log=False)
+        self.assertFalse(CHAIN_LOG_PATH.exists())
 
 
 if __name__ == '__main__':

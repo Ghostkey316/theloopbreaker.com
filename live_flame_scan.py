@@ -1,6 +1,7 @@
 import argparse
 import json
 import time
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List
 
@@ -106,7 +107,7 @@ def create_app(log_path: Path = DEFAULT_LOG, webhook: str | None = None, chain: 
         wallet = payload.get("wallet")
         tier = payload.get("tier")
         score = payload.get("score")
-        send_to_webhook(webhook, wallet, tier, int(score))
+        send_to_webhook(webhook, wallet, tier, int(score), datetime.utcnow().isoformat())
         return jsonify({"sent": bool(webhook)})
 
     return app
