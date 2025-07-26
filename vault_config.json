@@ -1,4 +1,5 @@
 {
   "weekly_drop_day": "Fri",
-  "weekly_drop_hour_et": 16
+  "weekly_drop_hour_et": 16,
+  "intel_loop": true
 }

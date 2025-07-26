@@ -1,0 +1,8 @@
+{
+  "scan_frequency": "every_2_hours",
+  "multipliers": {
+    "Legacy": 1.5,
+    "Core": 1.2,
+    "Entry": 1.0
+  }
+}
