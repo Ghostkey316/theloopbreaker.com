@@ -31,7 +31,7 @@ class BeliefTriggerEngineTest(unittest.TestCase):
         evaluate_wallet('flame_wallet')
         evaluate_wallet('inferno_wallet')
         data = json.loads(LOG_PATH.read_text())
-        triggers = {d['wallet_id']: d['trigger'] for d in data}
+        triggers = {d['wallet']: d['trigger'] for d in data}
         self.assertEqual(triggers['spark_wallet'], 'bonus_drop')
         self.assertEqual(triggers['torch_wallet'], 'unlock_nft_trait')
         self.assertEqual(triggers['flame_wallet'], 'claim_reward')
