@@ -7,12 +7,16 @@ from pathlib import Path
 from typing import List, Dict
 
 from engine.ghostscore_engine import get_ghostscore
+from engine.loyalty_engine import loyalty_score
 
 BASE_DIR = Path(__file__).resolve().parent
 REWARDS_PATH = BASE_DIR / "vaultfire_rewards.json"
 CONFIG_PATH = BASE_DIR / "vault_config.json"
 DROP_LOG_PATH = BASE_DIR / "logs" / "drop_schedule_log.json"
 SCORES_PATH = BASE_DIR / "ghostscores.json"
+INTEL_MAP_PATH = BASE_DIR / "overlays" / "intel_map.json"
+PASSIVE_SYNC_PATH = BASE_DIR / "configs" / "passive_sync.json"
+LOYALTY_TIER_PATH = BASE_DIR / "loyalty_tiers.json"
 
 DEFAULT_CONFIG = {
     "weekly_drop_day": "Fri",
@@ -36,6 +40,17 @@ def _write_json(path: Path, data) -> None:
         json.dump(data, f, indent=2)
 
 
+def _intel_boost(wallet: str, ens: str) -> float:
+    """Return additional drop amount from wallet intelligence."""
+    intel = _load_json(INTEL_MAP_PATH, {})
+    sync_cfg = _load_json(PASSIVE_SYNC_PATH, {})
+    tiers = _load_json(LOYALTY_TIER_PATH, {})
+    score = intel.get(wallet, {}).get("insightScore", 0)
+    tier = tiers.get(ens, {}).get("tier", "Entry")
+    mult = sync_cfg.get("multipliers", {}).get(tier, 1.0)
+    return round(score * mult / 100.0, 3)
+
+
 def _window_open(config: dict, now: datetime) -> bool:
     day = config.get("weekly_drop_day", "Fri")
     hour_et = config.get("weekly_drop_hour_et", 16)
@@ -55,15 +70,19 @@ def schedule_drops(now: datetime | None = None) -> List[Dict]:
         payouts = info.get("payout", [])
         score = get_ghostscore(ens)
         multiplier = 1 + score / 100
+        loyalty = loyalty_score(ens).get("score", 0)
         for p in payouts:
             amount = round(p.get("amount", 0) * multiplier, 3)
+            if config.get("intel_loop"):
+                amount += _intel_boost(wallet, ens)
             entry = {
                 "timestamp": dt.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "ens": ens,
                 "wallet": wallet,
                 "token": p.get("token"),
-                "amount": amount,
+                "amount": round(amount, 3),
                 "ghostscore": score,
+                "loyalty": loyalty,
             }
             results.append(entry)
     if results:
