@@ -1,15 +1,20 @@
 import json
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
-from belief_trigger_engine import evaluate_wallet, LOG_PATH
+from belief_trigger_engine import (
+    evaluate_wallet,
+    LOG_PATH,
+    CHAIN_LOG_PATH,
+)
 
 BELIEF_PATH = Path('belief_score.json')
 
 
 class BeliefTriggerEngineTest(unittest.TestCase):
     def setUp(self):
-        for p in (BELIEF_PATH, LOG_PATH):
+        for p in (BELIEF_PATH, LOG_PATH, CHAIN_LOG_PATH):
             if p.exists():
                 p.unlink()
         BELIEF_PATH.write_text(json.dumps({
@@ -36,6 +41,19 @@ class BeliefTriggerEngineTest(unittest.TestCase):
         result = evaluate_wallet('below_wallet')
         self.assertIsNone(result['tier'])
         self.assertFalse(LOG_PATH.exists())
+
+    def test_chain_and_webhook_logging(self):
+        with patch('urllib.request.urlopen') as mock_url:
+            evaluate_wallet(
+                'spark_wallet',
+                chain_log=True,
+                webhook='http://localhost/web'
+            )
+            self.assertEqual(mock_url.call_count, 1)
+        self.assertTrue(CHAIN_LOG_PATH.exists())
+        chain_data = json.loads(CHAIN_LOG_PATH.read_text())
+        self.assertEqual(chain_data[0]['wallet'], 'spark_wallet')
+        self.assertEqual(chain_data[0]['tier'], 'Spark')
 
 
 if __name__ == '__main__':

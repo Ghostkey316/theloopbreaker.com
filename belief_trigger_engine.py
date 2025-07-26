@@ -203,8 +203,23 @@ def _get_belief_score(wallet_id: str) -> int:
 
 # Public API ----------------------------------------------------------------
 
-def evaluate_wallet(wallet_id: str) -> dict:
-    """Evaluate ``wallet_id`` and activate the correct trigger."""
+def evaluate_wallet(
+    wallet_id: str,
+    *,
+    chain_log: bool = False,
+    webhook: str | None = None,
+) -> dict:
+    """Evaluate ``wallet_id`` and activate the correct trigger.
+
+    Parameters
+    ----------
+    wallet_id:
+        Wallet address to evaluate.
+    chain_log:
+        If ``True`` append the activation event to ``CHAIN_LOG_PATH``.
+    webhook:
+        Optional URL to POST activation data to.
+    """
     score = _get_belief_score(wallet_id)
     loyalty = loyalty_report(wallet_id)
 
@@ -228,6 +243,10 @@ def evaluate_wallet(wallet_id: str) -> dict:
             result["trigger"] = trigger_entry["trigger"]
             result["timestamp"] = trigger_entry["timestamp"]
             _log_trigger(result)
+            if chain_log:
+                log_chain_event(wallet_id, tier, result["timestamp"])
+            if webhook:
+                send_to_webhook(webhook, wallet_id, tier, score)
     return result
 
 
