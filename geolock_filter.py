@@ -2,10 +2,30 @@
 from __future__ import annotations
 
 from pathlib import Path
+from io import BytesIO
+
+
+try:  # Pillow is optional
+    from PIL import Image  # type: ignore
+except Exception:  # pragma: no cover - Pillow may not be installed
+    Image = None  # type: ignore
 
 
 def strip_exif(data: bytes, blur_faces: bool = False) -> bytes:
-    """Remove simple GPS markers from ``data``."""
+    """Remove basic EXIF information including GPS markers.
+
+    Falls back to a simple byte replace if Pillow is unavailable. ``blur_faces``
+    is accepted for API compatibility but not implemented.
+    """
+    if Image:
+        try:
+            img = Image.open(BytesIO(data))
+            img.info.pop("exif", None)
+            out = BytesIO()
+            img.save(out, format=img.format or "JPEG")
+            data = out.getvalue()
+        except Exception:  # pragma: no cover - pillow errors fall back
+            data = data
     return data.replace(b"GPS", b"")
 
 
