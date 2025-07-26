@@ -107,7 +107,14 @@ def create_app(log_path: Path = DEFAULT_LOG, webhook: str | None = None, chain: 
         wallet = payload.get("wallet")
         tier = payload.get("tier")
         score = payload.get("score")
-        send_to_webhook(webhook, wallet, tier, int(score), datetime.utcnow().isoformat())
+        send_to_webhook(
+            webhook,
+            wallet,
+            tier,
+            int(score),
+            datetime.utcnow().isoformat(),
+            "manual_hook",
+        )
         return jsonify({"sent": bool(webhook)})
 
     return app

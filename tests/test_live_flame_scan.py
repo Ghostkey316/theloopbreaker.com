@@ -32,7 +32,7 @@ class LiveFlameScanTest(unittest.TestCase):
             payload = json.loads(request_obj.data.decode('utf-8'))
             self.assertEqual(
                 list(payload.keys()),
-                ['wallet', 'tier', 'score', 'timestamp']
+                ['wallet', 'tier', 'score', 'timestamp', 'trigger']
             )
             self.assertEqual(
                 list(results[0].keys()),
