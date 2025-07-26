@@ -48,5 +48,10 @@
     "timestamp": "2025-07-26T00:22:48Z",
     "change": "Vaultfire v1.8: Loyalty Engine and Drop Scheduler",
     "update_block": "PENDING_PUSH"
+  },
+  {
+    "timestamp": "2025-07-26T12:00:00Z",
+    "change": "Vaultfire v1.9: Insight Loop and passive monitoring",
+    "update_block": "PENDING_PUSH"
   }
 ]

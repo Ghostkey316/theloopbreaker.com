@@ -1,4 +1,32 @@
 [
-  {"ghost_id": "g1", "session_id": "s1", "vector": [1,0,0,0]},
-  {"ghost_id": "g2", "session_id": "s2", "vector": [0,1,0,0]}
+  {
+    "ghost_id": "g1",
+    "session_id": "s1",
+    "vector": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ghost_id": "g2",
+    "session_id": "s2",
+    "vector": [
+      0,
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ghost_id": "g3",
+    "session_id": "passive",
+    "vector": [
+      0,
+      0,
+      1,
+      0
+    ]
+  }
 ]
