@@ -76,6 +76,49 @@ TRIGGERS = {
     "Inferno": claim_reward,
 }
 
+# Additional reward triggers for CLI simulation
+
+def high_tier_reward(wallet_id: str) -> dict:
+    """Reward for very high belief scores."""
+    result = {
+        "wallet_id": wallet_id,
+        "trigger": "high_tier_reward",
+        "message": "\ud83d\udd25 Flame Unlocked",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+    _log_trigger(result)
+    return result
+
+
+def mid_tier_reward(wallet_id: str) -> dict:
+    result = {
+        "wallet_id": wallet_id,
+        "trigger": "mid_tier_reward",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+    _log_trigger(result)
+    return result
+
+
+def loyalty_ping(wallet_id: str) -> dict:
+    result = {
+        "wallet_id": wallet_id,
+        "trigger": "loyalty_ping",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+    _log_trigger(result)
+    return result
+
+
+def belief_boost_suggestion(wallet_id: str) -> dict:
+    result = {
+        "wallet_id": wallet_id,
+        "trigger": "belief_boost_suggestion",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+    _log_trigger(result)
+    return result
+
 
 # Utility -------------------------------------------------------------------
 
@@ -113,12 +156,55 @@ def evaluate_wallet(wallet_id: str) -> dict:
     return result
 
 
-def main() -> None:
-    import unittest
+def simulate_cli(path: Path) -> None:
+    """Run CLI simulation using ``path`` as the score dataset."""
     try:
-        unittest.main(module="test_belief_trigger_engine", exit=False)
+        scores = json.loads(path.read_text())
     except Exception:
-        pass
+        print(f"Failed to load {path}")
+        return
+
+    counts = {"high": 0, "mid": 0, "loyalty": 0, "boost": 0}
+    for wallet, score in scores.items():
+        if score >= 90:
+            high_tier_reward(wallet)
+            counts["high"] += 1
+        elif score >= 70:
+            mid_tier_reward(wallet)
+            counts["mid"] += 1
+        elif score >= 50:
+            loyalty_ping(wallet)
+            counts["loyalty"] += 1
+        else:
+            belief_boost_suggestion(wallet)
+            counts["boost"] += 1
+
+    print(
+        f"High tier: {counts['high']} Mid tier: {counts['mid']} Loyalty tier: {counts['loyalty']} Boost tier: {counts['boost']}"
+    )
+
+
+def main() -> None:
+    import argparse
+    import unittest
+
+    parser = argparse.ArgumentParser(description="Belief trigger engine")
+    parser.add_argument(
+        "--simulate",
+        help="Path to JSON file with wallet belief scores for CLI simulation",
+    )
+    parser.add_argument("--test", action="store_true", help="Run unit tests")
+    args = parser.parse_args()
+
+    if args.test:
+        try:
+            unittest.main(module="test_belief_trigger_engine", exit=False)
+        except Exception:
+            pass
+
+    if args.simulate:
+        simulate_cli(Path(args.simulate))
+
     if LOG_PATH.exists():
         data = json.loads(LOG_PATH.read_text())
         active = {e["wallet_id"] for e in data}
