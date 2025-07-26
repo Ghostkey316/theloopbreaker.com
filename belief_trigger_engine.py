@@ -214,10 +214,10 @@ def activate_belief_reward(
     trigger_entry = func(wallet_id)
     result = {
         "wallet": wallet_id,
-        "score": score,
         "tier": tier,
-        "trigger": trigger_entry["trigger"],
+        "score": score,
         "timestamp": trigger_entry["timestamp"],
+        "trigger": trigger_entry["trigger"],
     }
     _log_trigger(result)
     if chain_log:
@@ -265,8 +265,8 @@ def evaluate_wallet(
 
     result = {
         "wallet": wallet_id,
-        "score": score,
         "tier": tier,
+        "score": score,
         "drop_score": loyalty.get("drop_score"),
     }
 
@@ -274,8 +274,8 @@ def evaluate_wallet(
         func = TRIGGERS.get(tier)
         if func:
             trigger_entry = func(wallet_id)
-            result["trigger"] = trigger_entry["trigger"]
             result["timestamp"] = trigger_entry["timestamp"]
+            result["trigger"] = trigger_entry["trigger"]
             _log_trigger(result)
             if chain_log:
                 log_chain_event(wallet_id, tier, score, result["timestamp"])

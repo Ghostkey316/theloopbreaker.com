@@ -34,6 +34,10 @@ class LiveFlameScanTest(unittest.TestCase):
                 list(payload.keys()),
                 ['wallet', 'tier', 'score', 'timestamp']
             )
+            self.assertEqual(
+                list(results[0].keys()),
+                ['wallet', 'tier', 'score', 'timestamp', 'trigger']
+            )
         triggers = {r['wallet']: r['trigger'] for r in results}
         self.assertEqual(triggers['high_wallet'], 'high_tier_reward')
         self.assertEqual(triggers['mid_wallet'], 'mid_tier_reward')
