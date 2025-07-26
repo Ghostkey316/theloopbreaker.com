@@ -13,6 +13,10 @@ from engine.belief_multiplier import (
 )
 from engine.loyalty_engine_v1 import loyalty_report
 
+# ---------------------------------------------------------------------------
+# Logging helpers
+# ---------------------------------------------------------------------------
+
 
 # Belief thresholds for trigger activation
 BELIEF_THRESHOLDS = {
@@ -64,6 +68,19 @@ def send_webhook(url: str, payload: dict) -> None:
         pass
 
 
+def send_to_webhook(url: str | None, wallet: str, tier: str, score: int) -> None:
+    """Send activation data to ``url`` if provided."""
+    if not url:
+        return
+    payload = {"wallet": wallet, "tier": tier, "score": score}
+    send_webhook(url, payload)
+
+
+def log_chain_event(wallet: str, tier: str, timestamp: str) -> None:
+    """Record a chain-style log entry."""
+    _append_json(CHAIN_LOG_PATH, {"wallet": wallet, "tier": tier, "timestamp": timestamp})
+
+
 # Trigger functions ----------------------------------------------------------
 
 def bonus_drop(wallet_id: str) -> dict:
@@ -72,7 +89,6 @@ def bonus_drop(wallet_id: str) -> dict:
         "trigger": "bonus_drop",
         "timestamp": datetime.utcnow().isoformat(),
     }
-    _log_trigger(result)
     return result
 
 
@@ -82,7 +98,6 @@ def unlock_nft_trait(wallet_id: str) -> dict:
         "trigger": "unlock_nft_trait",
         "timestamp": datetime.utcnow().isoformat(),
     }
-    _log_trigger(result)
     return result
 
 
@@ -92,7 +107,6 @@ def claim_reward(wallet_id: str) -> dict:
         "trigger": "claim_reward",
         "timestamp": datetime.utcnow().isoformat(),
     }
-    _log_trigger(result)
     return result
 
 
@@ -113,7 +127,6 @@ def high_tier_reward(wallet_id: str) -> dict:
         "message": "\ud83d\udd25 Flame Unlocked",
         "timestamp": datetime.utcnow().isoformat(),
     }
-    _log_trigger(result)
     return result
 
 
@@ -123,7 +136,6 @@ def mid_tier_reward(wallet_id: str) -> dict:
         "trigger": "mid_tier_reward",
         "timestamp": datetime.utcnow().isoformat(),
     }
-    _log_trigger(result)
     return result
 
 
@@ -133,7 +145,6 @@ def loyalty_ping(wallet_id: str) -> dict:
         "trigger": "loyalty_ping",
         "timestamp": datetime.utcnow().isoformat(),
     }
-    _log_trigger(result)
     return result
 
 
@@ -143,11 +154,16 @@ def belief_boost_suggestion(wallet_id: str) -> dict:
         "trigger": "belief_boost_suggestion",
         "timestamp": datetime.utcnow().isoformat(),
     }
-    _log_trigger(result)
     return result
 
 
-def activate_belief_reward(wallet_id: str, score: int, *, chain_log: bool = False) -> dict:
+def activate_belief_reward(
+    wallet_id: str,
+    score: int,
+    *,
+    chain_log: bool = False,
+    webhook: str | None = None,
+) -> dict:
     """Activate reward based on ``score`` and return activation entry."""
     if score >= 90:
         func = high_tier_reward
@@ -169,11 +185,11 @@ def activate_belief_reward(wallet_id: str, score: int, *, chain_log: bool = Fals
         "trigger": trigger_entry["trigger"],
         "timestamp": trigger_entry["timestamp"],
     }
+    _log_trigger(result)
     if chain_log:
-        _append_json(
-            CHAIN_LOG_PATH,
-            {"wallet": wallet_id, "tier": tier, "timestamp": trigger_entry["timestamp"]},
-        )
+        log_chain_event(wallet_id, tier, result["timestamp"])
+    if webhook:
+        send_to_webhook(webhook, wallet_id, tier, score)
     return result
 
 
@@ -210,6 +226,8 @@ def evaluate_wallet(wallet_id: str) -> dict:
         if func:
             trigger_entry = func(wallet_id)
             result["trigger"] = trigger_entry["trigger"]
+            result["timestamp"] = trigger_entry["timestamp"]
+            _log_trigger(result)
     return result
 
 
@@ -223,18 +241,10 @@ def simulate_cli(path: Path) -> None:
 
     counts = {"high": 0, "mid": 0, "loyalty": 0, "boost": 0}
     for wallet, score in scores.items():
-        if score >= 90:
-            high_tier_reward(wallet)
-            counts["high"] += 1
-        elif score >= 70:
-            mid_tier_reward(wallet)
-            counts["mid"] += 1
-        elif score >= 50:
-            loyalty_ping(wallet)
-            counts["loyalty"] += 1
-        else:
-            belief_boost_suggestion(wallet)
-            counts["boost"] += 1
+        entry = activate_belief_reward(wallet, int(score))
+        tier = entry.get("tier")
+        if tier:
+            counts[tier] += 1
 
     print(
         f"High tier: {counts['high']} Mid tier: {counts['mid']} Loyalty tier: {counts['loyalty']} Boost tier: {counts['boost']}"
