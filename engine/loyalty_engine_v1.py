@@ -12,6 +12,7 @@ from typing import Optional, Dict
 
 from .ens_overlay import resolve_overlay
 from .ghostscore_engine import get_ghostscore
+from .belief_multiplier import belief_multiplier, record_belief_action
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 LOG_PATH = BASE_DIR / "logs" / "loyalty_log.json"
@@ -80,6 +81,10 @@ def record_interaction(user_id: str, action: str, overlay: Optional[str] = None,
     log = _load_json(LOG_PATH, [])
     log.append(entry)
     _write_json(LOG_PATH, log)
+    try:
+        record_belief_action(user_id, "interaction")
+    except Exception:
+        pass
     return entry
 
 
@@ -92,7 +97,9 @@ def loyalty_report(user_id: str) -> Dict:
     partners = {p.get("partner_id") for p in _load_json(PARTNER_PATH, [])}
     partner_synced = user_id in partners
     retro_mult = _retro_multiplier(user_id)
+    belief_mult, flame_tier = belief_multiplier(user_id)
     drop_score = streak_data.get("count", 0) * retro_mult
+    drop_score *= belief_mult
     return {
         "user_id": user_id,
         "streak": streak_data.get("count", 0),
@@ -100,6 +107,8 @@ def loyalty_report(user_id: str) -> Dict:
         "partner_synced": partner_synced,
         "ghostscore": ghostscore,
         "retro_multiplier": retro_mult,
+        "belief_multiplier": belief_mult,
+        "flame_tier": flame_tier,
         "drop_score": drop_score,
     }
 
