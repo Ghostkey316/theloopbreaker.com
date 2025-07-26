@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vaultfire Secure Upload</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding:20px; }
+    #dropZone { border: 2px dashed #888; padding:20px; text-align:center; margin-top:10px; }
+    #uploadLog { margin-top:20px; }
+  </style>
+</head>
+<body>
+  <h1>Secure Upload</h1>
+  <button id="walletBtn">Connect Wallet</button>
+  <div>Wallet: <span id="walletStatus">not connected</span></div>
+  <div id="dropZone">Drag & Drop file or tap to select
+    <input id="fileInput" type="file" accept="image/*" capture="environment" style="display:none" />
+  </div>
+  <form id="metaForm">
+    <label>Tier <input id="tierInput" value="Spark" /></label>
+    <label>Score <input id="scoreInput" type="number" value="10" /></label>
+    <label>Trigger <input id="triggerInput" value="bonus_drop" /></label>
+    <button type="submit">Upload</button>
+  </form>
+  <ul id="uploadLog"></ul>
+  <script src="secure_upload.js"></script>
+</body>
+</html>
