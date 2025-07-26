@@ -107,7 +107,7 @@ def log_chain_event(wallet: str, tier: str, score: int, timestamp: str) -> None:
 
 def bonus_drop(wallet_id: str) -> dict:
     result = {
-        "wallet_id": wallet_id,
+        "wallet": wallet_id,
         "trigger": "bonus_drop",
         "timestamp": datetime.utcnow().isoformat(),
     }
@@ -116,7 +116,7 @@ def bonus_drop(wallet_id: str) -> dict:
 
 def unlock_nft_trait(wallet_id: str) -> dict:
     result = {
-        "wallet_id": wallet_id,
+        "wallet": wallet_id,
         "trigger": "unlock_nft_trait",
         "timestamp": datetime.utcnow().isoformat(),
     }
@@ -125,7 +125,7 @@ def unlock_nft_trait(wallet_id: str) -> dict:
 
 def claim_reward(wallet_id: str) -> dict:
     result = {
-        "wallet_id": wallet_id,
+        "wallet": wallet_id,
         "trigger": "claim_reward",
         "timestamp": datetime.utcnow().isoformat(),
     }
@@ -144,7 +144,7 @@ TRIGGERS = {
 def high_tier_reward(wallet_id: str) -> dict:
     """Reward for very high belief scores."""
     result = {
-        "wallet_id": wallet_id,
+        "wallet": wallet_id,
         "trigger": "high_tier_reward",
         "message": "\ud83d\udd25 Flame Unlocked",
         "timestamp": datetime.utcnow().isoformat(),
@@ -154,7 +154,7 @@ def high_tier_reward(wallet_id: str) -> dict:
 
 def mid_tier_reward(wallet_id: str) -> dict:
     result = {
-        "wallet_id": wallet_id,
+        "wallet": wallet_id,
         "trigger": "mid_tier_reward",
         "timestamp": datetime.utcnow().isoformat(),
     }
@@ -163,7 +163,7 @@ def mid_tier_reward(wallet_id: str) -> dict:
 
 def loyalty_ping(wallet_id: str) -> dict:
     result = {
-        "wallet_id": wallet_id,
+        "wallet": wallet_id,
         "trigger": "loyalty_ping",
         "timestamp": datetime.utcnow().isoformat(),
     }
@@ -172,7 +172,7 @@ def loyalty_ping(wallet_id: str) -> dict:
 
 def belief_boost_suggestion(wallet_id: str) -> dict:
     result = {
-        "wallet_id": wallet_id,
+        "wallet": wallet_id,
         "trigger": "belief_boost_suggestion",
         "timestamp": datetime.utcnow().isoformat(),
     }
@@ -213,7 +213,7 @@ def activate_belief_reward(
         tier = "boost"
     trigger_entry = func(wallet_id)
     result = {
-        "wallet_id": wallet_id,
+        "wallet": wallet_id,
         "score": score,
         "tier": tier,
         "trigger": trigger_entry["trigger"],
@@ -264,7 +264,7 @@ def evaluate_wallet(
             break
 
     result = {
-        "wallet_id": wallet_id,
+        "wallet": wallet_id,
         "score": score,
         "tier": tier,
         "drop_score": loyalty.get("drop_score"),
@@ -327,7 +327,7 @@ def main() -> None:
 
     if LOG_PATH.exists():
         data = json.loads(LOG_PATH.read_text())
-        active = {e["wallet_id"] for e in data}
+        active = {e.get("wallet") for e in data}
         print("Active wallets:", ", ".join(sorted(active)))
     else:
         print("No active wallets")

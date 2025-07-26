@@ -23,7 +23,7 @@ class LiveFlameScanTest(unittest.TestCase):
         with patch('urllib.request.urlopen') as mock_url:
             results = process_scores(scores, Path('test_flame_log.json'), webhook='http://localhost/web', chain=True)
             self.assertEqual(mock_url.call_count, 4)
-        triggers = {r['wallet_id']: r['trigger'] for r in results}
+        triggers = {r['wallet']: r['trigger'] for r in results}
         self.assertEqual(triggers['high_wallet'], 'high_tier_reward')
         self.assertEqual(triggers['mid_wallet'], 'mid_tier_reward')
         self.assertEqual(triggers['loyal_wallet'], 'loyalty_ping')
