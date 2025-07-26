@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import urllib.request
 from datetime import datetime
 from pathlib import Path
 
@@ -22,6 +23,7 @@ BELIEF_THRESHOLDS = {
 }
 
 LOG_PATH = Path("vault_trigger_log.json")
+CHAIN_LOG_PATH = Path("chain_event_log.json")
 
 
 def _log_trigger(entry: dict) -> None:
@@ -35,6 +37,31 @@ def _log_trigger(entry: dict) -> None:
         log = []
     log.append(entry)
     LOG_PATH.write_text(json.dumps(log, indent=2))
+
+
+def _append_json(path: Path, entry: dict) -> None:
+    """Append ``entry`` to a JSON list at ``path``."""
+    if path.exists():
+        try:
+            data = json.loads(path.read_text())
+        except json.JSONDecodeError:
+            data = []
+    else:
+        data = []
+    data.append(entry)
+    path.write_text(json.dumps(data, indent=2))
+
+
+def send_webhook(url: str, payload: dict) -> None:
+    """POST ``payload`` to ``url`` ignoring errors."""
+    if not url:
+        return
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+    try:
+        urllib.request.urlopen(req, timeout=5)
+    except Exception:
+        pass
 
 
 # Trigger functions ----------------------------------------------------------
@@ -117,6 +144,36 @@ def belief_boost_suggestion(wallet_id: str) -> dict:
         "timestamp": datetime.utcnow().isoformat(),
     }
     _log_trigger(result)
+    return result
+
+
+def activate_belief_reward(wallet_id: str, score: int, *, chain_log: bool = False) -> dict:
+    """Activate reward based on ``score`` and return activation entry."""
+    if score >= 90:
+        func = high_tier_reward
+        tier = "high"
+    elif score >= 70:
+        func = mid_tier_reward
+        tier = "mid"
+    elif score >= 50:
+        func = loyalty_ping
+        tier = "loyalty"
+    else:
+        func = belief_boost_suggestion
+        tier = "boost"
+    trigger_entry = func(wallet_id)
+    result = {
+        "wallet_id": wallet_id,
+        "score": score,
+        "tier": tier,
+        "trigger": trigger_entry["trigger"],
+        "timestamp": trigger_entry["timestamp"],
+    }
+    if chain_log:
+        _append_json(
+            CHAIN_LOG_PATH,
+            {"wallet": wallet_id, "tier": tier, "timestamp": trigger_entry["timestamp"]},
+        )
     return result
 
 
