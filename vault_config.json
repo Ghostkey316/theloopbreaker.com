@@ -1,5 +1,7 @@
 {
   "weekly_drop_day": "Fri",
   "weekly_drop_hour_et": 16,
-  "intel_loop": true
+  "intel_loop": true,
+  "memory_tracking": true,
+  "memory_snapshot_days": 30
 }
