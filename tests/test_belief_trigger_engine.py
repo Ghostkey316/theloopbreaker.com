@@ -54,6 +54,14 @@ class BeliefTriggerEngineTest(unittest.TestCase):
         chain_data = json.loads(CHAIN_LOG_PATH.read_text())
         self.assertEqual(chain_data[0]['wallet'], 'spark_wallet')
         self.assertEqual(chain_data[0]['tier'], 'Spark')
+        self.assertEqual(chain_data[0]['score'], 10)
+        self.assertIn('timestamp', chain_data[0])
+
+    def test_no_chain_no_webhook(self):
+        with patch('urllib.request.urlopen') as mock_url:
+            evaluate_wallet('spark_wallet')
+            self.assertEqual(mock_url.call_count, 0)
+        self.assertFalse(CHAIN_LOG_PATH.exists())
 
 
 if __name__ == '__main__':

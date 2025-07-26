@@ -76,9 +76,12 @@ def send_to_webhook(url: str | None, wallet: str, tier: str, score: int) -> None
     send_webhook(url, payload)
 
 
-def log_chain_event(wallet: str, tier: str, timestamp: str) -> None:
-    """Record a chain-style log entry."""
-    _append_json(CHAIN_LOG_PATH, {"wallet": wallet, "tier": tier, "timestamp": timestamp})
+def log_chain_event(wallet: str, tier: str, score: int, timestamp: str) -> None:
+    """Record a chain-style log entry with score and timestamp."""
+    _append_json(
+        CHAIN_LOG_PATH,
+        {"wallet": wallet, "tier": tier, "score": score, "timestamp": timestamp},
+    )
 
 
 # Trigger functions ----------------------------------------------------------
@@ -164,7 +167,19 @@ def activate_belief_reward(
     chain_log: bool = False,
     webhook: str | None = None,
 ) -> dict:
-    """Activate reward based on ``score`` and return activation entry."""
+    """Activate reward based on ``score`` and return activation entry.
+
+    Parameters
+    ----------
+    wallet_id:
+        Wallet to reward.
+    score:
+        Belief score determining tier.
+    chain_log:
+        If ``True`` also record the event in ``CHAIN_LOG_PATH`` with the score.
+    webhook:
+        Optional URL to POST activation data to.
+    """
     if score >= 90:
         func = high_tier_reward
         tier = "high"
@@ -187,7 +202,7 @@ def activate_belief_reward(
     }
     _log_trigger(result)
     if chain_log:
-        log_chain_event(wallet_id, tier, result["timestamp"])
+        log_chain_event(wallet_id, tier, score, result["timestamp"])
     if webhook:
         send_to_webhook(webhook, wallet_id, tier, score)
     return result
@@ -216,7 +231,7 @@ def evaluate_wallet(
     wallet_id:
         Wallet address to evaluate.
     chain_log:
-        If ``True`` append the activation event to ``CHAIN_LOG_PATH``.
+        If ``True`` append the activation event to ``CHAIN_LOG_PATH`` with score.
     webhook:
         Optional URL to POST activation data to.
     """
@@ -244,7 +259,7 @@ def evaluate_wallet(
             result["timestamp"] = trigger_entry["timestamp"]
             _log_trigger(result)
             if chain_log:
-                log_chain_event(wallet_id, tier, result["timestamp"])
+                log_chain_event(wallet_id, tier, score, result["timestamp"])
             if webhook:
                 send_to_webhook(webhook, wallet_id, tier, score)
     return result
