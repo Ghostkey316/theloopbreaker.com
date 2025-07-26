@@ -77,11 +77,19 @@ def send_to_webhook(url: str | None, wallet: str, tier: str, score: int) -> None
 
 
 def log_chain_event(wallet: str, tier: str, score: int, timestamp: str) -> None:
-    """Record a chain-style log entry with score and timestamp."""
-    _append_json(
-        CHAIN_LOG_PATH,
-        {"wallet": wallet, "tier": tier, "score": score, "timestamp": timestamp},
-    )
+    """Record a chain-style log entry.
+
+    Entries include wallet address, reward tier, score and timestamp to
+    satisfy audit requirements. Keys are ordered to match the Vaultfire
+    chain specification.
+    """
+    entry = {
+        "wallet": wallet,
+        "tier": tier,
+        "score": score,
+        "timestamp": timestamp,
+    }
+    _append_json(CHAIN_LOG_PATH, entry)
 
 
 # Trigger functions ----------------------------------------------------------
