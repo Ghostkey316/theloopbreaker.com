@@ -97,7 +97,8 @@
     "wellness_oracle",
     "worldcoin_layer",
     "yield_engine_v1",
-    "yield_protocol_prep"
+    "yield_protocol_prep",
+    "ghostkey_learning_rule_1"
   ],
   "integrity_checks": {
     "status": "PASS"

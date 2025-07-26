@@ -16,6 +16,7 @@ from .ethical_growth_engine import (
     record_mirror_entry,
     asi_activation_allowed,
 )
+from .integrity_layer import apply_pushback_rule
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 STATE_DIR = BASE_DIR / "logs" / "vaultlink"
@@ -130,6 +131,7 @@ def record_interaction(
 
     XP and level increases require passing the Ethical Growth Engine checks.
     """
+    pushback = apply_pushback_rule(user_id, text)
     path = _state_path(user_id)
     state = _load_json(path, None)
     if not state:
@@ -172,13 +174,15 @@ def record_interaction(
     state["memory"] = state["memory"][-mem_limit:]
     state["last_update"] = now.strftime("%Y-%m-%dT%H:%M:%SZ")
     _write_json(path, state)
-    return {
+    result = {
         "level": state["level"],
         "xp": state["xp"],
         "abilities": state["abilities"],
         "traits": state["traits"],
         "last_emotion": emotions[-1]["emotion"] if emotions else "neutral",
     }
+    result.update(pushback)
+    return result
 
 
 def fetch_state(user_id: str, key: str) -> Dict:

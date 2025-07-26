@@ -9,6 +9,8 @@ Vaultfire Init is the reference implementation of the Ghostkey protocol. It prov
 - **Plugin Architecture** – drop-in modules for external services or custom tools
 - **Signal Fusion Engine** – merges local and partner signal vectors for replay
 - **Vault License Shell** – validates alignment state and overlay sync
+- **Ghostkey Learning Rule #1** – ensures the AI companion gently corrects
+  misinformation while logging each pushback event
 
 ## Repository Layout
 - `engine/` – core protocol logic such as signal processing and reward engines
