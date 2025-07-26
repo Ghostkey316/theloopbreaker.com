@@ -1,0 +1,3 @@
+Manual Setup
+------------
+If network installs fail, install Python packages manually using wheel files and run `npm install` from the repository root.

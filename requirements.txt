@@ -2,3 +2,4 @@ flask
 web3
 ens
 psutil
+cryptography
