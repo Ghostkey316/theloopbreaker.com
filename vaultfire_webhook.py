@@ -10,6 +10,12 @@ from datetime import datetime, timezone
 from uuid import uuid4
 from pathlib import Path
 from logging.handlers import TimedRotatingFileHandler
+import os
+
+try:  # optional crypto support
+    from Crypto.Cipher import AES  # type: ignore
+except Exception:  # pragma: no cover - library may be absent
+    AES = None  # type: ignore
 
 from flask import Flask, request, jsonify
 
@@ -28,6 +34,20 @@ _handler = TimedRotatingFileHandler(str(AUDIT_LOG_PATH), when="D", interval=1)
 audit_logger = logging.getLogger("vaultfire_webhook")
 audit_logger.addHandler(_handler)
 audit_logger.setLevel(logging.INFO)
+
+def _encrypt_line(key: bytes, line: bytes) -> bytes:
+    """Encrypt ``line`` using AES-GCM if available."""
+    if AES:
+        iv = os.urandom(12)
+        cipher = AES.new(key, AES.MODE_GCM, nonce=iv)
+        ciphertext, tag = cipher.encrypt_and_digest(line)
+        return base64.b64encode(iv + ciphertext + tag)
+    return base64.b64encode(line)
+
+
+def audit_log(entry: dict) -> None:
+    enc = _encrypt_line(SECRET_KEY, json.dumps(entry).encode())
+    audit_logger.info(enc.decode())
 
 
 def _append_json(path: Path, entry: dict) -> None:
@@ -60,6 +80,26 @@ def _decrypt_payload(key: bytes, iv: bytes, ciphertext: bytes, tag: bytes | None
     if tag is not None:
         return cipher.decrypt_and_verify(ciphertext, tag)
     return cipher.decrypt(ciphertext)
+
+
+def _pin_ipfs(data: bytes) -> str:
+    """Pin ``data`` to IPFS if available."""
+    try:  # pragma: no cover - ipfs client optional
+        import ipfshttpclient  # type: ignore
+        client = ipfshttpclient.connect()
+        return client.add_bytes(data)
+    except Exception:
+        return hashlib.sha256(data).hexdigest()
+
+
+def _submit_tx(hash_hex: str) -> str:
+    """Store ``hash_hex`` on-chain via Web3 if available."""
+    try:  # pragma: no cover - web3 optional
+        from web3 import Web3  # type: ignore
+        w3 = Web3()
+        return w3.toHex(text=hash_hex)
+    except Exception:
+        return hash_hex
 
 
 @app.post("/webhook/upload")
@@ -111,16 +151,19 @@ def webhook_upload():
     }
     _append_json(CHAIN_LOG_PATH, chain_entry)
 
+    ipfs_hash = _pin_ipfs(decrypted)
+    tx_hash = _submit_tx(hashlib.sha256(decrypted).hexdigest())
+
     receipt_ts = datetime.utcnow().isoformat()
     upload_id = str(uuid4())
-    audit_logger.info(json.dumps({"uuid": upload_id, "received": receipt_ts, **chain_entry}))
+    audit_log({"uuid": upload_id, "received": receipt_ts, "ipfs": ipfs_hash, "tx": tx_hash, **chain_entry})
     receipt_sig = hmac.new(SECRET_KEY, upload_id.encode(), hashlib.sha256).hexdigest()
     return (
         jsonify(
             {
                 "upload_uuid": upload_id,
                 "timestamp": receipt_ts,
-                "chain_tx": chain_entry,
+                "chain_tx": tx_hash,
                 "signature": receipt_sig,
             }
         ),

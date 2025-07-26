@@ -6,6 +6,12 @@ import os
 import hmac
 import hashlib
 import subprocess
+from typing import Tuple
+
+try:  # optional crypto
+    from Crypto.Cipher import AES  # type: ignore
+except Exception:  # pragma: no cover - library may be missing
+    AES = None  # type: ignore
 from datetime import datetime
 from pathlib import Path
 
@@ -42,22 +48,28 @@ class SecureStore:
         cleaned = strip_exif(raw)
         content_hash = hashlib.sha256(cleaned).hexdigest()
 
-        iv = os.urandom(16)
-        result = subprocess.run(
-            [
-                "openssl",
-                "enc",
-                "-aes-256-cbc",
-                "-K",
-                self.key.hex(),
-                "-iv",
-                iv.hex(),
-            ],
-            input=cleaned,
-            stdout=subprocess.PIPE,
-            check=True,
-        )
-        encrypted = iv + result.stdout
+        iv = os.urandom(12)
+        tag: bytes | None = None
+        if AES:
+            cipher = AES.new(self.key, AES.MODE_GCM, nonce=iv)
+            ciphertext, tag = cipher.encrypt_and_digest(cleaned)
+            encrypted = iv + ciphertext + tag
+        else:  # pragma: no cover - fallback if crypto missing
+            result = subprocess.run(
+                [
+                    "openssl",
+                    "enc",
+                    "-aes-256-cbc",
+                    "-K",
+                    self.key.hex(),
+                    "-iv",
+                    iv.hex(),
+                ],
+                input=cleaned,
+                stdout=subprocess.PIPE,
+                check=True,
+            )
+            encrypted = iv + result.stdout
         cid = hashlib.sha256(encrypted).hexdigest()
         enc_path = self.bucket / f"{cid}.bin"
         enc_path.write_bytes(encrypted)
@@ -71,6 +83,8 @@ class SecureStore:
             "content_hash": content_hash,
             "cid": cid,
         }
+        if tag:
+            metadata["tag"] = tag.hex()
         metadata["signature"] = self._sign(metadata)
         (self.bucket / f"{cid}.json").write_text(json.dumps(metadata, indent=2))
 
@@ -97,22 +111,31 @@ class SecureStore:
         if self._sign(meta) != metadata.get("signature"):
             raise ValueError("Invalid signature")
         data = (self.bucket / f"{cid}.bin").read_bytes()
-        iv, enc = data[:16], data[16:]
-        result = subprocess.run(
-            [
-                "openssl",
-                "enc",
-                "-d",
-                "-aes-256-cbc",
-                "-K",
-                self.key.hex(),
-                "-iv",
-                iv.hex(),
-            ],
-            input=enc,
-            stdout=subprocess.PIPE,
-            check=True,
-        )
-        return result.stdout
+        iv = data[:12]
+        body = data[12:]
+        tag_hex = metadata.get("tag")
+        if AES and tag_hex:
+            tag = bytes.fromhex(tag_hex)
+            ciphertext = body[:-16]
+            cipher = AES.new(self.key, AES.MODE_GCM, nonce=iv)
+            return cipher.decrypt_and_verify(ciphertext, tag)
+        else:  # pragma: no cover - fallback
+            enc = body
+            result = subprocess.run(
+                [
+                    "openssl",
+                    "enc",
+                    "-d",
+                    "-aes-256-cbc",
+                    "-K",
+                    self.key.hex(),
+                    "-iv",
+                    iv.hex(),
+                ],
+                input=enc,
+                stdout=subprocess.PIPE,
+                check=True,
+            )
+            return result.stdout
 
 __all__ = ["SecureStore"]
