@@ -1,0 +1,5 @@
+Activation Notes
+----------------
+1. Install dependencies using `pip install -r requirements.txt`.
+2. Run `pytest` to verify the upload pipeline.
+3. Use `build_drop.sh` to create `vaultfire_partner_drop.zip` for distribution.
