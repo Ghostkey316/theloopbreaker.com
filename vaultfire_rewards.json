@@ -1,0 +1,10 @@
+{
+  "ghostkey316.eth": {
+    "wallet": "bpow20.cb.id",
+    "payout": [
+      {"token": "ETH", "amount": 0.01},
+      {"token": "ASM", "amount": 50},
+      {"token": "WLD", "amount": 10}
+    ]
+  }
+}

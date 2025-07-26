@@ -10,6 +10,7 @@ The gaming layer provides reusable helpers so developers can launch multiplayer 
 - **Mirrored avatars** – contract events adjust stats, traits and questline.
 - **On-chain inventory** – record blockchain items per player and fetch them later.
 - **ENS overlays** – map a player ID to an ENS name for consistent identity display.
+- **Wallet-linked overlays** – display contributor identity when a verified wallet is detected. Behavior scores factor into overlay rank.
 - **Replay records** – log player decisions and actions, hash them on-chain and
   tie the replay to their identity for future verification and awards.
 
