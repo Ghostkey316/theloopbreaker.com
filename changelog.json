@@ -53,5 +53,20 @@
     "timestamp": "2025-07-26T12:00:00Z",
     "change": "Vaultfire v1.9: Insight Loop and passive monitoring",
     "update_block": "PENDING_PUSH"
+  },
+  {
+    "timestamp": "2025-07-27T00:00:00Z",
+    "change": "Vaultfire v1.12 — Loyalty Backpay activated",
+    "update_block": "PENDING_PUSH"
+  },
+  {
+    "timestamp": "2025-07-27T00:00:01Z",
+    "change": "Retroactive rewards now issued based on past loyalty memory growth",
+    "update_block": "PENDING_PUSH"
+  },
+  {
+    "timestamp": "2025-07-27T00:00:02Z",
+    "change": "Multiplier sync complete across all loyalty systems",
+    "update_block": "PENDING_PUSH"
   }
 ]
