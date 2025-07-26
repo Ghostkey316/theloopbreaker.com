@@ -6,7 +6,7 @@ from typing import Dict, List
 
 from belief_trigger_engine import (
     activate_belief_reward,
-    send_webhook,
+    send_to_webhook,
 )
 
 try:
@@ -38,11 +38,14 @@ def process_scores(
 ) -> List[Dict]:
     results: List[Dict] = []
     for wallet, score in scores.items():
-        entry = activate_belief_reward(wallet, int(score), chain_log=chain)
+        entry = activate_belief_reward(
+            wallet,
+            int(score),
+            chain_log=chain,
+            webhook=webhook,
+        )
         results.append(entry)
         _append(log_path, entry)
-        if webhook:
-            send_webhook(webhook, entry)
     return results
 
 
@@ -73,12 +76,38 @@ def create_app(log_path: Path = DEFAULT_LOG, webhook: str | None = None, chain: 
         raise RuntimeError("Flask is not available")
     app = Flask(__name__)
 
-    @app.post("/scan")
+    @app.route("/scan", methods=["GET", "POST"])
     def scan_endpoint():
         payload = request.get_json(silent=True) or {}
+        if request.method == "GET":
+            payload.update(request.args)
         scores = payload.get("scores", {})
+        if isinstance(scores, str):
+            try:
+                scores = json.loads(scores)
+            except Exception:
+                scores = {}
         results = process_scores(scores, log_path, webhook, chain)
         return jsonify(results)
+
+    @app.route("/activate", methods=["GET", "POST"])
+    def activate_endpoint():
+        payload = request.get_json(silent=True) or {}
+        if request.method == "GET":
+            payload.update(request.args)
+        wallet = payload.get("wallet")
+        score = int(payload.get("score", 0))
+        result = activate_belief_reward(wallet, score, chain_log=chain, webhook=webhook)
+        return jsonify(result)
+
+    @app.route("/hook", methods=["POST"])
+    def hook_endpoint():
+        payload = request.get_json(silent=True) or {}
+        wallet = payload.get("wallet")
+        tier = payload.get("tier")
+        score = payload.get("score")
+        send_to_webhook(webhook, wallet, tier, int(score))
+        return jsonify({"sent": bool(webhook)})
 
     return app
 
