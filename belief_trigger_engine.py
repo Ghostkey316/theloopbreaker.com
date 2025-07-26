@@ -11,7 +11,6 @@ from engine.belief_multiplier import (
     _score as _belief_score,
     SCORE_PATH as BELIEF_PATH,
 )
-from engine.loyalty_engine_v1 import loyalty_report
 
 # ---------------------------------------------------------------------------
 # Logging helpers
@@ -255,7 +254,6 @@ def evaluate_wallet(
         Optional URL to POST activation data to.
     """
     score = _get_belief_score(wallet_id)
-    loyalty = loyalty_report(wallet_id)
 
     tier = None
     for name, threshold in sorted(BELIEF_THRESHOLDS.items(), key=lambda x: x[1], reverse=True):
@@ -267,7 +265,6 @@ def evaluate_wallet(
         "wallet": wallet_id,
         "tier": tier,
         "score": score,
-        "drop_score": loyalty.get("drop_score"),
     }
 
     if tier:
