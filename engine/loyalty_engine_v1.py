@@ -17,6 +17,7 @@ BASE_DIR = Path(__file__).resolve().parents[1]
 LOG_PATH = BASE_DIR / "logs" / "loyalty_log.json"
 STREAK_PATH = BASE_DIR / "logs" / "loyalty_streaks.json"
 PARTNER_PATH = BASE_DIR / "partners.json"
+RETRO_PATH = BASE_DIR / "retroactive_rewards.json"
 
 
 def _load_json(path: Path, default):
@@ -57,6 +58,11 @@ def _update_streak(user_id: str) -> int:
     return info["count"]
 
 
+def _retro_multiplier(user_id: str) -> float:
+    rewards = _load_json(RETRO_PATH, {})
+    return float(rewards.get(user_id, {}).get("multiplier", 1.0))
+
+
 def record_interaction(user_id: str, action: str, overlay: Optional[str] = None, partner_id: Optional[str] = None) -> Dict:
     """Record a contributor interaction and update streak."""
     streak = _update_streak(user_id)
@@ -85,12 +91,16 @@ def loyalty_report(user_id: str) -> Dict:
     ghostscore = get_ghostscore(ens)
     partners = {p.get("partner_id") for p in _load_json(PARTNER_PATH, [])}
     partner_synced = user_id in partners
+    retro_mult = _retro_multiplier(user_id)
+    drop_score = streak_data.get("count", 0) * retro_mult
     return {
         "user_id": user_id,
         "streak": streak_data.get("count", 0),
         "overlay": overlay,
         "partner_synced": partner_synced,
         "ghostscore": ghostscore,
+        "retro_multiplier": retro_mult,
+        "drop_score": drop_score,
     }
 
 
