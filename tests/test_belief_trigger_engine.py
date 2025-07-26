@@ -52,7 +52,10 @@ class BeliefTriggerEngineTest(unittest.TestCase):
             self.assertEqual(mock_url.call_count, 1)
             request_obj = mock_url.call_args[0][0]
             payload = json.loads(request_obj.data.decode('utf-8'))
-            self.assertEqual(list(payload.keys()), ['wallet', 'tier', 'score', 'timestamp'])
+            self.assertEqual(
+                list(payload.keys()),
+                ['wallet', 'tier', 'score', 'timestamp', 'trigger']
+            )
             self.assertEqual(payload['wallet'], 'spark_wallet')
             self.assertEqual(payload['tier'], 'Spark')
             self.assertEqual(payload['score'], 10)

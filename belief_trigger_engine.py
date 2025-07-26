@@ -73,8 +73,10 @@ def send_to_webhook(
     tier: str,
     score: int,
     timestamp: str,
+    trigger: str,
+    chain_timestamp: str | None = None,
 ) -> None:
-    """Send activation data to ``url`` if provided."""
+    """Send activation data to ``url`` if provided with strict ordering."""
     if not url:
         return
     payload = {
@@ -82,7 +84,21 @@ def send_to_webhook(
         "tier": tier,
         "score": score,
         "timestamp": timestamp,
+        "trigger": trigger,
     }
+    if list(payload.keys()) != [
+        "wallet",
+        "tier",
+        "score",
+        "timestamp",
+        "trigger",
+    ]:
+        raise ValueError("Invalid payload order")
+    if chain_timestamp:
+        ts_payload = datetime.fromisoformat(timestamp)
+        ts_chain = datetime.fromisoformat(chain_timestamp)
+        if abs((ts_payload - ts_chain).total_seconds()) > 0.5:
+            raise ValueError("Timestamp drift")
     send_webhook(url, payload)
 
 
@@ -219,10 +235,20 @@ def activate_belief_reward(
         "trigger": trigger_entry["trigger"],
     }
     _log_trigger(result)
+    chain_ts = None
     if chain_log:
-        log_chain_event(wallet_id, tier, score, result["timestamp"])
+        chain_ts = result["timestamp"]
+        log_chain_event(wallet_id, tier, score, chain_ts)
     if webhook:
-        send_to_webhook(webhook, wallet_id, tier, score, result["timestamp"])
+        send_to_webhook(
+            webhook,
+            wallet_id,
+            tier,
+            score,
+            result["timestamp"],
+            result["trigger"],
+            chain_ts,
+        )
     return result
 
 
@@ -274,10 +300,20 @@ def evaluate_wallet(
             result["timestamp"] = trigger_entry["timestamp"]
             result["trigger"] = trigger_entry["trigger"]
             _log_trigger(result)
+            chain_ts = None
             if chain_log:
-                log_chain_event(wallet_id, tier, score, result["timestamp"])
+                chain_ts = result["timestamp"]
+                log_chain_event(wallet_id, tier, score, chain_ts)
             if webhook:
-                send_to_webhook(webhook, wallet_id, tier, score, result["timestamp"])
+                send_to_webhook(
+                    webhook,
+                    wallet_id,
+                    tier,
+                    score,
+                    result["timestamp"],
+                    result["trigger"],
+                    chain_ts,
+                )
     return result
 
 
