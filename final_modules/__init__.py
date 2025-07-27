@@ -21,6 +21,9 @@ from .vaultfire_media import (
     analyze_video,
     build_avatar,
 )
+from .grid_gpu_monitor import log_system_snapshot, summarize_state
+from .behavior_drift_defense import ghostkey_shield, simulate_behavior_drift
+from .multi_domain_risk_mirror import model_misuse, sanitize_terms
 
 __all__ = [
     "companion_app",
@@ -42,4 +45,10 @@ __all__ = [
     "voice_response",
     "analyze_video",
     "build_avatar",
+    "log_system_snapshot",
+    "summarize_state",
+    "ghostkey_shield",
+    "simulate_behavior_drift",
+    "model_misuse",
+    "sanitize_terms",
 ]
