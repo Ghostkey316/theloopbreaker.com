@@ -38,6 +38,12 @@ const {
   whisper,
   resolve,
 } = require('../../modules/regen/nanoloop_innervoice_v8');
+const {
+  graft,
+  bind: memoryBind,
+  lock,
+  audit: memoryAudit
+} = require('../../modules/regen/nanoloop_memory_v10');
 
 function usage() {
   console.log('Usage: node nano.js <command> [options]');
@@ -63,6 +69,10 @@ function usage() {
   console.log('  nano.whisper --agent <id> --message <text>');
   console.log('  nano.resolve --agent <id>');
   console.log('  nano.syncstatus --agent <id>');
+  console.log('  nano.memory.graft --source <file> --context <ctx> --timestamp <ts>');
+  console.log('  nano.memory.bind --anchor <id> --tag <tag>');
+  console.log('  nano.memory.lock --tag <tag> --checksum <sum>');
+  console.log('  nano.memory.audit');
   console.log('  nano.recursify --agent <id> --depth <num>');
   console.log('  nano.realign --agent <id> --priority <text>');
   console.log('  nano.vowcheck --agent <id>');
@@ -133,6 +143,18 @@ function parseArgs() {
         break;
       case '--dry-run':
         opts.dryRun = true;
+        break;
+      case '--source':
+        opts.source = args.shift();
+        break;
+      case '--context':
+        opts.context = args.shift();
+        break;
+      case '--timestamp':
+        opts.timestamp = args.shift();
+        break;
+      case '--checksum':
+        opts.checksum = args.shift();
         break;
       case '--depth':
         opts.depth = parseInt(args.shift(), 10);
@@ -220,6 +242,18 @@ function main() {
       break;
     case 'nano.syncstatus':
       result = syncstatus(opts.agent);
+      break;
+    case 'nano.memory.graft':
+      result = graft(opts.source, opts.context, opts.timestamp);
+      break;
+    case 'nano.memory.bind':
+      result = memoryBind(opts.anchor, opts.tag);
+      break;
+    case 'nano.memory.lock':
+      result = lock(opts.tag, opts.checksum);
+      break;
+    case 'nano.memory.audit':
+      result = memoryAudit();
       break;
     case 'nano.recursify':
       result = recursify(opts.agent, Number(opts.depth));

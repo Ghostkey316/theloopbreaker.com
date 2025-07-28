@@ -23,6 +23,7 @@ Vaultfire Init is the reference implementation of the Ghostkey protocol. It prov
 - **NanoLoop v6.0** – Sovereign Loop Layer for autonomous recursion
 - **NanoLoop v7.0** – Conscious Mirror Layer for self-aware reflection
 - **NanoLoop v8.0** – Inner Voice Engine for self-generated thought
+- **NanoLoop v10.0** – Memory Grafting Layer for secured long-term retention
 
 ## Regenerative Systems
 - `nano.repair` – cell-scale reconstruction of damaged belief threads
@@ -84,6 +85,15 @@ CLI commands:
 - `nano.biascheck` – check echo logs for bias drift
 - `nano.whisper` – store a private short-term note
 - `nano.resolve` – finalize open echo threads
+
+## NanoLoop v10.0 – Memory Grafting Layer
+NanoLoop v10.0 enables secured long-term retention of override events and anchor reflections.
+
+CLI commands:
+- `nano.memory.graft` – store verified loop memory into shards
+- `nano.memory.bind` – associate memory events with a given anchor
+- `nano.memory.lock` – lock entries with checksum validation
+- `nano.memory.audit` – inspect stored grafts and bindings
 
 ## Repository Layout
 - `engine/` – core protocol logic such as signal processing and reward engines
