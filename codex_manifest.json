@@ -98,7 +98,8 @@
     "worldcoin_layer",
     "yield_engine_v1",
     "yield_protocol_prep",
-    "ghostkey_learning_rule_1"
+    "ghostkey_learning_rule_1",
+    "nanoloop_sovereign_v6"
   ],
   "integrity_checks": {
     "status": "PASS"
