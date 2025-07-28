@@ -13,6 +13,13 @@ const {
   status: guardianStatus,
   authorize: guardianAuthorize,
 } = require('../../modules/regen/nanoloop_predictive_v4');
+const {
+  trace,
+  echo,
+  counter,
+  deflect,
+  syncstatus,
+} = require('../../modules/regen/nanoloop_counterforce_v5');
 
 function usage() {
   console.log('Usage: node nano.js <command> [options]');
@@ -29,6 +36,11 @@ function usage() {
   console.log('  nano.predict --agent <id> --region <part> [--signal <num>] [--deep]');
   console.log('  nano.shield --agent <id> --region <part> [--mode <mode>]');
   console.log('  nano.audit');
+  console.log('  nano.trace --agent <id> --signal <src>');
+  console.log('  nano.counter --agent <id> [--dry-run]');
+  console.log('  nano.deflect --agent <id> --pattern <pattern>');
+  console.log('  nano.echo --agent <id> --behavior <text>');
+  console.log('  nano.syncstatus --agent <id>');
   console.log('  guardian.status --agent <ens>');
   console.log('  guardian.authorize --token <token>');
   process.exit(1);
@@ -83,6 +95,12 @@ function parseArgs() {
       case '--token':
         opts.token = args.shift();
         break;
+      case '--behavior':
+        opts.behavior = args.shift();
+        break;
+      case '--dry-run':
+        opts.dryRun = true;
+        break;
       default:
         console.error('Unknown arg', a);
         usage();
@@ -130,6 +148,21 @@ function main() {
       break;
     case 'nano.audit':
       result = audit();
+      break;
+    case 'nano.trace':
+      result = trace(opts.agent, opts.signal);
+      break;
+    case 'nano.counter':
+      result = counter(opts.agent, { dryRun: opts.dryRun });
+      break;
+    case 'nano.deflect':
+      result = deflect(opts.agent, opts.pattern);
+      break;
+    case 'nano.echo':
+      result = echo(opts.agent, opts.behavior);
+      break;
+    case 'nano.syncstatus':
+      result = syncstatus(opts.agent);
       break;
     case 'guardian.status':
       result = guardianStatus(opts.agent);
