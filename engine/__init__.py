@@ -269,6 +269,11 @@ from .connector_resilience_layer import (
     connector_enabled,
 )
 from .noise_filter import filter_feed
+from .nanoloop_v1 import (
+    MODULE_INFO as NANOLOOP_INFO,
+    module_status as nanoloop_status,
+    activate as activate_nanoloop,
+)
 
 __all__ = [
     "resolve_identity",
@@ -517,5 +522,8 @@ __all__ = [
     "connector_enabled",
     "trigger_royalty",
     "filter_feed",
+    "NANOLOOP_INFO",
+    "nanoloop_status",
+    "activate_nanoloop",
 ]
 
