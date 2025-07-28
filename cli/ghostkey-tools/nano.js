@@ -6,6 +6,11 @@ const {
   adapt,
   upgradeCore,
 } = require('../../modules/regen/nanoloop_mirrorsync_v2');
+const {
+  predict,
+  shield,
+  audit,
+} = require('../../modules/regen/nanoloop_predictive_v3');
 
 function usage() {
   console.log('Usage: node nano.js <command> [options]');
@@ -16,6 +21,9 @@ function usage() {
   console.log('  sync-mirror --signal <num> --belief <num>');
   console.log('  adapt --status <status>');
   console.log('  upgrade-core --tag <tag>');
+  console.log('  predict --user <id> --region <part> --signal <num>');
+  console.log('  shield --user <id> --region <part>');
+  console.log('  audit');
   process.exit(1);
 }
 
@@ -37,6 +45,12 @@ function parseArgs() {
         break;
       case '--pattern':
         opts.pattern = args.shift();
+        break;
+      case '--user':
+        opts.user = args.shift();
+        break;
+      case '--region':
+        opts.region = args.shift();
         break;
       case '--signal':
         opts.signal = parseFloat(args.shift());
@@ -79,6 +93,15 @@ function main() {
       break;
     case 'upgrade-core':
       result = upgradeCore(opts.tag);
+      break;
+    case 'predict':
+      result = predict(opts.user, opts.region, Number(opts.signal));
+      break;
+    case 'shield':
+      result = shield(opts.user, opts.region);
+      break;
+    case 'audit':
+      result = audit();
       break;
     default:
       usage();

@@ -17,6 +17,7 @@ Vaultfire Init is the reference implementation of the Ghostkey protocol. It prov
 - **NanoLoop v1.1** – regenerative operations with trauma stabilization and
   adaptive tissue encoding
 - **NanoLoop v2.0** – MirrorSync regenerative module with adaptive healing
+- **NanoLoop v3.0** – Predictive Immunity Layer with pre-injury diagnostics
 
 ## Regenerative Systems
 - `nano.repair` – cell-scale reconstruction of damaged belief threads
@@ -25,6 +26,11 @@ Vaultfire Init is the reference implementation of the Ghostkey protocol. It prov
 - `nano.sync-mirror` – sync healing rate with belief signals
 - `nano.adapt` – update ethics status for regeneration routines
 - `nano.upgrade-core` – evolve NanoLoop to future versions
+
+## Predictive Systems
+- `nano.predict` – forecast trauma events using behavioral mirroring
+- `nano.shield` – deploy soft barriers around stressed regions
+- `nano.audit` – review effectiveness of healing vs shielding
 
 ## Repository Layout
 - `engine/` – core protocol logic such as signal processing and reward engines
