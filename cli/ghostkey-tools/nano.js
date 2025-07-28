@@ -26,6 +26,12 @@ const {
   vowcheck,
   growthmap,
 } = require('../../modules/regen/nanoloop_sovereign_v6');
+const {
+  reflect,
+  mirror,
+  remind,
+  checkloop,
+} = require('../../modules/regen/nanoloop_conscious_v7');
 
 function usage() {
   console.log('Usage: node nano.js <command> [options]');
@@ -51,6 +57,10 @@ function usage() {
   console.log('  nano.realign --agent <id> --priority <text>');
   console.log('  nano.vowcheck --agent <id>');
   console.log('  nano.growthmap --agent <id> --horizon <num>');
+  console.log('  nano.reflect --agent <id> --depth <num> --anchor <token>');
+  console.log('  nano.mirror --agent <id>');
+  console.log('  nano.remind --agent <id>');
+  console.log('  nano.checkloop --agent <id>');
   console.log('  guardian.status --agent <ens>');
   console.log('  guardian.authorize --token <token>');
   process.exit(1);
@@ -119,6 +129,9 @@ function parseArgs() {
         break;
       case '--horizon':
         opts.horizon = parseInt(args.shift(), 10);
+        break;
+      case '--anchor':
+        opts.anchor = args.shift();
         break;
       default:
         console.error('Unknown arg', a);
@@ -194,6 +207,18 @@ function main() {
       break;
     case 'nano.growthmap':
       result = growthmap(opts.agent, Number(opts.horizon));
+      break;
+    case 'nano.reflect':
+      result = reflect(opts.agent, Number(opts.depth), opts.anchor);
+      break;
+    case 'nano.mirror':
+      result = mirror(opts.agent);
+      break;
+    case 'nano.remind':
+      result = remind(opts.agent);
+      break;
+    case 'nano.checkloop':
+      result = checkloop(opts.agent);
       break;
     case 'guardian.status':
       result = guardianStatus(opts.agent);

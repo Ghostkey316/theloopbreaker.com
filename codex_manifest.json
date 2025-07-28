@@ -99,7 +99,8 @@
     "yield_engine_v1",
     "yield_protocol_prep",
     "ghostkey_learning_rule_1",
-    "nanoloop_sovereign_v6"
+    "nanoloop_sovereign_v6",
+    "nanoloop_conscious_v7"
   ],
   "integrity_checks": {
     "status": "PASS"
