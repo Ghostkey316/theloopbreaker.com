@@ -10,7 +10,9 @@ const {
   predict,
   shield,
   audit,
-} = require('../../modules/regen/nanoloop_predictive_v3');
+  status: guardianStatus,
+  authorize: guardianAuthorize,
+} = require('../../modules/regen/nanoloop_predictive_v4');
 
 function usage() {
   console.log('Usage: node nano.js <command> [options]');
@@ -24,6 +26,11 @@ function usage() {
   console.log('  predict --user <id> --region <part> --signal <num>');
   console.log('  shield --user <id> --region <part>');
   console.log('  audit');
+  console.log('  nano.predict --agent <id> --region <part> [--signal <num>] [--deep]');
+  console.log('  nano.shield --agent <id> --region <part> [--mode <mode>]');
+  console.log('  nano.audit');
+  console.log('  guardian.status --agent <ens>');
+  console.log('  guardian.authorize --token <token>');
   process.exit(1);
 }
 
@@ -64,6 +71,18 @@ function parseArgs() {
       case '--tag':
         opts.tag = args.shift();
         break;
+      case '--deep':
+        opts.deep = true;
+        break;
+      case '--agent':
+        opts.agent = args.shift();
+        break;
+      case '--mode':
+        opts.mode = args.shift();
+        break;
+      case '--token':
+        opts.token = args.shift();
+        break;
       default:
         console.error('Unknown arg', a);
         usage();
@@ -102,6 +121,21 @@ function main() {
       break;
     case 'audit':
       result = audit();
+      break;
+    case 'nano.predict':
+      result = predict(opts.agent, opts.region, Number(opts.signal), { deep: opts.deep });
+      break;
+    case 'nano.shield':
+      result = shield(opts.agent, opts.region, { mode: opts.mode });
+      break;
+    case 'nano.audit':
+      result = audit();
+      break;
+    case 'guardian.status':
+      result = guardianStatus(opts.agent);
+      break;
+    case 'guardian.authorize':
+      result = guardianAuthorize(opts.token);
       break;
     default:
       usage();

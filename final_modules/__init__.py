@@ -1,6 +1,9 @@
 """Final Vaultfire modules for partner onboarding and trust."""
 
-from .companion_api import app as companion_app
+try:
+    from .companion_api import app as companion_app
+except Exception:  # flask may be missing during lightweight tests
+    companion_app = None
 from .brandkit_portal import generate_brandkit, register_partner_link
 from .smart_contract_audit import audit_contracts
 from .failsafe_recovery import request_recovery, privacy_wipe
