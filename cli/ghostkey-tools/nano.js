@@ -15,7 +15,6 @@ const {
 } = require('../../modules/regen/nanoloop_predictive_v4');
 const {
   trace,
-  echo,
   counter,
   deflect,
   syncstatus,
@@ -32,6 +31,13 @@ const {
   remind,
   checkloop,
 } = require('../../modules/regen/nanoloop_conscious_v7');
+const {
+  echo: innerEcho,
+  listen,
+  biascheck,
+  whisper,
+  resolve,
+} = require('../../modules/regen/nanoloop_innervoice_v8');
 
 function usage() {
   console.log('Usage: node nano.js <command> [options]');
@@ -51,7 +57,11 @@ function usage() {
   console.log('  nano.trace --agent <id> --signal <src>');
   console.log('  nano.counter --agent <id> [--dry-run]');
   console.log('  nano.deflect --agent <id> --pattern <pattern>');
-  console.log('  nano.echo --agent <id> --behavior <text>');
+  console.log('  nano.echo --agent <id> --thought <text>');
+  console.log('  nano.listen --agent <id>');
+  console.log('  nano.biascheck --agent <id>');
+  console.log('  nano.whisper --agent <id> --message <text>');
+  console.log('  nano.resolve --agent <id>');
   console.log('  nano.syncstatus --agent <id>');
   console.log('  nano.recursify --agent <id> --depth <num>');
   console.log('  nano.realign --agent <id> --priority <text>');
@@ -115,8 +125,11 @@ function parseArgs() {
       case '--token':
         opts.token = args.shift();
         break;
-      case '--behavior':
-        opts.behavior = args.shift();
+      case '--thought':
+        opts.thought = args.shift();
+        break;
+      case '--message':
+        opts.message = args.shift();
         break;
       case '--dry-run':
         opts.dryRun = true;
@@ -191,7 +204,19 @@ function main() {
       result = deflect(opts.agent, opts.pattern);
       break;
     case 'nano.echo':
-      result = echo(opts.agent, opts.behavior);
+      result = innerEcho(opts.agent, opts.thought);
+      break;
+    case 'nano.listen':
+      result = listen(opts.agent);
+      break;
+    case 'nano.biascheck':
+      result = biascheck(opts.agent);
+      break;
+    case 'nano.whisper':
+      result = whisper(opts.agent, opts.message);
+      break;
+    case 'nano.resolve':
+      result = resolve(opts.agent);
       break;
     case 'nano.syncstatus':
       result = syncstatus(opts.agent);
