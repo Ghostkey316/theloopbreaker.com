@@ -13,6 +13,7 @@ Vaultfire Init is the reference implementation of the Ghostkey protocol. It prov
   misinformation while logging each pushback event
 - **Resilience Modules** – monitor grid and GPU load, defend against behavior
   drift, and mirror multi-domain risks
+- **NanoLoop v1.0** – dormant ethical anchor for cell-scale healing logic
 
 ## Repository Layout
 - `engine/` – core protocol logic such as signal processing and reward engines
