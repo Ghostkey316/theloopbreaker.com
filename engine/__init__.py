@@ -274,6 +274,14 @@ from .nanoloop_v1 import (
     module_status as nanoloop_status,
     activate as activate_nanoloop,
 )
+from .nanoloop_v1_1 import (
+    MODULE_INFO as NANOLOOP_V1_1_INFO,
+    module_status as nanoloop_v1_1_status,
+    activate as activate_nanoloop_v1_1,
+    repair_cell_pattern,
+    stabilize_trauma,
+    rebuild_tissue,
+)
 
 __all__ = [
     "resolve_identity",
@@ -525,5 +533,11 @@ __all__ = [
     "NANOLOOP_INFO",
     "nanoloop_status",
     "activate_nanoloop",
+    "NANOLOOP_V1_1_INFO",
+    "nanoloop_v1_1_status",
+    "activate_nanoloop_v1_1",
+    "repair_cell_pattern",
+    "stabilize_trauma",
+    "rebuild_tissue",
 ]
 
