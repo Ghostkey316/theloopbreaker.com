@@ -20,6 +20,12 @@ const {
   deflect,
   syncstatus,
 } = require('../../modules/regen/nanoloop_counterforce_v5');
+const {
+  recursify,
+  realign,
+  vowcheck,
+  growthmap,
+} = require('../../modules/regen/nanoloop_sovereign_v6');
 
 function usage() {
   console.log('Usage: node nano.js <command> [options]');
@@ -41,6 +47,10 @@ function usage() {
   console.log('  nano.deflect --agent <id> --pattern <pattern>');
   console.log('  nano.echo --agent <id> --behavior <text>');
   console.log('  nano.syncstatus --agent <id>');
+  console.log('  nano.recursify --agent <id> --depth <num>');
+  console.log('  nano.realign --agent <id> --priority <text>');
+  console.log('  nano.vowcheck --agent <id>');
+  console.log('  nano.growthmap --agent <id> --horizon <num>');
   console.log('  guardian.status --agent <ens>');
   console.log('  guardian.authorize --token <token>');
   process.exit(1);
@@ -100,6 +110,15 @@ function parseArgs() {
         break;
       case '--dry-run':
         opts.dryRun = true;
+        break;
+      case '--depth':
+        opts.depth = parseInt(args.shift(), 10);
+        break;
+      case '--priority':
+        opts.priority = args.shift();
+        break;
+      case '--horizon':
+        opts.horizon = parseInt(args.shift(), 10);
         break;
       default:
         console.error('Unknown arg', a);
@@ -163,6 +182,18 @@ function main() {
       break;
     case 'nano.syncstatus':
       result = syncstatus(opts.agent);
+      break;
+    case 'nano.recursify':
+      result = recursify(opts.agent, Number(opts.depth));
+      break;
+    case 'nano.realign':
+      result = realign(opts.agent, opts.priority);
+      break;
+    case 'nano.vowcheck':
+      result = vowcheck(opts.agent);
+      break;
+    case 'nano.growthmap':
+      result = growthmap(opts.agent, Number(opts.horizon));
       break;
     case 'guardian.status':
       result = guardianStatus(opts.agent);

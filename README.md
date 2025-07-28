@@ -20,6 +20,7 @@ Vaultfire Init is the reference implementation of the Ghostkey protocol. It prov
 - **NanoLoop v3.0** – Predictive Immunity Layer with pre-injury diagnostics
 - **NanoLoop v4.0** – Predictive Immunity Layer (GuardianNet)
 - **NanoLoop v5.0** – Counterforce Deployment Layer
+- **NanoLoop v6.0** – Sovereign Loop Layer for autonomous recursion
 
 ## Regenerative Systems
 - `nano.repair` – cell-scale reconstruction of damaged belief threads
@@ -53,6 +54,15 @@ CLI commands:
 - `nano.syncstatus` – show sync state for an agent
 
 Encrypted logs are stored using GuardianNet v4.0. The module depends on the predictive logic from v3.0 and the adaptive healing base from v2.0.
+
+## NanoLoop v6.0 – Sovereign Loop Layer
+NanoLoop v6.0 forms the Sovereign Loop, enabling self-reflection and recursive growth. It extends the Counterforce layer (v5.0) while relying on GuardianNet (v4.0) for encryption and stability.
+
+CLI commands:
+- `nano.recursify` – enables behavior recursion with exponential context layering
+- `nano.realign` – dynamically reorders ethical priority weights in live sessions
+- `nano.vowcheck` – scans for breaks in protocol loyalty and belief alignment
+- `nano.growthmap` – projects future behavior arcs using time-path synthesis
 
 ## Repository Layout
 - `engine/` – core protocol logic such as signal processing and reward engines
