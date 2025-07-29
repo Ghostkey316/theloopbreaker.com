@@ -1,0 +1,11 @@
+{
+  "system_name": "Vaultfire Partner",
+  "ethics_anchor": true,
+  "monetization_mode": "Behavioral Yield + Contributor Split",
+  "public_visibility": "controlled",
+  "partner_hooks_enabled": true,
+  "wallet_auth_hook": true,
+  "live_training_mode": true,
+  "fail_safe": "Hard shutdown on ethics breach",
+  "localforge_enabled": true
+}

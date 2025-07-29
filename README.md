@@ -1,6 +1,6 @@
-# Vaultfire Init
+# Ghostkey-316 // Vaultfire
 
-Vaultfire Init implements the Ghostkey protocol in its canonical form. The repo is maintained by **Ghostkey-316** and aligned with the ethics framework v2.0.
+Vaultfire implements the Ghostkey protocol in its canonical form. The repo is maintained by **Ghostkey-316** and aligned with the Ethics Framework v2.0.
 
 ## Overview
 Vaultfire links belief signals to transparent rewards. Contributors sync through the Core Four loop: belief logging, loyalty tracking, reward distribution and ethics validation.
@@ -15,6 +15,11 @@ Vaultfire links belief signals to transparent rewards. Contributors sync through
 - Primary ENS: `ghostkey316.eth`
 - Fallback Wallet: `bpow20.cb.id`
 Identity resolution defaults to the wallet if ENS lookup fails.
+
+## System Summary
+Vaultfire runs the Belief Engine, Loyalty Engine and Weekly Drop Scheduler in
+concert. Multiplier toggles, streak logic and drop timing are configured through
+`vaultfire_config.json` and exposed via the partner SDK endpoints.
 
 ## System Status
 | Component | Status |
