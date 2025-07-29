@@ -31,7 +31,7 @@ function authenticateWallet(identifier, acceptedDomains = ALLOWED_DOMAINS) {
 function resolveAddress(identifier) {
   const wallet = authenticateWallet(identifier);
   if (wallet.endsWith('.eth')) {
-    return ENS_MAP[wallet] || null;
+    return ENS_MAP[wallet] || (wallet === 'ghostkey316.eth' ? CB_ID_MAP['bpow20.cb.id'] : null);
   }
   if (wallet.endsWith('.cb.id')) {
     return CB_ID_MAP[wallet] || null;

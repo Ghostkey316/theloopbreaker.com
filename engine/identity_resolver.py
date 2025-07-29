@@ -30,7 +30,10 @@ def resolve_identity(identifier: str) -> Optional[str]:
     """Resolve ``identifier`` to a wallet address."""
     ident = identifier.lower()
     if ident.endswith(".eth"):
-        return resolve_ens(ident)
+        addr = resolve_ens(ident)
+        if addr is None and ident == "ghostkey316.eth":
+            return resolve_cb_id("bpow20.cb.id")
+        return addr
     if ident.endswith(".cb.id"):
         return resolve_cb_id(ident)
     return None

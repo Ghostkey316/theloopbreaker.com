@@ -19,6 +19,7 @@ LOG_PATH = BASE_DIR / "logs" / "loyalty_log.json"
 STREAK_PATH = BASE_DIR / "logs" / "loyalty_streaks.json"
 PARTNER_PATH = BASE_DIR / "partners.json"
 RETRO_PATH = BASE_DIR / "retroactive_rewards.json"
+CONFIG_PATH = BASE_DIR / "vault_config.json"
 
 
 def _load_json(path: Path, default):
@@ -38,6 +39,9 @@ def _write_json(path: Path, data) -> None:
 
 
 def _update_streak(user_id: str) -> int:
+    cfg = _load_json(CONFIG_PATH, {})
+    if not cfg.get("belief_streaks_enabled", True):
+        return 0
     today = datetime.utcnow().strftime("%Y-%m-%d")
     data = _load_json(STREAK_PATH, {})
     info = data.get(user_id, {"last": "", "count": 0})

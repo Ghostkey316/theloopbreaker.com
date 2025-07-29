@@ -12,6 +12,17 @@ async function loadValues() {
   return loadJSON('../../vaultfire-core/ghostkey_values.json');
 }
 
+async function loadManifesto() {
+  const res = await fetch('../../docs/ghostkey_manifesto_v1.md').catch(() => null);
+  if (!res || !res.ok) return '';
+  return res.text();
+}
+
+function displayManifesto(text) {
+  const pre = document.getElementById('manifestoText');
+  if (pre) pre.textContent = text;
+}
+
 function displayIdentity(data) {
   const pre = document.getElementById('identityData');
   pre.textContent = JSON.stringify(data, null, 2);
@@ -41,6 +52,9 @@ async function init() {
   displayIdentity(id);
   const values = await loadValues();
   displayValues(values);
+
+  const man = await loadManifesto();
+  displayManifesto(man);
 }
 
 init();
