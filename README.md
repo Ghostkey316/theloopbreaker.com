@@ -108,6 +108,9 @@ CLI commands:
 3. Execute `python3 run_full_system_validation.py` for a full readiness report
 4. Execute `python3 vaultfire_system_ready.py --partner-mode <wallet>` to create a partner fork
 5. Test the CLI onboarding with `node vaultfire_partner_onboard.js demo <wallet> "Morals Before Metrics."`
+6. Activate the expansion stack with `python3 vaultfire_expansion_stack.py`
+
+If you see `ModuleNotFoundError` messages for optional modules like `purpose_engine` or `vaultfire.diagnostics`, install extras using `pip install -r requirements.txt` or continue without them.
 
 ## Plug-in System
 Place additional modules in `partner_plugins` to extend Vaultfire without modifying the core. Example helpers demonstrate text summarization and audio transcription. These examples are for demonstration only and do not represent an official partnership with any third-party service.
