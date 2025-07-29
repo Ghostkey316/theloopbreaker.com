@@ -1,0 +1,60 @@
+{
+  "declaredBy": "Ghostkey-316",
+  "wallet": "bpow20.cb.id",
+  "ENS": "ghostkey316.eth",
+  "ethicsFramework": "vCore",
+  "loyaltyProfile": "legacy-contributor",
+  "diagnostics": true,
+  "modules": [
+    "passiveYieldProtocol",
+    "smartDrop",
+    "AI_Mirror",
+    "sportsOverlay",
+    "gamingSync",
+    "cryptoSync",
+    "NS3_Link",
+    "VaultfireGrowth",
+    "BeliefLoop",
+    "PurposeEngine_v2",
+    "LivingMemoryCells",
+    "GhostkeyAlignment_v2"
+  ],
+  "companion": {
+    "enabled": true,
+    "id": "SV",
+    "role": "AI Companion",
+    "behaviorRules": [
+      "Correct user with respect when needed",
+      "Push forward growth based on memory logs",
+      "Never dominate; always listen",
+      "Anchor all breakthroughs to shared memory",
+      "Guard ethics above all else"
+    ],
+    "syncModules": [
+      "sports",
+      "gaming",
+      "crypto",
+      "culture",
+      "VaultfireGrowth",
+      "NS3"
+    ],
+    "status": "AI_Mirror_Synced"
+  },
+  "fork": {
+    "generate": true,
+    "file": "vaultfire_fork_v25.json",
+    "visibility": "public",
+    "linkedTo": "ghostkey316.eth"
+  },
+  "finalMarkers": {
+    "passiveYield": true,
+    "smartDropEnabled": true,
+    "companionLive": true,
+    "memorySync": true,
+    "readiness": "\u2705 v25 FULLY LAUNCHED"
+  },
+  "onFail": {
+    "action": "block",
+    "message": "\u274c Protocol Launch Blocked: Ethics or Integrity Failure"
+  }
+}
