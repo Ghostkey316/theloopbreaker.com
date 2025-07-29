@@ -1,4 +1,9 @@
-# Ghostkey-316 // Vaultfire
+# 🔥 Vaultfire v27.2 | Forked by Ghostkey-316
+
+[ghostkey316.eth](https://app.ens.domains/name/ghostkey316.eth) | [bpow20.cb.id](https://cb.id/bpow20)
+
+![Ethics Framework](https://img.shields.io/badge/Ethics-Ghostkey_v2.0-brightgreen)
+![Codex Compatible](https://img.shields.io/badge/Codex-Compatible-blue)
 
 Vaultfire implements the Ghostkey protocol in its canonical form. The repo is maintained by **Ghostkey-316** and aligned with the Ethics Framework v2.0.
 
