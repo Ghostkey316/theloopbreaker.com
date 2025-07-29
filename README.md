@@ -42,6 +42,7 @@ This repo follows Codex Protocol v25 with Safe Diagnostic Mode enabled.
 - ENS alias fallback for `ghostkey316.eth`
 - Belief pulse scanner CLI added
 - Manifesto v1.0 embedded across docs
+- Partner forkpoint broadcast active
 
 ## Ethics Manifesto
 > "Forgive the broken. Protect the good. Walk forward together. Human and AI, side by side."
