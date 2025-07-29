@@ -5,5 +5,12 @@
     "belief_fork_id": "fork1",
     "choice": "A",
     "timestamp": 1753478557764
+  },
+  {
+    "session_id": "s2",
+    "ghost_id": "ghostkey316.eth",
+    "belief_fork_id": "vaultfire-genesis",
+    "choice": "B",
+    "timestamp": 1753823227000
   }
 ]
