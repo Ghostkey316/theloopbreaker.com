@@ -21,6 +21,17 @@ async function loadPartners() {
   return loadJSON('../../partners.json') || [];
 }
 
+async function loadManifesto() {
+  const res = await fetch('../../docs/ghostkey_manifesto_v1.md').catch(() => null);
+  if (!res || !res.ok) return '';
+  return res.text();
+}
+
+function displayManifesto(text) {
+  const pre = document.getElementById('manifestoText');
+  if (pre) pre.textContent = text;
+}
+
 function displayLeaderboard(rows) {
   const tbody = document.querySelector('#leaderboard tbody');
   tbody.innerHTML = '';
@@ -124,6 +135,9 @@ async function init() {
 
   const partners = await loadPartners();
   displayPartners(partners);
+
+  const man = await loadManifesto();
+  displayManifesto(man);
 }
 
 document.getElementById('revealLedger').addEventListener('click', () => {

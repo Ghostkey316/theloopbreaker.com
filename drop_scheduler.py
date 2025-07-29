@@ -61,6 +61,8 @@ def _window_open(config: dict, now: datetime) -> bool:
 def schedule_drops(now: datetime | None = None) -> List[Dict]:
     dt = now or datetime.utcnow()
     config = _load_json(CONFIG_PATH, DEFAULT_CONFIG)
+    if not config.get("weekly_drops_enabled", True):
+        return []
     if not _window_open(config, dt):
         return []
     rewards = _load_json(REWARDS_PATH, {})

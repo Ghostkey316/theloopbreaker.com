@@ -25,6 +25,7 @@ CONTRIBUTORS_PATH = BASE_DIR / "user_list.json"
 EARNERS_PATH = BASE_DIR / "earners.json"
 SCORECARD_PATH = BASE_DIR / "user_scorecard.json"
 OG_LIST_PATH = BASE_DIR / "og_loyalists.json"
+CONFIG_PATH = BASE_DIR / "vault_config.json"
 
 
 def _load_json(path: Path, default):
@@ -342,6 +343,27 @@ def partner_themeforge():
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     return jsonify(preview_theme(partner_id))
+
+
+@app.get("/config")
+def get_config():
+    cfg = _load_json(CONFIG_PATH, {})
+    return jsonify(cfg)
+
+
+@app.post("/config")
+def update_config():
+    data = request.get_json(silent=True) or {}
+    cfg = _load_json(CONFIG_PATH, {})
+    for key in [
+        "weekly_drops_enabled",
+        "multiplier_boosts_enabled",
+        "belief_streaks_enabled",
+    ]:
+        if key in data:
+            cfg[key] = bool(data[key])
+    _write_json(CONFIG_PATH, cfg)
+    return jsonify(cfg)
 
 
 if __name__ == "__main__":

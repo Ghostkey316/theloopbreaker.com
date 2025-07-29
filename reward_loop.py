@@ -60,6 +60,7 @@ def _alignment(entries: List[Dict[str, Any]]) -> float:
 def process_rewards(wallet: str) -> List[Dict[str, Any]]:
     mem = _load_json(MEMORY_PATH, [])
     results: List[Dict[str, Any]] = []
+    existing = {(e.get("ghost_id"), e.get("wallet")) for e in _load_json(LOG_PATH, [])}
     by_ghost: Dict[str, List[Dict[str, Any]]] = {}
     for entry in mem:
         by_ghost.setdefault(entry.get("ghost_id"), []).append(entry)
@@ -67,6 +68,8 @@ def process_rewards(wallet: str) -> List[Dict[str, Any]]:
         score = _alignment(entries)
         milestone = any(e.get("action") == "belief_milestone" for e in entries)
         if score >= 0.75 or milestone:
+            if (gid, wallet) in existing:
+                continue
             reward = {
                 "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "ghost_id": gid,

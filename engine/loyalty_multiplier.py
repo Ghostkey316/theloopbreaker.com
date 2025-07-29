@@ -7,6 +7,7 @@ from .contributor_xp import xp_score
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 SCORECARD_PATH = BASE_DIR / "user_scorecard.json"
+CONFIG_PATH = BASE_DIR / "vault_config.json"
 
 
 def _load_json(path: Path, default):
@@ -21,6 +22,9 @@ def _load_json(path: Path, default):
 
 def loyalty_multiplier(user_id: str) -> float:
     """Return combined loyalty multiplier for ``user_id``."""
+    cfg = _load_json(CONFIG_PATH, {})
+    if not cfg.get("multiplier_boosts_enabled", True):
+        return 1.0
     scorecard = _load_json(SCORECARD_PATH, {})
     wallet = scorecard.get(user_id, {}).get("wallet")
     loyalty = loyalty_score(user_id)

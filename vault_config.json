@@ -3,5 +3,8 @@
   "weekly_drop_hour_et": 16,
   "intel_loop": true,
   "memory_tracking": true,
-  "memory_snapshot_days": 30
+  "memory_snapshot_days": 30,
+  "weekly_drops_enabled": true,
+  "multiplier_boosts_enabled": true,
+  "belief_streaks_enabled": true
 }
