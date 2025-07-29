@@ -137,8 +137,16 @@ def generate_bundle(args: argparse.Namespace) -> dict:
     conf_hash = hashlib.sha256(enc.encode()).hexdigest()
 
     # register entries
-    purpose = _load_json(PURPOSE_MAP_PATH, [])
-    purpose.append({"wallet": args.partner_wallet, "bundle": vault_name, "hash": conf_hash})
+    purpose = _load_json(PURPOSE_MAP_PATH, {"records": []})
+    if isinstance(purpose, list):
+        # legacy list format
+        purpose.append({"wallet": args.partner_wallet, "bundle": vault_name, "hash": conf_hash})
+    else:
+        purpose.setdefault("records", []).append({
+            "wallet": args.partner_wallet,
+            "bundle": vault_name,
+            "hash": conf_hash,
+        })
     _write_json(PURPOSE_MAP_PATH, purpose)
 
     registry = _load_json(PARTNERS_PATH, [])
