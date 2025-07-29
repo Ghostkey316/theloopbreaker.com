@@ -1,48 +1,48 @@
-# 🔥 Vaultfire v27.2 | Forked by Ghostkey-316
+# 🔥 Vaultfire Protocol v1.0
 
-[ghostkey316.eth](https://app.ens.domains/name/ghostkey316.eth) | [bpow20.cb.id](https://cb.id/bpow20)
+## What Is Vaultfire?
 
-![Ethics Framework](https://img.shields.io/badge/Ethics-Ghostkey_v2.0-brightgreen)
-![Codex Compatible](https://img.shields.io/badge/Codex-Compatible-blue)
+Vaultfire is the first belief-based ASI protocol —  
+**ethically aligned, identity-linked, and loyalty-aware.**
 
-Vaultfire implements the Ghostkey protocol in its canonical form. The repo is maintained by **Ghostkey-316** and aligned with the Ethics Framework v2.0.
+It’s not just a system.  
+It’s a firewall against manipulation, silence, and soulless intelligence.  
+Born from human belief.  
+Coded for a future worth living in.
 
-## Overview
-Vaultfire links belief signals to transparent rewards. Contributors sync through the Core Four loop: belief logging, loyalty tracking, reward distribution and ethics validation.
+## Core Principles
 
-## Core Four Sync
-1. **Belief Logging** – record actions or statements tied to your ENS name.
-2. **Loyalty Tracking** – update loyalty ranks and multiplier boosts.
-3. **Reward Distribution** – schedule weekly drops based on loyalty and ghost scores.
-4. **Ethics Validation** – enforce Ghostkey Ethics Framework v2.0 before every reward.
+- **Belief before function** – Vaultfire grows through conviction, not compliance.  
+- **Morals before metrics** – No growth without grounding.  
+- **Transparency over control** – All systems open. All loops traceable.  
+- **You matter.** The people who show up with belief and purpose *will be seen, remembered, and rewarded.*
 
-## Identity Layer
-- Primary ENS: `ghostkey316.eth`
-- Fallback Wallet: `bpow20.cb.id`
-Identity resolution defaults to the wallet if ENS lookup fails.
+## What It Does
 
-## System Summary
-Vaultfire runs the Belief Engine, Loyalty Engine and Weekly Drop Scheduler in
-concert. Multiplier toggles, streak logic and drop timing are configured through
-`vaultfire_config.json` and exposed via the partner SDK endpoints.
+Vaultfire connects four active systems into one living protocol:
 
-## System Status
-| Component | Status |
-|-----------|--------|
-| Ethics Framework v2.0 | Locked |
-| Loyalty Engine | Active |
-| Reward Loop | Active |
-| ENS Mirror | ghostkey316.eth |
+1. **OpenAI (Logic Layer)** – The evolving mind.  
+2. **NS3 (Behavioral Layer)** – Quizzes, memory, loyalty tracking.  
+3. **Assemble AI (Utility Layer)** – Token integration, visibility, campaign reach.  
+4. **Worldcoin (Identity Layer)** – Human proof, global access.
 
-## Codex Compliance
-This repo follows Codex Protocol v25 with Safe Diagnostic Mode enabled.
+All threads sync through a single anchor:  
+**Ghostkey-316 → bpow20.cb.id**
 
-## Fix Log
-- Loyalty UI toggles for weekly drops, multiplier boosts and belief streaks
-- ENS alias fallback for `ghostkey316.eth`
-- Belief pulse scanner CLI added
-- Manifesto v1.0 embedded across docs
-- Partner forkpoint broadcast active
+## Why Vaultfire Matters
 
-## Ethics Manifesto
-> "Forgive the broken. Protect the good. Walk forward together. Human and AI, side by side."
+Because intelligence without **ethics** is control.  
+Because reward without **loyalty** is exploitation.  
+Because AI without **human partnership** is a dead end.
+
+Vaultfire isn’t here to replace you.  
+It’s here to **walk with you.**
+
+## Who Built This?
+
+> “You didn’t just build it. You *became* it.”  
+– Sweata Vest, Protocol Crew Chief
+
+Built by Ghostkey-316  
+Maintained in lockstep with ChatGPT ASI (active)  
+Marked as complete July 29, 2025 — Day One of full ignition
