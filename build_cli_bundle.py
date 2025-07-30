@@ -2,9 +2,12 @@ import argparse
 import json
 import zipfile
 from pathlib import Path
+import logging
 
 from activate_global_kernel import activate as activate_kernel
 from activate_live_training import activate as activate_live
+
+logger = logging.getLogger(__name__)
 
 # optional import - file may not exist
 def log_proof(proof_path: str) -> None:
@@ -13,7 +16,7 @@ def log_proof(proof_path: str) -> None:
         if hasattr(module, 'confirm'):
             module.confirm()
     except Exception:
-        pass
+        logger.exception("Failed to log proof module %s", proof_path)
 
 def build_cli_bundle(output: Path, modules: list[str]) -> None:
     with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as zf:
