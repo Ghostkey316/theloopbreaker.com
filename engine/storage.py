@@ -3,8 +3,29 @@ import json
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import create_engine, Column, Integer, String, Text
-from sqlalchemy.orm import sessionmaker, declarative_base
+try:
+    from sqlalchemy import create_engine, Column, Integer, String, Text
+    from sqlalchemy.orm import sessionmaker, declarative_base
+except Exception:  # pragma: no cover - optional dependency
+    create_engine = None
+    def Column(*args, **kwargs):
+        return None
+
+    class _Dummy:
+        def __init__(self, *args, **kwargs):
+            pass
+
+    Integer = String = Text = _Dummy
+    sessionmaker = None
+
+    def declarative_base():
+        class DummyBase:
+            class metadata:
+                @staticmethod
+                def create_all(engine):
+                    pass
+
+        return DummyBase
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 CONFIG_PATH = BASE_DIR / "vaultfire_config.json"

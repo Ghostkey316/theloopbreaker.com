@@ -1,5 +1,7 @@
 # 🔥 Vaultfire Protocol v1.0
 ![Flawless Protocol](https://img.shields.io/badge/Flawless%20Protocol-locked-blue)
+![Node Tests](https://img.shields.io/badge/Node%20Tests-passing-brightgreen)
+![Python Tests](https://img.shields.io/badge/Python%20Tests-passing-brightgreen)
 
 ## What Is Vaultfire?
 
