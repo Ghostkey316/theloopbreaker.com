@@ -73,7 +73,6 @@ def _log(entry: Dict[str, Any]) -> None:
 
 def generate_bundle(args: argparse.Namespace) -> dict:
     src_path = Path(args.source_protocol)
-    protocol = _load_json(src_path, {})
     partner_key = secrets.token_hex(16)
     timestamp = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
 

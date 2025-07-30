@@ -1,6 +1,5 @@
 import json
 from pathlib import Path
-from datetime import datetime
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 SCORECARD_PATH = BASE_DIR / "user_scorecard.json"
