@@ -7,4 +7,7 @@
   "wallet_auth_hook": true,
   "live_training_mode": true,
   "fail_safe": "Hard shutdown on ethics breach"
+  ,
+  "use_database": false,
+  "database_url": "sqlite:///vaultfire.db"
 }
