@@ -22,6 +22,9 @@ All enterprise modules inherit these principles. An automated ethics check block
 - **Onboarding API** – REST endpoints for partners, contributors and earners.
 - **Vaultfire SDK** – packaged helpers for authentication, identity resolution and reward hooks.
 - **Plugin Framework** – add custom modules without modifying core files. Ethics checks apply automatically.
+- **Companion API** – lightweight interface for AI companion interactions.
+- **Fitness & Music Layers** – optional engagement modules for workouts and streaming data.
+- **Gaming Extensions** – livestream and AR hooks for interactive rewards.
 - **Enterprise Support Hooks** – optional callback functions for contract-based revenue sharing and usage tracking.
 
 ## 4. Transparency and Control
@@ -42,7 +45,9 @@ All enterprise modules inherit these principles. An automated ethics check block
 5. Periodically run `weekly_sync.py` to refresh dashboards and audit logs.
 
 ## Disclaimers
-- This file summarizes production features. It is provided for informational purposes only.
-- Nothing in this document constitutes financial or legal advice.
+- Use at your own risk; uptime or results are not guaranteed.
+- Ambient data is logged only with opt-in consent.
+- Nothing here constitutes legal, medical, or financial advice.
+- This file summarizes production features only.
 - Partners should perform their own security and compliance reviews before deploying.
 - Vaultfire modules may change without notice and are offered as-is.

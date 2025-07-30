@@ -1,7 +1,9 @@
 """Companion echo layer deployment utilities.
 
-- Ambient data gathering requires opt-in consent from participants.
-- Nothing here constitutes financial or medical advice.
+DISCLAIMER:
+- Use at your own risk; uptime or results are not guaranteed.
+- Ambient data is logged only with opt-in consent.
+- Nothing here constitutes legal, medical, or financial advice.
 """
 
 from __future__ import annotations

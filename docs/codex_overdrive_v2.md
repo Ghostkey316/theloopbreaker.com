@@ -19,6 +19,9 @@ engine package.
 - **Codex Self-Healing Layer** – confirms key dashboard files exist.
 - **Legacy Tracker** – archives notes about meaningful growth sessions.
 
--## Disclaimers
+## Disclaimers
+- Use at your own risk; uptime or results are not guaranteed.
+- Ambient data is logged only with opt-in consent.
+- Nothing here constitutes legal, medical, or financial advice.
 - Overdrive components are production-ready and subject to change.
 - Ambient data collection must comply with user privacy preferences.

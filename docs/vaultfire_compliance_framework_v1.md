@@ -52,8 +52,9 @@ Developers, partners, and end users must follow the ethics filter. Content manip
 - **Belief score** – aggregate measurement of aligned behavior.
 
 ## Disclaimers
-- This document is for informational purposes only and does not constitute financial or legal advice.
-- Ambient data gathering requires opt-in consent from participants.
+- Use at your own risk; uptime or results are not guaranteed.
+- Ambient data is logged only with opt-in consent.
+- Nothing here constitutes legal, medical, or financial advice.
 - System logs may store limited personal data for reflective analysis.
 - Partners must perform their own compliance review before deploying Vaultfire modules.
 - Vaultfire modules may change without notice and are provided as-is.

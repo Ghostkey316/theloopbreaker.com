@@ -12,5 +12,8 @@ post_signal("alice", "bob", "share", "excited", "We can win", mirror_prompt="mir
 ```
 
 ## Disclaimers
+- Use at your own risk; uptime or results are not guaranteed.
+- Ambient data is logged only with opt-in consent.
+- Nothing here constitutes legal, medical, or financial advice.
 - Data is written under `logs/social/` and may be cleared at any time.
 - Squad and competition records have no on-chain guarantees.

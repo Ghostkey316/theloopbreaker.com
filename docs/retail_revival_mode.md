@@ -12,7 +12,9 @@
 Logs are stored in `final_modules/retail_revival_visits.json` and `final_modules/retail_revival_config.json`.
 
 ## Disclaimers
+- Use at your own risk; uptime or results are not guaranteed.
+- Ambient data is logged only with opt-in consent.
+- Nothing here constitutes legal, medical, or financial advice.
 - Hardware integrations are not included.
 - Loyalty calculations are simulated with local logs.
-- This module does not provide financial or legal advice.
 

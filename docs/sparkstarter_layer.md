@@ -32,5 +32,8 @@ entry = next_ping("alice", "Keep moving forward!", "secret-key")
 ```
 
 ## Disclaimers
+- Use at your own risk; uptime or results are not guaranteed.
+- Ambient data is logged only with opt-in consent.
+- Nothing here constitutes legal, medical, or financial advice.
 - SparkStarter is not a medical or therapeutic system.
 - Ping data is stored locally and may be cleared at any time.
