@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 from datetime import datetime
+import logging
 
 from vaultfire_signal import log_vaultfire_status
 from .yield_engine_v1 import mark_yield_boost
@@ -10,6 +11,8 @@ from .belief_validation import validate_belief
 from .immutable_log import append_entry
 
 BASE_DIR = Path(__file__).resolve().parents[1]
+
+logger = logging.getLogger(__name__)
 EVENT_LOG_PATH = BASE_DIR / "event_log.json"
 SCORECARD_PATH = BASE_DIR / "user_scorecard.json"
 AUDIT_PATH = BASE_DIR / "logs" / "feedback_audit.json"
@@ -134,17 +137,20 @@ def check_thresholds(user_id):
 
 def sync_openai(user_id, event):
     """Placeholder for OpenAI reflection prompts."""
-    pass
+    logger.warning("sync_openai called but not implemented")
+    raise NotImplementedError("OpenAI integration not implemented")
 
 
 def sync_ns3(user_id, event):
     """Placeholder for NS3 quiz response mirror."""
-    pass
+    logger.warning("sync_ns3 called but not implemented")
+    raise NotImplementedError("NS3 integration not implemented")
 
 
 def sync_worldcoin(user_id):
     """Placeholder for Worldcoin ID verification hook."""
-    pass
+    logger.warning("sync_worldcoin called but not implemented")
+    raise NotImplementedError("Worldcoin integration not implemented")
 
 
 def _log_audit(entry):

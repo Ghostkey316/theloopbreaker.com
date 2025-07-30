@@ -6,11 +6,14 @@ import json
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
+import logging
 
 from .partner_hooks import grant_reward
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 SESSIONS_PATH = BASE_DIR / "logs" / "game_sessions.json"
+
+logger = logging.getLogger(__name__)
 
 
 def _load_json(path: Path, default):
@@ -51,6 +54,7 @@ def create_session(
             start_stream(stream_handle)
             session["stream"] = stream_handle
         except Exception:
+            logger.exception("start_stream failed for %s", stream_handle)
             session["stream"] = stream_handle
     sessions.append(session)
     _write_json(SESSIONS_PATH, sessions)
@@ -81,13 +85,13 @@ def end_session(game_id: str, reward_per_player: float = 0.0, token: str = "ASM"
                     from .twitch_layer import end_stream
                     end_stream(session["stream"])
                 except Exception:
-                    pass
+                    logger.exception("end_stream failed for %s", session["stream"])
             _write_json(SESSIONS_PATH, sessions)
             if reward_per_player > 0:
                 for player in session.get("players", []):
                     try:
                         grant_reward(player, player, reward_per_player, token)
                     except Exception:
-                        pass
+                        logger.exception("grant_reward failed for player %s", player)
             return session
     return None

@@ -1,6 +1,7 @@
 import argparse
 import hashlib
 import json
+import logging
 import urllib.request
 from importlib import import_module
 from pathlib import Path
@@ -8,6 +9,8 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 PROTOCOL_DIR = BASE_DIR / "belief_protocols"
 PLUGIN_DIR = BASE_DIR / "vaultfire_cli_plugins"
+
+logger = logging.getLogger(__name__)
 
 
 def _load_json(path: Path, default):
@@ -144,6 +147,7 @@ def load_plugins(subparsers: argparse._SubParsersAction) -> None:
                 if hasattr(module, "register"):
                     module.register(subparsers)
             except Exception:
+                logger.exception("Failed to load plugin %s", mod_name)
                 continue
 
 
