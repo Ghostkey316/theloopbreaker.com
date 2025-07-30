@@ -16,6 +16,9 @@ This document outlines the personal principles of Ghostkey-316, the original arc
 We are here to serve contributors who act with integrity. The project belongs to those who uphold the Ghostkey Commandments and strengthen the Vaultfire network.
 
 ## Disclaimers
+- Use at your own risk; uptime or results are not guaranteed.
+- Ambient data is logged only with opt-in consent.
+- Nothing here constitutes legal, medical, or financial advice.
 - This manifesto is a personal statement from Ghostkey-316 and does not create legal obligations.
 - Participation in Vaultfire does not guarantee financial gain or permanent access.
 - Materials are provided "as is" with no promise of fitness for a particular purpose.

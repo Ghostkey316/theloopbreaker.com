@@ -3,6 +3,11 @@
 This Flask app exposes a small API surface for partners to interact
 with the Vaultlink AI companion. It ties into the Ghostkey identity and
 BeliefSync modules via the existing ``vaultlink`` engine.
+
+DISCLAIMER:
+- Use at your own risk; uptime or results are not guaranteed.
+- Ambient data is logged only with opt-in consent.
+- Nothing here constitutes legal, medical, or financial advice.
 """
 from __future__ import annotations
 

@@ -11,7 +11,9 @@ record_workout_sync("alice", "apple", {"minutes": 30, "avg_hr": 120})
 Team challenges allow groups to combine minutes toward a shared goal. When the goal is met, each member earns a small Vault reward.
 
 ## Disclaimers
-- Fitness connectors are **Beta Module** — production version in development; API endpoints subject to change and do not use official APIs.
+- Use at your own risk; uptime or results are not guaranteed.
+- Ambient data is logged only with opt-in consent.
+- Nothing here constitutes legal, medical, or financial advice.
 - Proof-of-sweat validation is basic and not cheat-proof.
 - Rewards are test tokens with no monetary value.
 

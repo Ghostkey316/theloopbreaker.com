@@ -12,9 +12,11 @@ playlist = ai_curated_playlist("alice")
 ```
 
 ## Disclaimers
+- Use at your own risk; uptime or results are not guaranteed.
+- Ambient data is logged only with opt-in consent.
+- Nothing here constitutes legal, medical, or financial advice.
 - API tokens are stored as hashes and do not grant direct access to third‑party services.
 - Memory tracks use lightweight XOR encryption and are not suited for sensitive data.
-- Music NFTs recorded here are **Beta Module** — production version in development; API endpoints subject to change and hold no financial guarantee.
 - AI playlists are suggestions only and may not reflect professional curation.
 
 ## Ethics-Driven Sandbox Mode

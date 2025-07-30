@@ -9,5 +9,8 @@ log_journal_entry("alice", "Today I felt hopeful.", "secret-key")
 ```
 
 ## Disclaimers
+- Use at your own risk; uptime or results are not guaranteed.
+- Ambient data is logged only with opt-in consent.
+- Nothing here constitutes legal, medical, or financial advice.
 - This module does not replace professional mental health care.
 - Journal data is stored locally and should not include sensitive personal details.

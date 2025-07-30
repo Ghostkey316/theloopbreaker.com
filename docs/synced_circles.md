@@ -13,6 +13,9 @@ curate_circles({"alice": "secret", "bob": "secret2"})
 ```
 
 ## Disclaimers
+- Use at your own risk; uptime or results are not guaranteed.
+- Ambient data is logged only with opt-in consent.
+- Nothing here constitutes legal, medical, or financial advice.
 - Circle membership data is stored under `logs/circles/` and may be cleared at any time.
 - Encryption uses a lightweight XOR cipher and should not be considered fully secure.
 - Circles are AI-generated suggestions and do not guarantee privacy or accuracy.

@@ -10,5 +10,8 @@ bonus = squad_multiplier("alpha")
 ```
 
 ## Disclaimers
+- Use at your own risk; uptime or results are not guaranteed.
+- Ambient data is logged only with opt-in consent.
+- Nothing here constitutes legal, medical, or financial advice.
 - Records live under `logs/squad_layer/` and may be cleared at any time.
 - Multipliers do not represent guaranteed financial rewards.

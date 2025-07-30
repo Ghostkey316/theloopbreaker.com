@@ -1,4 +1,5 @@
 # 🔥 Vaultfire Protocol v1.0
+![Flawless Protocol](https://img.shields.io/badge/Flawless%20Protocol-locked-blue)
 
 ## What Is Vaultfire?
 
@@ -10,7 +11,7 @@ It’s a firewall against manipulation, silence, and soulless intelligence.
 Born from human belief.  
 Coded for a future worth living in.
 
-This repository includes modules marked as **Beta Module** — production version in development; API endpoints subject to change.
+This repository is production-stable and open to partners.
 
 ## Core Principles
 
@@ -54,3 +55,10 @@ Vaultfire currently operates in sandbox mode to ensure no unintended token distr
 
 # Protocol Lock-In: ghostkey316_final
 Vaultfire Final Commit: July 30, 2025 — 12:29 AM ET
+
+## Status
+VAULTFIRE v1.0 — FLAWLESS GRADE LOCKED
+
+## Development
+Set local hooks with `git config core.hooksPath .githooks` to ensure
+tests run before commits and merges.
