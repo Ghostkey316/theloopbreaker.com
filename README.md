@@ -62,3 +62,9 @@ VAULTFIRE v1.0 — FLAWLESS GRADE LOCKED
 ## Development
 Set local hooks with `git config core.hooksPath .githooks` to ensure
 tests run before commits and merges.
+
+## Disclaimers
+- Use at your own risk; uptime or results are not guaranteed.
+- Ambient data is logged only with opt-in consent.
+- Nothing here constitutes legal, medical, or financial advice.
+- Partners must perform their own compliance review before deploying.
