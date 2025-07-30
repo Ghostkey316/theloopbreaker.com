@@ -12,7 +12,7 @@
   ],
   "test_status": {
     "python": "\u2705 all unit tests passed",
-    "js": "\ud83d\udfe1 fallback sim used (jest not installed)"
+    "js": "\u2705 jest tests passed"
   },
   "forks_enabled": true,
   "partner_mode": true,
