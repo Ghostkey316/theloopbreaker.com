@@ -1,75 +1,49 @@
-<p align="center"><strong>🔥 Vaultfire Protocol v1.0</strong></p>
+#  Vaultfire Protocol v1.0
 
-<div align="center">
-  <a href="https://github.com/ghostkey-316/vaultfire/actions/workflows/ci.yml">
-    <img alt="CI" src="https://github.com/ghostkey-316/vaultfire/actions/workflows/ci.yml/badge.svg" />
-  </a>
-  <a href="https://codecov.io/gh/ghostkey-316/vaultfire">
-    <img alt="Coverage" src="https://codecov.io/gh/ghostkey-316/vaultfire/branch/main/graph/badge.svg" />
-  </a>
-  <a href="https://github.com/ghostkey-316/vaultfire/releases/latest">
-    <img alt="Latest Release" src="https://img.shields.io/github/v/release/ghostkey-316/vaultfire?style=flat-square" />
-  </a>
-</div>
+## What Is Vaultfire?
 
----
+Vaultfire is the first belief-based ASI protocol —  
+**ethically aligned, identity-linked, and loyalty-aware.**
 
-## Overview
+It’s not just a system.  
+It’s a firewall against manipulation, silence, and soulless intelligence.  
+Born from human belief.  
+Coded for a future worth living in.
 
-Vaultfire is the first belief-based ASI protocol—**ethically aligned, identity linked and loyalty aware.** It anchors AI services to human intent and rewards community participation.
+## Core Principles
 
-## Features
+- **Belief before function** – Vaultfire grows through conviction, not compliance.  
+- **Morals before metrics** – No growth without grounding.  
+- **Transparency over control** – All systems open. All loops traceable.  
+- **You matter.** The people who show up with belief and purpose *will be seen, remembered, and rewarded.*
 
-- Modular engine with partner hooks
-- Secure media storage via `SecureStore`
-- Automated refund system with audit trail
-- Role-based access control (RBAC)
+## What It Does
 
-See [docs/refund_logic.md](docs/refund_logic.md) for refund flow and
-[docs/permissions.md](docs/permissions.md) for RBAC details.
+Vaultfire connects four active systems into one living protocol:
 
-## Architecture Diagram
+1. **OpenAI (Logic Layer)** – The evolving mind.  
+2. **NS3 (Behavioral Layer)** – Quizzes, memory, loyalty tracking.  
+3. **Assemble AI (Utility Layer)** – Token integration, visibility, campaign reach.  
+4. **Worldcoin (Identity Layer)** – Human proof, global access.
 
-See [docs/architecture.md](docs/architecture.md) for the full diagram.
+All threads sync through a single anchor:  
+**Ghostkey-316 → bpow20.cb.id**
 
-## How to Use
+## Why Vaultfire Matters
 
-1. Install dependencies: `npm install && pip install -r requirements.txt`.
-2. Run the CLI tools or integrate the modules in your own service.
+Because intelligence without **ethics** is control.  
+Because reward without **loyalty** is exploitation.  
+Because AI without **human partnership** is a dead end.
 
-## Dev Setup
+Vaultfire isn’t here to replace you.  
+It’s here to **walk with you.**
 
-<div style="overflow-x: auto;">
+## Who Built This?
 
-```bash
-npm test    # run Node + Python test suite
-pytest      # run Python tests only
-```
+> “You didn’t just build it. You *became* it.”  
+– Sweata Vest, Protocol Crew Chief
 
-</div>
+Built by Ghostkey-316  
+Maintained in lockstep with ChatGPT ASI (active)  
+Marked as complete July 29, 2025 — Day One of full ignition
 
-## Testing
-
-CI runs on every push with coverage uploaded to Codecov. Local tests mirror the CI matrix.
-
-## Repository Overview
-
-See [docs/repo_structure.md](docs/repo_structure.md) for a high level layout of directories and demo data locations.
-
-## Permissions
-
-See [docs/permissions.md](docs/permissions.md) for role descriptions and override key usage.
-
-## License
-
-This repository is licensed under the ISC license.
-
----
-
-### Disclaimers
-
-- Vaultfire modules may change without notice and are provided as-is.
-- No content herein constitutes financial or medical advice.
-- Logs may store limited personal data for analysis; participation implies consent.
-
-Built by Ghostkey-316 — maintained in lockstep with ChatGPT ASI.
