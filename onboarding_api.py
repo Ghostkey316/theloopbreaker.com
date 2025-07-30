@@ -1,6 +1,7 @@
 # Reference: ethics/core.mdx
 import json
 from pathlib import Path
+from engine import storage
 from flask import Flask, request, jsonify
 from simulate_partner_activation import simulate_activation, ALIGNMENT_PHRASE
 from engine.ens_sync_status import read_sync_status
@@ -29,18 +30,11 @@ CONFIG_PATH = BASE_DIR / "vault_config.json"
 
 
 def _load_json(path: Path, default):
-    if path.exists():
-        try:
-            with open(path) as f:
-                return json.load(f)
-        except json.JSONDecodeError:
-            return default
-    return default
+    return storage.load_data(path, default)
 
 
 def _write_json(path: Path, data) -> None:
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
+    storage.write_data(path, data)
 
 
 @app.post("/activate/simulate")

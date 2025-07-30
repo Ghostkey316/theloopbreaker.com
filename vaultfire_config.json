@@ -7,5 +7,7 @@
   "wallet_auth_hook": true,
   "live_training_mode": true,
   "fail_safe": "Hard shutdown on ethics breach",
-  "localforge_enabled": true
+  "localforge_enabled": true,
+  "use_database": false,
+  "database_url": "sqlite:///vaultfire.db"
 }

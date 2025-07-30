@@ -3,3 +3,5 @@ web3
 ens
 psutil
 cryptography
+SQLAlchemy
+psycopg2-binary

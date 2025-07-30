@@ -4,6 +4,7 @@
 import json
 from pathlib import Path
 from datetime import datetime
+from . import storage
 
 from .loyalty_engine import loyalty_score
 from .token_ops import send_token
@@ -26,9 +27,10 @@ OG_LIST_PATH = BASE_DIR / "og_loyalists.json"
 BASE_APR = 0.05
 
 
-def _load_json(path):
-    with open(path) as f:
-        return json.load(f)
+def _load_json(path, default=None):
+    if default is None:
+        default = {}
+    return storage.load_data(path, default)
 
 
 # --- Loyalty and verification helpers --------------------------------------
@@ -60,19 +62,10 @@ def _dynamic_apr(user_id: str) -> float:
 
 
 def _log_audit(entry):
-    """Append an entry to morals_audit_log.json."""
-    log = []
-    if AUDIT_LOG_PATH.exists():
-        with open(AUDIT_LOG_PATH) as f:
-            try:
-                log = json.load(f)
-            except json.JSONDecodeError:
-                log = []
+    """Append an audit entry using configured storage backend."""
     timestamp = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
     entry_with_time = {"timestamp": timestamp, **entry}
-    log.append(entry_with_time)
-    with open(AUDIT_LOG_PATH, "w") as f:
-        json.dump(log, f, indent=2)
+    storage.append_log(AUDIT_LOG_PATH, entry_with_time)
 
 
 # --- Loyalty certification & passive yield ---------------------------------
@@ -129,18 +122,11 @@ def distribute_passive_yield(contributor_data: dict) -> dict:
 
 def _update_passive_ledger(entries: dict) -> None:
     """Append ``entries`` to the passive yield ledger."""
-    ledger = []
-    if PASSIVE_LEDGER_PATH.exists():
-        try:
-            with open(PASSIVE_LEDGER_PATH) as f:
-                ledger = json.load(f)
-        except json.JSONDecodeError:
-            ledger = []
+    ledger = storage.load_data(PASSIVE_LEDGER_PATH, [])
     timestamp = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
     for wallet, data in entries.items():
         ledger.append({"timestamp": timestamp, "wallet": wallet, **data})
-    with open(PASSIVE_LEDGER_PATH, "w") as f:
-        json.dump(ledger, f, indent=2)
+    storage.write_data(PASSIVE_LEDGER_PATH, ledger)
 
 
 # --- Yield Calculation ------------------------------------------------------
@@ -214,14 +200,8 @@ BOOST_CANDIDATE_PATH = BASE_DIR / "logs" / "yield_boost.json"
 def mark_yield_boost(user_id):
     """Flag user for yield boost consideration."""
     candidates = []
-    if BOOST_CANDIDATE_PATH.exists():
-        try:
-            with open(BOOST_CANDIDATE_PATH) as f:
-                candidates = json.load(f)
-        except json.JSONDecodeError:
-            candidates = []
+    candidates = storage.load_data(BOOST_CANDIDATE_PATH, [])
     if user_id not in candidates:
         candidates.append(user_id)
-        with open(BOOST_CANDIDATE_PATH, "w") as f:
-            json.dump(candidates, f, indent=2)
+        storage.write_data(BOOST_CANDIDATE_PATH, candidates)
         _log_audit({"action": "yield_boost_mark", "user_id": user_id})
