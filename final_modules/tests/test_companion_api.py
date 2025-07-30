@@ -1,5 +1,11 @@
 import importlib.util
 from pathlib import Path
+import pytest
+
+try:  # optional dependency during lightweight environments
+    import flask  # noqa: F401
+except Exception:
+    pytest.skip("flask not installed", allow_module_level=True)
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "companion_api.py"
 spec = importlib.util.spec_from_file_location("companion_api", MODULE_PATH)
