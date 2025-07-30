@@ -56,5 +56,12 @@
   "onFail": {
     "action": "block",
     "message": "\u274c Protocol Launch Blocked: Ethics or Integrity Failure"
+  },
+  "token_integration": {
+    "vaultfire_token": {
+      "status": "test-mode",
+      "contract_address": "TBD",
+      "note": "Token integration planned in v2.0 for reward activation"
+    }
   }
 }

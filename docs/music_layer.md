@@ -14,5 +14,8 @@ playlist = ai_curated_playlist("alice")
 ## Disclaimers
 - API tokens are stored as hashes and do not grant direct access to third‑party services.
 - Memory tracks use lightweight XOR encryption and are not suited for sensitive data.
-- Music NFTs recorded here are demo artifacts and hold no financial guarantee.
+- Music NFTs recorded here are **Beta Module** — production version in development; API endpoints subject to change and hold no financial guarantee.
 - AI playlists are suggestions only and may not reflect professional curation.
+
+## Ethics-Driven Sandbox Mode
+Vaultfire currently operates in sandbox mode to ensure no unintended token distribution or compliance risks. Rewards use test tokens only. Mainnet-ready modules are planned post-audit.

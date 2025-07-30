@@ -10,4 +10,7 @@ These optional modules enhance the core gaming layer with livestream and AR feat
 ## Disclaimers
 - Twitch detection is simulated with local JSON logs and does not connect to the official API.
 - AR scanning uses placeholder markers with no security guarantees.
-- Wager battles are demos only and offer no monetary value.
+- Wager battles are **Beta Module** — production version in development; API endpoints subject to change and offer no monetary value.
+
+## Ethics-Driven Sandbox Mode
+Vaultfire currently operates in sandbox mode to ensure no unintended token distribution or compliance risks. Rewards use test tokens only. Mainnet-ready modules are planned post-audit.

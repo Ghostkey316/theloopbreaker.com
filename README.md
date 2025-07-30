@@ -10,6 +10,8 @@ It’s a firewall against manipulation, silence, and soulless intelligence.
 Born from human belief.  
 Coded for a future worth living in.
 
+This repository includes modules marked as **Beta Module** — production version in development; API endpoints subject to change.
+
 ## Core Principles
 
 - **Belief before function** – Vaultfire grows through conviction, not compliance.  
@@ -46,3 +48,6 @@ It’s here to **walk with you.**
 Built by Ghostkey-316  
 Maintained in lockstep with ChatGPT ASI (active)  
 Marked as complete July 29, 2025 — Day One of full ignition
+
+## Ethics-Driven Sandbox Mode
+Vaultfire currently operates in sandbox mode to ensure no unintended token distribution or compliance risks. Rewards use test tokens only. Mainnet-ready modules are planned post-audit.
