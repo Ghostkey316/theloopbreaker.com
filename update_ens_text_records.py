@@ -5,14 +5,19 @@ from __future__ import annotations
 import os
 from typing import Dict, Iterable, Optional
 
-try:  # optional dependency for desktop mode
-    from web3 import Web3  # type: ignore
-except Exception:  # pragma: no cover - missing on mobile
-    Web3 = None  # type: ignore
+from mobile_mode import MOBILE_MODE
 
-try:
-    from ens import ENS  # type: ignore
-except Exception:  # pragma: no cover - missing on mobile
+if not MOBILE_MODE:
+    try:  # optional dependency for desktop mode
+        from web3 import Web3  # type: ignore
+    except Exception:  # pragma: no cover - missing on mobile
+        Web3 = None  # type: ignore
+    try:
+        from ens import ENS  # type: ignore
+    except Exception:  # pragma: no cover - missing on mobile
+        ENS = None  # type: ignore
+else:  # pragma: no cover - enforced mobile fallback
+    Web3 = None  # type: ignore
     ENS = None  # type: ignore
 
 ENS_DISABLED = Web3 is None or ENS is None
