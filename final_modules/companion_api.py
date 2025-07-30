@@ -11,7 +11,6 @@ DISCLAIMER:
 """
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from flask import Flask, request, jsonify
 
@@ -24,25 +23,13 @@ from engine.vaultlink import (
 from engine.identity_resolver import resolve_identity
 from partner_modules.verifiability_console import record_audit_log
 
+from utils.json_io import load_json, write_json
+
 app = Flask(__name__)
 BASE_DIR = Path(__file__).resolve().parent
 LOG_PATH = BASE_DIR / "companion_api_log.json"
 
 
-def _load_json(path: Path, default):
-    if path.exists():
-        try:
-            with open(path) as f:
-                return json.load(f)
-        except json.JSONDecodeError:
-            return default
-    return default
-
-
-def _write_json(path: Path, data) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
 
 
 @app.post("/companion/onboard")
@@ -63,9 +50,9 @@ def companion_onboard():
         resolved = None
     entry = {"event": "onboard", "user": user_id, "wallet": resolved}
     record_audit_log(entry)
-    log = _load_json(LOG_PATH, [])
+    log = load_json(LOG_PATH, [])
     log.append(entry)
-    _write_json(LOG_PATH, log)
+    write_json(LOG_PATH, log)
     return jsonify(state), 201
 
 

@@ -8,6 +8,8 @@ from pathlib import Path
 from engine.loyalty_engine import update_loyalty_ranks
 from engine.purpose_engine import moral_memory_mirror
 
+from utils.json_io import load_json, write_json
+
 BASE_DIR = Path(__file__).resolve().parent
 CFG_PATH = BASE_DIR / "retail_revival_config.json"
 VISITS_PATH = BASE_DIR / "retail_revival_visits.json"
@@ -18,32 +20,18 @@ NOSTALGIA_THEMES = {
 }
 
 
-def _load_json(path: Path, default):
-    if path.exists():
-        try:
-            with open(path) as f:
-                return json.load(f)
-        except json.JSONDecodeError:
-            return default
-    return default
-
-
-def _write_json(path: Path, data) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
 
 
 def set_retail_revival_enabled(partner_id: str, enabled: bool) -> None:
     """Toggle Retail Revival Mode for ``partner_id``."""
-    cfg = _load_json(CFG_PATH, {})
+    cfg = load_json(CFG_PATH, {})
     cfg[partner_id] = bool(enabled)
-    _write_json(CFG_PATH, cfg)
+    write_json(CFG_PATH, cfg)
 
 
 def retail_revival_enabled(partner_id: str) -> bool:
     """Return True if Retail Revival Mode is active for ``partner_id``."""
-    cfg = _load_json(CFG_PATH, {})
+    cfg = load_json(CFG_PATH, {})
     return cfg.get(partner_id, False)
 
 
@@ -68,7 +56,7 @@ def record_visit(user_id: str, partner_id: str, theme: str | None = None) -> dic
     """Record a physical visit and sync loyalty and memory."""
     if not retail_revival_enabled(partner_id):
         return {"message": "retail revival inactive"}
-    visits = _load_json(VISITS_PATH, {})
+    visits = load_json(VISITS_PATH, {})
     history = visits.get(user_id, [])
     entry = {
         "partner": partner_id,
@@ -77,7 +65,7 @@ def record_visit(user_id: str, partner_id: str, theme: str | None = None) -> dic
     }
     history.append(entry)
     visits[user_id] = history
-    _write_json(VISITS_PATH, visits)
+    write_json(VISITS_PATH, visits)
     moral_memory_mirror(user_id)
     update_loyalty_ranks()
     return entry
@@ -85,7 +73,7 @@ def record_visit(user_id: str, partner_id: str, theme: str | None = None) -> dic
 
 def visit_history(user_id: str) -> list:
     """Return logged visit history."""
-    visits = _load_json(VISITS_PATH, {})
+    visits = load_json(VISITS_PATH, {})
     return visits.get(user_id, [])
 
 
