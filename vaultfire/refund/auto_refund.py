@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from utils.json_io import load_json, write_json
+from vaultfire.access.rbac import has_permission
 
 # Default log and state paths
 AUDIT_LOG_PATH = Path("refund_audit.json")
@@ -26,14 +27,20 @@ def is_frozen() -> bool:
     return bool(state.get("frozen"))
 
 
-def freeze_refunds() -> None:
-    """Disable automatic refunds until unfrozen."""
+def freeze_refunds(user_id: str, *, override_key: str | None = None) -> bool:
+    """Disable automatic refunds if caller has permission."""
+    if not has_permission(user_id, "freeze_refunds", override_key):
+        return False
     write_json(STATE_PATH, {"frozen": True})
+    return True
 
 
-def unfreeze_refunds() -> None:
-    """Enable automatic refunds."""
+def unfreeze_refunds(user_id: str, *, override_key: str | None = None) -> bool:
+    """Enable automatic refunds if caller has permission."""
+    if not has_permission(user_id, "unfreeze_refunds", override_key):
+        return False
     write_json(STATE_PATH, {"frozen": False})
+    return True
 
 
 def should_refund(
@@ -88,9 +95,13 @@ def auto_refund(
     chain: str = "ETH",
     metrics: Optional[Dict[str, float]] = None,
     admin_override: bool = False,
+    user_id: str = "anonymous",
+    override_key: str | None = None,
 ) -> Dict[str, Any]:
     """Process a refund for ``wallet`` if not frozen."""
-    if is_frozen() and not admin_override:
+    if is_frozen() and not (
+        admin_override and has_permission(user_id, "unfreeze_refunds", override_key)
+    ):
         return {"status": "frozen"}
 
     entry = {
