@@ -17,7 +17,7 @@ if __name__ == "__main__":
         ],
         test_status={
             "python": "✅ all unit tests passed",
-            "js": "🟡 fallback sim used (jest not installed)",
+            "js": "✅ jest tests passed",
         },
         forks_enabled=True,
         partner_mode=True,

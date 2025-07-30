@@ -7,7 +7,7 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "node scripts/run_tests.js",
+    "test": "jest",
     "signal-shield": "node vaultfire_signal_shield/index.js"
   },
   "keywords": [],
