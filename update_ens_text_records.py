@@ -5,11 +5,22 @@ from __future__ import annotations
 import os
 from typing import Dict, Iterable, Optional
 
-from web3 import Web3
+try:  # optional dependency for desktop mode
+    from web3 import Web3  # type: ignore
+except Exception:  # pragma: no cover - missing on mobile
+    Web3 = None  # type: ignore
+
 try:
-    from ens import ENS
-except Exception:  # pragma: no cover - optional dependency
-    ENS = None
+    from ens import ENS  # type: ignore
+except Exception:  # pragma: no cover - missing on mobile
+    ENS = None  # type: ignore
+
+ENS_DISABLED = Web3 is None or ENS is None
+
+if ENS_DISABLED:
+    def update_text_records() -> None:
+        """Fallback when ENS features are unavailable."""
+        print("ENS text record update skipped (mobile mode).")
 
 FIELDS = {
     "vaultfire_sync": "true",
@@ -53,22 +64,24 @@ def update_records(ns: ENS, name: str, updates: Dict[str, str]) -> None:
         print(f"Updated {key} -> {value}")
 
 
+if not ENS_DISABLED:
+    def update_text_records() -> None:
+        """Sync ENS text records when dependencies are available."""
+        name = os.environ.get("TARGET_ENS", "ghostkey316.eth")
+        w3 = get_web3()
+        ns = ENS.from_web3(w3)
+        current = load_text_records(ns, name, FIELDS.keys())
+        mismatched = diff_records(current, FIELDS)
+        if not mismatched:
+            print("All text records already in sync")
+            return
+        update_records(ns, name, mismatched)
+
+
 def main() -> None:
-    if ENS is None:
-        raise RuntimeError("ens package required for ENS updates")
-
-    name = os.environ.get("TARGET_ENS", "ghostkey316.eth")
-    w3 = get_web3()
-    ns = ENS.from_web3(w3)
-
-    current = load_text_records(ns, name, FIELDS.keys())
-    mismatched = diff_records(current, FIELDS)
-
-    if not mismatched:
-        print("All text records already in sync")
-        return
-
-    update_records(ns, name, mismatched)
+    if ENS_DISABLED:
+        raise RuntimeError("ens and web3 packages required for ENS updates")
+    update_text_records()
 
 
 if __name__ == "__main__":

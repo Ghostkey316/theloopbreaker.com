@@ -6,6 +6,9 @@ import importlib
 import json
 from datetime import datetime
 from typing import Any, Dict
+import subprocess
+import sys
+from pathlib import Path
 
 from python_system_validate import gather_python_files, build_graph, detect_cycles
 from system_integrity_check import run_integrity_check, ALIGNMENT_PHRASE
@@ -42,6 +45,18 @@ def plugin_check(name: str) -> str:
         return "available"
     except Exception as e:  # pragma: no cover - environment variance
         return f"error: {e}"
+
+
+def tests_pass() -> bool:
+    """Run test suite and return ``True`` if all tests succeed."""
+    cmd = [sys.executable, "-m", "pytest", "-q"]
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    return proc.returncode == 0 and "54 passed" in proc.stdout
+
+
+def fallback_present() -> bool:
+    """Return ``True`` if mobile fallback modules exist."""
+    return Path("update_ens_text_records.py").exists() and Path("SecureStore.py").exists()
 
 
 def performance_metrics() -> Dict[str, Any]:
@@ -96,6 +111,9 @@ def run_checks() -> Dict[str, Any]:
 def main() -> int:
     report = run_checks()
     print(json.dumps(report, indent=2))
+    if report["status"] == "PASS" and tests_pass() and fallback_present():
+        print("\U0001F513 ALL SYSTEMS GO — VAULTFIRE READY FOR REAL-WORLD ACTIVATION \U0001F680")
+        return 0
     if report["status"] == "PASS":
         print("Vaultfire is Activation Ready")
         return 0
