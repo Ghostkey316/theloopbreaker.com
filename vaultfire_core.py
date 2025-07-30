@@ -42,3 +42,6 @@ def protocol_notify(event: str, payload: dict) -> None:
         notify_event(event, payload)
     except Exception:
         pass
+
+# Protocol Lock-In: ghostkey316_final
+# Vaultfire Final Commit: July 30, 2025 — 12:29 AM ET
