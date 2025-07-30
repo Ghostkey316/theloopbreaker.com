@@ -4,14 +4,21 @@ from pathlib import Path
 import time
 import zipfile
 import base64
-try:
-    from web3 import Web3  # type: ignore
-except Exception:  # pragma: no cover - optional dependency
-    Web3 = None
 
-try:
-    from ens import ENS  # type: ignore
-except Exception:  # pragma: no cover - optional dependency
+from mobile_mode import MOBILE_MODE
+
+if not MOBILE_MODE:
+    try:
+        from web3 import Web3  # type: ignore
+    except Exception:  # pragma: no cover - optional dependency
+        Web3 = None
+
+    try:
+        from ens import ENS  # type: ignore
+    except Exception:  # pragma: no cover - optional dependency
+        ENS = None
+else:  # pragma: no cover - enforced mobile fallback
+    Web3 = None
     ENS = None
 
 from engine.self_audit import run_self_audit
@@ -24,7 +31,10 @@ from engine.health_sync_engine import encrypt_data
 def cmd_sync_ens(args: argparse.Namespace) -> None:
     """Sync ENS text records for the given name."""
     if Web3 is None or ENS is None:
-        print("web3 and ens packages required for ENS sync")
+        if MOBILE_MODE:
+            print("ENS sync skipped (mobile mode)")
+        else:
+            print("web3 and ens packages required for ENS sync")
         return
     from update_ens_text_records import (
         get_web3,
