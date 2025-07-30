@@ -1,6 +1,5 @@
 flask
-web3
-ens
+web3==7.12.1
 psutil
 cryptography
 SQLAlchemy

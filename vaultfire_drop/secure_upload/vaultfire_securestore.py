@@ -85,7 +85,11 @@ class SecureStore:
         }
         if tag:
             metadata["tag"] = tag.hex()
-        metadata["signature"] = self._sign(metadata)
+        signature_payload = {
+            k: metadata[k]
+            for k in ["wallet", "tier", "score", "timestamp", "content_hash", "cid"]
+        }
+        metadata["signature"] = self._sign(signature_payload)
         (self.bucket / f"{cid}.json").write_text(json.dumps(metadata, indent=2))
 
         if chain_log:
