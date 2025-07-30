@@ -1,4 +1,5 @@
 # 🔥 Vaultfire Protocol v1.0
+[![CI](https://github.com/ghostkey-316/vaultfire/actions/workflows/ci.yml/badge.svg)](https://github.com/ghostkey-316/vaultfire/actions/workflows/ci.yml)
 
 ## What Is Vaultfire?
 
