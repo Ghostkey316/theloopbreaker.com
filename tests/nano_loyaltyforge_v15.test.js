@@ -17,9 +17,9 @@ const logPath = path.join(__dirname, '..', 'logs', 'nano_loyaltyforge_v15.log');
 function reset() {
   if (fs.existsSync(statusPath)) fs.unlinkSync(statusPath);
   if (fs.existsSync(logPath)) fs.unlinkSync(logPath);
-}
 
-try {
+}
+test('nano_loyaltyforge_v15.test', () => {
   reset();
   initLoyaltyProfile('g316', 'wallet1');
   updateBeliefScore('g316', 'action1', 10);
@@ -32,8 +32,4 @@ try {
   assert(state.profiles['g316'].tier === 'Tier3');
   assert(state.syncs.length === 1);
   assert(state.minted.length === 1);
-  console.log('OK');
-} catch (err) {
-  console.error('FAIL', err);
-  process.exit(1);
-}
+});

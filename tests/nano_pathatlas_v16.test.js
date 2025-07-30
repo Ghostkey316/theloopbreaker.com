@@ -15,9 +15,9 @@ const moralPath = path.join(__dirname, '..', 'logs', 'moral_mirror.json');
 
 function reset() {
   [statusPath, logPath, moralPath].forEach(p => { if (fs.existsSync(p)) fs.unlinkSync(p); });
-}
 
-try {
+}
+test('nano_pathatlas_v16.test', () => {
   reset();
   captureBeliefEvent('user1', 'beliefX', { type: 'click' });
   assignConsequenceTrail('user1', 'beliefX', 'success');
@@ -27,8 +27,4 @@ try {
   assert(state.trails.length === 1);
   assert(state.predictions.length === 1);
   assert(fs.existsSync(moralPath));
-  console.log('OK');
-} catch (err) {
-  console.error('FAIL', err);
-  process.exit(1);
-}
+});

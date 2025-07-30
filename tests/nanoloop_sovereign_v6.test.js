@@ -10,9 +10,9 @@ const logPath = path.join(__dirname, '..', 'vaultfire-core', 'nanoloop_v6_log.js
 function reset() {
   if (fs.existsSync(statusPath)) fs.unlinkSync(statusPath);
   if (fs.existsSync(logPath)) fs.unlinkSync(logPath);
-}
 
-try {
+}
+test('nanoloop_sovereign_v6.test', () => {
   reset();
   recursify('Ghostkey-316', 2);
   realign('Ghostkey-316', 'ethics-first');
@@ -23,8 +23,4 @@ try {
   assert(state.realigns.length === 1);
   assert(state.vowchecks.length === 1);
   assert(state.growthmaps.length === 1);
-  console.log('OK');
-} catch (err) {
-  console.error('FAIL', err);
-  process.exit(1);
-}
+});

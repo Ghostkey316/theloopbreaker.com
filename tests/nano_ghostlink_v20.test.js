@@ -10,9 +10,9 @@ const memoryLog = path.join(__dirname, '..', 'logs', 'memorybridge_v18.log');
 
 function reset() {
   [statusPath, logPath, memoryLog].forEach(p => { if (fs.existsSync(p)) fs.unlinkSync(p); });
-}
 
-try {
+}
+test('nano_ghostlink_v20.test', () => {
   reset();
   fs.mkdirSync(path.dirname(memoryLog), { recursive: true });
   fs.writeFileSync(memoryLog, JSON.stringify([{ ok: true }]));
@@ -24,8 +24,4 @@ try {
   assert(log.length === 1);
   assert(log[0].bridge_confirmed === true);
   assert(log[0].recipient_node === 'node1');
-  console.log('OK');
-} catch (err) {
-  console.error('FAIL', err);
-  process.exit(1);
-}
+});

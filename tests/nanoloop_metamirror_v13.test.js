@@ -18,9 +18,9 @@ function reset() {
   [statusPath, logPath].forEach(p => {
     if (fs.existsSync(p)) fs.unlinkSync(p);
   });
-}
 
-try {
+}
+test('nanoloop_metamirror_v13.test', () => {
   reset();
   reflectSignal({ id: 's1', decoy: true });
   verifyOrigin('trace1', 'phash1');
@@ -32,8 +32,4 @@ try {
   assert(state.echos.length === 1);
   assert(state.loops.length === 1);
   assert(fs.existsSync(pingPath));
-  console.log('OK');
-} catch (err) {
-  console.error('FAIL', err);
-  process.exit(1);
-}
+});

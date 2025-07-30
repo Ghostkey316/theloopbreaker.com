@@ -18,9 +18,9 @@ function reset() {
   [statusPath, logPath].forEach(p => {
     if (fs.existsSync(p)) fs.unlinkSync(p);
   });
-}
 
-try {
+}
+test('nano_trustengine_v14.test', () => {
   reset();
   initTrustMap('g316', 'wallet1');
   updateScore('g316', 'action1', 5);
@@ -34,8 +34,4 @@ try {
   assert(state.validations.length === 1);
   assert(state.syncs.length === 1);
   assert(state.fingerprints.length === 1);
-  console.log('OK');
-} catch (err) {
-  console.error('FAIL', err);
-  process.exit(1);
-}
+});

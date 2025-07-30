@@ -8,7 +8,6 @@ const { createIframe } = require('../web_mirror_viewer');
 function resetLog() {
   const p = path.join(__dirname, '..', 'fork_log.json');
   fs.writeFileSync(p, '[]');
-}
 
 function testSync() {
   resetLog();
@@ -20,7 +19,6 @@ function testSync() {
   assert(received && received.choice === 'A');
   const log = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'fork_log.json')));
   assert(log.length === 1);
-}
 
 function testViewerConfig() {
   const cfgPath = path.join(__dirname, '..', 'embed_config.json');
@@ -30,13 +28,9 @@ function testViewerConfig() {
   assert(html.includes('?visual_shell=1'));
   assert(html.includes('width="500"'));
   fs.writeFileSync(cfgPath, JSON.stringify({ width: 640, height: 480 }));
-}
 
-try {
+}
+test('test_multiplayer_sync', () => {
   testSync();
   testViewerConfig();
-  console.log('OK');
-} catch (err) {
-  console.error('FAIL', err);
-  process.exit(1);
-}
+});

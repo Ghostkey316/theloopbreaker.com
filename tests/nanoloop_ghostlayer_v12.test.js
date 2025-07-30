@@ -10,9 +10,9 @@ const logPath = path.join(__dirname, '..', 'vaultfire-core', 'nanoloop_v12_log.j
 function reset() {
   if (fs.existsSync(statusPath)) fs.unlinkSync(statusPath);
   if (fs.existsSync(logPath)) fs.unlinkSync(logPath);
-}
 
-try {
+}
+test('nanoloop_ghostlayer_v12.test', () => {
   reset();
   deploy_decoy('probe-sig');
   reflect('exploit');
@@ -23,8 +23,4 @@ try {
   assert(state.reflections.length === 1);
   assert(state.tracebacks.length === 1);
   assert(state.events.length === 1);
-  console.log('OK');
-} catch (err) {
-  console.error('FAIL', err);
-  process.exit(1);
-}
+});

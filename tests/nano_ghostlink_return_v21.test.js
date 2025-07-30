@@ -17,9 +17,9 @@ function reset() {
   [gl20Status, gl20Log, statusPath, logPath, memLog, echoStatus, synStatus].forEach(p => {
     if (fs.existsSync(p)) fs.unlinkSync(p);
   });
-}
 
-try {
+}
+test('nano_ghostlink_return_v21.test', () => {
   reset();
   fs.mkdirSync(path.dirname(memLog), { recursive: true });
   fs.writeFileSync(memLog, JSON.stringify([{ ok: true }]));
@@ -40,8 +40,4 @@ try {
   assert(state.metadata.return_status === 'verified');
   const log = JSON.parse(fs.readFileSync(logPath, 'utf8'));
   assert(log[0].verified === true);
-  console.log('OK');
-} catch (err) {
-  console.error('FAIL', err);
-  process.exit(1);
-}
+});

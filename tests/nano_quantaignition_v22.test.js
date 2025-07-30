@@ -19,9 +19,9 @@ const qiLog = path.join(__dirname, '..', 'logs', 'nano_quantaignition_v22.log');
 
 function reset() {
   [echoStatus, memLog, synStatus, retStatus, qiStatus, qiLog].forEach(p => { if (fs.existsSync(p)) fs.unlinkSync(p); });
-}
 
-try {
+}
+test('nano_quantaignition_v22.test', () => {
   reset();
   fs.mkdirSync(path.dirname(echoStatus), { recursive: true });
   fs.writeFileSync(echoStatus, JSON.stringify({ metadata: { echo_confirmed: true, clarity_score: 0.9 } }));
@@ -40,8 +40,4 @@ try {
   assert(state.metadata.verification_tag === 'final-tag');
   assert(state.metadata.loop_completed === true);
   assert(state.checkpoints.length === 2); // ignition + loop_final
-  console.log('OK');
-} catch (err) {
-  console.error('FAIL', err);
-  process.exit(1);
-}
+});

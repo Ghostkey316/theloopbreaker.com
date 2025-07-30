@@ -14,9 +14,9 @@ function reset() {
   [statusPath, logPath, moralPath, paStatus, paLog].forEach(p => {
     if (fs.existsSync(p)) fs.unlinkSync(p);
   });
-}
 
-try {
+}
+test('nano_memorybridge_v18.test', () => {
   reset();
   recordSignalEvent('nano_echopulse_v17', 'belief1', 0.8, true, ['t1']);
   recordSignalEvent('nano_echopulse_v17', 'belief1', 0.85, true, ['t1']);
@@ -28,8 +28,4 @@ try {
   assert(log.length === 1);
   assert(log[0].memory_node.origin_module === 'nano_echopulse_v17');
   assert(fs.existsSync(moralPath));
-  console.log('OK');
-} catch (err) {
-  console.error('FAIL', err);
-  process.exit(1);
-}
+});

@@ -10,9 +10,9 @@ const logPath = path.join(__dirname, '..', 'vaultfire-core', 'nanoloop_v8_log.js
 function reset() {
   if (fs.existsSync(statusPath)) fs.unlinkSync(statusPath);
   if (fs.existsSync(logPath)) fs.unlinkSync(logPath);
-}
 
-try {
+}
+test('nanoloop_innervoice_v8.test', () => {
   reset();
   echo('Ghostkey-316', 'internal thought');
   listen('Ghostkey-316');
@@ -25,8 +25,4 @@ try {
   assert(state.biaschecks.length === 1);
   assert(state.whispers.length === 1);
   assert(state.resolves.length === 1);
-  console.log('OK');
-} catch (err) {
-  console.error('FAIL', err);
-  process.exit(1);
-}
+});
