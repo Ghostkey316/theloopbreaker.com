@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import os
-from typing import Dict, Iterable
+from typing import Dict, Iterable, Optional
 
 from web3 import Web3
-from ens import ENS
+try:
+    from ens import ENS
+except Exception:  # pragma: no cover - optional dependency
+    ENS = None
 
 FIELDS = {
     "vaultfire_sync": "true",
@@ -51,6 +54,9 @@ def update_records(ns: ENS, name: str, updates: Dict[str, str]) -> None:
 
 
 def main() -> None:
+    if ENS is None:
+        raise RuntimeError("ens package required for ENS updates")
+
     name = os.environ.get("TARGET_ENS", "ghostkey316.eth")
     w3 = get_web3()
     ns = ENS.from_web3(w3)
