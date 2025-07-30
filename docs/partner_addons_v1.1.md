@@ -18,9 +18,12 @@ This update introduces four optional modules for partners. Each module can be en
 - Generates a summary of DAU, retention, referrals, rewards, passive usage and signal compass activations.
 - Includes a redaction toggle to anonymize user stats.
 
-## 4. Automated Partner Demo Mode
+## 4. Automated Partner **Beta Module** — production version in development; API endpoints subject to change Mode
 - Creates a temporary test user with synthetic data.
 - Simulates wallet connects, passive yield, quiz usage and drop claims.
 - Guides partners through a short walkthrough and automatically cleans up after 48 hours.
 
 All modules respect the existing privacy layer, ethics rules and loyalty logic. Logs are written through the Verifiability Console for transparency.
+
+## Ethics-Driven Sandbox Mode
+Vaultfire currently operates in sandbox mode to ensure no unintended token distribution or compliance risks. Rewards use test tokens only. Mainnet-ready modules are planned post-audit.
