@@ -14,9 +14,9 @@ const logPath = path.join(__dirname, '..', 'logs', 'echopulse_feedback_v17.log')
 
 function reset() {
   [statusPath, logPath].forEach(p => { if (fs.existsSync(p)) fs.unlinkSync(p); });
-}
 
-try {
+}
+test('nano_echopulse_v17.test', () => {
   reset();
   matchBeliefEcho('belief', 'belief');
   measureSignalClarity('intent', 'intentional');
@@ -28,8 +28,4 @@ try {
   const logs = JSON.parse(fs.readFileSync(logPath, 'utf8'));
   assert(logs.length === 1);
   assert(logs[0].fingerprint === 'finger1');
-  console.log('OK');
-} catch (err) {
-  console.error('FAIL', err);
-  process.exit(1);
-}
+});

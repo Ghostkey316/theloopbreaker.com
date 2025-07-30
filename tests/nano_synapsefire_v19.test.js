@@ -13,9 +13,9 @@ const pathatlasLog = path.join(__dirname, '..', 'logs', 'pathatlas_v16.log');
 
 function reset() {
   [statusPath, syncLogPath, auditLogPath, echoStatusPath, memorySyncPath, pathatlasLog].forEach(p => { if (fs.existsSync(p)) fs.unlinkSync(p); });
-}
 
-try {
+}
+test('nano_synapsefire_v19.test', () => {
   reset();
   fs.mkdirSync(path.dirname(echoStatusPath), { recursive: true });
   fs.writeFileSync(echoStatusPath, JSON.stringify({ metadata: { echo_confirmed: true, clarity_score: 0.85 } }));
@@ -33,8 +33,4 @@ try {
   assert(syncLog.length === 1);
   assert(syncLog[0].verified === true);
   assert(auditLog[0].verified_by_ethics === true);
-  console.log('OK');
-} catch (err) {
-  console.error('FAIL', err);
-  process.exit(1);
-}
+});
