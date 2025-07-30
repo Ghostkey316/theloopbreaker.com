@@ -7,31 +7,14 @@ DISCLAIMER:
 """
 
 from __future__ import annotations
-
-import json
-import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
+from utils.json_io import load_json, write_json
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 LOG_PATH = BASE_DIR / "logs" / "growth_prepare_v26.log"
-
-
-def _load_json(path: Path, default: Any) -> Any:
-    if path.exists():
-        try:
-            with open(path) as f:
-                return json.load(f)
-        except json.JSONDecodeError:
-            return default
-    return default
-
-
-def _write_json(path: Path, data: Any) -> None:
-    os.makedirs(path.parent, exist_ok=True)
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
 
 
 def prepare_v26(
@@ -41,7 +24,7 @@ def prepare_v26(
     yieldRewards: bool = False,
 ) -> Dict[str, Any]:
     """Log preparation of the V26 growth fork."""
-    log = _load_json(LOG_PATH, [])
+    log = load_json(LOG_PATH, [])
     entry = {
         "wallet": identity.get("wallet"),
         "multipliers": enableMultipliers,
@@ -50,5 +33,5 @@ def prepare_v26(
         "timestamp": datetime.utcnow().isoformat(),
     }
     log.append(entry)
-    _write_json(LOG_PATH, log)
+    write_json(LOG_PATH, log)
     return entry

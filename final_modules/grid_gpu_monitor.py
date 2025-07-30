@@ -5,31 +5,18 @@ for dashboards and CLI tools.
 """
 from __future__ import annotations
 
-import json
 from datetime import datetime
 from pathlib import Path
 from typing import Dict
 
 from engine.ethical_growth_engine import ethics_passed
 
+from utils.json_io import load_json, write_json
+
 BASE_DIR = Path(__file__).resolve().parent
 LOG_PATH = BASE_DIR / "grid_gpu_load.json"
 
 
-def _load_json(path: Path, default):
-    if path.exists():
-        try:
-            with open(path) as f:
-                return json.load(f)
-        except json.JSONDecodeError:
-            return default
-    return default
-
-
-def _write_json(path: Path, data) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
 
 
 def log_system_snapshot(
@@ -42,7 +29,7 @@ def log_system_snapshot(
     """Record a compute load snapshot."""
     if user_id and not ethics_passed(user_id):
         return {"status": "blocked"}
-    log = _load_json(LOG_PATH, [])
+    log = load_json(LOG_PATH, [])
     entry = {
         "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
         "grid_gw": grid_gw,
@@ -51,13 +38,13 @@ def log_system_snapshot(
         "zone": zone,
     }
     log.append(entry)
-    _write_json(LOG_PATH, log[-50:])
+    write_json(LOG_PATH, log[-50:])
     return entry
 
 
 def summarize_state() -> dict:
     """Return averaged load metrics."""
-    log = _load_json(LOG_PATH, [])
+    log = load_json(LOG_PATH, [])
     if not log:
         return {}
     avg_grid = sum(e["grid_gw"] for e in log) / len(log)

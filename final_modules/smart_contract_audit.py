@@ -6,12 +6,13 @@ Verifiability Console for partner viewing.
 """
 from __future__ import annotations
 
-import json
 import re
 from pathlib import Path
 from datetime import datetime
 
 from partner_modules.verifiability_console import record_audit_log
+
+from utils.json_io import write_json
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 CONTRACTS_DIR = BASE_DIR / "contracts"
@@ -21,10 +22,6 @@ REPORT_PATH = BASE_DIR / "final_modules" / "audit_report.json"
 FLAGS = ["TODO", "unsafe"]
 
 
-def _write_json(path: Path, data) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
 
 
 def audit_contracts() -> dict:
@@ -39,7 +36,7 @@ def audit_contracts() -> dict:
         }
         record_audit_log({"contract": path.name, "issues": issues})
         report.append(entry)
-    _write_json(REPORT_PATH, report)
+    write_json(REPORT_PATH, report)
     return {"contracts": report}
 
 
