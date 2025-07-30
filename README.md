@@ -68,3 +68,4 @@ tests run before commits and merges.
 - Ambient data is logged only with opt-in consent.
 - Nothing here constitutes legal, medical, or financial advice.
 - Partners must perform their own compliance review before deploying.
+✅ All tests pass in clean environments (Node + Python)
