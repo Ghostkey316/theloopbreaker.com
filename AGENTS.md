@@ -29,4 +29,8 @@ These instructions are intentionally modular to allow new roles or clauses to be
 - Partners must perform their own compliance review before deploying.
 - Vaultfire modules may change without notice and are provided as-is.
 - Nothing in this repository constitutes financial advice.
+- Forkable Protocol settings follow the Moral Memory Fork Agreement (MMFA).
+- Derivative forks must retain the Ghostkey Ethics framework and preserve contributor lineage.
+- Commercial rights require an opt-in beacon tag.
+- All forks must reference the original Vaultfire URI.
 
