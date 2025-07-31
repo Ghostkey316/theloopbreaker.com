@@ -35,9 +35,11 @@ DEFAULT_WALLET = "ghostkey316.eth"
 
 def _render_3d(prompt: str, fmt: str = "gltf") -> bytes:
     """Return binary 3D data for ``prompt`` using GPT-5 if available."""
-    if openai is None:
+    if openai is None or os.getenv("OPENAI_API_KEY") is None:
         return f"{prompt}->{fmt}".encode()
-    resp = openai.ChatCompletion.create(
+    from openai import OpenAI  # type: ignore
+    client = OpenAI()
+    resp = client.chat.completions.create(
         model="gpt-5",  # upcoming model with 3D output
         messages=[{"role": "user", "content": prompt}],
         max_tokens=2048,
