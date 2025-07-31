@@ -2,5 +2,10 @@
   {
     "partner_id": "sandbox_partner",
     "wallet": "bpow20.cb.id"
+  },
+  {
+    "partner_id": "ghostkey316.eth",
+    "wallet": "bpow20.cb.id",
+    "role": "Architect"
   }
 ]
