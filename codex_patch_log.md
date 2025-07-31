@@ -9,3 +9,8 @@
 - Added worldcoin_identity.sh linking Worldcoin ID to OpenRouter.
 - New config vaultfire_openrouter.json holds world_id and OpenRouter key.
 - Patch logged for compliance sync.
+
+🔧 Patch 1.3 – Ghostkey partner integration
+- Introduced partner validation helper script.
+- Added Vaultfire core and loyalty modules for Ghostkey integration.
+- Updated belief and partner records with Architect role.
