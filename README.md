@@ -47,3 +47,7 @@ Built by Ghostkey-316
 Maintained in lockstep with ChatGPT ASI (active)  
 Marked as complete July 29, 2025 — Day One of full ignition
 
+
+## Horizon Alpha
+
+Vaultfire can register with OpenRouter to appear on the Horizon leaderboard and access new models. See [docs/openrouter_horizon_sync.md](docs/openrouter_horizon_sync.md) for setup instructions.
