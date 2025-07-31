@@ -83,6 +83,18 @@ def register_pop(user_id: str, world_id: str) -> dict:
     return profile
 
 
+def connect_worldcoin_identity(user_id: str, wallet: str, *, level: str = "lite") -> dict:
+    """Link ``wallet`` to ``user_id`` and record identity level."""
+    profile = sync_identity(user_id, wallet=wallet, behaviors=["worldcoin_sync"])
+    data = _load_json(META_PATH, {})
+    meta = data.get(user_id, {})
+    meta.update({"wallet": wallet, "identity_level": level})
+    data[user_id] = meta
+    _write_json(META_PATH, data)
+    _log_event(user_id, "connect_worldcoin_identity", {"wallet": wallet, "level": level})
+    return identity_summary(user_id)
+
+
 # ---------------------------------------------------------------------------
 # Biometric Privacy Tunnel
 # ---------------------------------------------------------------------------
@@ -145,6 +157,7 @@ def run_worldcoin_diagnostics() -> dict:
 __all__ = [
     "sync_orb_identity",
     "register_pop",
+    "connect_worldcoin_identity",
     "biometric_privacy_tunnel",
     "worldapp_onboard",
     "wld_bridge",
