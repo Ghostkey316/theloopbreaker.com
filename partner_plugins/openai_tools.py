@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 from typing import Dict
 
 try:
@@ -9,9 +10,11 @@ except Exception:  # pragma: no cover - optional dependency
 
 def summarize_text(text: str) -> Dict:
     """Return a short summary of ``text`` using OpenAI if available."""
-    if openai is None:
+    if openai is None or os.getenv("OPENAI_API_KEY") is None:
         return {"summary": text[:100], "provider": "fallback"}
-    resp = openai.ChatCompletion.create(
+    from openai import OpenAI  # type: ignore
+    client = OpenAI()
+    resp = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[{"role": "user", "content": text}],
         max_tokens=60,

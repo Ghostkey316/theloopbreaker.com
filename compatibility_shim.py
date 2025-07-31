@@ -1,13 +1,17 @@
 """Compatibility shim for optional partner APIs."""
 
 from __future__ import annotations
+import os
 
 
 class _OpenAI:
     def chat_completion(self, prompt: str) -> dict:
         try:
-            import openai  # type: ignore
-            resp = openai.ChatCompletion.create(
+            if os.getenv("OPENAI_API_KEY") is None:
+                raise ValueError("missing key")
+            from openai import OpenAI  # type: ignore
+            client = OpenAI()
+            resp = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=60,

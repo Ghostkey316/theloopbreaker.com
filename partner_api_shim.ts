@@ -1,8 +1,9 @@
 /** Compatibility shim for partner APIs */
 export async function openaiChat(prompt: string): Promise<string> {
   try {
-    const openai = await import('openai');
-    const resp = await openai.ChatCompletion.create({
+    const { default: OpenAI } = await import('openai');
+    const client = new OpenAI();
+    const resp = await client.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 60
