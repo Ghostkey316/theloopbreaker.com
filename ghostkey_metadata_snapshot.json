@@ -1,0 +1,15 @@
+{
+  "wallet": "bpow20.cb.id",
+  "timestamp": "2025-08-21T22:25:18.099562+00:00",
+  "checksums": {
+    "ghostkey_asm_sync.py": "d328da60783eb030d0834aa77bc2e9aafcf96ba518f44d71227a3cab4a4c7a38",
+    "contributor_registry.json": "e9679a3ad0449fec83634ef9171bf1dbdf8b0eddb422b405a46d3aedb9798548"
+  },
+  "commands": [
+    "verify",
+    "retrodrop",
+    "contributor",
+    "proof",
+    "forkproof"
+  ]
+}
