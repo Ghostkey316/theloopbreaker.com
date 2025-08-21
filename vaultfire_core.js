@@ -22,4 +22,32 @@ function activateCore() {
   };
 }
 
-module.exports = { activateCore };
+function injectVaultfire(vaultfire, options = {}) {
+  const injection = vaultfire.inject({
+    ethics: 'belief-synced',
+    loyaltyLogic: true,
+    tokenBasedActivation: true,
+    passiveIncentives: true,
+    contributor: 'ghostkey316.eth',
+    wallet: 'bpow20.cb.id',
+    confirmDOJAlignment: true,
+    vaultfireLive: true
+  });
+  if (typeof vaultfire.displayStatus === 'function') {
+    vaultfire.displayStatus({
+      UI: 'Vaultfire Protocol: ACTIVE',
+      style: 'glow-pulse, ethical-green',
+      badge: 'Ghostkey Protocol ✅'
+    });
+  }
+  if (options.testMode && typeof vaultfire.simulateVaultfireEngagement === 'function') {
+    vaultfire.simulateVaultfireEngagement({
+      wallet: 'bpow20.cb.id',
+      behavior: 'loyalty+alignment',
+      simulateRewards: true
+    });
+  }
+  return injection;
+}
+
+module.exports = { activateCore, injectVaultfire };
