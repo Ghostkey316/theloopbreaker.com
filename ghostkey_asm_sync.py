@@ -182,23 +182,25 @@ def syncToASM():
 def main():
     parser = argparse.ArgumentParser(description="Vaultfire ASM sync module")
     sub = parser.add_subparsers(dest="cmd")
+
     sub.add_parser("sync", help="Run full sync")
-    sub.add_parser("verify", help="Verify identity")
-    sub.add_parser("yield", help="Check ASM yield")
-    sub.add_parser("loyalty", help="Log proof of loyalty")
-    sub.add_parser("retro", help="Run retro yield simulation")
+    sub.add_parser("verify", help="Verify last immutable syncpoint")
+    retro = sub.add_parser("retrodrop", help="Simulate retro yield and log")
+    retro.add_argument("--wallet", default=WALLET, help="Wallet to simulate drop for")
+    sub.add_parser("contributor", help="Grant or confirm contributor role")
+    sub.add_parser("proof", help="Export signed proof file")
     args = parser.parse_args()
 
     if args.cmd == "sync":
         result = syncToASM()
     elif args.cmd == "verify":
-        result = verifyIdentity()
-    elif args.cmd == "yield":
-        result = checkASMYield()
-    elif args.cmd == "loyalty":
-        result = logProofOfLoyalty()
-    elif args.cmd == "retro":
-        result = runRetroYield()
+        result = verifyImmutableSync()
+    elif args.cmd == "retrodrop":
+        result = runRetroDrop(args.wallet)
+    elif args.cmd == "contributor":
+        result = grantContributorRole()
+    elif args.cmd == "proof":
+        result = outputProof()
     else:
         parser.print_help()
         return
