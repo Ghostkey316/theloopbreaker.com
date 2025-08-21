@@ -1,6 +1,18 @@
 {
   "bpow20.cb.id": {
     "identity": "Ghostkey-316",
-    "role": "Contributor Tier 1"
+    "handle": "ghostkey316",
+    "role": "Contributor Tier 1",
+    "tags": [
+      "vaultfire",
+      "ghostkey316",
+      "retro-yield",
+      "cli-module",
+      "tokenomics",
+      "loyalty",
+      "ns3-ready"
+    ],
+    "ens": "ghostkey316.eth",
+    "title": "Core Architect of Vaultfire CLI"
   }
 }

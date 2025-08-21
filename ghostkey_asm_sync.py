@@ -146,13 +146,13 @@ def outputProof():
     proof_path.write_text(json.dumps(payload, indent=2))
     return {"proof": str(proof_path), "signature": signature}
 
-def codexMemory(event):
-    """Embed event into immutable log as an origin sync node."""
+def codexMemory(event, event_type: str = "ASM_Sync"):
+    """Embed event into immutable log with chained hashing."""
     log = _load_log()
     prev_hash = log[-1]["hash"] if log else "0" * 64
     entry = {
         "timestamp": datetime.now(timezone.utc).replace(microsecond=0).isoformat() + "Z",
-        "type": "ASM_Sync",
+        "type": event_type,
         "data": event,
         "prev_hash": prev_hash,
     }
@@ -160,6 +160,12 @@ def codexMemory(event):
     with open(LOG_PATH, "a") as f:
         f.write(json.dumps(entry) + "\n")
     return entry
+
+
+def forkProof():
+    """Prepare Codex-fork partner export placeholder."""
+    timestamp = datetime.now(timezone.utc).isoformat()
+    return {"export_ready": True, "timestamp": timestamp}
 
 def syncToASM():
     """Run the full ASM sync pipeline and log permanent verification."""
@@ -189,6 +195,7 @@ def main():
     retro.add_argument("--wallet", default=WALLET, help="Wallet to simulate drop for")
     sub.add_parser("contributor", help="Grant or confirm contributor role")
     sub.add_parser("proof", help="Export signed proof file")
+    sub.add_parser("forkproof", help="Prepare partner export placeholder")
     args = parser.parse_args()
 
     if args.cmd == "sync":
@@ -201,10 +208,13 @@ def main():
         result = grantContributorRole()
     elif args.cmd == "proof":
         result = outputProof()
+    elif args.cmd == "forkproof":
+        result = forkProof()
     else:
         parser.print_help()
         return
 
+    codexMemory({"command": args.cmd, "result": result}, event_type="CLI_Event")
     print(json.dumps(result, indent=2))
 
 if __name__ == "__main__":
