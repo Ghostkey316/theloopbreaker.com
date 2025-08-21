@@ -11,12 +11,24 @@ LAYER = "tokenomics"
 STATUS = "Active Sync Verified"
 
 LOG_PATH = Path("immutable_log.jsonl")
+RETRO_YIELD_PATH = Path("retro_yield.json")
+CONTRIB_REG_PATH = Path("contributor_registry.json")
 
 def _load_log():
     if not LOG_PATH.exists():
         return []
     with open(LOG_PATH) as f:
         return [json.loads(line) for line in f if line.strip()]
+
+
+def _read_json(path: Path, default):
+    """Read JSON file at ``path`` returning ``default`` on failure."""
+    if path.exists():
+        try:
+            return json.loads(path.read_text())
+        except json.JSONDecodeError:
+            return default
+    return default
 
 def verifyIdentity():
     """Confirm Ghostkey-316 status via timestamped sync history."""
@@ -52,6 +64,87 @@ def runRetroYield():
     """Simulate past due yield drops for validation or testnet activation."""
     timestamp = datetime.now(timezone.utc).isoformat()
     return {"wallet": WALLET, "simulated_at": timestamp, "result": "ok"}
+
+
+def verifyImmutableSync():
+    """Confirm ``ghostkey_asm_sync.py`` executed and persisted a syncpoint."""
+    log = _load_log()
+    for entry in reversed(log):
+        if entry.get("type") != "ASM_Sync":
+            continue
+        data = entry.get("data", {})
+        proof = data.get("proof", {})
+        if (
+            data.get("identity") == IDENTITY
+            and data.get("wallet") == WALLET
+            and proof.get("trigger") == TRIGGER
+            and data.get("status") == STATUS
+        ):
+            return {"verified": True, "syncpoint": entry}
+    return {"verified": False}
+
+
+def runRetroDrop(wallet: str = WALLET):
+    """Simulate past ASM yield events and log virtual yield."""
+    log = _load_log()
+    events = [
+        e
+        for e in log
+        if e.get("type") == "ASM_Sync" and e.get("data", {}).get("wallet") == wallet
+    ]
+    loyalty = _read_json(Path("loyalty_tiers.json"), {})
+    tier_info = loyalty.get("ghostkey316.eth", {})
+    multiplier = tier_info.get("multiplier", 1)
+    yield_amount = len(events) * 10 * multiplier
+    timestamp = datetime.now(timezone.utc).isoformat()
+    retro_entry = {
+        "wallet": wallet,
+        "events": len(events),
+        "yield": yield_amount,
+        "timestamp": timestamp,
+    }
+    history = _read_json(RETRO_YIELD_PATH, [])
+    if isinstance(history, list):
+        history.append(retro_entry)
+    else:
+        history = [retro_entry]
+    RETRO_YIELD_PATH.write_text(json.dumps(history, indent=2))
+    return retro_entry
+
+
+def grantContributorRole():
+    """Grant or confirm Contributor Tier 1 role for Ghostkey-316."""
+    verification = verifyImmutableSync()
+    if not verification.get("verified"):
+        return {"eligible": False, "reason": "syncpoint missing"}
+    registry = _read_json(CONTRIB_REG_PATH, {})
+    entry = registry.get(WALLET)
+    if not entry:
+        entry = {"identity": IDENTITY, "role": "Contributor Tier 1"}
+        registry[WALLET] = entry
+        CONTRIB_REG_PATH.write_text(json.dumps(registry, indent=2))
+    return {"eligible": True, "role": entry}
+
+
+def outputProof():
+    """Generate signed ``.proof`` file for Ghostkey-316."""
+    verification = verifyImmutableSync()
+    if not verification.get("verified"):
+        return {"error": "verification failed"}
+    sync_hash = verification["syncpoint"]["hash"]
+    timestamp = datetime.now(timezone.utc).isoformat()
+    payload = {
+        "identity": IDENTITY,
+        "wallet": WALLET,
+        "sync_hash": sync_hash,
+        "verified_at": timestamp,
+        "verification": verification,
+    }
+    signature = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
+    payload["signature"] = signature
+    proof_path = Path(f"{IDENTITY}.proof")
+    proof_path.write_text(json.dumps(payload, indent=2))
+    return {"proof": str(proof_path), "signature": signature}
 
 def codexMemory(event):
     """Embed event into immutable log as an origin sync node."""
