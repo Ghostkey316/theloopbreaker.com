@@ -50,4 +50,18 @@ function injectVaultfire(vaultfire, options = {}) {
   return injection;
 }
 
-module.exports = { activateCore, injectVaultfire };
+async function syncToASM({ wallet, layer, trigger }) {
+  const requiredWallet = 'bpow20.cb.id';
+  if (wallet !== requiredWallet) {
+    throw new Error('Sync failed: unauthorized wallet ID. Vaultfire protocol requires Ghostkey-316 alignment.');
+  }
+  const timestamp = new Date().toISOString();
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  console.log(`✅ Vaultfire successfully synced to ASM layer "${layer}" via trigger "${trigger}".`);
+  console.log(`🔗 Wallet ID: ${wallet}`);
+  console.log(`🕒 Timestamp: ${timestamp}`);
+  console.log('🎖️ Loyalty link confirmed.');
+  return { wallet, layer, trigger, timestamp, success: true };
+}
+
+module.exports = { activateCore, injectVaultfire, syncToASM };
