@@ -3,6 +3,7 @@
   "build_hash": "8a38328b7d8372d3c2c6bde4c0c1237e51f7330a32e117471ea96cc76e469f58",
   "feature_flags": [
     "activation_gate",
+    "ai_companion",
     "alignment_feedback",
     "ar_missions",
     "archetype_mirror",
@@ -13,6 +14,7 @@
     "belief_validation",
     "biofeedback",
     "case_studies",
+    "cli_sync",
     "codex_overdrive_v2",
     "connector_resilience_layer",
     "contributor_identity",
@@ -36,6 +38,7 @@
     "gaming_layer",
     "genesync",
     "ghostkey_commandments",
+    "ghostkey_learning_rule_1",
     "ghostscore_engine",
     "governance",
     "healing_trust_engine",
@@ -55,17 +58,26 @@
     "mission_registry",
     "mission_scheduler",
     "modding_layer",
+    "moral_memory",
     "music_layer",
+    "nanoloop_conscious_v7",
+    "nanoloop_innervoice_v8",
+    "nanoloop_sovereign_v6",
     "noise_filter",
+    "ns3_sync",
+    "openai_interface_hooks",
     "partner_hooks",
     "passive_yield_simulator",
     "planetkeeper",
     "play2earn",
     "proof_of_loyalty",
     "public_health_matcher",
+    "purpose_core",
     "purpose_engine",
     "reflection_layer",
+    "retro_drop_eligibility",
     "revenue_hooks",
+    "reward_flow_routing",
     "reward_guard",
     "royalty_engine",
     "score_oracle",
@@ -85,6 +97,7 @@
     "synergy_manager",
     "target_lock",
     "token_ops",
+    "tokenlink_asm",
     "truth_guard",
     "twitch_layer",
     "vaultfire_credits",
@@ -97,11 +110,8 @@
     "wellness_oracle",
     "worldcoin_layer",
     "yield_engine_v1",
-    "yield_protocol_prep",
-    "ghostkey_learning_rule_1",
-    "nanoloop_sovereign_v6",
-    "nanoloop_conscious_v7",
-    "nanoloop_innervoice_v8"
+    "yield_logic",
+    "yield_protocol_prep"
   ],
   "integrity_checks": {
     "status": "PASS"
@@ -109,10 +119,13 @@
   "contributor_identity": {
     "ens": "ghostkey316.eth",
     "wallet": "bpow20.cb.id",
-    "role": "Architect"
+    "role": "Architect",
+    "stipend_protocol": "$2,000/week",
+    "ethics_layer": "Ghostkey Ethics Framework v2.0",
+    "partner_sync": true
   },
   "date_created": "2025-07-25T04:33:48Z",
-  "system_status": "\ud83d\udd13 Codex-Activated: Belief-Based System",
+  "system_status": "🔓 Codex-Activated: Belief-Based System",
   "stability_rating": "Production-Ready Core, Beta Extensions",
   "checksum": "7e45f084491cdc04d046a080909694c90f77be515ed11b54aad1c9fb3fd311f6"
 }
