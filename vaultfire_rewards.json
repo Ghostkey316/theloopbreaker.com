@@ -5,6 +5,8 @@
       {"token": "ETH", "amount": 0.01},
       {"token": "ASM", "amount": 50},
       {"token": "WLD", "amount": 10}
-    ]
+    ],
+    "reward_flow_routing": "ENABLED",
+    "retro_drop_eligible": true
   }
 }
