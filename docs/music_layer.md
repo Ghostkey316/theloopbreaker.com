@@ -16,7 +16,7 @@ playlist = ai_curated_playlist("alice")
 - Ambient data is logged only with opt-in consent.
 - Nothing here constitutes legal, medical, or financial advice.
 - API tokens are stored as hashes and do not grant direct access to third‑party services.
-- Memory tracks use lightweight XOR encryption and are not suited for sensitive data.
+- Memory tracks now use AES-GCM encryption but should still avoid storing confidential or regulated data.
 - AI playlists are suggestions only and may not reflect professional curation.
 
 ## Ethics-Driven Sandbox Mode

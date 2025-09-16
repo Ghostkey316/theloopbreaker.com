@@ -5,7 +5,7 @@ Vaultlink provides a modular AI companion that evolves with each user. The engin
 ## Features
 - **Behavioral growth** – a time weighted algorithm increases XP based on interaction frequency, milestones and sentiment.
 - **Mythic identity** – each companion is seeded with a soulprint influencing voice style and moral compass.
-- **Encrypted memory** – personal memories are stored using the lightweight XOR encryption from `health_sync_engine` with a long-term history log.
+- **Encrypted memory** – personal memories are stored using the AES-GCM encryption from `health_sync_engine` with a long-term history log and file-locking safeguards.
 - **Emotion tracking** – interactions feed into the `reflection_layer` to adapt responses by tone.
 - **Synced evolution tree** – new levels unlock coaching and philosophical domains.
 - **Legacy transfer** – states can be cloned for a different user.
@@ -27,5 +27,5 @@ All session text is stored in a moral mirror log for human feedback. Advanced
 logic tiers require an override file signed by the founding architects.
 
 **Disclaimer**
-- Vaultlink uses basic XOR encryption and should not store highly sensitive data.
+- Vaultlink now uses AES-GCM with authenticated metadata but sensitive data should still be stored with user consent and appropriate key management.
 - Vaultlink Ascension Mode is stable and may produce unexpected results.

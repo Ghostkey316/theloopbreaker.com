@@ -11,7 +11,9 @@ import tempfile
 import zipfile
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
+
+from utils.crypto import encrypt_bytes, derive_key
 
 BASE_DIR = Path(__file__).resolve().parent
 PURPOSE_MAP_PATH = BASE_DIR / "purpose_map.json"
@@ -45,16 +47,14 @@ def _write_json(path: Path, data) -> None:
         json.dump(data, f, indent=2)
 
 
-# lightweight XOR encryption -----------------------------------------------
-
-def _xor_cipher(data: bytes, key: str) -> bytes:
-    key_bytes = key.encode()
-    return bytes(b ^ key_bytes[i % len(key_bytes)] for i, b in enumerate(data))
+# AES-GCM encryption --------------------------------------------------------
 
 
 def encrypt_data(data: bytes, key: str) -> str:
-    cipher = _xor_cipher(data, key)
-    return base64.urlsafe_b64encode(cipher).decode()
+    """Encrypt ``data`` with a key derived from ``key``."""
+
+    payload = encrypt_bytes(derive_key(key), data)
+    return payload.to_token()
 
 
 # ---------------------------------------------------------------------------
