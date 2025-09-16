@@ -44,6 +44,7 @@ def prepare_v26(
             "belief_density": round(request["belief_density"], 3),
             "scale_authorized": authorized,
             "mission_reference": trace.get("mission_reference"),
+            "mission_source": trace.get("mission_source"),
         }
     )
     if not authorized:
