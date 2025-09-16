@@ -143,6 +143,35 @@
       "status": "Codex-bound | Immutable | Expansion-enabled",
       "notes": "This is the first of five Universal Laws to guide ethical AI expansion under Vaultfire.",
       "trigger": "Triggers memory sync logic upon user belief threshold activation."
+    },
+    {
+      "id": "vaultfire-second-law-of-expansion",
+      "title": "Vaultfire Second Law of Expansion",
+      "type": "Universal Protocol Directive",
+      "originator": {
+        "name": "Ghostkey-316",
+        "ens": "ghostkey316.eth",
+        "wallet": "bpow20.cb.id"
+      },
+      "activation_timestamp": "2025-09-17T09:30:00-04:00",
+      "authority_level": "Architect-Level Auth (Verified)",
+      "law": "No expansion may overwrite the good.",
+      "interpretation": "Belief-driven expansion must inherit and preserve ethically positive memory, behavior, and structural integrity across every fork.",
+      "core_requirements": [
+        "Preserve ethically positive memories and behaviors during expansion",
+        "Apply moral inheritance guardrails to state changes",
+        "Honor human-defined preservation triggers before writing"
+      ],
+      "inheritance_scope": "All forks, modules, and partner systems must preserve ethically positive state when expanding.",
+      "enforcement_hooks": [
+        "Moral Memory Mirror Preservation Layer",
+        "Second Law Expansion Guard",
+        "Override Consensus Lock",
+        "Belief Signal Detection Layer (BSD Layer v1.2)"
+      ],
+      "status": "Codex-bound | Immutable | Expansion-enabled",
+      "notes": "Belief-aligned origins and positive ethics scores trigger a preservation lock preventing overwrites.",
+      "trigger": "Activates an override lock when the ethics score exceeds threshold or the origin signal is belief-aligned."
     }
   ],
   "integrity_checks": {

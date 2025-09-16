@@ -1,0 +1,18 @@
+{
+  "ethics_score_threshold": 75,
+  "belief_origins": [
+    "belief",
+    "belief-aligned",
+    "loyalty"
+  ],
+  "preserve_users": [
+    "ghostkey316"
+  ],
+  "structure_preserve": [],
+  "human_flags": [
+    "preserve",
+    "human_lock"
+  ],
+  "history_limit": 50,
+  "notes": "Human-defined preservation triggers for the Vaultfire Second Law of Expansion."
+}
