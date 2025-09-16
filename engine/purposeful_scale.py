@@ -9,6 +9,8 @@ from typing import Any, Dict, Iterable, List, Mapping, Sequence, Set, Tuple
 
 from utils.json_io import load_json, write_json
 
+from .alignment_guard import evaluate_alignment
+
 BASE_DIR = Path(__file__).resolve().parents[1]
 PURPOSE_PROFILES_PATH = BASE_DIR / "logs" / "purpose_profiles.json"
 SCALE_LOG_PATH = BASE_DIR / "logs" / "purposeful_scale_log.json"
@@ -264,6 +266,7 @@ def belief_trace(
     scale_request: Mapping[str, Any],
     *,
     threshold: float = DEFAULT_BELIEF_THRESHOLD,
+    identity: Mapping[str, Any] | None = None,
 ) -> Dict[str, Any]:
     """Validate a scale request against recorded belief intent."""
 
@@ -320,6 +323,47 @@ def belief_trace(
         "reason": "; ".join(reasons) if reasons else "approved",
         "timestamp": timestamp,
     }
+    guard_payload = {
+        "belief_density": belief_density,
+        "declared_purpose": declared_purpose,
+        "mission": mission,
+        "mission_tags": mission_tags,
+        "alignment": alignment,
+        "empathy_score": scale_request.get("empathy_score"),
+        "override": scale_request.get("override"),
+        "override_signature": scale_request.get("override_signature"),
+        "trust_tier": scale_request.get("trust_tier"),
+    }
+    guard_result = evaluate_alignment(
+        entry["operation"],
+        guard_payload,
+        identity=identity,
+        override_requested=bool(scale_request.get("override")),
+    )
+    guard_summary = {
+        "decision": guard_result["decision"],
+        "reasons": guard_result["reasons"],
+        "override": guard_result["override"],
+        "drift": guard_result["drift"],
+    }
+
+    if not guard_result["allowed"]:
+        guard_reasons = guard_result["reasons"] or ["alignment guard rejection"]
+        for reason in guard_reasons:
+            if reason not in reasons:
+                reasons.append(reason)
+
+    approved = not reasons and guard_result["allowed"]
+
+    entry.update({
+        "approved": approved,
+        "reason": "; ".join(reasons) if reasons else "approved",
+        "alignment_guard": guard_summary,
+    })
+
+    if guard_result["decision"] == "override":
+        entry["override_authorized"] = True
+
     if profile:
         if profile.get("mission_source"):
             entry["mission_source"] = profile.get("mission_source")
@@ -347,6 +391,7 @@ def belief_trace(
         "mission_tags": mission_tags,
         "timestamp": timestamp,
         "mission_source": profile.get("mission_source") if profile else None,
+        "alignment_guard": guard_summary,
     }
 
 

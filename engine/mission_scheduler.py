@@ -4,8 +4,9 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Any, Dict, Mapping, Optional
 
+from .alignment_guard import evaluate_alignment
 from .purpose_engine import generate_purpose_quest
 
 BASE_DIR = Path(__file__).resolve().parents[1]
@@ -64,7 +65,7 @@ def _user_schedule(data: Dict, user_id: str) -> Dict:
     return entry
 
 
-def assign_daily_mission(user_id: str) -> Optional[Dict]:
+def assign_daily_mission(user_id: str, *, identity: Optional[Mapping[str, Any]] = None) -> Optional[Dict]:
     if not sync_mode(user_id):
         return None
     data = _load_json(SCHEDULE_PATH, {})
@@ -73,7 +74,39 @@ def assign_daily_mission(user_id: str) -> Optional[Dict]:
     if entry.get("day") == today:
         return entry
     mission = generate_purpose_quest(user_id)
-    entry.update({"day": today, "mission": mission})
+    guard_identity = dict(identity) if isinstance(identity, Mapping) else {"user_id": user_id}
+    guard_identity.setdefault("user_id", user_id)
+    guard_payload = {
+        "mission": mission,
+        "declared_purpose": mission,
+        "mission_tags": ["daily-mission"],
+        "belief_density": 1.0,
+        "empathy_score": guard_identity.get("empathyScore") or guard_identity.get("empathy_score") or 0.72,
+    }
+    guard_result = evaluate_alignment(
+        "mission.assign_daily",
+        guard_payload,
+        identity=guard_identity,
+    )
+    guard_summary = {
+        "decision": guard_result["decision"],
+        "reasons": guard_result["reasons"],
+        "override": guard_result["override"],
+        "drift": guard_result["drift"],
+    }
+    if not guard_result["allowed"]:
+        entry.update(
+            {
+                "day": today,
+                "mission": None,
+                "status": guard_result["decision"],
+                "reason": "; ".join(guard_result["reasons"]) or guard_result["decision"],
+                "alignment_guard": guard_summary,
+            }
+        )
+        _write_json(SCHEDULE_PATH, data)
+        return entry
+    entry.update({"day": today, "mission": mission, "alignment_guard": guard_summary})
     _write_json(SCHEDULE_PATH, data)
     return entry
 

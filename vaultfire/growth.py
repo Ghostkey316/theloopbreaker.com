@@ -47,9 +47,14 @@ def prepare_v26(
             "mission_source": trace.get("mission_source"),
         }
     )
+    guard_decision = trace.get("alignment_guard")
+    if guard_decision:
+        entry["alignment_guard"] = guard_decision
     if not authorized:
         if reason:
             entry["blocked_reason"] = reason
+        if guard_decision and guard_decision.get("reasons") and "blocked_reason" not in entry:
+            entry["blocked_reason"] = "; ".join(guard_decision["reasons"])
         return entry
 
     log = load_json(LOG_PATH, [])
