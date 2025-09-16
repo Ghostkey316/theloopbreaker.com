@@ -31,6 +31,37 @@ def _resolve_belief_density(identity: Dict[str, Any]) -> float:
         return 0.0
 
 
+def _resolve_empathy(identity: Dict[str, Any]) -> float:
+    empathy = (
+        identity.get("empathyScore")
+        or identity.get("empathy_score")
+        or identity.get("careIndex")
+    )
+    if empathy is None:
+        empathy = 0.72 if identity.get("ethicsVerified") else 0.55
+    try:
+        return float(empathy)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _resolve_override(identity: Dict[str, Any]) -> Tuple[bool, str | None, str | None]:
+    override_flag = bool(
+        identity.get("alignmentOverride")
+        or identity.get("overrideAlignment")
+        or identity.get("override")
+    )
+    signature = identity.get("beliefSignature") or identity.get("belief_signature")
+    trust_tier = (
+        identity.get("trustTier")
+        or identity.get("trust_tier")
+        or identity.get("role")
+        or identity.get("tier")
+    )
+    trust_value = str(trust_tier).strip() if isinstance(trust_tier, str) else None
+    return override_flag, signature if isinstance(signature, str) else None, trust_value
+
+
 def _resolve_declared_purpose(identity: Dict[str, Any], user_id: str) -> str:
     purpose = identity.get("declaredPurpose") or identity.get("mission") or identity.get("purpose")
     if isinstance(purpose, str) and purpose.strip():
@@ -58,7 +89,17 @@ def build_scale_request(
         "mission_tags": mission_tags,
         "declared_purpose": _resolve_declared_purpose(identity, user_id),
         "belief_density": _resolve_belief_density(identity),
+        "empathy_score": _resolve_empathy(identity),
     }
+    override_flag, signature, trust_tier = _resolve_override(identity)
+    if override_flag:
+        request["override"] = True
+    if signature:
+        request["override_signature"] = signature
+    if trust_tier:
+        request["trust_tier"] = trust_tier
+    if identity.get("beliefSignatureVerified") or identity.get("belief_signature_verified"):
+        request["beliefSignatureVerified"] = True
     mission_reference = ensure_mission_profile(user_id, identity, request["declared_purpose"])
     if not request["declared_purpose"] and mission_reference:
         request["declared_purpose"] = mission_reference
@@ -71,7 +112,7 @@ def authorize_scale(
     extra_tags: Sequence[str] | None = None,
 ) -> Tuple[bool, str | None, Dict[str, Any], Dict[str, Any]]:
     user_id, request = build_scale_request(identity, operation, extra_tags)
-    trace = belief_trace(user_id, request)
+    trace = belief_trace(user_id, request, identity=identity)
     if not trace["approved"]:
         return False, trace["reason"], request, trace
     resonance = behavioral_resonance_filter(user_id, request)

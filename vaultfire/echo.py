@@ -44,8 +44,13 @@ def deploy_companion(identity: Dict[str, Any]) -> Dict[str, Any]:
             "mission_source": trace.get("mission_source"),
         }
     )
+    guard_decision = trace.get("alignment_guard")
+    if guard_decision:
+        entry["alignment_guard"] = guard_decision
     if not authorized and reason:
         entry["blocked_reason"] = reason
+    if not authorized and guard_decision and guard_decision.get("reasons"):
+        entry.setdefault("blocked_reason", "; ".join(guard_decision["reasons"]))
 
     log = load_json(LOG_PATH, [])
     log.append(entry)

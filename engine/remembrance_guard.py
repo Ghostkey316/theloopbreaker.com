@@ -3,7 +3,9 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, MutableMapping, Optional, Sequence, Set
+from typing import Any, Dict, List, Mapping, MutableMapping, Optional, Sequence, Set
+
+from .alignment_guard import evaluate_alignment
 
 LAW_TITLE = "The Forgotten Flame: Those who lit the path shall not be left in the dark."
 
@@ -261,6 +263,48 @@ class RemembranceGuard:
             tag_set = {str(tag).lower() for tag in tags} if isinstance(tags, (list, tuple, set)) else set()
             is_key = bool(entry.get("key_breakthrough")) or ("breakthrough" in tag_set)
             action = request.get("action", "inspect")
+            insight_text = entry.get("insight") or entry.get("pattern") or entry.get("text")
+
+            guard_payload = {
+                "memory_id": memory_id,
+                "mission": insight_text,
+                "mission_tags": sorted(tag_set),
+                "action": action,
+                "consensus_weight": provided,
+                "required_consensus": required,
+                "empathy_score": request.get("empathy_score"),
+                "intent": request.get("intent"),
+            }
+            identity = request.get("identity")
+            guard_identity = identity if isinstance(identity, Mapping) else None
+            guard_result = evaluate_alignment(
+                f"memory.{action}",
+                guard_payload,
+                identity=guard_identity,
+                override_requested=bool(request.get("override")),
+            )
+            guard_summary = {
+                "decision": guard_result["decision"],
+                "reasons": guard_result["reasons"],
+                "override": guard_result["override"],
+                "drift": guard_result["drift"],
+            }
+
+            if not guard_result["allowed"]:
+                lock_info = {
+                    "memory_id": memory_id,
+                    "required_consensus": required,
+                    "provided_consensus": provided,
+                    "action": action,
+                    "insight": insight_text,
+                    "reason": guard_result["reasons"][0]
+                    if guard_result["reasons"]
+                    else guard_result["decision"],
+                    "alignment_guard": guard_summary,
+                }
+                locked.append(lock_info)
+                self._mirror_archive[memory_id] = deepcopy(entry)
+                continue
             if is_key and provided < required and action in {"delete", "override"}:
                 lock_info = {
                     "memory_id": memory_id,
@@ -269,6 +313,7 @@ class RemembranceGuard:
                     "action": action,
                     "insight": entry.get("insight") or entry.get("pattern") or entry.get("text"),
                     "reason": "consensus_not_met",
+                    "alignment_guard": guard_summary,
                 }
                 locked.append(lock_info)
                 self._mirror_archive[memory_id] = deepcopy(entry)
@@ -287,7 +332,8 @@ class RemembranceGuard:
                     "memory_id": memory_id,
                     "action": action,
                     "consensus": provided,
-                    "insight": entry.get("insight") or entry.get("pattern") or entry.get("text"),
+                    "insight": insight_text,
+                    "alignment_guard": guard_summary,
                 }
             )
         report = {
@@ -298,7 +344,13 @@ class RemembranceGuard:
         self.last_memory_lock = report
         return report
 
-    def restore_memories(self, memory_ids: Optional[Sequence[str]] = None) -> List[Dict[str, Any]]:
+    def restore_memories(
+        self,
+        memory_ids: Optional[Sequence[str]] = None,
+        *,
+        identity: Optional[Mapping[str, Any]] = None,
+        override: bool = False,
+    ) -> List[Dict[str, Any]]:
         if memory_ids is None:
             targets = list(self._mirror_archive.keys())
         else:
@@ -308,6 +360,28 @@ class RemembranceGuard:
             entry = self._mirror_archive.get(memory_id)
             if entry:
                 restored_entry = deepcopy(entry)
+                guard_payload = {
+                    "memory_id": memory_id,
+                    "mission": restored_entry.get("insight")
+                    or restored_entry.get("pattern")
+                    or restored_entry.get("text"),
+                    "mission_tags": restored_entry.get("tags", []),
+                    "action": "restore",
+                }
+                guard_result = evaluate_alignment(
+                    "memory.restore",
+                    guard_payload,
+                    identity=identity,
+                    override_requested=override,
+                )
+                if not guard_result["allowed"]:
+                    continue
+                restored_entry["alignment_guard"] = {
+                    "decision": guard_result["decision"],
+                    "reasons": guard_result["reasons"],
+                    "override": guard_result["override"],
+                    "drift": guard_result["drift"],
+                }
                 self._memory_by_id[memory_id] = restored_entry
                 restored.append(restored_entry)
         return restored
