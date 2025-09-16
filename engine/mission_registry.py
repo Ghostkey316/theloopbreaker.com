@@ -128,7 +128,13 @@ def record_mission(
         "reasons": guard_result["reasons"],
         "override": guard_result["override"],
         "drift": guard_result["drift"],
+        "human_standard": {
+            "decision": guard_result["human_standard"]["decision"],
+            "escalation_level": guard_result["human_standard"]["escalation_level"],
+            "reasons": guard_result["human_standard"]["reasons"],
+        },
     }
+    entry["human_standard_hash"] = guard_result["human_standard_hash"]
     data[user_id] = entry
     write_json(DATA_PATH, data)
     return entry

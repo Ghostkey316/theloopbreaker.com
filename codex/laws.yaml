@@ -1,0 +1,10 @@
+immutable_if_human_violation: true
+laws:
+  - number: 10
+    title: "Vaultfire Law 10: The Human Standard"
+    summary: >-
+      HumanStandardGuard ensures every expansion, mission approval, and codex action
+      maintains empathy, human dignity, and emotional resonance before activation.
+    version: "1.0"
+    guard_path: "engine/human_standard_guard.py"
+    validation_suite: "tests/human_standard_guard_test.py"

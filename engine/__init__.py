@@ -282,6 +282,12 @@ from .nanoloop_v1_1 import (
     stabilize_trauma,
     rebuild_tissue,
 )
+from .human_standard_guard import (
+    HumanStandardGuard,
+    DEFAULT_HUMAN_STANDARD_GUARD,
+    humanity_violation_log,
+    flag_empathy_violation,
+)
 
 __all__ = [
     "resolve_identity",
@@ -539,5 +545,9 @@ __all__ = [
     "repair_cell_pattern",
     "stabilize_trauma",
     "rebuild_tissue",
+    "HumanStandardGuard",
+    "DEFAULT_HUMAN_STANDARD_GUARD",
+    "humanity_violation_log",
+    "flag_empathy_violation",
 ]
 

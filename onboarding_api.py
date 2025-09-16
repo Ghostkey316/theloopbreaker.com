@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 from simulate_partner_activation import simulate_activation, ALIGNMENT_PHRASE
 from engine.ens_sync_status import read_sync_status
 from engine.case_studies import submit_case_study, list_case_studies
+from engine.human_standard_guard import DEFAULT_HUMAN_STANDARD_GUARD
 from partner_modules import (
     get_audit_logs,
     record_audit_log,
@@ -27,6 +28,8 @@ EARNERS_PATH = BASE_DIR / "earners.json"
 SCORECARD_PATH = BASE_DIR / "user_scorecard.json"
 OG_LIST_PATH = BASE_DIR / "og_loyalists.json"
 CONFIG_PATH = BASE_DIR / "vault_config.json"
+
+HUMAN_GUARD = DEFAULT_HUMAN_STANDARD_GUARD
 
 
 def _load_json(path: Path, default):
@@ -61,10 +64,33 @@ def onboard_partner():
     og_flag = data.get("og_loyalist", False)
     if not partner_id or not wallet:
         return jsonify({"error": "partner_id and wallet required"}), 400
+    guard_result = HUMAN_GUARD.evaluate(
+        "onboard.partner",
+        {"partner_id": partner_id, "wallet": wallet, "og_loyalist": og_flag},
+        identity={"partner_id": partner_id, "wallet": wallet},
+        context={"mission": False, "enforce_human_first": True},
+    )
+    if not guard_result["allowed"]:
+        return (
+            jsonify(
+                {
+                    "error": "human_standard_violation",
+                    "reasons": guard_result["reasons"],
+                }
+            ),
+            403,
+        )
     partners = _load_json(PARTNERS_PATH, [])
     if any(p.get("partner_id") == partner_id for p in partners):
         return jsonify({"message": "partner already exists"}), 200
-    partners.append({"partner_id": partner_id, "wallet": wallet, "og_loyalist": og_flag})
+    partners.append(
+        {
+            "partner_id": partner_id,
+            "wallet": wallet,
+            "og_loyalist": og_flag,
+            "human_standard_hash": guard_result["human_standard_hash"],
+        }
+    )
     _write_json(PARTNERS_PATH, partners)
     if og_flag:
         og_list = _load_json(OG_LIST_PATH, [])
@@ -81,6 +107,22 @@ def onboard_contributor():
     wallet = data.get("wallet", "")
     if not user_id:
         return jsonify({"error": "user_id required"}), 400
+    guard_result = HUMAN_GUARD.evaluate(
+        "onboard.contributor",
+        {"user_id": user_id, "wallet": wallet},
+        identity={"user_id": user_id, "wallet": wallet},
+        context={"mission": False, "enforce_human_first": True},
+    )
+    if not guard_result["allowed"]:
+        return (
+            jsonify(
+                {
+                    "error": "human_standard_violation",
+                    "reasons": guard_result["reasons"],
+                }
+            ),
+            403,
+        )
     users = _load_json(CONTRIBUTORS_PATH, [])
     if user_id in users:
         return jsonify({"message": "contributor already exists"}), 200
@@ -88,7 +130,11 @@ def onboard_contributor():
     _write_json(CONTRIBUTORS_PATH, users)
     scorecard = _load_json(SCORECARD_PATH, {})
     if user_id not in scorecard:
-        scorecard[user_id] = {"wallet": wallet, "score": 0}
+        scorecard[user_id] = {
+            "wallet": wallet,
+            "score": 0,
+            "human_standard_hash": guard_result["human_standard_hash"],
+        }
         _write_json(SCORECARD_PATH, scorecard)
     return jsonify({"message": "contributor onboarded"}), 201
 
@@ -99,6 +145,22 @@ def onboard_earner():
     wallet = data.get("wallet")
     if not wallet:
         return jsonify({"error": "wallet required"}), 400
+    guard_result = HUMAN_GUARD.evaluate(
+        "onboard.earner",
+        {"wallet": wallet},
+        identity={"wallet": wallet},
+        context={"mission": False, "enforce_human_first": True},
+    )
+    if not guard_result["allowed"]:
+        return (
+            jsonify(
+                {
+                    "error": "human_standard_violation",
+                    "reasons": guard_result["reasons"],
+                }
+            ),
+            403,
+        )
     earners = _load_json(EARNERS_PATH, [])
     if wallet in earners:
         return jsonify({"message": "earner already exists"}), 200
