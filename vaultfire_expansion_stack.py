@@ -23,6 +23,9 @@ user_identity = {
     "syncMode": "full",
     "behaviorTracking": True,
     "ethicsVerified": True,
+    "beliefDensity": 0.74,
+    "missionTags": ["Vaultfire", "NS3", "Ghostkey-316"],
+    "declaredPurpose": "Sustain Vaultfire, NS3, and Ghostkey-316 mission threads with belief-aligned scale",
 }
 
 

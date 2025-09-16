@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 from utils.json_io import load_json, write_json
+from vaultfire._purposeful_scale import authorize_scale
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 LOG_PATH = BASE_DIR / "logs" / "growth_prepare_v26.log"
@@ -24,7 +25,6 @@ def prepare_v26(
     yieldRewards: bool = False,
 ) -> Dict[str, Any]:
     """Log preparation of the V26 growth fork."""
-    log = load_json(LOG_PATH, [])
     entry = {
         "wallet": identity.get("wallet"),
         "multipliers": enableMultipliers,
@@ -32,6 +32,26 @@ def prepare_v26(
         "yield_rewards": yieldRewards,
         "timestamp": datetime.utcnow().isoformat(),
     }
+    authorized, reason, request, trace = authorize_scale(
+        identity,
+        "growth.prepare_v26",
+        extra_tags=["growth", "expansion"],
+    )
+    entry.update(
+        {
+            "mission_tags": request["mission_tags"],
+            "declared_purpose": request["declared_purpose"],
+            "belief_density": round(request["belief_density"], 3),
+            "scale_authorized": authorized,
+            "mission_reference": trace.get("mission_reference"),
+        }
+    )
+    if not authorized:
+        if reason:
+            entry["blocked_reason"] = reason
+        return entry
+
+    log = load_json(LOG_PATH, [])
     log.append(entry)
     write_json(LOG_PATH, log)
     return entry
