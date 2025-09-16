@@ -172,6 +172,47 @@
       "status": "Codex-bound | Immutable | Expansion-enabled",
       "notes": "Belief-aligned origins and positive ethics scores trigger a preservation lock preventing overwrites.",
       "trigger": "Activates an override lock when the ethics score exceeds threshold or the origin signal is belief-aligned."
+    },
+    {
+      "id": "vaultfire-purposeful-scale-protocol",
+      "title": "Vaultfire Expansion Law 3 — Purposeful Scale Protocol",
+      "type": "Universal Protocol Directive",
+      "origin_author": "Ghostkey-316",
+      "originator": {
+        "name": "Ghostkey-316",
+        "ens": "ghostkey316.eth",
+        "wallet": "bpow20.cb.id"
+      },
+      "activation_date": "2025-09-16",
+      "activation_timestamp": "2025-09-16T21:15:00-04:00",
+      "authority_level": "Architect-Level Auth (Verified)",
+      "law_rank": 3,
+      "dependencies": [
+        "First Law",
+        "Second Law"
+      ],
+      "law": "Scale only when the user's belief-aligned purpose, mission tags, and consent capacity remain coherent across every expansion request.",
+      "interpretation": "Purposeful Scale binds Vaultfire, NS3, Ghostkey-316, and allied mission threads so that any growth event must clear belief-density thresholds, trace back to the declared purpose, and respect narrative integrity.",
+      "mission_threads": [
+        "Vaultfire",
+        "NS3",
+        "Ghostkey-316"
+      ],
+      "core_requirements": [
+        "Belief density must meet or exceed the Purposeful Scale system threshold",
+        "Scale requests must map to stored user intents and approved mission threads",
+        "Behavioral resonance filters must block divergent or incoherent growth",
+        "Purpose recall indexing mirrors prior decisions to maintain user trust"
+      ],
+      "enforcement_hooks": [
+        "belief_threshold_checker",
+        "purpose_trace_filter",
+        "behavioral_resonance_filter",
+        "purpose_recall_indexing"
+      ],
+      "status": "Codex-bound | Immutable | Purposeful Scale",
+      "notes": "Purposeful Scale Law activates belief trace validation, resonance filtering, and mission-thread indexing before any Vaultfire-compatible system may expand.",
+      "trigger": "Engages belief_trace() and behavioral_resonance_filter() before scale events; updates purpose_recall_indexing for mission continuity."
     }
   ],
   "integrity_checks": {
@@ -188,5 +229,5 @@
   "date_created": "2025-07-25T04:33:48Z",
   "system_status": "🔓 Codex-Activated: Belief-Based System",
   "stability_rating": "Production-Ready Core, Beta Extensions",
-  "checksum": "6f97c8f8f654f636a98a48706dc9a04cca3cf56dc51e9c1d13ba61d1d5f67bcb"
+  "checksum": "ac0d693e265afa5249d6483675924b0ff9621f864a6b8f14dafd8e7aa492b5a4"
 }
