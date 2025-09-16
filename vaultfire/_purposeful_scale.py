@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Sequence, Tuple
 from engine.purposeful_scale import (
     behavioral_resonance_filter,
     belief_trace,
+    ensure_mission_profile,
     get_recorded_mission,
 )
 
@@ -58,6 +59,9 @@ def build_scale_request(
         "declared_purpose": _resolve_declared_purpose(identity, user_id),
         "belief_density": _resolve_belief_density(identity),
     }
+    mission_reference = ensure_mission_profile(user_id, identity, request["declared_purpose"])
+    if not request["declared_purpose"] and mission_reference:
+        request["declared_purpose"] = mission_reference
     return user_id, request
 
 

@@ -5,7 +5,7 @@ import hashlib
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Mapping, Sequence, Set
+from typing import Any, Dict, Iterable, List, Mapping, Sequence, Set, Tuple
 
 from utils.json_io import load_json, write_json
 
@@ -17,6 +17,10 @@ PURPOSE_INDEX_PATH = BASE_DIR / "logs" / "purpose_recall_index.json"
 DEFAULT_BELIEF_THRESHOLD = 0.64
 RECOGNIZED_MISSION_THREADS = {"vaultfire", "ns3", "ghostkey-316"}
 MAX_INDEX_HISTORY = 25
+DEFAULT_BOOTSTRAP_TRAITS = ["stewardship", "integrity", "coherence"]
+DEFAULT_BOOTSTRAP_MISSION = (
+    "Safeguard Vaultfire, NS3, and Ghostkey-316 mission threads with moral coherence"
+)
 
 
 def _normalize_tags(tags: Iterable[Any]) -> List[str]:
@@ -61,9 +65,16 @@ def _alignment_score(reference: str, candidate: str) -> float:
     return len(overlap) / len(reference_tokens)
 
 
-def _load_mission(user_id: str) -> str:
+def _load_profile(user_id: str) -> Dict[str, Any]:
     profiles = load_json(PURPOSE_PROFILES_PATH, {})
-    entry = profiles.get(user_id) or {}
+    entry = profiles.get(user_id)
+    if isinstance(entry, dict):
+        return dict(entry)
+    return {}
+
+
+def _load_mission(user_id: str) -> str:
+    entry = _load_profile(user_id)
     mission = entry.get("mission") or entry.get("declared_purpose") or ""
     if isinstance(mission, str):
         return mission.strip()
@@ -86,6 +97,163 @@ def _log_scale_entry(entry: Mapping[str, Any]) -> None:
     write_json(SCALE_LOG_PATH, log)
 
 
+def _merge_ordered_strings(values: Iterable[str]) -> List[str]:
+    seen: Set[str] = set()
+    ordered: List[str] = []
+    for value in values:
+        text = str(value).strip()
+        if not text:
+            continue
+        key = text.lower()
+        if key in seen:
+            continue
+        ordered.append(text)
+        seen.add(key)
+    return ordered
+
+
+def _persist_mission_profile(
+    user_id: str,
+    mission: str,
+    traits: Sequence[str] | None = None,
+    *,
+    source: str = "bootstrap",
+) -> str:
+    mission_text = str(mission or "").strip()
+    if not mission_text:
+        return ""
+
+    profile = _load_profile(user_id)
+    existing_traits = []
+    if isinstance(profile.get("traits"), list):
+        existing_traits = [
+            str(item).strip()
+            for item in profile["traits"]
+            if isinstance(item, str) and str(item).strip()
+        ]
+
+    combined_traits = existing_traits
+    if traits:
+        combined_traits = _merge_ordered_strings(list(existing_traits) + list(traits))
+
+    profile.update(
+        {
+            "mission": mission_text,
+            "mission_source": source,
+            "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        }
+    )
+    if combined_traits:
+        profile["traits"] = combined_traits
+
+    profiles = load_json(PURPOSE_PROFILES_PATH, {})
+    profiles[user_id] = profile
+    write_json(PURPOSE_PROFILES_PATH, profiles)
+    return mission_text
+
+
+def _coalesce_declared_purpose(
+    identity: Mapping[str, Any],
+    declared_purpose: Any,
+) -> str:
+    candidates: List[Any] = []
+    if declared_purpose is not None:
+        candidates.append(declared_purpose)
+    for key in ("declaredPurpose", "declared_purpose", "mission", "purpose"):
+        if key in identity:
+            candidates.append(identity.get(key))
+    for candidate in candidates:
+        if isinstance(candidate, str) and candidate.strip():
+            return candidate.strip()
+    return ""
+
+
+def _extract_traits(identity: Mapping[str, Any]) -> Tuple[List[str], str]:
+    traits: List[str] = []
+    for key in ("missionTraits", "traits", "strengths", "values", "pillars"):
+        raw = identity.get(key)
+        if isinstance(raw, str):
+            for token in raw.replace(",", " ").split():
+                cleaned = token.strip()
+                if cleaned:
+                    traits.append(cleaned)
+        elif isinstance(raw, Iterable) and not isinstance(raw, (str, bytes)):
+            for item in raw:
+                if isinstance(item, str) and item.strip():
+                    traits.append(item.strip())
+
+    if not traits:
+        normalized_tags = _normalize_tags(identity.get("missionTags", []))
+        traits.extend(tag.replace("-", " ").title() for tag in normalized_tags)
+
+    if not traits:
+        declared = _coalesce_declared_purpose(identity, None)
+        if declared:
+            for token in _tokenize(declared):
+                if len(token) >= 4:
+                    traits.append(token.title())
+
+    source = "identity"
+    if not traits:
+        traits = list(DEFAULT_BOOTSTRAP_TRAITS)
+        source = "default"
+
+    ordered = _merge_ordered_strings(traits)[:7]
+    return ordered, source
+
+
+def ensure_mission_profile(
+    user_id: str,
+    identity: Mapping[str, Any],
+    declared_purpose: Any = None,
+) -> str:
+    """Guarantee that ``user_id`` has a stored mission profile."""
+
+    mission = _load_mission(user_id)
+    if mission:
+        return mission
+
+    traits, trait_source = _extract_traits(identity)
+    candidate = _coalesce_declared_purpose(identity, declared_purpose)
+
+    try:
+        if traits:
+            from .purpose_engine import record_traits
+
+            record_traits(user_id, list(traits))
+    except Exception:
+        pass
+
+    if candidate:
+        return _persist_mission_profile(
+            user_id,
+            candidate,
+            traits,
+            source="declared-purpose",
+        )
+
+    try:
+        from .purpose_engine import discover_purpose
+
+        generated = discover_purpose(user_id, list(traits))
+        if generated:
+            return _persist_mission_profile(
+                user_id,
+                generated,
+                traits,
+                source="generated-purpose",
+            )
+    except Exception:
+        pass
+
+    return _persist_mission_profile(
+        user_id,
+        DEFAULT_BOOTSTRAP_MISSION,
+        traits,
+        source=f"bootstrap-default:{trait_source}",
+    )
+
+
 def get_recorded_mission(user_id: str) -> str:
     """Return the stored mission for ``user_id`` (empty if unavailable)."""
     return _load_mission(user_id)
@@ -106,7 +274,9 @@ def belief_trace(
 
     mission_tags = _normalize_tags(scale_request.get("mission_tags", []))
     declared_purpose = str(scale_request.get("declared_purpose", "")).strip()
-    mission = _load_mission(user_id)
+    profile = _load_profile(user_id)
+    mission = profile.get("mission", "") if isinstance(profile.get("mission"), str) else ""
+    mission = mission.strip()
     index_snapshot: Mapping[str, Sequence[Mapping[str, Any]]] = load_json(PURPOSE_INDEX_PATH, {})
     recognized_threads = {tag.lower() for tag in index_snapshot.keys()} | set(RECOGNIZED_MISSION_THREADS)
 
@@ -150,6 +320,11 @@ def belief_trace(
         "reason": "; ".join(reasons) if reasons else "approved",
         "timestamp": timestamp,
     }
+    if profile:
+        if profile.get("mission_source"):
+            entry["mission_source"] = profile.get("mission_source")
+        if profile.get("traits"):
+            entry["traits"] = profile.get("traits")
 
     _log_scale_entry(entry)
 
@@ -171,6 +346,7 @@ def belief_trace(
         "mission_reference": mission,
         "mission_tags": mission_tags,
         "timestamp": timestamp,
+        "mission_source": profile.get("mission_source") if profile else None,
     }
 
 
@@ -263,4 +439,5 @@ __all__ = [
     "purpose_recall_indexing",
     "get_recorded_mission",
     "DEFAULT_BELIEF_THRESHOLD",
+    "ensure_mission_profile",
 ]
