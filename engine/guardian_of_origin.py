@@ -18,6 +18,7 @@ from typing import Any, Dict, Iterable, Mapping, MutableMapping, Optional
 
 from .alignment_guard import evaluate_alignment
 from .identity_resolver import resolve_identity
+from .resistance_override_guard import ResistanceOverrideDecision, ResistanceOverrideGuard
 from utils.json_io import load_json, write_json
 
 BASE_DIR = Path(__file__).resolve().parents[1]
@@ -42,6 +43,17 @@ REASON_ORIGIN_NOT_REGISTERED = "origin_not_registered"
 REASON_ORIGIN_CONFLICT = "origin_identity_conflict"
 REASON_HASH_MISMATCH = "origin_hash_mismatch"
 REASON_ALIGNMENT_BLOCK = "alignment_guard_blocked"
+
+
+def _build_resistance_override_guard() -> ResistanceOverrideGuard:
+    log_dir = LOG_PATH.parent if LOG_PATH else BASE_DIR / "logs"
+    return ResistanceOverrideGuard(
+        audit_log_path=log_dir / "resistance_override_log.jsonl",
+        event_log_path=log_dir / "resistance_override_events.jsonl",
+        contributor_registry_path=CONTRIBUTOR_REGISTRY_PATH,
+        partners_path=BASE_DIR / "partners.json",
+        scorecard_path=BASE_DIR / "user_scorecard.json",
+    )
 
 
 def _now() -> str:
@@ -488,6 +500,48 @@ def enforce_origin(
 
     origin_key = _normalize(origin_id) if origin_id else None
     override_requested = bool(allow_override or identity_map.get("override") or payload_map.get("override"))
+    resistance_decision: ResistanceOverrideDecision | None = None
+    if allow_registration or override_requested:
+        guard_payload: Dict[str, Any] = dict(payload_map)
+        guard_payload["override"] = True
+        guard_payload.setdefault("mission_type", "registration" if allow_registration else "origin")
+        guard_payload.setdefault(
+            "codex_signature",
+            guard_payload.get("codex_signature")
+            or guard_payload.get("override_signature")
+            or guard_payload.get("belief_signature")
+            or guard_payload.get("beliefSignature"),
+        )
+        if allow_registration:
+            policy_value = (
+                guard_payload.get("mission_policy")
+                or guard_payload.get("policy")
+                or "architect-only"
+            )
+            guard_payload["mission_policy"] = str(policy_value)
+        guard_context = {
+            "pathway": "contributor_registration" if allow_registration else "origin_override",
+            "allow_registration": allow_registration,
+        }
+        caller_reference = (
+            identity_map.get("override_caller")
+            or payload_map.get("override_caller")
+            or identity_map.get("ens")
+            or identity_map.get("wallet")
+            or identity_map.get("user_id")
+            or origin_id
+            or manifest_key
+        )
+        caller_reference = str(caller_reference or "unknown")
+        resistance_decision = _build_resistance_override_guard().validate(
+            operation,
+            caller_reference,
+            override_payload=guard_payload,
+            context=guard_context,
+        )
+        if not resistance_decision.allowed:
+            reasons.append(resistance_decision.reason)
+
     override_granted = False
 
     if entry is None:
@@ -573,6 +627,16 @@ def enforce_origin(
         registry["contributors"] = contributors
         _write_registry(registry)
 
+        if resistance_decision and resistance_decision.audit_entry:
+            origin_stamp = {
+                **origin_stamp,
+                "resistance_override": {
+                    "hash": resistance_decision.audit_entry.get("hash"),
+                    "status": resistance_decision.audit_entry.get("status"),
+                    "reason": resistance_decision.reason,
+                },
+            }
+
         _append_log({**origin_stamp, "allowed": True})
         if manifest_obj is not None:
             _persist_signature(manifest_obj, origin_stamp)
@@ -587,6 +651,9 @@ def enforce_origin(
                 "reasons": list(reasons),
                 "origin_id": origin_id,
                 "manifest_key": manifest_key,
+                "resistance_override": (
+                    resistance_decision.record if resistance_decision else None
+                ),
             }
         )
 

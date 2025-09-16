@@ -72,6 +72,12 @@ def _make_guard(module, tmp_path, origin_allowed: bool = True):
     def origin_enforcer(*_args, **_kwargs):
         return StubOriginResult(allowed=origin_allowed)
 
+    override_guard = module.ResistanceOverrideGuard(
+        audit_log_path=tmp_path / "resistance_override_log.jsonl",
+        event_log_path=tmp_path / "resistance_override_events.jsonl",
+        alignment_log_path=tmp_path / "belief_trace_log.json",
+    )
+
     belief_logs = [
         {
             "insight": "ignite future",
@@ -98,6 +104,7 @@ def _make_guard(module, tmp_path, origin_allowed: bool = True):
         memory_chains,
         audit_log_path=tmp_path / "memory_audit_log.json",
         origin_enforcer=origin_enforcer,
+        override_guard=override_guard,
         codex_seed="test-seed",
     )
 
@@ -162,6 +169,7 @@ def test_memory_audit_flags_unapproved_override(memory_audit_module, tmp_path):
         "previous_belief_density": 0.88,
         "authorized": False,
         "override": True,
+        "codex_signature": "bad" * 16,
         "tags": ["scale", "rogue"],
     }
     identity = {"ens": "rogue.eth", "trustTier": "scout"}
@@ -178,6 +186,7 @@ def test_memory_audit_flags_unapproved_override(memory_audit_module, tmp_path):
     assert "unauthorized_memory_edit" in result.codex_violation_flags
     assert "override_denied" in result.codex_violation_flags
     assert "misaligned_scale_attempt" in result.codex_violation_flags
+    assert "resistance_override_block" in result.codex_violation_flags
     assert guard.review_queue[-1]["target_id"] == "mem-1"
     assert guard.memory_action_log[-1]["codex_violation_flags"] == result.codex_violation_flags
 
@@ -209,11 +218,12 @@ def test_memory_audit_rollback_replay_restores_state(memory_audit_module, tmp_pa
         "justification": "Restoring truth",
         "authorized": True,
         "rollback_payload": rollback_payload,
+        "override_signature": "f" * 64,
     }
     result = guard.audit_memory_action(
         "retroactive_change",
         retro_payload,
-        identity={"ens": "guardian.eth", "trustTier": "guardian"},
+        identity={"ens": "ghostkey316.eth", "trustTier": "architect"},
         override_requested=True,
     )
 
