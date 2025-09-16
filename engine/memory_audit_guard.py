@@ -20,6 +20,7 @@ from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Optional,
 
 from .alignment_guard import evaluate_alignment
 from .remembrance_guard import RemembranceGuard
+from .resistance_override_guard import ResistanceOverrideDecision, ResistanceOverrideGuard
 
 try:  # pragma: no cover - optional dependency for environments without guardian
     from .guardian_of_origin import enforce_origin as _default_origin_enforcer
@@ -163,6 +164,7 @@ class MemoryAuditGuard:
         *,
         audit_log_path: Path | str | None = None,
         origin_enforcer: Optional[Any] = None,
+        override_guard: Optional[ResistanceOverrideGuard] = None,
         codex_seed: str = "vaultfire-codex",
         drift_alert_threshold: float = 0.35,
         belief_shift_threshold: float = 0.12,
@@ -174,6 +176,13 @@ class MemoryAuditGuard:
 
         self.remembrance_guard = RemembranceGuard(belief_logs or [], memory_chains or [])
         self.origin_enforcer = origin_enforcer or _default_origin_enforcer
+        log_dir = self.audit_log_path.parent
+        if override_guard is None:
+            override_guard = ResistanceOverrideGuard(
+                audit_log_path=log_dir / "resistance_override_log.jsonl",
+                event_log_path=log_dir / "resistance_override_events.jsonl",
+            )
+        self.override_guard = override_guard
 
         existing_log = load_json(self.audit_log_path, [])
         if not isinstance(existing_log, list):
@@ -368,6 +377,46 @@ class MemoryAuditGuard:
                 rollback_block = True
                 codex_flags.append("invalid_rollback_signature")
 
+        resistance_decision: ResistanceOverrideDecision | None = None
+        caller_identity = (
+            identity_map.get("ens")
+            or identity_map.get("user_id")
+            or identity_map.get("wallet")
+            or payload_map.get("contributor")
+            or payload_map.get("identity")
+            or target_id
+        )
+        caller_identity = str(caller_identity or "unknown")
+        if self.override_guard and (override_flag or rollback_applied):
+            guard_payload: Dict[str, Any] = dict(payload_map)
+            guard_payload["override"] = True
+            guard_payload.setdefault("mission_type", "rollback" if rollback_applied else "memory")
+            if rollback_applied:
+                guard_payload.setdefault("mission_policy", "lawful-rollback")
+                if isinstance(rollback_source, Mapping):
+                    guard_payload.setdefault("codex_signature", rollback_source.get("signature"))
+            guard_payload.setdefault(
+                "codex_signature",
+                guard_payload.get("override_signature")
+                or guard_payload.get("belief_signature")
+                or guard_payload.get("beliefSignature"),
+            )
+            guard_context = {
+                "pathway": "rollback" if rollback_applied else "memory",
+                "action_type": action_type,
+                "target_id": target_id,
+                "alignment_allowed": alignment_allowed,
+                "override_requested": override_flag,
+            }
+            resistance_decision = self.override_guard.validate(
+                f"audit.{action_type}",
+                caller_identity,
+                override_payload=guard_payload,
+                context=guard_context,
+            )
+            if not resistance_decision.allowed:
+                codex_flags.append("resistance_override_block")
+
         requires_justification = action_type in REQUIRES_JUSTIFICATION and not rollback_applied
         if requires_justification and not justification:
             codex_flags.append("missing_justification")
@@ -387,6 +436,10 @@ class MemoryAuditGuard:
             allowed = origin_allowed and not rollback_block
         else:
             allowed = alignment_allowed and origin_allowed and not rollback_block
+        if resistance_decision and not resistance_decision.allowed:
+            allowed = False
+            if decision != "rollback":
+                decision = "block"
 
         belief_shift = round(belief_shift, 6)
         belief_density = round(belief_density, 6)
@@ -445,6 +498,15 @@ class MemoryAuditGuard:
             "previous_state": prior_state,
             "rollback_applied": rollback_applied,
         }
+
+        if resistance_decision:
+            resistance_record = {
+                "allowed": resistance_decision.allowed,
+                "reason": resistance_decision.reason,
+            }
+            if resistance_decision.audit_entry:
+                resistance_record["hash"] = resistance_decision.audit_entry.get("hash")
+            record["resistance_override"] = resistance_record
 
         if remembrance_alerts:
             record["remembrance_alerts"] = remembrance_alerts

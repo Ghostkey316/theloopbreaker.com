@@ -96,6 +96,8 @@ def test_guardian_records_authentic_origin_and_signature(origin_guard, tmp_path)
         "belief_density": 0.84,
         "empathy_score": 0.81,
         "mission_tags": ["vaultfire", "ghostkey"],
+        "mission_policy": "architect-only",
+        "codex_signature": "f" * 64,
     }
     identity = {
         "ens": "ghostkey316.eth",
@@ -141,6 +143,8 @@ def test_origin_guard_blocks_hijack_attempts(origin_guard, tmp_path):
         "belief_density": 0.84,
         "empathy_score": 0.81,
         "mission_tags": ["vaultfire", "ghostkey"],
+        "mission_policy": "architect-only",
+        "codex_signature": "f" * 64,
     }
     identity = {
         "ens": "ghostkey316.eth",
@@ -210,12 +214,15 @@ def test_validate_contributor_claims_uses_codex_trust(origin_guard, tmp_path):
         "belief_density": 0.88,
         "empathy_score": 0.86,
         "mission_tags": ["vaultfire"],
+        "mission_policy": "architect-only",
+        "codex_signature": "f" * 64,
     }
     identity = {
         "ens": "ally.eth",
         "wallet": "0xally",
         "trustTier": "guardian",
         "codex_trust": 0.82,
+        "override_caller": "ghostkey316.eth",
     }
 
     result = origin_guard.register_origin(

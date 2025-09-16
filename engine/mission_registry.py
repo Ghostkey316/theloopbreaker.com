@@ -10,6 +10,7 @@ from utils.crypto import decrypt_text, derive_key, encrypt_text
 from utils.json_io import load_json, write_json
 
 from .alignment_guard import evaluate_alignment
+from .resistance_override_guard import DEFAULT_RESISTANCE_GUARD, ResistanceOverrideDecision
 BASE_DIR = Path(__file__).resolve().parents[1]
 DATA_PATH = BASE_DIR / "missions.json"
 DEFAULT_KEY = os.environ.get("MISSION_KEY", "vaultfire")
@@ -29,6 +30,9 @@ def decrypt_mission(token: str, key: Optional[str] = None) -> str:
 
 
 # --- Mission registry functions -------------------------------------------
+
+_RESISTANCE_OVERRIDE_GUARD = DEFAULT_RESISTANCE_GUARD
+
 
 def record_mission(
     user_id: str,
@@ -59,6 +63,34 @@ def record_mission(
                 extra_payload[key_name] = metadata[key_name]
         identity_payload.update({k: metadata[k] for k in metadata if isinstance(k, str)})
 
+    resistance_decision: ResistanceOverrideDecision | None = None
+    if extra_payload.get("override"):
+        override_payload = dict(extra_payload)
+        override_payload["override"] = True
+        override_payload.setdefault(
+            "codex_signature",
+            override_payload.get("override_signature")
+            or override_payload.get("beliefSignature")
+            or override_payload.get("belief_signature"),
+        )
+        override_context = {
+            "mission_type": (metadata or {}).get("mission_type", "growth")
+            if isinstance(metadata, Mapping)
+            else "growth",
+            "pathway": "growth",
+            "policy": override_payload.get("mission_policy")
+            or override_payload.get("policy"),
+        }
+        caller_reference = wallet or user_id
+        resistance_decision = _RESISTANCE_OVERRIDE_GUARD.validate(
+            "mission.record",
+            caller_reference,
+            override_payload=override_payload,
+            context=override_context,
+        )
+        if not resistance_decision.allowed:
+            raise PermissionError(resistance_decision.reason)
+
     guard_payload = {
         "mission": mission,
         "declared_purpose": mission,
@@ -86,6 +118,11 @@ def record_mission(
         "mission": enc,
         "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
+    if resistance_decision and resistance_decision.audit_entry:
+        entry["resistance_override"] = {
+            "hash": resistance_decision.audit_entry.get("hash"),
+            "status": resistance_decision.audit_entry.get("status"),
+        }
     entry["alignment_guard"] = {
         "decision": guard_result["decision"],
         "reasons": guard_result["reasons"],
