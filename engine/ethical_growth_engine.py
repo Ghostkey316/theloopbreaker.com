@@ -13,6 +13,7 @@ from datetime import datetime
 
 from .loyalty_multiplier import loyalty_multiplier
 from .signal_engine import calculate_alignment_score
+from .expansion_guard import enforce_preservation
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 SCORECARD_PATH = BASE_DIR / "user_scorecard.json"
@@ -64,11 +65,19 @@ def record_mirror_entry(user_id: str, text: str) -> None:
     """Store interaction text for human reflection."""
     data = _load_json(MIRROR_PATH, {})
     history = data.get(user_id, [])
-    history.append({
+    entry = {
         "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
         "text": text,
-    })
-    data[user_id] = history[-50:]
+        "ethics_score": calculate_alignment_score(user_id),
+        "origin": "reflection_mirror",
+    }
+    history.append(entry)
+    data[user_id] = enforce_preservation(
+        "reflection_mirror",
+        history,
+        entry=entry,
+        user_id=user_id,
+    )
     _write_json(MIRROR_PATH, data)
 
 

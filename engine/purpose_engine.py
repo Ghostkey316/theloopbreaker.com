@@ -10,6 +10,7 @@ from typing import List, Dict
 
 from .reflection_layer import emotion_trend
 from .genesync import gene_risk_level
+from .expansion_guard import enforce_preservation
 
 try:
     from .planetkeeper import eco_multiplier, is_opted_in, award_planetkeeper_badge
@@ -253,12 +254,19 @@ def moral_memory_mirror(user_id: str) -> Dict:
 
     memory = _load_json(MORAL_MEMORY_PATH, {})
     history = memory.get(user_id, [])
-    history.append({
+    entry = {
         "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
         "alignment": alignment,
         "actions": actions,
-    })
-    memory[user_id] = history[-50:]
+        "origin": "moral_memory",
+    }
+    history.append(entry)
+    memory[user_id] = enforce_preservation(
+        "moral_memory",
+        history,
+        entry=entry,
+        user_id=user_id,
+    )
     _write_json(MORAL_MEMORY_PATH, memory)
 
     fingerprint = _generate_behavioral_fingerprint(memory[user_id])

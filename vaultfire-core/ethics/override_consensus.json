@@ -1,3 +1,11 @@
 {
-  "asi_override": false
+  "asi_override": false,
+  "second_law_lock": {
+    "active": false,
+    "reason": null,
+    "structure": null,
+    "user_id": null,
+    "triggered_at": null,
+    "history": []
+  }
 }
