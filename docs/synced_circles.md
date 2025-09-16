@@ -17,5 +17,5 @@ curate_circles({"alice": "secret", "bob": "secret2"})
 - Ambient data is logged only with opt-in consent.
 - Nothing here constitutes legal, medical, or financial advice.
 - Circle membership data is stored under `logs/circles/` and may be cleared at any time.
-- Encryption uses a lightweight XOR cipher and should not be considered fully secure.
+- Encryption uses AES-GCM with per-user keys; safeguard recovery keys and rotate them if compromise is suspected.
 - Circles are AI-generated suggestions and do not guarantee privacy or accuracy.

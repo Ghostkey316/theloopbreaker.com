@@ -1,30 +1,24 @@
-"""Vaultfire SecureStore v1."""
+"""Vaultfire SecureStore v1 with authenticated encryption."""
 from __future__ import annotations
 
 import json
-import os
 import hmac
 import hashlib
-import subprocess
-from typing import Tuple
-
-try:  # optional crypto
-    from Crypto.Cipher import AES  # type: ignore
-except Exception:  # pragma: no cover - library may be missing
-    AES = None  # type: ignore
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 from geolock_filter import strip_exif
 from belief_trigger_engine import log_chain_event, send_to_webhook
+from utils.crypto import decrypt_bytes, encrypt_bytes
 
 
 class SecureStore:
     """Encrypt and store media with signed metadata."""
 
     def __init__(self, key: bytes, bucket: Path) -> None:
-        if len(key) != 32:
-            raise ValueError("Key must be 32 bytes for AES-256")
+        if len(key) not in (16, 24, 32):
+            raise ValueError("Key must be 16, 24, or 32 bytes for AES-GCM")
         self.key = key
         self.bucket = bucket
         bucket.mkdir(exist_ok=True, parents=True)
@@ -40,7 +34,7 @@ class SecureStore:
         tier: str,
         score: int,
         *,
-        webhook: str | None = None,
+        webhook: Optional[str] = None,
         chain_log: bool = False,
     ) -> dict:
         """Sanitize ``file_path`` and store encrypted copy."""
@@ -48,31 +42,11 @@ class SecureStore:
         cleaned = strip_exif(raw)
         content_hash = hashlib.sha256(cleaned).hexdigest()
 
-        iv = os.urandom(12)
-        tag: bytes | None = None
-        if AES:
-            cipher = AES.new(self.key, AES.MODE_GCM, nonce=iv)
-            ciphertext, tag = cipher.encrypt_and_digest(cleaned)
-            encrypted = iv + ciphertext + tag
-        else:  # pragma: no cover - fallback if crypto missing
-            result = subprocess.run(
-                [
-                    "openssl",
-                    "enc",
-                    "-aes-256-cbc",
-                    "-K",
-                    self.key.hex(),
-                    "-iv",
-                    iv.hex(),
-                ],
-                input=cleaned,
-                stdout=subprocess.PIPE,
-                check=True,
-            )
-            encrypted = iv + result.stdout
-        cid = hashlib.sha256(encrypted).hexdigest()
+        payload = encrypt_bytes(self.key, cleaned)
+        ciphertext = payload.ciphertext
+        cid = hashlib.sha256(payload.nonce + ciphertext).hexdigest()
         enc_path = self.bucket / f"{cid}.bin"
-        enc_path.write_bytes(encrypted)
+        enc_path.write_bytes(ciphertext)
 
         timestamp = datetime.utcnow().isoformat()
         metadata = {
@@ -82,11 +56,8 @@ class SecureStore:
             "timestamp": timestamp,
             "content_hash": content_hash,
             "cid": cid,
+            "nonce": payload.nonce.hex(),
         }
-        if tag:
-            metadata["tag"] = tag.hex()
-        # Sign only the stable metadata fields so signature
-        # verification matches during ``decrypt``.
         signature_payload = {
             k: metadata[k]
             for k in ["wallet", "tier", "score", "timestamp", "content_hash", "cid"]
@@ -116,32 +87,13 @@ class SecureStore:
         }
         if self._sign(meta) != metadata.get("signature"):
             raise ValueError("Invalid signature")
-        data = (self.bucket / f"{cid}.bin").read_bytes()
-        iv = data[:12]
-        body = data[12:]
-        tag_hex = metadata.get("tag")
-        if AES and tag_hex:
-            tag = bytes.fromhex(tag_hex)
-            ciphertext = body[:-16]
-            cipher = AES.new(self.key, AES.MODE_GCM, nonce=iv)
-            return cipher.decrypt_and_verify(ciphertext, tag)
-        else:  # pragma: no cover - fallback
-            enc = body
-            result = subprocess.run(
-                [
-                    "openssl",
-                    "enc",
-                    "-d",
-                    "-aes-256-cbc",
-                    "-K",
-                    self.key.hex(),
-                    "-iv",
-                    iv.hex(),
-                ],
-                input=enc,
-                stdout=subprocess.PIPE,
-                check=True,
-            )
-            return result.stdout
+        data_path = self.bucket / f"{cid}.bin"
+        ciphertext = data_path.read_bytes()
+        nonce_hex = metadata.get("nonce")
+        if not nonce_hex:
+            raise ValueError("Missing nonce in metadata")
+        nonce = bytes.fromhex(nonce_hex)
+        return decrypt_bytes(self.key, nonce, ciphertext)
+
 
 __all__ = ["SecureStore"]

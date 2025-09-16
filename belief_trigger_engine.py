@@ -1,7 +1,11 @@
 """Belief-based trigger system for Vaultfire."""
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
+import os
+import time
 import urllib.request
 from datetime import datetime
 from pathlib import Path
@@ -27,6 +31,7 @@ BELIEF_THRESHOLDS = {
 
 LOG_PATH = Path("vault_trigger_log.json")
 CHAIN_LOG_PATH = Path("chain_event_log.json")
+DEFAULT_WEBHOOK_SECRET = os.environ.get("VAULTFIRE_WEBHOOK_SECRET")
 
 
 def _log_trigger(entry: dict) -> None:
@@ -55,16 +60,33 @@ def _append_json(path: Path, entry: dict) -> None:
     path.write_text(json.dumps(data, indent=2))
 
 
-def send_webhook(url: str, payload: dict) -> None:
-    """POST ``payload`` to ``url`` ignoring errors."""
+def _build_signature(secret: str, body: bytes, *, timestamp: int) -> str:
+    message = f"{timestamp}.".encode("utf-8") + body
+    digest = hmac.new(secret.encode("utf-8"), message, hashlib.sha256).hexdigest()
+    return f"t={timestamp},v1={digest}"
+
+
+def send_webhook(url: str, payload: dict, *, secret: str | None = None, retries: int = 3) -> None:
+    """POST ``payload`` to ``url`` with optional HMAC authentication."""
     if not url:
         return
-    data = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
-    try:
-        urllib.request.urlopen(req, timeout=5)
-    except Exception:
-        pass
+
+    body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    secret_value = secret or DEFAULT_WEBHOOK_SECRET
+
+    for attempt in range(retries):
+        headers = {"Content-Type": "application/json"}
+        if secret_value:
+            timestamp = int(time.time())
+            headers["X-Vaultfire-Signature"] = _build_signature(secret_value, body, timestamp=timestamp)
+        req = urllib.request.Request(url, data=body, headers=headers)
+        try:
+            urllib.request.urlopen(req, timeout=5)
+            break
+        except Exception:
+            if attempt == retries - 1:
+                break
+            time.sleep(0.2 * (2 ** attempt))
 
 
 def send_to_webhook(
@@ -75,6 +97,8 @@ def send_to_webhook(
     timestamp: str,
     trigger: str,
     chain_timestamp: str | None = None,
+    *,
+    secret: str | None = None,
 ) -> None:
     """Send activation data to ``url`` if provided with strict ordering."""
     if not url:
@@ -99,7 +123,7 @@ def send_to_webhook(
         ts_chain = datetime.fromisoformat(chain_timestamp)
         if abs((ts_payload - ts_chain).total_seconds()) > 0.5:
             raise ValueError("Timestamp drift")
-    send_webhook(url, payload)
+    send_webhook(url, payload, secret=secret)
 
 
 def log_chain_event(wallet: str, tier: str, score: int, timestamp: str) -> None:

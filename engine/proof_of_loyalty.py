@@ -7,6 +7,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict
 
+from utils.json_io import load_json, write_json
+
 from .token_ops import send_token
 # ``vaultfire_signal_parser`` lives at the repo root rather than within
 # ``engine`` so import it as a top-level module.
@@ -14,22 +16,6 @@ from vaultfire_signal_parser import parse_signal
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 LOG_PATH = BASE_DIR / "logs" / "proof_of_loyalty.json"
-
-
-def _load_json(path: Path, default):
-    if path.exists():
-        try:
-            with open(path) as f:
-                return json.load(f)
-        except json.JSONDecodeError:
-            return default
-    return default
-
-
-def _write_json(path: Path, data) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
 
 
 def record_belief_action(user_id: str, wallet: str, text: str) -> Dict:
@@ -43,9 +29,9 @@ def record_belief_action(user_id: str, wallet: str, text: str) -> Dict:
         "score": result.get("score"),
         "verified": result.get("verified"),
     }
-    log = _load_json(LOG_PATH, [])
+    log = load_json(LOG_PATH, [])
     log.append(entry)
-    _write_json(LOG_PATH, log)
+    write_json(LOG_PATH, log)
 
     if result.get("verified"):
         try:
