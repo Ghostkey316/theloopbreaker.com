@@ -306,6 +306,11 @@ class MemoryAuditGuard:
             identity_map or None,
             override_requested=override_flag,
         )
+        alignment_inputs = (
+            alignment.get("inputs")
+            if isinstance(alignment.get("inputs"), Mapping)
+            else {}
+        )
         alignment_allowed = bool(alignment.get("allowed", True))
         decision = alignment.get("decision", "allow" if alignment_allowed else "review")
         override_granted = bool(alignment.get("override"))
@@ -533,6 +538,27 @@ class MemoryAuditGuard:
         human_payload.setdefault("target_id", target_id)
         human_payload["new_state_preview"] = deepcopy(new_state)
         human_payload["previous_state"] = deepcopy(prior_state)
+        empathy_candidates = [
+            payload_map.get("empathy_score"),
+            payload_map.get("empathyScore"),
+            identity_map.get("empathy_score"),
+            identity_map.get("empathyScore"),
+        ]
+        if isinstance(alignment_inputs, Mapping):
+            empathy_candidates.append(alignment_inputs.get("empathy_score"))
+        empathy_value = None
+        for candidate in empathy_candidates:
+            if candidate is None:
+                continue
+            try:
+                empathy_value = float(candidate)
+            except (TypeError, ValueError):
+                continue
+            else:
+                break
+        if empathy_value is not None:
+            human_payload.setdefault("empathy_score", empathy_value)
+            identity_map.setdefault("empathy_score", empathy_value)
         human_standard_result = self.human_guard.evaluate(
             f"audit.{action_type}",
             human_payload,
