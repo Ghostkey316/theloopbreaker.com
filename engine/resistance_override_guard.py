@@ -198,12 +198,40 @@ class ResistanceOverrideGuard:
             "allowed_pre_guard": allowed,
             "mission": mission_type in {"growth", "memory", "audit"},
         }
+        empathy_candidates = [
+            override_map.get("empathy_score"),
+            override_map.get("empathyScore"),
+            context_map.get("empathy_score"),
+            context_map.get("empathyScore"),
+        ]
+        lineage_record = lineage.get("record")
+        if isinstance(lineage_record, Mapping):
+            empathy_candidates.extend(
+                [
+                    lineage_record.get("empathy_score"),
+                    lineage_record.get("empathyScore"),
+                ]
+            )
+        empathy_value = None
+        for candidate in empathy_candidates:
+            if candidate is None:
+                continue
+            try:
+                empathy_value = float(candidate)
+            except (TypeError, ValueError):
+                continue
+            else:
+                break
+        if empathy_value is None:
+            empathy_value = 0.82 if architect_authorized and alignment_clear else 0.68 if alignment_clear else 0.6
+        human_payload.setdefault("empathy_score", empathy_value)
         human_identity: Dict[str, Any] = {}
         if isinstance(lineage.get("record"), Mapping):
             human_identity.update(dict(lineage.get("record")))
         human_identity.setdefault("caller_id", caller_id)
         if lineage.get("trust_tier"):
             human_identity.setdefault("trust_tier", lineage.get("trust_tier"))
+        human_identity.setdefault("empathy_score", empathy_value)
         human_standard_result = self.human_guard.evaluate(
             operation,
             human_payload,

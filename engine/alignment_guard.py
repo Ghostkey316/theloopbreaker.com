@@ -165,6 +165,7 @@ def evaluate_alignment(
 
     decision = "allow"
     allowed = True
+    pre_human_decision = "allow"
     if reasons:
         allowed = False
         decision = "delay"
@@ -239,6 +240,7 @@ def evaluate_alignment(
         "override_requested": override_flag,
         "initial_decision": decision,
     }
+    pre_human_decision = decision
     human_standard_result = DEFAULT_HUMAN_STANDARD_GUARD.evaluate(
         operation,
         human_guard_payload,
@@ -260,6 +262,16 @@ def evaluate_alignment(
         audit_record["allowed"] = False
         audit_record["decision"] = decision
         audit_record["reasons"] = reasons or ["human standard guard review"]
+
+    # Harmonize decision semantics so external integrations receive
+    # ``delay``/``block`` rather than the human-standard specific
+    # ``review`` label.  We preserve ``override`` and ``block`` decisions
+    # as-is while translating softer human guard escalations into the
+    # canonical ``delay`` action.
+    severity_alias = {"review": "delay"}
+    if decision in severity_alias and pre_human_decision in {"block", "delay"}:
+        decision = severity_alias[decision]
+        audit_record["decision"] = decision
 
     _append_audit_log(audit_record)
 
