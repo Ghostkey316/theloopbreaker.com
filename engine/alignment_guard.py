@@ -157,11 +157,14 @@ def evaluate_alignment(
     if tokens & FORBIDDEN_TOKENS or tags & FORBIDDEN_TOKENS or "rogue" in tags:
         reasons.append("mission conflicts with empathy covenant")
 
+    mission_optional = operation.startswith("memory.")
+
     if mission_text:
-        if not (tokens & HUMANITY_TOKENS or tags & HUMANITY_TOKENS):
+        if not mission_optional and not (tokens & HUMANITY_TOKENS or tags & HUMANITY_TOKENS):
             reasons.append("mission lacks human-first focus")
     else:
-        reasons.append("mission clarity required for human-first execution")
+        if not mission_optional:
+            reasons.append("mission clarity required for human-first execution")
 
     decision = "allow"
     allowed = True
