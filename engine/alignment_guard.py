@@ -5,6 +5,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Mapping, Sequence
 
+from .human_standard_guard import DEFAULT_HUMAN_STANDARD_GUARD
+
 from utils.json_io import load_json, write_json
 
 BASE_DIR = Path(__file__).resolve().parents[1]
@@ -219,6 +221,46 @@ def evaluate_alignment(
     if override_flag and not override_granted:
         audit_record["override_denied"] = True
 
+    human_guard_payload = {
+        "mission": mission_text,
+        "intent": intent_text,
+        "combined_text": combined_text,
+        "empathy_score": empathy_score,
+        "belief_density": belief_density,
+        "mission_tags": list(tags),
+        "tokens": sorted(tokens),
+        "override": override_flag,
+    }
+    human_guard_context = {
+        "alignment_reasons": list(reasons),
+        "mission": True,
+        "dialogue": False,
+        "enforce_human_first": True,
+        "override_requested": override_flag,
+        "initial_decision": decision,
+    }
+    human_standard_result = DEFAULT_HUMAN_STANDARD_GUARD.evaluate(
+        operation,
+        human_guard_payload,
+        identity=identity_mapping,
+        context=human_guard_context,
+        initial_decision=allowed,
+    )
+    audit_record["human_standard"] = human_standard_result["audit_record"]
+    audit_record["human_standard_hash"] = human_standard_result["human_standard_hash"]
+    audit_record["human_standard_escalation"] = human_standard_result["escalation_level"]
+    audit_record["ethics_versions"] = human_standard_result["ethics_versions"]
+    audit_record["passive_empathy_synced"] = human_standard_result["passive_empathy_synced"]
+    if not human_standard_result["allowed"]:
+        allowed = False
+        decision = human_standard_result["decision"]
+        for reason in human_standard_result["reasons"]:
+            if reason not in reasons:
+                reasons.append(reason)
+        audit_record["allowed"] = False
+        audit_record["decision"] = decision
+        audit_record["reasons"] = reasons or ["human standard guard review"]
+
     _append_audit_log(audit_record)
 
     return {
@@ -233,6 +275,8 @@ def evaluate_alignment(
             "empathy_score": empathy_score,
             "trust_tier": trust_tier,
         },
+        "human_standard": human_standard_result,
+        "human_standard_hash": human_standard_result["human_standard_hash"],
     }
 
 

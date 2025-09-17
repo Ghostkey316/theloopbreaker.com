@@ -6,6 +6,8 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, List
 
+from .human_standard_guard import DEFAULT_HUMAN_STANDARD_GUARD
+
 from .vaultlink import record_mirror_entry  # type: ignore
 from .purpose_engine import moral_memory_mirror  # type: ignore
 from vaultfire_signal_parser import parse_signal  # type: ignore
@@ -65,11 +67,25 @@ def post_message(room_id: str, user_id: str, text: str) -> Dict:
     if not data:
         raise ValueError("room not found")
     loops = parse_signal(text).get("loop_activators", 0)
+    guard_result = DEFAULT_HUMAN_STANDARD_GUARD.evaluate(
+        "mirror_room.post_message",
+        {"text": text, "loops": loops, "room_id": room_id, "topic": data.get("topic")},
+        identity={"user_id": user_id},
+        context={"dialogue": True, "enforce_respect": True, "enforce_emotional_resonance": True},
+    )
+    if not guard_result["allowed"]:
+        raise PermissionError("; ".join(guard_result["reasons"]) or "human standard guard rejection")
     entry = {
         "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
         "user": user_id,
         "text": text,
         "loops": loops,
+        "human_standard_hash": guard_result["human_standard_hash"],
+        "human_standard": {
+            "decision": guard_result["decision"],
+            "escalation_level": guard_result["escalation_level"],
+            "passive_empathy_synced": guard_result["passive_empathy_synced"],
+        },
     }
     data.setdefault("messages", []).append(entry)
     data["messages"] = data["messages"][-500:]

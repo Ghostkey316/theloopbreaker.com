@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Optional, Sequence
 
 from .alignment_guard import evaluate_alignment
+from .human_standard_guard import DEFAULT_HUMAN_STANDARD_GUARD, HumanStandardGuard
 from .remembrance_guard import RemembranceGuard
 from .resistance_override_guard import ResistanceOverrideDecision, ResistanceOverrideGuard
 
@@ -145,6 +146,8 @@ class MemoryAuditResult:
     codex_violation_flags: List[str]
     review_enqueued: bool
     record: Dict[str, Any]
+    human_standard_hash: str
+    human_standard: Dict[str, Any]
 
     @property
     def remembrance_alerts(self) -> List[Dict[str, Any]]:
@@ -168,6 +171,7 @@ class MemoryAuditGuard:
         codex_seed: str = "vaultfire-codex",
         drift_alert_threshold: float = 0.35,
         belief_shift_threshold: float = 0.12,
+        human_guard: Optional[HumanStandardGuard] = None,
     ) -> None:
         self.codex_seed = codex_seed
         self.drift_alert_threshold = drift_alert_threshold
@@ -183,6 +187,7 @@ class MemoryAuditGuard:
                 event_log_path=log_dir / "resistance_override_events.jsonl",
             )
         self.override_guard = override_guard
+        self.human_guard = human_guard or DEFAULT_HUMAN_STANDARD_GUARD
 
         existing_log = load_json(self.audit_log_path, [])
         if not isinstance(existing_log, list):
@@ -514,6 +519,44 @@ class MemoryAuditGuard:
             record["origin"] = origin_result
         record["alignment"] = alignment
 
+        human_context = {
+            "codex_flags": list(codex_flags),
+            "remembrance_alerts": remembrance_alerts,
+            "origin": origin_result,
+            "rollback_applied": rollback_applied,
+            "override_requested": override_flag,
+            "dialogue": False,
+            "mission": action_type in {"mission_change", "retroactive_change", "scale_authorization"},
+        }
+        human_payload = dict(payload_map)
+        human_payload.setdefault("action_type", action_type)
+        human_payload.setdefault("target_id", target_id)
+        human_payload["new_state_preview"] = deepcopy(new_state)
+        human_payload["previous_state"] = deepcopy(prior_state)
+        human_standard_result = self.human_guard.evaluate(
+            f"audit.{action_type}",
+            human_payload,
+            identity=identity_map,
+            context=human_context,
+            initial_decision=allowed,
+        )
+        record["human_standard"] = human_standard_result["audit_record"]
+        record["human_standard_hash"] = human_standard_result["human_standard_hash"]
+        record["human_standard_escalation"] = human_standard_result["escalation_level"]
+        record["ethics_versions"] = human_standard_result["ethics_versions"]
+        record["passive_empathy_synced"] = human_standard_result["passive_empathy_synced"]
+        if not human_standard_result["allowed"]:
+            allowed = False
+            decision = human_standard_result["decision"]
+            codex_flags.append("human_standard_violation")
+            record["allowed"] = False
+            record["decision"] = decision
+            record["human_standard_reasons"] = human_standard_result["reasons"]
+            if human_standard_result["rollback_required"] and not rollback_applied:
+                record["rollback_required"] = True
+
+        review_required = review_required or not human_standard_result["allowed"]
+
         if review_required:
             review_payload = {
                 "target_id": target_id,
@@ -524,6 +567,12 @@ class MemoryAuditGuard:
                 "override_requested": override_flag,
                 "flags": list(dict.fromkeys(codex_flags)),
             }
+            if not human_standard_result["allowed"]:
+                flags = review_payload.setdefault("flags", [])
+                if "human_standard_violation" not in flags:
+                    flags.append("human_standard_violation")
+                review_payload["human_standard_hash"] = human_standard_result["human_standard_hash"]
+                review_payload["human_standard_reasons"] = human_standard_result["reasons"]
             record["review"] = review_payload
             self.review_queue.append(review_payload)
 
@@ -543,6 +592,8 @@ class MemoryAuditGuard:
             codex_violation_flags=list(dict.fromkeys(codex_flags)),
             review_enqueued=review_required,
             record=record,
+            human_standard_hash=human_standard_result["human_standard_hash"],
+            human_standard=human_standard_result,
         )
 
     # ------------------------------------------------------------------

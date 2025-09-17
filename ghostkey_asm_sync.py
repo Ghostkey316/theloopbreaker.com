@@ -4,6 +4,8 @@ import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 
+from engine.human_standard_guard import DEFAULT_HUMAN_STANDARD_GUARD
+
 WALLET = "bpow20.cb.id"
 IDENTITY = "Ghostkey-316"
 TRIGGER = "loyalty"
@@ -13,6 +15,8 @@ STATUS = "Active Sync Verified"
 LOG_PATH = Path("immutable_log.jsonl")
 RETRO_YIELD_PATH = Path("retro_yield.json")
 CONTRIB_REG_PATH = Path("contributor_registry.json")
+
+HUMAN_GUARD = DEFAULT_HUMAN_STANDARD_GUARD
 
 def _load_log():
     if not LOG_PATH.exists():
@@ -148,6 +152,13 @@ def outputProof():
 
 def codexMemory(event, event_type: str = "ASM_Sync"):
     """Embed event into immutable log with chained hashing."""
+    guard_result = HUMAN_GUARD.evaluate(
+        "codex.push",
+        {"event": event, "event_type": event_type},
+        context={"mission": False, "dialogue": False},
+    )
+    if not guard_result["allowed"]:
+        raise PermissionError("; ".join(guard_result["reasons"]) or "human standard guard rejection")
     log = _load_log()
     prev_hash = log[-1]["hash"] if log else "0" * 64
     entry = {
@@ -157,8 +168,16 @@ def codexMemory(event, event_type: str = "ASM_Sync"):
         "prev_hash": prev_hash,
     }
     entry["hash"] = hashlib.sha256(json.dumps(entry, sort_keys=True).encode()).hexdigest()
+    entry["human_standard_hash"] = guard_result["human_standard_hash"]
+    entry["human_standard"] = {
+        "decision": guard_result["decision"],
+        "escalation_level": guard_result["escalation_level"],
+        "ethics_versions": guard_result["ethics_versions"],
+        "passive_empathy_synced": guard_result["passive_empathy_synced"],
+    }
     with open(LOG_PATH, "a") as f:
         f.write(json.dumps(entry) + "\n")
+    HUMAN_GUARD.emit_manifest(entry, extra={"event_type": event_type})
     return entry
 
 

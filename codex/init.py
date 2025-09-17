@@ -41,6 +41,7 @@ class CodexMetadata:
     ethics_layer: str = "Ghostkey Ethics Framework v2.0"
     partner_sync: str = "ENABLED"
     immutable_identity_rights: str = "GRANTED"
+    immutable_if_human_violation: bool = True
     royalties_revenue_share: str = "WALLET-BOUND"
     role_visibility: str = "PUBLIC-FACING ACTIVATION READY"
     partner_clone_rights: str = "EARLY ACCESS"

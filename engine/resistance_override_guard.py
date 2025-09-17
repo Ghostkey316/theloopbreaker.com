@@ -10,6 +10,8 @@ from typing import Any, Dict, Iterable, Mapping, MutableMapping, Optional, Seque
 
 from utils.json_io import load_json
 
+from .human_standard_guard import DEFAULT_HUMAN_STANDARD_GUARD, HumanStandardGuard
+
 BASE_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_LOG_DIR = BASE_DIR / "logs"
 DEFAULT_AUDIT_PATH = DEFAULT_LOG_DIR / "resistance_override_log.jsonl"
@@ -86,6 +88,7 @@ class ResistanceOverrideGuard:
         contributor_registry_path: str | Path | None = None,
         scorecard_path: str | Path | None = None,
         alignment_log_path: str | Path | None = None,
+        human_guard: HumanStandardGuard | None = None,
     ) -> None:
         self.base_dir = Path(base_dir) if base_dir is not None else BASE_DIR
         self.audit_log_path = Path(audit_log_path) if audit_log_path else DEFAULT_AUDIT_PATH
@@ -100,6 +103,7 @@ class ResistanceOverrideGuard:
         self.alignment_log_path = (
             Path(alignment_log_path) if alignment_log_path else DEFAULT_ALIGNMENT_LOG_PATH
         )
+        self.human_guard = human_guard or DEFAULT_HUMAN_STANDARD_GUARD
 
     # ------------------------------------------------------------------
     # Public API
@@ -181,6 +185,48 @@ class ResistanceOverrideGuard:
         if lineage.get("record"):
             record["lineage_record"] = lineage["record"]
 
+        human_payload = dict(override_map)
+        human_payload.setdefault("mission_type", mission_type)
+        if mission_policy is not None:
+            human_payload.setdefault("mission_policy", mission_policy)
+        human_payload["override_requested"] = override_requested
+        human_payload["pre_guard_allowed"] = allowed
+        human_context = {
+            "alignment_clear": alignment_clear,
+            "alignment_reason": alignment_reason,
+            "reasons": list(reasons),
+            "allowed_pre_guard": allowed,
+            "mission": mission_type in {"growth", "memory", "audit"},
+        }
+        human_identity: Dict[str, Any] = {}
+        if isinstance(lineage.get("record"), Mapping):
+            human_identity.update(dict(lineage.get("record")))
+        human_identity.setdefault("caller_id", caller_id)
+        if lineage.get("trust_tier"):
+            human_identity.setdefault("trust_tier", lineage.get("trust_tier"))
+        human_standard_result = self.human_guard.evaluate(
+            operation,
+            human_payload,
+            identity=human_identity,
+            context=human_context,
+            initial_decision=allowed,
+        )
+        record["human_standard"] = human_standard_result["audit_record"]
+        record["human_standard_hash"] = human_standard_result["human_standard_hash"]
+        record["human_standard_escalation"] = human_standard_result["escalation_level"]
+        record["human_standard_reasons"] = human_standard_result["reasons"]
+        record["ethics_versions"] = human_standard_result["ethics_versions"]
+        record["passive_empathy_synced"] = human_standard_result["passive_empathy_synced"]
+        if not human_standard_result["allowed"]:
+            allowed = False
+            for item in human_standard_result["reasons"] or ["human_standard_violation"]:
+                if item not in reasons:
+                    reasons.append(item)
+            record["status"] = "rejected"
+        record["allowed"] = allowed
+        reason_text = reasons[0] if reasons else ("allowed" if allowed else "human_standard_violation")
+        record["reasons"] = reasons if reasons else (["allowed"] if allowed else ["human_standard_violation"])
+
         audit_entry = self._append_log_entry(self.audit_log_path, record)
         event_entry: Dict[str, Any] | None = None
         if not allowed:
@@ -193,6 +239,7 @@ class ResistanceOverrideGuard:
                 "reasons": list(reasons),
                 "provenance_hash": provenance_hash,
                 "audit_hash": audit_entry.get("hash"),
+                "human_standard_hash": human_standard_result["human_standard_hash"],
             }
             event_entry = self._append_log_entry(self.event_log_path, event_payload)
 
