@@ -13,12 +13,12 @@
   ],
   "loyalty_status": {
     "user_id": "ghostkey316",
-    "base": 0,
-    "tier": "default",
-    "score": 0.0
+    "base": 210,
+    "tier": "veteran",
+    "score": 210.0
   },
-  "contributor_xp": 0,
-  "loyalty_multiplier": 1.0,
+  "contributor_xp": 1200,
+  "loyalty_multiplier": 1.8,
   "system_phase": "Vaultfire Init",
   "deployment_date": "2025-07-24"
 }

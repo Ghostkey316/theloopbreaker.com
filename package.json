@@ -18,6 +18,7 @@
     "jest": "^29.6.1"
   },
   "dependencies": {
-    "sentiment": "^5.0.2"
+    "sentiment": "^5.0.2",
+    "sqlite3": "^5.1.7"
   }
 }

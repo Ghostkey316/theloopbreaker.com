@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+from datetime import datetime
 from pathlib import Path
 
+from engine import storage
 from engine.loyalty_engine import update_loyalty_ranks
 from engine.identity_resolver import resolve_identity
 from system_integrity_check import run_integrity_check
@@ -39,11 +42,12 @@ def simulate_activation(partner_id: str, wallets: list[str],
     success = not failures
     resolved_wallets = resolve_wallets(wallets) if success else wallets
     if success and not test_mode:
-        activate_partner(partner_id, resolved_wallets)
+        activate_partner(partner_id, wallets, resolved_wallets)
 
     return {
         "partner_id": partner_id,
         "wallets": resolved_wallets,
+        "input_wallets": wallets,
         "phrase": phrase,
         "success": success,
         "failures": failures,
@@ -52,19 +56,17 @@ def simulate_activation(partner_id: str, wallets: list[str],
 
 
 def _load_json(path: Path, default):
-    if path.exists():
-        try:
-            with open(path) as f:
-                return json.load(f)
-        except json.JSONDecodeError:
-            return default
-    return default
+    return storage.load_data(path, default)
 
 
 def _write_json(path: Path, data) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
+    storage.write_data(path, data)
+
+
+def _alignment_signature(phrase: str) -> str:
+    """Return a deterministic signature for the alignment phrase."""
+    normalized = phrase.strip().lower().encode("utf-8")
+    return hashlib.sha256(normalized).hexdigest()
 
 
 def check_ethics_anchor() -> bool:
@@ -96,14 +98,24 @@ def resolve_wallets(wallets: list[str]) -> list[str]:
     return resolved
 
 
-def activate_partner(partner_id: str, wallets: list[str]) -> None:
+def activate_partner(partner_id: str, wallets: list[str],
+                    resolved_wallets: list[str]) -> None:
     """Persist partner info if not already recorded."""
     partners = _load_json(PARTNERS_PATH, [])
     if any(p.get("partner_id") == partner_id for p in partners):
         return
-    entry = {"partner_id": partner_id, "wallet": wallets[0]}
+    timestamp = datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+    entry = {
+        "partner_id": partner_id,
+        "wallet": resolved_wallets[0],
+        "wallet_alias": wallets[0],
+        "resolved_wallet": resolved_wallets[0],
+        "alignment_signature": _alignment_signature(ALIGNMENT_PHRASE),
+        "onboarded_at": timestamp,
+    }
     if len(wallets) > 1:
-        entry["wallets"] = wallets
+        entry["wallets"] = resolved_wallets
+        entry["wallet_aliases"] = wallets
     partners.append(entry)
     _write_json(PARTNERS_PATH, partners)
 

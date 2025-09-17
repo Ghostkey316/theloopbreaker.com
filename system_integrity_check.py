@@ -1,7 +1,9 @@
-import json
 import argparse
+import hashlib
+import json
 from pathlib import Path
 
+from engine import storage
 from engine.identity_resolver import resolve_identity
 from engine.loyalty_engine import update_loyalty_ranks
 
@@ -12,18 +14,18 @@ SNAPSHOT_PATH = BASE_DIR / "dashboards" / "contributor_snapshot.json"
 BINDINGS_PATH = BASE_DIR / "dashboards" / "contributor_bindings.json"
 USER_LIST_PATH = BASE_DIR / "user_list.json"
 SCORECARD_PATH = BASE_DIR / "user_scorecard.json"
+PARTNERS_PATH = BASE_DIR / "partners.json"
 
 ALIGNMENT_PHRASE = "Morals Before Metrics."
 
 
 def _load_json(path: Path, default):
-    if path.exists():
-        try:
-            with open(path) as f:
-                return json.load(f)
-        except json.JSONDecodeError:
-            return default
-    return default
+    return storage.load_data(path, default)
+
+
+def _alignment_signature() -> str:
+    normalized = ALIGNMENT_PHRASE.strip().lower().encode("utf-8")
+    return hashlib.sha256(normalized).hexdigest()
 
 
 def check_ethics() -> list[str]:
@@ -41,6 +43,17 @@ def check_loyalty_engine() -> list[str]:
     scorecard = _load_json(SCORECARD_PATH, None)
     if scorecard is None:
         errors.append("user_scorecard.json missing or invalid")
+        return errors
+    if not isinstance(scorecard, dict) or len(scorecard) < 5:
+        errors.append("scorecard coverage below minimum partner readiness threshold")
+    for user, entry in scorecard.items() if isinstance(scorecard, dict) else []:
+        missing = [field for field in ("contributor_score", "contributor_tag", "wallet")
+                   if field not in entry]
+        if missing:
+            errors.append(f"{user} missing fields: {', '.join(missing)}")
+        loyalty = entry.get("loyalty")
+        if loyalty is None or not isinstance(loyalty, (int, float)):
+            errors.append(f"{user} loyalty metric missing or invalid")
     try:
         update_loyalty_ranks()
     except Exception as e:
@@ -68,10 +81,43 @@ def check_contributor_bindings() -> list[str]:
         if not entry:
             errors.append(f"no binding for user {user}")
             continue
+        wallet = entry.get("wallet")
+        if not wallet:
+            errors.append(f"wallet missing for {user}")
+            continue
+        resolved = entry.get("resolved_wallet")
+        expected = resolve_identity(wallet) or wallet
+        if resolved != expected:
+            errors.append(f"resolved wallet mismatch for {user}")
         if "contributor_xp" not in entry:
             errors.append(f"xp missing for {user}")
         if "loyalty_multiplier" not in entry:
             errors.append(f"multiplier missing for {user}")
+    return errors
+
+
+def check_partner_registry() -> list[str]:
+    errors: list[str] = []
+    partners = _load_json(PARTNERS_PATH, [])
+    if not isinstance(partners, list) or len(partners) < 3:
+        errors.append("partner registry missing production-scale entries")
+        return errors
+    seen: set[str] = set()
+    expected_signature = _alignment_signature()
+    for partner in partners:
+        partner_id = partner.get("partner_id")
+        if not partner_id:
+            errors.append("partner entry missing partner_id")
+            continue
+        if partner_id in seen:
+            errors.append(f"duplicate partner_id detected: {partner_id}")
+        seen.add(partner_id)
+        signature = partner.get("alignment_signature")
+        if signature != expected_signature:
+            errors.append(f"alignment signature mismatch for {partner_id}")
+        resolved = partner.get("resolved_wallet")
+        if not resolved:
+            errors.append(f"resolved_wallet missing for {partner_id}")
     return errors
 
 
@@ -81,6 +127,7 @@ def run_integrity_check() -> dict:
         "loyalty_engine": check_loyalty_engine(),
         "snapshot": check_snapshot(),
         "contributor_bindings": check_contributor_bindings(),
+        "partner_registry": check_partner_registry(),
     }
 
 

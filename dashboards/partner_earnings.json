@@ -1,1 +1,44 @@
-[]
+[
+  {
+    "partner_id": "ghostkey316.eth",
+    "monthly_gross": 12400,
+    "loyalty_bonus": 620,
+    "regions": ["NA", "EU"],
+    "last_payout": "2025-07-27"
+  },
+  {
+    "partner_id": "atlantech",
+    "monthly_gross": 9400,
+    "loyalty_bonus": 470,
+    "regions": ["NA", "APAC"],
+    "last_payout": "2025-07-27"
+  },
+  {
+    "partner_id": "luminetwork",
+    "monthly_gross": 8800,
+    "loyalty_bonus": 440,
+    "regions": ["EU", "LATAM"],
+    "last_payout": "2025-07-27"
+  },
+  {
+    "partner_id": "ethicallens",
+    "monthly_gross": 10100,
+    "loyalty_bonus": 505,
+    "regions": ["NA", "AF"],
+    "last_payout": "2025-07-27"
+  },
+  {
+    "partner_id": "civicforge",
+    "monthly_gross": 7600,
+    "loyalty_bonus": 380,
+    "regions": ["NA"],
+    "last_payout": "2025-07-27"
+  },
+  {
+    "partner_id": "harmonics",
+    "monthly_gross": 6900,
+    "loyalty_bonus": 345,
+    "regions": ["EU", "APAC"],
+    "last_payout": "2025-07-27"
+  }
+]

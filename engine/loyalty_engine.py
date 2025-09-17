@@ -1,10 +1,11 @@
 # Reference: ethics/core.mdx
 """Loyalty Engine with tiered behavior multipliers."""
 
-import json
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
+
+from . import storage
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 SCORECARD_PATH = BASE_DIR / "user_scorecard.json"
@@ -14,27 +15,17 @@ LOG_PATH = BASE_DIR / "logs" / "loyalty_engine_log.json"
 
 
 def _load_json(path: Path, default):
-    if path.exists():
-        try:
-            with open(path) as f:
-                return json.load(f)
-        except json.JSONDecodeError:
-            return default
-    return default
+    return storage.load_data(path, default)
 
 
 def _write_json(path: Path, data) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
+    storage.write_data(path, data)
 
 
 def _log(entry: dict) -> None:
-    log = _load_json(LOG_PATH, [])
     timestamp = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
     entry_with_time = {"timestamp": timestamp, **entry}
-    log.append(entry_with_time)
-    _write_json(LOG_PATH, log)
+    storage.append_log(LOG_PATH, entry_with_time)
 
 
 def _tier_multiplier(tier: str) -> float:
