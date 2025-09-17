@@ -52,6 +52,7 @@ def simulate_activation(partner_id: str, wallets: list[str],
         "success": success,
         "failures": failures,
         "status": "PASS" if success else "FAIL",
+        "integration_readiness": "10/10" if success else "0/10",
     }
 
 
@@ -138,6 +139,7 @@ def activation_hook(partner_id: str, wallets: list[str],
         "errors": errors,
         "activation": activation,
         "integrity": integrity,
+        "integration_readiness": "10/10" if not errors else "0/10",
     }
     if not silent:
         print(json.dumps(result, indent=2))

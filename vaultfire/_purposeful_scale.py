@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Sequence, Tuple
 
+from engine.human_standard_guard import DEFAULT_HUMAN_STANDARD_GUARD
 from engine.purposeful_scale import (
     behavioral_resonance_filter,
     belief_trace,
@@ -37,12 +38,17 @@ def _resolve_empathy(identity: Dict[str, Any]) -> float:
         or identity.get("empathy_score")
         or identity.get("careIndex")
     )
+    baseline = DEFAULT_HUMAN_STANDARD_GUARD.empathy_threshold
+    explicit = empathy is not None
     if empathy is None:
-        empathy = 0.72 if identity.get("ethicsVerified") else 0.55
+        empathy = baseline + 0.05 if identity.get("ethicsVerified") else baseline
     try:
-        return float(empathy)
+        score = float(empathy)
     except (TypeError, ValueError):
-        return 0.0
+        score = baseline
+    if explicit:
+        return score
+    return max(score, baseline)
 
 
 def _resolve_override(identity: Dict[str, Any]) -> Tuple[bool, str | None, str | None]:

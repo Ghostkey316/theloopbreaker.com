@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import sqlite3
 from typing import Any
 
 try:
@@ -56,11 +57,30 @@ def _init_engine():
     cfg = _load_config()
     if not cfg.get("use_database"):
         return
-    if create_engine is None or sessionmaker is None or make_url is None:
-        raise RuntimeError(
-            "SQLAlchemy is required when database usage is enabled."
-        )
     url = cfg.get("database_url", "sqlite:///vaultfire.db")
+
+    if create_engine is None or sessionmaker is None or make_url is None:
+        prefix = "sqlite:///"
+        database = url[len(prefix):] if url.startswith(prefix) else "vaultfire.db"
+        if not database:
+            database = "vaultfire.db"
+        if database != ":memory:":
+            db_path = Path(database)
+            if not db_path.is_absolute():
+                db_path = (BASE_DIR / db_path).resolve()
+            db_path.parent.mkdir(parents=True, exist_ok=True)
+            database = str(db_path)
+        _engine = sqlite3.connect(database)
+        _engine.execute(
+            "CREATE TABLE IF NOT EXISTS kv_store (key TEXT PRIMARY KEY, value TEXT)"
+        )
+        _engine.execute(
+            "CREATE TABLE IF NOT EXISTS log_entries (id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT, entry TEXT)"
+        )
+        _engine.commit()
+        _Session = None
+        return
+
     parsed = make_url(url)
     if parsed.drivername != "sqlite":
         raise ValueError("Only sqlite URLs are supported for the storage backend")
@@ -108,6 +128,18 @@ def load_data(path: Path, default: Any):
         return _read_json_file(path, default)
 
     _init_engine()
+    if isinstance(_engine, sqlite3.Connection) and _Session is None:
+        cursor = _engine.execute(
+            "SELECT value FROM kv_store WHERE key = ?", (str(path),)
+        )
+        row = cursor.fetchone()
+        if row:
+            try:
+                return json.loads(row[0])
+            except json.JSONDecodeError:
+                return default
+        return _read_json_file(path, default)
+
     session = _Session()
     record = session.query(KV).filter_by(key=str(path)).first()
     session.close()
@@ -125,6 +157,17 @@ def write_data(path: Path, data: Any) -> None:
         return
 
     _init_engine()
+    if isinstance(_engine, sqlite3.Connection) and _Session is None:
+        data_json = json.dumps(data)
+        _engine.execute(
+            "INSERT INTO kv_store (key, value) VALUES (?, ?) "
+            "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            (str(path), data_json),
+        )
+        _engine.commit()
+        _write_json_file(path, data)
+        return
+
     session = _Session()
     record = session.query(KV).filter_by(key=str(path)).first()
     data_json = json.dumps(data)
@@ -153,6 +196,17 @@ def append_log(path: Path, entry: Any) -> None:
         return
 
     _init_engine()
+    if isinstance(_engine, sqlite3.Connection) and _Session is None:
+        _engine.execute(
+            "INSERT INTO log_entries (path, entry) VALUES (?, ?)",
+            (str(path), json.dumps(entry)),
+        )
+        _engine.commit()
+        log = _read_json_file(path, [])
+        log.append(entry)
+        _write_json_file(path, log)
+        return
+
     session = _Session()
     record = LogEntry(path=str(path), entry=json.dumps(entry))
     session.add(record)
