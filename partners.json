@@ -1,11 +1,59 @@
 [
   {
     "partner_id": "sandbox_partner",
-    "wallet": "bpow20.cb.id"
+    "wallet": "cb1qexampleaddress0000000000000000000000",
+    "wallet_alias": "bpow20.cb.id",
+    "resolved_wallet": "cb1qexampleaddress0000000000000000000000",
+    "alignment_signature": "abd5aa86560f75dc165458453e6b64b8988050397b8baea585bbf95f80fe760d",
+    "onboarded_at": "2025-07-20T12:40:00Z"
   },
   {
     "partner_id": "ghostkey316.eth",
-    "wallet": "bpow20.cb.id",
+    "wallet": "0x9abCDEF1234567890abcdefABCDEF1234567890",
+    "wallet_alias": "ghostkey316.eth",
+    "resolved_wallet": "0x9abCDEF1234567890abcdefABCDEF1234567890",
+    "alignment_signature": "abd5aa86560f75dc165458453e6b64b8988050397b8baea585bbf95f80fe760d",
+    "onboarded_at": "2025-07-21T09:05:00Z",
     "role": "Architect"
+  },
+  {
+    "partner_id": "atlantech",
+    "wallet": "0x1111111111111111111111111111111111111111",
+    "wallet_alias": "atlantech.eth",
+    "resolved_wallet": "0x1111111111111111111111111111111111111111",
+    "alignment_signature": "abd5aa86560f75dc165458453e6b64b8988050397b8baea585bbf95f80fe760d",
+    "onboarded_at": "2025-07-24T14:22:17Z"
+  },
+  {
+    "partner_id": "luminetwork",
+    "wallet": "0x2222222222222222222222222222222222222222",
+    "wallet_alias": "luminetwork.eth",
+    "resolved_wallet": "0x2222222222222222222222222222222222222222",
+    "alignment_signature": "abd5aa86560f75dc165458453e6b64b8988050397b8baea585bbf95f80fe760d",
+    "onboarded_at": "2025-07-24T18:03:45Z"
+  },
+  {
+    "partner_id": "ethicallens",
+    "wallet": "0x3333333333333333333333333333333333333333",
+    "wallet_alias": "ethicallens.eth",
+    "resolved_wallet": "0x3333333333333333333333333333333333333333",
+    "alignment_signature": "abd5aa86560f75dc165458453e6b64b8988050397b8baea585bbf95f80fe760d",
+    "onboarded_at": "2025-07-25T07:54:11Z"
+  },
+  {
+    "partner_id": "civicforge",
+    "wallet": "0x4444444444444444444444444444444444444444",
+    "wallet_alias": "civicforge.eth",
+    "resolved_wallet": "0x4444444444444444444444444444444444444444",
+    "alignment_signature": "abd5aa86560f75dc165458453e6b64b8988050397b8baea585bbf95f80fe760d",
+    "onboarded_at": "2025-07-26T10:18:29Z"
+  },
+  {
+    "partner_id": "harmonics",
+    "wallet": "0x5555555555555555555555555555555555555555",
+    "wallet_alias": "harmonics.eth",
+    "resolved_wallet": "0x5555555555555555555555555555555555555555",
+    "alignment_signature": "abd5aa86560f75dc165458453e6b64b8988050397b8baea585bbf95f80fe760d",
+    "onboarded_at": "2025-07-27T15:42:56Z"
   }
 ]

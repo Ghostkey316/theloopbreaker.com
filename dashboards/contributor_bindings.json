@@ -2,13 +2,43 @@
   "ghostkey316": {
     "wallet": "ghostkey316.eth",
     "resolved_wallet": "0x9abCDEF1234567890abcdefABCDEF1234567890",
-    "contributor_xp": 0,
-    "loyalty_multiplier": 1.0
+    "contributor_xp": 1200,
+    "loyalty_multiplier": 1.8
   },
   "sample_user": {
     "wallet": "sample.eth",
     "resolved_wallet": "0x0000000000000000000000000000000000000001",
-    "contributor_xp": 0,
-    "loyalty_multiplier": 1.0
+    "contributor_xp": 320,
+    "loyalty_multiplier": 1.2
+  },
+  "atlantech": {
+    "wallet": "atlantech.eth",
+    "resolved_wallet": "0x1111111111111111111111111111111111111111",
+    "contributor_xp": 980,
+    "loyalty_multiplier": 1.6
+  },
+  "luminetwork": {
+    "wallet": "luminetwork.eth",
+    "resolved_wallet": "0x2222222222222222222222222222222222222222",
+    "contributor_xp": 760,
+    "loyalty_multiplier": 1.45
+  },
+  "ethicallens": {
+    "wallet": "ethicallens.eth",
+    "resolved_wallet": "0x3333333333333333333333333333333333333333",
+    "contributor_xp": 875,
+    "loyalty_multiplier": 1.55
+  },
+  "civicforge": {
+    "wallet": "civicforge.eth",
+    "resolved_wallet": "0x4444444444444444444444444444444444444444",
+    "contributor_xp": 640,
+    "loyalty_multiplier": 1.35
+  },
+  "harmonics": {
+    "wallet": "harmonics.eth",
+    "resolved_wallet": "0x5555555555555555555555555555555555555555",
+    "contributor_xp": 420,
+    "loyalty_multiplier": 1.25
   }
 }

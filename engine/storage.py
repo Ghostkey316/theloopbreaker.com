@@ -1,24 +1,28 @@
 from __future__ import annotations
+
 import json
 from pathlib import Path
 from typing import Any
 
 try:
-    from sqlalchemy import create_engine, Column, Integer, String, Text
-    from sqlalchemy.orm import sessionmaker, declarative_base
+    from sqlalchemy import Column, Integer, String, Text, create_engine
+    from sqlalchemy.engine import make_url
+    from sqlalchemy.orm import declarative_base, sessionmaker
 except Exception:  # pragma: no cover - optional dependency
-    create_engine = None
-    def Column(*args, **kwargs):
+    create_engine = None  # type: ignore
+    make_url = None  # type: ignore
+
+    def Column(*args, **kwargs):  # type: ignore
         return None
 
     class _Dummy:
         def __init__(self, *args, **kwargs):
             pass
 
-    Integer = String = Text = _Dummy
+    Integer = String = Text = _Dummy  # type: ignore
     sessionmaker = None
 
-    def declarative_base():
+    def declarative_base():  # type: ignore
         class DummyBase:
             class metadata:
                 @staticmethod
@@ -52,9 +56,23 @@ def _init_engine():
     cfg = _load_config()
     if not cfg.get("use_database"):
         return
+    if create_engine is None or sessionmaker is None or make_url is None:
+        raise RuntimeError(
+            "SQLAlchemy is required when database usage is enabled."
+        )
     url = cfg.get("database_url", "sqlite:///vaultfire.db")
-    _engine = create_engine(url)
-    _Session = sessionmaker(bind=_engine)
+    parsed = make_url(url)
+    if parsed.drivername != "sqlite":
+        raise ValueError("Only sqlite URLs are supported for the storage backend")
+    database = parsed.database or "vaultfire.db"
+    if database != ":memory:":
+        db_path = Path(database)
+        if not db_path.is_absolute():
+            db_path = (BASE_DIR / db_path).resolve()
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        url = f"sqlite:///{db_path}"
+    _engine = create_engine(url, future=True)
+    _Session = sessionmaker(bind=_engine, future=True)
     Base.metadata.create_all(_engine)
 
 
@@ -69,15 +87,25 @@ class KV(Base):
     value = Column(Text)
 
 
+def _read_json_file(path: Path, default: Any):
+    if path.exists():
+        try:
+            with open(path) as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            return default
+    return default
+
+
+def _write_json_file(path: Path, data: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
 def load_data(path: Path, default: Any):
     if not is_enabled():
-        if path.exists():
-            try:
-                with open(path) as f:
-                    return json.load(f)
-            except json.JSONDecodeError:
-                return default
-        return default
+        return _read_json_file(path, default)
 
     _init_engine()
     session = _Session()
@@ -88,14 +116,12 @@ def load_data(path: Path, default: Any):
             return json.loads(record.value)
         except json.JSONDecodeError:
             return default
-    return default
+    return _read_json_file(path, default)
 
 
 def write_data(path: Path, data: Any) -> None:
     if not is_enabled():
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path, "w") as f:
-            json.dump(data, f, indent=2)
+        _write_json_file(path, data)
         return
 
     _init_engine()
@@ -109,6 +135,7 @@ def write_data(path: Path, data: Any) -> None:
         session.add(record)
     session.commit()
     session.close()
+    _write_json_file(path, data)
 
 
 class LogEntry(Base):
@@ -120,17 +147,9 @@ class LogEntry(Base):
 
 def append_log(path: Path, entry: Any) -> None:
     if not is_enabled():
-        log = []
-        if path.exists():
-            try:
-                with open(path) as f:
-                    log = json.load(f)
-            except json.JSONDecodeError:
-                log = []
+        log = _read_json_file(path, [])
         log.append(entry)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path, "w") as f:
-            json.dump(log, f, indent=2)
+        _write_json_file(path, log)
         return
 
     _init_engine()
@@ -139,3 +158,6 @@ def append_log(path: Path, entry: Any) -> None:
     session.add(record)
     session.commit()
     session.close()
+    log = _read_json_file(path, [])
+    log.append(entry)
+    _write_json_file(path, log)

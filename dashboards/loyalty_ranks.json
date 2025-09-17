@@ -1,14 +1,44 @@
 [
   {
+    "user_id": "atlantech",
+    "base": 325,
+    "tier": "legend",
+    "score": 487.5
+  },
+  {
+    "user_id": "ethicallens",
+    "base": 265,
+    "tier": "veteran",
+    "score": 331.25
+  },
+  {
     "user_id": "ghostkey316",
-    "base": 0,
-    "tier": "default",
-    "score": 0.0
+    "base": 210,
+    "tier": "veteran",
+    "score": 262.5
+  },
+  {
+    "user_id": "luminetwork",
+    "base": 185,
+    "tier": "veteran",
+    "score": 231.25
+  },
+  {
+    "user_id": "civicforge",
+    "base": 150,
+    "tier": "veteran",
+    "score": 187.5
+  },
+  {
+    "user_id": "harmonics",
+    "base": 95,
+    "tier": "origin",
+    "score": 104.5
   },
   {
     "user_id": "sample_user",
-    "base": 0,
-    "tier": "default",
-    "score": 0.0
+    "base": 75,
+    "tier": "origin",
+    "score": 82.5
   }
 ]

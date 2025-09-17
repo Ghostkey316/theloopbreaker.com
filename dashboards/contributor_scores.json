@@ -6,5 +6,25 @@
   "sample_user": {
     "score": 5,
     "tag": "Echo Agent"
+  },
+  "atlantech": {
+    "score": 48,
+    "tag": "Civic Builder"
+  },
+  "luminetwork": {
+    "score": 36,
+    "tag": "Community Ally"
+  },
+  "ethicallens": {
+    "score": 42,
+    "tag": "Ethics Vanguard"
+  },
+  "civicforge": {
+    "score": 30,
+    "tag": "Field Steward"
+  },
+  "harmonics": {
+    "score": 28,
+    "tag": "Signal Weaver"
   }
 }

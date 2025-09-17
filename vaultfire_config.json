@@ -8,6 +8,6 @@
   "live_training_mode": true,
   "fail_safe": "Hard shutdown on ethics breach",
   "localforge_enabled": true,
-  "use_database": false,
+  "use_database": true,
   "database_url": "sqlite:///vaultfire.db"
 }

@@ -2,11 +2,43 @@
   "ghostkey316": {
     "contributor_score": 15,
     "contributor_tag": "Echo Agent",
-    "wallet": "ghostkey316.eth"
+    "wallet": "ghostkey316.eth",
+    "loyalty": 210
   },
   "sample_user": {
     "contributor_score": 5,
     "contributor_tag": "Echo Agent",
-    "wallet": "sample.eth"
+    "wallet": "sample.eth",
+    "loyalty": 75
+  },
+  "atlantech": {
+    "contributor_score": 48,
+    "contributor_tag": "Civic Builder",
+    "wallet": "atlantech.eth",
+    "loyalty": 325
+  },
+  "luminetwork": {
+    "contributor_score": 36,
+    "contributor_tag": "Community Ally",
+    "wallet": "luminetwork.eth",
+    "loyalty": 185
+  },
+  "ethicallens": {
+    "contributor_score": 42,
+    "contributor_tag": "Ethics Vanguard",
+    "wallet": "ethicallens.eth",
+    "loyalty": 265
+  },
+  "civicforge": {
+    "contributor_score": 30,
+    "contributor_tag": "Field Steward",
+    "wallet": "civicforge.eth",
+    "loyalty": 150
+  },
+  "harmonics": {
+    "contributor_score": 28,
+    "contributor_tag": "Signal Weaver",
+    "wallet": "harmonics.eth",
+    "loyalty": 95
   }
 }
