@@ -1,6 +1,19 @@
 {
   "system_name": "Vaultfire Partner",
   "ethics_anchor": true,
+  "ethics_values": [
+    "Human First",
+    "Private by Default",
+    "Decentralized by Design"
+  ],
+  "ethics_sync": {
+    "FounderAnchorVerified": true,
+    "ethics_root_signer": "ghostkey316.eth",
+    "audit": {
+      "pulse_interval_days": 7,
+      "notify_on_anchor_drift": "ghostkey316.eth"
+    }
+  },
   "monetization_mode": "Behavioral Yield + Contributor Split",
   "public_visibility": "controlled",
   "partner_hooks_enabled": true,

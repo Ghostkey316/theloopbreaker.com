@@ -2,6 +2,11 @@ const fs = require('fs');
 const path = require('path');
 
 const CONFIG_PATH = path.join(__dirname, 'visual_config.json');
+const ETHICS_WATERMARK_VALUES = [
+  'Human First',
+  'Private by Default',
+  'Decentralized by Design'
+];
 
 function loadConfig() {
   try {
@@ -16,7 +21,10 @@ function renderModel(record) {
   const cfg = loadConfig();
   const engine = cfg.engine === 'babylon' ? 'babylon' : 'three';
   const meta = [];
-  if (record.watermark) meta.push('watermark');
+  if (record.watermark) {
+    meta.push('watermark');
+    ETHICS_WATERMARK_VALUES.forEach(value => meta.push(value));
+  }
   if (record.timed_reveal) meta.push('timed_reveal');
   if (record.partner_lock) meta.push('partner_lock');
   const overlay = meta.map(m => `<span class="meta">${m}</span>`).join(' ');
