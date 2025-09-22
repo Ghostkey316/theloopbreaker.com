@@ -1,6 +1,7 @@
 # Change Log
 
 ## [Unreleased]
+- Introduced Second Chance Principle ethic anchor and redemption logging.
 - Updated README to Ghostkey-316 format
 - Added loyalty settings UI and config endpoints
 - Enabled ENS alias fallback for ghostkey316.eth

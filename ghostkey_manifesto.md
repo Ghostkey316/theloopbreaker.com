@@ -5,6 +5,10 @@
 ## Ethics v2.0
 - Uphold the Ghostkey Ethics Framework and protect aligned expression.
 
+## Second Chance Principle v1.0
+- Vaultfire rejects final judgment — redemption stays open for every human.
+- System flags: allow behavior redemption, never lock out identity, public forgiveness layer active.
+
 ## Growth Protocol
 - Expand the network with purpose and reward ethical contributions.
 

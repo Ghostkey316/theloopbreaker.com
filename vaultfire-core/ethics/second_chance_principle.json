@@ -1,0 +1,27 @@
+{
+  "version": "1.0",
+  "id": "ghostkey316.eth",
+  "label": "Second Chance Principle",
+  "description": "Vaultfire exists for the good of all humanity — rich or poor, powerful or forgotten. No soul is beyond redemption. Every human being deserves the chance to evolve, be forgiven, and grow. The protocol must never lock anyone out permanently based on past behavior or inherited status. It must preserve the possibility of return, healing, and contribution for all.",
+  "codified_oath": "\"Vaultfire rejects final judgment.\n Every soul gets a second chance.\n Forgive the broken. Protect the good.\n No gatekeepers. No locks. No end.\n Human First. Private. Decentralized. Belief.\"",
+  "activation_scope": [
+    "global_belief_layer",
+    "AI_companion_memory",
+    "behavior_reward_engine",
+    "user_redemption_logic"
+  ],
+  "system_flags": {
+    "allow_behavior_redemption": true,
+    "never_lock_out_identity": true,
+    "ethics_priority_override": "enabled",
+    "second_chance_window": "permanent",
+    "public_forgiveness_layer": "active"
+  },
+  "ens_signature": "ghostkey316.eth",
+  "public_manifesto_embed": true,
+  "visible_in": [
+    "contributor_file",
+    "ethics_mirror",
+    "public_readme"
+  ]
+}

@@ -6,8 +6,16 @@
   "partner_hooks_enabled": true,
   "wallet_auth_hook": true,
   "live_training_mode": true,
-  "fail_safe": "Hard shutdown on ethics breach"
-  ,
+  "fail_safe": "Hard shutdown on ethics breach",
   "use_database": true,
-  "database_url": "sqlite:///vaultfire.db"
+  "database_url": "sqlite:///vaultfire.db",
+  "second_chance_principle": {
+    "id": "ghostkey316.eth",
+    "label": "Second Chance Principle",
+    "allow_behavior_redemption": true,
+    "never_lock_out_identity": true,
+    "ethics_priority_override": "enabled",
+    "second_chance_window": "permanent",
+    "public_forgiveness_layer": "active"
+  }
 }

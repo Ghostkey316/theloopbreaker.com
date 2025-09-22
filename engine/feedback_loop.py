@@ -9,6 +9,7 @@ from vaultfire_signal import log_vaultfire_status
 from .yield_engine_v1 import mark_yield_boost
 from .belief_validation import validate_belief
 from .immutable_log import append_entry
+from .second_chance import apply_second_chance
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 
@@ -96,6 +97,7 @@ def track_behavior(event):
         if approved:
             user_scores["belief_level"] = user_scores.get("belief_level", 0) + 1
 
+    user_scores = apply_second_chance(uid, user_scores)
     scorecard[uid] = user_scores
     _write_json(SCORECARD_PATH, scorecard)
 

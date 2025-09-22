@@ -16,6 +16,7 @@ Coded for a future worth living in.
 - **Morals before metrics** – No growth without grounding.  
 - **Transparency over control** – All systems open. All loops traceable.  
 - **You matter.** The people who show up with belief and purpose *will be seen, remembered, and rewarded.*
+- **Second Chance Principle** – No gatekeepers, no permanent locks — every human gets a path back.
 
 ## What It Does
 

@@ -7,5 +7,14 @@
   "wallet_auth_hook": true,
   "live_training_mode": true,
   "fail_safe": "Hard shutdown on ethics breach",
-  "localforge_enabled": true
+  "localforge_enabled": true,
+  "second_chance_principle": {
+    "id": "ghostkey316.eth",
+    "label": "Second Chance Principle",
+    "allow_behavior_redemption": true,
+    "never_lock_out_identity": true,
+    "ethics_priority_override": "enabled",
+    "second_chance_window": "permanent",
+    "public_forgiveness_layer": "active"
+  }
 }
