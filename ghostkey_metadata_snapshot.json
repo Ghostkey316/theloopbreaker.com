@@ -11,5 +11,19 @@
     "contributor",
     "proof",
     "forkproof"
-  ]
+  ],
+  "ethics_values": [
+    "Human First",
+    "Private by Default",
+    "Decentralized by Design"
+  ],
+  "ethics_sync": {
+    "FounderAnchorVerified": true,
+    "ethics_root_signer": "ghostkey316.eth",
+    "audit": {
+      "enabled": true,
+      "pulse_interval_days": 7,
+      "anchor_drift_notification": "ghostkey316.eth"
+    }
+  }
 }
