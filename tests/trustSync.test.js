@@ -10,9 +10,19 @@ process.env.VAULTFIRE_RC_PATH = path.join(__dirname, 'vaultfirerc.test.json');
 const { app, tokenService, identityStoreReady, partnerHooks, telemetryLedger, createServer } = require('../auth/expressExample');
 const { ROLES } = require('../auth/roles');
 
+const WALLET_PARTNER = '0xcccccccccccccccccccccccccccccccccccccccc';
+const WALLET_SAMPLE = '0xabcdabcdabcdabcdabcdabcdabcdabcdabcdabcd';
+const WALLET_SECONDARY = '0x1111111111111111111111111111111111111111';
+const WALLET_BREACH = '0xbeefbeefbeefbeefbeefbeefbeefbeefbeefbeef';
+const WALLET_STREAM = '0xfeedfeedfeedfeedfeedfeedfeedfeedfeedfeed';
+const WALLET_REFRESH = '0xcafecafecafecafecafecafecafecafecafecafe';
+const WALLET_MIRROR = '0xdeaddeaddeaddeaddeaddeaddeaddeaddeadbeef';
+const WALLET_CENTRAL = '0x2222222222222222222222222222222222222222';
+const WALLET_CONTRIBUTOR = '0x3333333333333333333333333333333333333333';
+
 function createToken(overrides = {}) {
   return tokenService.createAccessToken({
-    userId: 'trust-sync-tester',
+    wallet: WALLET_PARTNER,
     role: ROLES.PARTNER,
     partnerId: 'trust-partner',
     scopes: ['belief:sync'],
@@ -29,37 +39,38 @@ describe('Trust Sync protocol', () => {
     partnerHooks.removeAllListeners();
   });
 
-  describe('Belief identity linker', () => {
+  describe('Wallet linker', () => {
     it('rejects belief scores outside the 0-1 range', async () => {
       const token = createToken();
       const high = await request(app)
-        .post('/link-identity')
+        .post('/link-wallet')
         .set('Authorization', `Bearer ${token}`)
-        .send({ wallet: '0xabc', partnerUserId: 'user-high', beliefScore: 1.2 });
+        .send({ wallet: WALLET_SAMPLE, beliefScore: 1.2 });
       expect(high.status).toBe(400);
-      expect(high.body.error.code).toBe('identity.invalid_belief_score');
+      expect(high.body.error.code).toBe('wallet.invalid_belief_score');
 
       const low = await request(app)
-        .post('/link-identity')
+        .post('/link-wallet')
         .set('Authorization', `Bearer ${token}`)
-        .send({ wallet: '0xabc', partnerUserId: 'user-low', beliefScore: -0.1 });
+        .send({ wallet: WALLET_SAMPLE, beliefScore: -0.1 });
       expect(low.status).toBe(400);
-      expect(low.body.error.code).toBe('identity.invalid_belief_score');
+      expect(low.body.error.code).toBe('wallet.invalid_belief_score');
     });
 
     it('stores anchors at range boundaries and returns them decrypted', async () => {
       const token = createToken();
       const create = await request(app)
-        .post('/link-identity')
+        .post('/link-wallet')
         .set('Authorization', `Bearer ${token}`)
-        .send({ wallet: '0xwallet', partnerUserId: 'user-0', beliefScore: 1 });
+        .send({ wallet: WALLET_SAMPLE, beliefScore: 1 });
       expect(create.status).toBe(200);
       expect(create.body.anchor.beliefScore).toBe(1);
+      expect(create.body.anchor.ensAlias).toBeNull();
 
       const fetchRes = await request(app)
-        .get('/link-identity')
+        .get('/link-wallet')
         .set('Authorization', `Bearer ${token}`)
-        .query({ wallet: '0xwallet', partnerUserId: 'user-0' });
+        .query({ wallet: WALLET_SAMPLE });
       expect(fetchRes.status).toBe(200);
       expect(fetchRes.body.anchor.beliefScore).toBe(1);
     });
@@ -67,11 +78,32 @@ describe('Trust Sync protocol', () => {
     it('returns 404 when anchor is missing', async () => {
       const token = createToken();
       const res = await request(app)
-        .get('/link-identity')
+        .get('/link-wallet')
         .set('Authorization', `Bearer ${token}`)
-        .query({ wallet: '0xmissing', partnerUserId: 'unknown-user' });
+        .query({ wallet: WALLET_SECONDARY });
       expect(res.status).toBe(404);
     });
+
+    it('rejects payloads containing external identifiers', async () => {
+      const token = createToken();
+      const res = await request(app)
+        .post('/link-wallet')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ wallet: WALLET_SAMPLE, beliefScore: 0.5, metadata: { externalId: '1234' } });
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('wallet.identity_rejected');
+    });
+  });
+
+  it('exposes wallet-first identity policy via health check', async () => {
+    const res = await request(app).get('/health');
+    expect(res.status).toBe(200);
+    expect(res.body.identity).toMatchObject({
+      useWalletAsIdentity: true,
+      rejectExternalID: true,
+      pseudonymousMode: 'always',
+    });
+    expect(res.body.telemetryMode).toBe('wallet-anonymous');
   });
 
   describe('Partner relationship hooks', () => {
@@ -82,13 +114,14 @@ describe('Trust Sync protocol', () => {
       partnerHooks.on('delivery:beliefBreach', (entry) => deliveries.push(entry));
 
       const res = await request(app)
-        .post('/link-identity')
+        .post('/link-wallet')
         .set('Authorization', `Bearer ${token}`)
-        .send({ wallet: '0xbreach', partnerUserId: 'user-breach', beliefScore: 0.2 });
+        .send({ wallet: WALLET_BREACH, ens: 'breach.eth', beliefScore: 0.2 });
       expect(res.status).toBe(200);
 
       await new Promise((resolve) => setTimeout(resolve, 50));
       expect(deliveries.some((entry) => entry.payload.beliefScore === 0.2)).toBe(true);
+      expect(deliveries.some((entry) => entry.payload.ensAlias === 'breach.eth')).toBe(true);
 
       const ethicsLog = telemetryLedger.readChannel('ethics');
       expect(ethicsLog.some((entry) => entry.eventType === 'identity.anchor.linked')).toBe(true);
@@ -120,7 +153,7 @@ describe('Trust Sync protocol', () => {
       const updatePromise = new Promise((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error('No signal update received')), 2000);
         client.on('signal-compass:update', (snapshot) => {
-          if (snapshot.incoming.some((entry) => entry.walletId === '0xstream')) {
+          if (snapshot.incoming.some((entry) => entry.walletId === WALLET_STREAM)) {
             clearTimeout(timeout);
             resolve(snapshot);
           }
@@ -128,9 +161,9 @@ describe('Trust Sync protocol', () => {
       });
 
       await request(app)
-        .post('/link-identity')
+        .post('/link-wallet')
         .set('Authorization', `Bearer ${token}`)
-        .send({ wallet: '0xstream', partnerUserId: 'user-stream', beliefScore: 0.9 });
+        .send({ wallet: WALLET_STREAM, beliefScore: 0.9 });
 
       const snapshot = await updatePromise;
       expect(snapshot.intentFrequency).toBeDefined();
@@ -154,7 +187,7 @@ describe('Trust Sync protocol', () => {
     it('issues and refreshes access tokens', async () => {
       const login = await request(app)
         .post('/auth/login')
-        .send({ userId: 'refresh-user', partnerId: 'trust-partner', role: ROLES.PARTNER });
+        .send({ wallet: WALLET_REFRESH, partnerId: 'trust-partner', role: ROLES.PARTNER, ens: 'refresh.eth' });
       expect(login.status).toBe(200);
       const refresh = await request(app)
         .post('/auth/refresh')
@@ -167,12 +200,20 @@ describe('Trust Sync protocol', () => {
       const res = await request(app).post('/auth/login').send({});
       expect(res.status).toBe(400);
     });
+
+    it('rejects attempts to login with external IDs', async () => {
+      const res = await request(app)
+        .post('/auth/login')
+        .send({ userId: 'centralized-user', wallet: WALLET_CENTRAL, partnerId: 'trust-partner' });
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('auth.identity_rejected');
+    });
   });
 
   describe('Mirror agent integration', () => {
     it('interprets belief payloads through the mirror route', async () => {
       const token = tokenService.createAccessToken({
-        userId: 'contributor',
+        wallet: WALLET_CONTRIBUTOR,
         role: ROLES.CONTRIBUTOR,
         partnerId: 'trust-partner',
       });
@@ -180,7 +221,7 @@ describe('Trust Sync protocol', () => {
       const res = await request(app)
         .post('/vaultfire/mirror')
         .set('Authorization', `Bearer ${token}`)
-        .send({ walletId: '0xmirror', beliefScore: 0.76, partnerUserId: 'mirror-user', narrative: 'Aligned mission.' });
+        .send({ walletId: WALLET_MIRROR, beliefScore: 0.76, ens: 'mirror.eth', narrative: 'Aligned mission.' });
       expect(res.status).toBe(202);
       expect(res.body.summary.recommendedAction).toBeDefined();
     });

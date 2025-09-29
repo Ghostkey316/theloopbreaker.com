@@ -15,6 +15,10 @@ function normalizeKey(key) {
   return crypto.createHash('sha256').update(material).digest();
 }
 
+function normalizeWallet(wallet) {
+  return wallet ? wallet.toLowerCase() : wallet;
+}
+
 class MemoryProvider {
   constructor() {
     this.anchors = new Map();
@@ -68,7 +72,7 @@ class PostgresProvider {
       CREATE TABLE IF NOT EXISTS ${this.tableName} (
         anchor_id TEXT PRIMARY KEY,
         wallet_hash TEXT NOT NULL,
-        partner_user_id_hash TEXT NOT NULL,
+        ens_alias_hash TEXT,
         payload JSONB NOT NULL,
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
@@ -78,19 +82,19 @@ class PostgresProvider {
   async upsert(anchorId, record) {
     const query = {
       text: `
-        INSERT INTO ${this.tableName} (anchor_id, wallet_hash, partner_user_id_hash, payload, updated_at)
+        INSERT INTO ${this.tableName} (anchor_id, wallet_hash, ens_alias_hash, payload, updated_at)
         VALUES ($1, $2, $3, $4, NOW())
         ON CONFLICT (anchor_id)
         DO UPDATE SET payload = EXCLUDED.payload, updated_at = NOW()
-        RETURNING anchor_id, wallet_hash, partner_user_id_hash, payload, updated_at;
+        RETURNING anchor_id, wallet_hash, ens_alias_hash, payload, updated_at;
       `,
-      values: [anchorId, record.walletHash, record.partnerUserIdHash, record.payload],
+      values: [anchorId, record.walletHash, record.ensAliasHash, record.payload],
     };
     const result = await this.pool.query(query);
     return {
       anchorId: result.rows[0].anchor_id,
       walletHash: result.rows[0].wallet_hash,
-      partnerUserIdHash: result.rows[0].partner_user_id_hash,
+      ensAliasHash: result.rows[0].ens_alias_hash,
       payload: result.rows[0].payload,
       updatedAt: result.rows[0].updated_at,
     };
@@ -98,7 +102,7 @@ class PostgresProvider {
 
   async getByAnchor(anchorId) {
     const result = await this.pool.query(
-      `SELECT anchor_id, wallet_hash, partner_user_id_hash, payload, updated_at FROM ${this.tableName} WHERE anchor_id = $1`,
+      `SELECT anchor_id, wallet_hash, ens_alias_hash, payload, updated_at FROM ${this.tableName} WHERE anchor_id = $1`,
       [anchorId]
     );
     if (!result.rowCount) {
@@ -108,7 +112,7 @@ class PostgresProvider {
     return {
       anchorId: row.anchor_id,
       walletHash: row.wallet_hash,
-      partnerUserIdHash: row.partner_user_id_hash,
+      ensAliasHash: row.ens_alias_hash,
       payload: row.payload,
       updatedAt: row.updated_at,
     };
@@ -116,13 +120,13 @@ class PostgresProvider {
 
   async findByWallet(walletHash) {
     const result = await this.pool.query(
-      `SELECT anchor_id, wallet_hash, partner_user_id_hash, payload, updated_at FROM ${this.tableName} WHERE wallet_hash = $1`,
+      `SELECT anchor_id, wallet_hash, ens_alias_hash, payload, updated_at FROM ${this.tableName} WHERE wallet_hash = $1`,
       [walletHash]
     );
     return result.rows.map((row) => ({
       anchorId: row.anchor_id,
       walletHash: row.wallet_hash,
-      partnerUserIdHash: row.partner_user_id_hash,
+      ensAliasHash: row.ens_alias_hash,
       payload: row.payload,
       updatedAt: row.updated_at,
     }));
@@ -153,7 +157,7 @@ class MongoProvider {
     const update = {
       $set: {
         walletHash: record.walletHash,
-        partnerUserIdHash: record.partnerUserIdHash,
+        ensAliasHash: record.ensAliasHash || null,
         payload: record.payload,
         updatedAt: new Date(),
       },
@@ -162,7 +166,7 @@ class MongoProvider {
     return {
       anchorId,
       walletHash: record.walletHash,
-      partnerUserIdHash: record.partnerUserIdHash,
+      ensAliasHash: record.ensAliasHash || null,
       payload: record.payload,
       updatedAt: new Date().toISOString(),
     };
@@ -227,20 +231,33 @@ class EncryptedIdentityStore {
     return JSON.parse(decrypted.toString('utf8'));
   }
 
-  #anchorId(wallet, partnerUserId) {
-    return sha256(`${wallet}:${partnerUserId}`);
+  #anchorId(wallet, ensAlias) {
+    const normalizedWallet = normalizeWallet(wallet);
+    const normalizedEns = ensAlias ? ensAlias.toLowerCase() : 'anonymous';
+    return sha256(`${normalizedWallet}:${normalizedEns}`);
   }
 
-  async linkAnchor({ wallet, partnerUserId, beliefScore, metadata = {} }) {
-    const anchorId = this.#anchorId(wallet, partnerUserId);
-    const payload = this.#encrypt({ wallet, partnerUserId, beliefScore, metadata, updatedAt: new Date().toISOString() });
-    const record = await this.provider.upsert(anchorId, {
-      walletHash: sha256(wallet),
-      partnerUserIdHash: sha256(partnerUserId),
+  async linkWallet({ wallet, ensAlias = null, beliefScore, metadata = {} }) {
+    const normalizedWallet = normalizeWallet(wallet);
+    if (!normalizedWallet) {
+      throw new Error('wallet is required');
+    }
+    const normalizedEns = ensAlias ? ensAlias.toLowerCase() : null;
+    const anchorId = this.#anchorId(normalizedWallet, normalizedEns);
+    const payload = this.#encrypt({
+      wallet: normalizedWallet,
+      ensAlias: normalizedEns,
+      beliefScore,
+      metadata,
+      updatedAt: new Date().toISOString(),
+    });
+    await this.provider.upsert(anchorId, {
+      walletHash: sha256(normalizedWallet),
+      ensAliasHash: normalizedEns ? sha256(normalizedEns) : null,
       payload,
     });
 
-    const entry = { anchorId, wallet, partnerUserId, beliefScore, metadata };
+    const entry = { anchorId, wallet: normalizedWallet, ensAlias: normalizedEns, beliefScore, metadata };
     this.telemetry?.record('identity.anchor.linked', entry, {
       tags: ['identity', 'belief'],
       visibility: { partner: true, ethics: true, audit: true },
@@ -248,8 +265,12 @@ class EncryptedIdentityStore {
     return entry;
   }
 
-  async getAnchor({ wallet, partnerUserId }) {
-    const anchorId = this.#anchorId(wallet, partnerUserId);
+  async getWalletAnchor({ wallet, ensAlias = null }) {
+    const normalizedWallet = normalizeWallet(wallet);
+    if (!normalizedWallet) {
+      return null;
+    }
+    const anchorId = this.#anchorId(normalizedWallet, ensAlias ? ensAlias.toLowerCase() : null);
     const record = await this.provider.getByAnchor(anchorId);
     if (!record) {
       return null;
@@ -259,7 +280,11 @@ class EncryptedIdentityStore {
   }
 
   async listByWallet(wallet) {
-    const walletHash = sha256(wallet);
+    const normalizedWallet = normalizeWallet(wallet);
+    if (!normalizedWallet) {
+      return [];
+    }
+    const walletHash = sha256(normalizedWallet);
     const records = await this.provider.findByWallet(walletHash);
     return records.map((record) => ({ ...this.#decrypt(record.payload), anchorId: record.anchorId || record.anchor_id }));
   }

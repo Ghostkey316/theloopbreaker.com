@@ -18,9 +18,16 @@ class TokenService {
 
   createAccessToken(payload) {
     assertRole(payload.role);
+    const wallet = (payload.wallet || payload.userId || '').toLowerCase();
+    if (!wallet) {
+      throw new Error('wallet identity is required');
+    }
+    const ensAlias = payload.ens || payload.ensAlias || null;
     return jwt.sign(
       {
-        sub: payload.userId,
+        sub: wallet,
+        wallet,
+        ens: ensAlias,
         role: payload.role,
         scopes: payload.scopes || [],
         partnerId: payload.partnerId,
@@ -32,10 +39,15 @@ class TokenService {
   }
 
   createRefreshToken(payload) {
-    const entry = this.refreshStore.create(payload.userId, {
+    const wallet = (payload.wallet || payload.userId || '').toLowerCase();
+    if (!wallet) {
+      throw new Error('wallet identity is required');
+    }
+    const entry = this.refreshStore.create(wallet, {
       role: payload.role,
       partnerId: payload.partnerId,
       beliefVector: payload.beliefVector || null,
+      ens: payload.ens || payload.ensAlias || null,
       scopes: payload.scopes || [],
     });
     return entry;
@@ -51,12 +63,13 @@ class TokenService {
       return null;
     }
 
-    const { meta, userId } = entry;
+    const { meta, wallet } = entry;
     const newToken = this.createAccessToken({
-      userId,
+      wallet,
       role: meta.role,
       partnerId: meta.partnerId,
       beliefVector: meta.beliefVector,
+      ens: meta.ens,
       scopes: meta.scopes || [],
     });
     return {

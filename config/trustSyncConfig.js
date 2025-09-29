@@ -2,11 +2,21 @@ const fs = require('fs');
 const path = require('path');
 
 const DEFAULT_CONFIG = {
-  identityStore: {
-    provider: 'memory',
+  useWalletAsIdentity: true,
+  rejectExternalID: true,
+  pseudonymousMode: 'always',
+  telemetryMode: 'wallet-anonymous',
+  identity: {
+    useWalletAsIdentity: true,
+    rejectExternalID: true,
+    pseudonymousMode: 'always',
   },
   telemetry: {
     baseDir: path.join(__dirname, '..', 'logs', 'telemetry'),
+    mode: 'wallet-anonymous',
+  },
+  identityStore: {
+    provider: 'memory',
   },
   signalCompass: {
     retentionLimit: 200,
@@ -57,6 +67,15 @@ function loadTrustSyncConfig() {
   if (process.env.VAULTFIRE_ENCRYPTION_KEY) {
     merged.identityStore.encryptionKey = process.env.VAULTFIRE_ENCRYPTION_KEY;
   }
+  merged.identity = merged.identity || {};
+  merged.identity.useWalletAsIdentity =
+    merged.identity.useWalletAsIdentity ?? merged.useWalletAsIdentity ?? true;
+  merged.identity.rejectExternalID = merged.identity.rejectExternalID ?? merged.rejectExternalID ?? true;
+  merged.identity.pseudonymousMode = merged.identity.pseudonymousMode ?? merged.pseudonymousMode ?? 'always';
+  merged.useWalletAsIdentity = merged.identity.useWalletAsIdentity;
+  merged.rejectExternalID = merged.identity.rejectExternalID;
+  merged.pseudonymousMode = merged.identity.pseudonymousMode;
+  merged.telemetryMode = merged.telemetry?.mode || merged.telemetryMode || 'wallet-anonymous';
   return merged;
 }
 

@@ -58,19 +58,43 @@ try {
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', beliefEngine: 'synchronized', trustPhase: 'sync' });
+  res.json({
+    status: 'ok',
+    beliefEngine: 'synchronized',
+    trustPhase: 'sync',
+    identity: {
+      useWalletAsIdentity: trustConfig.useWalletAsIdentity,
+      rejectExternalID: trustConfig.rejectExternalID,
+      pseudonymousMode: trustConfig.pseudonymousMode,
+    },
+    telemetryMode: trustConfig.telemetryMode,
+  });
 });
 
 app.post('/auth/login', (req, res) => {
-  const { userId, role = ROLES.PARTNER, partnerId = 'demo-partner', scopes = [] } = req.body;
-  if (!userId) {
-    return res.status(400).json({ error: { code: 'auth.invalid_payload', message: 'userId is required' } });
+  const { wallet, ens, role = ROLES.PARTNER, partnerId = 'demo-partner', scopes = [] } = req.body || {};
+  if (!wallet) {
+    return res.status(400).json({ error: { code: 'auth.invalid_payload', message: 'wallet is required' } });
+  }
+  if (!validateWallet(wallet)) {
+    return res.status(400).json({ error: { code: 'auth.invalid_wallet', message: 'wallet must be a valid address' } });
+  }
+  if (trustConfig.identity?.rejectExternalID && req.body?.userId && req.body.userId !== wallet) {
+    return res.status(400).json({
+      error: {
+        code: 'auth.identity_rejected',
+        message: 'External identifiers are not accepted. Use wallet or ENS only.',
+      },
+    });
   }
 
+  const normalizedWallet = wallet.toLowerCase();
+  const ensAlias = ens ? ens.toLowerCase() : null;
+
   try {
-    const accessToken = tokenService.createAccessToken({ userId, role, partnerId, scopes });
-    const refreshToken = tokenService.createRefreshToken({ userId, role, partnerId, scopes });
-    telemetryLedger.record('auth.login', { userId, partnerId, role }, {
+    const accessToken = tokenService.createAccessToken({ wallet: normalizedWallet, ens: ensAlias, role, partnerId, scopes });
+    const refreshToken = tokenService.createRefreshToken({ wallet: normalizedWallet, ens: ensAlias, role, partnerId, scopes });
+    telemetryLedger.record('auth.login', { wallet: normalizedWallet, partnerId, role, ens: ensAlias }, {
       tags: ['auth'],
       visibility: { partner: false, ethics: true, audit: true },
     });
@@ -115,10 +139,17 @@ app.post(
         error: { code: 'activation.invalid_payload', message: 'walletId and activationChannel are required' },
       });
     }
+    if (!validateWallet(walletId)) {
+      return res.status(400).json({
+        error: { code: 'activation.invalid_wallet', message: 'walletId must be a valid address' },
+      });
+    }
+
+    const normalizedWallet = walletId.toLowerCase();
 
     const response = {
       status: 'activated',
-      walletId,
+      walletId: normalizedWallet,
       tierLevel: 'flame',
       activatedAt: new Date().toISOString(),
       modules: [
@@ -127,13 +158,13 @@ app.post(
       ],
     };
 
-    telemetryLedger.record('vaultfire.activation', { walletId, activationChannel, partnerId: req.user.partnerId }, {
+    telemetryLedger.record('vaultfire.activation', { walletId: normalizedWallet, activationChannel, partnerId: req.user.partnerId }, {
       tags: ['activation'],
       visibility: { partner: true, ethics: true, audit: true },
     });
 
     partnerHooks
-      .onActivation({ walletId, activationChannel, partnerId: req.user.partnerId })
+      .onActivation({ walletId: normalizedWallet, activationChannel, partnerId: req.user.partnerId })
       .catch((error) => console.warn('Activation hook delivery error', error));
 
     return res.status(201).json(response);
@@ -174,29 +205,44 @@ function validateBeliefScore(value) {
   return null;
 }
 
+function validateWallet(value) {
+  if (typeof value !== 'string' || !/^0x[a-fA-F0-9]{4,}$/.test(value)) {
+    return false;
+  }
+  return true;
+}
+
 function evaluateBreach(score) {
   return score < BELIEF_BREACH_THRESHOLD;
 }
 
 app.get(
-  '/link-identity',
+  '/link-wallet',
   ...createAuthMiddleware({ requiredRoles: [ROLES.PARTNER, ROLES.ADMIN], tokenService }),
   ethicsGuard,
   async (req, res) => {
-    const { wallet, partnerUserId } = req.query;
-    if (!wallet || !partnerUserId) {
+    const { wallet, ens } = req.query || {};
+    if (!wallet) {
       return res.status(400).json({
         error: {
-          code: 'identity.invalid_query',
-          message: 'wallet and partnerUserId query parameters are required',
+          code: 'wallet.invalid_query',
+          message: 'wallet query parameter is required',
+        },
+      });
+    }
+    if (!validateWallet(wallet)) {
+      return res.status(400).json({
+        error: {
+          code: 'wallet.invalid_query',
+          message: 'wallet must be a valid address',
         },
       });
     }
 
     await identityStoreReady;
-    const anchor = await identityStore.getAnchor({ wallet, partnerUserId });
+    const anchor = await identityStore.getWalletAnchor({ wallet, ensAlias: ens });
     if (!anchor) {
-      return res.status(404).json({ error: { code: 'identity.not_found', message: 'Anchor not found' } });
+      return res.status(404).json({ error: { code: 'wallet.not_found', message: 'Wallet anchor not found' } });
     }
 
     return res.json({ anchor });
@@ -204,36 +250,47 @@ app.get(
 );
 
 app.post(
-  '/link-identity',
+  '/link-wallet',
   ...createAuthMiddleware({ requiredRoles: [ROLES.PARTNER, ROLES.ADMIN], tokenService }),
   ethicsGuard,
   async (req, res) => {
-    const { wallet, partnerUserId, beliefScore, metadata = {} } = req.body || {};
-    if (!wallet || !partnerUserId) {
+    const { wallet, ens, beliefScore, metadata = {} } = req.body || {};
+    if (!wallet) {
       return res.status(400).json({
-        error: { code: 'identity.invalid_payload', message: 'wallet and partnerUserId are required' },
+        error: { code: 'wallet.invalid_payload', message: 'wallet is required' },
+      });
+    }
+    if (!validateWallet(wallet)) {
+      return res.status(400).json({ error: { code: 'wallet.invalid_payload', message: 'wallet must be a valid address' } });
+    }
+    if (trustConfig.identity?.rejectExternalID && metadata?.externalId) {
+      return res.status(400).json({
+        error: {
+          code: 'wallet.identity_rejected',
+          message: 'External identifiers are not accepted. Remove externalId metadata.',
+        },
       });
     }
     const validationError = validateBeliefScore(beliefScore);
     if (validationError) {
-      return res.status(400).json({ error: { code: 'identity.invalid_belief_score', message: validationError } });
+      return res.status(400).json({ error: { code: 'wallet.invalid_belief_score', message: validationError } });
     }
 
     await identityStoreReady;
-    const anchor = await identityStore.linkAnchor({ wallet, partnerUserId, beliefScore, metadata });
+    const anchor = await identityStore.linkWallet({ wallet, ensAlias: ens, beliefScore, metadata });
 
     const snapshot = signalCompass.recordPayload({
-      walletId: wallet,
-      partnerUserId,
+      walletId: anchor.wallet,
+      ensAlias: anchor.ensAlias,
       beliefScore,
       intents: metadata?.intents || [],
       ethicsFlags: metadata?.ethicsFlags || [],
-      metadata: { source: 'link-identity' },
+      metadata: { ...metadata, source: 'link-wallet' },
     });
 
     if (evaluateBreach(beliefScore)) {
       partnerHooks
-        .onBeliefBreach({ walletId: wallet, partnerUserId, beliefScore, partnerId: req.user.partnerId })
+        .onBeliefBreach({ walletId: anchor.wallet, ensAlias: anchor.ensAlias, beliefScore, partnerId: req.user.partnerId })
         .catch((error) => console.warn('Belief breach hook error', error));
     }
 
@@ -280,10 +337,14 @@ app.post(
   async (req, res) => {
     try {
       const parsed = mirrorAgent.parseWebhook(req.body);
+      if (!validateWallet(parsed.walletId)) {
+        throw new Error('walletId must be a valid address');
+      }
       const summary = mirrorAgent.interpretBeliefSignal(parsed);
+      const ensAlias = req.body.ens || req.body.ensAlias || null;
       signalCompass.recordPayload({
         walletId: parsed.walletId,
-        partnerUserId: req.body.partnerUserId || req.user.partnerId,
+        ensAlias: ensAlias ? ensAlias.toLowerCase() : null,
         beliefScore: parsed.beliefScore,
         intents: summary.intents,
         ethicsFlags: summary.ethicsFlags,
@@ -297,21 +358,19 @@ app.post(
         intents: summary.intents,
       });
 
-      if (req.body.partnerUserId) {
-        await identityStoreReady;
-        await identityStore.linkAnchor({
-          wallet: parsed.walletId,
-          partnerUserId: req.body.partnerUserId,
-          beliefScore: parsed.beliefScore,
-          metadata: { source: 'mirror-route' },
-        });
-      }
+      await identityStoreReady;
+      await identityStore.linkWallet({
+        wallet: parsed.walletId,
+        ensAlias,
+        beliefScore: parsed.beliefScore,
+        metadata: { source: 'mirror-route' },
+      });
 
       if (evaluateBreach(parsed.beliefScore)) {
         partnerHooks
           .onBeliefBreach({
             walletId: parsed.walletId,
-            partnerUserId: req.body.partnerUserId || req.user.userId,
+            ensAlias: ensAlias ? ensAlias.toLowerCase() : req.user.ens || null,
             beliefScore: parsed.beliefScore,
             partnerId: req.user.partnerId,
           })

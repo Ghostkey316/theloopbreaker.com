@@ -20,6 +20,8 @@ program
   .option('--partner <partnerId>', 'Partner identifier to embed in the config')
   .option('--base-url <url>', 'Vaultfire core API URL', 'http://localhost:4002')
   .option('--role <role>', 'Default role for generated tokens', ROLES.PARTNER)
+  .option('--wallet <wallet>', 'Default wallet address used for identity')
+  .option('--ens <ens>', 'Optional ENS alias for the wallet identity')
   .action((options) => {
     try {
       const { config, path } = initConfig({
@@ -28,6 +30,8 @@ program
         partnerId: options.partner,
         baseUrl: options.baseUrl,
         role: options.role,
+        walletAddress: options.wallet,
+        ensAlias: options.ens,
       });
       console.log(chalk.green(`Partner configuration created at ${path}`));
       console.log(JSON.stringify(config, null, 2));
@@ -59,19 +63,33 @@ program
   .command('push')
   .option('-c, --config <path>', 'Path to the partner config file')
   .option('-t, --token <token>', 'Existing JWT to use for authentication')
+  .option('--wallet <wallet>', 'Override wallet address for this session')
+  .option('--ens <ens>', 'Override ENS alias for this session')
   .action(async (options) => {
     try {
       const config = loadConfig(options.config);
+      const sessionWallet = (options.wallet || config.walletAddress || '').toLowerCase();
+      if (!sessionWallet) {
+        throw new Error('Wallet identity is required. Set --wallet or configure walletAddress.');
+      }
+      const sessionEns =
+        options.ens !== undefined ? (options.ens ? options.ens.toLowerCase() : null) : config.ensAlias;
       const token =
         options.token ||
         tokenService.createAccessToken({
-          userId: `${config.partnerId}-cli`,
+          wallet: sessionWallet,
+          ens: sessionEns,
           role: config.role,
           partnerId: config.partnerId,
           scopes: config.scopes,
         });
 
-      const response = await pushBeliefs({ configPath: options.config, token });
+      const response = await pushBeliefs({
+        configPath: options.config,
+        token,
+        wallet: sessionWallet,
+        ens: sessionEns,
+      });
       const color = response.ok ? chalk.green : chalk.yellow;
       console.log(color(`Push response status: ${response.status}`));
       console.log(JSON.stringify(response.body, null, 2));

@@ -6,10 +6,10 @@ class RefreshStore {
     this.ttlMinutes = ttlMinutes;
   }
 
-  create(userId, meta = {}) {
+  create(wallet, meta = {}) {
     const token = crypto.randomBytes(48).toString('hex');
     const expiresAt = Date.now() + this.ttlMinutes * 60 * 1000;
-    this.tokens.set(token, { userId, meta, expiresAt });
+    this.tokens.set(token, { wallet, meta, expiresAt });
     return { token, expiresAt };
   }
 
@@ -31,9 +31,9 @@ class RefreshStore {
     this.tokens.delete(token);
   }
 
-  revokeByUser(userId) {
+  revokeByWallet(wallet) {
     for (const [token, entry] of this.tokens.entries()) {
-      if (entry.userId === userId) {
+      if (entry.wallet === wallet) {
         this.tokens.delete(token);
       }
     }
