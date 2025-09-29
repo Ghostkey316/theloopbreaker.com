@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-jest.mock('node-fetch', () => jest.fn());
+jest.mock('node-fetch', () => require('jest-fetch-mock'));
 const fetch = require('node-fetch');
 
 const { pushBeliefs } = require('../cli/actions');
@@ -12,7 +12,7 @@ describe('CLI wallet guardrails', () => {
   beforeEach(() => {
     fs.rmSync(tempDir, { recursive: true, force: true });
     fs.mkdirSync(tempDir, { recursive: true });
-    fetch.mockReset();
+    fetch.resetMocks();
   });
 
   afterAll(() => {
