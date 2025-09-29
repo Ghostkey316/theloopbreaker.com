@@ -1,0 +1,382 @@
+openapi: 3.0.3
+info:
+  title: Vaultfire Partner API
+  version: 1.0.0
+  description: |
+    The Vaultfire Partner API powers belief-aligned integrations. All endpoints reinforce ethics-first guardrails
+    and belief telemetry. JWT bearer tokens issued via `/auth/login` are required for every route.
+servers:
+  - url: https://api.vaultfire.network
+    description: Production
+  - url: http://localhost:4002
+    description: Local development using the sample Express server
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorEnvelope:
+      type: object
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            correlationId:
+              type: string
+              format: uuid
+            retryAfter:
+              type: string
+              format: date-time
+    ActivationRequest:
+      type: object
+      required: [walletId, activationChannel]
+      properties:
+        walletId:
+          type: string
+        ens:
+          type: string
+        activationChannel:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+    ActivationResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        walletId:
+          type: string
+        tierLevel:
+          type: string
+        activatedAt:
+          type: string
+          format: date-time
+        modules:
+          type: array
+          items:
+            type: object
+            properties:
+              moduleId:
+                type: string
+              state:
+                type: string
+    RewardsResponse:
+      type: object
+      properties:
+        walletId:
+          type: string
+        currentYield:
+          type: object
+          properties:
+            apr:
+              type: number
+            multiplier:
+              type: number
+            tierLevel:
+              type: string
+        pendingEvents:
+          type: array
+          items:
+            type: object
+            properties:
+              eventId:
+                type: string
+              amount:
+                type: string
+              multiplier:
+                type: number
+              sourceProtocol:
+                type: string
+              timestamp:
+                type: string
+                format: date-time
+    MirrorRequest:
+      type: object
+      required: [walletId, beliefScore, consent]
+      properties:
+        walletId:
+          type: string
+        beliefScore:
+          type: number
+        sourceProtocol:
+          type: string
+        mirroredAt:
+          type: string
+          format: date-time
+        signals:
+          type: array
+          items:
+            type: object
+            properties:
+              signalId:
+                type: string
+              weight:
+                type: number
+              confidence:
+                type: number
+        consent:
+          type: object
+          required: [tag, version, attestedAt]
+          properties:
+            tag:
+              type: string
+            version:
+              type: string
+            attestedAt:
+              type: string
+              format: date-time
+    MirrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        walletId:
+          type: string
+        beliefScore:
+          type: number
+        alignmentState:
+          type: string
+        nextReviewAt:
+          type: string
+          format: date-time
+    LoginRequest:
+      type: object
+      required: [userId]
+      properties:
+        userId:
+          type: string
+        role:
+          type: string
+          enum: [admin, partner, contributor]
+        partnerId:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+    LoginResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        refreshExpiresAt:
+          type: string
+          format: date-time
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+    RefreshResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        expiresIn:
+          type: integer
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Authentication
+  - name: Activation
+  - name: Rewards
+  - name: Belief Sync
+
+paths:
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Issue a short-lived Vaultfire JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              userId: demo-partner
+              role: partner
+              partnerId: aurora-labs
+      responses:
+        '200':
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              example:
+                accessToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                refreshToken: d9321af0...
+                refreshExpiresAt: 2024-05-28T14:37:12Z
+        '400':
+          description: Invalid payload or role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Rotate an access token using a refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+            example:
+              refreshToken: d9321af0...
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshResponse'
+        '401':
+          description: Refresh token expired or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /vaultfire/activate:
+    post:
+      tags: [Activation]
+      summary: Trigger a Vaultfire activation sequence
+      security:
+        - bearerAuth: [activation:trigger]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivationRequest'
+            example:
+              walletId: 0x8f1a...f93b
+              activationChannel: guardian_link
+              metadata:
+                campaignId: spring-ignite
+      responses:
+        '201':
+          description: Activation initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivationResponse'
+        '400':
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: Wallet already activated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: Maintenance window active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /vaultfire/rewards/{walletId}:
+    get:
+      tags: [Rewards]
+      summary: Fetch the latest loyalty yield metrics
+      security:
+        - bearerAuth: [rewards:read]
+      parameters:
+        - in: path
+          name: walletId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Yield metrics returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RewardsResponse'
+        '400':
+          description: Invalid wallet ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: Rewards not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /vaultfire/mirror:
+    post:
+      tags: [Belief Sync]
+      summary: Mirror partner belief metadata
+      security:
+        - bearerAuth: [belief:sync]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MirrorRequest'
+            example:
+              walletId: 0x8f1a...f93b
+              beliefScore: 0.87
+              mirroredAt: 2024-05-28T14:43:18Z
+              signals:
+                - signalId: sig-9923
+                  weight: 0.62
+                  confidence: 0.94
+              consent:
+                tag: ethics-first
+                version: 1.2.0
+                attestedAt: 2024-05-28T14:42:57Z
+      responses:
+        '202':
+          description: Belief metadata accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MirrorResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: Version conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: Alignment breach detected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'

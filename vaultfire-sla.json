@@ -1,0 +1,28 @@
+{
+  "service": "Vaultfire Partner Mesh",
+  "version": "2024.Q3",
+  "uptimeTarget": "99.5%",
+  "responseTime": {
+    "p95": "450ms",
+    "p99": "900ms"
+  },
+  "maintenance": {
+    "notice": "72 hours",
+    "windows": [
+      "First Sunday of each month 02:00-04:00 UTC"
+    ]
+  },
+  "ethics": {
+    "principles": [
+      "Belief data processed with explicit consent",
+      "No surveillance or covert profiling",
+      "Partners must respect Vaultfire guardrail policies"
+    ],
+    "breachRemediation": "Partners must notify Vaultfire within 24 hours and halt offending automations"
+  },
+  "support": {
+    "email": "partners@vaultfire.network",
+    "pager": "24/7",
+    "statusPage": "https://status.vaultfire.network"
+  }
+}
