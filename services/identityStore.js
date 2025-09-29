@@ -19,6 +19,32 @@ function normalizeWallet(wallet) {
   return wallet ? wallet.toLowerCase() : wallet;
 }
 
+const BANNED_METADATA_KEYS = ['externalid', 'email', 'phone', 'kyc', 'passport', 'nationalid', 'biometric'];
+
+function ensureWalletOnlyMetadata(metadata) {
+  if (!metadata || typeof metadata !== 'object') {
+    return metadata;
+  }
+  const stack = [metadata];
+  while (stack.length) {
+    const current = stack.pop();
+    if (!current || typeof current !== 'object') {
+      continue;
+    }
+    for (const key of Object.keys(current)) {
+      const normalized = key.toLowerCase();
+      if (BANNED_METADATA_KEYS.some((banned) => normalized.includes(banned))) {
+        throw new Error(`metadata field '${key}' is not permitted. Wallet/ENS only.`);
+      }
+      const value = current[key];
+      if (typeof value === 'object') {
+        stack.push(value);
+      }
+    }
+  }
+  return metadata;
+}
+
 class MemoryProvider {
   constructor() {
     this.anchors = new Map();
@@ -243,12 +269,13 @@ class EncryptedIdentityStore {
       throw new Error('wallet is required');
     }
     const normalizedEns = ensAlias ? ensAlias.toLowerCase() : null;
+    const filteredMetadata = ensureWalletOnlyMetadata(metadata);
     const anchorId = this.#anchorId(normalizedWallet, normalizedEns);
     const payload = this.#encrypt({
       wallet: normalizedWallet,
       ensAlias: normalizedEns,
       beliefScore,
-      metadata,
+      metadata: filteredMetadata,
       updatedAt: new Date().toISOString(),
     });
     await this.provider.upsert(anchorId, {
@@ -257,7 +284,7 @@ class EncryptedIdentityStore {
       payload,
     });
 
-    const entry = { anchorId, wallet: normalizedWallet, ensAlias: normalizedEns, beliefScore, metadata };
+    const entry = { anchorId, wallet: normalizedWallet, ensAlias: normalizedEns, beliefScore, metadata: filteredMetadata };
     this.telemetry?.record('identity.anchor.linked', entry, {
       tags: ['identity', 'belief'],
       visibility: { partner: true, ethics: true, audit: true },

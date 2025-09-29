@@ -66,6 +66,7 @@ describe('Trust Sync protocol', () => {
       expect(create.status).toBe(200);
       expect(create.body.anchor.beliefScore).toBe(1);
       expect(create.body.anchor.ensAlias).toBeNull();
+      expect(create.body.anchor.originFingerprint).toHaveLength(64);
 
       const fetchRes = await request(app)
         .get('/link-wallet')
@@ -73,6 +74,7 @@ describe('Trust Sync protocol', () => {
         .query({ wallet: WALLET_SAMPLE });
       expect(fetchRes.status).toBe(200);
       expect(fetchRes.body.anchor.beliefScore).toBe(1);
+      expect(fetchRes.body.anchor.originFingerprint).toHaveLength(64);
     });
 
     it('returns 404 when anchor is missing', async () => {

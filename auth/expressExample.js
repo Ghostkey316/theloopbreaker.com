@@ -14,6 +14,7 @@ const EncryptedIdentityStore = require('../services/identityStore');
 const SignalCompass = require('../services/signalCompass');
 const PartnerHookRegistry = require('../services/partnerHooks');
 const AIMirrorAgent = require('../services/aiMirrorAgent');
+const { createFingerprint } = require('../services/originFingerprint');
 const { loadTrustSyncConfig } = require('../config/trustSyncConfig');
 
 const app = express();
@@ -244,8 +245,9 @@ app.get(
     if (!anchor) {
       return res.status(404).json({ error: { code: 'wallet.not_found', message: 'Wallet anchor not found' } });
     }
-
-    return res.json({ anchor });
+    const fingerprint = createFingerprint({ wallet: anchor.wallet, ens: anchor.ensAlias });
+    const anchorWithOrigin = { ...anchor, originFingerprint: fingerprint.fingerprint };
+    return res.json({ anchor: anchorWithOrigin });
   }
 );
 
@@ -279,10 +281,12 @@ app.post(
     await identityStoreReady;
     const anchor = await identityStore.linkWallet({ wallet, ensAlias: ens, beliefScore, metadata });
 
+    const fingerprint = createFingerprint({ wallet: anchor.wallet, ens: anchor.ensAlias });
     const snapshot = signalCompass.recordPayload({
       walletId: anchor.wallet,
       ensAlias: anchor.ensAlias,
       beliefScore,
+      originFingerprint: fingerprint.fingerprint,
       intents: metadata?.intents || [],
       ethicsFlags: metadata?.ethicsFlags || [],
       metadata: { ...metadata, source: 'link-wallet' },
@@ -294,7 +298,8 @@ app.post(
         .catch((error) => console.warn('Belief breach hook error', error));
     }
 
-    return res.status(200).json({ anchor, signalCompass: snapshot });
+    const anchorWithOrigin = { ...anchor, originFingerprint: fingerprint.fingerprint };
+    return res.status(200).json({ anchor: anchorWithOrigin, signalCompass: snapshot });
   }
 );
 
@@ -342,10 +347,15 @@ app.post(
       }
       const summary = mirrorAgent.interpretBeliefSignal(parsed);
       const ensAlias = req.body.ens || req.body.ensAlias || null;
+      const fingerprint = createFingerprint({
+        wallet: parsed.walletId,
+        ens: ensAlias ? ensAlias.toLowerCase() : null,
+      });
       signalCompass.recordPayload({
         walletId: parsed.walletId,
         ensAlias: ensAlias ? ensAlias.toLowerCase() : null,
         beliefScore: parsed.beliefScore,
+        originFingerprint: fingerprint.fingerprint,
         intents: summary.intents,
         ethicsFlags: summary.ethicsFlags,
         metadata: { source: 'mirror', tone: summary.toneLabel },
@@ -363,7 +373,7 @@ app.post(
         wallet: parsed.walletId,
         ensAlias,
         beliefScore: parsed.beliefScore,
-        metadata: { source: 'mirror-route' },
+        metadata: { source: 'mirror-route', originFingerprint: fingerprint.fingerprint },
       });
 
       if (evaluateBreach(parsed.beliefScore)) {

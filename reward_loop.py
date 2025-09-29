@@ -9,6 +9,7 @@ from typing import Any, Dict, List
 LOG_PATH = Path('rewards_log.json')
 TX_PATH = Path('simulated_tx.json')
 MEMORY_PATH = Path('memory_log.json')
+DAO_CONFIG_PATH = Path('dao_reward_config.json')
 
 ETHICS_WORDS = ["truth", "loyalty", "wisdom", "service", "humanity"]
 
@@ -36,6 +37,10 @@ def _append(path: Path, entry: Dict[str, Any]) -> None:
     _write_json(path, data)
 
 
+def _write_dao_config(data: Dict[str, Any]) -> None:
+    _write_json(DAO_CONFIG_PATH, data)
+
+
 def _vectorize(text: str, words: List[str]) -> List[int]:
     tokens = [t.lower() for t in text.split()]
     return [tokens.count(w) for w in words]
@@ -57,6 +62,39 @@ def _alignment(entries: List[Dict[str, Any]]) -> float:
     return _cosine(vec, ref)
 
 
+def _estimate_uptime(entries: List[Dict[str, Any]]) -> float:
+    timestamps = []
+    for entry in entries:
+        ts = entry.get("timestamp")
+        if isinstance(ts, str):
+            try:
+                if ts.endswith("Z"):
+                    timestamps.append(datetime.fromisoformat(ts.replace("Z", "+00:00")))
+                else:
+                    timestamps.append(datetime.fromisoformat(ts))
+            except ValueError:
+                continue
+    if len(timestamps) >= 2:
+        timestamps.sort()
+        delta = timestamps[-1] - timestamps[0]
+        return max(delta.total_seconds() / 3600.0, 0.0)
+    return max(len(entries) * 0.25, 0.0)
+
+
+def draft_passive_stream(wallet: str, belief_weight: float, uptime_hours: float) -> Dict[str, Any]:
+    config = _load_json(DAO_CONFIG_PATH, {})
+    normalized_wallet = wallet.lower()
+    multiplier = round(1 + belief_weight * 0.5 + min(uptime_hours / 120.0, 0.5), 3)
+    entry = {
+        "beliefWeight": round(belief_weight, 4),
+        "syncUptimeHours": round(uptime_hours, 2),
+        "streamMultiplier": multiplier,
+    }
+    config[normalized_wallet] = entry
+    _write_dao_config(config)
+    return entry
+
+
 def process_rewards(wallet: str) -> List[Dict[str, Any]]:
     mem = _load_json(MEMORY_PATH, [])
     results: List[Dict[str, Any]] = []
@@ -70,12 +108,15 @@ def process_rewards(wallet: str) -> List[Dict[str, Any]]:
         if score >= 0.75 or milestone:
             if (gid, wallet) in existing:
                 continue
+            uptime = _estimate_uptime(entries)
+            stream = draft_passive_stream(wallet, score, uptime)
             reward = {
                 "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "ghost_id": gid,
                 "wallet": wallet,
                 "amount": 1,
                 "score": round(score, 3),
+                "stream_multiplier": stream["streamMultiplier"],
             }
             _append(LOG_PATH, reward)
             tx = {
