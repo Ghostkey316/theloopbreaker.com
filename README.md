@@ -4,6 +4,79 @@
 ## Project Overview
 Vaultfire is a production-ready, morals-first protocol that fuses belief-driven intelligence with verifiable human identity. It orchestrates Codex reasoning engines, NFT-based identity anchors, and partner-focused loyalty modules to deliver a resilient activation stack for ethical AI collaboration.
 
+## Installation
+1. Clone this repository and install dependencies: `npm install`
+2. Launch the wallet-only Partner Sync interface: `node partnerSync.js`
+3. Run the Vaultfire Dashboard for a futuristic dark-mode UI: `npm run dashboard:dev`
+4. Execute the Codex Integrity tests to verify belief discipline: `npm test`
+
+All modules are wallet-first. No email capture, no digital ID fallback—ever.
+
+## System Diagram
+```
+┌────────────────────────┐         ┌─────────────────────────────┐
+│ Wallet / ENS Identity │─belief─▶│ Partner Sync Interface (API) │
+└────────────────────────┘         │  • POST /vaultfire/sync-belief│
+                                   │  • GET  /vaultfire/sync-status│
+                                   └──────────────┬────────────────┘
+                                                  │ real-time socket
+                                                  ▼
+                                   ┌─────────────────────────────┐
+                                   │ Belief Mirror v1 (AI Engine)│
+                                   │  • computes multipliers      │
+                                   │  • writes telemetry logs     │
+                                   └──────────────┬──────────────┘
+                                                  │
+                                                  ▼
+                                   ┌─────────────────────────────┐
+                                   │ BeliefVote CLI              │
+                                   │  • wallet-signed votes      │
+                                   │  • belief-weighted outputs  │
+                                   └──────────────┬──────────────┘
+                                                  │
+                                                  ▼
+                                   ┌─────────────────────────────┐
+                                   │ Vaultfire Dashboard v1      │
+                                   │  • WalletConnect / ENS login│
+                                   │  • belief score + history   │
+                                   └──────────────┬──────────────┘
+                                                  │
+                                                  ▼
+                                   ┌─────────────────────────────┐
+                                   │ Codex Integrity Test Suite  │
+                                   │  • audits for alignment     │
+                                   └─────────────────────────────┘
+```
+
+## Module Guide
+
+### 📦 Partner Sync Interface (`partnerSync.js`)
+- Signature-locked Express API exposing `/vaultfire/sync-belief` (POST) and `/vaultfire/sync-status` (GET).
+- Socket.IO broadcasts and webhook fan-out keep partners aligned in real time.
+- Stores sync multipliers in-memory while mirroring every belief action to telemetry.
+- Start with `node partnerSync.js` or embed via `createPartnerSyncServer()`.
+
+### 🧠 Belief Mirror v1 (`mirror/engine.js` + `mirror/belief-weight.js`)
+- Ingests quiz scores, holding patterns, votes, and partner syncs to compute belief multipliers.
+- Telemetry recorded in `telemetry/belief-log.json` for downstream analytics.
+- Schedule hourly runs or trigger via CLI by importing `BeliefMirrorEngine`.
+
+### 🗳 BeliefVote CLI (`cli/beliefVote.js`)
+- `vaultfire vote --proposal <id> --choice <a|b|c> --wallet <addr> --signature <sig> --message <msg>`
+- Verifies wallet signatures, references `proposals.json`, and appends weighted outcomes to `votes.json`.
+- Auto-updates belief telemetry so governance behavior influences multipliers.
+
+### 🖥 Vaultfire Dashboard v1 (`dashboard/`)
+- Dark-mode React UI with wallet or ENS login plus optional browser wallet signature flow.
+- Surfaces personal multiplier, tier, partner sync stream, mirror reflections, and BeliefVote history.
+- Consumes the Partner Sync API securely and subscribes to Socket.IO for live updates.
+
+### 🧪 Codex Integrity Test Suite (`tests/integrity.test.js`)
+- Jest-powered guardrails validating wallet-only identity, mirror math, CLI vote flow, and dashboard truth.
+- Emits `codex-integrity.json` with pass/fail metadata after each run for audit trails.
+
+**Final Rule: Wallet is passport. Vaultfire never compromises.**
+
 ## Core Features
 - **Codex-Aligned Intelligence:** Continuous alignment loop that feeds signal, ethics, and activation data directly into the Codex layer.
 - **Identity-Linked NFTs:** Verifiable Vaultfire NFT IDs ensure partner provenance and enforce lineage-aware access control.
