@@ -13,7 +13,8 @@
     "start:api": "node auth/expressExample.js",
     "dashboard:dev": "vite --config dashboard/vite.config.mjs",
     "dashboard:build": "vite build --config dashboard/vite.config.mjs",
-    "build:test": "tsc --project tsconfig.json --noEmit"
+    "build:test": "tsc --project tsconfig.json --noEmit",
+    "lint:guardrails": "node tools/lint_guardrails.js"
   },
   "keywords": [],
   "author": "",

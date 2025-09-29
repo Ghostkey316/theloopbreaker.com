@@ -11,12 +11,21 @@ class SignalCompass extends EventEmitter {
     this.incoming = [];
   }
 
-  recordPayload({ walletId, ensAlias = null, beliefScore, intents = [], ethicsFlags = [], metadata = {} }) {
+  recordPayload({
+    walletId,
+    ensAlias = null,
+    beliefScore,
+    originFingerprint = null,
+    intents = [],
+    ethicsFlags = [],
+    metadata = {},
+  }) {
     const timestamp = new Date().toISOString();
     const entry = {
       walletId,
       ensAlias,
       beliefScore,
+      originFingerprint,
       intents,
       ethicsFlags,
       metadata,

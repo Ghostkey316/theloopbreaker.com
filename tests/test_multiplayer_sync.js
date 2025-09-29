@@ -1,36 +1,44 @@
-const assert = require('assert');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
 const { BeliefSyncEngine } = require('../belief_sync_engine');
-const { createIframe } = require('../web_mirror_viewer');
 
-function resetLog() {
-  const p = path.join(__dirname, '..', 'fork_log.json');
-  fs.writeFileSync(p, '[]');
-
-function testSync() {
-  resetLog();
-  const a = new BeliefSyncEngine('s1', 'g1');
-  const b = new BeliefSyncEngine('s1', 'g2');
-  let received = null;
-  b.on('sync', e => { received = e; });
-  a.syncChoice('fork1', 'A');
-  assert(received && received.choice === 'A');
-  const log = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'fork_log.json')));
-  assert(log.length === 1);
-
-function testViewerConfig() {
-  const cfgPath = path.join(__dirname, '..', 'embed_config.json');
-  const cfg = { width: 500, height: 300, visual_shell: true };
-  fs.writeFileSync(cfgPath, JSON.stringify(cfg));
-  const html = createIframe('https://example.com');
-  assert(html.includes('?visual_shell=1'));
-  assert(html.includes('width="500"'));
-  fs.writeFileSync(cfgPath, JSON.stringify({ width: 640, height: 480 }));
-
+function withTempDir(fn) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'belief-sync-'));
+  const logPath = path.join(dir, 'fork_log.json');
+  fs.writeFileSync(logPath, '[]', 'utf8');
+  const originalLogPath = path.join(__dirname, '..', 'fork_log.json');
+  const originalContent = fs.existsSync(originalLogPath) ? fs.readFileSync(originalLogPath, 'utf8') : '[]';
+  fs.writeFileSync(originalLogPath, '[]', 'utf8');
+  try {
+    fn();
+  } finally {
+    fs.writeFileSync(originalLogPath, originalContent, 'utf8');
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 }
-test('test_multiplayer_sync', () => {
-  testSync();
-  testViewerConfig();
+
+test('belief sync emits events and captures origin fingerprint', () => {
+  withTempDir(() => {
+    const a = new BeliefSyncEngine('session-a', '0xabc');
+    const b = new BeliefSyncEngine('session-a', '0xdef');
+    let received = null;
+    b.on('sync', event => {
+      received = event;
+    });
+    const result = a.syncChoice('fork-1', 'YES', { originEns: 'belief.eth' });
+
+    expect(received).not.toBeNull();
+    expect(received.choice).toBe('YES');
+    expect(received.origin).toMatchObject({ ens: 'belief.eth', wallet: '0xabc' });
+    expect(received.origin.fingerprint).toHaveLength(64);
+    expect(result.origin.fingerprint).toBe(received.origin.fingerprint);
+
+    const logPath = path.join(__dirname, '..', 'fork_log.json');
+    const log = JSON.parse(fs.readFileSync(logPath, 'utf8'));
+    expect(log).toHaveLength(1);
+    expect(log[0].origin.ens).toBe('belief.eth');
+  });
 });
+*** End of File

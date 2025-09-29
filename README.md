@@ -134,7 +134,8 @@ The 2024 integration expansion introduces a full-stack activation path that prio
 - `vaultfire-cli` streamlines partner setup with:
   - `vaultfire init` → scaffolds `vaultfire.partner.config.json` and belief templates.
   - `vaultfire test` → pings the `/health` endpoint to verify connectivity + auth readiness.
-  - `vaultfire push` → submits belief telemetry to `/vaultfire/mirror` using live tokens.
+  - `vaultfire push` → submits belief telemetry to `/vaultfire/mirror` using live tokens. Pass `--beliefproof` to emit an ENS-signed integrity hash for the submission.
+  - `vaultfire trust-sync` → verifies Trust Sync maturity, reporting fingerprinted timelines and uptime multipliers.
 - Install globally via `npm install` then `npx vaultfire init`, or invoke locally with `node cli/vaultfire-cli.js <command>`.
 
 ### 🌐 Partner Dashboard UI (`/dashboard`)

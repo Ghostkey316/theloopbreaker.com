@@ -1,0 +1,7 @@
+{
+  "0x0000000000000000000000000000000000000001": {
+    "beliefWeight": 0.85,
+    "syncUptimeHours": 48,
+    "streamMultiplier": 1.425
+  }
+}

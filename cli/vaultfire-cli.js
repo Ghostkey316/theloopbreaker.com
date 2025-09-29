@@ -2,9 +2,18 @@
 const { Command } = require('commander');
 const chalk = require('chalk');
 const TokenService = require('../auth/tokenService');
-const { initConfig, testConnection, pushBeliefs, loadConfig, summarizeMirror } = require('./actions');
+const {
+  initConfig,
+  testConnection,
+  pushBeliefs,
+  loadConfig,
+  summarizeMirror,
+  verifyTrustSync,
+} = require('./actions');
 const { registerBeliefVoteCommand } = require('./beliefVote');
 const { ROLES } = require('../auth/roles');
+const { recordCliEvent } = require('../codex/ledger');
+const ethics = require('../services/ethicsEngineV2');
 
 const program = new Command();
 const tokenService = new TokenService();
@@ -24,6 +33,12 @@ program
   .option('--wallet <wallet>', 'Default wallet address used for identity')
   .option('--ens <ens>', 'Optional ENS alias for the wallet identity')
   .action((options) => {
+    const initialWallet = options.wallet ? options.wallet.toLowerCase() : null;
+    const initialEns = options.ens ? options.ens.toLowerCase() : null;
+    const context = ethics.reflect({ command: 'init', wallet: initialWallet, ens: initialEns });
+    let status = 'success';
+    let recordedWallet = initialWallet;
+    let recordedEns = initialEns;
     try {
       const { config, path } = initConfig({
         configPath: options.config,
@@ -34,11 +49,17 @@ program
         walletAddress: options.wallet,
         ensAlias: options.ens,
       });
+      recordedWallet = config.walletAddress;
+      recordedEns = config.ensAlias;
       console.log(chalk.green(`Partner configuration created at ${path}`));
       console.log(JSON.stringify(config, null, 2));
     } catch (error) {
+      status = 'error';
       console.error(chalk.red(error.message));
       process.exitCode = 1;
+    } finally {
+      recordCliEvent({ command: 'init', wallet: recordedWallet, ens: recordedEns, status, digest: context.digest });
+      ethics.checkpoint({ command: 'init', status, digest: context.digest });
     }
   });
 
@@ -46,7 +67,12 @@ program
   .command('test')
   .option('-c, --config <path>', 'Path to the partner config file')
   .action(async (options) => {
+    let status = 'success';
+    let config;
+    let context;
     try {
+      config = loadConfig(options.config);
+      context = ethics.reflect({ command: 'test', wallet: config.walletAddress, ens: config.ensAlias });
       const result = await testConnection({ configPath: options.config });
       if (result.ok) {
         console.log(chalk.green(`API reachable at status ${result.status}`));
@@ -55,8 +81,21 @@ program
       }
       console.log(JSON.stringify(result.body, null, 2));
     } catch (error) {
+      status = 'error';
+      if (!context) {
+        context = ethics.reflect({ command: 'test', wallet: config?.walletAddress, ens: config?.ensAlias });
+      }
       console.error(chalk.red(`Test failed: ${error.message}`));
       process.exitCode = 1;
+    } finally {
+      recordCliEvent({
+        command: 'test',
+        wallet: config?.walletAddress,
+        ens: config?.ensAlias,
+        status,
+        digest: context?.digest,
+      });
+      ethics.checkpoint({ command: 'test', status, digest: context?.digest });
     }
   });
 
@@ -66,15 +105,23 @@ program
   .option('-t, --token <token>', 'Existing JWT to use for authentication')
   .option('--wallet <wallet>', 'Override wallet address for this session')
   .option('--ens <ens>', 'Override ENS alias for this session')
+  .option('--beliefproof', 'Generate beliefproof signature', false)
   .action(async (options) => {
+    let status = 'success';
+    let config;
+    let context;
+    let proof = null;
+    let sessionWallet = options.wallet ? options.wallet.toLowerCase() : null;
+    let sessionEns = options.ens !== undefined ? (options.ens ? options.ens.toLowerCase() : null) : null;
     try {
-      const config = loadConfig(options.config);
-      const sessionWallet = (options.wallet || config.walletAddress || '').toLowerCase();
+      config = loadConfig(options.config);
+      sessionWallet = (options.wallet || config.walletAddress || '').toLowerCase();
       if (!sessionWallet) {
         throw new Error('Wallet identity is required. Set --wallet or configure walletAddress.');
       }
-      const sessionEns =
+      sessionEns =
         options.ens !== undefined ? (options.ens ? options.ens.toLowerCase() : null) : config.ensAlias;
+      context = ethics.reflect({ command: 'push', wallet: sessionWallet, ens: sessionEns });
       const token =
         options.token ||
         tokenService.createAccessToken({
@@ -90,13 +137,33 @@ program
         token,
         wallet: sessionWallet,
         ens: sessionEns,
+        beliefproof: options.beliefproof,
       });
+      proof = response.proof || null;
       const color = response.ok ? chalk.green : chalk.yellow;
       console.log(color(`Push response status: ${response.status}`));
       console.log(JSON.stringify(response.body, null, 2));
+      if (proof && options.beliefproof) {
+        console.log(chalk.cyan(`Beliefproof hash: ${proof.hash}`));
+        console.log(chalk.cyan(`Beliefproof signature: ${proof.signature}`));
+      }
     } catch (error) {
+      status = 'error';
+      if (!context) {
+        context = ethics.reflect({ command: 'push', wallet: sessionWallet, ens: sessionEns });
+      }
       console.error(chalk.red(`Push failed: ${error.message}`));
       process.exitCode = 1;
+    } finally {
+      recordCliEvent({
+        command: 'push',
+        wallet: sessionWallet,
+        ens: sessionEns,
+        status,
+        proof,
+        digest: context?.digest,
+      });
+      ethics.checkpoint({ command: 'push', status, digest: context?.digest, proof: proof?.hash });
     }
   });
 
@@ -109,11 +176,19 @@ program
   .option('--channel <channel>', 'Output channel (cli|slack)', 'cli')
   .action(async (options) => {
     if (!options.summarize) {
+      const context = ethics.reflect({ command: 'mirror', wallet: null, ens: null });
       console.log(chalk.yellow('No mirror action selected. Use --summarize to generate a summary.'));
+      recordCliEvent({ command: 'mirror', wallet: null, ens: null, status: 'skipped', digest: context.digest });
+      ethics.checkpoint({ command: 'mirror', status: 'skipped', digest: context.digest });
       return;
     }
 
+    let status = 'success';
+    let config;
+    let context;
     try {
+      config = loadConfig(options.config);
+      context = ethics.reflect({ command: 'mirror', wallet: config.walletAddress, ens: config.ensAlias });
       const summary = await summarizeMirror({
         configPath: options.config,
         inputPath: options.input,
@@ -122,8 +197,70 @@ program
       console.log(chalk.cyan('Mirror summary generated:'));
       console.log(JSON.stringify(summary, null, 2));
     } catch (error) {
+      status = 'error';
+      if (!context) {
+        context = ethics.reflect({ command: 'mirror', wallet: config?.walletAddress, ens: config?.ensAlias });
+      }
       console.error(chalk.red(`Mirror command failed: ${error.message}`));
       process.exitCode = 1;
+    } finally {
+      recordCliEvent({
+        command: 'mirror',
+        wallet: config?.walletAddress,
+        ens: config?.ensAlias,
+        status,
+        digest: context?.digest,
+      });
+      ethics.checkpoint({ command: 'mirror', status, digest: context?.digest });
+    }
+  });
+
+program
+  .command('trust-sync')
+  .description('Run Trust Sync verification flow')
+  .option('-c, --config <path>', 'Path to the partner config file')
+  .option('--wallet <wallet>', 'Wallet identity to verify')
+  .option('--ens <ens>', 'ENS alias override for verification')
+  .option('--history', 'Include full belief sync history in the output', false)
+  .action((options) => {
+    let status = 'success';
+    let config;
+    let context;
+    let result;
+    let wallet = options.wallet ? options.wallet.toLowerCase() : null;
+    let ens = options.ens !== undefined ? (options.ens ? options.ens.toLowerCase() : null) : null;
+    try {
+      config = loadConfig(options.config);
+      wallet = (options.wallet || config.walletAddress || '').toLowerCase();
+      if (!wallet) {
+        throw new Error('Wallet identity is required for Trust Sync verification.');
+      }
+      ens = options.ens !== undefined ? (options.ens ? options.ens.toLowerCase() : null) : config.ensAlias;
+      context = ethics.reflect({ command: 'trust-sync', wallet, ens });
+      result = verifyTrustSync({
+        configPath: options.config,
+        wallet,
+        ens,
+        includeHistory: options.history,
+      });
+      console.log(chalk.green('Trust Sync verification complete.'));
+      console.log(JSON.stringify(result, null, 2));
+    } catch (error) {
+      status = 'error';
+      if (!context) {
+        context = ethics.reflect({ command: 'trust-sync', wallet, ens });
+      }
+      console.error(chalk.red(`Trust Sync verification failed: ${error.message}`));
+      process.exitCode = 1;
+    } finally {
+      recordCliEvent({
+        command: 'trust-sync',
+        wallet: result?.wallet || wallet,
+        ens: result?.ensAlias ?? ens,
+        status,
+        digest: context?.digest,
+      });
+      ethics.checkpoint({ command: 'trust-sync', status, digest: context?.digest });
     }
   });
 

@@ -61,6 +61,8 @@ describe('CLI wallet guardrails', () => {
     const body = JSON.parse(options.body);
     expect(body.walletId).toBe('0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
     expect(body.ensAlias).toBe('cli.eth');
+    expect(typeof body.originFingerprint).toBe('string');
+    expect(body.originFingerprint).toHaveLength(64);
   });
 
   it('allows wallet overrides per session', async () => {
@@ -78,5 +80,6 @@ describe('CLI wallet guardrails', () => {
     const body = JSON.parse(options.body);
     expect(body.walletId).toBe('0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb');
     expect(body.ensAlias).toBe('override.eth');
+    expect(body.originFingerprint).toHaveLength(64);
   });
 });
