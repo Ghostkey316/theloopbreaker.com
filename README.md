@@ -41,3 +41,41 @@ Prospective partners can initiate integration by opening a secure channel via th
 
 ---
 **Architect:** Ghostkey-316 · Vaultfire Protocol Steward
+
+## Partner Integration Modules · Real-World Activation Phase
+
+The 2024 integration expansion introduces a full-stack activation path that prioritises belief-signal fidelity and ethics-first guardrails. Every module is forkable and tuned for partner extensibility.
+
+### 🔐 Authentication Layer (`/auth`)
+- `tokenService.js` issues JWT access tokens with embedded role + belief metadata and maintains refresh token rotation.
+- `authMiddleware.js` provides plug-and-play Express middleware with rate limiting, expiry handling, and RBAC filters for `admin`, `partner`, and `contributor` personas.
+- `expressExample.js` exposes sample login, refresh, rewards, and belief mirror routes plus a live Swagger UI at `/docs`.
+- **Run locally:** `npm run start:api`
+
+### 🧠 Ethics Protocol Guardrails (`/middleware`)
+- `ethicsGuard.js` logs intent metadata (user type, endpoint, reason flag) to `logs/ethics-guard.log` and enforces block/warn policies.
+- Partners extend guardrails by copying `middleware/guardrail-policy.json` or pointing middleware to a custom policy file.
+- Automation spikes trigger warnings or hard stops aligned with the Vaultfire ethics doctrine.
+
+### 🧩 Partner Onboarding Kit (`/cli`)
+- `vaultfire-cli` streamlines partner setup with:
+  - `vaultfire init` → scaffolds `vaultfire.partner.config.json` and belief templates.
+  - `vaultfire test` → pings the `/health` endpoint to verify connectivity + auth readiness.
+  - `vaultfire push` → submits belief telemetry to `/vaultfire/mirror` using live tokens.
+- Install globally via `npm install` then `npx vaultfire init`, or invoke locally with `node cli/vaultfire-cli.js <command>`.
+
+### 🌐 Partner Dashboard UI (`/dashboard`)
+- React + Vite implementation with JWT-gated access, yield metrics, and belief telemetry visualisations.
+- Authenticated views call the same sample API used by the CLI to keep flows consistent.
+- **Develop:** `npm run dashboard:dev`
+- **Build static assets:** `npm run dashboard:build`
+
+### 🧾 OpenAPI & Compliance Artifacts
+- `docs/vaultfire-openapi.yaml` mirrors every endpoint described in `vaultfire-partner-docs/docs/api-reference.md` with tags, scopes, and example payloads. Served automatically via `/docs` when running the sample API.
+- `vaultfire-sla.json` captures uptime, response SLAs, and ethics obligations for partner agreements.
+- `vaultfire-compliance-template.json` provides a ready-to-complete checklist for privacy, automation thresholds, and opt-in telemetry.
+
+### ✅ Testing & Coverage
+- Jest suites in `/tests` exercise the authentication flow, guardrail middleware, and CLI scaffolding.
+- Run `npm test` for fast feedback or `npm run test:coverage` for full instrumentation.
+- All suites reinforce belief-centric metadata and ethics guardrails to prevent regressions.

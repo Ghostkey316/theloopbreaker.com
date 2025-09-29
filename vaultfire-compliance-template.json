@@ -1,0 +1,30 @@
+{
+  "partner": {
+    "name": "",
+    "contactEmail": "",
+    "jurisdiction": ""
+  },
+  "dataPrivacy": {
+    "consentMechanism": "",
+    "logRetentionDays": 30,
+    "dataResidency": "",
+    "userDeletionProcess": "Provide endpoint for deletion attestation"
+  },
+  "ethics": {
+    "usesGuardrailPolicy": true,
+    "customGuardrailFile": "./vaultfire-guardrails.json",
+    "automationThreshold": 25,
+    "humanReview": "Describe how belief adjustments are reviewed by humans"
+  },
+  "security": {
+    "jwtRotationMinutes": 15,
+    "refreshTokenExpiryHours": 12,
+    "ipAllowList": [],
+    "auditLogExport": false
+  },
+  "optIns": {
+    "beliefTelemetry": true,
+    "activationWebhooks": false,
+    "loyaltyYieldReports": true
+  }
+}

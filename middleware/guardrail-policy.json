@@ -1,0 +1,8 @@
+{
+  "blockedReasons": ["exploit_loop", "scraping"],
+  "warnReasons": ["excessive_automation"],
+  "automation": {
+    "windowMs": 60000,
+    "maxRequests": 30
+  }
+}

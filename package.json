@@ -8,17 +8,38 @@
   },
   "scripts": {
     "test": "jest",
-    "signal-shield": "node vaultfire_signal_shield/index.js"
+    "test:coverage": "jest --coverage",
+    "signal-shield": "node vaultfire_signal_shield/index.js",
+    "start:api": "node auth/expressExample.js",
+    "dashboard:dev": "vite --config dashboard/vite.config.mjs",
+    "dashboard:build": "vite build --config dashboard/vite.config.mjs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
-    "jest": "^29.6.1"
+    "@vitejs/plugin-react": "^4.0.0",
+    "jest": "^29.6.1",
+    "supertest": "^6.3.3",
+    "vite": "^5.1.0"
   },
   "dependencies": {
+    "body-parser": "^1.20.2",
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "express": "^4.18.2",
+    "express-rate-limit": "^6.10.0",
+    "jsonwebtoken": "^9.0.2",
+    "node-fetch": "^2.6.7",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "sentiment": "^5.0.2",
-    "sqlite3": "^5.1.7"
+    "sqlite3": "^5.1.7",
+    "swagger-ui-express": "^4.6.3",
+    "yamljs": "^0.3.0"
+  },
+  "bin": {
+    "vaultfire": "cli/vaultfire-cli.js"
   }
 }
