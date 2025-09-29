@@ -1,0 +1,112 @@
+openapi: 3.1.0
+info:
+  title: Vaultfire Partner Data Schemas
+  version: 1.0.0
+  description: |
+    Canonical schemas for partner-integrated data exchanges. Use these components when
+    constructing API payloads or validating event ingestions.
+components:
+  schemas:
+    UserProfile:
+      type: object
+      required:
+        - walletId
+        - beliefScore
+        - tierLevel
+      properties:
+        walletId:
+          type: string
+          description: EVM-compatible wallet address serving as the unique identifier.
+          pattern: "^0x[a-fA-F0-9]{40}$"
+        ENS:
+          type: string
+          description: Optional ENS name mapped to the wallet.
+          example: partneruser.eth
+        beliefScore:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Normalized belief alignment score maintained by Vaultfire.
+          example: 0.87
+        tierLevel:
+          type: string
+          description: Loyalty tier currently assigned to the wallet.
+          enum:
+            - ember
+            - spark
+            - flame
+            - blaze
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Partner-defined supplemental attributes.
+    ActivationLog:
+      type: object
+      required:
+        - timestamp
+        - eventType
+        - walletId
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO-8601 UTC timestamp of the activation event.
+        eventType:
+          type: string
+          description: Label describing the activation milestone.
+          enum:
+            - activation_requested
+            - activation_completed
+            - activation_failed
+        walletId:
+          type: string
+          description: Wallet address associated with the activation event.
+          pattern: "^0x[a-fA-F0-9]{40}$"
+        module:
+          type: string
+          description: Module or surface initiating the activation.
+          example: guardian_link
+        correlationId:
+          type: string
+          format: uuid
+          description: Trace identifier for cross-system diagnostics.
+        details:
+          type: object
+          additionalProperties: true
+          description: Optional extended context for audit and compliance reviews.
+    YieldEvent:
+      type: object
+      required:
+        - walletId
+        - amount
+        - multiplier
+        - sourceProtocol
+        - timestamp
+      properties:
+        walletId:
+          type: string
+          description: Wallet address receiving the yield event.
+          pattern: "^0x[a-fA-F0-9]{40}$"
+        amount:
+          type: string
+          description: Decimal string representing the net yield amount credited.
+          pattern: "^-?[0-9]+(\\.[0-9]+)?$"
+          example: "42.5000"
+        multiplier:
+          type: number
+          format: float
+          description: Yield multiplier applied based on tier and belief state.
+          example: 1.15
+        sourceProtocol:
+          type: string
+          description: Originating protocol contributing the yield.
+          example: AuroraPool
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO-8601 UTC timestamp of the yield accrual event.
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Optional partner-supplied context for reconciliation.
