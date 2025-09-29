@@ -5,7 +5,7 @@ jest.mock('node-fetch');
 
 describe('AI Mirror Agent', () => {
   beforeEach(() => {
-    fetch.mockReset();
+    fetch.resetMocks();
   });
 
   it('parses and summarizes webhook payloads', () => {

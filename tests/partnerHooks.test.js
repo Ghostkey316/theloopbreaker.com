@@ -5,7 +5,7 @@ jest.mock('node-fetch');
 
 describe('Partner hook registry', () => {
   beforeEach(() => {
-    fetch.mockReset();
+    fetch.resetMocks();
   });
 
   it('delivers hook payloads and records telemetry', async () => {

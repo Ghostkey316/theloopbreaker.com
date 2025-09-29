@@ -15,7 +15,7 @@ describe('vaultfire CLI actions', () => {
     cwd = process.cwd();
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vaultfire-cli-'));
     process.chdir(tempDir);
-    fetch.mockReset();
+    fetch.resetMocks();
   });
 
   afterEach(() => {
