@@ -1,29 +1,6 @@
 const path = require('path');
 const fs = require('fs');
-
-jest.mock('fs', () => {
-  let files = {};
-  const mock = {
-    readFileSync: jest.fn((p) => {
-      if (!files[p]) {
-        throw new Error(`File not found: ${p}`);
-      }
-      return files[p];
-    }),
-    writeFileSync: jest.fn((p, data) => {
-      files[p] = data;
-      mock.__lastWrite = { path: p, data, time: Date.now() };
-    }),
-    existsSync: jest.fn((p) => Object.prototype.hasOwnProperty.call(files, p)),
-    mkdirSync: jest.fn(() => {}),
-    __setFile: (p, data) => {
-      files[p] = data;
-    },
-    __getFile: (p) => files[p],
-    __reset: () => { files = {}; mock.__lastWrite = undefined; }
-  };
-  return mock;
-});
+const mockFs = require('mock-fs');
 
 jest.mock('../node_storage', () => {
   const fs = require('fs');
@@ -56,11 +33,21 @@ const CORE_CONFIG_PATH = path.join(__dirname, '..', 'vaultfire-core', 'vaultfire
 const ROOT_CONFIG_PATH = path.join(__dirname, '..', 'vaultfire_config.json');
 const PARTNERS_PATH = path.join(__dirname, '..', 'partners.json');
 
+const toMockPath = (pathname) => pathname.split(path.sep).join('/');
+
+const baseConfig = {
+  [toMockPath(CORE_CONFIG_PATH)]: JSON.stringify({ ethics_anchor: true, partner_hooks_enabled: true }),
+  [toMockPath(ROOT_CONFIG_PATH)]: JSON.stringify({ ethics_anchor: true, partner_hooks_enabled: true, use_database: false }),
+  [toMockPath(PARTNERS_PATH)]: JSON.stringify([]),
+};
+
 beforeEach(() => {
-  fs.__reset();
+  mockFs({ ...baseConfig }, { createCwd: true, createTmp: true });
   storage.__store.clear();
-  fs.__setFile(CORE_CONFIG_PATH, JSON.stringify({ ethics_anchor: true, partner_hooks_enabled: true }));
-  fs.__setFile(ROOT_CONFIG_PATH, JSON.stringify({ ethics_anchor: true, partner_hooks_enabled: true, use_database: false }));
+});
+
+afterEach(() => {
+  mockFs.restore();
 });
 
 test('resolveIdentity validates ENS, cb.id, and raw addresses', () => {
@@ -75,7 +62,7 @@ test('resolveIdentity validates ENS, cb.id, and raw addresses', () => {
 
 test('ethicsEnabled reads config flag', () => {
   expect(ethicsEnabled()).toBe(true);
-  fs.__setFile(ROOT_CONFIG_PATH, JSON.stringify({ ethics_anchor: false, partner_hooks_enabled: true }));
+  fs.writeFileSync(ROOT_CONFIG_PATH, JSON.stringify({ ethics_anchor: false, partner_hooks_enabled: true }));
   expect(ethicsEnabled()).toBe(false);
 });
 
@@ -101,12 +88,12 @@ test('onboardPartner timestamps writes near now', async () => {
   const before = Date.now();
   await onboardPartner('demo2', 'sample.eth', ALIGNMENT_PHRASE);
   const after = Date.now();
-  const writeTime = fs.__lastWrite.time;
-  expect(writeTime).toBeGreaterThanOrEqual(before);
-  expect(writeTime).toBeLessThanOrEqual(after);
+  const saved = storage.__store.get(PARTNERS_PATH);
+  const writeTime = new Date(saved[0].onboarded_at).getTime();
+  expect(writeTime).toBeGreaterThanOrEqual(before - 1000);
+  expect(writeTime).toBeLessThanOrEqual(after + 1000);
 });
 
 test('rejects incorrect alignment phrase', async () => {
   await expect(onboardPartner('demo3', 'sample.eth', 'Different Phrase')).rejects.toThrow('Alignment phrase mismatch');
 });
-

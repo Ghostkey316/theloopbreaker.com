@@ -1,31 +1,31 @@
 const path = require('path');
-const fs = require('fs');
-
-jest.mock('fs', () => {
-  let files = {};
-  const mock = {
-    readFileSync: jest.fn((p, enc) => {
-      if (!files[p]) throw new Error(`File not found: ${p}`);
-      return files[p];
-    }),
-    existsSync: jest.fn(p => Object.prototype.hasOwnProperty.call(files, p)),
-    writeFileSync: jest.fn((p, data) => { files[p] = data; }),
-    __setFile: (p, data) => { files[p] = data; },
-    __reset: () => { files = {}; },
-  };
-  return mock;
-});
+const mockFs = require('mock-fs');
 
 const { createIframe } = require('../web_mirror_viewer');
 const CONFIG_PATH = path.join(__dirname, '..', 'embed_config.json');
 
+const toMockPath = (pathname) => pathname.split(path.sep).join('/');
+
 beforeEach(() => {
-  fs.__reset();
-  fs.__setFile(CONFIG_PATH, JSON.stringify({ width: 700, height: 300 }));
+  mockFs({
+    [toMockPath(CONFIG_PATH)]: JSON.stringify({ width: 700, height: 300 }),
+  }, { createCwd: true, createTmp: true });
+});
+
+afterEach(() => {
+  mockFs.restore();
 });
 
 test('createIframe reads width and height from config', () => {
   const html = createIframe('https://example.com/3d');
   expect(html).toContain('width="700"');
   expect(html).toContain('height="300"');
+});
+
+test('falls back to defaults when config missing', () => {
+  mockFs.restore();
+  mockFs({}, { createCwd: true, createTmp: true });
+  const html = createIframe('https://example.com/fallback');
+  expect(html).toContain('width="600"');
+  expect(html).toContain('height="400"');
 });

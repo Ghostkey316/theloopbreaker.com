@@ -3,4 +3,11 @@ module.exports = {
   testMatch: ['**/__tests__/**/*.test.js', '**/tests/**/*.test.js'],
   // Run in a single process to avoid stateful test interference
   maxWorkers: 1,
+  setupFilesAfterEnv: ['jest-fetch-mock', '<rootDir>/jest.setup.js'],
+  transform: {
+    '^.+\\.tsx?$': 'ts-jest',
+  },
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  testEnvironment: 'node',
+  resetModules: true,
 };

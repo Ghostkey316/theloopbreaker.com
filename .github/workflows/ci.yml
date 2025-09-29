@@ -9,15 +9,25 @@ on:
   pull_request:
     branches: [ main ]
 
+env:
+  WALLET_ADDR: "0xDEMO123"
+  ENS_NAME: "demo.eth"
+  DB_PATH: "./test/db.sqlite"
+
 jobs:
-  build:
+  setup:
     runs-on: ubuntu-latest
     steps:
+      - name: Initialize pipeline
+        run: |
+          echo "Preparing Vaultfire CI with shared environment"
+          echo "Wallet: $WALLET_ADDR"
+
+  test-python:
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
       - uses: actions/checkout@v3
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
@@ -34,8 +44,6 @@ jobs:
           if [ -f requirements-dev.txt ]; then
             timeout 300 pip install -r requirements-dev.txt || echo "::warning::pip install requirements-dev.txt failed"
           fi
-      - name: Install Node dependencies
-        run: npm install
       - name: Run Pytest
         run: |
           if [ -f secure_upload/secure.key ]; then
@@ -43,5 +51,23 @@ jobs:
           else
             echo "::warning::Secure files missing, skipping pytest"
           fi
+
+  test-node:
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Run Vaultfire setup
+        run: |
+          chmod +x scripts/codex_setup.sh
+          ./scripts/codex_setup.sh || echo "::warning::setup script failed"
+      - name: Install Node dependencies
+        run: npm install
+      - name: Build TypeScript sources for tests
+        run: npm run build:test
       - name: Run Node tests
         run: npm test
