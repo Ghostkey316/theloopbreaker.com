@@ -11,11 +11,11 @@ class SignalCompass extends EventEmitter {
     this.incoming = [];
   }
 
-  recordPayload({ walletId, partnerUserId, beliefScore, intents = [], ethicsFlags = [], metadata = {} }) {
+  recordPayload({ walletId, ensAlias = null, beliefScore, intents = [], ethicsFlags = [], metadata = {} }) {
     const timestamp = new Date().toISOString();
     const entry = {
       walletId,
-      partnerUserId,
+      ensAlias,
       beliefScore,
       intents,
       ethicsFlags,
@@ -39,7 +39,7 @@ class SignalCompass extends EventEmitter {
 
     if (ethicsFlags.length) {
       ethicsFlags.forEach((flag) => {
-        this.ethicsTriggers.push({ flag, timestamp, walletId, partnerUserId });
+        this.ethicsTriggers.push({ flag, timestamp, walletId, ensAlias });
       });
       if (this.ethicsTriggers.length > this.retentionLimit) {
         this.ethicsTriggers.splice(0, this.ethicsTriggers.length - this.retentionLimit);
