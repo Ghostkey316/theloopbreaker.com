@@ -3,6 +3,7 @@ const { Command } = require('commander');
 const chalk = require('chalk');
 const TokenService = require('../auth/tokenService');
 const { initConfig, testConnection, pushBeliefs, loadConfig, summarizeMirror } = require('./actions');
+const { registerBeliefVoteCommand } = require('./beliefVote');
 const { ROLES } = require('../auth/roles');
 
 const program = new Command();
@@ -125,5 +126,7 @@ program
       process.exitCode = 1;
     }
   });
+
+registerBeliefVoteCommand(program);
 
 program.parseAsync(process.argv);

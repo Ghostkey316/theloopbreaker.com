@@ -1,0 +1,22 @@
+[
+  {
+    "id": "vf-guardian-001",
+    "title": "Activate Guardian Mesh",
+    "description": "Deploy guardian mesh validators to safeguard Vaultfire belief flows.",
+    "choices": {
+      "a": "Launch guardian mesh immediately",
+      "b": "Pilot with aligned partners",
+      "c": "Pause until next mirror cycle"
+    }
+  },
+  {
+    "id": "vf-signal-002",
+    "title": "Expand Belief Signal",
+    "description": "Open a second channel for community signal ingestion.",
+    "choices": {
+      "a": "Open to all verified wallets",
+      "b": "Whitelist select partner collectives",
+      "c": "Retain current scope"
+    }
+  }
+]

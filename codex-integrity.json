@@ -1,0 +1,30 @@
+{
+  "generatedAt": "2025-09-29T20:05:54.887Z",
+  "summary": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0
+  },
+  "tests": [
+    {
+      "name": "No email/digital ID fallback exists",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Belief mirror logs correct multipliers",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "CLI vote flow integrity",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Dashboard data reflects correct backend truth",
+      "passed": true,
+      "details": null
+    }
+  ]
+}

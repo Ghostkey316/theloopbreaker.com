@@ -1,64 +1,34 @@
 import { io } from 'socket.io-client';
 
-const API_BASE = import.meta.env.VITE_VAULTFIRE_API || 'http://localhost:4002';
+const API_BASE = import.meta.env.VITE_VAULTFIRE_API || 'http://localhost:4050';
 let socket;
 
-async function request(path, { method = 'GET', token, body } = {}) {
+async function request(path, { method = 'GET', body } = {}) {
   const headers = { 'Content-Type': 'application/json' };
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-  headers['X-Vaultfire-Reason'] = 'dashboard_insight';
-
-  const res = await fetch(`${API_BASE}${path}`, {
+  const response = await fetch(`${API_BASE}${path}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  if (!res.ok) {
-    const errorBody = await res.json().catch(() => ({}));
-    throw new Error(errorBody?.error?.message || 'Vaultfire API request failed');
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => ({}));
+    const message = errorBody?.error?.message || 'Vaultfire request failed';
+    throw new Error(message);
   }
 
-  return res.json();
+  return response.json();
 }
 
-export async function loginPartner({ userId, token }) {
-  if (token) {
-    return {
-      token,
-      partnerId: userId,
-      status: 'connected',
-      metrics: {
-        averageYield: 6.4,
-        signalConfidence: '92%',
-      },
-    };
-  }
-
-  const response = await request('/auth/login', {
-    method: 'POST',
-    body: { userId },
-  });
-
-  return {
-    token: response.accessToken,
-    partnerId: userId,
-    status: 'connected',
-    metrics: {
-      averageYield: 6.4,
-      signalConfidence: '92%',
-    },
-  };
+export async function syncBeliefPayload(payload) {
+  return request('/vaultfire/sync-belief', { method: 'POST', body: payload });
 }
 
-export async function fetchMetrics(token) {
-  const compass = await request('/signal-compass/state', { token });
-  return compass;
+export async function fetchSyncStatus() {
+  return request('/vaultfire/sync-status');
 }
 
-export function subscribeToSignalCompass({ token, onUpdate } = {}) {
+export function subscribeToSync({ onSync, onError } = {}) {
   if (socket) {
     socket.disconnect();
     socket = null;
@@ -66,21 +36,25 @@ export function subscribeToSignalCompass({ token, onUpdate } = {}) {
 
   socket = io(API_BASE, {
     transports: ['websocket'],
-    auth: { token },
+    reconnectionAttempts: 5,
   });
 
-  if (onUpdate) {
-    socket.on('signal-compass:update', onUpdate);
+  if (onSync) {
+    socket.on('belief-sync', onSync);
   }
 
   socket.on('connect_error', (error) => {
-    console.warn('Signal compass socket error', error.message);
+    if (onError) {
+      onError(error.message);
+    } else {
+      console.warn('Belief sync socket error', error.message);
+    }
   });
 
   return () => {
     if (!socket) return;
-    if (onUpdate) {
-      socket.off('signal-compass:update', onUpdate);
+    if (onSync) {
+      socket.off('belief-sync', onSync);
     }
     socket.disconnect();
     socket = null;
