@@ -1,4 +1,7 @@
+import { io } from 'socket.io-client';
+
 const API_BASE = import.meta.env.VITE_VAULTFIRE_API || 'http://localhost:4002';
+let socket;
 
 async function request(path, { method = 'GET', token, body } = {}) {
   const headers = { 'Content-Type': 'application/json' };
@@ -51,11 +54,35 @@ export async function loginPartner({ userId, token }) {
 }
 
 export async function fetchMetrics(token) {
-  const rewards = await request('/vaultfire/rewards/0xpartnerwallet', { token });
-  const entries = (rewards.pendingEvents || []).map((event) => ({
-    signalId: event.eventId,
-    confidence: `${Math.round(event.multiplier * 100)}%`,
-    lastSynced: event.timestamp,
-  }));
-  return { entries };
+  const compass = await request('/signal-compass/state', { token });
+  return compass;
+}
+
+export function subscribeToSignalCompass({ token, onUpdate } = {}) {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+
+  socket = io(API_BASE, {
+    transports: ['websocket'],
+    auth: { token },
+  });
+
+  if (onUpdate) {
+    socket.on('signal-compass:update', onUpdate);
+  }
+
+  socket.on('connect_error', (error) => {
+    console.warn('Signal compass socket error', error.message);
+  });
+
+  return () => {
+    if (!socket) return;
+    if (onUpdate) {
+      socket.off('signal-compass:update', onUpdate);
+    }
+    socket.disconnect();
+    socket = null;
+  };
 }

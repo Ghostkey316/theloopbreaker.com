@@ -2,7 +2,7 @@
 const { Command } = require('commander');
 const chalk = require('chalk');
 const TokenService = require('../auth/tokenService');
-const { initConfig, testConnection, pushBeliefs, loadConfig } = require('./actions');
+const { initConfig, testConnection, pushBeliefs, loadConfig, summarizeMirror } = require('./actions');
 const { ROLES } = require('../auth/roles');
 
 const program = new Command();
@@ -77,6 +77,33 @@ program
       console.log(JSON.stringify(response.body, null, 2));
     } catch (error) {
       console.error(chalk.red(`Push failed: ${error.message}`));
+      process.exitCode = 1;
+    }
+  });
+
+program
+  .command('mirror')
+  .description('Interact with the AI mirror agent')
+  .option('-c, --config <path>', 'Path to the partner config file')
+  .option('--summarize', 'Summarize the latest belief payload', false)
+  .option('--input <path>', 'Override the belief payload file path')
+  .option('--channel <channel>', 'Output channel (cli|slack)', 'cli')
+  .action(async (options) => {
+    if (!options.summarize) {
+      console.log(chalk.yellow('No mirror action selected. Use --summarize to generate a summary.'));
+      return;
+    }
+
+    try {
+      const summary = await summarizeMirror({
+        configPath: options.config,
+        inputPath: options.input,
+        outputChannel: options.channel,
+      });
+      console.log(chalk.cyan('Mirror summary generated:'));
+      console.log(JSON.stringify(summary, null, 2));
+    } catch (error) {
+      console.error(chalk.red(`Mirror command failed: ${error.message}`));
       process.exitCode = 1;
     }
   });

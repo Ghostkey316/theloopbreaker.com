@@ -3,7 +3,7 @@ const os = require('os');
 const path = require('path');
 const fetch = require('node-fetch');
 
-const { initConfig, loadConfig, testConnection, pushBeliefs } = require('../cli/actions');
+const { initConfig, loadConfig, testConnection, pushBeliefs, summarizeMirror } = require('../cli/actions');
 
 jest.mock('node-fetch');
 
@@ -45,5 +45,12 @@ describe('vaultfire CLI actions', () => {
     const result = await pushBeliefs({ token: 'demo-token' });
     expect(result.status).toBe(202);
     expect(fetch).toHaveBeenLastCalledWith('http://localhost:4002/vaultfire/mirror', expect.any(Object));
+  });
+
+  it('summarizes belief payloads using the mirror agent', async () => {
+    initConfig();
+    const summary = await summarizeMirror();
+    expect(summary.recommendedAction).toBeDefined();
+    expect(summary.walletId).toBeDefined();
   });
 });

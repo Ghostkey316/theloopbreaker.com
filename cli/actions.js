@@ -2,6 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const fetch = require('node-fetch');
 const { ROLES } = require('../auth/roles');
+const MultiTierTelemetryLedger = require('../services/telemetryLedger');
+const AIMirrorAgent = require('../services/aiMirrorAgent');
+const { loadTrustSyncConfig } = require('../config/trustSyncConfig');
 
 const CONFIG_FILE = 'vaultfire.partner.config.json';
 
@@ -56,8 +59,8 @@ async function testConnection({ configPath } = {}) {
   };
 }
 
-function ensureBeliefPayload(config) {
-  const beliefPath = path.resolve(process.cwd(), config.beliefFeedPath);
+function ensureBeliefPayload(config, overridePath) {
+  const beliefPath = path.resolve(process.cwd(), overridePath || config.beliefFeedPath);
   if (!fs.existsSync(beliefPath)) {
     const scaffold = {
       walletId: '0xpartnerwallet',
@@ -97,10 +100,23 @@ async function pushBeliefs({ configPath, token } = {}) {
   return { ok: response.ok, status: response.status, body };
 }
 
+async function summarizeMirror({ configPath, inputPath, outputChannel = 'cli' } = {}) {
+  const config = loadConfig(configPath);
+  const trustConfig = loadTrustSyncConfig();
+  const telemetry = new MultiTierTelemetryLedger(trustConfig.telemetry);
+  const agent = new AIMirrorAgent({ telemetry, outputChannel });
+  const payload = ensureBeliefPayload(config, inputPath);
+  const parsed = agent.parseWebhook(payload);
+  const summary = agent.interpretBeliefSignal(parsed);
+  await Promise.resolve(agent.emitSummary(summary));
+  return summary;
+}
+
 module.exports = {
   CONFIG_FILE,
   initConfig,
   loadConfig,
   testConnection,
   pushBeliefs,
+  summarizeMirror,
 };

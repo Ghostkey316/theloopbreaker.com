@@ -1,0 +1,35 @@
+{
+  "trustSync": {
+    "identityStore": {
+      "provider": "memory",
+      "breachThreshold": 0.35,
+      "postgres": {
+        "connection": {
+          "connectionString": "postgres://vaultfire:secret@localhost:5432/vaultfire"
+        }
+      },
+      "mongo": {
+        "connection": {
+          "uri": "mongodb://localhost:27017/vaultfire"
+        }
+      }
+    },
+    "telemetry": {
+      "baseDir": "./logs/telemetry"
+    },
+    "signalCompass": {
+      "retentionLimit": 200
+    },
+    "mirror": {
+      "outputChannel": "cli"
+    }
+  },
+  "hooks": {
+    "defaultSubscriptions": [
+      {
+        "event": "activation",
+        "targetUrl": "https://partners.example.com/hooks/vaultfire/activation"
+      }
+    ]
+  }
+}
