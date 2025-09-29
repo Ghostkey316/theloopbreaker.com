@@ -1,0 +1,15 @@
+{
+  "identityStore": {
+    "provider": "memory",
+    "breachThreshold": 0.4
+  },
+  "telemetry": {
+    "baseDir": "./logs/test-telemetry"
+  },
+  "signalCompass": {
+    "retentionLimit": 50
+  },
+  "mirror": {
+    "outputChannel": "cli"
+  }
+}

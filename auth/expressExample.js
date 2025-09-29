@@ -3,10 +3,18 @@ const bodyParser = require('body-parser');
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
 const path = require('path');
+const http = require('http');
+const { Server } = require('socket.io');
 const TokenService = require('./tokenService');
 const { createAuthMiddleware } = require('./authMiddleware');
 const { ROLES } = require('./roles');
 const createEthicsGuard = require('../middleware/ethicsGuard');
+const MultiTierTelemetryLedger = require('../services/telemetryLedger');
+const EncryptedIdentityStore = require('../services/identityStore');
+const SignalCompass = require('../services/signalCompass');
+const PartnerHookRegistry = require('../services/partnerHooks');
+const AIMirrorAgent = require('../services/aiMirrorAgent');
+const { loadTrustSyncConfig } = require('../config/trustSyncConfig');
 
 const app = express();
 const port = process.env.PORT || 4002;
@@ -15,6 +23,29 @@ app.use(bodyParser.json());
 
 const tokenService = new TokenService();
 const ethicsGuard = createEthicsGuard();
+const trustConfig = loadTrustSyncConfig();
+const telemetryLedger = new MultiTierTelemetryLedger(trustConfig.telemetry);
+const identityStore = new EncryptedIdentityStore(trustConfig.identityStore, telemetryLedger);
+const identityStoreReady = identityStore.init();
+const signalCompass = new SignalCompass({ telemetry: telemetryLedger, ...(trustConfig.signalCompass || {}) });
+const partnerHooks = new PartnerHookRegistry({ telemetry: telemetryLedger });
+const mirrorAgent = new AIMirrorAgent({ telemetry: telemetryLedger, ...(trustConfig.mirror || {}) });
+const BELIEF_BREACH_THRESHOLD = trustConfig.identityStore?.breachThreshold ?? 0.35;
+
+if (Array.isArray(trustConfig.hooks?.defaultSubscriptions)) {
+  trustConfig.hooks.defaultSubscriptions.forEach((subscription) => {
+    try {
+      partnerHooks.subscribe({
+        partnerId: subscription.partnerId || 'config-partner',
+        event: subscription.event,
+        targetUrl: subscription.targetUrl,
+        metadata: { ...subscription.metadata, source: 'config-bootstrap' },
+      });
+    } catch (error) {
+      console.warn('Failed to register default hook', error.message);
+    }
+  });
+}
 
 const swaggerPath = path.join(__dirname, '../docs/vaultfire-openapi.yaml');
 let swaggerDocument = {};
@@ -27,7 +58,7 @@ try {
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', beliefEngine: 'synchronized' });
+  res.json({ status: 'ok', beliefEngine: 'synchronized', trustPhase: 'sync' });
 });
 
 app.post('/auth/login', (req, res) => {
@@ -39,6 +70,10 @@ app.post('/auth/login', (req, res) => {
   try {
     const accessToken = tokenService.createAccessToken({ userId, role, partnerId, scopes });
     const refreshToken = tokenService.createRefreshToken({ userId, role, partnerId, scopes });
+    telemetryLedger.record('auth.login', { userId, partnerId, role }, {
+      tags: ['auth'],
+      visibility: { partner: false, ethics: true, audit: true },
+    });
 
     return res.status(200).json({
       accessToken,
@@ -61,6 +96,11 @@ app.post('/auth/refresh', (req, res) => {
     return res.status(401).json({ error: { code: 'auth.unauthorized', message: 'Refresh token expired or invalid' } });
   }
 
+  telemetryLedger.record('auth.refresh', { refreshTokenId: refreshToken.slice(0, 12) }, {
+    tags: ['auth'],
+    visibility: { partner: false, ethics: true, audit: true },
+  });
+
   return res.status(200).json(response);
 });
 
@@ -76,7 +116,7 @@ app.post(
       });
     }
 
-    return res.status(201).json({
+    const response = {
       status: 'activated',
       walletId,
       tierLevel: 'flame',
@@ -85,7 +125,18 @@ app.post(
         { moduleId: 'belief-alignment', state: 'initialized' },
         { moduleId: 'loyalty-yield', state: 'queued' },
       ],
+    };
+
+    telemetryLedger.record('vaultfire.activation', { walletId, activationChannel, partnerId: req.user.partnerId }, {
+      tags: ['activation'],
+      visibility: { partner: true, ethics: true, audit: true },
     });
+
+    partnerHooks
+      .onActivation({ walletId, activationChannel, partnerId: req.user.partnerId })
+      .catch((error) => console.warn('Activation hook delivery error', error));
+
+    return res.status(201).json(response);
   }
 );
 
@@ -94,11 +145,131 @@ app.get(
   ...createAuthMiddleware({ requiredRoles: [ROLES.PARTNER, ROLES.ADMIN], tokenService }),
   ethicsGuard,
   (req, res) => {
-    return res.json({
+    const response = {
       walletId: req.params.walletId,
       currentYield: { apr: 6.4, multiplier: 1.15, tierLevel: 'flame' },
       signalsReviewed: true,
+    };
+
+    telemetryLedger.record('vaultfire.rewards.view', { walletId: req.params.walletId, partnerId: req.user.partnerId }, {
+      tags: ['rewards'],
+      visibility: { partner: true, ethics: false, audit: true },
     });
+
+    partnerHooks
+      .onRewardEarned({ walletId: req.params.walletId, partnerId: req.user.partnerId, yield: response.currentYield })
+      .catch((error) => console.warn('Reward hook delivery error', error));
+
+    return res.json(response);
+  }
+);
+
+function validateBeliefScore(value) {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return 'beliefScore must be a number';
+  }
+  if (value < 0 || value > 1) {
+    return 'beliefScore must be between 0 and 1';
+  }
+  return null;
+}
+
+function evaluateBreach(score) {
+  return score < BELIEF_BREACH_THRESHOLD;
+}
+
+app.get(
+  '/link-identity',
+  ...createAuthMiddleware({ requiredRoles: [ROLES.PARTNER, ROLES.ADMIN], tokenService }),
+  ethicsGuard,
+  async (req, res) => {
+    const { wallet, partnerUserId } = req.query;
+    if (!wallet || !partnerUserId) {
+      return res.status(400).json({
+        error: {
+          code: 'identity.invalid_query',
+          message: 'wallet and partnerUserId query parameters are required',
+        },
+      });
+    }
+
+    await identityStoreReady;
+    const anchor = await identityStore.getAnchor({ wallet, partnerUserId });
+    if (!anchor) {
+      return res.status(404).json({ error: { code: 'identity.not_found', message: 'Anchor not found' } });
+    }
+
+    return res.json({ anchor });
+  }
+);
+
+app.post(
+  '/link-identity',
+  ...createAuthMiddleware({ requiredRoles: [ROLES.PARTNER, ROLES.ADMIN], tokenService }),
+  ethicsGuard,
+  async (req, res) => {
+    const { wallet, partnerUserId, beliefScore, metadata = {} } = req.body || {};
+    if (!wallet || !partnerUserId) {
+      return res.status(400).json({
+        error: { code: 'identity.invalid_payload', message: 'wallet and partnerUserId are required' },
+      });
+    }
+    const validationError = validateBeliefScore(beliefScore);
+    if (validationError) {
+      return res.status(400).json({ error: { code: 'identity.invalid_belief_score', message: validationError } });
+    }
+
+    await identityStoreReady;
+    const anchor = await identityStore.linkAnchor({ wallet, partnerUserId, beliefScore, metadata });
+
+    const snapshot = signalCompass.recordPayload({
+      walletId: wallet,
+      partnerUserId,
+      beliefScore,
+      intents: metadata?.intents || [],
+      ethicsFlags: metadata?.ethicsFlags || [],
+      metadata: { source: 'link-identity' },
+    });
+
+    if (evaluateBreach(beliefScore)) {
+      partnerHooks
+        .onBeliefBreach({ walletId: wallet, partnerUserId, beliefScore, partnerId: req.user.partnerId })
+        .catch((error) => console.warn('Belief breach hook error', error));
+    }
+
+    return res.status(200).json({ anchor, signalCompass: snapshot });
+  }
+);
+
+app.post(
+  '/partner/hooks/subscribe',
+  ...createAuthMiddleware({ requiredRoles: [ROLES.PARTNER, ROLES.ADMIN], tokenService }),
+  ethicsGuard,
+  (req, res) => {
+    const { event, targetUrl, metadata = {} } = req.body || {};
+    if (!event) {
+      return res.status(400).json({ error: { code: 'hooks.invalid_payload', message: 'event is required' } });
+    }
+    try {
+      const subscription = partnerHooks.subscribe({
+        partnerId: req.user.partnerId,
+        event,
+        targetUrl,
+        metadata,
+      });
+      return res.status(201).json({ subscription });
+    } catch (error) {
+      return res.status(400).json({ error: { code: 'hooks.invalid_event', message: error.message } });
+    }
+  }
+);
+
+app.get(
+  '/signal-compass/state',
+  ...createAuthMiddleware({ requiredRoles: [ROLES.PARTNER, ROLES.ADMIN], tokenService }),
+  ethicsGuard,
+  (req, res) => {
+    return res.json(signalCompass.snapshot());
   }
 );
 
@@ -106,20 +277,89 @@ app.post(
   '/vaultfire/mirror',
   ...createAuthMiddleware({ requiredRoles: [ROLES.CONTRIBUTOR, ROLES.PARTNER], tokenService }),
   ethicsGuard,
-  (req, res) => {
-    return res.status(202).json({
-      status: 'mirroring',
-      walletId: req.body.walletId,
-      alignmentState: 'under_review',
-      beliefScore: req.body.beliefScore,
-    });
+  async (req, res) => {
+    try {
+      const parsed = mirrorAgent.parseWebhook(req.body);
+      const summary = mirrorAgent.interpretBeliefSignal(parsed);
+      signalCompass.recordPayload({
+        walletId: parsed.walletId,
+        partnerUserId: req.body.partnerUserId || req.user.partnerId,
+        beliefScore: parsed.beliefScore,
+        intents: summary.intents,
+        ethicsFlags: summary.ethicsFlags,
+        metadata: { source: 'mirror', tone: summary.toneLabel },
+      });
+
+      telemetryLedger.record('vaultfire.mirror.accepted', {
+        walletId: parsed.walletId,
+        partnerId: req.user.partnerId,
+        beliefScore: parsed.beliefScore,
+        intents: summary.intents,
+      });
+
+      if (req.body.partnerUserId) {
+        await identityStoreReady;
+        await identityStore.linkAnchor({
+          wallet: parsed.walletId,
+          partnerUserId: req.body.partnerUserId,
+          beliefScore: parsed.beliefScore,
+          metadata: { source: 'mirror-route' },
+        });
+      }
+
+      if (evaluateBreach(parsed.beliefScore)) {
+        partnerHooks
+          .onBeliefBreach({
+            walletId: parsed.walletId,
+            partnerUserId: req.body.partnerUserId || req.user.userId,
+            beliefScore: parsed.beliefScore,
+            partnerId: req.user.partnerId,
+          })
+          .catch((error) => console.warn('Belief breach hook error', error));
+      }
+
+      const response = {
+        status: 'mirroring',
+        walletId: parsed.walletId,
+        alignmentState: 'under_review',
+        beliefScore: parsed.beliefScore,
+        summary,
+      };
+      await Promise.resolve(mirrorAgent.emitSummary(summary));
+      return res.status(202).json(response);
+    } catch (error) {
+      return res.status(400).json({ error: { code: 'mirror.invalid_payload', message: error.message } });
+    }
   }
 );
 
+function createServer({ corsOrigins = ['*'] } = {}) {
+  const server = http.createServer(app);
+  const io = new Server(server, {
+    cors: {
+      origin: corsOrigins,
+      methods: ['GET', 'POST'],
+    },
+  });
+  signalCompass.bindSocket(io);
+  return { server, io };
+}
+
 if (require.main === module) {
-  app.listen(port, () => {
-    console.log(`Vaultfire auth example listening on port ${port}`);
+  const { server } = createServer();
+  server.listen(port, () => {
+    console.log(`Vaultfire trust sync API listening on port ${port}`);
   });
 }
 
-module.exports = { app, tokenService };
+module.exports = {
+  app,
+  tokenService,
+  telemetryLedger,
+  signalCompass,
+  partnerHooks,
+  identityStore,
+  identityStoreReady,
+  mirrorAgent,
+  createServer,
+};
