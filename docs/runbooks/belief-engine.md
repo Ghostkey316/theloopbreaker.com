@@ -14,4 +14,4 @@
 ## Recovery Steps
 - Inspect `logs/partner_relays/*.jsonl` for buffered payloads and relay them after restoring connectivity.
 - Clear or amend `partner_port/external_nodes.json` to remove stale endpoints before re-registering nodes.
-- Execute `BeliefSyncEngine.processRetryQueue()` with a controlled `now` timestamp to drain accumulated retries.
+- Execute `signalRelay.retry({ now })` (via `BeliefSyncEngine.processRetryQueue`) with a controlled timestamp to drain queued deliveries and honour circuit breaker cooldowns.

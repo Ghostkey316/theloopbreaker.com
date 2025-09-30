@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const EventEmitter = require('events');
 
 const { createFingerprint } = require('./services/originFingerprint');
+const { createSignalRelay } = require('./services/signalRelay');
 
 const GLOBAL_BUS = new EventEmitter();
 
@@ -53,41 +54,6 @@ function _ensureRelayDir() {
   }
 }
 
-function _loadRetrySchedule() {
-  if (!fs.existsSync(RETRY_SCHEDULE_PATH)) {
-    return [];
-  }
-  try {
-    const raw = fs.readFileSync(RETRY_SCHEDULE_PATH, 'utf8');
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (error) {
-    return [];
-  }
-}
-
-function _writeRetrySchedule(entries) {
-  _ensureRelayDir();
-  fs.writeFileSync(RETRY_SCHEDULE_PATH, JSON.stringify(entries, null, 2));
-}
-
-function _scheduleRemoteRetry(node, payload, { attempts = 0, delayMs } = {}) {
-  const queue = _loadRetrySchedule();
-  const baseDelay = delayMs || Math.min(60 * 60 * 1000, 60 * 1000 * 2 ** attempts);
-  const scheduled = {
-    id: crypto.randomUUID(),
-    nodeId: node.id || node.partnerId || 'unknown',
-    endpoint: node.endpoint || null,
-    payload,
-    attempts,
-    nextAttemptAt: new Date(Date.now() + baseDelay).toISOString(),
-  };
-  queue.push(scheduled);
-  _writeRetrySchedule(queue);
-  return scheduled;
-  // TODO(remote-relay-roadmap): escalate retries to remote scheduler once governance approves cross-region relay orchestration.
-}
-
 function _encryptRelayPayload(entry, key) {
   if (!key) {
     return { mode: 'plain', payload: Buffer.from(JSON.stringify(entry)).toString('base64') };
@@ -109,26 +75,6 @@ function _encryptRelayPayload(entry, key) {
   }
 }
 
-async function _sendToEndpoint(endpoint, payload) {
-  if (!endpoint) {
-    return false;
-  }
-  try {
-    const fetchImpl = typeof fetch === 'function' ? fetch : require('node-fetch');
-    const response = await fetchImpl(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Vaultfire-Signal': 'belief-sync',
-      },
-      body: JSON.stringify(payload),
-    });
-    return response.ok;
-  } catch (error) {
-    return false;
-  }
-}
-
 function _writeRelayFallback(node, entry) {
   _ensureRelayDir();
   const relayPath = path.join(RELAY_DIR, `${node.id || node.partnerId || 'partner'}.jsonl`);
@@ -147,6 +93,17 @@ class BeliefSyncEngine extends EventEmitter {
     this.session_id = session_id;
     this.ghost_id = ghost_id;
     this.partnerNodes = _loadPartnerNodes();
+    this.signalRelay = createSignalRelay({
+      queueFilePath: RETRY_SCHEDULE_PATH,
+      fallbackWriter: (node, payload) => {
+        try {
+          _writeRelayFallback(node, payload);
+        } catch (error) {
+          // ignore fallback write errors to keep relay attempts non-blocking
+        }
+      },
+      nowFn: () => Date.now(),
+    });
     GLOBAL_BUS.on('sync', e => {
       if (e.session_id === this.session_id && e.ghost_id !== this.ghost_id) {
         this.emit('sync', e);
@@ -191,12 +148,10 @@ class BeliefSyncEngine extends EventEmitter {
       return;
     }
     await Promise.all(
-      this.partnerNodes.map(async node => {
-        const ok = await _sendToEndpoint(node.endpoint, payload);
-        if (!ok) {
-          _writeRelayFallback(node, payload);
-          _scheduleRemoteRetry(node, payload, { attempts: 0 });
-        }
+      this.partnerNodes.map(async (node) => {
+        await this.signalRelay.dispatch(node, payload, {
+          telemetryId: entry.session_id,
+        });
       })
     );
   }
@@ -228,49 +183,7 @@ class BeliefSyncEngine extends EventEmitter {
   }
 
   async processRetryQueue({ now = Date.now(), maxAttempts = 5 } = {}) {
-    const queue = _loadRetrySchedule();
-    if (!queue.length) {
-      return { attempted: 0, delivered: 0, remaining: 0 };
-    }
-    const keep = [];
-    let attempted = 0;
-    let delivered = 0;
-    const nowTs = typeof now === 'number' ? now : new Date(now).getTime();
-
-    for (const job of queue) {
-      const nextAttemptTs = new Date(job.nextAttemptAt).getTime();
-      if (Number.isNaN(nextAttemptTs) || nextAttemptTs > nowTs) {
-        keep.push(job);
-        continue;
-      }
-      attempted += 1;
-      const ok = await _sendToEndpoint(job.endpoint, job.payload);
-      if (ok) {
-        delivered += 1;
-        continue;
-      }
-      const attempts = (job.attempts || 0) + 1;
-      if (attempts >= maxAttempts) {
-        const fallbackRecord = {
-          timestamp: new Date(nowTs).toISOString(),
-          node: job.nodeId,
-          endpoint: job.endpoint,
-          status: 'exhausted',
-          attempts,
-        };
-        _writeRelayFallback({ id: job.nodeId, endpoint: job.endpoint }, fallbackRecord);
-        continue;
-      }
-      const delay = Math.min(2 ** attempts * 60 * 1000, 6 * 60 * 60 * 1000);
-      keep.push({
-        ...job,
-        attempts,
-        nextAttemptAt: new Date(nowTs + delay).toISOString(),
-      });
-    }
-
-    _writeRetrySchedule(keep);
-    return { attempted, delivered, remaining: keep.length };
+    return this.signalRelay.retry({ now, maxAttempts });
   }
 }
 

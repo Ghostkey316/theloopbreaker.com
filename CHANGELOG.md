@@ -1,5 +1,16 @@
 # Vaultfire Partner Changelog
 
+## 2025-09-19 — v2.6.0-alpha Partner Readiness
+- Added `signalRelay.retry()` with exponential backoff and a circuit-breaker
+  guard to stabilise remote belief sync deliveries during partner outages.
+- Hardened Trust Sync verification by enforcing timestamp windows, replay
+  protection, and checksum fallbacks exposed via `trustSync.verify()`.
+- Introduced the JavaScript loyalty engine with on-chain multiplier wiring,
+  telemetry anchors, and the `calculateMultiplier()` interface for partner
+  reward orchestration.
+- Expanded Jest coverage with dedicated suites for the signal relay, Trust Sync
+  verifier, and loyalty engine multiplier mapping.
+
 ## 2025-08-15 — v1.2.0-rc Partner Hardening
 - Added `pilot-loader.js` with `VAULTFIRE_MODULE_SCOPE` controls so pilots boot only CLI, dashboard, and belief engines when `pilot_mode=true`.
 - Introduced governance config loader supporting `.govrc`/`--config-path=` overrides, default-threshold warnings, and `npm run audit:gov` self-audits.

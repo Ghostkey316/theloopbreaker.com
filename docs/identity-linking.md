@@ -61,6 +61,19 @@ payloads to the remote verifier and includes the verdict in the response. A
 rejected verdict returns HTTP `409` so client SDKs can surface actionable
 messages. <!-- TODO(trust-sync-remote-migration): wire verifier retries into job queue -->
 
+### `trustSync.verify()`
+
+`trustSync.verify()` enforces timestamp validation and replay protection before
+dispatching the payload. Anchors must include an ISO timestamp within ±2
+minutes of the verifier's clock or they are immediately rejected. The verifier
+computes a deterministic replay key from the anchor fingerprint and partner
+context. Any subsequent call within the configured replay window returns
+`{ status: "rejected", reason: "replay_detected" }` and records telemetry for
+investigation. When the remote endpoint is unavailable the verifier now returns
+`{ status: 'pending' | 'deferred', checksum }` where `checksum` is a SHA-256
+digest of the payload. Partners can use that checksum to confirm the fallback
+entry matches the original request before re-processing it offline.
+
 ```json
 {
   "trustSync": {
