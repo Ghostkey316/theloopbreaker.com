@@ -1,0 +1,8 @@
+{
+  "partner_wallet": "partner.eth",
+  "traits": [
+    "origin"
+  ],
+  "loyalty_tier": "default",
+  "fork_origin": "ghostkey316.eth"
+}
