@@ -52,6 +52,16 @@ configured via `trustSync.telemetry.persistence` and supports:
 If no adapter is configured or initialisation fails the ledger automatically
 falls back to file-based logging, ensuring telemetry never drops.
 
+### Failover buffer & sink flushing
+
+Every persistence adapter feeds a failover buffer stored at
+`logs/telemetry/persistence-failover.jsonl`. When a remote sink or database
+rejects a write, the entry is appended to this buffer and replayed on the next
+`ledger.flushExternal()` call. The new Jest suite exercises JSON, Postgres and
+Supabase adapters to confirm backlog recovery. Custom sink integrations can call
+`TelemetrySinkRegistry.flush()` to await in-flight deliveries and align CI with
+production failover behaviour.
+
 ### Configuration examples
 
 ```json

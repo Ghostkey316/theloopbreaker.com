@@ -81,7 +81,8 @@ All modules are wallet-first. No email capture, no digital ID fallback—ever.
 ## Core Features
 - **Codex-Aligned Intelligence:** Continuous alignment loop that feeds signal, ethics, and activation data directly into the Codex layer.
 - **Identity-Linked NFTs:** Verifiable Vaultfire NFT IDs ensure partner provenance and enforce lineage-aware access control.
-- **Vaultfire CLI Suite:** Cross-platform command-line utilities for deployments, audits, and activation beacons.
+- **Vaultfire CLI Suite:** Cross-platform command-line utilities for deployments, audits, and activation beacons, including the
+  `vaultfire-deploy` planner for sandbox and production rollouts.
 - **Belief Signal Engine:** Loyalty-aware scoring and ambient signal synthesis for responsive reward flows.
 - **Partner Integration Sandbox:** Ready-to-run activation demos, forks, and API shims for rapid onboarding.
 - **SecureStore Guardrails:** Encryption-backed storage protecting belief logs, partner credentials, and ethics artifacts.
@@ -135,7 +136,7 @@ The 2024 integration expansion introduces a full-stack activation path that prio
 - **Run locally:** `npm run start:api`
 
 ### 🧠 Ethics Protocol Guardrails (`/middleware`)
-- `ethicsGuard.js` logs intent metadata (user type, endpoint, reason flag) to `logs/ethics-guard.log` and enforces block/warn policies.
+- `ethicsGuard.js` logs intent metadata (user type, endpoint, reason flag, purpose) to `logs/ethics-guard.log` and enforces block/warn policies.
 - Partners extend guardrails by copying `middleware/guardrail-policy.json` or pointing middleware to a custom policy file.
 - Automation spikes trigger warnings or hard stops aligned with the Vaultfire ethics doctrine.
 

@@ -6,7 +6,7 @@ module.exports = {
   setupFilesAfterEnv: ['jest-fetch-mock', '<rootDir>/jest.setup.js'],
   transform: {
     '^.+\\.tsx?$': 'ts-jest',
-    '^(?!.*\\.(ts|tsx)$).+\\.[tj]sx?$': 'babel-jest',
+    '^(?!.*\\.(ts|tsx)$).+\\.[tj]sx?$': '<rootDir>/jest.transform.js',
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   testEnvironment: 'node',

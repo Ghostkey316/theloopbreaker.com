@@ -47,9 +47,20 @@ function createEthicsGuard({ policyPath, logPath } = {}) {
 
   return function ethicsGuard(req, res, next) {
     const reasonFlag = (req.headers['x-vaultfire-reason'] || req.body?.reasonFlag || '').toLowerCase();
+    const purpose = req.headers['x-vaultfire-purpose'] || req.body?.purpose || null;
     const userType = req.user?.role || 'anonymous';
     const endpoint = req.originalUrl || req.url;
     const correlationId = req.headers['x-correlation-id'] || null;
+
+    let decision = 'allowed';
+    let decisionReason = null;
+    if (reasonFlag && policy.blockedReasons?.includes(reasonFlag)) {
+      decision = 'blocked';
+      decisionReason = 'blocked_reason_policy';
+    } else if (reasonFlag && policy.warnReasons?.includes(reasonFlag)) {
+      decision = 'warned';
+      decisionReason = 'warn_threshold';
+    }
 
     const logEntry = {
       timestamp: new Date().toISOString(),
@@ -57,7 +68,10 @@ function createEthicsGuard({ policyPath, logPath } = {}) {
       endpoint,
       method: req.method,
       reasonFlag: reasonFlag || null,
+      purpose: purpose || null,
       correlationId,
+      decision,
+      decisionReason,
     };
 
     fs.appendFileSync(resolvedLogPath, `${JSON.stringify(logEntry)}\n`);

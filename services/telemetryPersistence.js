@@ -111,6 +111,7 @@ class PostgresTelemetryAdapter extends TelemetryPersistenceAdapter {
     if (this.client && typeof this.client.end === 'function') {
       await this.client.end();
     }
+    this.client = null;
   }
 }
 
@@ -165,11 +166,19 @@ class SupabaseTelemetryAdapter extends TelemetryPersistenceAdapter {
       throw response.error;
     }
   }
+
+  async flush() {
+    return undefined;
+  }
 }
 
 function createTelemetryPersistence(config = {}) {
   if (!config || config.type === 'json' || Object.keys(config).length === 0) {
-    return new JsonFileTelemetryAdapter(config.json || { baseDir: config.baseDir });
+    const jsonConfig = config.json || {};
+    if (!jsonConfig.baseDir && config.baseDir) {
+      jsonConfig.baseDir = config.baseDir;
+    }
+    return new JsonFileTelemetryAdapter({ ...jsonConfig, telemetry: config.telemetry });
   }
   if (config.type === 'postgres') {
     return new PostgresTelemetryAdapter({

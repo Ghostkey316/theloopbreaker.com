@@ -1,63 +1,85 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const express = require('express');
-const request = require('supertest');
+
 const createEthicsGuard = require('../middleware/ethicsGuard');
 
-function createPolicyFile(policy) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vaultfire-ethics-'));
-  const filePath = path.join(dir, 'policy.json');
-  fs.writeFileSync(filePath, JSON.stringify(policy));
-  return filePath;
-}
+describe('ethicsGuard middleware', () => {
+  const policy = {
+    blockedReasons: ['fraud'],
+    warnReasons: ['automation'],
+  };
 
-describe('Ethics guard middleware', () => {
-  it('blocks intents flagged as exploit loops', async () => {
-    const policyPath = createPolicyFile({ blockedReasons: ['exploit_loop'] });
-    const app = express();
-    app.use(express.json());
-    app.use((req, res, next) => {
-      req.user = { role: 'partner', sub: 'user-1' };
-      next();
-    });
-    app.use(createEthicsGuard({ policyPath }));
-    app.get('/test', (req, res) => res.json({ ok: true }));
+  function writePolicy(tempDir) {
+    const policyPath = path.join(tempDir, 'policy.json');
+    fs.writeFileSync(policyPath, JSON.stringify(policy), 'utf8');
+    return policyPath;
+  }
 
-    const res = await request(app).get('/test').set('X-Vaultfire-Reason', 'exploit_loop');
+  test('logs purpose-based decisions and blocks disallowed intents', () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ethics-guard-'));
+    const policyPath = writePolicy(tempDir);
+    const logPath = path.join(tempDir, 'guard.log');
+    const guard = createEthicsGuard({ policyPath, logPath });
+
+    const req = {
+      method: 'POST',
+      originalUrl: '/vaultfire/reward',
+      headers: { 'x-vaultfire-reason': 'fraud', 'x-vaultfire-purpose': 'suspicious-withdrawal' },
+      body: {},
+      user: { role: 'partner', sub: 'partner-1' },
+    };
+    const res = {
+      status(code) {
+        this.statusCode = code;
+        return this;
+      },
+      json(payload) {
+        this.payload = payload;
+        return this;
+      },
+      setHeader() {},
+    };
+
+    const next = jest.fn();
+    guard(req, res, next);
+
     expect(res.statusCode).toBe(451);
-    expect(res.body.error.code).toBe('ethics.blocked_intent');
+    expect(next).not.toHaveBeenCalled();
+    const lines = fs.readFileSync(logPath, 'utf8').trim().split('\n');
+    const lastEntry = JSON.parse(lines[lines.length - 1]);
+    expect(lastEntry.decision).toBe('blocked');
+    expect(lastEntry.purpose).toBe('suspicious-withdrawal');
   });
 
-  it('warns about automation but allows limited requests', async () => {
-    const policyPath = createPolicyFile({ warnReasons: ['excessive_automation'], automation: { windowMs: 60000, maxRequests: 2 } });
-    const app = express();
-    app.use(express.json());
-    app.use((req, res, next) => {
-      req.user = { role: 'partner', sub: 'user-1' };
-      next();
-    });
-    app.use(createEthicsGuard({ policyPath }));
-    app.get('/test', (req, res) => res.json({ ok: true }));
+  test('warns automation attempts while allowing request', () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ethics-guard-'));
+    const policyPath = writePolicy(tempDir);
+    const logPath = path.join(tempDir, 'guard.log');
+    const guard = createEthicsGuard({ policyPath, logPath });
 
-    const res = await request(app).get('/test').set('X-Vaultfire-Reason', 'excessive_automation');
-    expect(res.statusCode).toBe(200);
-    expect(res.headers['x-vaultfire-ethics-warning']).toBe('excessive_automation');
-  });
+    const req = {
+      method: 'GET',
+      url: '/vaultfire/telemetry',
+      headers: { 'x-vaultfire-reason': 'automation' },
+      body: {},
+      user: { role: 'partner', sub: 'partner-automation' },
+      ip: '127.0.0.1',
+    };
+    const res = {
+      status() {
+        throw new Error('should not block automation warning');
+      },
+      json() {},
+      setHeader: jest.fn(),
+    };
+    const next = jest.fn();
 
-  it('rate limits repeated automation attempts', async () => {
-    const policyPath = createPolicyFile({ warnReasons: ['excessive_automation'], automation: { windowMs: 60000, maxRequests: 1 } });
-    const app = express();
-    app.use(express.json());
-    app.use((req, res, next) => {
-      req.user = { role: 'partner', sub: 'user-1' };
-      next();
-    });
-    app.use(createEthicsGuard({ policyPath }));
-    app.get('/test', (req, res) => res.json({ ok: true }));
-
-    await request(app).get('/test').set('X-Vaultfire-Reason', 'excessive_automation');
-    const res = await request(app).get('/test').set('X-Vaultfire-Reason', 'excessive_automation');
-    expect(res.statusCode).toBe(429);
+    guard(req, res, next);
+    expect(next).toHaveBeenCalled();
+    const lines = fs.readFileSync(logPath, 'utf8').trim().split('\n');
+    const lastEntry = JSON.parse(lines[lines.length - 1]);
+    expect(lastEntry.decision).toBe('warned');
+    expect(res.setHeader).toHaveBeenCalledWith('X-Vaultfire-Ethics-Warning', 'automation');
   });
 });

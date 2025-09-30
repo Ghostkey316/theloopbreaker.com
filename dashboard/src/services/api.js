@@ -127,3 +127,16 @@ export async function fetchHandshakeSecret() {
 export async function fetchStagingProfiles() {
   return request('/security/test-ens');
 }
+
+if (typeof module !== 'undefined') {
+  module.exports = {
+    syncBeliefPayload,
+    fetchSyncStatus,
+    subscribeToSync,
+    subscribeToObservability,
+    fetchObservability,
+    fetchSecurityPosture,
+    fetchHandshakeSecret,
+    fetchStagingProfiles,
+  };
+}
