@@ -7,6 +7,14 @@ const { createPartnerSyncServer } = require('../partnerSync');
 const { BeliefMirrorEngine } = require('../mirror/engine');
 const { computeBeliefMultiplier } = require('../mirror/belief-weight');
 const { castBeliefVote } = require('../cli/beliefVote');
+const TokenService = require('../auth/tokenService');
+const { ROLES } = require('../auth/roles');
+const SecurityPostureManager = require('../services/securityPosture');
+const {
+  SIGNATURE_HEADER,
+  SIGNATURE_ALGORITHM_HEADER,
+  SIGNATURE_ALGORITHM,
+} = require('../utils/responseSigner');
 
 const tmpDir = path.join(__dirname, 'tmp');
 fs.rmSync(tmpDir, { recursive: true, force: true });
@@ -133,6 +141,24 @@ defineIntegrityTest('CLI vote flow integrity', async () => {
   }
 });
 
+defineIntegrityTest('Handshake discovery rejects unauthenticated access', async () => {
+  const server = createPartnerSyncServer({
+    telemetryPath: path.join(tmpDir, 'handshake-unauth-log.json'),
+    votesPath: path.join(tmpDir, 'handshake-unauth-votes.json'),
+    storageOptions: { provider: 'memory', readOnly: false },
+  });
+  const agent = request(server.app);
+
+  const response = await agent.get('/vaultfire/handshake');
+
+  if (response.status !== 401) {
+    throw new Error('Handshake discovery should require authentication');
+  }
+  if (!response.body || response.body.error?.code !== 'auth.unauthorized') {
+    throw new Error('Unauthenticated handshake did not return expected error payload');
+  }
+});
+
 defineIntegrityTest('Dashboard data reflects correct backend truth', async () => {
   const telemetryPath = path.join(tmpDir, 'sync-belief-log.json');
   const votesPath = path.join(tmpDir, 'sync-votes.json');
@@ -146,9 +172,34 @@ defineIntegrityTest('Dashboard data reflects correct backend truth', async () =>
   const agent = request(server.app);
 
   const wallet = ethers.Wallet.createRandom();
-  const handshakeSnapshot = await agent.get('/vaultfire/handshake');
-  const secret = handshakeSnapshot.body?.secret || null;
-  const secretId = handshakeSnapshot.body?.secretId || null;
+  const tokenService = new TokenService();
+  const accessToken = tokenService.createAccessToken({ wallet: wallet.address, role: ROLES.PARTNER });
+  const handshakeSnapshot = await agent
+    .get('/vaultfire/handshake')
+    .set('Authorization', `Bearer ${accessToken}`);
+
+  if (handshakeSnapshot.status !== 200) {
+    throw new Error(`Authenticated handshake discovery failed with status ${handshakeSnapshot.status}`);
+  }
+  if (handshakeSnapshot.body?.secret || handshakeSnapshot.body?.rotation) {
+    throw new Error('Handshake discovery leaked secret metadata');
+  }
+
+  const signatureHeader = handshakeSnapshot.headers[SIGNATURE_HEADER.toLowerCase()];
+  if (!signatureHeader) {
+    throw new Error('Handshake discovery missing signature header');
+  }
+  if (
+    handshakeSnapshot.headers[SIGNATURE_ALGORITHM_HEADER.toLowerCase()] &&
+    handshakeSnapshot.headers[SIGNATURE_ALGORITHM_HEADER.toLowerCase()] !== SIGNATURE_ALGORITHM
+  ) {
+    throw new Error('Unexpected handshake discovery signature algorithm');
+  }
+
+  const postureManager = new SecurityPostureManager();
+  const activeSecret = postureManager.getActiveSecret();
+  const secret = activeSecret?.value || null;
+  const secretId = activeSecret?.id || null;
   const nonce = `nonce-${Date.now()}`;
   const timestamp = Date.now().toString();
   const digest =
@@ -169,6 +220,15 @@ defineIntegrityTest('Dashboard data reflects correct backend truth', async () =>
 
   if (handshakeResponse.status !== 200) {
     throw new Error(`Handshake request failed with status ${handshakeResponse.status}`);
+  }
+
+  if (handshakeResponse.body?.rotation) {
+    throw new Error('Handshake acknowledgement should not include rotation metadata');
+  }
+
+  const handshakeSignature = handshakeResponse.headers[SIGNATURE_HEADER.toLowerCase()];
+  if (!handshakeSignature) {
+    throw new Error('Signed handshake acknowledgement missing signature header');
   }
 
   const sessionToken = handshakeResponse.body?.session?.token || null;
@@ -206,5 +266,43 @@ defineIntegrityTest('Dashboard data reflects correct backend truth', async () =>
   }
   if (Math.abs(summary.beliefScore - partner.multiplier) > 0.0001) {
     throw new Error('Dashboard summary belief score mismatch');
+  }
+});
+
+defineIntegrityTest('Rotation status admin route requires elevated access', async () => {
+  const server = createPartnerSyncServer({
+    telemetryPath: path.join(tmpDir, 'rotation-log.json'),
+    votesPath: path.join(tmpDir, 'rotation-votes.json'),
+    storageOptions: { provider: 'memory', readOnly: false },
+  });
+  const agent = request(server.app);
+  const wallet = ethers.Wallet.createRandom();
+  const tokenService = new TokenService();
+  const partnerToken = tokenService.createAccessToken({ wallet: wallet.address, role: ROLES.PARTNER });
+  const adminToken = tokenService.createAccessToken({ wallet: wallet.address, role: ROLES.ADMIN });
+
+  const forbidden = await agent
+    .get('/vaultfire/admin/rotation-status')
+    .set('Authorization', `Bearer ${partnerToken}`);
+
+  if (forbidden.status !== 403) {
+    throw new Error('Rotation status should reject non-admin access');
+  }
+
+  const authorized = await agent
+    .get('/vaultfire/admin/rotation-status')
+    .set('Authorization', `Bearer ${adminToken}`);
+
+  if (authorized.status !== 200) {
+    throw new Error(`Admin rotation status request failed with status ${authorized.status}`);
+  }
+
+  if (!authorized.body?.rotation || authorized.body.rotation.current?.value) {
+    throw new Error('Rotation status should only expose sanitized metadata');
+  }
+
+  const signatureHeader = authorized.headers[SIGNATURE_HEADER.toLowerCase()];
+  if (!signatureHeader) {
+    throw new Error('Rotation status response missing signature header');
   }
 });

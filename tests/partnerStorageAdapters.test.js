@@ -15,17 +15,25 @@ const mockSupabaseFrom = jest.fn(() => ({
   upsert: mockSupabaseUpsert,
 }));
 
-jest.mock('pg', () => ({
-  __esModule: true,
-  Pool: mockPool,
-}));
+jest.mock(
+  'pg',
+  () => ({
+    __esModule: true,
+    Pool: mockPool,
+  }),
+  { virtual: true }
+);
 
-jest.mock('@supabase/supabase-js', () => ({
-  __esModule: true,
-  createClient: jest.fn(() => ({
-    from: mockSupabaseFrom,
-  })),
-}));
+jest.mock(
+  '@supabase/supabase-js',
+  () => ({
+    __esModule: true,
+    createClient: jest.fn(() => ({
+      from: mockSupabaseFrom,
+    })),
+  }),
+  { virtual: true }
+);
 
 const {
   PostgresPartnerStorage,

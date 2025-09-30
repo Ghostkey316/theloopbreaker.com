@@ -199,10 +199,202 @@ class LocalForagePartnerStorage extends BasePartnerStorage {
   }
 }
 
+function recordPartnerSaved(telemetry, provider, wallet) {
+  if (telemetry && typeof telemetry.record === 'function') {
+    telemetry.record('storage.partner.saved', { provider, wallet });
+  }
+}
+
+class PostgresPartnerStorage extends BasePartnerStorage {
+  constructor(options = {}) {
+    super({ readOnly: false });
+    this.tableName = options.tableName || 'vaultfire_partner_sync';
+    this.connectionString =
+      options.connectionString || options.url || process.env.VAULTFIRE_POSTGRES_URL || null;
+    this.poolOptions = options.poolOptions || {};
+    this.telemetry = options.telemetry || null;
+    this.pg = options.pg || safeRequire('pg');
+    if (!this.pg) {
+      throw new Error('pg dependency is required for PostgresPartnerStorage.');
+    }
+    this.Pool = this.pg.Pool || this.pg;
+    this.pool = null;
+  }
+
+  async init() {
+    if (this.pool) {
+      return;
+    }
+    const config = { ...this.poolOptions };
+    if (this.connectionString) {
+      config.connectionString = this.connectionString;
+    }
+    this.pool = new this.Pool(config);
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS ${this.tableName} (
+        wallet TEXT PRIMARY KEY,
+        ens TEXT,
+        last_sync TIMESTAMPTZ,
+        multiplier NUMERIC NOT NULL,
+        tier TEXT NOT NULL,
+        status TEXT NOT NULL,
+        payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+        config_overrides BOOLEAN DEFAULT FALSE,
+        inserted_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+  }
+
+  async listPartners() {
+    await this.init();
+    const result = await this.pool.query(
+      `SELECT wallet, ens, last_sync, multiplier, tier, status, payload, config_overrides FROM ${this.tableName} ORDER BY last_sync DESC NULLS LAST`
+    );
+    return result.rows.map((row) => ({
+      wallet: normalizeWallet(row.wallet),
+      ens: row.ens,
+      lastSync: row.last_sync || row.lastSync || null,
+      multiplier: Number(row.multiplier),
+      tier: row.tier,
+      status: row.status,
+      payload: row.payload || {},
+      configOverrides: Boolean(row.config_overrides ?? row.configOverrides),
+    }));
+  }
+
+  async savePartner(record) {
+    await this.init();
+    const normalizedWallet = normalizeWallet(record.wallet);
+    const payload = JSON.stringify(record.payload || {});
+    await this.pool.query(
+      `
+        INSERT INTO ${this.tableName} (wallet, ens, last_sync, multiplier, tier, status, payload, config_overrides)
+        VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8)
+        ON CONFLICT (wallet)
+        DO UPDATE SET
+          ens = EXCLUDED.ens,
+          last_sync = EXCLUDED.last_sync,
+          multiplier = EXCLUDED.multiplier,
+          tier = EXCLUDED.tier,
+          status = EXCLUDED.status,
+          payload = EXCLUDED.payload,
+          config_overrides = EXCLUDED.config_overrides
+      `,
+      [
+        normalizedWallet,
+        record.ens || null,
+        record.lastSync || null,
+        record.multiplier,
+        record.tier,
+        record.status,
+        payload,
+        Boolean(record.configOverrides),
+      ]
+    );
+    recordPartnerSaved(this.telemetry, 'postgres', normalizeWallet(record.wallet));
+    return {
+      ...record,
+      wallet: normalizedWallet,
+    };
+  }
+}
+
+class SupabasePartnerStorage extends BasePartnerStorage {
+  constructor(options = {}) {
+    super({ readOnly: false });
+    this.tableName = options.tableName || 'vaultfire_partner_sync';
+    this.url = options.url || process.env.SUPABASE_URL;
+    this.serviceKey = options.serviceKey || process.env.SUPABASE_SERVICE_ROLE_KEY;
+    this.telemetry = options.telemetry || null;
+    const supabase = options.supabase || safeRequire('@supabase/supabase-js');
+    this.createClient = options.createClient || supabase?.createClient || null;
+    if (!this.url || !this.serviceKey) {
+      throw new Error('Supabase URL and service key are required for SupabasePartnerStorage.');
+    }
+    if (typeof this.createClient !== 'function') {
+      throw new Error('Supabase dependency is required for SupabasePartnerStorage.');
+    }
+    this.client = null;
+  }
+
+  async init() {
+    if (this.client) {
+      return;
+    }
+    this.client = this.createClient(this.url, this.serviceKey, { auth: { persistSession: false } });
+  }
+
+  async listPartners() {
+    await this.init();
+    const query = this.client
+      .from(this.tableName)
+      .select('wallet, ens, last_sync, multiplier, tier, status, payload, config_overrides')
+      .order('last_sync', { ascending: false });
+    const { data, error } = await query;
+    if (error) {
+      throw new Error(`Supabase listPartners failed: ${error.message}`);
+    }
+    return (data || []).map((row) => ({
+      wallet: normalizeWallet(row.wallet),
+      ens: row.ens,
+      lastSync: row.last_sync || null,
+      multiplier: Number(row.multiplier),
+      tier: row.tier,
+      status: row.status,
+      payload: row.payload || {},
+      configOverrides: Boolean(row.config_overrides),
+    }));
+  }
+
+  async savePartner(record) {
+    await this.init();
+    const normalizedWallet = normalizeWallet(record.wallet);
+    const payload = {
+      wallet: normalizedWallet,
+      ens: record.ens || null,
+      last_sync: record.lastSync || null,
+      multiplier: record.multiplier,
+      tier: record.tier,
+      status: record.status,
+      payload: record.payload || {},
+      config_overrides: Boolean(record.configOverrides),
+    };
+    const { error } = await this.client.from(this.tableName).upsert(payload, { onConflict: 'wallet' });
+    if (error) {
+      throw new Error(`Supabase savePartner failed: ${error.message}`);
+    }
+    recordPartnerSaved(this.telemetry, 'supabase', normalizedWallet);
+    return {
+      ...record,
+      wallet: normalizedWallet,
+    };
+  }
+}
+
 function createPartnerStorage(options = {}) {
   const adapter = options.adapter || options.provider || null;
   if (adapter === 'memory') {
     return new MemoryPartnerStorage({ readOnly: !!options.readOnly });
+  }
+
+  if (adapter === 'postgres') {
+    try {
+      return new PostgresPartnerStorage({ ...options, ...(options.postgres || {}) });
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.warn('Postgres adapter unavailable, falling back to memory partner storage:', error.message);
+      return new MemoryPartnerStorage({ readOnly: true });
+    }
+  }
+
+  if (adapter === 'supabase') {
+    try {
+      return new SupabasePartnerStorage({ ...options, ...(options.supabase || {}) });
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.warn('Supabase adapter unavailable, falling back to memory partner storage:', error.message);
+      return new MemoryPartnerStorage({ readOnly: true });
+    }
   }
 
   if (adapter === 'localforage' || (typeof window !== 'undefined' && window.indexedDB)) {
@@ -229,4 +421,6 @@ module.exports = {
   MemoryPartnerStorage,
   SQLitePartnerStorage,
   LocalForagePartnerStorage,
+  PostgresPartnerStorage,
+  SupabasePartnerStorage,
 };

@@ -51,14 +51,44 @@ class SecurityPostureManager {
     const current = this.getActiveSecret();
     return {
       status: current ? 'rotating' : 'legacy',
-      secret: current?.value || null,
-      secretId: current?.id || null,
-      expiresAt: current?.expiresAt || null,
+      requiresHandshake: this.requiresHandshake(),
+      issuedAt: new Date().toISOString(),
       posture: {
         algorithm: 'HMAC-SHA256',
         rotationGraceDays: this.config?.verification?.rotationGraceDays || 0,
         allowLegacyHandshake: this.allowsLegacyHandshake(),
       },
+    };
+  }
+
+  getRotationStatus() {
+    const rotation = this.getRotation() || { current: null, previous: [], upcoming: [] };
+
+    const sanitize = (secret) => {
+      if (!secret) {
+        return null;
+      }
+
+      const checksum = secret.value
+        ? crypto.createHash('sha256').update(String(secret.value)).digest('hex')
+        : null;
+
+      return {
+        id: secret.id || null,
+        activeFrom: secret.activeFrom || null,
+        expiresAt: secret.expiresAt || null,
+        checksum,
+        status: secret.value ? 'configured' : 'pending',
+      };
+    };
+
+    return {
+      generatedAt: new Date().toISOString(),
+      current: sanitize(rotation.current),
+      previous: Array.isArray(rotation.previous) ? rotation.previous.map(sanitize).filter(Boolean) : [],
+      upcoming: Array.isArray(rotation.upcoming) ? rotation.upcoming.map(sanitize).filter(Boolean) : [],
+      totalSecrets: [rotation.current, ...(rotation.previous || []), ...(rotation.upcoming || [])].filter(Boolean)
+        .length,
     };
   }
 

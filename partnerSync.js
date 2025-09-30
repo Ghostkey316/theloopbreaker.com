@@ -17,6 +17,10 @@ const {
 } = require('./utils/scoringValidator');
 const SecurityPostureManager = require('./services/securityPosture');
 const WebhookDeliveryQueue = require('./services/deliveryQueue');
+const TokenService = require('./auth/tokenService');
+const { ROLES, hasRequiredRole } = require('./auth/roles');
+const { createAuthMiddleware } = require('./auth/authMiddleware');
+const { sendSignedJson } = require('./utils/responseSigner');
 
 function sanitizeVotePayload(vote) {
   assertWalletOnlyData(vote, { context: 'vote' });
@@ -99,6 +103,9 @@ function createPartnerSyncServer({
     provider: storageOptions.provider,
     readOnly: storageOptions.readOnly,
     localforage: storageOptions.localforage,
+    postgres: storageOptions.postgres,
+    supabase: storageOptions.supabase,
+    telemetry: resolvedTelemetry,
   });
   const voteRepository = new VoteRepository({ filePath: resolvedVotesPath });
   const webhookQueue = deliveryQueue || new WebhookDeliveryQueue();
@@ -113,6 +120,18 @@ function createPartnerSyncServer({
     summaryWarning: governance.summaryWarning ?? GOVERNANCE_THRESHOLDS.summaryWarning,
   };
 
+  const discoveryTokenService = new TokenService();
+  const handshakeRequiredRoles = [ROLES.PARTNER, ROLES.ADMIN];
+  const discoveryApiKeys = (process.env.VAULTFIRE_HANDSHAKE_API_KEYS || process.env.VAULTFIRE_HANDSHAKE_API_KEY || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const apiKeyHeaders = ['x-api-key', 'x-vaultfire-api-key', 'x-vf-handshake-key'];
+  const [adminAuthRateLimiter, adminAuthGuard] = createAuthMiddleware({
+    requiredRoles: [ROLES.ADMIN],
+    tokenService: discoveryTokenService,
+  });
+
   const securityLogOptions = {
     tags: ['security'],
     visibility: { partner: false, ethics: true, audit: true },
@@ -123,6 +142,95 @@ function createPartnerSyncServer({
       return;
     }
     resolvedTelemetry.record(event, payload, options);
+  }
+
+  function authError(message, code = 'auth.unauthorized', statusCode = 401) {
+    const error = new Error(message);
+    error.code = code;
+    error.statusCode = statusCode;
+    return error;
+  }
+
+  function safeCompare(expected, actual) {
+    if (!expected || !actual) {
+      return false;
+    }
+    const expectedBuffer = Buffer.from(expected);
+    const actualBuffer = Buffer.from(actual);
+    if (expectedBuffer.length !== actualBuffer.length) {
+      return false;
+    }
+    try {
+      return crypto.timingSafeEqual(expectedBuffer, actualBuffer);
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function extractBearerToken(req) {
+    const header = req.headers.authorization;
+    if (!header) {
+      return null;
+    }
+    const [scheme, value] = header.split(' ');
+    if (scheme !== 'Bearer' || !value) {
+      return null;
+    }
+    return value;
+  }
+
+  function verifyBearer(req, { requiredRoles = handshakeRequiredRoles } = {}) {
+    const token = extractBearerToken(req);
+    if (!token) {
+      return null;
+    }
+
+    const decoded = discoveryTokenService.verifyAccessToken(token);
+    if (!hasRequiredRole(decoded.role, requiredRoles)) {
+      throw authError('Insufficient role access for this resource.', 'auth.forbidden', 403);
+    }
+    return decoded;
+  }
+
+  function extractApiKey(req) {
+    for (const header of apiKeyHeaders) {
+      if (req.headers[header]) {
+        return String(req.headers[header]);
+      }
+    }
+    return null;
+  }
+
+  function verifyApiKey(req) {
+    if (!discoveryApiKeys.length) {
+      return null;
+    }
+    const provided = extractApiKey(req);
+    if (!provided) {
+      return null;
+    }
+
+    const matched = discoveryApiKeys.some((key) => safeCompare(key, provided));
+    if (!matched) {
+      throw authError('Invalid API key for handshake discovery.', 'auth.unauthorized', 401);
+    }
+    return { type: 'api-key', key: provided };
+  }
+
+  function requireDiscoveryAuth(req) {
+    const bearer = verifyBearer(req, {});
+    if (bearer) {
+      req.discoveryAuth = { type: 'bearer', user: bearer };
+      return req.discoveryAuth;
+    }
+
+    const apiKeyAuth = verifyApiKey(req);
+    if (apiKeyAuth) {
+      req.discoveryAuth = apiKeyAuth;
+      return apiKeyAuth;
+    }
+
+    throw authError('Missing authentication for handshake discovery. Provide a bearer token or API key.');
   }
 
   function cleanupExpiredSessions(now = Date.now()) {
@@ -210,14 +318,25 @@ function createPartnerSyncServer({
 
   app.get('/vaultfire/handshake', (req, res) => {
     try {
+      requireDiscoveryAuth(req);
       securityPosture.refresh();
       const snapshot = securityPosture.getHandshakeSnapshot();
-      res.json({
-        ...snapshot,
+      const response = {
+        status: snapshot.status,
+        requiresHandshake: snapshot.requiresHandshake,
+        posture: snapshot.posture,
+        issuedAt: snapshot.issuedAt,
         sessionTtlSeconds: Math.floor(sessionTtl / 1000),
-      });
+      };
+      sendSignedJson(res, response, { securityPosture });
     } catch (error) {
-      res.status(500).json({ error: { message: error.message } });
+      const statusCode = error.statusCode || 500;
+      res.status(statusCode).json({
+        error: {
+          code: error.code || 'handshake.discovery.error',
+          message: error.message,
+        },
+      });
     }
   });
 
@@ -256,16 +375,18 @@ function createPartnerSyncServer({
         },
         securityLogOptions
       );
-      res.json({
-        ok: true,
-        status: 'acknowledged',
-        session,
-        posture: securityPosture.getHandshakeSnapshot().posture,
-        rotation: {
-          secretId: session.secretId,
-          expiresAt: session.expiresAt,
+      sendSignedJson(
+        res,
+        {
+          ok: true,
+          status: 'acknowledged',
+          session,
+          posture: securityPosture.getHandshakeSnapshot().posture,
+          requiresHandshake: securityPosture.requiresHandshake(),
+          issuedAt: new Date().toISOString(),
         },
-      });
+        { securityPosture }
+      );
     } catch (error) {
       recordTelemetry(
         'security.handshake.rejected',
@@ -278,6 +399,24 @@ function createPartnerSyncServer({
       );
       const statusCode = error.statusCode || 400;
       res.status(statusCode).json({ error: { message: error.message } });
+    }
+  });
+
+  app.get('/vaultfire/admin/rotation-status', adminAuthRateLimiter, adminAuthGuard, (req, res) => {
+    try {
+      securityPosture.refresh();
+      const rotation = securityPosture.getRotationStatus();
+      sendSignedJson(
+        res,
+        {
+          ok: true,
+          rotation,
+          issuedAt: new Date().toISOString(),
+        },
+        { securityPosture }
+      );
+    } catch (error) {
+      res.status(500).json({ error: { message: error.message } });
     }
   });
 
