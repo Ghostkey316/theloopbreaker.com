@@ -1,4 +1,7 @@
-version: 1
+version: 2
+metadata:
+  revision: vaultfire-pilot-prod
+  lastUpdated: 2025-08-01T00:00:00Z
 services:
   telemetry-ledger:
     persistence:
@@ -10,11 +13,28 @@ services:
         database: telemetry
         user: vaultfire
         password: change-me
+      retentionDays: 35
+    enrichment:
+      enableBeliefComplexity: true
+      fields:
+        - name: beliefComplexityIndex
+          source: handshake.beliefComplexity.metrics[0]
+        - name: behaviorDensityScore
+          source: reward-streams.behaviorMetrics.capture.behaviorDensityScore
+        - name: loyaltySustainRate
+          source: reward-streams.behaviorMetrics.capture.loyaltySustainRate
     sinks:
       - type: s3
         bucket: vaultfire-telemetry-archive
         prefix: partners/
       - type: firehose
         streamName: vaultfire-telemetry-stream
+      - type: realtime
+        channel: telemetry.behavior
+        batching:
+          intervalSeconds: 10
+          jitter: 0.4
+          maxBatchSize: 75
     failover:
       fallbackFile: ./logs/telemetry/persistence-failover.jsonl
+      beliefComplexitySnapshot: ./logs/telemetry/belief-complexity.jsonl

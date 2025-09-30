@@ -1,4 +1,7 @@
-version: 1
+version: 2
+metadata:
+  revision: vaultfire-pilot-prod
+  lastUpdated: 2025-08-01T00:00:00Z
 services:
   webhook-relay:
     maxRetries: 5
@@ -6,4 +9,22 @@ services:
     maxDelayMs: 15000
     jitter: 0.35
     concurrency: 8
-    telemetryChannel: webhook.delivery
+    queues:
+      production:
+        target: partners
+        deliveryGuarantee: at-least-once
+      sandbox:
+        target: sandbox
+        deliveryGuarantee: at-most-once
+        enabled: true
+    observability:
+      telemetryChannel: webhook.delivery
+      behaviorMetrics:
+        beliefComplexityStream: telemetry.behavior
+        loyaltySandboxFeed: telemetry.loyalty.sandbox
+      manifestIntegrity:
+        source: ../codex_manifest.json
+        requiredStatus: PASS
+    safeguards:
+      replayWindowMinutes: 20
+      enforceEthicsManifest: true
