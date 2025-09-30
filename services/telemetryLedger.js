@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { createTelemetrySinkRegistry } = require('./telemetrySinks');
+const { createTelemetryPersistence } = require('./telemetryPersistence');
 
 function ensureDirectory(dirPath) {
   if (!fs.existsSync(dirPath)) {
@@ -37,6 +38,7 @@ class MultiTierTelemetryLedger {
     ethicsLog = 'ethics.log',
     auditLog = 'audit.log',
     sinks = [],
+    persistence,
   } = {}) {
     this.baseDir = baseDir;
     ensureDirectory(this.baseDir);
@@ -46,6 +48,25 @@ class MultiTierTelemetryLedger {
     ensureDirectory(path.dirname(this.auditLogPath));
     this.lastAuditHash = this.#bootstrapAuditHash();
     this.sinkRegistry = createTelemetrySinkRegistry(sinks);
+    this.persistenceAdapter = null;
+    if (persistence) {
+      try {
+        this.persistenceAdapter = createTelemetryPersistence({
+          ...persistence,
+          telemetry: this,
+        });
+        if (this.persistenceAdapter?.init) {
+          Promise.resolve(this.persistenceAdapter.init()).catch((error) => {
+            // eslint-disable-next-line no-console
+            console.warn('Telemetry persistence initialisation failed, falling back to file logs:', error.message);
+            this.persistenceAdapter = null;
+          });
+        }
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.warn('Unable to create telemetry persistence adapter:', error.message);
+      }
+    }
   }
 
   #bootstrapAuditHash() {
@@ -100,6 +121,13 @@ class MultiTierTelemetryLedger {
       scope: options.tags || [],
     });
 
+    if (this.persistenceAdapter?.persist) {
+      Promise.resolve(this.persistenceAdapter.persist(entry, { visibility })).catch((error) => {
+        // eslint-disable-next-line no-console
+        console.warn('Telemetry persistence error:', error.message);
+      });
+    }
+
     return entry;
   }
 
@@ -144,9 +172,14 @@ class MultiTierTelemetryLedger {
   }
 
   async flushExternal() {
+    const tasks = [];
     if (this.sinkRegistry) {
-      await this.sinkRegistry.flush();
+      tasks.push(this.sinkRegistry.flush());
     }
+    if (this.persistenceAdapter?.flush) {
+      tasks.push(this.persistenceAdapter.flush());
+    }
+    await Promise.all(tasks);
   }
 }
 

@@ -11,5 +11,11 @@
   },
   "mirror": {
     "outputChannel": "cli"
+  },
+  "verification": {
+    "remote": {
+      "endpoint": "https://verification.invalid/anchor",
+      "apiKey": "test-key"
+    }
   }
 }

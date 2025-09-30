@@ -30,6 +30,14 @@ function createToken(overrides = {}) {
   });
 }
 
+function mockVerification(result = { accepted: true }, { status = 200 } = {}) {
+  fetchMock.mockResolvedValueOnce({
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => result,
+  });
+}
+
 describe('Trust Sync protocol', () => {
   beforeAll(async () => {
     await identityStoreReady;
@@ -59,6 +67,7 @@ describe('Trust Sync protocol', () => {
 
     it('stores anchors at range boundaries and returns them decrypted', async () => {
       const token = createToken();
+      mockVerification();
       const create = await request(app)
         .post('/link-wallet')
         .set('Authorization', `Bearer ${token}`)
@@ -67,6 +76,7 @@ describe('Trust Sync protocol', () => {
       expect(create.body.anchor.beliefScore).toBe(1);
       expect(create.body.anchor.ensAlias).toBeNull();
       expect(create.body.anchor.originFingerprint).toHaveLength(64);
+      expect(create.body.verification.status).toBe('accepted');
 
       const fetchRes = await request(app)
         .get('/link-wallet')
@@ -115,11 +125,13 @@ describe('Trust Sync protocol', () => {
       partnerHooks.subscribe({ event: 'beliefBreach', partnerId: 'trust-partner', targetUrl: '' });
       partnerHooks.on('delivery:beliefBreach', (entry) => deliveries.push(entry));
 
+      mockVerification();
       const res = await request(app)
         .post('/link-wallet')
         .set('Authorization', `Bearer ${token}`)
         .send({ wallet: WALLET_BREACH, ens: 'breach.eth', beliefScore: 0.2 });
       expect(res.status).toBe(200);
+      expect(res.body.verification.status).toBe('accepted');
 
       await new Promise((resolve) => setTimeout(resolve, 50));
       expect(deliveries.some((entry) => entry.payload.beliefScore === 0.2)).toBe(true);
@@ -138,6 +150,15 @@ describe('Trust Sync protocol', () => {
       expect(res.status).toBe(201);
       expect(res.body.subscription.event).toBe('activation');
     });
+  });
+
+  it('previews reward stream wiring when viewing rewards', async () => {
+    const token = createToken();
+    const res = await request(app)
+      .get(`/vaultfire/rewards/${WALLET_REFRESH}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.streamPreview).toMatchObject({ status: 'pending-integration' });
   });
 
   describe('Signal Compass streaming', () => {
@@ -162,6 +183,7 @@ describe('Trust Sync protocol', () => {
         });
       });
 
+      mockVerification();
       await request(app)
         .post('/link-wallet')
         .set('Authorization', `Bearer ${token}`)
@@ -220,6 +242,7 @@ describe('Trust Sync protocol', () => {
         partnerId: 'trust-partner',
       });
 
+      mockVerification();
       const res = await request(app)
         .post('/vaultfire/mirror')
         .set('Authorization', `Bearer ${token}`)
@@ -227,5 +250,17 @@ describe('Trust Sync protocol', () => {
       expect(res.status).toBe(202);
       expect(res.body.summary.recommendedAction).toBeDefined();
     });
+  });
+
+  it('rejects anchors when remote verification denies the request', async () => {
+    const token = createToken();
+    mockVerification({ accepted: false, reason: 'mismatch' });
+    const res = await request(app)
+      .post('/link-wallet')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ wallet: WALLET_SECONDARY, beliefScore: 0.8 });
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe('wallet.verification_rejected');
+    expect(res.body.verification.status).toBe('rejected');
   });
 });

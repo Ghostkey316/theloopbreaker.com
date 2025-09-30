@@ -52,3 +52,29 @@ AES-256-GCM using the key supplied via `VAULTFIRE_ENCRYPTION_KEY`.
 Set `trustSync.identityStore.breachThreshold` to customise the score that
 should trigger `onBeliefBreach`. The default is `0.35`. Breaches are recorded in
 all telemetry channels and propagated to any registered partner hooks.
+
+## Remote verification
+
+Partners can opt into remote verification by configuring
+`trustSync.verification.remote`. When present the Trust Sync API forwards anchor
+payloads to the remote verifier and includes the verdict in the response. A
+rejected verdict returns HTTP `409` so client SDKs can surface actionable
+messages. <!-- TODO(trust-sync-remote-migration): wire verifier retries into job queue -->
+
+```json
+{
+  "trustSync": {
+    "verification": {
+      "remote": {
+        "endpoint": "https://partner.example.com/verify-anchor",
+        "apiKey": "partner-service-token"
+      }
+    }
+  }
+}
+```
+
+The verifier receives `{ anchor, context }` and should respond with
+`{ accepted: true }` or `{ accepted: false, reason: "explain" }`. Any network
+failures are logged as deferred telemetry so operators can re-run the
+verification later.
