@@ -84,6 +84,17 @@ describe('SecurityPostureManager handshake enforcement', () => {
     expect(legacyCall).toBeTruthy();
     expect(legacyCall[1]).toMatchObject({ wallet: '0xabc' });
   });
+
+  test('handshake snapshot omits secret payloads', () => {
+    const { manager } = createManager();
+    const snapshot = manager.getHandshakeSnapshot();
+
+    expect(snapshot).toMatchObject({ status: 'rotating', requiresHandshake: true });
+    expect(snapshot.secret).toBeUndefined();
+    expect(snapshot.secretId).toBeUndefined();
+    expect(snapshot.expiresAt).toBeUndefined();
+    expect(snapshot.posture).toMatchObject({ algorithm: 'HMAC-SHA256' });
+  });
 });
 
 describe('SecurityPostureManager domain enforcement', () => {
@@ -104,5 +115,23 @@ describe('SecurityPostureManager domain enforcement', () => {
     const rejectionCall = telemetry.record.mock.calls.find(([event]) => event === 'security.domain.rejected');
     expect(rejectionCall).toBeTruthy();
     expect(rejectionCall[1]).toMatchObject({ host: 'malicious.example.com' });
+  });
+});
+
+describe('SecurityPostureManager rotation status reporting', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('returns sanitized rotation metadata without secret values', () => {
+    const { manager } = createManager();
+    const rotation = manager.getRotationStatus();
+
+    expect(rotation.current).toMatchObject({ id: activeSecret.id, status: 'configured' });
+    expect(rotation.current.checksum).toEqual(expect.any(String));
+    expect(rotation.current).not.toHaveProperty('value');
+    expect(rotation.previous).toBeInstanceOf(Array);
+    expect(rotation.upcoming).toBeInstanceOf(Array);
+    expect(rotation.totalSecrets).toBeGreaterThanOrEqual(1);
   });
 });
