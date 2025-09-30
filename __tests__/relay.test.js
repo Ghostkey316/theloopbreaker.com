@@ -1,4 +1,4 @@
-const { describe, it, expect, jest } = require('@jest/globals');
+const { describe, it, expect } = require('@jest/globals');
 
 describe('Relay reliability fallback and retry', () => {
   function createRelay({ sendFn, redisClient, scheduleRetry }) {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 /**
  * @title GhostkeyLoyaltyLock
@@ -22,19 +22,19 @@ contract GhostkeyLoyaltyLock {
      * @notice Stake tokens for a number of weeks. The amount is sent with the
      * transaction as ETH.
      * @param ensHolder The user address to credit the lock to.
-     * @param weeks The duration in weeks to lock funds for.
+     * @param lockWeeks The duration in weeks to lock funds for.
      */
-    function stake(address ensHolder, uint256 weeks) external payable {
-        require(weeks > 0, "duration 0");
+    function stake(address ensHolder, uint256 lockWeeks) external payable {
+        require(lockWeeks > 0, "duration 0");
         require(msg.value > 0, "no value");
         LockInfo storage info = locks[ensHolder];
         require(info.amount == 0, "already staked");
 
         info.start = block.timestamp;
-        info.duration = weeks * 1 weeks;
+        info.duration = lockWeeks * 1 weeks;
         info.amount = msg.value;
 
-        emit Staked(ensHolder, msg.value, weeks);
+        emit Staked(ensHolder, msg.value, lockWeeks);
     }
 
     /**

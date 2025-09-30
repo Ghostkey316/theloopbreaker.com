@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const path = require('path');
 const { Command } = require('commander');
 const chalk = require('chalk');
 const TokenService = require('../auth/tokenService');
@@ -17,11 +18,31 @@ const ethics = require('../services/ethicsEngineV2');
 
 const program = new Command();
 const tokenService = new TokenService();
+const STARTER_CONFIG_PATH = path.join(__dirname, '..', 'configs', 'starter-pilot', 'vaultfire-lite.yaml');
+let starterModeInitialized = false;
 
 program
   .name('vaultfire-cli')
   .description('Vaultfire partner activation toolkit')
   .version('1.0.0');
+
+program.option('--starter-mode', 'Load the starter pilot configuration with minimal modules', false);
+
+program.hook('preAction', () => {
+  const { starterMode } = program.opts();
+  if (starterMode && !starterModeInitialized) {
+    process.env.VAULTFIRE_STARTER_MODE = 'true';
+    if (!process.env.VAULTFIRE_RC_PATH) {
+      process.env.VAULTFIRE_RC_PATH = STARTER_CONFIG_PATH;
+    }
+    console.log(
+      chalk.cyan(
+        `Starter pilot configuration enabled via ${path.relative(process.cwd(), STARTER_CONFIG_PATH)}. Advanced modules remain disabled.`,
+      ),
+    );
+    starterModeInitialized = true;
+  }
+});
 
 program
   .command('init')

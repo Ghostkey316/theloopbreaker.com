@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const YAML = require('yamljs');
 
 const DEFAULT_CONFIG = {
   useWalletAsIdentity: true,
@@ -30,8 +31,39 @@ const DEFAULT_CONFIG = {
   },
   verification: {
     remote: null,
+    externalValidationEndpoint: null,
+  },
+  rewards: {
+    fallbackMultiplier: 1,
+    multiplierAddress: null,
+    rewardStreamAddress: null,
+    providerUrl: null,
+    stream: {
+      autoDistribute: false,
+    },
   },
 };
+
+const STARTER_CONFIG_PATH = path.join(__dirname, '..', 'configs', 'starter-pilot', 'vaultfire-lite.yaml');
+
+function readConfigFile(filePath) {
+  if (!fs.existsSync(filePath)) {
+    return {};
+  }
+  try {
+    const raw = fs.readFileSync(filePath, 'utf8');
+    if (!raw.trim()) {
+      return {};
+    }
+    if (filePath.endsWith('.yaml') || filePath.endsWith('.yml')) {
+      return YAML.parse(raw);
+    }
+    return JSON.parse(raw);
+  } catch (error) {
+    console.warn(`Unable to parse ${path.basename(filePath)}, falling back to defaults:`, error.message);
+    return {};
+  }
+}
 
 function mergeConfig(base, override) {
   if (!override) {
@@ -56,18 +88,21 @@ function mergeConfig(base, override) {
 }
 
 function loadTrustSyncConfig() {
-  const customPath = process.env.VAULTFIRE_RC_PATH || path.join(__dirname, '..', 'vaultfirerc.json');
-  let fileConfig = {};
-  if (fs.existsSync(customPath)) {
-    try {
-      const raw = fs.readFileSync(customPath, 'utf8');
-      fileConfig = JSON.parse(raw);
-    } catch (error) {
-      console.warn('Unable to parse vaultfirerc.json, falling back to defaults:', error.message);
-    }
-  }
+  const rcPathEnv =
+    process.env.VAULTFIRE_RC_PATH ||
+    (process.env.VAULTFIRE_STARTER_MODE === 'true' || process.env.VAULTFIRE_STARTER_MODE === '1'
+      ? STARTER_CONFIG_PATH
+      : null);
+  const customPath = rcPathEnv || path.join(__dirname, '..', 'vaultfirerc.json');
+  const fileConfig = readConfigFile(customPath);
 
   const merged = mergeConfig(DEFAULT_CONFIG, fileConfig.trustSync || fileConfig);
+  if (fileConfig.modules && !merged.modules) {
+    merged.modules = fileConfig.modules;
+  }
+  if (fileConfig.rewards) {
+    merged.rewards = mergeConfig(DEFAULT_CONFIG.rewards, fileConfig.rewards);
+  }
   if (process.env.VAULTFIRE_IDENTITY_PROVIDER) {
     merged.identityStore.provider = process.env.VAULTFIRE_IDENTITY_PROVIDER;
   }
@@ -96,6 +131,17 @@ function loadTrustSyncConfig() {
       : Boolean(fallbackToggle);
   if (!merged.telemetry.fallback.fileName) {
     merged.telemetry.fallback.fileName = 'remote-fallback.jsonl';
+  }
+  if (merged.verification && typeof merged.verification === 'object') {
+    merged.verification.remote = merged.verification.remote || null;
+    merged.verification.externalValidationEndpoint =
+      merged.verification.externalValidationEndpoint ?? null;
+  }
+  if (merged.rewards && typeof merged.rewards === 'object') {
+    merged.rewards.fallbackMultiplier = Number(merged.rewards.fallbackMultiplier || 1);
+    merged.rewards.stream = mergeConfig(DEFAULT_CONFIG.rewards.stream, merged.rewards.stream);
+  } else {
+    merged.rewards = { ...DEFAULT_CONFIG.rewards };
   }
   return merged;
 }

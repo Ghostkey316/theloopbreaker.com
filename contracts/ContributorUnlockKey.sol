@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -18,7 +18,7 @@ contract ContributorUnlockKey is ERC721, Ownable {
 
     event UnlockHookSet(address indexed hook);
 
-    constructor() ERC721("Contributor Unlock Key", "CUK") {}
+    constructor() ERC721("Contributor Unlock Key", "CUK") Ownable(msg.sender) {}
 
     function setUnlockHook(address hook) external onlyOwner {
         unlockHook = hook;

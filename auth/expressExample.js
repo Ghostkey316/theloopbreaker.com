@@ -39,8 +39,9 @@ const mirrorAgent = new AIMirrorAgent({ telemetry: telemetryLedger, ...(trustCon
 const trustVerifier = new TrustSyncVerifier({
   telemetry: telemetryLedger,
   remote: trustConfig.verification?.remote || null,
+  externalValidationEndpoint: trustConfig.verification?.externalValidationEndpoint || null,
 });
-const rewardStreamPlanner = new RewardStreamPlanner({ telemetry: telemetryLedger });
+const rewardStreamPlanner = new RewardStreamPlanner({ telemetry: telemetryLedger, config: trustConfig.rewards });
 const BELIEF_BREACH_THRESHOLD = trustConfig.identityStore?.breachThreshold ?? 0.35;
 const SANDBOX_CONFIG_PATH = path.join(__dirname, '../configs/module_sandbox.json');
 const BELIEF_SANDBOX_LOG = path.join(__dirname, '../logs/belief-sandbox.json');
@@ -252,9 +253,9 @@ app.get(
   '/vaultfire/rewards/:walletId',
   ...createAuthMiddleware({ requiredRoles: [ROLES.PARTNER, ROLES.ADMIN], tokenService }),
   ethicsGuard,
-  (req, res) => {
+  async (req, res) => {
     const currentYield = { apr: 6.4, multiplier: 1.15, tierLevel: 'flame' };
-    const streamPreview = rewardStreamPlanner.previewStream(req.params.walletId, {
+    const streamPreview = await rewardStreamPlanner.previewStream(req.params.walletId, {
       partnerId: req.user.partnerId,
       currentYield,
     });
