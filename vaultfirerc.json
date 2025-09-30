@@ -15,8 +15,13 @@
       }
     },
     "telemetry": {
-      "baseDir": "./logs/telemetry"
+      "baseDir": "./logs/telemetry",
+      "fallback": {
+        "enabled": true,
+        "fileName": "remote-fallback.jsonl"
+      }
     },
+    "telemetry-fallback": true,
     "signalCompass": {
       "retentionLimit": 200
     },

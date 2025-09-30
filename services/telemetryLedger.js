@@ -39,6 +39,9 @@ class MultiTierTelemetryLedger {
     auditLog = 'audit.log',
     sinks = [],
     persistence,
+    telemetryFallback = false,
+    fallbackFile = 'remote-fallback.jsonl',
+    fallback = {},
   } = {}) {
     this.baseDir = baseDir;
     ensureDirectory(this.baseDir);
@@ -47,7 +50,29 @@ class MultiTierTelemetryLedger {
     this.auditLogPath = path.join(this.baseDir, auditLog);
     ensureDirectory(path.dirname(this.auditLogPath));
     this.lastAuditHash = this.#bootstrapAuditHash();
-    this.sinkRegistry = createTelemetrySinkRegistry(sinks);
+    const sinkFallbackEnabled = fallback?.enabled ?? telemetryFallback;
+    const sinkFallbackFile = fallback?.fileName || fallbackFile;
+    const sinkFallbackDir = fallback?.directory
+      ? path.resolve(this.baseDir, fallback.directory)
+      : this.baseDir;
+    ensureDirectory(sinkFallbackDir);
+    this.sinkFallbackPath = path.join(sinkFallbackDir, sinkFallbackFile);
+    if (sinkFallbackEnabled && !fs.existsSync(this.sinkFallbackPath)) {
+      fs.writeFileSync(this.sinkFallbackPath, '', 'utf8');
+    }
+    const sinkFallbackWriter = sinkFallbackEnabled
+      ? (event, error) => {
+          const payload = {
+            eventType: event?.eventType || null,
+            entry: event?.entry || null,
+            visibility: event?.visibility || null,
+            sinkError: error ? error.message || String(error) : null,
+            capturedAt: new Date().toISOString(),
+          };
+          appendLine(this.sinkFallbackPath, payload);
+        }
+      : null;
+    this.sinkRegistry = createTelemetrySinkRegistry(sinks, { fallback: sinkFallbackWriter });
     this.persistenceAdapter = null;
     this.persistenceBacklog = [];
     this.persistenceFallbackPath = path.join(this.baseDir, 'persistence-failover.jsonl');
@@ -79,7 +104,11 @@ class MultiTierTelemetryLedger {
     return lastEntry?.hash || null;
   }
 
-  #createEntry(eventType, payload = {}, { severity = 'info', tags = [], correlationId } = {}) {
+  #createEntry(
+    eventType,
+    payload = {},
+    { severity = 'info', tags = [], correlationId, config: entryConfig } = {}
+  ) {
     const timestamp = new Date().toISOString();
     return {
       id: crypto.randomUUID(),
@@ -89,6 +118,9 @@ class MultiTierTelemetryLedger {
       tags,
       payload,
       correlationId: correlationId || crypto.randomUUID(),
+      config: {
+        auditPassed: Boolean(entryConfig?.auditPassed),
+      },
     };
   }
 
@@ -164,6 +196,7 @@ class MultiTierTelemetryLedger {
       entry,
       visibility,
       scope: options.tags || [],
+      config: entry.config,
     });
 
     Promise.resolve(this.#persistEntry(entry, visibility)).catch((error) => {

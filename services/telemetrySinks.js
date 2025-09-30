@@ -84,13 +84,17 @@ function buildSink(config) {
 }
 
 class TelemetrySinkRegistry {
-  constructor(configs = []) {
+  constructor(configs = [], options = {}) {
     this.sinks = configs.map(buildSink);
     this.pending = new Set();
+    this.onFallback = typeof options.fallback === 'function' ? options.fallback : null;
   }
 
   dispatch(event) {
     if (!this.sinks.length) {
+      if (this.onFallback) {
+        this.onFallback(event, null);
+      }
       return;
     }
     for (const sink of this.sinks) {
@@ -98,6 +102,9 @@ class TelemetrySinkRegistry {
       this.pending.add(task);
       task.catch((error) => {
         console.warn('Telemetry sink failed', error);
+        if (this.onFallback) {
+          this.onFallback(event, error);
+        }
       }).finally(() => {
         this.pending.delete(task);
       });
@@ -112,11 +119,14 @@ class TelemetrySinkRegistry {
   }
 }
 
-function createTelemetrySinkRegistry(configs = []) {
+function createTelemetrySinkRegistry(configs = [], options = {}) {
   if (!configs.length) {
+    if (options.fallback) {
+      return new TelemetrySinkRegistry([], options);
+    }
     return null;
   }
-  return new TelemetrySinkRegistry(configs);
+  return new TelemetrySinkRegistry(configs, options);
 }
 
 module.exports = {

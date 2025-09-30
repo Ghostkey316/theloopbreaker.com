@@ -1,6 +1,6 @@
 {
   "name": "ghostkey-316-vaultfire-init",
-  "version": "1.6.0",
+  "version": "1.2.0-rc",
   "description": "**This system is not built for profit. It is built for people.**",
   "main": "manifesto_broadcast.js",
   "directories": {
@@ -18,7 +18,8 @@
     "lint:guardrails": "node tools/lint_guardrails.js",
     "preflight": "node tools/preflight-check.js",
     "deploy:sandbox": "node cli/deployVaultfire.js --env sandbox",
-    "deploy:production": "node cli/deployVaultfire.js --env production"
+    "deploy:production": "node cli/deployVaultfire.js --env production",
+    "audit:gov": "node governance/governance-core.js --audit"
   },
   "keywords": [],
   "author": "",

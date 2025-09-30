@@ -1,5 +1,10 @@
 # Vaultfire Protocol Version History
 
+## v1.2.0-rc — 2025-08-15
+- Scoped pilot loader respects `VAULTFIRE_MODULE_SCOPE`/`pilot_mode=true` and loads only CLI, Dashboard, and Belief Engine packages for rapid onboarding.
+- Governance core now reads `.govrc` or `--config-path=` overrides, surfaces warnings when defaults are used, and exposes `npm run audit:gov` self-audits with `config.auditPassed` telemetry.
+- Telemetry ledger gains JSON fallback mirroring, partner hook adapter, and residency guidance for compliance-first pilots.
+
 ## v1.6.0 — 2025-02-20
 - Introduced belief sandbox observability with unified toggles for belief mechanics, loyalty engine, and multiplier core plus the `/debug/belief-sandbox` verification endpoint.
 - Added automated version stamping via `npm run build`, commit hash linking in `manifest.json`, and refreshed partner-facing changelog assets.
