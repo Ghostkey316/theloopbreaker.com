@@ -17,22 +17,15 @@
 - Include reproduction steps, environment details, and potential impact. GPG key: `B7F5 F0CC 9D62 73F8 214A  792F 1A63 5ED4 7C3B 9F3E`.
 - Critical issues receive acknowledgement within 24 hours and coordinated disclosure is preferred.
 
-## Dependency Compensating Controls
-- **GHSA-pxg6-pf52-xh8x (`cookie` <0.7.0 via `hardhat` → `@sentry/node@5.30.0`):**
-  - `infra/hardhat-sandbox.js` now short-circuits Hardhat's internal Sentry bootstrap with a no-op stub that never instantiates
-    the vulnerable `cookie` parser, while still allowing first-party code to load the modern `@sentry/node@10.x` dependency.
-  - The sandbox also enforces loopback-only RPC URLs and disables remote telemetry to prevent any Hardhat-managed process from
-    accepting untrusted cookie headers.
-  - **Future remediation:** Track Hardhat releases monthly and upgrade once a version bundles a patched Sentry stack (or removes
-    the dependency entirely). Remove the stub once the upstream chain ships a fixed `cookie` >=0.7.0.
-- **GHSA-52f5-9888-hmc6 (`tmp` <=0.2.3 via `solc`):**
-  - The sandbox wraps the `tmp` module whenever it is required from `solc`/Hardhat, forcing all temporary directories into
-    `.vaultfire_tmp/hardhat/sandbox-tmp` with `0o700` ownership and ignoring caller-provided `dir` hints that could point to
-    symlink traps.
-  - `TMPDIR`, `TMP`, and `TEMP` environment variables are pinned to the sandbox directory before Hardhat executes, closing the
-    symbolic link escalation vector documented in the advisory.
-  - **Future remediation:** Monitor the `solc` and `tmp` release streams during the first week of each month. Once a patched
-    `tmp` (>0.2.3) is published and consumed by `solc`, drop the wrapper and lock to the remediated version in `package-lock.json`.
+## Dependency Remediation Log
+- **2025-09-30 · Vaultfire `1.2.0-rc` · GHSA-pxg6-pf52-xh8x (`cookie` <0.7.0 via `hardhat` → `@sentry/node@5.30.0`):**
+  - Hardhat's transitive `@sentry/node` dependency is now forced to consume `cookie@0.7.2` through `package.json` overrides, eliminating the out-of-bounds cookie parsing vector without relying on sandbox stubs.
+  - The repository-wide override also dedupes all other `cookie` consumers (Express, Socket.IO) on the same patched release to guarantee uniform behaviour.
+- **2025-09-30 · Vaultfire `1.2.0-rc` · GHSA-52f5-9888-hmc6 (`tmp` <=0.2.3 via `solc`):**
+  - `package.json` overrides pin `solc` to `tmp@0.2.5`, which contains the upstream directory traversal mitigation, removing the need for temporary directory guardrails.
+  - The standalone `tmp` override ensures any future consumer inherits the same patched baseline so symbolic link exploits remain blocked.
+
+Both advisories now resolve cleanly via `npm audit`, and the previous Hardhat sandbox remains available but is no longer required for mitigation.
 
 ## Governance Cadence
 - Run `npm run security:watch` at least once per week (automated via CI cron) to capture an `npm audit --json` snapshot in
