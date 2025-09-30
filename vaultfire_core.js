@@ -8,6 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const MANIFEST = path.join(__dirname, 'ghostkey_manifesto.md');
+const { exportLogs } = require('./compliance/exportLogs');
 
 function activateCore() {
   if (!fs.existsSync(MANIFEST)) {
@@ -64,4 +65,11 @@ async function syncToASM({ wallet, layer, trigger }) {
   return { wallet, layer, trigger, timestamp, success: true };
 }
 
-module.exports = { activateCore, injectVaultfire, syncToASM };
+module.exports = {
+  activateCore,
+  injectVaultfire,
+  syncToASM,
+  logs: {
+    export: exportLogs,
+  },
+};

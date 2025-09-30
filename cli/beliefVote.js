@@ -5,6 +5,9 @@ const { keccak256, toUtf8Bytes } = require('ethers');
 const { BeliefMirrorEngine } = require('../mirror/engine');
 const { determineTier } = require('../mirror/belief-weight');
 const { verifyWalletSignature, normalizeWallet } = require('../utils/walletAuth');
+const { VoteRepository } = require('../services/voteRepository');
+const { assertWalletOnlyData } = require('../utils/identityGuards');
+const { validateMetrics } = require('../utils/scoringValidator');
 
 function readJson(filePath, fallback = []) {
   if (!fs.existsSync(filePath)) {
@@ -17,10 +20,6 @@ function readJson(filePath, fallback = []) {
   } catch (error) {
     throw new Error(`Unable to parse ${path.basename(filePath)}: ${error.message}`);
   }
-}
-
-function writeJson(filePath, payload) {
-  fs.writeFileSync(filePath, JSON.stringify(payload, null, 2));
 }
 
 function loadProposals(proposalsPath = path.join(__dirname, '..', 'proposals.json')) {
@@ -56,22 +55,25 @@ async function castBeliefVote(
 
   const verified = verifyWalletSignature({ wallet, signature, message, ens });
   const normalizedWallet = normalizeWallet(verified.wallet);
-  const votes = readJson(votesPath, []);
+  const voteRepository = new VoteRepository({ filePath: votesPath });
+  const votes = await voteRepository.loadVotes();
   const previousVotes = votes.filter((voteRecord) => voteRecord.wallet === normalizedWallet).length;
 
   const mirrorEngine = new BeliefMirrorEngine({ telemetryPath });
+  const metrics = validateMetrics({
+    loyalty: Math.min(68 + previousVotes * 6, 100),
+    ethics: Math.min(88 + previousVotes * 2, 100),
+    frequency: Math.min(60 + previousVotes * 5, 100),
+    alignment: 80,
+    holdDuration: Math.min(55 + previousVotes * 3, 95),
+  });
+
   const action = {
     wallet: normalizedWallet,
     ens: verified.ens,
     type: 'vote',
     origin: 'belief-vote-cli',
-    metrics: {
-      loyalty: Math.min(68 + previousVotes * 6, 100),
-      ethics: Math.min(88 + previousVotes * 2, 100),
-      frequency: Math.min(60 + previousVotes * 5, 100),
-      alignment: 80,
-      holdDuration: Math.min(55 + previousVotes * 3, 95),
-    },
+    metrics,
   };
 
   const entry = await mirrorEngine.processAction(action);
@@ -88,8 +90,8 @@ async function castBeliefVote(
     messageDigest,
   };
 
-  votes.push(voteRecord);
-  writeJson(votesPath, votes);
+  assertWalletOnlyData(voteRecord, { context: 'vote' });
+  await voteRepository.appendVote(voteRecord);
 
   return {
     proposal,

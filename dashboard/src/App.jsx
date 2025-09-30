@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import BeliefOverview from './components/BeliefOverview.jsx';
 import SyncTable from './components/SyncTable.jsx';
@@ -16,7 +16,39 @@ function WalletLogin() {
     ethics: 91,
     interactionFrequency: 68,
     partnerAlignment: 77,
+    holdDuration: 45,
   });
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [weights, setWeights] = useState({
+    loyalty: '',
+    ethics: '',
+    frequency: '',
+    alignment: '',
+    holdDuration: '',
+  });
+  const [baselineMultiplier, setBaselineMultiplier] = useState('');
+
+  const scoringConfig = useMemo(() => {
+    const normalizedWeights = Object.entries(weights).reduce((acc, [key, value]) => {
+      if (value === '') {
+        return acc;
+      }
+      const numeric = Number(value);
+      if (!Number.isNaN(numeric)) {
+        acc[key === 'frequency' ? 'frequency' : key] = numeric;
+      }
+      return acc;
+    }, {});
+    const config = {};
+    if (Object.keys(normalizedWeights).length) {
+      config.weights = normalizedWeights;
+    }
+    const baselineValue = Number(baselineMultiplier);
+    if (baselineMultiplier && !Number.isNaN(baselineValue)) {
+      config.baselineMultiplier = baselineValue;
+    }
+    return Object.keys(config).length ? config : undefined;
+  }, [weights, baselineMultiplier]);
 
   useEffect(() => {
     if (wallet) {
@@ -44,7 +76,10 @@ function WalletLogin() {
   const handleConnect = async (event) => {
     event.preventDefault();
     try {
-      await connect({ wallet, ens, signature, message, payload });
+      const submissionPayload = scoringConfig
+        ? { ...payload, scoringConfig }
+        : payload;
+      await connect({ wallet, ens, signature, message, payload: submissionPayload });
     } catch (err) {
       console.error('Belief sync failed', err.message);
     }
@@ -130,7 +165,102 @@ function WalletLogin() {
             }
           />
         </label>
+        <label>
+          Hold Duration (days)
+          <input
+            type="number"
+            value={payload.holdDuration}
+            min="0"
+            max="365"
+            onChange={(event) =>
+              setPayload((prev) => ({ ...prev, holdDuration: Number(event.target.value) }))
+            }
+          />
+        </label>
       </div>
+      <button
+        type="button"
+        className="ghost-button advanced-toggle"
+        onClick={() => setShowAdvanced((prev) => !prev)}
+      >
+        {showAdvanced ? 'Hide Scoring Overrides' : 'Advanced: Scoring Overrides'}
+      </button>
+      {showAdvanced ? (
+        <div className="advanced-grid">
+          <p className="subtitle">
+            Override the default belief weights (0-1 values are normalized automatically).
+          </p>
+          <div className="weights-grid">
+            <label>
+              Loyalty Weight
+              <input
+                type="number"
+                inputMode="decimal"
+                value={weights.loyalty}
+                min="0"
+                step="0.01"
+                onChange={(event) => setWeights((prev) => ({ ...prev, loyalty: event.target.value }))}
+              />
+            </label>
+            <label>
+              Ethics Weight
+              <input
+                type="number"
+                inputMode="decimal"
+                value={weights.ethics}
+                min="0"
+                step="0.01"
+                onChange={(event) => setWeights((prev) => ({ ...prev, ethics: event.target.value }))}
+              />
+            </label>
+            <label>
+              Frequency Weight
+              <input
+                type="number"
+                inputMode="decimal"
+                value={weights.frequency}
+                min="0"
+                step="0.01"
+                onChange={(event) => setWeights((prev) => ({ ...prev, frequency: event.target.value }))}
+              />
+            </label>
+            <label>
+              Alignment Weight
+              <input
+                type="number"
+                inputMode="decimal"
+                value={weights.alignment}
+                min="0"
+                step="0.01"
+                onChange={(event) => setWeights((prev) => ({ ...prev, alignment: event.target.value }))}
+              />
+            </label>
+            <label>
+              Hold Duration Weight
+              <input
+                type="number"
+                inputMode="decimal"
+                value={weights.holdDuration}
+                min="0"
+                step="0.01"
+                onChange={(event) => setWeights((prev) => ({ ...prev, holdDuration: event.target.value }))}
+              />
+            </label>
+          </div>
+          <label>
+            Baseline Multiplier
+            <input
+              type="number"
+              inputMode="decimal"
+              value={baselineMultiplier}
+              min="0.5"
+              step="0.01"
+              onChange={(event) => setBaselineMultiplier(event.target.value)}
+              placeholder="Default partner baseline is 1.15"
+            />
+          </label>
+        </div>
+      ) : null}
       <div className="actions">
         <button
           type="button"

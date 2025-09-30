@@ -4,33 +4,37 @@ const rateLimit = require('express-rate-limit');
 const fetch = require('node-fetch');
 const { Server } = require('socket.io');
 const path = require('path');
-const fs = require('fs');
 const { BeliefMirrorEngine } = require('./mirror/engine');
 const { determineTier } = require('./mirror/belief-weight');
 const { verifyWalletSignature } = require('./utils/walletAuth');
+const { createPartnerStorage } = require('./services/partnerStorage');
+const { VoteRepository } = require('./services/voteRepository');
+const { assertWalletOnlyData } = require('./utils/identityGuards');
+const {
+  ValidationError,
+  extractMetrics,
+  sanitizeScoringConfig,
+} = require('./utils/scoringValidator');
 
-function safeReadJson(filePath, fallback = []) {
-  if (!fs.existsSync(filePath)) {
-    fs.writeFileSync(filePath, JSON.stringify(fallback, null, 2));
-    return Array.isArray(fallback) ? [...fallback] : { ...fallback };
-  }
-
-  const raw = fs.readFileSync(filePath, 'utf8');
-  try {
-    return JSON.parse(raw);
-  } catch (error) {
-    throw new Error(`Unable to parse ${path.basename(filePath)}: ${error.message}`);
-  }
-}
-
-function safeWriteJson(filePath, payload) {
-  fs.writeFileSync(filePath, JSON.stringify(payload, null, 2));
+function sanitizeVotePayload(vote) {
+  assertWalletOnlyData(vote, { context: 'vote' });
+  return {
+    proposalId: vote.proposalId,
+    choice: vote.choice,
+    wallet: vote.wallet,
+    ens: vote.ens || null,
+    weight: vote.weight,
+    tier: vote.tier,
+    timestamp: vote.timestamp,
+    messageDigest: vote.messageDigest,
+  };
 }
 
 function createPartnerSyncServer({
   webhookTargets = [],
   telemetryPath,
   votesPath,
+  storageOptions = {},
 } = {}) {
   const app = express();
   const httpServer = http.createServer(app);
@@ -39,11 +43,18 @@ function createPartnerSyncServer({
   });
 
   const engine = new BeliefMirrorEngine({ telemetryPath });
-  const partnerStore = new Map();
   const resolvedVotesPath = votesPath || path.join(__dirname, 'votes.json');
-  if (!fs.existsSync(resolvedVotesPath)) {
-    fs.writeFileSync(resolvedVotesPath, JSON.stringify([], null, 2));
-  }
+  const partnerStorage = createPartnerStorage({
+    sqlite: {
+      dbPath: path.join(__dirname, 'data', 'partner-sync.db'),
+      ...(storageOptions.sqlite || {}),
+    },
+    adapter: storageOptions.adapter,
+    provider: storageOptions.provider,
+    readOnly: storageOptions.readOnly,
+    localforage: storageOptions.localforage,
+  });
+  const voteRepository = new VoteRepository({ filePath: resolvedVotesPath });
 
   const limiter = rateLimit({
     windowMs: 60 * 1000,
@@ -95,34 +106,31 @@ function createPartnerSyncServer({
     };
   }
 
-  function loadVotes() {
-    return safeReadJson(resolvedVotesPath, []);
+  async function loadVotes() {
+    return voteRepository.loadVotes();
   }
 
-  function appendVote(vote) {
-    const votes = loadVotes();
-    votes.push(vote);
-    safeWriteJson(resolvedVotesPath, votes);
-    return votes;
+  async function appendVote(vote) {
+    const sanitized = sanitizeVotePayload(vote);
+    await voteRepository.appendVote(sanitized);
+    return voteRepository.loadVotes();
   }
 
   app.post('/vaultfire/sync-belief', async (req, res) => {
     try {
       const { wallet, signature, message, ens, payload = {} } = req.body || {};
+      assertWalletOnlyData(payload, { context: 'payload' });
       const verified = verifyWalletSignature({ wallet, signature, message, ens });
+      const metrics = extractMetrics(payload);
+      const scoringConfig = sanitizeScoringConfig(payload.scoringConfig);
 
       const action = {
         wallet: verified.wallet,
         ens: verified.ens,
         type: 'partnerSync',
         origin: 'partner-sync-interface',
-        metrics: {
-          loyalty: payload.loyalty ?? payload.loyaltyScore ?? 75,
-          ethics: payload.ethics ?? payload.ethicsScore ?? 80,
-          frequency: payload.interactionFrequency ?? payload.frequency ?? 60,
-          alignment: payload.partnerAlignment ?? payload.alignment ?? 70,
-          holdDuration: payload.holdDuration ?? payload.holdDurationDays ?? 40,
-        },
+        metrics,
+        scoringConfig,
       };
 
       const entry = await engine.processAction(action);
@@ -133,16 +141,21 @@ function createPartnerSyncServer({
         multiplier: entry.multiplier,
         tier: entry.tier,
         status: 'healthy',
-        payload,
+        payload: {
+          metrics,
+          scoringConfig,
+        },
+        configOverrides: Boolean(entry.configOverrides),
       };
 
-      partnerStore.set(entry.wallet.toLowerCase(), partnerRecord);
+      await partnerStorage.savePartner(partnerRecord);
 
       const responsePayload = {
         ok: true,
         status: 'synced',
         entry,
         tier: entry.tier,
+        overridesDetected: Boolean(entry.configOverrides),
       };
 
       io.emit('belief-sync', { type: 'partnerSync', entry: partnerRecord });
@@ -153,23 +166,33 @@ function createPartnerSyncServer({
 
       res.json(responsePayload);
     } catch (error) {
-      res.status(401).json({ error: { message: error.message } });
+      const statusCode = error.statusCode || (error.message && error.message.includes('Signature') ? 401 : 400);
+      res.status(statusCode).json({
+        error: {
+          message: error.message,
+          details: error instanceof ValidationError ? error.details : undefined,
+        },
+      });
     }
   });
 
-  app.get('/vaultfire/sync-status', (req, res) => {
-    const partners = Array.from(partnerStore.values());
-    const summary = buildSummary(partners);
-    const mirrorLog = engine.readLog().slice(-50);
-    const votes = loadVotes();
+  app.get('/vaultfire/sync-status', async (req, res) => {
+    try {
+      const partners = await partnerStorage.listPartners();
+      const summary = buildSummary(partners);
+      const mirrorLog = engine.readRecentEntries(50);
+      const votes = await loadVotes();
 
-    res.json({
-      system: partners.length ? 'operational' : 'awaiting_sync',
-      summary,
-      partners,
-      mirrorLog,
-      votes,
-    });
+      res.json({
+        system: partners.length ? 'operational' : 'awaiting_sync',
+        summary,
+        partners,
+        mirrorLog,
+        votes,
+      });
+    } catch (error) {
+      res.status(500).json({ error: { message: error.message } });
+    }
   });
 
   const start = ({ port = 4050 } = {}) =>
@@ -194,7 +217,7 @@ function createPartnerSyncServer({
     stop,
     appendVote,
     loadVotes,
-    partnerStore,
+    partnerStorage,
     engine,
   };
 }
