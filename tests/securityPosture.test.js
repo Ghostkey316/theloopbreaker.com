@@ -7,6 +7,7 @@ jest.mock('../config/securityConfig', () => {
   };
 });
 
+const crypto = require('crypto');
 const { loadSecurityConfig, resolveActiveSecret } = require('../config/securityConfig');
 const SecurityPostureManager = require('../services/securityPosture');
 
@@ -35,11 +36,19 @@ describe('SecurityPostureManager handshake enforcement', () => {
     jest.clearAllMocks();
   });
 
-  test('accepts messages containing the active secret', () => {
+  test('accepts payloads signed with the active secret', () => {
     const { manager, telemetry } = createManager();
+    const wallet = '0xabc';
+    const nonce = 'nonce-123';
+    const timestamp = Date.now().toString();
+    const digest = crypto
+      .createHmac('sha256', activeSecret.value)
+      .update(`${wallet.toLowerCase()}::${nonce}::${timestamp}`)
+      .digest('hex');
+
     expect(() =>
-      manager.assertHandshakeSecret('Vaultfire :: secret=vaultfire-secret-token :: handshake', {
-        wallet: '0xabc',
+      manager.assertHandshakeSecret({ nonce, timestamp, digest, secretId: activeSecret.id }, {
+        wallet,
       })
     ).not.toThrow();
     expect(telemetry.record).not.toHaveBeenCalledWith('security.signature.failed', expect.anything(), expect.anything());
@@ -50,7 +59,7 @@ describe('SecurityPostureManager handshake enforcement', () => {
 
     let capturedError;
     try {
-      manager.assertHandshakeSecret('Vaultfire handshake payload without token', { wallet: '0xabc' });
+      manager.assertHandshakeSecret({ nonce: 'nonce', timestamp: Date.now().toString() }, { wallet: '0xabc' });
     } catch (error) {
       capturedError = error;
     }
@@ -61,7 +70,7 @@ describe('SecurityPostureManager handshake enforcement', () => {
 
     const failureCall = telemetry.record.mock.calls.find(([event]) => event === 'security.signature.failed');
     expect(failureCall).toBeTruthy();
-    expect(failureCall[1]).toMatchObject({ reason: 'secret_mismatch', phase: 'handshake' });
+    expect(failureCall[1]).toMatchObject({ reason: 'payload_incomplete', phase: 'handshake', wallet: '0xabc' });
   });
 
   test('allows legacy handshake path when explicitly enabled', () => {
@@ -70,9 +79,10 @@ describe('SecurityPostureManager handshake enforcement', () => {
     };
     const { manager, telemetry } = createManager(overrides);
 
-    expect(() => manager.assertHandshakeSecret('Legacy Vaultfire handshake message', { wallet: '0xabc' })).not.toThrow();
+    expect(() => manager.assertHandshakeSecret(null, { wallet: '0xabc' })).not.toThrow();
     const legacyCall = telemetry.record.mock.calls.find(([event]) => event === 'security.signature.legacy');
     expect(legacyCall).toBeTruthy();
+    expect(legacyCall[1]).toMatchObject({ wallet: '0xabc' });
   });
 });
 
