@@ -1,0 +1,14 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`belief vote CLI integration records votes and telemetry with consent 1`] = `
+{
+  "choice": "a",
+  "ens": null,
+  "messageDigest": "0xabab64598e71838b5cac1f8bb9b14686b37c76ed4aed30df1bf8acd2d00a9de4",
+  "proposalId": "proposal-1",
+  "tier": "Mythic",
+  "timestamp": "2024-01-01T00:00:00.000Z",
+  "wallet": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "weight": 1.8535,
+}
+`;

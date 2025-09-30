@@ -8,6 +8,7 @@ const { verifyWalletSignature, normalizeWallet } = require('../utils/walletAuth'
 const { VoteRepository } = require('../services/voteRepository');
 const { assertWalletOnlyData } = require('../utils/identityGuards');
 const { validateMetrics } = require('../utils/scoringValidator');
+const telemetry = require('../telemetry/nodeTelemetry');
 
 function readJson(filePath, fallback = []) {
   if (!fs.existsSync(filePath)) {
@@ -32,8 +33,10 @@ async function castBeliefVote(
     proposalsPath = path.join(__dirname, '..', 'proposals.json'),
     votesPath = path.join(__dirname, '..', 'votes.json'),
     telemetryPath,
+    telemetry: telemetryOptions = {},
   } = {}
 ) {
+  telemetry.initTelemetry(telemetryOptions);
   if (!proposalId) {
     throw new Error('Proposal identifier is required');
   }
@@ -55,6 +58,9 @@ async function castBeliefVote(
 
   const verified = verifyWalletSignature({ wallet, signature, message, ens });
   const normalizedWallet = normalizeWallet(verified.wallet);
+  if (typeof telemetryOptions.optIn === 'boolean') {
+    telemetry.updateConsent(normalizedWallet, telemetryOptions.optIn);
+  }
   const voteRepository = new VoteRepository({ filePath: votesPath });
   const votes = await voteRepository.loadVotes();
   const previousVotes = votes.filter((voteRecord) => voteRecord.wallet === normalizedWallet).length;
@@ -93,6 +99,14 @@ async function castBeliefVote(
   assertWalletOnlyData(voteRecord, { context: 'vote' });
   await voteRepository.appendVote(voteRecord);
 
+  telemetry.recordBeliefVote({
+    wallet: normalizedWallet,
+    proposalId,
+    choice: choiceKey,
+    tier: voteRecord.tier,
+    multiplier: entry.multiplier,
+  });
+
   return {
     proposal,
     vote: voteRecord,
@@ -113,9 +127,21 @@ function registerBeliefVoteCommand(program, options = {}) {
     .requiredOption('--signature <signature>', 'Wallet signature confirming the vote')
     .requiredOption('--message <message>', 'Signed message anchoring the vote')
     .option('--ens <alias>', 'Optional ENS alias for the wallet')
+    .option('--telemetry-consent <on|off>', 'Opt-in or opt-out of telemetry logging for this wallet')
     .action(async (cmdOptions) => {
       try {
-        const result = await castBeliefVote(cmdOptions, options);
+        const telemetryConsent = typeof cmdOptions.telemetryConsent === 'string'
+          ? cmdOptions.telemetryConsent.toLowerCase()
+          : undefined;
+        const telemetryOptIn =
+          telemetryConsent === 'on' ? true : telemetryConsent === 'off' ? false : undefined;
+        const result = await castBeliefVote(cmdOptions, {
+          ...options,
+          telemetry: {
+            ...options.telemetry,
+            optIn: telemetryOptIn,
+          },
+        });
         console.log('Belief-weighted vote recorded');
         console.log(JSON.stringify(result, null, 2));
       } catch (error) {
