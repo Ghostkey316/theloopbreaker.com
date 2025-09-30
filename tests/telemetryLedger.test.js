@@ -39,4 +39,24 @@ describe('Multi-tier telemetry ledger', () => {
     expect(ledger.readChannel('partner')).toEqual([]);
     expect(() => ledger.readChannel('unknown')).toThrow('Unknown telemetry channel');
   });
+
+  it('streams entries to external sinks', async () => {
+    const putObject = jest.fn().mockResolvedValue({});
+    const handler = jest.fn();
+    const ledger = new MultiTierTelemetryLedger({
+      baseDir,
+      sinks: [
+        { type: 's3', client: { putObject }, bucket: 'test-bucket', prefix: 'telemetry/' },
+        { type: 'custom', handler },
+      ],
+    });
+
+    ledger.record('telemetry.event', { ok: true });
+    await ledger.flushExternal();
+
+    expect(putObject).toHaveBeenCalledTimes(1);
+    const [{ Body }] = putObject.mock.calls[0];
+    expect(JSON.parse(Body).eventType).toBe('telemetry.event');
+    expect(handler).toHaveBeenCalledWith(expect.objectContaining({ eventType: 'telemetry.event' }));
+  });
 });

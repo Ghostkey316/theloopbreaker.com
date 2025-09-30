@@ -1,5 +1,5 @@
 const EventEmitter = require('events');
-const fetch = require('node-fetch');
+const WebhookDeliveryQueue = require('./deliveryQueue');
 
 const EVENTS = {
   ACTIVATION: 'activation',
@@ -8,22 +8,25 @@ const EVENTS = {
 };
 
 class PartnerHookRegistry extends EventEmitter {
-  constructor({ telemetry } = {}) {
+  constructor({ telemetry, deliveryQueue } = {}) {
     super();
     this.telemetry = telemetry;
     this.subscriptions = new Map();
+    this.deliveryQueue = deliveryQueue || new WebhookDeliveryQueue();
   }
 
   subscribe({ partnerId, event, targetUrl, metadata = {} }) {
     if (!Object.values(EVENTS).includes(event)) {
       throw new Error(`Unsupported hook event: ${event}`);
     }
+    const signingSecret = metadata.signingSecret || metadata.signing_secret || metadata.webhookSecret;
     const entry = {
       partnerId,
       event,
       targetUrl,
       metadata,
       subscribedAt: new Date().toISOString(),
+      signingSecret: signingSecret || null,
     };
     const existing = this.subscriptions.get(event) || [];
     existing.push(entry);
@@ -37,39 +40,41 @@ class PartnerHookRegistry extends EventEmitter {
 
   async notify(event, payload) {
     const subscriptions = this.subscriptions.get(event) || [];
+    if (!subscriptions.length) {
+      return [];
+    }
+
     const deliveries = await Promise.all(
-      subscriptions.map(async (subscription) => {
-        const { targetUrl, partnerId } = subscription;
-        let status = 'queued';
-        try {
-          if (targetUrl) {
-            const response = await fetch(targetUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ event, payload, partnerId }),
+      subscriptions.map((subscription) =>
+        this.deliveryQueue
+          .enqueue({
+            event,
+            payload,
+            partnerId: subscription.partnerId,
+            targetUrl: subscription.targetUrl,
+            signingSecret: subscription.signingSecret,
+            metadata: subscription.metadata,
+          })
+          .then((result) => {
+            const entry = {
+              partnerId: result.partnerId,
+              event: result.event,
+              targetUrl: result.targetUrl,
+              status: result.status,
+              payload: result.payload,
+              attempts: result.attempts,
+              deliveryId: result.deliveryId,
+              deliveredAt: result.completedAt,
+              lastError: result.lastError,
+            };
+            this.telemetry?.record('partner.hook.delivery', entry, {
+              tags: ['partner', 'hooks'],
+              visibility: { partner: true, ethics: true, audit: true },
             });
-            status = response.ok ? 'delivered' : `error:${response.status}`;
-          } else {
-            status = 'skipped';
-          }
-        } catch (error) {
-          status = `failed:${error.message}`;
-        }
-        const entry = {
-          partnerId,
-          event,
-          targetUrl,
-          status,
-          payload,
-          deliveredAt: new Date().toISOString(),
-        };
-        this.telemetry?.record('partner.hook.delivery', entry, {
-          tags: ['partner', 'hooks'],
-          visibility: { partner: true, ethics: true, audit: true },
-        });
-        this.emit(`delivery:${event}`, entry);
-        return entry;
-      })
+            this.emit(`delivery:${event}`, entry);
+            return entry;
+          })
+      )
     );
     return deliveries;
   }

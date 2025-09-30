@@ -62,8 +62,61 @@ def _append_json(path: Path, entry: dict) -> None:
     path.write_text(json.dumps(data, indent=2))
 
 
-def _verify_signature(raw: bytes, signature: str) -> bool:
-    return True
+def _canonicalize_payload(raw: bytes) -> bytes:
+    try:
+        parsed = json.loads(raw.decode("utf-8"))
+    except Exception:
+        return raw
+    try:
+        return json.dumps(parsed, separators=(", ", ": ")).encode("utf-8")
+    except Exception:
+        return raw
+
+
+def _verify_signature(raw: bytes, signature: str | None) -> bool:
+    """Validate HMAC signatures for inbound callbacks."""
+
+    if not signature:
+        return False
+
+    try:
+        payloads = {raw}
+        canonical = _canonicalize_payload(raw)
+        payloads.add(canonical)
+        try:
+            parsed = json.loads(raw.decode("utf-8"))
+        except Exception:
+            parsed = None
+        if parsed is not None:
+            payloads.add(json.dumps(parsed, separators=(",", ":")).encode("utf-8"))
+            payloads.add(json.dumps(parsed, sort_keys=True, separators=(",", ":")).encode("utf-8"))
+            preferred_order = ["metadata", "payload", "iv"]
+            ordered_payload = {}
+            for key in preferred_order:
+                if key in parsed:
+                    ordered_payload[key] = parsed[key]
+            for key, value in parsed.items():
+                if key not in ordered_payload:
+                    ordered_payload[key] = value
+            metadata = ordered_payload.get("metadata")
+            if isinstance(metadata, dict):
+                meta_order = ["wallet_id", "vaultfire_tier", "belief_score", "timestamp", "trigger_id"]
+                reordered_meta = {}
+                for key in meta_order:
+                    if key in metadata:
+                        reordered_meta[key] = metadata[key]
+                for key, value in metadata.items():
+                    if key not in reordered_meta:
+                        reordered_meta[key] = value
+                ordered_payload["metadata"] = reordered_meta
+            payloads.add(json.dumps(ordered_payload, separators=(", ", ": ")).encode("utf-8"))
+        for candidate in payloads:
+            expected = hmac.new(SECRET_KEY, candidate, hashlib.sha256).hexdigest()
+            if hmac.compare_digest(expected, signature):
+                return True
+    except Exception:
+        return False
+    return False
 
 
 def _decrypt_payload(key: bytes, iv: bytes, ciphertext: bytes, tag: bytes | None) -> bytes:
@@ -103,6 +156,11 @@ def _submit_tx(hash_hex: str) -> str:
 
 @app.post("/webhook/upload")
 def webhook_upload():
+    raw_body = request.get_data(cache=True) or b""
+    signature = request.headers.get("X-Signature") or request.headers.get("X-Vaultfire-Signature")
+    if not _verify_signature(raw_body, signature):
+        return jsonify({"error": "invalid signature"}), 401
+
     payload = request.get_json(force=True) or {}
     meta = payload.get("metadata", {})
     try:

@@ -6,6 +6,9 @@ import hmac
 import json
 import os
 import time
+from dataclasses import dataclass, field
+from typing import Any
+from uuid import uuid4
 import urllib.request
 from datetime import datetime
 from pathlib import Path
@@ -32,6 +35,53 @@ BELIEF_THRESHOLDS = {
 LOG_PATH = Path("vault_trigger_log.json")
 CHAIN_LOG_PATH = Path("chain_event_log.json")
 DEFAULT_WEBHOOK_SECRET = os.environ.get("VAULTFIRE_WEBHOOK_SECRET")
+WEBHOOK_QUEUE_PATH = Path(os.environ.get("VAULTFIRE_WEBHOOK_QUEUE", "webhook_delivery_queue.json"))
+MAX_QUEUE_ATTEMPTS = 6
+BASE_BACKOFF_SECONDS = 0.3
+MAX_BACKOFF_SECONDS = 15.0
+
+
+@dataclass
+class _QueuedDelivery:
+    """In-flight webhook delivery metadata."""
+
+    url: str
+    payload: dict
+    secret: str | None
+    id: str = field(default_factory=lambda: uuid4().hex)
+    attempts: int = 0
+    next_attempt: float = field(default_factory=lambda: time.time())
+    last_error: str | None = None
+    max_attempts: int = MAX_QUEUE_ATTEMPTS
+    dead_letter: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "url": self.url,
+            "payload": self.payload,
+            "secret": self.secret,
+            "attempts": self.attempts,
+            "next_attempt": self.next_attempt,
+            "last_error": self.last_error,
+            "max_attempts": self.max_attempts,
+            "dead_letter": self.dead_letter,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "_QueuedDelivery":
+        entry = cls(
+            url=data.get("url", ""),
+            payload=data.get("payload", {}),
+            secret=data.get("secret"),
+            id=data.get("id", uuid4().hex),
+        )
+        entry.attempts = int(data.get("attempts", 0))
+        entry.next_attempt = float(data.get("next_attempt", time.time()))
+        entry.last_error = data.get("last_error")
+        entry.max_attempts = int(data.get("max_attempts", MAX_QUEUE_ATTEMPTS))
+        entry.dead_letter = bool(data.get("dead_letter", False))
+        return entry
 
 
 def _log_trigger(entry: dict) -> None:
@@ -66,27 +116,111 @@ def _build_signature(secret: str, body: bytes, *, timestamp: int) -> str:
     return f"t={timestamp},v1={digest}"
 
 
-def send_webhook(url: str, payload: dict, *, secret: str | None = None, retries: int = 3) -> None:
-    """POST ``payload`` to ``url`` with optional HMAC authentication."""
+def _load_queue() -> list[_QueuedDelivery]:
+    if WEBHOOK_QUEUE_PATH.exists():
+        try:
+            raw = json.loads(WEBHOOK_QUEUE_PATH.read_text())
+            if isinstance(raw, list):
+                return [_QueuedDelivery.from_dict(item) for item in raw]
+        except json.JSONDecodeError:
+            pass
+    return []
+
+
+def _save_queue(entries: list[_QueuedDelivery]) -> None:
+    data = [entry.to_dict() for entry in entries]
+    WEBHOOK_QUEUE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    WEBHOOK_QUEUE_PATH.write_text(json.dumps(data, indent=2))
+
+
+def _dispatch_delivery(entry: _QueuedDelivery) -> bool:
+    body = json.dumps(entry.payload, separators=(",", ":")).encode("utf-8")
+    headers = {"Content-Type": "application/json", "X-Vaultfire-Delivery": entry.id}
+    secret_value = entry.secret or DEFAULT_WEBHOOK_SECRET
+    if secret_value:
+        timestamp = int(time.time())
+        headers["X-Vaultfire-Signature"] = _build_signature(secret_value, body, timestamp=timestamp)
+        headers["X-Vaultfire-Timestamp"] = str(timestamp)
+    req = urllib.request.Request(entry.url, data=body, headers=headers)
+    urllib.request.urlopen(req, timeout=5)
+    return True
+
+
+def _schedule_retry(entry: _QueuedDelivery) -> None:
+    entry.attempts += 1
+    delay = min(MAX_BACKOFF_SECONDS, BASE_BACKOFF_SECONDS * (2 ** max(0, entry.attempts - 1)))
+    entry.next_attempt = time.time() + delay
+
+
+def process_webhook_queue(now: float | None = None) -> int:
+    """Attempt queued webhook deliveries and return number of successes."""
+
+    queue = _load_queue()
+    delivered: list[str] = []
+    pending: list[_QueuedDelivery] = []
+    dead_letters: list[_QueuedDelivery] = []
+    current_time = now or time.time()
+
+    for entry in queue:
+        if entry.dead_letter:
+            dead_letters.append(entry)
+            continue
+
+        if entry.next_attempt > current_time:
+            pending.append(entry)
+            continue
+
+        try:
+            if not entry.url:
+                raise ValueError("missing webhook url")
+            _dispatch_delivery(entry)
+        except Exception as exc:  # pragma: no cover - network variations
+            entry.last_error = str(exc)
+            if entry.attempts + 1 >= entry.max_attempts:
+                entry.attempts += 1
+                entry.dead_letter = True
+                dead_letters.append(entry)
+                continue
+            _schedule_retry(entry)
+            pending.append(entry)
+        else:
+            delivered.append(entry.id)
+
+    if pending or dead_letters:
+        _save_queue(pending + dead_letters)
+    elif WEBHOOK_QUEUE_PATH.exists():
+        WEBHOOK_QUEUE_PATH.unlink()
+
+    return len(delivered)
+
+
+def enqueue_webhook(
+    url: str,
+    payload: dict,
+    *,
+    secret: str | None = None,
+    max_attempts: int | None = None,
+) -> None:
+    entry = _QueuedDelivery(url=url, payload=payload, secret=secret)
+    if max_attempts is not None:
+        entry.max_attempts = max(1, int(max_attempts))
+    queue = _load_queue()
+    queue.append(entry)
+    _save_queue(queue)
+
+
+def send_webhook(url: str, payload: dict, *, secret: str | None = None, retries: int | None = None) -> None:
+    """POST ``payload`` to ``url`` with optional HMAC authentication.
+
+    ``retries`` parameter retained for backward compatibility but handled by
+    queue processing which uses ``MAX_QUEUE_ATTEMPTS``.
+    """
+
     if not url:
         return
 
-    body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
-    secret_value = secret or DEFAULT_WEBHOOK_SECRET
-
-    for attempt in range(retries):
-        headers = {"Content-Type": "application/json"}
-        if secret_value:
-            timestamp = int(time.time())
-            headers["X-Vaultfire-Signature"] = _build_signature(secret_value, body, timestamp=timestamp)
-        req = urllib.request.Request(url, data=body, headers=headers)
-        try:
-            urllib.request.urlopen(req, timeout=5)
-            break
-        except Exception:
-            if attempt == retries - 1:
-                break
-            time.sleep(0.2 * (2 ** attempt))
+    enqueue_webhook(url, payload, secret=secret, max_attempts=retries)
+    process_webhook_queue()
 
 
 def send_to_webhook(

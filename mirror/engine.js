@@ -4,14 +4,16 @@ const crypto = require('crypto');
 const zlib = require('zlib');
 const { computeBeliefMultiplier, determineTier } = require('./belief-weight');
 const { assertWalletOnlyData } = require('../utils/identityGuards');
+const { createTelemetrySinkRegistry } = require('../services/telemetrySinks');
 
 class BeliefMirrorEngine {
-  constructor({ telemetryPath, rotationDays = 7, archiveDir } = {}) {
+  constructor({ telemetryPath, rotationDays = 7, archiveDir, sinks = [] } = {}) {
     this.telemetryPath =
       telemetryPath || path.join(__dirname, '..', 'telemetry', 'belief-log.json');
     this.ensureTelemetryFile();
     this.archiveDir = archiveDir || path.join(path.dirname(this.telemetryPath), 'archive');
     this.rotationWindowMs = rotationDays * 24 * 60 * 60 * 1000;
+    this.sinkRegistry = createTelemetrySinkRegistry(sinks);
   }
 
   ensureTelemetryFile() {
@@ -86,6 +88,7 @@ class BeliefMirrorEngine {
     const rotatedLog = this.#rotateIfNeeded(log, entry.timestamp);
     rotatedLog.push(entry);
     this.#writeLog(rotatedLog);
+    this.sinkRegistry?.dispatch({ channel: 'belief.mirror', entry });
     return entry;
   }
 
@@ -130,6 +133,12 @@ class BeliefMirrorEngine {
       processed.push(entry);
     }
     return processed;
+  }
+
+  async flushExternal() {
+    if (this.sinkRegistry) {
+      await this.sinkRegistry.flush();
+    }
   }
 
   async loadFromSources() {
