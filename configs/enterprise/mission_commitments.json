@@ -1,0 +1,74 @@
+{
+  "mission": "Belief-secured intelligence for partners who lead with ethics.",
+  "pillars": [
+    {
+      "id": "ethics-led-intelligence",
+      "title": "Ethics-Led Intelligence",
+      "description": "Confirm every operator honours the morals-first charter.",
+      "checks": [
+        {
+          "id": "ethics-verification",
+          "description": "Wallet or ENS identity has verified ethics tag.",
+          "profile_keys": ["ethicsVerified", "ethics_verified"]
+        },
+        {
+          "id": "mission-promise",
+          "description": "Partner has declared a mission aligned with Vaultfire.",
+          "profile_keys": ["declaredPurpose", "mission", "purpose"]
+        }
+      ]
+    },
+    {
+      "id": "telemetry-trust",
+      "title": "Telemetry Trust Fabric",
+      "description": "Ensure telemetry routing honours residency and consent gates.",
+      "checks": [
+        {
+          "id": "telemetry-policy",
+          "description": "Partner supplied telemetry residency policy or opted into defaults.",
+          "profile_keys": ["telemetryPolicy", "telemetry_policy", "residency"]
+        },
+        {
+          "id": "consent-ops",
+          "description": "Consent operations reference opt-in ledgers.",
+          "profile_keys": ["consentLedger", "consent_ledger"]
+        }
+      ]
+    },
+    {
+      "id": "resilience-squad",
+      "title": "Resilience Squad",
+      "description": "Validate queues, webhooks, and failovers are wired for scale.",
+      "checks": [
+        {
+          "id": "webhook-replay",
+          "description": "Partner tested webhook replay + signature validation.",
+          "profile_keys": ["webhookReplay", "webhook_replay"]
+        },
+        {
+          "id": "failover-plan",
+          "description": "Failover plan exists for manifests and telemetry sinks.",
+          "profile_keys": ["failoverPlan", "failover_plan"]
+        }
+      ]
+    }
+  ],
+  "differentiators": [
+    {
+      "id": "mission-control-loop",
+      "summary": "Belief-weighted mission loops broadcast confidence to every tenant."
+    },
+    {
+      "id": "guardian-beacons",
+      "summary": "Purposeful Scale guardrails confirm expansions remain ethics-first."
+    },
+    {
+      "id": "trust-fabric",
+      "summary": "Telemetry trust fabric keeps partner data isolated yet observable."
+    }
+  ],
+  "observability": {
+    "logbook": "logs/enterprise/mission_control.json",
+    "signals": ["alignment_guard", "belief_density", "mission_tags"]
+  }
+}
