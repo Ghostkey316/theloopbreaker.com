@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const request = require('supertest');
 const { ethers } = require('ethers');
 const { createPartnerSyncServer } = require('../partnerSync');
@@ -145,12 +146,35 @@ defineIntegrityTest('Dashboard data reflects correct backend truth', async () =>
   const agent = request(server.app);
 
   const wallet = ethers.Wallet.createRandom();
-  const handshake = await agent.get('/vaultfire/handshake');
-  const secret = handshake.body?.secret || null;
-  const nonce = Date.now();
+  const handshakeSnapshot = await agent.get('/vaultfire/handshake');
+  const secret = handshakeSnapshot.body?.secret || null;
+  const secretId = handshakeSnapshot.body?.secretId || null;
+  const nonce = `nonce-${Date.now()}`;
+  const timestamp = Date.now().toString();
+  const digest =
+    secret
+      ? crypto
+          .createHmac('sha256', secret)
+          .update(`${wallet.address.toLowerCase()}::${nonce}::${timestamp}`)
+          .digest('hex')
+      : null;
+
+  const handshakeResponse = await agent.post('/vaultfire/handshake').send({
+    wallet: wallet.address,
+    nonce,
+    timestamp,
+    digest,
+    secretId,
+  });
+
+  if (handshakeResponse.status !== 200) {
+    throw new Error(`Handshake request failed with status ${handshakeResponse.status}`);
+  }
+
+  const sessionToken = handshakeResponse.body?.session?.token || null;
   const messageParts = [`Vaultfire belief sync handshake :: wallet=${wallet.address.toLowerCase()}`];
-  if (secret) {
-    messageParts.push(`secret=${secret}`);
+  if (sessionToken) {
+    messageParts.push(`session=${sessionToken}`);
   }
   messageParts.push(`nonce=${nonce}`);
   const message = messageParts.join(' :: ');
@@ -165,7 +189,7 @@ defineIntegrityTest('Dashboard data reflects correct backend truth', async () =>
 
   const syncResponse = await agent
     .post('/vaultfire/sync-belief')
-    .send({ wallet: wallet.address, message, signature, payload });
+    .send({ wallet: wallet.address, message, signature, payload, sessionToken, nonce });
 
   if (syncResponse.status !== 200) {
     throw new Error(`Sync request failed with status ${syncResponse.status}`);
