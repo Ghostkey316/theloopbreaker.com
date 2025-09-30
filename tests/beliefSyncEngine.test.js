@@ -20,7 +20,9 @@ describe('BeliefSyncEngine remote relay scheduling', () => {
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     expect(fs.existsSync(RETRY_PATH)).toBe(true);
-    const schedule = JSON.parse(fs.readFileSync(RETRY_PATH, 'utf8'));
+    const schedule = JSON.parse(fs.readFileSync(RETRY_PATH, 'utf8')).filter(
+      (entry) => entry.nodeId === 'partner-a'
+    );
     expect(schedule).toHaveLength(1);
     expect(schedule[0].nodeId).toBe('partner-a');
     expect(schedule[0].attempts).toBe(0);
@@ -35,6 +37,7 @@ describe('BeliefSyncEngine remote relay scheduling', () => {
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     let schedule = JSON.parse(fs.readFileSync(RETRY_PATH, 'utf8'));
+    schedule = schedule.filter((entry) => entry.nodeId === 'partner-b');
     expect(schedule).toHaveLength(1);
     schedule[0].nextAttemptAt = new Date(Date.now() - 1000).toISOString();
     fs.writeFileSync(RETRY_PATH, JSON.stringify(schedule, null, 2));

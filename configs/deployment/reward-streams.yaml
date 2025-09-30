@@ -1,0 +1,16 @@
+version: 1
+services:
+  reward-streams:
+    ledger:
+      provider: supabase
+      table: vaultfire_reward_events
+      url: https://supabase.example.com
+      serviceRoleKey: change-me
+    scheduling:
+      intervalSeconds: 120
+      jitter: 0.2
+    intents:
+      - name: loyalty-bonus
+        trigger: belief.score >= 0.8
+      - name: partner-milestone
+        trigger: partner.firstActivation

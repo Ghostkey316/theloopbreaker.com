@@ -1,7 +1,35 @@
+const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
+
 jest.mock('socket.io-client', () => {
   const ioMock = jest.fn();
   return { __esModule: true, io: ioMock };
 });
+
+function loadDashboardApi() {
+  const filePath = path.join(__dirname, '..', 'dashboard', 'src', 'services', 'api.js');
+  const source = fs.readFileSync(filePath, 'utf8');
+  const transformed =
+    source
+      .replace(/import\s+\{\s*io\s*\}\s+from\s+'socket\.io-client';/, "const { io } = require('socket.io-client');")
+      .replace(/export\s+async\s+function/g, 'async function')
+      .replace(/export\s+function/g, 'function') +
+    '\nmodule.exports = { syncBeliefPayload, fetchSyncStatus, subscribeToSync, subscribeToObservability, fetchObservability, fetchSecurityPosture, fetchHandshakeSecret, fetchStagingProfiles };';
+  const module = { exports: {} };
+  const sandbox = {
+    module,
+    exports: module.exports,
+    require,
+    console,
+    setTimeout,
+    clearTimeout,
+    fetch: global.fetch,
+    __VAULTFIRE_DASHBOARD_ENV__: global.__VAULTFIRE_DASHBOARD_ENV__,
+  };
+  vm.runInNewContext(transformed, sandbox, { filename: filePath });
+  return module.exports;
+}
 
 describe('dashboard websocket utilities', () => {
   let ioMock;
@@ -19,7 +47,7 @@ describe('dashboard websocket utilities', () => {
     ioMock = require('socket.io-client').io;
     ioMock.mockReset();
     ioMock.mockReturnValue(socket);
-    ({ subscribeToObservability } = await import('../dashboard/src/services/api.js'));
+    ({ subscribeToObservability } = loadDashboardApi());
   });
 
   test('registers listeners and disconnects when the last subscriber leaves', () => {

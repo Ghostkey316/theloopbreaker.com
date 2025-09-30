@@ -1,0 +1,9 @@
+version: 1
+services:
+  webhook-relay:
+    maxRetries: 5
+    baseDelayMs: 500
+    maxDelayMs: 15000
+    jitter: 0.35
+    concurrency: 8
+    telemetryChannel: webhook.delivery

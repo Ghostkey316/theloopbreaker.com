@@ -1,0 +1,18 @@
+version: 1
+services:
+  handshake:
+    rotation:
+      graceDays: 7
+      secrets:
+        - id: 2024-q3
+          value: vaultfire-rotation-q3
+          activeFrom: 2024-07-01T00:00:00Z
+          expiresAt: 2024-10-01T00:00:00Z
+        - id: 2024-q4
+          value: vaultfire-rotation-q4
+          activeFrom: 2024-10-01T00:00:00Z
+          expiresAt: 2025-01-01T00:00:00Z
+    telemetryChannel: security.signature
+    allowedDomains:
+      - partners.vaultfire.app
+      - vaultfire.app

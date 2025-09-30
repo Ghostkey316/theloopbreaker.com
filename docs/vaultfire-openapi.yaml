@@ -16,6 +16,33 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: |
+        Partner JWTs issued by Vaultfire. The following scopes are recognised:
+          • `activation:trigger` – partners, admins
+          • `rewards:read` – partners, admins, auditors
+          • `rewards:plan` – admins, partner_ops
+          • `belief:sync` – partners, admins
+          • `belief:triggers` – admins, partner_ops
+          • `telemetry:read` – admins, auditors
+        Include the scope matching the partner role assigned to the token.
+      x-roles:
+        partner:
+          - activation:trigger
+          - rewards:read
+          - belief:sync
+        partner_ops:
+          - rewards:plan
+          - belief:triggers
+        admin:
+          - activation:trigger
+          - rewards:read
+          - rewards:plan
+          - belief:sync
+          - belief:triggers
+          - telemetry:read
+        auditor:
+          - rewards:read
+          - telemetry:read
   schemas:
     ErrorEnvelope:
       type: object
@@ -133,6 +160,67 @@ components:
             attestedAt:
               type: string
               format: date-time
+    RewardStreamPreviewRequest:
+      type: object
+      required: [streamId, horizonMinutes]
+      properties:
+        streamId:
+          type: string
+        horizonMinutes:
+          type: integer
+          minimum: 5
+        walletFilters:
+          type: array
+          items:
+            type: string
+        includeBacklog:
+          type: boolean
+          default: false
+    RewardStreamPreviewResponse:
+      type: object
+      properties:
+        streamId:
+          type: string
+        totalProjected:
+          type: string
+        nextEmissionAt:
+          type: string
+          format: date-time
+        sampleRecipients:
+          type: array
+          items:
+            type: object
+            properties:
+              walletId:
+                type: string
+              projectedAmount:
+                type: string
+    BeliefTriggerPlanRequest:
+      type: object
+      required: [triggerId, intent]
+      properties:
+        triggerId:
+          type: string
+        intent:
+          type: string
+        predicate:
+          type: string
+          description: Vaultfire rule syntax (planned)
+        webhookUrl:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+    BeliefTriggerPlanResponse:
+      type: object
+      properties:
+        triggerId:
+          type: string
+        status:
+          type: string
+        reviewAt:
+          type: string
+          format: date-time
     MirrorResponse:
       type: object
       properties:
@@ -187,13 +275,15 @@ components:
           type: integer
 
 security:
-  - bearerAuth: []
+  - bearerAuth: [rewards:read]
 
 tags:
   - name: Authentication
   - name: Activation
   - name: Rewards
   - name: Belief Sync
+  - name: Reward Streams
+  - name: Belief Events
 
 paths:
   /auth/login:
@@ -376,6 +466,83 @@ paths:
                 $ref: '#/components/schemas/ErrorEnvelope'
         '422':
           description: Alignment breach detected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /vaultfire/rewards/streams/preview:
+    post:
+      tags: [Rewards, Reward Streams]
+      summary: Preview a planned reward stream distribution
+      description: |
+        Calculates a projected emission window for an upcoming reward stream. This endpoint is in preview
+        and returns indicative data so partners can align campaign messaging.
+      security:
+        - bearerAuth: [rewards:plan]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RewardStreamPreviewRequest'
+            example:
+              streamId: vaultfire-loyalty-q4
+              horizonMinutes: 60
+              walletFilters: ["0xabc...", "0xdef..."]
+      responses:
+        '202':
+          description: Preview generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RewardStreamPreviewResponse'
+        '403':
+          description: Scope missing for reward planning
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '501':
+          description: Stream engine not yet enabled in this cluster
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /belief/events/triggers:
+    post:
+      tags: [Belief Events]
+      summary: Register an intent-driven belief trigger (planned)
+      description: |
+        Creates a placeholder trigger for belief-based eventing. Partners can pre-stage automation intents
+        which activate once the Vaultfire belief trigger engine ships to production.
+      security:
+        - bearerAuth: [belief:triggers]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BeliefTriggerPlanRequest'
+            example:
+              triggerId: loyalty-surge
+              intent: notify-high-belief
+              predicate: belief.score >= 0.9
+              webhookUrl: https://partner.example.com/webhooks/belief
+      responses:
+        '202':
+          description: Trigger registered for review
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BeliefTriggerPlanResponse'
+        '409':
+          description: Trigger already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '501':
+          description: Belief trigger orchestration not yet active
           content:
             application/json:
               schema:

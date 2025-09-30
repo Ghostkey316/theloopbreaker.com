@@ -1,0 +1,20 @@
+version: 1
+services:
+  telemetry-ledger:
+    persistence:
+      type: postgres
+      tableName: vaultfire_telemetry
+      connection:
+        host: telemetry-db
+        port: 5432
+        database: telemetry
+        user: vaultfire
+        password: change-me
+    sinks:
+      - type: s3
+        bucket: vaultfire-telemetry-archive
+        prefix: partners/
+      - type: firehose
+        streamName: vaultfire-telemetry-stream
+    failover:
+      fallbackFile: ./logs/telemetry/persistence-failover.jsonl

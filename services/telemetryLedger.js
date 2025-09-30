@@ -49,6 +49,11 @@ class MultiTierTelemetryLedger {
     this.lastAuditHash = this.#bootstrapAuditHash();
     this.sinkRegistry = createTelemetrySinkRegistry(sinks);
     this.persistenceAdapter = null;
+    this.persistenceBacklog = [];
+    this.persistenceFallbackPath = path.join(this.baseDir, 'persistence-failover.jsonl');
+    if (!fs.existsSync(this.persistenceFallbackPath)) {
+      fs.writeFileSync(this.persistenceFallbackPath, '', 'utf8');
+    }
     if (persistence) {
       try {
         this.persistenceAdapter = createTelemetryPersistence({
@@ -100,6 +105,46 @@ class MultiTierTelemetryLedger {
     return auditEntry;
   }
 
+  async #persistEntry(entry, visibility) {
+    if (!this.persistenceAdapter?.persist) {
+      return;
+    }
+    try {
+      await this.persistenceAdapter.persist(entry, { visibility });
+    } catch (error) {
+      const failure = {
+        entry,
+        visibility,
+        error: error?.message || String(error),
+        capturedAt: new Date().toISOString(),
+      };
+      this.persistenceBacklog.push(failure);
+      appendLine(this.persistenceFallbackPath, failure);
+      throw error;
+    }
+  }
+
+  async #replayBacklog() {
+    if (!this.persistenceAdapter?.persist || !this.persistenceBacklog.length) {
+      return;
+    }
+    if (typeof this.persistenceAdapter.init === 'function') {
+      await this.persistenceAdapter.init();
+    }
+    const pending = this.persistenceBacklog.slice();
+    this.persistenceBacklog.length = 0;
+    for (const item of pending) {
+      try {
+        await this.persistenceAdapter.persist(item.entry, { visibility: item.visibility });
+      } catch (error) {
+        item.error = error?.message || String(error);
+        item.retryAt = new Date().toISOString();
+        this.persistenceBacklog.push(item);
+        appendLine(this.persistenceFallbackPath, item);
+      }
+    }
+  }
+
   record(eventType, payload, options = {}) {
     const entry = this.#createEntry(eventType, payload, options);
     const { visibility = { partner: true, ethics: true, audit: true } } = options;
@@ -121,12 +166,10 @@ class MultiTierTelemetryLedger {
       scope: options.tags || [],
     });
 
-    if (this.persistenceAdapter?.persist) {
-      Promise.resolve(this.persistenceAdapter.persist(entry, { visibility })).catch((error) => {
-        // eslint-disable-next-line no-console
-        console.warn('Telemetry persistence error:', error.message);
-      });
-    }
+    Promise.resolve(this.#persistEntry(entry, visibility)).catch((error) => {
+      // eslint-disable-next-line no-console
+      console.warn('Telemetry persistence error:', error.message);
+    });
 
     return entry;
   }
@@ -172,6 +215,7 @@ class MultiTierTelemetryLedger {
   }
 
   async flushExternal() {
+    await this.#replayBacklog();
     const tasks = [];
     if (this.sinkRegistry) {
       tasks.push(this.sinkRegistry.flush());

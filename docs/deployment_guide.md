@@ -7,6 +7,8 @@ This guide outlines how partners can deploy Vaultfire modules.
 2. Install Python dependencies with `pip install -r requirements.txt`.
 3. Install Node dependencies with `npm install`.
 4. Run `git config core.hooksPath .githooks` to enable hooks.
+5. Plan rollouts with `npm run deploy:sandbox` or `npm run deploy:production` – the CLI reads sample `.env` templates in
+   `deploy/` and aggregates YAML manifests from `configs/deployment/`.
 
 ## Integration Points
 - Onboarding API at `onboarding_api.py`.
@@ -15,7 +17,8 @@ This guide outlines how partners can deploy Vaultfire modules.
 - Plugin framework via `partner_plugins/`.
 
 ## Environment Presets
-Create `.env.staging` and `.env.production` files to avoid leaking secrets. Recommended keys:
+Create `.env.staging` and `.env.production` files (start with `deploy/.env.sandbox.example` and `deploy/.env.production.example`)
+to avoid leaking secrets. Recommended keys:
 
 ```bash
 VAULTFIRE_STORAGE_PROVIDER=postgres

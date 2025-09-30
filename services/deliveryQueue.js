@@ -12,12 +12,14 @@ class WebhookDeliveryQueue {
     baseDelayMs = 250,
     maxDelayMs = 10000,
     jitter = 0.25,
+    randomFn = Math.random,
   } = {}) {
     this.fetch = fetchImpl;
     this.maxRetries = maxRetries;
     this.baseDelayMs = baseDelayMs;
     this.maxDelayMs = maxDelayMs;
     this.jitter = jitter;
+    this.randomFn = typeof randomFn === 'function' ? randomFn : Math.random;
     this.queue = [];
     this.processingPromise = null;
     this.pending = new Set();
@@ -25,7 +27,7 @@ class WebhookDeliveryQueue {
 
   #computeDelay(attempt) {
     const base = Math.min(this.maxDelayMs, this.baseDelayMs * 2 ** Math.max(0, attempt - 1));
-    const jitterAmount = base * this.jitter * Math.random();
+    const jitterAmount = base * this.jitter * this.randomFn();
     return Math.min(this.maxDelayMs, base + jitterAmount);
   }
 
@@ -173,6 +175,24 @@ class WebhookDeliveryQueue {
     if (this.pending.size) {
       await Promise.allSettled(Array.from(this.pending));
     }
+  }
+
+  sampleDelays(attempt = 1, samples = 10) {
+    const size = Math.max(0, samples);
+    const values = [];
+    for (let i = 0; i < size; i += 1) {
+      values.push(this.#computeDelay(attempt));
+    }
+    return values;
+  }
+
+  inspectConfig() {
+    return {
+      maxRetries: this.maxRetries,
+      baseDelayMs: this.baseDelayMs,
+      maxDelayMs: this.maxDelayMs,
+      jitter: this.jitter,
+    };
   }
 }
 

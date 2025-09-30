@@ -15,7 +15,9 @@
     "dashboard:build": "vite build --config dashboard/vite.config.mjs",
     "build:test": "tsc --project tsconfig.json --noEmit",
     "lint:guardrails": "node tools/lint_guardrails.js",
-    "preflight": "node tools/preflight-check.js"
+    "preflight": "node tools/preflight-check.js",
+    "deploy:sandbox": "node cli/deployVaultfire.js --env sandbox",
+    "deploy:production": "node cli/deployVaultfire.js --env production"
   },
   "keywords": [],
   "author": "",

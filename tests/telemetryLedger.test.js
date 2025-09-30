@@ -71,6 +71,7 @@ describe('Multi-tier telemetry ledger', () => {
     });
 
     const entry = ledger.record('postgres.event', { ok: true }, { visibility: { partner: true } });
+    await new Promise((resolve) => setImmediate(resolve));
     await ledger.flushExternal();
 
     expect(connect).toHaveBeenCalled();
@@ -89,6 +90,7 @@ describe('Multi-tier telemetry ledger', () => {
     });
 
     ledger.record('supabase.event', { ok: true });
+    await new Promise((resolve) => setImmediate(resolve));
 
     expect(from).toHaveBeenCalledWith('telemetry_test');
     expect(insert).toHaveBeenCalledWith(
