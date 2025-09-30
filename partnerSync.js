@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const fs = require('fs');
 const express = require('express');
 const http = require('http');
 const rateLimit = require('express-rate-limit');
@@ -25,6 +26,41 @@ const HandshakeJWTAuthority = require('./services/handshake/jwtAuthority');
 const ApiKeyGate = require('./services/handshake/apiKeyGate');
 const GovernanceEnforcer = require('./services/handshake/governanceEnforcer');
 const SocketRelay = require('./services/handshake/socketRelay');
+
+const PROTOCOL_MANIFEST_PATH = path.join(__dirname, 'manifest.json');
+const DEFAULT_MANIFEST_METADATA = {
+  name: 'Vaultfire Protocol',
+  semanticVersion: '0.0.0',
+  releaseDate: null,
+  ethicsTags: ['ethics-anchor'],
+  scopeTags: ['pilot'],
+};
+
+let cachedManifest = null;
+let cachedManifestMtime = 0;
+
+function loadManifestMetadata() {
+  try {
+    const stats = fs.statSync(PROTOCOL_MANIFEST_PATH);
+    if (!cachedManifest || stats.mtimeMs !== cachedManifestMtime) {
+      const raw = fs.readFileSync(PROTOCOL_MANIFEST_PATH, 'utf8');
+      const data = JSON.parse(raw);
+      cachedManifest = {
+        ...DEFAULT_MANIFEST_METADATA,
+        ...data,
+        semanticVersion: data.semanticVersion || data.version || DEFAULT_MANIFEST_METADATA.semanticVersion,
+        ethicsTags: Array.isArray(data.ethicsTags) ? data.ethicsTags : DEFAULT_MANIFEST_METADATA.ethicsTags,
+        scopeTags: Array.isArray(data.scopeTags) ? data.scopeTags : DEFAULT_MANIFEST_METADATA.scopeTags,
+      };
+      cachedManifestMtime = stats.mtimeMs;
+    }
+  } catch (error) {
+    if (!cachedManifest) {
+      cachedManifest = { ...DEFAULT_MANIFEST_METADATA, error: 'manifest_unavailable' };
+    }
+  }
+  return cachedManifest;
+}
 
 function sanitizeVotePayload(vote) {
   assertWalletOnlyData(vote, { context: 'vote' });
@@ -548,6 +584,11 @@ function createPartnerSyncServer({
     }
   });
 
+  app.get('/manifest.json', (req, res) => {
+    const manifest = loadManifestMetadata();
+    res.json(manifest);
+  });
+
   app.get('/vaultfire/sync-status', async (req, res) => {
     try {
       const partners = await partnerStorage.listPartners();
@@ -555,12 +596,41 @@ function createPartnerSyncServer({
       const mirrorLog = engine.readRecentEntries(50);
       const votes = await loadVotes();
 
+      const manifest = loadManifestMetadata();
       res.json({
         system: partners.length ? 'operational' : 'awaiting_sync',
         summary,
         partners,
         mirrorLog,
         votes,
+        manifest,
+        ethics: { tags: manifest.ethicsTags },
+        scope: { tags: manifest.scopeTags },
+      });
+    } catch (error) {
+      res.status(500).json({ error: { message: error.message } });
+    }
+  });
+
+  app.get('/status', async (req, res) => {
+    try {
+      const partners = await partnerStorage.listPartners();
+      const summary = buildSummary(partners);
+      const manifest = loadManifestMetadata();
+      res.json({
+        system: partners.length ? 'operational' : 'awaiting_sync',
+        summary,
+        manifest,
+        ethics: { tags: manifest.ethicsTags },
+        scope: { tags: manifest.scopeTags },
+        partners: partners.map((partner) => ({
+          wallet: partner.wallet,
+          ens: partner.ens,
+          tier: partner.tier,
+          multiplier: partner.multiplier,
+          lastSync: partner.lastSync,
+          status: partner.status,
+        })),
       });
     } catch (error) {
       res.status(500).json({ error: { message: error.message } });

@@ -52,6 +52,7 @@ except Exception:  # pragma: no cover - fallback when full version unavailable
             telemetry_batch_size: int = 10,
             telemetry_flush_interval: float = 2.5,
             telemetry_jitter: float = 0.35,
+            telemetry_max_attempts: int = 3,
         ) -> None:
             if len(key) not in (16, 24, 32):
                 raise ValueError("Key must be 16, 24, or 32 bytes for AES-GCM")
@@ -68,6 +69,7 @@ except Exception:  # pragma: no cover - fallback when full version unavailable
             self.telemetry_batch_size = max(1, telemetry_batch_size)
             self.telemetry_flush_interval = max(0.5, telemetry_flush_interval)
             self.telemetry_jitter = max(0.0, min(1.0, telemetry_jitter))
+            self.telemetry_max_attempts = max(1, telemetry_max_attempts)
             self._telemetry_queue: Deque[dict] = deque()
             self._telemetry_lock = threading.Lock()
             self._telemetry_executor: ThreadPoolExecutor | None = (
@@ -137,6 +139,7 @@ except Exception:  # pragma: no cover - fallback when full version unavailable
                 "score": metadata.get("score"),
                 "reason": reason,
                 "metrics": metrics,
+                "_attempts": 0,
             }
             with self._telemetry_lock:
                 self._telemetry_queue.append(envelope)
@@ -171,9 +174,21 @@ except Exception:  # pragma: no cover - fallback when full version unavailable
             try:
                 self.telemetry_sink(payloads)
             except Exception:
+                dropped: list[dict] = []
                 with self._telemetry_lock:
                     for item in reversed(payloads):
+                        attempts = int(item.get("_attempts", 0)) + 1
+                        if attempts >= self.telemetry_max_attempts:
+                            dropped.append(item)
+                            continue
+                        item["_attempts"] = attempts
                         self._telemetry_queue.appendleft(item)
+                for dropped_item in dropped:
+                    self._record_intent(
+                        "telemetry-dropped",
+                        dropped_item,
+                        reason="max_attempts_exceeded",
+                    )
 
         def close(self) -> None:
             if not self._telemetry_executor:

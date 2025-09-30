@@ -9,6 +9,17 @@ const API_BASE = runtimeEnv.VITE_VAULTFIRE_API || runtimeEnv.VAULTFIRE_API_BASE 
 const DEFAULT_METADATA_BUDGET = 2400;
 const METADATA_PADDING_RATIO = 0.1;
 const MAX_METADATA_DEPTH = 4;
+const DEFAULT_STATUS_METADATA = {
+  manifest: {
+    name: 'Vaultfire Protocol',
+    semanticVersion: '0.0.0',
+    releaseDate: null,
+    ethicsTags: ['ethics-anchor'],
+    scopeTags: ['pilot'],
+  },
+  ethics: { tags: ['ethics-anchor'] },
+  scope: { tags: ['pilot'] },
+};
 let socket;
 let socketRefCount = 0;
 
@@ -222,7 +233,21 @@ async function request(path, { method = 'GET', body, headers } = {}) {
     throw new Error(message);
   }
 
-  return response.json();
+  const payload = await response.json();
+
+  if (method === 'GET' && path === '/status') {
+    const manifest = {
+      ...DEFAULT_STATUS_METADATA.manifest,
+      ...(payload.manifest || {}),
+    };
+    const ethicsTags = payload.ethics?.tags || manifest.ethicsTags || DEFAULT_STATUS_METADATA.ethics.tags;
+    const scopeTags = payload.scope?.tags || manifest.scopeTags || DEFAULT_STATUS_METADATA.scope.tags;
+    payload.manifest = manifest;
+    payload.ethics = { tags: ethicsTags };
+    payload.scope = { tags: scopeTags };
+  }
+
+  return payload;
 }
 
 function getSocket() {
@@ -263,6 +288,10 @@ export async function syncBeliefPayload(payload, { mode, triggerHaptics } = {}) 
 
 export async function fetchSyncStatus() {
   return request('/vaultfire/sync-status');
+}
+
+export async function fetchStatus() {
+  return request('/status');
 }
 
 export function subscribeToSync({ onSync, onError } = {}) {
@@ -337,6 +366,7 @@ if (typeof module !== 'undefined') {
   module.exports = {
     syncBeliefPayload,
     fetchSyncStatus,
+    fetchStatus,
     subscribeToSync,
     subscribeToObservability,
     fetchObservability,
