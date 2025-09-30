@@ -1,0 +1,98 @@
+jest.mock('../config/securityConfig', () => {
+  const actual = jest.requireActual('../config/securityConfig');
+  return {
+    ...actual,
+    loadSecurityConfig: jest.fn(),
+    resolveActiveSecret: jest.fn(),
+  };
+});
+
+const { loadSecurityConfig, resolveActiveSecret } = require('../config/securityConfig');
+const SecurityPostureManager = require('../services/securityPosture');
+
+const baseConfig = {
+  cors: { allowedOrigins: [], allowedDomains: [] },
+  telemetry: {},
+  verification: { rotationGraceDays: 0, allowLegacyHandshake: false, secrets: [] },
+  sandbox: { mode: 'sandbox', testEnsProfiles: [] },
+  walletKeys: {},
+};
+
+const activeSecret = {
+  id: 'test-secret',
+  value: 'vaultfire-secret-token',
+  expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+};
+
+function createManager(overrides = {}, telemetry = { record: jest.fn() }) {
+  loadSecurityConfig.mockReturnValue({ ...baseConfig, ...overrides });
+  resolveActiveSecret.mockReturnValue({ current: activeSecret, previous: [], upcoming: [] });
+  return { manager: new SecurityPostureManager({ telemetry }), telemetry };
+}
+
+describe('SecurityPostureManager handshake enforcement', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('accepts messages containing the active secret', () => {
+    const { manager, telemetry } = createManager();
+    expect(() =>
+      manager.assertHandshakeSecret('Vaultfire :: secret=vaultfire-secret-token :: handshake', {
+        wallet: '0xabc',
+      })
+    ).not.toThrow();
+    expect(telemetry.record).not.toHaveBeenCalledWith('security.signature.failed', expect.anything(), expect.anything());
+  });
+
+  test('records telemetry and throws when secret is missing', () => {
+    const { manager, telemetry } = createManager();
+
+    let capturedError;
+    try {
+      manager.assertHandshakeSecret('Vaultfire handshake payload without token', { wallet: '0xabc' });
+    } catch (error) {
+      capturedError = error;
+    }
+
+    expect(capturedError).toBeInstanceOf(Error);
+    expect(capturedError.message).toBe('Handshake secret invalid or expired');
+    expect(capturedError.statusCode).toBe(401);
+
+    const failureCall = telemetry.record.mock.calls.find(([event]) => event === 'security.signature.failed');
+    expect(failureCall).toBeTruthy();
+    expect(failureCall[1]).toMatchObject({ reason: 'secret_mismatch', phase: 'handshake' });
+  });
+
+  test('allows legacy handshake path when explicitly enabled', () => {
+    const overrides = {
+      verification: { ...baseConfig.verification, allowLegacyHandshake: true },
+    };
+    const { manager, telemetry } = createManager(overrides);
+
+    expect(() => manager.assertHandshakeSecret('Legacy Vaultfire handshake message', { wallet: '0xabc' })).not.toThrow();
+    const legacyCall = telemetry.record.mock.calls.find(([event]) => event === 'security.signature.legacy');
+    expect(legacyCall).toBeTruthy();
+  });
+});
+
+describe('SecurityPostureManager domain enforcement', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('bypasses localhost but rejects unapproved domains', () => {
+    const overrides = {
+      cors: { allowedOrigins: [], allowedDomains: ['vaultfire.app'] },
+    };
+    const { manager, telemetry } = createManager(overrides);
+
+    expect(() => manager.assertDomain('localhost')).not.toThrow();
+    expect(() => manager.assertDomain('127.0.0.1')).not.toThrow();
+
+    expect(() => manager.assertDomain('malicious.example.com')).toThrow('Domain not allowed');
+    const rejectionCall = telemetry.record.mock.calls.find(([event]) => event === 'security.domain.rejected');
+    expect(rejectionCall).toBeTruthy();
+    expect(rejectionCall[1]).toMatchObject({ host: 'malicious.example.com' });
+  });
+});

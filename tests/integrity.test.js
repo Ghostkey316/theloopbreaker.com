@@ -137,11 +137,23 @@ defineIntegrityTest('Dashboard data reflects correct backend truth', async () =>
   const votesPath = path.join(tmpDir, 'sync-votes.json');
   fs.writeFileSync(votesPath, JSON.stringify([], null, 2));
 
-  const server = createPartnerSyncServer({ telemetryPath, votesPath });
+  const server = createPartnerSyncServer({
+    telemetryPath,
+    votesPath,
+    storageOptions: { provider: 'memory', readOnly: false },
+  });
   const agent = request(server.app);
 
   const wallet = ethers.Wallet.createRandom();
-  const message = `Vaultfire belief sync handshake :: wallet=${wallet.address.toLowerCase()} :: nonce=${Date.now()}`;
+  const handshake = await agent.get('/vaultfire/handshake');
+  const secret = handshake.body?.secret || null;
+  const nonce = Date.now();
+  const messageParts = [`Vaultfire belief sync handshake :: wallet=${wallet.address.toLowerCase()}`];
+  if (secret) {
+    messageParts.push(`secret=${secret}`);
+  }
+  messageParts.push(`nonce=${nonce}`);
+  const message = messageParts.join(' :: ');
   const signature = await wallet.signMessage(message);
   const payload = {
     loyalty: 88,

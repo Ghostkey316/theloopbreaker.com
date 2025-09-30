@@ -1,13 +1,19 @@
 import { io } from 'socket.io-client';
 
-const API_BASE = import.meta.env.VITE_VAULTFIRE_API || 'http://localhost:4050';
-let socket;
+const runtimeEnv =
+  (typeof globalThis !== 'undefined' && globalThis.__VAULTFIRE_DASHBOARD_ENV__) ||
+  (typeof process !== 'undefined' && process.env) ||
+  {};
 
-async function request(path, { method = 'GET', body } = {}) {
-  const headers = { 'Content-Type': 'application/json' };
+const API_BASE = runtimeEnv.VITE_VAULTFIRE_API || runtimeEnv.VAULTFIRE_API_BASE || 'http://localhost:4050';
+let socket;
+let socketRefCount = 0;
+
+async function request(path, { method = 'GET', body, headers } = {}) {
+  const requestHeaders = { 'Content-Type': 'application/json', ...(headers || {}) };
   const response = await fetch(`${API_BASE}${path}`, {
     method,
-    headers,
+    headers: requestHeaders,
     body: body ? JSON.stringify(body) : undefined,
   });
 
@@ -20,8 +26,34 @@ async function request(path, { method = 'GET', body } = {}) {
   return response.json();
 }
 
-export async function syncBeliefPayload(payload) {
-  return request('/vaultfire/sync-belief', { method: 'POST', body: payload });
+function getSocket() {
+  if (!socket) {
+    socket = io(API_BASE, {
+      transports: ['websocket'],
+      reconnectionAttempts: 5,
+    });
+  }
+  socketRefCount += 1;
+  return socket;
+}
+
+function releaseSocket() {
+  if (socketRefCount > 0) {
+    socketRefCount -= 1;
+  }
+  if (socketRefCount <= 0 && socket) {
+    socket.disconnect();
+    socket = null;
+    socketRefCount = 0;
+  }
+}
+
+export async function syncBeliefPayload(payload, { mode } = {}) {
+  const headers = {};
+  if (mode) {
+    headers['X-Vaultfire-Mode'] = mode;
+  }
+  return request('/vaultfire/sync-belief', { method: 'POST', body: payload, headers });
 }
 
 export async function fetchSyncStatus() {
@@ -29,34 +61,69 @@ export async function fetchSyncStatus() {
 }
 
 export function subscribeToSync({ onSync, onError } = {}) {
-  if (socket) {
-    socket.disconnect();
-    socket = null;
-  }
-
-  socket = io(API_BASE, {
-    transports: ['websocket'],
-    reconnectionAttempts: 5,
-  });
+  const instance = getSocket();
 
   if (onSync) {
-    socket.on('belief-sync', onSync);
+    instance.on('belief-sync', onSync);
   }
 
-  socket.on('connect_error', (error) => {
+  const errorHandler = (error) => {
     if (onError) {
       onError(error.message);
     } else {
       console.warn('Belief sync socket error', error.message);
     }
-  });
+  };
+  instance.on('connect_error', errorHandler);
 
   return () => {
-    if (!socket) return;
+    if (!instance) return;
     if (onSync) {
-      socket.off('belief-sync', onSync);
+      instance.off('belief-sync', onSync);
     }
-    socket.disconnect();
-    socket = null;
+    instance.off('connect_error', errorHandler);
+    releaseSocket();
   };
+}
+
+export function subscribeToObservability({ onUpdate, onError } = {}) {
+  const instance = getSocket();
+
+  if (onUpdate) {
+    instance.on('observability:update', onUpdate);
+  }
+
+  const errorHandler = (error) => {
+    if (onError) {
+      onError(error.message);
+    } else {
+      console.warn('Observability socket error', error.message);
+    }
+  };
+  instance.on('connect_error', errorHandler);
+
+  return () => {
+    if (!instance) return;
+    if (onUpdate) {
+      instance.off('observability:update', onUpdate);
+    }
+    instance.off('connect_error', errorHandler);
+    releaseSocket();
+  };
+}
+
+export async function fetchObservability() {
+  return request('/vaultfire/observability');
+}
+
+export async function fetchSecurityPosture() {
+  return request('/security/posture');
+}
+
+export async function fetchHandshakeSecret() {
+  return request('/security/handshake');
+}
+
+export async function fetchStagingProfiles() {
+  return request('/security/test-ens');
 }
