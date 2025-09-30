@@ -14,7 +14,10 @@ SCORECARD_PATH = BASE_DIR / "user_scorecard.json"
 VALUES_PATH = BASE_DIR / "vaultfire-core" / "ghostkey_values.json"
 LOYALTY_RANKS_PATH = BASE_DIR / "dashboards" / "loyalty_ranks.json"
 LOG_PATH = BASE_DIR / "logs" / "loyalty_engine_log.json"
-SANDBOX_LOG_PATH = Path("/tmp/belief-metrics.log")
+SANDBOX_CONFIG_PATH = BASE_DIR / "configs" / "module_sandbox.json"
+DEFAULT_SANDBOX_LOG_PATH = BASE_DIR / "logs" / "belief-sandbox.json"
+SANDBOX_LOG_PATH = DEFAULT_SANDBOX_LOG_PATH
+SANDBOX_CONFIG_FLAG = False
 SANDBOX_ENV_FLAG = os.getenv("VAULTFIRE_SANDBOX_MODE", "").lower() in {"1", "true", "yes", "on"}
 
 
@@ -30,6 +33,15 @@ def _log(entry: dict) -> None:
     timestamp = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
     entry_with_time = {"timestamp": timestamp, **entry}
     storage.append_log(LOG_PATH, entry_with_time)
+
+
+def _resolve_log_path(value: str | None) -> Path:
+    if not value:
+        return DEFAULT_SANDBOX_LOG_PATH
+    candidate = Path(value)
+    if not candidate.is_absolute():
+        candidate = (BASE_DIR / candidate).resolve()
+    return candidate
 
 
 def _tier_multiplier(tier: str) -> tuple[float, bool]:
@@ -54,6 +66,17 @@ def _sandbox_log(entry: dict) -> None:
             handle.write(json.dumps(entry) + "\n")
     except OSError:
         pass
+
+
+def _load_sandbox_config() -> None:
+    global SANDBOX_CONFIG_FLAG, SANDBOX_LOG_PATH
+    config = storage.load_data(SANDBOX_CONFIG_PATH, {})
+    settings = config.get("loyalty-engine", {}) if isinstance(config, dict) else {}
+    SANDBOX_CONFIG_FLAG = bool(settings.get("sandbox_mode"))
+    SANDBOX_LOG_PATH = _resolve_log_path(settings.get("log_path"))
+
+
+_load_sandbox_config()
 
 
 def _determine_tier(points: float) -> str:
@@ -90,7 +113,8 @@ def loyalty_score(user_id: str, *, sandbox_mode: bool | None = None) -> dict:
         "multiplier": multiplier,
     }
 
-    active_sandbox = SANDBOX_ENV_FLAG if sandbox_mode is None else bool(sandbox_mode)
+    base_sandbox = SANDBOX_ENV_FLAG or SANDBOX_CONFIG_FLAG
+    active_sandbox = base_sandbox if sandbox_mode is None else bool(sandbox_mode)
     if active_sandbox:
         _sandbox_log(
             {
@@ -129,7 +153,8 @@ def loyalty_enhanced_score(
     info["score"] += bonus
     info["bonus"] = bonus
 
-    active_sandbox = SANDBOX_ENV_FLAG if sandbox_mode is None else bool(sandbox_mode)
+    base_sandbox = SANDBOX_ENV_FLAG or SANDBOX_CONFIG_FLAG
+    active_sandbox = base_sandbox if sandbox_mode is None else bool(sandbox_mode)
     if active_sandbox:
         _sandbox_log(
             {
@@ -154,7 +179,8 @@ def update_loyalty_ranks(*, sandbox_mode: bool | None = None) -> list[dict]:
     _write_json(LOYALTY_RANKS_PATH, ranks)
     _log({"action": "update_ranks", "count": len(ranks)})
 
-    active_sandbox = SANDBOX_ENV_FLAG if sandbox_mode is None else bool(sandbox_mode)
+    base_sandbox = SANDBOX_ENV_FLAG or SANDBOX_CONFIG_FLAG
+    active_sandbox = base_sandbox if sandbox_mode is None else bool(sandbox_mode)
     if active_sandbox:
         _sandbox_log(
             {

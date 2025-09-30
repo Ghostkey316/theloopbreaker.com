@@ -1,5 +1,5 @@
 # Vaultfire Protocol 🔥
-[![Test Status](https://img.shields.io/badge/tests-passing-brightgreen?logo=github)](./test-report.json)
+[![Last Test](https://img.shields.io/badge/last_test-%E2%9C%85-2ea44f?logo=github)](./logs/test-report.json)
 **Belief-secured intelligence for partners who lead with ethics.**
 
 ## Project Overview
@@ -14,11 +14,20 @@ Vaultfire is a production-ready, morals-first protocol that fuses belief-driven 
 All modules are wallet-first. No email capture, no digital ID fallback—ever.
 
 ## How to Launch a Scoped Partner Pilot
-1. **Initialize sandbox mode:** export `VAULTFIRE_SANDBOX_MODE=1` before starting the Partner Sync interface so belief and loyalty engines log sandbox metrics to `/tmp/belief-metrics.log`.
+1. **Initialize sandbox mode:** export `VAULTFIRE_SANDBOX_MODE=1` before starting the Partner Sync interface so belief and loyalty engines log sandbox metrics to `logs/belief-sandbox.json`.
 2. **Enable telemetry privacy controls:** update `configs/deployment/telemetry.yaml` if partners require telemetry opt-outs—set `telemetry.enabled` to `false` for no-stream pilots.
 3. **Deploy pilot configs:** run `node cli/deployVaultfire.js --env sandbox` to apply the `pilot_ready: true` deployment manifests across handshake, relay, reward-streams, and telemetry services.
 4. **Verify manifest metadata:** call `GET /status` on the running Partner Sync interface; confirm the response includes `manifest.semanticVersion`, `ethics.tags`, and `scope.tags` aligned with your pilot scope.
-5. **Share pilot brief:** point partners to the `VERSION.md` changelog plus the README badge for the latest verified test run before inviting wallet-based contributors.
+5. **Share pilot brief:** point partners to the `VERSION.md` changelog, the `/debug/belief-sandbox` endpoint output, and the README badge for the latest verified test run before inviting wallet-based contributors.
+
+## Pilot Integration Timeline
+
+| Phase | Window | Partner Checklist |
+| --- | --- | --- |
+| Discovery Sync | Week 0 | Confirm wallet-based access, review `manifest.json` ethics tags, and capture governance contacts. |
+| Sandbox Validation | Week 1 | Enable `logs/belief-sandbox.json`, call `GET /debug/belief-sandbox`, and verify telemetry fallbacks through the dashboard API. |
+| Governance Review | Week 2 | Share `governance_plan.md`, execute `npm test` with the generated `/logs/test-report.json`, and archive the latest `CHANGELOG.md` entry. |
+| Pilot Launch | Week 3 | Flip deployment YAMLs with `pilot_ready: true`, execute webhook rehearsal via SecureStore fallback, and distribute the due diligence quickstart. |
 
 ## System Diagram
 ```

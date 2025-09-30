@@ -1,0 +1,14 @@
+{
+  "belief-mechanics": {
+    "sandbox_mode": true,
+    "log_path": "./logs/belief-sandbox.json"
+  },
+  "loyalty-engine": {
+    "sandbox_mode": true,
+    "log_path": "./logs/belief-sandbox.json"
+  },
+  "multiplier-core": {
+    "sandbox_mode": true,
+    "log_path": "./logs/belief-sandbox.json"
+  }
+}

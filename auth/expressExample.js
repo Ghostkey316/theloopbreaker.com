@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
 const path = require('path');
+const fs = require('fs');
 const http = require('http');
 const { Server } = require('socket.io');
 const TokenService = require('./tokenService');
@@ -39,6 +40,39 @@ const trustVerifier = new TrustSyncVerifier({
 });
 const rewardStreamPlanner = new RewardStreamPlanner({ telemetry: telemetryLedger });
 const BELIEF_BREACH_THRESHOLD = trustConfig.identityStore?.breachThreshold ?? 0.35;
+const SANDBOX_CONFIG_PATH = path.join(__dirname, '../configs/module_sandbox.json');
+const BELIEF_SANDBOX_LOG = path.join(__dirname, '../logs/belief-sandbox.json');
+
+function loadSandboxConfig() {
+  try {
+    const raw = fs.readFileSync(SANDBOX_CONFIG_PATH, 'utf8');
+    return JSON.parse(raw);
+  } catch (error) {
+    return {};
+  }
+}
+
+function readSandboxLog(limit = 200) {
+  try {
+    const raw = fs.readFileSync(BELIEF_SANDBOX_LOG, 'utf8');
+    if (!raw.trim()) {
+      return [];
+    }
+    const lines = raw.split(/\r?\n/).filter(Boolean);
+    const recent = lines.slice(-Math.max(1, Math.min(Number(limit) || 0, 500)));
+    const parsed = [];
+    for (const line of recent) {
+      try {
+        parsed.push(JSON.parse(line));
+      } catch (error) {
+        parsed.push({ raw: line, parseError: error.message });
+      }
+    }
+    return parsed;
+  } catch (error) {
+    return [];
+  }
+}
 
 if (Array.isArray(trustConfig.hooks?.defaultSubscriptions)) {
   trustConfig.hooks.defaultSubscriptions.forEach((subscription) => {
@@ -76,6 +110,34 @@ app.get('/health', (req, res) => {
       pseudonymousMode: trustConfig.pseudonymousMode,
     },
     telemetryMode: trustConfig.telemetryMode,
+  });
+});
+
+app.get('/debug/belief-sandbox', (req, res) => {
+  const limit = Number.parseInt(req.query.limit, 10);
+  const entries = readSandboxLog(Number.isNaN(limit) ? 200 : limit);
+  const config = loadSandboxConfig();
+  const componentToggles = ['belief-mechanics', 'loyalty-engine', 'multiplier-core'].reduce(
+    (acc, key) => {
+      const settings = config?.[key] || {};
+      acc[key] = {
+        sandbox_mode: Boolean(settings.sandbox_mode),
+        log_path: settings.log_path || './logs/belief-sandbox.json',
+      };
+      return acc;
+    },
+    {}
+  );
+  const lastEntry = entries.length ? entries[entries.length - 1] : null;
+
+  res.json({
+    sandbox: componentToggles,
+    logPath: path.relative(process.cwd(), BELIEF_SANDBOX_LOG),
+    entries,
+    stats: {
+      totalEntries: entries.length,
+      lastEntryAt: lastEntry?.timestamp || lastEntry?.time || null,
+    },
   });
 });
 

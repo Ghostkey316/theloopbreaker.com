@@ -20,6 +20,13 @@ const DEFAULT_STATUS_METADATA = {
   ethics: { tags: ['ethics-anchor'] },
   scope: { tags: ['pilot'] },
 };
+const NULL_TELEMETRY_FALLBACKS = {
+  syncStatus: { status: 'unknown', sessions: [], sandbox: { active: false } },
+  observability: { status: 'offline', streams: [], lastUpdated: null },
+  securityPosture: { status: 'unknown', checks: [], lastScan: null },
+  handshakeSecret: { status: 'unavailable', secret: null, rotation: null },
+  stagingProfiles: { profiles: [], source: 'fallback' },
+};
 let socket;
 let socketRefCount = 0;
 
@@ -235,6 +242,10 @@ async function request(path, { method = 'GET', body, headers } = {}) {
 
   const payload = await response.json();
 
+  if (payload == null) {
+    return null;
+  }
+
   if (method === 'GET' && path === '/status') {
     const manifest = {
       ...DEFAULT_STATUS_METADATA.manifest,
@@ -287,11 +298,23 @@ export async function syncBeliefPayload(payload, { mode, triggerHaptics } = {}) 
 }
 
 export async function fetchSyncStatus() {
-  return request('/vaultfire/sync-status');
+  const payload = await request('/vaultfire/sync-status');
+  if (payload == null) {
+    return { ...NULL_TELEMETRY_FALLBACKS.syncStatus };
+  }
+  return payload;
 }
 
 export async function fetchStatus() {
-  return request('/status');
+  const payload = await request('/status');
+  if (payload == null) {
+    return {
+      manifest: { ...DEFAULT_STATUS_METADATA.manifest },
+      ethics: { ...DEFAULT_STATUS_METADATA.ethics },
+      scope: { ...DEFAULT_STATUS_METADATA.scope },
+    };
+  }
+  return payload;
 }
 
 export function subscribeToSync({ onSync, onError } = {}) {
@@ -347,19 +370,35 @@ export function subscribeToObservability({ onUpdate, onError } = {}) {
 }
 
 export async function fetchObservability() {
-  return request('/vaultfire/observability');
+  const payload = await request('/vaultfire/observability');
+  if (payload == null) {
+    return { ...NULL_TELEMETRY_FALLBACKS.observability };
+  }
+  return payload;
 }
 
 export async function fetchSecurityPosture() {
-  return request('/security/posture');
+  const payload = await request('/security/posture');
+  if (payload == null) {
+    return { ...NULL_TELEMETRY_FALLBACKS.securityPosture };
+  }
+  return payload;
 }
 
 export async function fetchHandshakeSecret() {
-  return request('/security/handshake');
+  const payload = await request('/security/handshake');
+  if (payload == null) {
+    return { ...NULL_TELEMETRY_FALLBACKS.handshakeSecret };
+  }
+  return payload;
 }
 
 export async function fetchStagingProfiles() {
-  return request('/security/test-ens');
+  const payload = await request('/security/test-ens');
+  if (payload == null) {
+    return { ...NULL_TELEMETRY_FALLBACKS.stagingProfiles };
+  }
+  return payload;
 }
 
 if (typeof module !== 'undefined') {

@@ -1,6 +1,6 @@
 {
   "name": "ghostkey-316-vaultfire-init",
-  "version": "1.0.0",
+  "version": "1.6.0",
   "description": "**This system is not built for profit. It is built for people.**",
   "main": "manifesto_broadcast.js",
   "directories": {
@@ -13,6 +13,7 @@
     "start:api": "node auth/expressExample.js",
     "dashboard:dev": "vite --config dashboard/vite.config.mjs",
     "dashboard:build": "vite build --config dashboard/vite.config.mjs",
+    "build": "node tools/update-version.js && npm run dashboard:build",
     "build:test": "tsc --project tsconfig.json --noEmit",
     "lint:guardrails": "node tools/lint_guardrails.js",
     "preflight": "node tools/preflight-check.js",
