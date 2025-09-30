@@ -78,7 +78,8 @@ defineIntegrityTest('Belief mirror logs correct multipliers', async () => {
     },
   };
 
-  const expectedMultiplier = computeBeliefMultiplier(action.type, action.metrics);
+  const expected = computeBeliefMultiplier(action.type, action.metrics);
+  const expectedMultiplier = expected.multiplier;
   const [entry] = await engine.run([action]);
   const log = JSON.parse(fs.readFileSync(telemetryPath, 'utf8'));
 
@@ -147,6 +148,7 @@ defineIntegrityTest('Dashboard data reflects correct backend truth', async () =>
     ethics: 92,
     interactionFrequency: 75,
     partnerAlignment: 83,
+    holdDuration: 61,
   };
 
   const syncResponse = await agent

@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+
+printf '%s\n' '🔒 Vaultfire pre-push verification in progress...'
+
+npm run lint:guardrails
+npx tsc --noEmit
+node tools/belief_rule_validator.js
+node tools/mobile_pr_helper.js --prepare
+
+printf '%s\n' '✅ Pre-push checks complete.'
