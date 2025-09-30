@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { createTelemetrySinkRegistry } = require('./telemetrySinks');
 
 function ensureDirectory(dirPath) {
   if (!fs.existsSync(dirPath)) {
@@ -35,6 +36,7 @@ class MultiTierTelemetryLedger {
     partnerLog = 'partner.log',
     ethicsLog = 'ethics.log',
     auditLog = 'audit.log',
+    sinks = [],
   } = {}) {
     this.baseDir = baseDir;
     ensureDirectory(this.baseDir);
@@ -43,6 +45,7 @@ class MultiTierTelemetryLedger {
     this.auditLogPath = path.join(this.baseDir, auditLog);
     ensureDirectory(path.dirname(this.auditLogPath));
     this.lastAuditHash = this.#bootstrapAuditHash();
+    this.sinkRegistry = createTelemetrySinkRegistry(sinks);
   }
 
   #bootstrapAuditHash() {
@@ -90,6 +93,13 @@ class MultiTierTelemetryLedger {
       this.#writeAudit(entry);
     }
 
+    this.sinkRegistry?.dispatch({
+      eventType,
+      entry,
+      visibility,
+      scope: options.tags || [],
+    });
+
     return entry;
   }
 
@@ -131,6 +141,12 @@ class MultiTierTelemetryLedger {
       .split('\n')
       .filter(Boolean)
       .map((line) => JSON.parse(line));
+  }
+
+  async flushExternal() {
+    if (this.sinkRegistry) {
+      await this.sinkRegistry.flush();
+    }
   }
 }
 

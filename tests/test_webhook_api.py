@@ -41,6 +41,13 @@ def test_webhook_valid_upload(tmp_path):
     assert "upload_uuid" in data
 
 
+def test_webhook_requires_signature():
+    body = {"metadata": {}, "payload": base64.b64encode(b"NOP").decode()}
+    resp = client.post("/webhook/upload", json=body)
+    assert resp.status_code == 401
+    assert resp.get_json()["error"] == "invalid signature"
+
+
 def test_webhook_timestamp_drift():
     ts = (datetime.utcnow() + timedelta(seconds=1)).isoformat()
     meta = {

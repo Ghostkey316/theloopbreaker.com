@@ -59,6 +59,7 @@ All modules are wallet-first. No email capture, no digital ID fallback—ever.
 ### 🧠 Belief Mirror v1 (`mirror/engine.js` + `mirror/belief-weight.js`)
 - Ingests quiz scores, holding patterns, votes, and partner syncs to compute belief multipliers.
 - Telemetry recorded in `telemetry/belief-log.json` for downstream analytics.
+- Streams belief telemetry to optional sinks (S3, Firehose, or custom handlers) for durable storage.
 - Schedule hourly runs or trigger via CLI by importing `BeliefMirrorEngine`.
 
 ### 🗳 BeliefVote CLI (`cli/beliefVote.js`)
@@ -84,6 +85,14 @@ All modules are wallet-first. No email capture, no digital ID fallback—ever.
 - **Belief Signal Engine:** Loyalty-aware scoring and ambient signal synthesis for responsive reward flows.
 - **Partner Integration Sandbox:** Ready-to-run activation demos, forks, and API shims for rapid onboarding.
 - **SecureStore Guardrails:** Encryption-backed storage protecting belief logs, partner credentials, and ethics artifacts.
+- **Partner Confidence Mechanics:** Hardened webhook delivery with signed callbacks, backoff queues, and telemetry sinks underpin pilot-ready onboarding.
+
+## Delivery Resilience & Scaling Milestones
+- **Signed Callbacks:** All partner webhooks now include Vaultfire HMAC signatures and delivery identifiers.
+- **Queue-Based Delivery:** Automatic retries with exponential backoff and dead-letter surfacing keep integrations stable under load.
+- **Telemetry Durability:** JSON telemetry can be mirrored to remote sinks for HIPAA/SOC 2/GDPR evidence without sacrificing local archives.
+- **Scaling Playbook:** `services/scalingPlaybook.js` evaluates delivery resilience, scaling pathways, and security controls to prioritise partner polish work.
+- **Governance Automation:** `governance/automation_triggers.py` raises guardrail actions when queues spike, security alerts occur, or ethics overrides need steward review.
 
 ## System Architecture
 Vaultfire combines an ethics-weighted Codex integration, an NFT ID registry, and a multi-tier CLI to coordinate protocol state. The system syncs belief telemetry, loyalty scores, and Codex outputs through Ghostkey-316 anchors while exposing partner modules, SDK hooks, and fork-ready governance controls for seamless expansion.
