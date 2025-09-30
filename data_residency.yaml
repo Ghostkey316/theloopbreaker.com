@@ -1,0 +1,33 @@
+version: 1
+updated: 2025-02-20
+policy:
+  current:
+    primary_region: eu-central-1
+    replication_strategy: "Hot standby in us-west-2 with encrypted transport"
+    retention_days: 35
+    encryption: "AES-256 at rest with per-partner envelope keys"
+    residency_controls:
+      - "Partner-specific storage buckets with wallet-scoped prefixes"
+      - "GDPR + SOC2 audit logs retained inside EU tenants"
+      - "Ethics council approval required for cross-region exports"
+  roadmap:
+    - phase: short-term
+      window: Q2 2025
+      goals:
+        - "Add APAC residency tier with opt-in replication"
+        - "Automate residency attestations in `/debug/belief-sandbox` responses"
+    - phase: mid-term
+      window: Q3 2025
+      goals:
+        - "Introduce per-partner key rotation SLAs"
+        - "Launch zero-knowledge residency proofs for compliance reviewers"
+    - phase: long-term
+      window: Q4 2025
+      goals:
+        - "Expand to sovereign cloud partners with shared governance nodes"
+        - "Publish residency posture via governance voting snapshots"
+controls:
+  audit_contacts:
+    - name: "Vaultfire Data Steward"
+      email: "steward@vaultfire.partner"
+  escalation_window_hours: 24

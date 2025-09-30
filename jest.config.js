@@ -11,4 +11,8 @@ module.exports = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   testEnvironment: 'node',
   resetModules: true,
+  reporters: [
+    'default',
+    ['<rootDir>/tools/testSummaryReporter.js', { output: './logs/test-report.json' }],
+  ],
 };

@@ -1,12 +1,18 @@
 # Vaultfire Protocol Version History
 
-# v1.5.0 — 2024-10-05
+## v1.6.0 — 2025-02-20
+- Introduced belief sandbox observability with unified toggles for belief mechanics, loyalty engine, and multiplier core plus the `/debug/belief-sandbox` verification endpoint.
+- Added automated version stamping via `npm run build`, commit hash linking in `manifest.json`, and refreshed partner-facing changelog assets.
+- Captured test summaries to `/logs/test-report.json`, surfaced the last test status badge, and enforced integrity test execution in the pre-push hook.
+- Published new governance, data residency, and due diligence guides alongside pilot timeline updates for partner onboarding.
+
+## v1.5.0 — 2024-10-05
 - Added manifest failover watchdog with telemetry and recovery hooks powering `/status` responses when `manifest.json` is rotated or offline.
 - Introduced tenant-isolated telemetry router to segregate belief signals per partner and support concurrent enterprise workloads.
 - Expanded test coverage with `manifestFailover.test.js` and `telemetryTenantRouter.test.js` to validate failover and multi-tenant stress scenarios.
 
 ## v1.4.0 — 2024-09-12
-- Added sandbox-mode toggles for belief and loyalty engines with JSON telemetry in `/tmp/belief-metrics.log`.
+- Added sandbox-mode toggles for belief and loyalty engines with JSON telemetry in `logs/belief-sandbox.json`.
 - Surfaced manifest metadata (ethics + scope tags) in `GET /status` responses and dashboard services.
 - Hardened SecureStore telemetry retries with max-attempt safeguards and privacy toggles for telemetry deployments.
 - Marked deployment manifests as `pilot_ready: true` and documented partner pilot rollout steps.

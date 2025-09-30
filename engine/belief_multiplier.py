@@ -11,7 +11,10 @@ BASE_DIR = Path(__file__).resolve().parents[1]
 SCORE_PATH = BASE_DIR / "belief_score.json"
 TIER_NAMES = ("Spark", "Glow", "Burner", "Immortal Flame")
 SANDBOX_ENV_FLAG = os.getenv("VAULTFIRE_SANDBOX_MODE", "").lower() in {"1", "true", "yes", "on"}
-SANDBOX_LOG_PATH = Path("/tmp/belief-metrics.log")
+SANDBOX_CONFIG_PATH = BASE_DIR / "configs" / "module_sandbox.json"
+DEFAULT_SANDBOX_LOG_PATH = BASE_DIR / "logs" / "belief-sandbox.json"
+SANDBOX_CONFIG_FLAG = False
+SANDBOX_LOG_PATH = DEFAULT_SANDBOX_LOG_PATH
 
 TIER_RULES = (
     {"threshold": 100, "tier": TIER_NAMES[3], "multiplier": 1.2},
@@ -30,6 +33,15 @@ def _collision_map() -> Dict[float, list[str]]:
 
 
 MULTIPLIER_COLLISIONS = _collision_map()
+
+
+def _resolve_log_path(value: str | None) -> Path:
+    if not value:
+        return DEFAULT_SANDBOX_LOG_PATH
+    candidate = Path(value)
+    if not candidate.is_absolute():
+        candidate = (BASE_DIR / candidate).resolve()
+    return candidate
 
 
 def _log_sandbox_metrics(entry: dict) -> None:
@@ -71,6 +83,17 @@ def _write_json(path: Path, data: dict) -> None:
         json.dump(data, f, indent=2)
 
 
+def _load_sandbox_config() -> None:
+    global SANDBOX_CONFIG_FLAG, SANDBOX_LOG_PATH
+    config = _load_json(SANDBOX_CONFIG_PATH)
+    settings = config.get("belief-mechanics", {}) if isinstance(config, dict) else {}
+    SANDBOX_CONFIG_FLAG = bool(settings.get("sandbox_mode"))
+    SANDBOX_LOG_PATH = _resolve_log_path(settings.get("log_path"))
+
+
+_load_sandbox_config()
+
+
 def record_belief_action(user_id: str, action: str) -> None:
     """Update ``belief_score.json`` with ``action`` for ``user_id``."""
     data = _load_json(SCORE_PATH)
@@ -103,7 +126,7 @@ def belief_multiplier(user_id: str, *, sandbox_mode: bool | None = None) -> Tupl
     """Return ``(multiplier, tier)`` for ``user_id``.
 
     When ``sandbox_mode`` is enabled (explicitly or via ``VAULTFIRE_SANDBOX_MODE``)
-    metrics are streamed to ``/tmp/belief-metrics.log`` so partner sandboxes can
+    metrics are streamed to ``logs/belief-sandbox.json`` so partner sandboxes can
     verify the scoring heuristics without mutating production data.
     """
     data = _load_json(SCORE_PATH)
@@ -120,7 +143,8 @@ def belief_multiplier(user_id: str, *, sandbox_mode: bool | None = None) -> Tupl
 
     multiplier, collision_resolved = _resolve_collision(tier, base_multiplier)
 
-    active_sandbox = SANDBOX_ENV_FLAG if sandbox_mode is None else bool(sandbox_mode)
+    base_sandbox = SANDBOX_ENV_FLAG or SANDBOX_CONFIG_FLAG
+    active_sandbox = base_sandbox if sandbox_mode is None else bool(sandbox_mode)
     if active_sandbox:
         entry = {
             "source": "belief_multiplier",

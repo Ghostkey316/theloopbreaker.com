@@ -53,6 +53,7 @@ except Exception:  # pragma: no cover - fallback when full version unavailable
             telemetry_flush_interval: float = 2.5,
             telemetry_jitter: float = 0.35,
             telemetry_max_attempts: int = 3,
+            webhook_max_attempts: int = 3,
         ) -> None:
             if len(key) not in (16, 24, 32):
                 raise ValueError("Key must be 16, 24, or 32 bytes for AES-GCM")
@@ -70,6 +71,7 @@ except Exception:  # pragma: no cover - fallback when full version unavailable
             self.telemetry_flush_interval = max(0.5, telemetry_flush_interval)
             self.telemetry_jitter = max(0.0, min(1.0, telemetry_jitter))
             self.telemetry_max_attempts = max(1, telemetry_max_attempts)
+            self.webhook_max_attempts = max(1, webhook_max_attempts)
             self._telemetry_queue: Deque[dict] = deque()
             self._telemetry_lock = threading.Lock()
             self._telemetry_executor: ThreadPoolExecutor | None = (
@@ -254,15 +256,28 @@ except Exception:  # pragma: no cover - fallback when full version unavailable
                 if chain_log:
                     _log_chain_event(wallet, tier, score, metadata["timestamp"])
                 if webhook:
-                    _send_to_webhook(
-                        webhook,
-                        wallet,
-                        tier,
-                        score,
-                        metadata["timestamp"],
-                        "secure_upload",
-                        metadata["timestamp"] if chain_log else None,
-                    )
+                    webhook_error: Exception | None = None
+                    for attempt in range(1, self.webhook_max_attempts + 1):
+                        try:
+                            _send_to_webhook(
+                                webhook,
+                                wallet,
+                                tier,
+                                score,
+                                metadata["timestamp"],
+                                "secure_upload",
+                                metadata["timestamp"] if chain_log else None,
+                            )
+                            webhook_error = None
+                            break
+                        except Exception as error:  # pragma: no cover - network dependent
+                            webhook_error = error
+                            if attempt >= self.webhook_max_attempts:
+                                break
+                            time.sleep(self.retry_backoff * (attempt + 1))
+                    if webhook_error is not None:
+                        self._record_intent("webhook-fallback", metadata, reason=str(webhook_error))
+                        self._enqueue_telemetry("securestore.webhook-fallback", metadata, reason=str(webhook_error))
                 self._record_intent("stored", metadata)
                 self._enqueue_telemetry("securestore.stored", metadata)
                 return metadata
