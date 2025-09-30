@@ -63,6 +63,7 @@ All modules are wallet-first. No email capture, no digital ID fallback—ever.
 - Socket.IO broadcasts and webhook fan-out keep partners aligned in real time.
 - Stores sync multipliers in-memory while mirroring every belief action to telemetry.
 - Start with `node partnerSync.js` or embed via `createPartnerSyncServer()`.
+- Enterprise-grade manifest failover (`services/manifestFailover.js`) keeps `/status` and `/manifest.json` authoritative even if `manifest.json` is rotated or temporarily unavailable.
 
 ### 🧠 Belief Mirror v1 (`mirror/engine.js` + `mirror/belief-weight.js`)
 - Ingests quiz scores, holding patterns, votes, and partner syncs to compute belief multipliers.
@@ -84,6 +85,16 @@ All modules are wallet-first. No email capture, no digital ID fallback—ever.
 - Jest-powered guardrails validating wallet-only identity, mirror math, CLI vote flow, and dashboard truth.
 - Emits `codex-integrity.json` with pass/fail metadata after each run for audit trails.
 
+### 🛰 Tenant Telemetry Router (`services/telemetryTenantRouter.js`)
+- Segregates telemetry ledgers per partner tenant, eliminating cross-tenant data mixing.
+- Supports concurrent fan-out with `flushAll()` to drain sinks after burst loads.
+- Backed by Jest coverage in `tests/telemetryTenantRouter.test.js` simulating 75 concurrent partner events.
+
+### 🛡 Manifest Failover Service (`services/manifestFailover.js`)
+- Watches `manifest.json` for rotations or outages and falls back to safe defaults automatically.
+- Emits structured telemetry (`manifest.failover.*`) so governance teams see when fallbacks engage or recover.
+- Shared across `/status` and `/manifest.json` ensuring partner integrations remain deterministic.
+
 **Final Rule: Wallet is passport. Vaultfire never compromises.**
 
 ## Core Features
@@ -102,6 +113,8 @@ All modules are wallet-first. No email capture, no digital ID fallback—ever.
 - **Telemetry Durability:** JSON telemetry can be mirrored to remote sinks for HIPAA/SOC 2/GDPR evidence without sacrificing local archives.
 - **Scaling Playbook:** `services/scalingPlaybook.js` evaluates delivery resilience, scaling pathways, and security controls to prioritise partner polish work.
 - **Governance Automation:** `governance/automation_triggers.py` raises guardrail actions when queues spike, security alerts occur, or ethics overrides need steward review.
+- **Tenant-Isolated Telemetry:** `services/telemetryTenantRouter.js` provides per-tenant log segregation with bulk flush support so multi-tenant activations never co-mingle belief data.
+- **Manifest Failover Watchdog:** `services/manifestFailover.js` automatically falls back to safe defaults, emits audit telemetry, and self-heals once canonical manifests return.
 
 ## System Architecture
 Vaultfire combines an ethics-weighted Codex integration, an NFT ID registry, and a multi-tier CLI to coordinate protocol state. The system syncs belief telemetry, loyalty scores, and Codex outputs through Ghostkey-316 anchors while exposing partner modules, SDK hooks, and fork-ready governance controls for seamless expansion.
