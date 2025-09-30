@@ -22,6 +22,9 @@ Vaultfire is a production-ready, morals-first protocol that fuses belief-driven 
 
 All modules are wallet-first. No email capture, no digital ID fallback—ever.
 
+Optional Sentry front-end hooks are detected during `npm install`. If `@sentry/react` is not present, the postinstall script logs
+guidance and Jest falls back to an identity profiler so mobile pipelines keep passing.
+
 ## 🏁 Onboarding Test Checklist
 - Review the [Operational Onboarding Checklist](./docs/runbooks/onboarding-test-checklist.md) before inviting new partners.
 - Run `node scripts/run-test-suite.js` to execute module-by-module coverage checks and surface any gaps below 80%.
@@ -50,6 +53,16 @@ When `pilot_mode=true` in the environment the loader automatically falls back to
 - Residency guard automatically adapts to React Native and webview runtimes without blocking bundle execution.
 - Optional telemetry exports are disabled when `MOBILE_MODE` is active to preserve bandwidth and partner privacy.
 - CLI-heavy flows (preflight, residency drills) auto-skip when a mobile environment is detected, keeping developer ergonomics intact on phones and tablets.
+- Run `MOBILE_MODE=true npm run preflight` for a compact status readout before revisiting the full desktop checks.
+
+## Testing Playbook
+
+| Command | Purpose |
+| --- | --- |
+| `npm test` | Executes the full Jest suite with coverage, regenerating the coverage badge. |
+| `MOBILE_MODE=true npm test` | Re-runs the suite with mobile relaxations enabled to confirm residency and telemetry guards short-circuit safely. |
+| `npm run preflight` | Validates peer dependencies, Node.js version, and residency configuration with full desktop formatting. |
+| `MOBILE_MODE=true npm run preflight` | Emits the mobile-friendly summary so you can verify posture quickly on tablets/phones. |
 
 ## How to Launch a Scoped Partner Pilot
 1. **Initialize sandbox mode:** export `VAULTFIRE_SANDBOX_MODE=1` before starting the Partner Sync interface so belief and loyalty engines log sandbox metrics to `logs/belief-sandbox.json`.

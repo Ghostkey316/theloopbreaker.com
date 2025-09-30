@@ -3,6 +3,7 @@ const { hasOptIn, setOptIn, normalizeWallet } = require('./nodeConsentStore');
 const { createResidencyGuard } = require('./residencyGuard');
 const { loadTrustSyncConfig } = require('../config/trustSyncConfig');
 
+const globalScope = typeof globalThis !== 'undefined' ? globalThis : {};
 const isBrowserRuntime = typeof window !== 'undefined';
 
 function toBoolean(value, fallback = false) {
@@ -19,6 +20,9 @@ const processEnv = typeof process !== 'undefined' && process && process.env ? pr
 
 function isMobileModeActive() {
   if (isBrowserRuntime) {
+    return true;
+  }
+  if (globalScope.__VAULTFIRE_MOBILE_MODE) {
     return true;
   }
   return toBoolean(processEnv.MOBILE_MODE, false);

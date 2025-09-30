@@ -19,6 +19,9 @@ function isMobileModeActive() {
   if (isBrowserRuntime) {
     return true;
   }
+  if (globalScope.__VAULTFIRE_MOBILE_MODE) {
+    return true;
+  }
   return toBoolean(processEnv.MOBILE_MODE, false);
 }
 

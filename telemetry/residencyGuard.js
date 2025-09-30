@@ -13,9 +13,11 @@ function resolveMobileModeFlag(value) {
 }
 
 const processEnv = typeof process !== 'undefined' && process && process.env ? process.env : {};
-const mobileModeEnvFlag = resolveMobileModeFlag(processEnv.MOBILE_MODE);
-const mobileRuntimeFlag = Boolean(globalScope.__VAULTFIRE_MOBILE_MODE);
-const shouldRelaxForMobile = isBrowserRuntime || mobileModeEnvFlag || mobileRuntimeFlag;
+function isMobileRuntimeRelaxed() {
+  const mobileModeEnvFlag = resolveMobileModeFlag(processEnv.MOBILE_MODE);
+  const mobileRuntimeFlag = Boolean(globalScope.__VAULTFIRE_MOBILE_MODE);
+  return isBrowserRuntime || mobileModeEnvFlag || mobileRuntimeFlag;
+}
 
 function getUrlCtor() {
   if (isBrowserRuntime && typeof globalScope.URL === 'function') {
@@ -112,13 +114,14 @@ function createResidencyGuard(config = {}) {
   }
 
   function ensureEndpointAllowed(endpoint, { kind = 'telemetry', region, label = 'endpoint' } = {}) {
-    if (!enforce || !endpoint || shouldRelaxForMobile) {
+    const relaxed = isMobileRuntimeRelaxed();
+    if (!enforce || !endpoint || relaxed) {
       return {
         allowed: true,
         region: resolveRegion(region),
         host: null,
-        enforced: Boolean(enforce) && !shouldRelaxForMobile,
-        skipped: shouldRelaxForMobile,
+        enforced: Boolean(enforce) && !relaxed,
+        skipped: relaxed,
       };
     }
 
@@ -171,12 +174,12 @@ function createResidencyGuard(config = {}) {
       }
     }
     return {
-      enforced: Boolean(enforce) && !shouldRelaxForMobile,
+      enforced: Boolean(enforce) && !isMobileRuntimeRelaxed(),
       defaultRegion,
       allowLocalhost: Boolean(allowLocalhost),
       summary,
       globalAllowList: normalizedGlobal,
-      mobileRelaxed: shouldRelaxForMobile,
+      mobileRelaxed: isMobileRuntimeRelaxed(),
     };
   }
 
