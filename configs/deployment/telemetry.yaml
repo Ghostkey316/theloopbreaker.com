@@ -1,7 +1,7 @@
 version: 2
 metadata:
   revision: vaultfire-pilot-prod
-  lastUpdated: 2025-08-01T00:00:00Z
+  lastUpdated: 2025-08-18T00:00:00Z
 services:
   telemetry-ledger:
     persistence:
@@ -23,6 +23,15 @@ services:
           source: reward-streams.behaviorMetrics.capture.behaviorDensityScore
         - name: loyaltySustainRate
           source: reward-streams.behaviorMetrics.capture.loyaltySustainRate
+        - name: trustResonance
+          source: handshake.beliefComplexity.metrics[2]
+      logging:
+        stream: telemetry.behavior
+        persistedMetrics:
+          - beliefComplexityIndex
+          - behaviorDensityScore
+          - loyaltySustainRate
+          - trustResonance
     sinks:
       - type: s3
         bucket: vaultfire-telemetry-archive
@@ -38,3 +47,4 @@ services:
     failover:
       fallbackFile: ./logs/telemetry/persistence-failover.jsonl
       beliefComplexitySnapshot: ./logs/telemetry/belief-complexity.jsonl
+      maxBufferSeconds: 300

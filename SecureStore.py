@@ -127,6 +127,7 @@ except Exception:  # pragma: no cover - fallback when full version unavailable
         def _enqueue_telemetry(self, event: str, metadata: dict, *, reason: str | None = None) -> None:
             if not self.telemetry_sink or not self._telemetry_executor:
                 return
+            metrics = metadata.get("behaviorMetrics") or self._compute_behavior_metrics(metadata)
             envelope = {
                 "event": event,
                 "timestamp": datetime.utcnow().isoformat(),
@@ -135,7 +136,7 @@ except Exception:  # pragma: no cover - fallback when full version unavailable
                 "tier": metadata.get("tier"),
                 "score": metadata.get("score"),
                 "reason": reason,
-                "metrics": self._compute_behavior_metrics(metadata),
+                "metrics": metrics,
             }
             with self._telemetry_lock:
                 self._telemetry_queue.append(envelope)
@@ -203,6 +204,7 @@ except Exception:  # pragma: no cover - fallback when full version unavailable
                 "cid": cid,
                 "nonce": payload.nonce.hex(),
             }
+            metadata["behaviorMetrics"] = self._compute_behavior_metrics(metadata)
             signature_payload = {
                 k: metadata[k]
                 for k in ["wallet", "tier", "score", "timestamp", "content_hash", "cid"]

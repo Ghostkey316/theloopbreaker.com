@@ -1,8 +1,9 @@
 version: 2
 metadata:
   revision: vaultfire-pilot-prod
-  lastUpdated: 2025-08-01T00:00:00Z
+  lastUpdated: 2025-08-18T00:00:00Z
   changelogRef: "Vaultfire v1.13 — belief multiplier module added"
+  releaseTrain: "vaultfire-mainnet-pilot"
 services:
   handshake:
     rotation:
@@ -30,6 +31,11 @@ services:
           capture: differential
         - id: trust-resonance
           capture: rolling
+      logging:
+        enabled: true
+        stream: telemetry.behavior
+        persistTo: logs/behavior/handshake-complexity.jsonl
+        redactIdentifiers: true
     telemetryChannel: security.signature
     allowedDomains:
       - partners.vaultfire.app
@@ -43,3 +49,6 @@ services:
       behaviorAudit:
         mode: mirrored
         retentionDays: 14
+      loyaltyPreview:
+        allowPartialUnlocks: true
+        maxTouchpointsPerDay: 12

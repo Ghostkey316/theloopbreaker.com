@@ -1,7 +1,8 @@
 version: 2
 metadata:
   revision: vaultfire-pilot-prod
-  lastUpdated: 2025-08-01T00:00:00Z
+  lastUpdated: 2025-08-18T00:00:00Z
+  releaseTrain: "vaultfire-mainnet-pilot"
 services:
   reward-streams:
     ledger:
@@ -18,12 +19,16 @@ services:
       loyaltyPreviewCap: 250
       cohortTag: codex-sandbox
       expiryMinutes: 90
+      touchpointSpacingSeconds: 45
+      auditLogChannel: telemetry.loyalty.sandbox
     behaviorMetrics:
       telemetryChannel: telemetry.loyalty.core
       capture:
         beliefComplexityIndex: true
         behaviorDensityScore: true
         loyaltySustainRate: true
+      logComplexityStream: telemetry.behavior
+      flushIntervalSeconds: 60
     intents:
       - name: loyalty-bonus
         trigger: belief.score >= 0.8
