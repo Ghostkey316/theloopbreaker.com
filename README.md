@@ -1,5 +1,6 @@
 # Vaultfire Protocol 🔥
 [![Last Test](https://img.shields.io/badge/last_test-%E2%9C%85-2ea44f?logo=github)](./logs/test-report.json)
+![Node.js CI](https://github.com/ghostkey316/vaultfire/actions/workflows/node-test.yml/badge.svg)
 **Belief-secured intelligence for partners who lead with ethics.**
 
 ## Project Overview

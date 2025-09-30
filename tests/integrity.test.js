@@ -22,6 +22,29 @@ fs.mkdirSync(tmpDir, { recursive: true });
 
 const integrityResults = [];
 
+const activePartnerSyncServers = new Set();
+
+function createTestPartnerSyncServer(options) {
+  const server = createPartnerSyncServer(options);
+  activePartnerSyncServers.add(server);
+  return server;
+}
+
+afterEach(() => {
+  activePartnerSyncServers.forEach((server) => {
+    if (server?.manifestFailover?.close) {
+      server.manifestFailover.close();
+    }
+    if (server?.io) {
+      server.io.removeAllListeners();
+      if (typeof server.io.close === 'function') {
+        server.io.close();
+      }
+    }
+  });
+  activePartnerSyncServers.clear();
+});
+
 function recordResult(name, passed, details) {
   integrityResults.push({ name, passed, details: details || null });
 }
@@ -142,7 +165,7 @@ defineIntegrityTest('CLI vote flow integrity', async () => {
 });
 
 defineIntegrityTest('Handshake discovery rejects unauthenticated access', async () => {
-  const server = createPartnerSyncServer({
+  const server = createTestPartnerSyncServer({
     telemetryPath: path.join(tmpDir, 'handshake-unauth-log.json'),
     votesPath: path.join(tmpDir, 'handshake-unauth-votes.json'),
     storageOptions: { provider: 'memory', readOnly: false },
@@ -164,7 +187,7 @@ defineIntegrityTest('Dashboard data reflects correct backend truth', async () =>
   const votesPath = path.join(tmpDir, 'sync-votes.json');
   fs.writeFileSync(votesPath, JSON.stringify([], null, 2));
 
-  const server = createPartnerSyncServer({
+  const server = createTestPartnerSyncServer({
     telemetryPath,
     votesPath,
     storageOptions: { provider: 'memory', readOnly: false },
@@ -270,7 +293,7 @@ defineIntegrityTest('Dashboard data reflects correct backend truth', async () =>
 });
 
 defineIntegrityTest('Rotation status admin route requires elevated access', async () => {
-  const server = createPartnerSyncServer({
+  const server = createTestPartnerSyncServer({
     telemetryPath: path.join(tmpDir, 'rotation-log.json'),
     votesPath: path.join(tmpDir, 'rotation-votes.json'),
     storageOptions: { provider: 'memory', readOnly: false },
