@@ -121,6 +121,11 @@ When `pilot_mode=true` in the environment the loader automatically falls back to
 - Emits structured telemetry (`manifest.failover.*`) so governance teams see when fallbacks engage or recover.
 - Shared across `/status` and `/manifest.json` ensuring partner integrations remain deterministic.
 
+### 🚀 Enterprise Mission Control (`vaultfire/enterprise/mission_control.py`)
+- Runs Purposeful Scale authorization before any enterprise expansion to keep the mission intact.
+- Ships belief-weighted checklists for ethics, telemetry trust fabric, and resilience squad readiness.
+- Generates audit-ready blueprints and logs every decision to `logs/enterprise/mission_control.json`.
+
 ## Telemetry Residency & Partner Hooks
 
 - Configure residency policies in `vaultfirerc.json` (or via `VAULTFIRE_RC_PATH`) and enable the JSON fallback flag (`"telemetry-fallback": true`) so remote sink failures are mirrored locally.
