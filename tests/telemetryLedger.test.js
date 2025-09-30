@@ -59,4 +59,40 @@ describe('Multi-tier telemetry ledger', () => {
     expect(JSON.parse(Body).eventType).toBe('telemetry.event');
     expect(handler).toHaveBeenCalledWith(expect.objectContaining({ eventType: 'telemetry.event' }));
   });
+
+  it('persists records to a postgres adapter when configured', async () => {
+    const query = jest.fn().mockResolvedValue({});
+    const connect = jest.fn().mockResolvedValue({});
+    const end = jest.fn().mockResolvedValue({});
+    const clientFactory = async () => ({ query, connect, end });
+    const ledger = new MultiTierTelemetryLedger({
+      baseDir,
+      persistence: { type: 'postgres', clientFactory, tableName: 'telemetry_test' },
+    });
+
+    const entry = ledger.record('postgres.event', { ok: true }, { visibility: { partner: true } });
+    await ledger.flushExternal();
+
+    expect(connect).toHaveBeenCalled();
+    const insertCall = query.mock.calls.find(([statement]) => statement.includes('INSERT INTO telemetry_test'));
+    expect(insertCall).toBeDefined();
+    expect(insertCall[1][0]).toBe(entry.id);
+  });
+
+  it('persists records to a supabase adapter when configured', async () => {
+    const insert = jest.fn().mockResolvedValue({ data: [{}], error: null });
+    const from = jest.fn().mockReturnValue({ insert });
+    const clientFactory = async () => ({ from });
+    const ledger = new MultiTierTelemetryLedger({
+      baseDir,
+      persistence: { type: 'supabase', clientFactory, tableName: 'telemetry_test' },
+    });
+
+    ledger.record('supabase.event', { ok: true });
+
+    expect(from).toHaveBeenCalledWith('telemetry_test');
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({ id: expect.any(String), event_type: 'supabase.event' })
+    );
+  });
 });

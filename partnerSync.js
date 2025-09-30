@@ -17,10 +17,14 @@ const {
 } = require('./utils/scoringValidator');
 const SecurityPostureManager = require('./services/securityPosture');
 const WebhookDeliveryQueue = require('./services/deliveryQueue');
-const TokenService = require('./auth/tokenService');
 const { ROLES, hasRequiredRole } = require('./auth/roles');
 const { createAuthMiddleware } = require('./auth/authMiddleware');
 const { sendSignedJson } = require('./utils/responseSigner');
+const { SecretsManager } = require('./services/secretsManager');
+const HandshakeJWTAuthority = require('./services/handshake/jwtAuthority');
+const ApiKeyGate = require('./services/handshake/apiKeyGate');
+const GovernanceEnforcer = require('./services/handshake/governanceEnforcer');
+const SocketRelay = require('./services/handshake/socketRelay');
 
 function sanitizeVotePayload(vote) {
   assertWalletOnlyData(vote, { context: 'vote' });
@@ -90,6 +94,11 @@ function createPartnerSyncServer({
   });
 
   const resolvedTelemetry = ensureTelemetry(telemetry);
+  const socketRelay = new SocketRelay({ io, telemetry: resolvedTelemetry });
+  const secretsManager = storageOptions.secretsManager || new SecretsManager({});
+  const jwtAuthority = new HandshakeJWTAuthority({ secretsManager, telemetry: resolvedTelemetry });
+  const discoveryTokenService = jwtAuthority.tokenService;
+  const apiKeyGate = new ApiKeyGate({ secretsManager, telemetry: resolvedTelemetry });
   const securityPosture =
     securityPostureManager || new SecurityPostureManager({ telemetry: resolvedTelemetry });
   const engine = new BeliefMirrorEngine({ telemetryPath });
@@ -114,19 +123,17 @@ function createPartnerSyncServer({
     .filter((entry) => entry && entry.targetUrl);
   const handshakeSessions = new Map();
   const sessionTtl = Math.max(60 * 1000, sessionTtlMs || DEFAULT_SESSION_TTL_MS);
-  const governanceThresholds = {
-    multiplierCritical:
-      governance.multiplierCritical ?? GOVERNANCE_THRESHOLDS.multiplierCritical,
-    summaryWarning: governance.summaryWarning ?? GOVERNANCE_THRESHOLDS.summaryWarning,
-  };
+  const governanceEnforcer = new GovernanceEnforcer({
+    telemetry: resolvedTelemetry,
+    thresholds: {
+      multiplierCritical:
+        governance.multiplierCritical ?? GOVERNANCE_THRESHOLDS.multiplierCritical,
+      summaryWarning: governance.summaryWarning ?? GOVERNANCE_THRESHOLDS.summaryWarning,
+    },
+  });
+  socketRelay.register({ jwtAuthority, apiKeyGate });
 
-  const discoveryTokenService = new TokenService();
   const handshakeRequiredRoles = [ROLES.PARTNER, ROLES.ADMIN];
-  const discoveryApiKeys = (process.env.VAULTFIRE_HANDSHAKE_API_KEYS || process.env.VAULTFIRE_HANDSHAKE_API_KEY || '')
-    .split(',')
-    .map((value) => value.trim())
-    .filter(Boolean);
-  const apiKeyHeaders = ['x-api-key', 'x-vaultfire-api-key', 'x-vf-handshake-key'];
   const [adminAuthRateLimiter, adminAuthGuard] = createAuthMiddleware({
     requiredRoles: [ROLES.ADMIN],
     tokenService: discoveryTokenService,
@@ -151,22 +158,6 @@ function createPartnerSyncServer({
     return error;
   }
 
-  function safeCompare(expected, actual) {
-    if (!expected || !actual) {
-      return false;
-    }
-    const expectedBuffer = Buffer.from(expected);
-    const actualBuffer = Buffer.from(actual);
-    if (expectedBuffer.length !== actualBuffer.length) {
-      return false;
-    }
-    try {
-      return crypto.timingSafeEqual(expectedBuffer, actualBuffer);
-    } catch (error) {
-      return false;
-    }
-  }
-
   function extractBearerToken(req) {
     const header = req.headers.authorization;
     if (!header) {
@@ -185,36 +176,25 @@ function createPartnerSyncServer({
       return null;
     }
 
-    const decoded = discoveryTokenService.verifyAccessToken(token);
-    if (!hasRequiredRole(decoded.role, requiredRoles)) {
+    const result = jwtAuthority.verify(token, { tags: ['http'] });
+    if (!result.valid) {
+      throw authError('Invalid bearer token for handshake discovery.', 'auth.unauthorized', 401);
+    }
+    if (!hasRequiredRole(result.payload.role, requiredRoles)) {
       throw authError('Insufficient role access for this resource.', 'auth.forbidden', 403);
     }
-    return decoded;
-  }
-
-  function extractApiKey(req) {
-    for (const header of apiKeyHeaders) {
-      if (req.headers[header]) {
-        return String(req.headers[header]);
-      }
-    }
-    return null;
+    return result.payload;
   }
 
   function verifyApiKey(req) {
-    if (!discoveryApiKeys.length) {
-      return null;
-    }
-    const provided = extractApiKey(req);
-    if (!provided) {
-      return null;
-    }
-
-    const matched = discoveryApiKeys.some((key) => safeCompare(key, provided));
-    if (!matched) {
+    const result = apiKeyGate.verify(req);
+    if (!result.valid) {
+      if (result.reason === 'no_keys_configured') {
+        return null;
+      }
       throw authError('Invalid API key for handshake discovery.', 'auth.unauthorized', 401);
     }
-    return { type: 'api-key', key: provided };
+    return { type: 'api-key', key: result.key };
   }
 
   function requireDiscoveryAuth(req) {
@@ -509,33 +489,38 @@ function createPartnerSyncServer({
         overridesDetected: Boolean(entry.configOverrides),
       };
 
-      io.emit('belief-sync', { type: 'partnerSync', entry: partnerRecord });
+      socketRelay.emit('belief-sync', { type: 'partnerSync', entry: partnerRecord });
       await notifyWebhooks('partnerSync', partnerRecord);
 
       const partners = await partnerStorage.listPartners();
       const summary = buildSummary(partners);
-      const governanceAlerts = [];
+      const enforcement = governanceEnforcer.assess({
+        multiplier: entry.multiplier,
+        summaryScore: summary.beliefScore,
+      });
 
-      if (entry.multiplier < governanceThresholds.multiplierCritical) {
-        governanceAlerts.push({
-          type: 'multiplier.floor',
-          wallet: entry.wallet,
-          multiplier: entry.multiplier,
-          tier: entry.tier,
-          severity: 'critical',
+      if (enforcement.alerts.length) {
+        const governanceAlerts = enforcement.alerts.map((alert) => {
+          if (alert.type === 'multiplier.floor') {
+            return {
+              type: 'multiplier.floor',
+              wallet: entry.wallet,
+              multiplier: entry.multiplier,
+              tier: entry.tier,
+              severity: 'critical',
+            };
+          }
+          if (alert.type === 'summary.threshold') {
+            return {
+              type: 'summary.drift',
+              beliefScore: summary.beliefScore,
+              totalPartners: summary.totalPartners,
+              severity: 'warning',
+            };
+          }
+          return alert;
         });
-      }
 
-      if (summary.beliefScore < governanceThresholds.summaryWarning) {
-        governanceAlerts.push({
-          type: 'summary.drift',
-          beliefScore: summary.beliefScore,
-          totalPartners: summary.totalPartners,
-          severity: 'warning',
-        });
-      }
-
-      if (governanceAlerts.length) {
         governanceAlerts.forEach((alert) => {
           recordTelemetry(
             'governance.alert',
@@ -547,8 +532,8 @@ function createPartnerSyncServer({
           );
         });
         await Promise.all(governanceAlerts.map((alert) => notifyWebhooks('governance.alert', alert)));
-        io.emit('governance-alert', governanceAlerts);
-        responsePayload.governance = { alerts: governanceAlerts };
+        socketRelay.emit('governance-alert', governanceAlerts);
+        responsePayload.governance = { alerts: governanceAlerts, status: enforcement.status };
       }
 
       res.json(responsePayload);
@@ -623,6 +608,7 @@ function createPartnerSyncServer({
 
   const stop = () =>
     new Promise((resolve) => {
+      socketRelay.close();
       io.removeAllListeners();
       httpServer.close(async () => {
         try {

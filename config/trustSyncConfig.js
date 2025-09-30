@@ -24,6 +24,9 @@ const DEFAULT_CONFIG = {
   mirror: {
     outputChannel: 'cli',
   },
+  verification: {
+    remote: null,
+  },
 };
 
 function mergeConfig(base, override) {

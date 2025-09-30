@@ -16,6 +16,8 @@ const PartnerHookRegistry = require('../services/partnerHooks');
 const AIMirrorAgent = require('../services/aiMirrorAgent');
 const { createFingerprint } = require('../services/originFingerprint');
 const { loadTrustSyncConfig } = require('../config/trustSyncConfig');
+const TrustSyncVerifier = require('../services/trustSyncVerifier');
+const RewardStreamPlanner = require('../services/rewardStreamPlanner');
 
 const app = express();
 const port = process.env.PORT || 4002;
@@ -31,6 +33,11 @@ const identityStoreReady = identityStore.init();
 const signalCompass = new SignalCompass({ telemetry: telemetryLedger, ...(trustConfig.signalCompass || {}) });
 const partnerHooks = new PartnerHookRegistry({ telemetry: telemetryLedger });
 const mirrorAgent = new AIMirrorAgent({ telemetry: telemetryLedger, ...(trustConfig.mirror || {}) });
+const trustVerifier = new TrustSyncVerifier({
+  telemetry: telemetryLedger,
+  remote: trustConfig.verification?.remote || null,
+});
+const rewardStreamPlanner = new RewardStreamPlanner({ telemetry: telemetryLedger });
 const BELIEF_BREACH_THRESHOLD = trustConfig.identityStore?.breachThreshold ?? 0.35;
 
 if (Array.isArray(trustConfig.hooks?.defaultSubscriptions)) {
@@ -177,10 +184,16 @@ app.get(
   ...createAuthMiddleware({ requiredRoles: [ROLES.PARTNER, ROLES.ADMIN], tokenService }),
   ethicsGuard,
   (req, res) => {
+    const currentYield = { apr: 6.4, multiplier: 1.15, tierLevel: 'flame' };
+    const streamPreview = rewardStreamPlanner.previewStream(req.params.walletId, {
+      partnerId: req.user.partnerId,
+      currentYield,
+    });
     const response = {
       walletId: req.params.walletId,
-      currentYield: { apr: 6.4, multiplier: 1.15, tierLevel: 'flame' },
+      currentYield,
       signalsReviewed: true,
+      streamPreview,
     };
 
     telemetryLedger.record('vaultfire.rewards.view', { walletId: req.params.walletId, partnerId: req.user.partnerId }, {
@@ -299,7 +312,23 @@ app.post(
     }
 
     const anchorWithOrigin = { ...anchor, originFingerprint: fingerprint.fingerprint };
-    return res.status(200).json({ anchor: anchorWithOrigin, signalCompass: snapshot });
+    const verification = await trustVerifier.verifyAnchor(anchorWithOrigin, {
+      partnerId: req.user.partnerId,
+      wallet,
+      event: 'link-wallet',
+    });
+
+    if (verification.status === 'rejected') {
+      return res.status(409).json({
+        error: {
+          code: 'wallet.verification_rejected',
+          message: 'Remote trust verifier rejected anchor attestation.',
+        },
+        verification,
+      });
+    }
+
+    return res.status(200).json({ anchor: anchorWithOrigin, signalCompass: snapshot, verification });
   }
 );
 

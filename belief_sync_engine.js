@@ -10,6 +10,7 @@ const GLOBAL_BUS = new EventEmitter();
 const LOG_PATH = path.join(__dirname, 'fork_log.json');
 const PARTNER_NODE_PATH = path.join(__dirname, 'partner_port', 'external_nodes.json');
 const RELAY_DIR = path.join(__dirname, 'logs', 'partner_relays');
+const RETRY_SCHEDULE_PATH = path.join(RELAY_DIR, 'retry-schedule.json');
 
 function _loadLog() {
   if (!fs.existsSync(LOG_PATH)) return [];
@@ -50,6 +51,41 @@ function _ensureRelayDir() {
   if (!fs.existsSync(RELAY_DIR)) {
     fs.mkdirSync(RELAY_DIR, { recursive: true });
   }
+}
+
+function _loadRetrySchedule() {
+  if (!fs.existsSync(RETRY_SCHEDULE_PATH)) {
+    return [];
+  }
+  try {
+    const raw = fs.readFileSync(RETRY_SCHEDULE_PATH, 'utf8');
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function _writeRetrySchedule(entries) {
+  _ensureRelayDir();
+  fs.writeFileSync(RETRY_SCHEDULE_PATH, JSON.stringify(entries, null, 2));
+}
+
+function _scheduleRemoteRetry(node, payload, { attempts = 0, delayMs } = {}) {
+  const queue = _loadRetrySchedule();
+  const baseDelay = delayMs || Math.min(60 * 60 * 1000, 60 * 1000 * 2 ** attempts);
+  const scheduled = {
+    id: crypto.randomUUID(),
+    nodeId: node.id || node.partnerId || 'unknown',
+    endpoint: node.endpoint || null,
+    payload,
+    attempts,
+    nextAttemptAt: new Date(Date.now() + baseDelay).toISOString(),
+  };
+  queue.push(scheduled);
+  _writeRetrySchedule(queue);
+  return scheduled;
+  // TODO(remote-relay-roadmap): escalate retries to remote scheduler once governance approves cross-region relay orchestration.
 }
 
 function _encryptRelayPayload(entry, key) {
@@ -159,6 +195,7 @@ class BeliefSyncEngine extends EventEmitter {
         const ok = await _sendToEndpoint(node.endpoint, payload);
         if (!ok) {
           _writeRelayFallback(node, payload);
+          _scheduleRemoteRetry(node, payload, { attempts: 0 });
         }
       })
     );
@@ -188,6 +225,52 @@ class BeliefSyncEngine extends EventEmitter {
       counts[entry.choice] = (counts[entry.choice] || 0) + 1;
     }
     return counts;
+  }
+
+  async processRetryQueue({ now = Date.now(), maxAttempts = 5 } = {}) {
+    const queue = _loadRetrySchedule();
+    if (!queue.length) {
+      return { attempted: 0, delivered: 0, remaining: 0 };
+    }
+    const keep = [];
+    let attempted = 0;
+    let delivered = 0;
+    const nowTs = typeof now === 'number' ? now : new Date(now).getTime();
+
+    for (const job of queue) {
+      const nextAttemptTs = new Date(job.nextAttemptAt).getTime();
+      if (Number.isNaN(nextAttemptTs) || nextAttemptTs > nowTs) {
+        keep.push(job);
+        continue;
+      }
+      attempted += 1;
+      const ok = await _sendToEndpoint(job.endpoint, job.payload);
+      if (ok) {
+        delivered += 1;
+        continue;
+      }
+      const attempts = (job.attempts || 0) + 1;
+      if (attempts >= maxAttempts) {
+        const fallbackRecord = {
+          timestamp: new Date(nowTs).toISOString(),
+          node: job.nodeId,
+          endpoint: job.endpoint,
+          status: 'exhausted',
+          attempts,
+        };
+        _writeRelayFallback({ id: job.nodeId, endpoint: job.endpoint }, fallbackRecord);
+        continue;
+      }
+      const delay = Math.min(2 ** attempts * 60 * 1000, 6 * 60 * 60 * 1000);
+      keep.push({
+        ...job,
+        attempts,
+        nextAttemptAt: new Date(nowTs + delay).toISOString(),
+      });
+    }
+
+    _writeRetrySchedule(keep);
+    return { attempted, delivered, remaining: keep.length };
   }
 }
 
