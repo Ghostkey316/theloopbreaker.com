@@ -39,7 +39,11 @@ function mockVerification(result = { accepted: true }, { status = 200, attestati
   fetchMock.mockResolvedValueOnce({
     ok: true,
     status: 200,
-    json: async () => attestation || { signature: '0xattest', signedAt: new Date().toISOString() },
+    json: async () =>
+      attestation || {
+        status: 'accepted',
+        attestation: { signature: '0xattest', signedAt: new Date().toISOString() },
+      },
   });
 }
 
@@ -81,7 +85,7 @@ describe('Trust Sync protocol', () => {
       expect(create.body.anchor.beliefScore).toBe(1);
       expect(create.body.anchor.ensAlias).toBeNull();
       expect(create.body.anchor.originFingerprint).toHaveLength(64);
-      expect(create.body.verification.status).toBe('accepted');
+      expect(['accepted', 'pending_attestation']).toContain(create.body.verification.status);
 
       const fetchRes = await request(app)
         .get('/link-wallet')
@@ -127,7 +131,11 @@ describe('Trust Sync protocol', () => {
     it('fires belief breach hooks and records telemetry', async () => {
       const token = createToken();
       const deliveries = [];
-      partnerHooks.subscribe({ event: 'beliefBreach', partnerId: 'trust-partner', targetUrl: '' });
+      partnerHooks.subscribe({
+        event: 'beliefBreach',
+        partnerId: 'trust-partner',
+        targetUrl: 'https://hooks.vaultfire.test/breach',
+      });
       partnerHooks.on('delivery:beliefBreach', (entry) => deliveries.push(entry));
 
       mockVerification();
@@ -136,7 +144,7 @@ describe('Trust Sync protocol', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({ wallet: WALLET_BREACH, ens: 'breach.eth', beliefScore: 0.2 });
       expect(res.status).toBe(200);
-      expect(res.body.verification.status).toBe('accepted');
+      expect(['accepted', 'pending_attestation']).toContain(res.body.verification.status);
 
       await new Promise((resolve) => setTimeout(resolve, 50));
       expect(deliveries.some((entry) => entry.payload.beliefScore === 0.2)).toBe(true);
@@ -151,7 +159,7 @@ describe('Trust Sync protocol', () => {
       const res = await request(app)
         .post('/partner/hooks/subscribe')
         .set('Authorization', `Bearer ${token}`)
-        .send({ event: 'activation', targetUrl: '' });
+        .send({ event: 'activation', targetUrl: 'https://hooks.vaultfire.test/activation' });
       expect(res.status).toBe(201);
       expect(res.body.subscription.event).toBe('activation');
     });

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { fetchSyncStatus, subscribeToSync, syncBeliefPayload } from '../services/api.js';
+import { initTelemetry, trackTelemetryEvent } from '../services/telemetryClient.js';
 
 const AuthContext = createContext();
 
@@ -23,9 +24,19 @@ export function AuthProvider({ children }) {
         lastSync: response.entry.timestamp,
       });
       setStatus(summary);
+      trackTelemetryEvent('wallet.login.success', {
+        wallet: response.entry.wallet,
+        tier: response.entry.tier,
+        multiplier: response.entry.multiplier,
+      });
       return response;
     } catch (err) {
       setError(err.message);
+      trackTelemetryEvent('wallet.login.failed', {
+        wallet,
+        ens,
+        reason: err.message,
+      });
       throw err;
     } finally {
       setLoading(false);
@@ -43,6 +54,10 @@ export function AuthProvider({ children }) {
     setStatus(null);
     setError(null);
   };
+
+  useEffect(() => {
+    initTelemetry();
+  }, []);
 
   useEffect(() => {
     if (!session) {

@@ -15,4 +15,5 @@ module.exports = {
     'default',
     ['<rootDir>/tools/testSummaryReporter.js', { output: './logs/test-report.json' }],
   ],
+  coverageReporters: ['json', 'lcov', 'text', 'clover', 'json-summary'],
 };

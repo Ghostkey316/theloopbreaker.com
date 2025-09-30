@@ -2,10 +2,17 @@
 # Vaultfire Protocol 🔥
 [![Last Test](https://img.shields.io/badge/last_test-%E2%9C%85-2ea44f?logo=github)](./logs/test-report.json)
 ![Node.js CI](https://github.com/ghostkey316/vaultfire/actions/workflows/node-test.yml/badge.svg)
+[![Trust Coverage](docs/badges/trust-badge.svg)](./docs/badges/trust-badge.svg)
 **Belief-secured intelligence for partners who lead with ethics.**
 
 ## Project Overview
 Vaultfire is a production-ready, morals-first protocol that fuses belief-driven intelligence with verifiable human identity. It orchestrates Codex reasoning engines, NFT-based identity anchors, and partner-focused loyalty modules to deliver a resilient activation stack for ethical AI collaboration.
+
+## Trust & Transparency
+- **Automated proof:** `npm test` now runs Jest with full coverage, React Testing Library checks, and CLI integrations. Snapshot artifacts are uploaded on every CI run.
+- **Security posture:** Express surfaces Helmet headers, safe-list CORS defaults, and SSRF-hardened webhook validation alongside regression tests for invalid JWT and malformed wallet payloads.
+- **Telemetry ethics:** Wallet-level consent toggles route opt-in signals to Sentry, logging dashboard renders, wallet logins, and belief vote casts only when explicitly approved.
+- **Trust badge:** The coverage-driven badge above is auto-generated from `coverage/coverage-summary.json` via `node tools/generateCoverageBadge.js` after each test run.
 
 ## Installation
 1. Clone this repository and install dependencies: `npm install`

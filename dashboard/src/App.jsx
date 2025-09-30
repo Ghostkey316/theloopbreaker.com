@@ -4,6 +4,11 @@ import BeliefOverview from './components/BeliefOverview.jsx';
 import SyncTable from './components/SyncTable.jsx';
 import MirrorLog from './components/MirrorLog.jsx';
 import VoteHistory from './components/VoteHistory.jsx';
+import {
+  hasTelemetryConsent,
+  setTelemetryConsent,
+  trackTelemetryEvent,
+} from './services/telemetryClient.js';
 
 function WalletLogin() {
   const { connect, loading, error } = useAuth();
@@ -27,6 +32,7 @@ function WalletLogin() {
     holdDuration: '',
   });
   const [baselineMultiplier, setBaselineMultiplier] = useState('');
+  const [telemetryOptIn, setTelemetryOptIn] = useState(false);
 
   const scoringConfig = useMemo(() => {
     const normalizedWeights = Object.entries(weights).reduce((acc, [key, value]) => {
@@ -55,6 +61,9 @@ function WalletLogin() {
       setMessage(
         `Vaultfire belief sync handshake :: wallet=${wallet.toLowerCase()} :: nonce=${Date.now()}`
       );
+      setTelemetryOptIn(hasTelemetryConsent(wallet));
+    } else {
+      setTelemetryOptIn(false);
     }
   }, [wallet]);
 
@@ -79,6 +88,9 @@ function WalletLogin() {
       const submissionPayload = scoringConfig
         ? { ...payload, scoringConfig }
         : payload;
+      if (wallet) {
+        setTelemetryConsent(wallet, telemetryOptIn);
+      }
       await connect({ wallet, ens, signature, message, payload: submissionPayload });
     } catch (err) {
       console.error('Belief sync failed', err.message);
@@ -92,6 +104,19 @@ function WalletLogin() {
       <label>
         Wallet Address
         <input value={wallet} onChange={(event) => setWallet(event.target.value)} required />
+      </label>
+      <label className="telemetry-optin">
+        <input
+          type="checkbox"
+          checked={telemetryOptIn}
+          onChange={(event) => {
+            setTelemetryOptIn(event.target.checked);
+            if (wallet) {
+              setTelemetryConsent(wallet, event.target.checked);
+            }
+          }}
+        />
+        Share anonymized telemetry for belief votes and dashboard usage
       </label>
       <label>
         ENS Alias (optional)
@@ -279,6 +304,16 @@ function WalletLogin() {
 
 function DashboardShell() {
   const { session, status, logout, loading, error } = useAuth();
+
+  useEffect(() => {
+    if (session) {
+      trackTelemetryEvent('dashboard.render', {
+        wallet: session.wallet,
+        tier: session.tier,
+        multiplier: session.multiplier,
+      });
+    }
+  }, [session?.wallet, session?.tier, session?.multiplier]);
 
   if (!session) {
     return <WalletLogin />;

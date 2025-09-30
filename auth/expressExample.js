@@ -1,5 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const helmet = require('helmet');
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
 const path = require('path');
@@ -23,8 +24,19 @@ const { createOpsMetrics } = require('../services/opsMetrics');
 
 const app = express();
 const port = process.env.PORT || 4002;
+const DEFAULT_ALLOWED_ORIGINS = (process.env.VAULTFIRE_ALLOWED_ORIGINS ||
+  'https://vaultfire.app,http://localhost:3000').split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
-app.use(bodyParser.json());
+app.disable('x-powered-by');
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  })
+);
+app.use(bodyParser.json({ limit: '1mb' }));
 
 const tokenService = new TokenService();
 const ethicsGuard = createEthicsGuard();
@@ -74,6 +86,46 @@ function readSandboxLog(limit = 200) {
     return parsed;
   } catch (error) {
     return [];
+  }
+}
+
+function resolveAllowedOrigins(origins) {
+  if (Array.isArray(origins) && origins.length) {
+    return origins;
+  }
+  return DEFAULT_ALLOWED_ORIGINS;
+}
+
+function isRestrictedHostname(hostname) {
+  const value = (hostname || '').toLowerCase();
+  return (
+    value === 'localhost' ||
+    value.endsWith('.localhost') ||
+    value.endsWith('.local') ||
+    value === '::1' ||
+    /^127\./.test(value) ||
+    /^10\./.test(value) ||
+    /^169\.254\./.test(value) ||
+    /^192\.168\./.test(value) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(value)
+  );
+}
+
+function validatePartnerTarget(targetUrl) {
+  if (!targetUrl) {
+    return { valid: false, reason: 'missing_target' };
+  }
+  try {
+    const parsed = new URL(targetUrl);
+    if (!['https:', 'http:'].includes(parsed.protocol)) {
+      return { valid: false, reason: 'unsupported_protocol' };
+    }
+    if (isRestrictedHostname(parsed.hostname)) {
+      return { valid: false, reason: 'restricted_host' };
+    }
+    return { valid: true, sanitized: parsed.toString() };
+  } catch (error) {
+    return { valid: false, reason: 'invalid_url', detail: error.message };
   }
 }
 
@@ -413,11 +465,20 @@ app.post(
     if (!event) {
       return res.status(400).json({ error: { code: 'hooks.invalid_payload', message: 'event is required' } });
     }
+    const targetValidation = validatePartnerTarget(targetUrl);
+    if (!targetValidation.valid) {
+      return res.status(400).json({
+        error: {
+          code: 'hooks.invalid_target',
+          message: `Target URL rejected: ${targetValidation.reason}`,
+        },
+      });
+    }
     try {
       const subscription = partnerHooks.subscribe({
         partnerId: req.user.partnerId,
         event,
-        targetUrl,
+        targetUrl: targetValidation.sanitized,
         metadata,
       });
       return res.status(201).json({ subscription });
@@ -503,16 +564,18 @@ app.post(
   }
 );
 
-function createServer({ corsOrigins = ['*'] } = {}) {
+function createServer({ corsOrigins } = {}) {
+  const allowedOrigins = resolveAllowedOrigins(corsOrigins);
   const server = http.createServer(app);
   const io = new Server(server, {
     cors: {
-      origin: corsOrigins,
+      origin: allowedOrigins,
       methods: ['GET', 'POST'],
+      credentials: true,
     },
   });
   signalCompass.bindSocket(io);
-  return { server, io };
+  return { server, io, allowedOrigins };
 }
 
 if (require.main === module) {
