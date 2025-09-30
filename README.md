@@ -20,6 +20,12 @@ All modules are wallet-first. No email capture, no digital ID fallback—ever.
 - Run `node scripts/run-test-suite.js` to execute module-by-module coverage checks and surface any gaps below 80%.
 - Capture generated artefacts (coverage reports and `logs/test-report.json`) for compliance sign-off.
 
+## Due Diligence & Maturity Signals
+- Review the [Technical Due Diligence](./docs/technical-due-diligence.md) brief for architecture, threat modeling, and dependency health snapshots.
+- Monitor uptime trends and reference deployments via the [Operational Metrics](./status/metrics.md), [Reference Deployments](./status/reference-deployments.md), and [Security Report](./status/security-report.md) rollups.
+- Track change governance through the [Change Management Playbook](./docs/change-management.md) and automated checks in [`scripts/security-audit.sh`](./scripts/security-audit.sh).
+- Vaultfire maintains transparent partner communications, surfacing scan results, scheduled audits, and rollout notices before each production pilot.
+
 ## Module Scope Modes
 
 Vaultfire ships with a scoped loader for pilot programmes. Set `VAULTFIRE_MODULE_SCOPE` in your environment (or `.env`) and run
