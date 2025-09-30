@@ -1,0 +1,44 @@
+[
+  {
+    "timestamp": "2024-05-01T14:22:00Z",
+    "type": "threshold-change",
+    "actor": "governance@vaultfire",
+    "details": {
+      "control": "webhook_retry_quorum",
+      "previous": 2,
+      "new": 3,
+      "justification": "Increase quorum after partner scaling review"
+    }
+  },
+  {
+    "timestamp": "2024-05-08T09:10:45Z",
+    "type": "onboarding",
+    "actor": "compliance@vaultfire",
+    "details": {
+      "partner": "ghostkey-summit",
+      "scopes": [
+        "webhook",
+        "telemetry"
+      ],
+      "approvers": [
+        "secops@vaultfire",
+        "alliances@vaultfire"
+      ],
+      "notes": "Pilot access approved with weekly audit checkpoints"
+    }
+  },
+  {
+    "timestamp": "2024-05-15T21:03:12Z",
+    "type": "infrastructure-change",
+    "actor": "sre@vaultfire",
+    "details": {
+      "change_id": "deploy-2315",
+      "summary": "Applied vaultfire-minimal Terraform stack",
+      "artifacts": [
+        "deployment/vaultfire-minimal.tf"
+      ],
+      "risk_level": "low",
+      "rollback_plan": "terraform apply -refresh-only"
+    }
+  }
+]

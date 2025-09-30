@@ -1,3 +1,4 @@
+![CI](https://github.com/ghostkey316/vaultfire/actions/workflows/test.yml/badge.svg)
 # Vaultfire Protocol 🔥
 [![Last Test](https://img.shields.io/badge/last_test-%E2%9C%85-2ea44f?logo=github)](./logs/test-report.json)
 ![Node.js CI](https://github.com/ghostkey316/vaultfire/actions/workflows/node-test.yml/badge.svg)
@@ -120,6 +121,17 @@ flowchart LR
 - **CI/CD Hooks**: GitHub Actions trigger container builds, Terraform plans, Helm releases, and validate `governance/auditLog.json` updates before production rollouts.
 - **Metrics Fan-out**: The shared Ops Metrics exporter feeds `/metrics/ops` while structured telemetry continues to stream through `MultiTierTelemetryLedger` sinks.
 
+## Deployment Guide
+
+The `deployment/` folder contains a minimal Terraform configuration (`vaultfire-minimal.tf`) and a CI-friendly diagram (`deployment-diagram.md`). Use these assets to bootstrap a pilot environment that mirrors production guardrails without requiring the full `infra/` stack.
+
+1. **Plan & Apply:** Run `terraform init` and `terraform plan` inside `deployment/` to review AWS primitives (artifact bucket and webhook secret).
+2. **Bundle Promotion:** Point CI outputs to the `artifact_bucket` output so release bundles land in the managed S3 store before ECS pulls them.
+3. **Secret Rotation:** Maintain webhook secrets in SSM via `webhook_secret_path` and rotate them using existing automation hooks in `tools/`.
+4. **Diagram Review:** Reference `deployment/deployment-diagram.md` to align DevOps, SRE, and partner teams on the minimum viable deployment topology.
+
+Automation touchpoints remain unchanged: GitHub Actions runs tests (`.github/workflows/test.yml`), the CLI promotes artifacts, and Terraform tracks state for auditability.
+
 ## Module Guide
 
 ### 📦 Partner Sync Interface (`partnerSync.js`)
@@ -199,6 +211,14 @@ flowchart LR
 - **Governance Automation:** `governance/automation_triggers.py` raises guardrail actions when queues spike, security alerts occur, or ethics overrides need steward review.
 - **Tenant-Isolated Telemetry:** `services/telemetryTenantRouter.js` provides per-tenant log segregation with bulk flush support so multi-tenant activations never co-mingle belief data.
 - **Manifest Failover Watchdog:** `services/manifestFailover.js` automatically falls back to safe defaults, emits audit telemetry, and self-heals once canonical manifests return.
+
+## Governance and Risk
+
+Vaultfire records critical governance decisions in [`governance-ledger.json`](./governance-ledger.json) and documents the update workflow in [`governance/README.md`](./governance/README.md). Use these resources to confirm threshold changes, partner onboarding approvals, and infrastructure updates before promoting releases.
+
+- **Audit Trail:** Append ledger entries via pull requests and validate them with `npm run audit:gov`.
+- **Operational Links:** Cross-reference ledger changes with posture rotation logs and telemetry metrics described in [`docs/metrics.md`](./docs/metrics.md).
+- **Risk Reviews:** Include ledger excerpts in partner due diligence packets to evidence compliance and rollback planning.
 
 ## System Architecture
 Vaultfire combines an ethics-weighted Codex integration, an NFT ID registry, and a multi-tier CLI to coordinate protocol state. The system syncs belief telemetry, loyalty scores, and Codex outputs through Ghostkey-316 anchors while exposing partner modules, SDK hooks, and fork-ready governance controls for seamless expansion.
