@@ -17,6 +17,7 @@
     "build:test": "tsc --project tsconfig.json --noEmit",
     "lint:guardrails": "node tools/lint_guardrails.js",
     "preflight": "node tools/preflight-check.js",
+    "postinstall": "node scripts/check-mobile-optional.js",
     "deploy:sandbox": "node cli/deployVaultfire.js --env sandbox",
     "deploy:production": "node cli/deployVaultfire.js --env production",
     "audit:gov": "node governance/governance-core.js --audit"
@@ -30,6 +31,7 @@
     "@babel/preset-env": "^7.24.0",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "@openzeppelin/contracts": "^5.4.0",
+    "@sentry/react": "^10.17.0",
     "@testing-library/jest-dom": "^6.9.0",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
@@ -45,11 +47,11 @@
     "supertest": "^6.3.3",
     "ts-jest": "^29.1.1",
     "typescript": "^5.3.3",
-    "vite": "^7.1.7"
+    "vite": "^7.1.7",
+    "wrap-ansi": "^9.0.2"
   },
   "dependencies": {
     "@sentry/node": "^10.17.0",
-    "@sentry/react": "^10.17.0",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "body-parser": "^1.20.2",

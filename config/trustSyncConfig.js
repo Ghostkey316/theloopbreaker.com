@@ -2,6 +2,19 @@ const fs = require('fs');
 const path = require('path');
 const YAML = require('yamljs');
 
+function toBoolean(value, fallback = false) {
+  if (value === undefined || value === null) {
+    return fallback;
+  }
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  return ['true', '1', 'yes', 'on'].includes(String(value).toLowerCase());
+}
+
+const isBrowserRuntime = typeof window !== 'undefined';
+const processEnv = typeof process !== 'undefined' && process && process.env ? process.env : {};
+
 const DEFAULT_CONFIG = {
   useWalletAsIdentity: true,
   rejectExternalID: true,
@@ -18,6 +31,20 @@ const DEFAULT_CONFIG = {
     fallback: {
       enabled: false,
       fileName: 'remote-fallback.jsonl',
+    },
+    residency: {
+      enforce: true,
+      defaultRegion: 'eu-central-1',
+      allowLocalhost: false,
+      telemetry: {
+        'eu-central-1': ['o*.ingest.sentry.io', 'telemetry.eu.vaultfire.xyz'],
+        'us-west-2': ['o*.ingest.sentry.io', 'telemetry.us.vaultfire.xyz'],
+      },
+      partnerHooks: {
+        'eu-central-1': ['hooks.eu.vaultfire.xyz', '*.partners.eu.vaultfire.xyz'],
+        'us-west-2': ['hooks.us.vaultfire.xyz', '*.partners.us.vaultfire.xyz'],
+      },
+      globalAllowList: ['telemetry.vaultfire.xyz'],
     },
   },
   identityStore: {
@@ -89,8 +116,8 @@ function mergeConfig(base, override) {
 
 function loadTrustSyncConfig() {
   const rcPathEnv =
-    process.env.VAULTFIRE_RC_PATH ||
-    (process.env.VAULTFIRE_STARTER_MODE === 'true' || process.env.VAULTFIRE_STARTER_MODE === '1'
+    processEnv.VAULTFIRE_RC_PATH ||
+    (processEnv.VAULTFIRE_STARTER_MODE === 'true' || processEnv.VAULTFIRE_STARTER_MODE === '1'
       ? STARTER_CONFIG_PATH
       : null);
   const customPath = rcPathEnv || path.join(__dirname, '..', 'vaultfirerc.json');
@@ -103,11 +130,11 @@ function loadTrustSyncConfig() {
   if (fileConfig.rewards) {
     merged.rewards = mergeConfig(DEFAULT_CONFIG.rewards, fileConfig.rewards);
   }
-  if (process.env.VAULTFIRE_IDENTITY_PROVIDER) {
-    merged.identityStore.provider = process.env.VAULTFIRE_IDENTITY_PROVIDER;
+  if (processEnv.VAULTFIRE_IDENTITY_PROVIDER) {
+    merged.identityStore.provider = processEnv.VAULTFIRE_IDENTITY_PROVIDER;
   }
-  if (process.env.VAULTFIRE_ENCRYPTION_KEY) {
-    merged.identityStore.encryptionKey = process.env.VAULTFIRE_ENCRYPTION_KEY;
+  if (processEnv.VAULTFIRE_ENCRYPTION_KEY) {
+    merged.identityStore.encryptionKey = processEnv.VAULTFIRE_ENCRYPTION_KEY;
   }
   merged.identity = merged.identity || {};
   merged.identity.useWalletAsIdentity =
@@ -120,17 +147,35 @@ function loadTrustSyncConfig() {
   merged.telemetryMode = merged.telemetry?.mode || merged.telemetryMode || 'wallet-anonymous';
   merged.telemetry = merged.telemetry || {};
   const fallbackToggle =
-    process.env.VAULTFIRE_TELEMETRY_FALLBACK ??
+    processEnv.VAULTFIRE_TELEMETRY_FALLBACK ??
     merged['telemetry-fallback'] ??
     merged.telemetryFallback ??
     merged.telemetry?.fallback?.enabled;
   merged.telemetry.fallback = merged.telemetry.fallback || {};
-  merged.telemetry.fallback.enabled =
-    typeof fallbackToggle === 'string'
-      ? ['true', '1', 'yes', 'on'].includes(fallbackToggle.toLowerCase())
-      : Boolean(fallbackToggle);
+  merged.telemetry.fallback.enabled = toBoolean(fallbackToggle, false);
   if (!merged.telemetry.fallback.fileName) {
     merged.telemetry.fallback.fileName = 'remote-fallback.jsonl';
+  }
+  const residencyOverride = merged.telemetry.residency || {};
+  merged.telemetry.residency = mergeConfig(DEFAULT_CONFIG.telemetry.residency, residencyOverride);
+  if (processEnv.VAULTFIRE_RESIDENCY_REGION) {
+    merged.telemetry.residency.defaultRegion = processEnv.VAULTFIRE_RESIDENCY_REGION;
+  }
+  if (processEnv.VAULTFIRE_RESIDENCY_ENFORCE) {
+    merged.telemetry.residency.enforce = toBoolean(processEnv.VAULTFIRE_RESIDENCY_ENFORCE, true);
+  }
+  if (processEnv.VAULTFIRE_RESIDENCY_ALLOW_LOCAL) {
+    merged.telemetry.residency.allowLocalhost = toBoolean(processEnv.VAULTFIRE_RESIDENCY_ALLOW_LOCAL, false);
+  }
+  const mobileModeActive = isBrowserRuntime || toBoolean(processEnv.MOBILE_MODE, false);
+  if (mobileModeActive) {
+    merged.telemetry = merged.telemetry || {};
+    merged.telemetry.mobileMode = true;
+    if (merged.telemetry.residency) {
+      merged.telemetry.residency.enforce = false;
+    }
+    merged.telemetry.allowPartnerWebhooks = false;
+    merged.telemetry.dsn = null;
   }
   if (merged.verification && typeof merged.verification === 'object') {
     merged.verification.remote = merged.verification.remote || null;

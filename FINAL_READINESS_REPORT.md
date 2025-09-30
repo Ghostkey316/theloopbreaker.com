@@ -19,6 +19,7 @@ Vaultfire Final Commit: July 30, 2025 — 12:29 AM ET
 - **Trust Sync CLI**: verification flow surfaces maturity score but still relies on local telemetry logs. TODO: add remote RPC validation once partner APIs expose trust snapshots.
 - **Reward streams**: passive stream multipliers persisted in `dao_reward_config.json`. TODO: wire stream multipliers into onchain streaming contract once DAO finalizes payout cadence.
 - **Ethics guardrails**: `tools/lint_guardrails.js` blocks biometric/KYC imports; extend list when new surveillance vendors emerge.
+- **Residency enforcement**: Telemetry DSNs and partner hooks must satisfy `trustSync.telemetry.residency` allow-lists; preflight now fails without region coverage, closing the open question on remote sink compliance.
 
 ### Safe Partner Testnet Entry Points
 - `https://partner-sandbox.vaultfire.xyz` — mirrored belief sync with wallet-only auth.

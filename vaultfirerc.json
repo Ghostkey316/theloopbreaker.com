@@ -19,6 +19,36 @@
       "fallback": {
         "enabled": true,
         "fileName": "remote-fallback.jsonl"
+      },
+      "residency": {
+        "enforce": true,
+        "defaultRegion": "eu-central-1",
+        "allowLocalhost": false,
+        "telemetry": {
+          "eu-central-1": [
+            "o*.ingest.sentry.io",
+            "telemetry.eu.vaultfire.xyz"
+          ],
+          "us-west-2": [
+            "o*.ingest.sentry.io",
+            "telemetry.us.vaultfire.xyz"
+          ]
+        },
+        "partnerHooks": {
+          "eu-central-1": [
+            "hooks.eu.vaultfire.xyz",
+            "partners.eu.vaultfire.xyz",
+            "*.partners.eu.vaultfire.xyz"
+          ],
+          "us-west-2": [
+            "hooks.us.vaultfire.xyz",
+            "partners.us.vaultfire.xyz",
+            "*.partners.us.vaultfire.xyz"
+          ]
+        },
+        "globalAllowList": [
+          "telemetry.vaultfire.xyz"
+        ]
       }
     },
     "telemetry-fallback": true,

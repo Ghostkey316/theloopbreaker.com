@@ -33,6 +33,13 @@ ledger.record('identity.anchor.linked', { walletId: '0xabc', partnerUserId: 'dem
 Production deployments should point `trustSync.telemetry.baseDir` to a persistent
 volume so the audit history survives restarts.
 
+## Residency enforcement
+
+- Declare your residency policy inside `trustSync.telemetry.residency` (see `vaultfirerc.json` for the enterprise template).
+- Each region entry must list the Sentry DSN hosts and partner webhook domains that are authorised to receive telemetry.
+- The Node preflight (`npm run preflight`) calls `telemetry/residencyGuard` to verify enforcement is enabled and that the default region has both telemetry and partner hook allow-lists. Misconfigurations stop the build before deployment.
+- Runtime adapters such as `telemetry/adapters/partner_hook_adapter.js` refuse to initialise if the destination URL is outside the configured residency policy, ensuring pilots cannot leak data across jurisdictions.
+
 ## Persistence adapters
 
 `MultiTierTelemetryLedger` now loads a pluggable persistence adapter so the

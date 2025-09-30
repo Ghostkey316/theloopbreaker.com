@@ -45,6 +45,12 @@ Vaultfire ships with a scoped loader for pilot programmes. Set `VAULTFIRE_MODULE
 
 When `pilot_mode=true` in the environment the loader automatically falls back to the `pilot` scope for minimal rollouts.
 
+## 📱 Mobile Compatibility
+
+- Residency guard automatically adapts to React Native and webview runtimes without blocking bundle execution.
+- Optional telemetry exports are disabled when `MOBILE_MODE` is active to preserve bandwidth and partner privacy.
+- CLI-heavy flows (preflight, residency drills) auto-skip when a mobile environment is detected, keeping developer ergonomics intact on phones and tablets.
+
 ## How to Launch a Scoped Partner Pilot
 1. **Initialize sandbox mode:** export `VAULTFIRE_SANDBOX_MODE=1` before starting the Partner Sync interface so belief and loyalty engines log sandbox metrics to `logs/belief-sandbox.json`.
 2. **Enable telemetry privacy controls:** update `configs/deployment/telemetry.yaml` if partners require telemetry opt-outs—set `telemetry.enabled` to `false` for no-stream pilots.
@@ -198,6 +204,7 @@ Automation touchpoints remain unchanged: GitHub Actions runs tests (`.github/wor
 ## Telemetry Residency & Partner Hooks
 
 - Configure residency policies in `vaultfirerc.json` (or via `VAULTFIRE_RC_PATH`) and enable the JSON fallback flag (`"telemetry-fallback": true`) so remote sink failures are mirrored locally.
+- Residency guardrails are enforced at runtime: every Sentry DSN or partner webhook must match the allow-list declared in `trustSync.telemetry.residency`. `npm run preflight` now fails fast if your region map is incomplete so pilots cannot ship without jurisdictional coverage.
 - The Trust Sync loader now normalises fallback preferences so every `MultiTierTelemetryLedger` instance mirrors failed remote writes into `logs/telemetry/remote-fallback.jsonl` for compliance review.
 - Extend telemetry pipelines by wiring the partner hook adapter:
 
