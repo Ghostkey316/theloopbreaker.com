@@ -30,4 +30,4 @@ The latest `npm audit` execution produced the following summary:
 Info: 0 | Low: 0 | Moderate: 2 | High: 0 | Critical: 0 | Total: 2
 ```
 
-Two moderate transitive issues remain without upstream patches. Track `npm audit` output during each release cut and document remediation or compensating controls in the CHANGELOG.
+Moderate advisories GHSA-pxg6-pf52-xh8x (`cookie` <0.7.0 via Hardhat Sentry) and GHSA-52f5-9888-hmc6 (`tmp` <=0.2.3 via `solc`) persist upstream. Vaultfire applies sandbox guards (`infra/hardhat-sandbox.js`) to neutralize the attack surface and records weekly `npm audit` output through `npm run security:watch`. Maintain the controls until patched releases land, then update `package-lock.json` and retire the wrappers.

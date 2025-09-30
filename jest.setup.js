@@ -70,3 +70,24 @@ if (hasSentryNode) {
     { virtual: true }
   );
 }
+
+let hasHelmet = true;
+try {
+  require.resolve('helmet');
+} catch (error) {
+  hasHelmet = false;
+  // eslint-disable-next-line no-console
+  console.warn('[jest setup] Optional dependency helmet not found, using noop mock.');
+}
+
+if (!hasHelmet) {
+  jest.mock(
+    'helmet',
+    () => () => (req, res, next) => {
+      if (typeof next === 'function') {
+        next();
+      }
+    },
+    { virtual: true }
+  );
+}

@@ -20,7 +20,8 @@
     "postinstall": "node scripts/check-mobile-optional.js",
     "deploy:sandbox": "node cli/deployVaultfire.js --env sandbox",
     "deploy:production": "node cli/deployVaultfire.js --env production",
-    "audit:gov": "node governance/governance-core.js --audit"
+    "audit:gov": "node governance/governance-core.js --audit",
+    "security:watch": "node tools/security-watch.js"
   },
   "keywords": [],
   "author": "",

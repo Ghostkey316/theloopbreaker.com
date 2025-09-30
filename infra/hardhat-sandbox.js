@@ -2,6 +2,111 @@
 
 const fs = require('fs');
 const path = require('path');
+const Module = require('module');
+
+const HARDHAT_TAG = `${path.sep}node_modules${path.sep}hardhat${path.sep}`;
+const SOLC_TAG = `${path.sep}node_modules${path.sep}solc${path.sep}`;
+
+let moduleGuardsInstalled = false;
+let safeTmpBase = null;
+const originalModuleLoad = Module._load;
+
+function isHardhatParent(parent) {
+  return Boolean(parent && parent.filename && parent.filename.includes(HARDHAT_TAG));
+}
+
+function isSandboxedTmpParent(parent) {
+  if (!parent || !parent.filename) {
+    return false;
+  }
+  const filePath = parent.filename;
+  return filePath.includes(HARDHAT_TAG) || filePath.includes(SOLC_TAG);
+}
+
+function createSentryStub() {
+  const noop = () => undefined;
+  const resolved = Promise.resolve(true);
+  return {
+    __vaultfireSandboxStub: true,
+    init: () => ({
+      close: () => resolved,
+      flush: () => resolved,
+      captureException: noop,
+      captureMessage: noop,
+    }),
+    close: () => resolved,
+    flush: () => resolved,
+    captureException: noop,
+    captureMessage: noop,
+    withScope: (cb) => {
+      if (typeof cb === 'function') {
+        cb({ setTag: noop, setExtra: noop, setContext: noop });
+      }
+    },
+    configureScope: (cb) => {
+      if (typeof cb === 'function') {
+        cb({ setTag: noop, setExtra: noop, setContext: noop });
+      }
+    },
+    getCurrentHub: () => ({ getClient: () => null }),
+  };
+}
+
+function createSafeTmpWrapper(tmpModule, baseDir) {
+  if (!tmpModule || tmpModule.__vaultfireGuarded) {
+    return tmpModule;
+  }
+
+  const safeDir = ensureDirectory(baseDir);
+
+  const normalizeOptions = (options = {}) => {
+    if (typeof options === 'string') {
+      return { dir: safeDir, template: options };
+    }
+    const sanitized = { ...options, dir: safeDir };
+    if (sanitized.unsafeCleanup) {
+      sanitized.unsafeCleanup = false;
+    }
+    return sanitized;
+  };
+
+  const wrapped = { ...tmpModule };
+
+  wrapped.dirSync = (options) => tmpModule.dirSync(normalizeOptions(options));
+  wrapped.dir = (options, callback) => {
+    let normalizedOptions = options;
+    let cb = callback;
+    if (typeof options === 'function') {
+      normalizedOptions = {};
+      cb = options;
+    }
+    return tmpModule.dir(normalizeOptions(normalizedOptions), cb);
+  };
+
+  wrapped.__vaultfireGuarded = true;
+  return wrapped;
+}
+
+function installModuleGuards(preferredTmp) {
+  safeTmpBase = ensureDirectory(path.join(preferredTmp, 'sandbox-tmp'));
+
+  if (moduleGuardsInstalled) {
+    return;
+  }
+
+  Module._load = function vaultfireSandboxedLoad(request, parent, isMain) {
+    if (request === '@sentry/node' && isHardhatParent(parent)) {
+      return createSentryStub();
+    }
+    if (request === 'tmp' && isSandboxedTmpParent(parent)) {
+      const loaded = originalModuleLoad.call(this, request, parent, isMain);
+      return createSafeTmpWrapper(loaded, safeTmpBase);
+    }
+    return originalModuleLoad.call(this, request, parent, isMain);
+  };
+
+  moduleGuardsInstalled = true;
+}
 
 function ensureDirectory(targetPath) {
   fs.mkdirSync(targetPath, { recursive: true, mode: 0o700 });
@@ -47,6 +152,8 @@ function applyHardhatSandbox() {
 
   const sanitizedRpc = enforceLoopback(process.env.BASE_RPC_URL);
   process.env.BASE_RPC_URL = sanitizedRpc;
+
+  installModuleGuards(preferredTmp);
 
   return {
     tmpDir: preferredTmp,
