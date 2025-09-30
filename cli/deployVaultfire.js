@@ -85,6 +85,51 @@ function evaluateBeliefMetrics(handshakeConfig) {
   }));
 }
 
+function summarizeBehaviorMetrics(handshakeConfig, rewardConfig) {
+  const handshake = handshakeConfig?.services?.handshake?.beliefComplexity || {};
+  const rewards = rewardConfig?.services?.['reward-streams']?.behaviorMetrics || {};
+  return {
+    handshake: {
+      telemetryChannel: handshake.telemetryChannel || null,
+      logging: {
+        enabled: Boolean(handshake.logging?.enabled),
+        stream: handshake.logging?.stream || null,
+        persistTo: handshake.logging?.persistTo || null,
+      },
+      trackedMetrics: (handshake.metrics || []).map((metric) => metric.id),
+    },
+    rewards: {
+      telemetryChannel: rewards.telemetryChannel || null,
+      logStream: rewards.logComplexityStream || null,
+      flushIntervalSeconds: rewards.flushIntervalSeconds || null,
+      capture: rewards.capture || {},
+    },
+  };
+}
+
+function summarizeSandboxModes(handshakeConfig, rewardConfig) {
+  const handshakeSandbox = handshakeConfig?.services?.handshake?.sandbox || {};
+  const rewardSandbox = rewardConfig?.services?.['reward-streams']?.sandboxMode || {};
+  return {
+    handshake: {
+      enabled: Boolean(handshakeSandbox.enabled),
+      allowedPartners: handshakeSandbox.allowedPartners || [],
+      behaviorAudit: handshakeSandbox.behaviorAudit || null,
+      loyaltyPreview: handshakeSandbox.loyaltyPreview || null,
+    },
+    rewards: {
+      enabled: Boolean(rewardSandbox.enabled),
+      cohortTag: rewardSandbox.cohortTag || null,
+      loyaltyPreviewCap: rewardSandbox.loyaltyPreviewCap || null,
+      touchpointSpacingSeconds: rewardSandbox.touchpointSpacingSeconds || null,
+    },
+  };
+}
+
+function extractReleaseTrain(config) {
+  return config?.metadata?.releaseTrain || null;
+}
+
 function computeChangelogStatus(entries) {
   if (!Array.isArray(entries)) {
     return { finalized: null, pending: [] };
@@ -123,6 +168,8 @@ try {
     handshake: handshakeConfig,
     ethics: evaluateEthicsConfig(handshakeConfig),
     beliefMetrics: evaluateBeliefMetrics(handshakeConfig),
+    behaviorMetricsLog: summarizeBehaviorMetrics(handshakeConfig, rewardConfig),
+    sandboxReadiness: summarizeSandboxModes(handshakeConfig, rewardConfig),
     manifestIntegrity: {
       status: manifest?.integrity_checks?.status || 'UNKNOWN',
       checksum: manifest?.checksum || null,
@@ -131,6 +178,12 @@ try {
       packageVersion: packageJson.version,
       finalizedChangelog: changelogStatus.finalized,
       pendingChangelog: changelogStatus.pending.map((entry) => entry.change),
+    },
+    releaseTrain: {
+      telemetry: extractReleaseTrain(primaryConfig),
+      relay: extractReleaseTrain(relayConfig),
+      rewards: extractReleaseTrain(rewardConfig),
+      handshake: extractReleaseTrain(handshakeConfig),
     },
   };
 
@@ -145,8 +198,11 @@ try {
     console.log('Handshake configuration:', summary.handshake);
     console.log('Ethics attestation policy:', summary.ethics);
     console.log('Belief complexity metrics:', summary.beliefMetrics);
+    console.log('Behavior metrics logging:', summary.behaviorMetricsLog);
+    console.log('Sandbox readiness:', summary.sandboxReadiness);
     console.log('Manifest integrity status:', summary.manifestIntegrity);
     console.log('Versioning + changelog status:', summary.versioning);
+    console.log('Release train alignment:', summary.releaseTrain);
     console.log('To execute deployment, provide real credentials via environment variables and rerun with provider scripts.');
   }
 } catch (error) {

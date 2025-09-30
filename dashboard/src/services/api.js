@@ -7,44 +7,131 @@ const runtimeEnv =
 
 const API_BASE = runtimeEnv.VITE_VAULTFIRE_API || runtimeEnv.VAULTFIRE_API_BASE || 'http://localhost:4050';
 const DEFAULT_METADATA_BUDGET = 2400;
+const METADATA_PADDING_RATIO = 0.1;
+const MAX_METADATA_DEPTH = 4;
 let socket;
 let socketRefCount = 0;
 
 function estimateViewportBudget() {
   if (typeof window !== 'undefined' && window.innerWidth && window.innerHeight) {
     const area = window.innerWidth * window.innerHeight;
-    const normalized = Math.max(960, Math.floor(area * 0.45));
-    return Math.min(6400, normalized);
+    const baseBudget = Math.max(960, Math.floor(area * 0.45));
+    const deviceRatio = typeof window.devicePixelRatio === 'number' ? window.devicePixelRatio : 1;
+    const adjusted = baseBudget / Math.max(1, deviceRatio * 0.9);
+    return Math.min(6400, Math.floor(adjusted));
   }
   return DEFAULT_METADATA_BUDGET;
 }
 
-function clampMetadataForViewport(metadata) {
+function shrinkValueForBudget(value, budget, depth = 0) {
+  if (budget <= 0 || depth > MAX_METADATA_DEPTH) {
+    return undefined;
+  }
+
+  if (value === null) {
+    return null;
+  }
+
+  if (typeof value === 'string') {
+    const estimated = value.length * 2;
+    if (estimated <= budget) {
+      return value;
+    }
+    const sliceLength = Math.max(1, Math.floor(budget / 2));
+    return `${value.slice(0, sliceLength)}…`;
+  }
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return [];
+    }
+    const result = [];
+    let used = 2; // [] braces
+    for (const item of value) {
+      const remaining = budget - used;
+      if (remaining <= 0) {
+        break;
+      }
+      const shrunk = shrinkValueForBudget(item, Math.floor(remaining * (1 - METADATA_PADDING_RATIO)), depth + 1);
+      if (typeof shrunk === 'undefined') {
+        break;
+      }
+      const candidateSize = JSON.stringify(shrunk).length + (result.length ? 1 : 0);
+      if (used + candidateSize > budget) {
+        break;
+      }
+      result.push(shrunk);
+      used += candidateSize;
+    }
+    return result;
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'object') {
+    return clampMetadataForViewport(
+      value,
+      Math.max(0, Math.floor(budget * (1 - METADATA_PADDING_RATIO))),
+      { root: false, depth: depth + 1 }
+    );
+  }
+
+  return undefined;
+}
+
+function clampMetadataForViewport(metadata, budget = estimateViewportBudget(), options = {}) {
   if (!metadata || typeof metadata !== 'object') {
     return metadata;
   }
 
-  const budget = estimateViewportBudget();
+  const { root = true, depth = 0 } = options;
+  if (depth > MAX_METADATA_DEPTH) {
+    return {};
+  }
+
   const serialized = JSON.stringify(metadata);
   if (serialized.length <= budget) {
-    return metadata;
+    return JSON.parse(serialized);
   }
 
   const trimmed = {};
   let used = 2; // account for braces in JSON string
+  let truncated = false;
+
   for (const [key, value] of Object.entries(metadata)) {
-    const chunk = JSON.stringify({ [key]: value });
-    const chunkSize = chunk.length;
-    if (used + chunkSize > budget) {
+    const remaining = budget - used;
+    if (remaining <= 0) {
+      truncated = true;
+      break;
+    }
+    const shrunk = shrinkValueForBudget(value, Math.floor(remaining * (1 - METADATA_PADDING_RATIO)), depth + 1);
+    if (typeof shrunk === 'undefined') {
+      truncated = true;
       continue;
     }
-    trimmed[key] = value;
-    used += chunkSize;
+    const candidateSize = JSON.stringify({ [key]: shrunk }).length;
+    if (used + candidateSize > budget) {
+      truncated = true;
+      continue;
+    }
+    trimmed[key] = shrunk;
+    used += candidateSize;
+    if (shrunk !== value) {
+      truncated = true;
+    }
   }
 
-  trimmed.__truncated__ = true;
-  trimmed.__originalBytes__ = serialized.length;
+  if (!root) {
+    return trimmed;
+  }
+
   trimmed.__budget__ = budget;
+  trimmed.__originalBytes__ = serialized.length;
+  trimmed.__renderedKeys__ = Object.keys(trimmed).filter((key) => !key.startsWith('__'));
+  trimmed.__truncated__ = truncated || trimmed.__originalBytes__ > budget;
+
   return trimmed;
 }
 
@@ -62,6 +149,18 @@ function enforceViewportBudget(payload) {
   return safePayload;
 }
 
+function computeTouchTargetHint() {
+  if (typeof window === 'undefined') {
+    return { minSize: 48, recommendedSpacing: 14, density: 'standard' };
+  }
+  const width = window.innerWidth || 360;
+  const ratio = typeof window.devicePixelRatio === 'number' ? window.devicePixelRatio : 1;
+  const minSize = Math.max(44, Math.round(width / (ratio * 8)));
+  const recommendedSpacing = Math.max(12, Math.round(minSize * 0.6));
+  const density = width < 480 ? 'cozy' : width < 768 ? 'standard' : 'spacious';
+  return { minSize, recommendedSpacing, density };
+}
+
 function isIosDevice() {
   if (typeof navigator === 'undefined' || typeof window === 'undefined') {
     return false;
@@ -77,6 +176,8 @@ function hintHapticFeedback(pattern = 'impactMedium') {
     if (window.navigator?.vibrate) {
       if (pattern === 'impactMedium') {
         window.navigator.vibrate([12, 20, 12]);
+      } else if (pattern === 'notificationSuccess') {
+        window.navigator.vibrate([8, 8, 8, 24]);
       } else {
         window.navigator.vibrate(20);
       }
@@ -91,6 +192,10 @@ function hintHapticFeedback(pattern = 'impactMedium') {
     console.warn('Unable to dispatch haptic feedback hint', error);
   }
   return false;
+}
+
+export function getTouchTargetHint() {
+  return computeTouchTargetHint();
 }
 
 function shouldTriggerHaptics(options, payload) {
@@ -150,7 +255,8 @@ export async function syncBeliefPayload(payload, { mode, triggerHaptics } = {}) 
   const safePayload = enforceViewportBudget(payload);
   const response = await request('/vaultfire/sync-belief', { method: 'POST', body: safePayload, headers });
   if (shouldTriggerHaptics({ triggerHaptics }, safePayload)) {
-    hintHapticFeedback('impactMedium');
+    const pattern = isIosDevice() ? 'impactMedium' : 'notificationSuccess';
+    hintHapticFeedback(pattern);
   }
   return response;
 }

@@ -1,7 +1,8 @@
 version: 2
 metadata:
   revision: vaultfire-pilot-prod
-  lastUpdated: 2025-08-01T00:00:00Z
+  lastUpdated: 2025-08-18T00:00:00Z
+  releaseTrain: "vaultfire-mainnet-pilot"
 services:
   webhook-relay:
     maxRetries: 5
@@ -22,9 +23,15 @@ services:
       behaviorMetrics:
         beliefComplexityStream: telemetry.behavior
         loyaltySandboxFeed: telemetry.loyalty.sandbox
+        aggregateWindowSeconds: 120
+        capture:
+          - belief-complexity-index
+          - belief-drift-delta
+          - trust-resonance
       manifestIntegrity:
         source: ../codex_manifest.json
         requiredStatus: PASS
     safeguards:
       replayWindowMinutes: 20
       enforceEthicsManifest: true
+      rejectUnsignedPayloads: true
