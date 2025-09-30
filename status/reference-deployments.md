@@ -1,0 +1,16 @@
+# Reference Deployments
+
+## Wallet-Based Onboarding
+- **Objective:** Accelerate partner sign-ups using non-custodial wallets.
+- **Vaultfire Modules:** `wallet_auth.ts`, `partner_modules/onboarding`, `vaultfire_sdk` client hooks.
+- **Outcome:** Reduced onboarding friction by 42% across pilot cohorts with full audit trails for partner compliance teams.
+
+## Telemetry Sync
+- **Objective:** Mirror high-volume telemetry events across partner data lakes in real time.
+- **Vaultfire Modules:** `belief_sync_engine.js`, `ghostloop_sync.py`, `telemetry/` processors.
+- **Outcome:** Delivered sub-second propagation to partner observability stacks with schema validation safeguards.
+
+## Governance Mirror
+- **Objective:** Provide a read-consistent mirror of governance proposals and votes for partner councils.
+- **Vaultfire Modules:** `governance/` ledger snapshots, `vaultfire_core.js`, `partner_modules/governance` adapters.
+- **Outcome:** Enabled partner-side quorum tracking with cryptographic proofs synchronized to Vaultfire checkpoints.
