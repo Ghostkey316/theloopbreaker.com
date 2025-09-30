@@ -378,6 +378,8 @@ app.post(
       partnerId: req.user.partnerId,
       wallet,
       event: 'link-wallet',
+      timestamp: new Date().toISOString(),
+      telemetryId: fingerprint.fingerprint,
     });
 
     if (verification.status === 'rejected') {
