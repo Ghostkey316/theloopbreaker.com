@@ -1,4 +1,7 @@
-version: 1
+version: 2
+metadata:
+  revision: vaultfire-pilot-prod
+  lastUpdated: 2025-08-01T00:00:00Z
 services:
   reward-streams:
     ledger:
@@ -9,8 +12,22 @@ services:
     scheduling:
       intervalSeconds: 120
       jitter: 0.2
+      sandboxIntervalSeconds: 300
+    sandboxMode:
+      enabled: true
+      loyaltyPreviewCap: 250
+      cohortTag: codex-sandbox
+      expiryMinutes: 90
+    behaviorMetrics:
+      telemetryChannel: telemetry.loyalty.core
+      capture:
+        beliefComplexityIndex: true
+        behaviorDensityScore: true
+        loyaltySustainRate: true
     intents:
       - name: loyalty-bonus
         trigger: belief.score >= 0.8
       - name: partner-milestone
         trigger: partner.firstActivation
+      - name: sandbox-signal
+        trigger: sandboxMode.enabled && belief.score >= 0.6

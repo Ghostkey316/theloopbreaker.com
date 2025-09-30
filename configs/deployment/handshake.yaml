@@ -1,4 +1,8 @@
-version: 1
+version: 2
+metadata:
+  revision: vaultfire-pilot-prod
+  lastUpdated: 2025-08-01T00:00:00Z
+  changelogRef: "Vaultfire v1.13 — belief multiplier module added"
 services:
   handshake:
     rotation:
@@ -12,7 +16,30 @@ services:
           value: vaultfire-rotation-q4
           activeFrom: 2024-10-01T00:00:00Z
           expiresAt: 2025-01-01T00:00:00Z
+    attestation:
+      pluginId: vaultfire-ethics-anchor
+      manifestPath: dashboard/dist/meta/ethics-manifest.json
+      required: true
+      ttlMinutes: 45
+    beliefComplexity:
+      telemetryChannel: telemetry.behavior
+      metrics:
+        - id: belief-complexity-index
+          capture: weighted
+        - id: belief-drift-delta
+          capture: differential
+        - id: trust-resonance
+          capture: rolling
     telemetryChannel: security.signature
     allowedDomains:
       - partners.vaultfire.app
       - vaultfire.app
+      - pilot.codex.vaultfire.app
+    sandbox:
+      enabled: true
+      allowedPartners:
+        - codex-labs
+        - beliefnet-scouts
+      behaviorAudit:
+        mode: mirrored
+        retentionDays: 14
