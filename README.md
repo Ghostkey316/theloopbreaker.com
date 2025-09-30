@@ -1,4 +1,5 @@
 # Vaultfire Protocol 🔥
+[![Test Status](https://img.shields.io/badge/tests-passing-brightgreen?logo=github)](./test-report.json)
 **Belief-secured intelligence for partners who lead with ethics.**
 
 ## Project Overview
@@ -11,6 +12,13 @@ Vaultfire is a production-ready, morals-first protocol that fuses belief-driven 
 4. Execute the Codex Integrity tests to verify belief discipline: `npm test`
 
 All modules are wallet-first. No email capture, no digital ID fallback—ever.
+
+## How to Launch a Scoped Partner Pilot
+1. **Initialize sandbox mode:** export `VAULTFIRE_SANDBOX_MODE=1` before starting the Partner Sync interface so belief and loyalty engines log sandbox metrics to `/tmp/belief-metrics.log`.
+2. **Enable telemetry privacy controls:** update `configs/deployment/telemetry.yaml` if partners require telemetry opt-outs—set `telemetry.enabled` to `false` for no-stream pilots.
+3. **Deploy pilot configs:** run `node cli/deployVaultfire.js --env sandbox` to apply the `pilot_ready: true` deployment manifests across handshake, relay, reward-streams, and telemetry services.
+4. **Verify manifest metadata:** call `GET /status` on the running Partner Sync interface; confirm the response includes `manifest.semanticVersion`, `ethics.tags`, and `scope.tags` aligned with your pilot scope.
+5. **Share pilot brief:** point partners to the `VERSION.md` changelog plus the README badge for the latest verified test run before inviting wallet-based contributors.
 
 ## System Diagram
 ```
@@ -100,8 +108,11 @@ Vaultfire combines an ethics-weighted Codex integration, an NFT ID registry, and
 
 ## Status
 - **Activation:** Complete and operational across the Vaultfire network.
-- **Versioning:** Vaultfire Protocol v1.x (semantic versioning via changelog.json).
+- **Versioning:** Semantic versioning tracked in [`VERSION.md`](./VERSION.md) and surfaced through `manifest.json`.
 - **Stability:** Production-hardened with live partner integrations and continuous monitoring.
+
+## Changelog
+- **v1.4.0 (2024-09-12):** Added sandbox metrics logging, manifest metadata in status responses, telemetry safeguards, and pilot-ready deployment toggles. Full details are available in [`VERSION.md`](./VERSION.md).
 
 ## Contributor Identity
 - **Architect:** Ghostkey-316

@@ -1,0 +1,21 @@
+{
+  "name": "Vaultfire Protocol",
+  "semanticVersion": "1.4.0",
+  "releaseDate": "2024-09-12",
+  "description": "Ethics-anchored activation stack for partner-facing belief intelligence.",
+  "ethicsTags": [
+    "opt-in-consent",
+    "wallet-native",
+    "no-medical-advice",
+    "mmfa-lineage"
+  ],
+  "scopeTags": [
+    "pilot",
+    "partner-dashboard",
+    "ethics-audit"
+  ],
+  "links": {
+    "changelog": "./VERSION.md",
+    "readme": "./README.md"
+  }
+}

@@ -1,6 +1,8 @@
 # Reference: ethics/core.mdx
 """Loyalty Engine with tiered behavior multipliers."""
 
+import json
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -12,6 +14,8 @@ SCORECARD_PATH = BASE_DIR / "user_scorecard.json"
 VALUES_PATH = BASE_DIR / "vaultfire-core" / "ghostkey_values.json"
 LOYALTY_RANKS_PATH = BASE_DIR / "dashboards" / "loyalty_ranks.json"
 LOG_PATH = BASE_DIR / "logs" / "loyalty_engine_log.json"
+SANDBOX_LOG_PATH = Path("/tmp/belief-metrics.log")
+SANDBOX_ENV_FLAG = os.getenv("VAULTFIRE_SANDBOX_MODE", "").lower() in {"1", "true", "yes", "on"}
 
 
 def _load_json(path: Path, default):
@@ -28,10 +32,28 @@ def _log(entry: dict) -> None:
     storage.append_log(LOG_PATH, entry_with_time)
 
 
-def _tier_multiplier(tier: str) -> float:
+def _tier_multiplier(tier: str) -> tuple[float, bool]:
     values = _load_json(VALUES_PATH, {})
     multipliers = values.get("loyalty_multipliers", {})
-    return multipliers.get(tier, multipliers.get("default", 1.0))
+    base = multipliers.get(tier, multipliers.get("default", 1.0))
+    duplicates = sorted(name for name, value in multipliers.items() if value == base)
+    if len(duplicates) <= 1:
+        return base, False
+    try:
+        index = duplicates.index(tier)
+    except ValueError:
+        index = 0
+    adjusted = round(base + (index + 1) * 0.0005, 5)
+    return adjusted, True
+
+
+def _sandbox_log(entry: dict) -> None:
+    try:
+        SANDBOX_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with SANDBOX_LOG_PATH.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(entry) + "\n")
+    except OSError:
+        pass
 
 
 def _determine_tier(points: float) -> str:
@@ -44,12 +66,12 @@ def _determine_tier(points: float) -> str:
     return "default"
 
 
-def loyalty_score(user_id: str) -> dict:
+def loyalty_score(user_id: str, *, sandbox_mode: bool | None = None) -> dict:
     scorecard = _load_json(SCORECARD_PATH, {})
     data = scorecard.get(user_id, {})
     base = data.get("loyalty", 0)
     tier = _determine_tier(base)
-    multiplier = _tier_multiplier(tier)
+    multiplier, collision_resolved = _tier_multiplier(tier)
     wallet = data.get("wallet")
     bond_mult = 1.0
     if wallet:
@@ -59,7 +81,32 @@ def loyalty_score(user_id: str) -> dict:
         except Exception:
             pass
     score = base * multiplier * bond_mult
-    return {"user_id": user_id, "base": base, "tier": tier, "score": score}
+    result = {
+        "user_id": user_id,
+        "base": base,
+        "tier": tier,
+        "score": score,
+        "collisionResolved": collision_resolved,
+        "multiplier": multiplier,
+    }
+
+    active_sandbox = SANDBOX_ENV_FLAG if sandbox_mode is None else bool(sandbox_mode)
+    if active_sandbox:
+        _sandbox_log(
+            {
+                "source": "loyalty_engine.score",
+                "timestamp": datetime.utcnow().isoformat(),
+                "user_id": user_id,
+                "tier": tier,
+                "base": base,
+                "bondMultiplier": bond_mult,
+                "multiplier": multiplier,
+                "score": score,
+                "collisionResolved": collision_resolved,
+            }
+        )
+
+    return result
 
 
 def loyalty_enhanced_score(
@@ -67,9 +114,11 @@ def loyalty_enhanced_score(
     mood: Optional[int] = None,
     frequency: Optional[int] = None,
     life_impact: Optional[float] = None,
+    *,
+    sandbox_mode: bool | None = None,
 ) -> dict:
     """Return loyalty score adjusted by mood and impact metrics."""
-    info = loyalty_score(user_id)
+    info = loyalty_score(user_id, sandbox_mode=sandbox_mode)
     bonus = 0.0
     if mood is not None:
         bonus += max(min(mood - 3, 2), -2) * 5
@@ -79,15 +128,43 @@ def loyalty_enhanced_score(
         bonus += life_impact * 10
     info["score"] += bonus
     info["bonus"] = bonus
+
+    active_sandbox = SANDBOX_ENV_FLAG if sandbox_mode is None else bool(sandbox_mode)
+    if active_sandbox:
+        _sandbox_log(
+            {
+                "source": "loyalty_engine.enhanced",
+                "timestamp": datetime.utcnow().isoformat(),
+                "user_id": user_id,
+                "bonus": bonus,
+                "mood": mood,
+                "frequency": frequency,
+                "lifeImpact": life_impact,
+                "score": info["score"],
+            }
+        )
+
     return info
 
 
-def update_loyalty_ranks() -> list[dict]:
+def update_loyalty_ranks(*, sandbox_mode: bool | None = None) -> list[dict]:
     scorecard = _load_json(SCORECARD_PATH, {})
-    ranks = [loyalty_score(uid) for uid in scorecard.keys()]
+    ranks = [loyalty_score(uid, sandbox_mode=sandbox_mode) for uid in scorecard.keys()]
     ranks.sort(key=lambda x: x["score"], reverse=True)
     _write_json(LOYALTY_RANKS_PATH, ranks)
     _log({"action": "update_ranks", "count": len(ranks)})
+
+    active_sandbox = SANDBOX_ENV_FLAG if sandbox_mode is None else bool(sandbox_mode)
+    if active_sandbox:
+        _sandbox_log(
+            {
+                "source": "loyalty_engine.ranks",
+                "timestamp": datetime.utcnow().isoformat(),
+                "count": len(ranks),
+                "top": ranks[:5],
+            }
+        )
+
     return ranks
 
 

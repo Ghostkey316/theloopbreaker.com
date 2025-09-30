@@ -1,7 +1,10 @@
 version: 2
+pilot_ready: true
 metadata:
   revision: vaultfire-pilot-prod
   lastUpdated: 2025-08-18T00:00:00Z
+telemetry:
+  enabled: true
 services:
   telemetry-ledger:
     persistence:

@@ -503,20 +503,27 @@ export default function Dashboard() {
             {loading && !partners.length ? (
               <p>Loading partners…</p>
             ) : partners.length ? (
-              partners.map((partner) => (
-                <div key={`${partner.wallet}-${partner.lastSync}`} style={styles.listItem}>
-                  <div style={styles.badgeRow}>
-                    <button
-                      type="button"
-                      style={styles.mutedButton}
-                      onClick={() => openEnsModal(partner.wallet)}
-                    >
-                      {partner.wallet}
-                    </button>
-                    {partner.ens ? <span style={styles.pill}>{partner.ens}</span> : null}
-                    <span style={styles.pill}>Tier {partner.tier}</span>
-                  </div>
-                  <span>Multiplier: {partner.multiplier?.toFixed?.(3) ?? partner.multiplier ?? '—'}</span>
+              partners.map((partner, index) => {
+                const wallet = partner.wallet || `unknown-wallet-${index}`;
+                const ens = partner.ens || null;
+                const multiplier =
+                  typeof partner.multiplier === 'number'
+                    ? partner.multiplier.toFixed(3)
+                    : partner.multiplier ?? '—';
+                return (
+                  <div key={`${wallet}-${partner.lastSync || index}`} style={styles.listItem}>
+                    <div style={styles.badgeRow}>
+                      <button
+                        type="button"
+                        style={styles.mutedButton}
+                        onClick={() => openEnsModal(partner.wallet || wallet)}
+                      >
+                        {wallet}
+                      </button>
+                      {ens ? <span style={styles.pill}>{ens}</span> : null}
+                      <span style={styles.pill}>Tier {partner.tier || '—'}</span>
+                    </div>
+                    <span>Multiplier: {multiplier}</span>
                   <span>Last Sync: {formatTimestamp(partner.lastSync)}</span>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', fontSize: '0.85rem' }}>
                     {partner?.payload?.metrics ? (
@@ -532,8 +539,9 @@ export default function Dashboard() {
                   {partner.configOverrides ? (
                     <span style={{ color: '#fcd34d' }}>Scoring override detected</span>
                   ) : null}
-                </div>
-              ))
+                  </div>
+                );
+              })
             ) : (
               <p>No partners synced yet.</p>
             )}
@@ -546,21 +554,28 @@ export default function Dashboard() {
             {loading && !logs.length ? (
               <p>Loading telemetry…</p>
             ) : logs.length ? (
-              logs.map((entry) => (
-                <div key={`${entry.wallet}-${entry.timestamp}`} style={styles.listItem}>
-                  <div style={styles.badgeRow}>
-                    <button
-                      type="button"
-                      style={styles.mutedButton}
-                      onClick={() => openEnsModal(entry.wallet)}
-                    >
-                      {entry.wallet}
-                    </button>
-                    {entry.ens ? <span style={styles.pill}>{entry.ens}</span> : null}
-                    <span style={styles.pill}>{entry.type}</span>
-                  </div>
-                  <span>Multiplier: {entry.multiplier}</span>
-                  <span>Tier: {entry.tier}</span>
+              logs.map((entry, index) => {
+                const wallet = entry.wallet || `unknown-wallet-${index}`;
+                const ens = entry.ens || null;
+                const multiplier =
+                  typeof entry.multiplier === 'number'
+                    ? entry.multiplier.toFixed(3)
+                    : entry.multiplier ?? '—';
+                return (
+                  <div key={`${wallet}-${entry.timestamp || index}`} style={styles.listItem}>
+                    <div style={styles.badgeRow}>
+                      <button
+                        type="button"
+                        style={styles.mutedButton}
+                        onClick={() => openEnsModal(entry.wallet || wallet)}
+                      >
+                        {wallet}
+                      </button>
+                      {ens ? <span style={styles.pill}>{ens}</span> : null}
+                      <span style={styles.pill}>{entry.type || 'telemetry'}</span>
+                    </div>
+                    <span>Multiplier: {multiplier}</span>
+                    <span>Tier: {entry.tier || '—'}</span>
                   <span>Timestamp: {formatTimestamp(entry.timestamp)}</span>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', fontSize: '0.8rem' }}>
                     {entry.metrics ? (
@@ -578,8 +593,9 @@ export default function Dashboard() {
                       Overrides: {entry.overrides.join(', ')}
                     </span>
                   ) : null}
-                </div>
-              ))
+                  </div>
+                );
+              })
             ) : (
               <p>No telemetry entries available.</p>
             )}

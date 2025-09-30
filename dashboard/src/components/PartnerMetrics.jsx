@@ -4,6 +4,25 @@ import { fetchMetrics, subscribeToSignalCompass } from '../services/api.js';
 
 const EMPTY_SNAPSHOT = { incoming: [], timeSeries: [], intentFrequency: [], ethicsTriggers: [] };
 
+function formatBeliefScore(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return `${(value * 100).toFixed(1)}%`;
+  }
+  return '—';
+}
+
+function safeMask(wallet) {
+  const masked = maskWallet(wallet || '');
+  return masked || 'Unknown wallet';
+}
+
+function safeIntent(intent) {
+  if (typeof intent === 'string' && intent.trim()) {
+    return intent;
+  }
+  return 'Unclassified intent';
+}
+
 function formatTimestamp(value) {
   try {
     return new Date(value).toLocaleTimeString();
@@ -63,12 +82,13 @@ export default function PartnerMetrics() {
   }, [session]);
 
   const insights = useMemo(() => {
-    if (!snapshot.timeSeries.length) {
+    const validSeries = snapshot.timeSeries.filter((entry) => typeof entry.beliefScore === 'number');
+    if (!validSeries.length) {
       return { average: 0, latest: null };
     }
-    const scores = snapshot.timeSeries.map((entry) => entry.beliefScore);
+    const scores = validSeries.map((entry) => entry.beliefScore);
     const average = scores.reduce((acc, value) => acc + value, 0) / scores.length;
-    const latest = snapshot.timeSeries[snapshot.timeSeries.length - 1];
+    const latest = validSeries[validSeries.length - 1];
     return { average, latest };
   }, [snapshot.timeSeries]);
 
@@ -89,12 +109,12 @@ export default function PartnerMetrics() {
         </div>
         <div className="compass-metric">
           <span className="label">Rolling Average</span>
-          <span className="value">{(insights.average * 100).toFixed(1)}%</span>
+            <span className="value">{formatBeliefScore(insights.average)}</span>
         </div>
         {insights.latest ? (
           <div className="compass-metric">
             <span className="label">Last Signal</span>
-            <span className="value">{(insights.latest.beliefScore * 100).toFixed(1)}%</span>
+            <span className="value">{formatBeliefScore(insights.latest.beliefScore)}</span>
             <span className="hint">{formatTimestamp(insights.latest.timestamp)}</span>
           </div>
         ) : null}
@@ -103,10 +123,10 @@ export default function PartnerMetrics() {
         <div className="compass-column">
           <h3>Incoming Belief Payloads</h3>
           <ul className="compass-list">
-            {snapshot.incoming.slice(0, 6).map((entry) => (
-              <li key={`${entry.walletId}-${entry.timestamp}`}>
-                <div className="primary">{maskWallet(entry.walletId)}</div>
-                <div className="secondary">{(entry.beliefScore * 100).toFixed(1)}% belief</div>
+            {snapshot.incoming.slice(0, 6).map((entry, index) => (
+              <li key={`${entry.walletId || 'incoming'}-${entry.timestamp || index}`}>
+                <div className="primary">{safeMask(entry.walletId)}</div>
+                <div className="secondary">{formatBeliefScore(entry.beliefScore)} belief</div>
                 <div className="tertiary">{formatTimestamp(entry.timestamp)}</div>
               </li>
             ))}
@@ -116,10 +136,10 @@ export default function PartnerMetrics() {
         <div className="compass-column">
           <h3>Intent Frequency</h3>
           <ul className="compass-list">
-            {snapshot.intentFrequency.slice(0, 6).map((intent) => (
-              <li key={intent.intent}>
-                <div className="primary">{intent.intent}</div>
-                <div className="secondary">{intent.count} detections</div>
+            {snapshot.intentFrequency.slice(0, 6).map((intent, index) => (
+              <li key={intent.intent || `intent-${index}`}>
+                <div className="primary">{safeIntent(intent.intent)}</div>
+                <div className="secondary">{typeof intent.count === 'number' ? intent.count : 0} detections</div>
               </li>
             ))}
             {!snapshot.intentFrequency.length && <li>No intents detected.</li>}
@@ -129,9 +149,9 @@ export default function PartnerMetrics() {
           <h3>Ethics Triggers</h3>
           <ul className="compass-list">
             {snapshot.ethicsTriggers.slice(0, 6).map((trigger, index) => (
-              <li key={`${trigger.flag}-${index}`}>
-                <div className="primary">{trigger.flag}</div>
-                <div className="secondary">{maskWallet(trigger.walletId)}</div>
+              <li key={`${trigger.flag || 'ethics'}-${index}`}>
+                <div className="primary">{trigger.flag || 'No flag supplied'}</div>
+                <div className="secondary">{safeMask(trigger.walletId)}</div>
                 <div className="tertiary">{formatTimestamp(trigger.timestamp)}</div>
               </li>
             ))}

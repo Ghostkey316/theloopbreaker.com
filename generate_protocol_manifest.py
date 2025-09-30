@@ -12,6 +12,7 @@ CONFIG_PATH = BASE_DIR / "vaultfire-core" / "vaultfire_config.json"
 ETHICS_PATH = BASE_DIR / "ethics" / "core.mdx"
 PARTNERS_PATH = BASE_DIR / "partners.json"
 OUTPUT_PATH = BASE_DIR / "dashboards" / "protocol_status.json"
+VERSION_PATH = BASE_DIR / "VERSION.md"
 
 
 def ethics_checksum() -> str:
@@ -26,6 +27,18 @@ def extract_version() -> str:
     if "v" in first:
         return first.split("v")[-1]
     return "unknown"
+
+
+def extract_semantic_version() -> str:
+    if not VERSION_PATH.exists():
+        return "0.0.0"
+    with open(VERSION_PATH, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith("## v"):
+                marker = line.split(" ")[1]
+                return marker.replace("v", "")
+    return "0.0.0"
 
 
 def list_modules() -> list[str]:
@@ -62,6 +75,7 @@ def build_manifest() -> dict:
     manifest = {
         "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
         "version": extract_version(),
+        "semantic_version": extract_semantic_version(),
         "modules": list_modules(),
         "ethics_config": load_config(),
         "partners": partner_status(),

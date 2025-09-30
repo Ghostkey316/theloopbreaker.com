@@ -6,6 +6,7 @@ import crypto from 'crypto';
 
 const ETHICS_SOURCE_PATH = path.resolve(__dirname, '../ethics/core_v2.mdx');
 const DEV_META_DIR = path.resolve(__dirname, '.dev-meta');
+const PROTOCOL_MANIFEST_PATH = path.resolve(__dirname, '../manifest.json');
 
 function ensureEthicsManifest(targetDir, commandLabel = 'build') {
   if (!fs.existsSync(ETHICS_SOURCE_PATH)) {
@@ -15,11 +16,23 @@ function ensureEthicsManifest(targetDir, commandLabel = 'build') {
 
   const content = fs.readFileSync(ETHICS_SOURCE_PATH);
   const hash = crypto.createHash('sha256').update(content).digest('hex');
+  let semanticVersion = '0.0.0';
+  let scopeTags = ['pilot'];
+  try {
+    const manifestRaw = fs.readFileSync(PROTOCOL_MANIFEST_PATH, 'utf8');
+    const manifest = JSON.parse(manifestRaw);
+    semanticVersion = manifest.semanticVersion || manifest.version || semanticVersion;
+    scopeTags = Array.isArray(manifest.scopeTags) ? manifest.scopeTags : scopeTags;
+  } catch (error) {
+    semanticVersion = '0.0.0';
+  }
   const payload = {
     source: 'ethics/core_v2.mdx',
     hash,
     generatedAt: new Date().toISOString(),
     command: commandLabel,
+    semanticVersion,
+    scopeTags,
   };
 
   fs.mkdirSync(targetDir, { recursive: true });
