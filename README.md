@@ -83,6 +83,43 @@ When `pilot_mode=true` in the environment the loader automatically falls back to
                                    └─────────────────────────────┘
 ```
 
+## Quick Infra Model
+
+```mermaid
+flowchart LR
+  subgraph CI[CI/CD Hooks]
+    gha[GitHub Actions]
+    prbot[Compliance Bot]
+  end
+  subgraph Cloud[Vaultfire Deployment]
+    api[(Trust Sync API)]
+    sync[(Partner Sync Service)]
+    queue[(Webhook Queue)]
+    telemetry[(Telemetry Ledger)]
+    metrics[(Ops Metrics Exporter)]
+  end
+  subgraph Integrations[Partner Surface]
+    webhooks{{Signed Webhooks}}
+    dashboards[[Partner Dashboards]]
+    auditors[[Governance Reviewers]]
+  end
+
+  gha -->|lint/test| api
+  gha -->|bundle chart| sync
+  prbot -->|audit log check| auditors
+  api --> queue --> webhooks
+  sync --> queue
+  api --> telemetry
+  sync --> telemetry
+  telemetry --> metrics --> dashboards
+  auditors -. governance snapshots .-> telemetry
+```
+
+- **Terraform**: `infra/mvd.tf` provisions an AWS Fargate baseline (VPC, load balancer, task definitions, secrets) for the Trust Sync API and Partner Sync services.
+- **Helm (optional)**: `charts/vaultfire/` packages the same services plus a metrics Service and ServiceMonitor for Kubernetes clusters.
+- **CI/CD Hooks**: GitHub Actions trigger container builds, Terraform plans, Helm releases, and validate `governance/auditLog.json` updates before production rollouts.
+- **Metrics Fan-out**: The shared Ops Metrics exporter feeds `/metrics/ops` while structured telemetry continues to stream through `MultiTierTelemetryLedger` sinks.
+
 ## Module Guide
 
 ### 📦 Partner Sync Interface (`partnerSync.js`)

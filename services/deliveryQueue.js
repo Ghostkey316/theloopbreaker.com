@@ -13,6 +13,8 @@ class WebhookDeliveryQueue {
     maxDelayMs = 10000,
     jitter = 0.25,
     randomFn = Math.random,
+    telemetry = null,
+    metrics = null,
   } = {}) {
     this.fetch = fetchImpl;
     this.maxRetries = maxRetries;
@@ -23,6 +25,10 @@ class WebhookDeliveryQueue {
     this.queue = [];
     this.processingPromise = null;
     this.pending = new Set();
+    this.telemetry = telemetry || null;
+    this.metrics = metrics || null;
+    this.lastDepth = 0;
+    this.#emitDepth();
   }
 
   #computeDelay(attempt) {
@@ -124,10 +130,12 @@ class WebhookDeliveryQueue {
     job.resolve = (result) => {
       resolve(result);
       this.pending.delete(promise);
+      this.#emitDepth();
     };
     this.pending.add(promise);
 
     this.queue.push(job);
+    this.#emitDepth();
     this.#ensureProcessing();
     return promise;
   }
@@ -147,12 +155,16 @@ class WebhookDeliveryQueue {
         job.lastError = outcome.error;
         job.nextAttempt = Date.now() + this.#computeDelay(job.attempt);
         this.queue.push(job);
+        this.#recordRetry({ job, outcome });
+        this.#emitDepth();
         continue;
       }
 
       const status = outcome.completed
         ? outcome.status
         : `failed:${outcome.error || 'exhausted'}`;
+
+      this.#recordCompletion({ job, status, outcome });
 
       job.resolve({
         partnerId: job.partnerId,
@@ -165,6 +177,66 @@ class WebhookDeliveryQueue {
         lastError: outcome.error,
         completedAt: new Date().toISOString(),
       });
+    }
+  }
+
+  #emitDepth() {
+    const snapshot = { queued: this.queue.length, inFlight: this.pending.size };
+    const total = snapshot.queued + snapshot.inFlight;
+    if (this.metrics?.updateQueueDepth) {
+      this.metrics.updateQueueDepth(snapshot);
+    }
+    if (this.telemetry && this.lastDepth !== total) {
+      this.telemetry.record('ops.webhookQueue.depth', snapshot, {
+        tags: ['ops', 'webhooks'],
+        visibility: { partner: false, ethics: true, audit: true },
+      });
+      this.lastDepth = total;
+    }
+  }
+
+  #recordRetry({ job, outcome }) {
+    if (this.metrics?.incrementRetry) {
+      this.metrics.incrementRetry(outcome.error || 'retryable');
+    }
+    if (this.telemetry) {
+      this.telemetry.record(
+        'ops.webhookQueue.retry',
+        {
+          partnerId: job.partnerId,
+          event: job.event,
+          targetUrl: job.targetUrl,
+          attempt: job.attempt,
+          error: outcome.error,
+        },
+        {
+          tags: ['ops', 'webhooks'],
+          visibility: { partner: false, ethics: true, audit: true },
+        }
+      );
+    }
+  }
+
+  #recordCompletion({ job, status, outcome }) {
+    if (this.metrics?.recordOutcome) {
+      this.metrics.recordOutcome(status);
+    }
+    if (this.telemetry) {
+      this.telemetry.record(
+        'ops.webhookQueue.delivery',
+        {
+          partnerId: job.partnerId,
+          event: job.event,
+          targetUrl: job.targetUrl,
+          status,
+          attempts: job.attempt,
+          lastError: outcome.error,
+        },
+        {
+          tags: ['ops', 'webhooks'],
+          visibility: { partner: true, ethics: true, audit: true },
+        }
+      );
     }
   }
 

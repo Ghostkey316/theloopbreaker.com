@@ -8,11 +8,12 @@ const EVENTS = {
 };
 
 class PartnerHookRegistry extends EventEmitter {
-  constructor({ telemetry, deliveryQueue } = {}) {
+  constructor({ telemetry, deliveryQueue, metrics } = {}) {
     super();
     this.telemetry = telemetry;
     this.subscriptions = new Map();
-    this.deliveryQueue = deliveryQueue || new WebhookDeliveryQueue();
+    this.deliveryQueue = deliveryQueue || new WebhookDeliveryQueue({ telemetry, metrics });
+    this.metrics = metrics || null;
   }
 
   subscribe({ partnerId, event, targetUrl, metadata = {} }) {

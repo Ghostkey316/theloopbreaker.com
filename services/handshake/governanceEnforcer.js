@@ -1,5 +1,5 @@
 class GovernanceEnforcer {
-  constructor({ telemetry, thresholds, audit } = {}) {
+  constructor({ telemetry, thresholds, audit, auditLogger } = {}) {
     this.telemetry = telemetry || null;
     this.thresholds = {
       multiplierCritical: thresholds?.multiplierCritical ?? 1,
@@ -8,6 +8,7 @@ class GovernanceEnforcer {
     this.audit = {
       passed: audit?.passed ?? false,
     };
+    this.auditLogger = auditLogger || null;
   }
 
   #telemetryConfig() {
@@ -37,6 +38,14 @@ class GovernanceEnforcer {
       : alerts.length
       ? 'warning'
       : 'ok';
+    if (alerts.length && this.auditLogger) {
+      this.auditLogger.logDecision({
+        decisionType: 'governance.enforcer.alert',
+        actorWallet: null,
+        policyChange: status,
+        notes: JSON.stringify({ alerts, thresholds: this.thresholds }),
+      });
+    }
     return { status, alerts };
     // TODO(governance-dao-thresholds): wire DAO-configured dynamic thresholds once partner councils expose signed snapshots.
   }

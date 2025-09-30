@@ -19,6 +19,7 @@ const { createFingerprint } = require('../services/originFingerprint');
 const { loadTrustSyncConfig } = require('../config/trustSyncConfig');
 const TrustSyncVerifier = require('../services/trustSyncVerifier');
 const RewardStreamPlanner = require('../services/rewardStreamPlanner');
+const { createOpsMetrics } = require('../services/opsMetrics');
 
 const app = express();
 const port = process.env.PORT || 4002;
@@ -32,7 +33,8 @@ const telemetryLedger = new MultiTierTelemetryLedger(trustConfig.telemetry);
 const identityStore = new EncryptedIdentityStore(trustConfig.identityStore, telemetryLedger);
 const identityStoreReady = identityStore.init();
 const signalCompass = new SignalCompass({ telemetry: telemetryLedger, ...(trustConfig.signalCompass || {}) });
-const partnerHooks = new PartnerHookRegistry({ telemetry: telemetryLedger });
+const opsMetrics = createOpsMetrics();
+const partnerHooks = new PartnerHookRegistry({ telemetry: telemetryLedger, metrics: opsMetrics });
 const mirrorAgent = new AIMirrorAgent({ telemetry: telemetryLedger, ...(trustConfig.mirror || {}) });
 const trustVerifier = new TrustSyncVerifier({
   telemetry: telemetryLedger,
@@ -98,6 +100,11 @@ try {
 }
 
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+app.get('/metrics/ops', async (req, res) => {
+  res.set('Content-Type', opsMetrics.contentType());
+  res.send(await opsMetrics.metricsSnapshot());
+});
 
 app.get('/health', (req, res) => {
   res.json({
@@ -524,4 +531,5 @@ module.exports = {
   identityStoreReady,
   mirrorAgent,
   createServer,
+  opsMetrics,
 };

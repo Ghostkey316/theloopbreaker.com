@@ -21,14 +21,17 @@ function toBuffer(value) {
 }
 
 class SecurityPostureManager {
-  constructor({ telemetry } = {}) {
+  constructor({ telemetry, opsMetrics } = {}) {
     this.telemetry = telemetry || null;
+    this.opsMetrics = opsMetrics || null;
+    this.lastPostureFingerprint = null;
     this.refresh();
   }
 
   refresh() {
     this.config = loadSecurityConfig();
     this.rotation = resolveActiveSecret(this.config);
+    this.#maybeCapturePosture(this.#buildHandshakeSnapshot());
   }
 
   getActiveSecret() {
@@ -47,7 +50,7 @@ class SecurityPostureManager {
     return Boolean(this.getActiveSecret()?.value);
   }
 
-  getHandshakeSnapshot() {
+  #buildHandshakeSnapshot() {
     const current = this.getActiveSecret();
     return {
       status: current ? 'rotating' : 'legacy',
@@ -59,6 +62,12 @@ class SecurityPostureManager {
         allowLegacyHandshake: this.allowsLegacyHandshake(),
       },
     };
+  }
+
+  getHandshakeSnapshot() {
+    const snapshot = this.#buildHandshakeSnapshot();
+    this.#maybeCapturePosture(snapshot);
+    return snapshot;
   }
 
   getRotationStatus() {
@@ -101,6 +110,27 @@ class SecurityPostureManager {
       visibility: { partner: false, ethics: true, audit: true },
     };
     this.telemetry.record(event, payload, options || defaultOptions);
+  }
+
+  #maybeCapturePosture(snapshot) {
+    if (!snapshot) {
+      return;
+    }
+    const fingerprint = JSON.stringify({
+      status: snapshot.status,
+      requiresHandshake: snapshot.requiresHandshake,
+      posture: snapshot.posture,
+    });
+    if (fingerprint === this.lastPostureFingerprint) {
+      return;
+    }
+    this.lastPostureFingerprint = fingerprint;
+    this.opsMetrics?.recordPostureChange(snapshot.status);
+    this.#record('security.posture.changed', {
+      status: snapshot.status,
+      requiresHandshake: snapshot.requiresHandshake,
+      posture: snapshot.posture,
+    });
   }
 
   #candidateSecrets() {
