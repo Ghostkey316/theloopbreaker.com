@@ -1,5 +1,16 @@
 # Vaultfire Partner Changelog
 
+## 2025-10-02 — Residency Enforcement Sprint
+- Introduced `telemetry/residencyGuard` with wildcard-aware host policies for telemetry DSNs and partner hooks.
+- Updated `telemetry/nodeTelemetry` and partner hook adapters to block endpoints outside approved residency regions.
+- Extended `npm run preflight` to fail fast when residency maps are missing or enforcement is disabled.
+- Documented the residency policy workflow in `docs/telemetry-ledger.md` and shipped hardened defaults in `vaultfirerc.json`.
+
+## 2025-10-04 — Mobile Readiness & Optional Telemetry
+- Added `MOBILE_MODE` toggles, mobile-aware residency guards, and Trust Sync fallbacks to keep telemetry optional on phones and tablets.
+- Updated `tools/preflight-check.js` with chalk + wrap-ansi formatting and automatic mobile skips for small-screen ergonomics.
+- Created a mobile summary Jest suite and postinstall script to surface optional dependency messaging without breaking mobile pipelines.
+
 ## 2025-09-19 — v2.6.0-alpha Partner Readiness
 - Added `signalRelay.retry()` with exponential backoff and a circuit-breaker
   guard to stabilise remote belief sync deliveries during partner outages.
