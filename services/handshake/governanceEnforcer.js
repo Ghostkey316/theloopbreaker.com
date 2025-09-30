@@ -1,10 +1,17 @@
 class GovernanceEnforcer {
-  constructor({ telemetry, thresholds } = {}) {
+  constructor({ telemetry, thresholds, audit } = {}) {
     this.telemetry = telemetry || null;
     this.thresholds = {
       multiplierCritical: thresholds?.multiplierCritical ?? 1,
       summaryWarning: thresholds?.summaryWarning ?? 1.05,
     };
+    this.audit = {
+      passed: audit?.passed ?? false,
+    };
+  }
+
+  #telemetryConfig() {
+    return { auditPassed: Boolean(this.audit.passed) };
   }
 
   assess({ multiplier, summaryScore }) {
@@ -14,6 +21,7 @@ class GovernanceEnforcer {
       this.telemetry?.record('handshake.governance.blocked', { multiplier, summaryScore }, {
         tags: ['handshake', 'governance'],
         visibility: { partner: false, ethics: true, audit: true },
+        config: this.#telemetryConfig(),
       });
     }
     if (summaryScore < this.thresholds.summaryWarning) {
@@ -21,6 +29,7 @@ class GovernanceEnforcer {
       this.telemetry?.record('handshake.governance.warned', { multiplier, summaryScore }, {
         tags: ['handshake', 'governance'],
         visibility: { partner: true, ethics: true, audit: true },
+        config: this.#telemetryConfig(),
       });
     }
     const status = alerts.some((alert) => alert.type === 'multiplier.floor')

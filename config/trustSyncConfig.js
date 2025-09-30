@@ -14,6 +14,10 @@ const DEFAULT_CONFIG = {
   telemetry: {
     baseDir: path.join(__dirname, '..', 'logs', 'telemetry'),
     mode: 'wallet-anonymous',
+    fallback: {
+      enabled: false,
+      fileName: 'remote-fallback.jsonl',
+    },
   },
   identityStore: {
     provider: 'memory',
@@ -79,6 +83,20 @@ function loadTrustSyncConfig() {
   merged.rejectExternalID = merged.identity.rejectExternalID;
   merged.pseudonymousMode = merged.identity.pseudonymousMode;
   merged.telemetryMode = merged.telemetry?.mode || merged.telemetryMode || 'wallet-anonymous';
+  merged.telemetry = merged.telemetry || {};
+  const fallbackToggle =
+    process.env.VAULTFIRE_TELEMETRY_FALLBACK ??
+    merged['telemetry-fallback'] ??
+    merged.telemetryFallback ??
+    merged.telemetry?.fallback?.enabled;
+  merged.telemetry.fallback = merged.telemetry.fallback || {};
+  merged.telemetry.fallback.enabled =
+    typeof fallbackToggle === 'string'
+      ? ['true', '1', 'yes', 'on'].includes(fallbackToggle.toLowerCase())
+      : Boolean(fallbackToggle);
+  if (!merged.telemetry.fallback.fileName) {
+    merged.telemetry.fallback.fileName = 'remote-fallback.jsonl';
+  }
   return merged;
 }
 

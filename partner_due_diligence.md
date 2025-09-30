@@ -11,3 +11,11 @@ Vaultfire provides ethics-first telemetry, hardened SecureStore mechanics, and g
 - Integrity tests are enforced via the Git pre-push hook; request the latest `/logs/test-report.json` artifact as part of evidence collection.
 - Manifest metadata (`manifest.json`) links the semantic version and git commit hash for immutable audit trails.
 - Data residency controls are documented in `data_residency.yaml` with roadmap milestones for future partner regions.
+
+## Partner Risk Matrix
+
+| Risk Area | Reviewer Question | Vaultfire Mitigation |
+| --- | --- | --- |
+| Module complexity | How do pilots avoid loading the entire module stack? | Set `VAULTFIRE_MODULE_SCOPE=pilot` (or `pilot_mode=true`) and execute `node pilot-loader.js` to load only CLI, Dashboard, and Belief Engine surfaces. |
+| Governance tuning | What ensures thresholds are production-ready? | Configure `.govrc` or `--config-path=` overrides, then run `npm run audit:gov` to validate thresholds and log `config.auditPassed` for audit trails. |
+| Telemetry residency | How are rejected partner sinks handled? | Enable `telemetry.fallback.enabled` so failed remote writes fall back to JSON logs and extend pipelines via `telemetry/adapters/partner_hook_adapter.js`. |

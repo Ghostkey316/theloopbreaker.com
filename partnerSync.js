@@ -24,6 +24,7 @@ const { SecretsManager } = require('./services/secretsManager');
 const HandshakeJWTAuthority = require('./services/handshake/jwtAuthority');
 const ApiKeyGate = require('./services/handshake/apiKeyGate');
 const GovernanceEnforcer = require('./services/handshake/governanceEnforcer');
+const { loadGovernanceConfig } = require('./governance/governance-core');
 const SocketRelay = require('./services/handshake/socketRelay');
 
 const PROTOCOL_MANIFEST_PATH = path.join(__dirname, 'manifest.json');
@@ -139,12 +140,16 @@ function createPartnerSyncServer({
     .filter((entry) => entry && entry.targetUrl);
   const handshakeSessions = new Map();
   const sessionTtl = Math.max(60 * 1000, sessionTtlMs || DEFAULT_SESSION_TTL_MS);
+  const governanceAudit = governance.auditPassed ?? false;
   const governanceEnforcer = new GovernanceEnforcer({
     telemetry: resolvedTelemetry,
     thresholds: {
       multiplierCritical:
         governance.multiplierCritical ?? GOVERNANCE_THRESHOLDS.multiplierCritical,
       summaryWarning: governance.summaryWarning ?? GOVERNANCE_THRESHOLDS.summaryWarning,
+    },
+    audit: {
+      passed: governanceAudit,
     },
   });
   socketRelay.register({ jwtAuthority, apiKeyGate });
@@ -164,7 +169,13 @@ function createPartnerSyncServer({
     if (!resolvedTelemetry || typeof resolvedTelemetry.record !== 'function') {
       return;
     }
-    resolvedTelemetry.record(event, payload, options);
+    const nextOptions = options ? { ...options } : {};
+    const existingConfig = nextOptions.config ? { ...nextOptions.config } : {};
+    if (typeof existingConfig.auditPassed !== 'boolean') {
+      existingConfig.auditPassed = governanceAudit;
+    }
+    nextOptions.config = existingConfig;
+    resolvedTelemetry.record(event, payload, nextOptions);
   }
 
   function authError(message, code = 'auth.unauthorized', statusCode = 401) {
@@ -691,7 +702,8 @@ if (require.main === module) {
     ? process.env.PARTNER_SYNC_WEBHOOKS.split(',').map((target) => target.trim()).filter(Boolean)
     : [];
 
-  const server = createPartnerSyncServer({ webhookTargets });
+  const { config: governanceConfig } = loadGovernanceConfig({ argv: process.argv });
+  const server = createPartnerSyncServer({ webhookTargets, governance: governanceConfig });
   const port = process.env.PARTNER_SYNC_PORT ? Number(process.env.PARTNER_SYNC_PORT) : 4050;
   server
     .start({ port })

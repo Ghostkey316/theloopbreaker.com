@@ -13,6 +13,18 @@ Vaultfire is a production-ready, morals-first protocol that fuses belief-driven 
 
 All modules are wallet-first. No email capture, no digital ID fallback—ever.
 
+## Module Scope Modes
+
+Vaultfire ships with a scoped loader for pilot programmes. Set `VAULTFIRE_MODULE_SCOPE` in your environment (or `.env`) and run
+`node pilot-loader.js` to verify which modules will initialise.
+
+| Scope | Modules Enabled |
+| --- | --- |
+| `pilot` | CLI, Dashboard, Belief Engine |
+| `full` | All (incl. APIs, Telemetry, Gov) |
+
+When `pilot_mode=true` in the environment the loader automatically falls back to the `pilot` scope for minimal rollouts.
+
 ## How to Launch a Scoped Partner Pilot
 1. **Initialize sandbox mode:** export `VAULTFIRE_SANDBOX_MODE=1` before starting the Partner Sync interface so belief and loyalty engines log sandbox metrics to `logs/belief-sandbox.json`.
 2. **Enable telemetry privacy controls:** update `configs/deployment/telemetry.yaml` if partners require telemetry opt-outs—set `telemetry.enabled` to `false` for no-stream pilots.
@@ -103,6 +115,21 @@ All modules are wallet-first. No email capture, no digital ID fallback—ever.
 - Watches `manifest.json` for rotations or outages and falls back to safe defaults automatically.
 - Emits structured telemetry (`manifest.failover.*`) so governance teams see when fallbacks engage or recover.
 - Shared across `/status` and `/manifest.json` ensuring partner integrations remain deterministic.
+
+## Telemetry Residency & Partner Hooks
+
+- Configure residency policies in `vaultfirerc.json` (or via `VAULTFIRE_RC_PATH`) and enable the JSON fallback flag (`"telemetry-fallback": true`) so remote sink failures are mirrored locally.
+- The Trust Sync loader now normalises fallback preferences so every `MultiTierTelemetryLedger` instance mirrors failed remote writes into `logs/telemetry/remote-fallback.jsonl` for compliance review.
+- Extend telemetry pipelines by wiring the partner hook adapter:
+
+  ```js
+  const partnerHook = require('./telemetry/adapters/partner_hook_adapter');
+
+  partnerHook.init('https://partners.example.com/hooks/telemetry');
+  await partnerHook.writeTelemetry({ event: 'belief.signal', payload: { wallet: '0xabc' } });
+  ```
+
+  Swap the URL for region-specific endpoints to respect data residency constraints while still tapping into Vaultfire's belief events.
 
 **Final Rule: Wallet is passport. Vaultfire never compromises.**
 
