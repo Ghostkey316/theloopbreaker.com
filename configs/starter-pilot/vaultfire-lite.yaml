@@ -1,0 +1,44 @@
+version: 1
+profile: starter-pilot
+modules:
+  belief-sync:
+    enabled: true
+    syncWindow: "rolling"
+    retentionHours: 72
+  wallet-auth:
+    enabled: true
+    tokenTtlMinutes: 30
+  telemetry-core:
+    enabled: true
+    sinks:
+      - type: file
+        level: info
+        path: ./logs/starter-telemetry.log
+    fallback:
+      enabled: true
+      fileName: starter-fallback.jsonl
+  streaming-rewards:
+    enabled: false
+  cross-chain-forks:
+    enabled: false
+  analytics-hyperstream:
+    enabled: false
+trustSync:
+  identityStore:
+    provider: memory
+    breachThreshold: 0.35
+  telemetry:
+    baseDir: ./logs/starter-telemetry
+    fallback:
+      enabled: true
+      fileName: starter-fallback.jsonl
+  verification:
+    remote: null
+    externalValidationEndpoint: null
+rewards:
+  fallbackMultiplier: 1.0
+  multiplierAddress: "0x0000000000000000000000000000000000000000"
+  rewardStreamAddress: "0x0000000000000000000000000000000000000000"
+  providerUrl: "http://localhost:8545"
+  stream:
+    autoDistribute: false

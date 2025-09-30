@@ -6,6 +6,7 @@ contract RewardStream {
     mapping(address => uint256) private multipliers;
 
     event MultiplierUpdated(address indexed user, uint256 multiplier);
+    event AdminTransferred(address indexed previousAdmin, address indexed newAdmin);
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "not-authorized");
@@ -25,5 +26,12 @@ contract RewardStream {
 
     function getMultiplier(address user) external view returns (uint256) {
         return multipliers[user];
+    }
+
+    function transferAdmin(address newAdmin) external onlyAdmin {
+        require(newAdmin != address(0), "admin-required");
+        address previous = admin;
+        admin = newAdmin;
+        emit AdminTransferred(previous, newAdmin);
     }
 }

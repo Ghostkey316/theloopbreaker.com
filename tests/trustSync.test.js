@@ -30,11 +30,16 @@ function createToken(overrides = {}) {
   });
 }
 
-function mockVerification(result = { accepted: true }, { status = 200 } = {}) {
+function mockVerification(result = { accepted: true }, { status = 200, attestation } = {}) {
   fetchMock.mockResolvedValueOnce({
     ok: status >= 200 && status < 300,
     status,
     json: async () => result,
+  });
+  fetchMock.mockResolvedValueOnce({
+    ok: true,
+    status: 200,
+    json: async () => attestation || { signature: '0xattest', signedAt: new Date().toISOString() },
   });
 }
 
@@ -158,7 +163,10 @@ describe('Trust Sync protocol', () => {
       .get(`/vaultfire/rewards/${WALLET_REFRESH}`)
       .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
-    expect(res.body.streamPreview).toMatchObject({ status: 'pending-integration' });
+    expect(res.body.streamPreview).toMatchObject({
+      status: 'fallback',
+      multiplier: { value: 1, source: 'fallback' },
+    });
   });
 
   describe('Signal Compass streaming', () => {

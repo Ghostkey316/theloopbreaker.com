@@ -1,0 +1,103 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Vaultfire Runtime Configuration",
+  "type": "object",
+  "required": ["version", "partnerType", "modules", "trustSync", "rewards"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "partnerType": {
+      "type": "string",
+      "enum": ["light-consumer", "analytics", "infra-integrator"]
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "modules": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["enabled"],
+        "properties": {
+          "enabled": { "type": "boolean" },
+          "config": { "type": "object", "additionalProperties": true },
+          "notes": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "trustSync": {
+      "type": "object",
+      "required": ["identityStore", "telemetry", "verification"],
+      "properties": {
+        "identityStore": {
+          "type": "object",
+          "required": ["provider"],
+          "properties": {
+            "provider": { "type": "string" },
+            "breachThreshold": { "type": "number", "minimum": 0, "maximum": 1 }
+          },
+          "additionalProperties": true
+        },
+        "telemetry": {
+          "type": "object",
+          "required": ["baseDir"],
+          "properties": {
+            "baseDir": { "type": "string" },
+            "fallback": {
+              "type": "object",
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "fileName": { "type": "string" }
+              },
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": true
+        },
+        "verification": {
+          "type": "object",
+          "properties": {
+            "remote": {
+              "anyOf": [
+                { "type": "null" },
+                { "type": "object", "additionalProperties": true }
+              ]
+            },
+            "externalValidationEndpoint": {
+              "anyOf": [
+                { "type": "null" },
+                { "type": "string", "format": "uri" }
+              ]
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "rewards": {
+      "type": "object",
+      "required": ["fallbackMultiplier"],
+      "properties": {
+        "fallbackMultiplier": { "type": "number", "minimum": 0 },
+        "multiplierAddress": { "type": "string" },
+        "rewardStreamAddress": { "type": "string" },
+        "providerUrl": { "type": "string" },
+        "stream": {
+          "type": "object",
+          "properties": {
+            "autoDistribute": { "type": "boolean" }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

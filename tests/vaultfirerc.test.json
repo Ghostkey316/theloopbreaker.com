@@ -16,6 +16,16 @@
     "remote": {
       "endpoint": "https://verification.invalid/anchor",
       "apiKey": "test-key"
+    },
+    "externalValidationEndpoint": "https://attest.vaultfire.test/test"
+  },
+  "rewards": {
+    "fallbackMultiplier": 1,
+    "multiplierAddress": "0x0000000000000000000000000000000000000000",
+    "rewardStreamAddress": "0x0000000000000000000000000000000000000000",
+    "providerUrl": "http://localhost:8545",
+    "stream": {
+      "autoDistribute": false
     }
   }
 }

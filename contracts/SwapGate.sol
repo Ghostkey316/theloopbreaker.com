@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -24,7 +24,7 @@ contract SwapGate is Ownable {
     event Swap(address indexed user, string asset, uint256 amountIn, uint256 amountOut);
     event SwapToSol(address indexed user, bytes32 solanaAddress, uint256 amountIn);
 
-    constructor(IERC20 _vaultfire, IERC20 _usdc, address _feeRecipient) {
+    constructor(IERC20 _vaultfire, IERC20 _usdc, address _feeRecipient) Ownable(msg.sender) {
         require(address(_vaultfire) != address(0), "vaultfire zero");
         require(address(_usdc) != address(0), "usdc zero");
         vaultfire = _vaultfire;

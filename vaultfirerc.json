@@ -27,6 +27,13 @@
     },
     "mirror": {
       "outputChannel": "cli"
+    },
+    "verification": {
+      "remote": {
+        "endpoint": "https://verification.invalid/anchor",
+        "apiKey": "starter-key"
+      },
+      "externalValidationEndpoint": "https://attest.vaultfire.test/partners"
     }
   },
   "hooks": {
@@ -36,5 +43,14 @@
         "targetUrl": "https://partners.example.com/hooks/vaultfire/activation"
       }
     ]
+  },
+  "rewards": {
+    "fallbackMultiplier": 1,
+    "multiplierAddress": "0x0000000000000000000000000000000000000000",
+    "rewardStreamAddress": "0x0000000000000000000000000000000000000000",
+    "providerUrl": "http://localhost:8545",
+    "stream": {
+      "autoDistribute": false
+    }
   }
 }
