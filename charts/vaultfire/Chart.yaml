@@ -1,0 +1,10 @@
+apiVersion: v2
+name: vaultfire
+version: 0.1.0
+description: Helm chart for Vaultfire Trust Sync + Partner Sync services with Ops metrics exporter.
+appVersion: "3.0.0"
+keywords:
+  - vaultfire
+  - partner-sync
+  - observability
+type: application

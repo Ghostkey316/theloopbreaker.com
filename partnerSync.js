@@ -26,6 +26,8 @@ const ApiKeyGate = require('./services/handshake/apiKeyGate');
 const GovernanceEnforcer = require('./services/handshake/governanceEnforcer');
 const { loadGovernanceConfig } = require('./governance/governance-core');
 const SocketRelay = require('./services/handshake/socketRelay');
+const { createOpsMetrics } = require('./services/opsMetrics');
+const { createAuditLogger } = require('./governance/auditLogger');
 
 const PROTOCOL_MANIFEST_PATH = path.join(__dirname, 'manifest.json');
 const DEFAULT_MANIFEST_METADATA = {
@@ -98,6 +100,7 @@ function createPartnerSyncServer({
   deliveryQueue,
   sessionTtlMs = DEFAULT_SESSION_TTL_MS,
   governance = {},
+  auditLogger: providedAuditLogger,
 } = {}) {
   const app = express();
   const httpServer = http.createServer(app);
@@ -106,6 +109,8 @@ function createPartnerSyncServer({
   });
 
   const resolvedTelemetry = ensureTelemetry(telemetry);
+  const opsMetrics = createOpsMetrics();
+  const auditLogger = providedAuditLogger || createAuditLogger();
   const manifestFailover = createManifestFailover({
     manifestPath: PROTOCOL_MANIFEST_PATH,
     defaults: DEFAULT_MANIFEST_METADATA,
@@ -117,7 +122,7 @@ function createPartnerSyncServer({
   const discoveryTokenService = jwtAuthority.tokenService;
   const apiKeyGate = new ApiKeyGate({ secretsManager, telemetry: resolvedTelemetry });
   const securityPosture =
-    securityPostureManager || new SecurityPostureManager({ telemetry: resolvedTelemetry });
+    securityPostureManager || new SecurityPostureManager({ telemetry: resolvedTelemetry, opsMetrics });
   const engine = new BeliefMirrorEngine({ telemetryPath });
   const resolvedVotesPath = votesPath || path.join(__dirname, 'votes.json');
   const partnerStorage = createPartnerStorage({
@@ -134,7 +139,8 @@ function createPartnerSyncServer({
     telemetry: resolvedTelemetry,
   });
   const voteRepository = new VoteRepository({ filePath: resolvedVotesPath });
-  const webhookQueue = deliveryQueue || new WebhookDeliveryQueue();
+  const webhookQueue =
+    deliveryQueue || new WebhookDeliveryQueue({ telemetry: resolvedTelemetry, metrics: opsMetrics });
   const webhookSubscriptions = webhookTargets
     .map((target, index) => normalizeWebhookTarget(target, index))
     .filter((entry) => entry && entry.targetUrl);
@@ -151,6 +157,7 @@ function createPartnerSyncServer({
     audit: {
       passed: governanceAudit,
     },
+    auditLogger,
   });
   socketRelay.register({ jwtAuthority, apiKeyGate });
 
@@ -322,6 +329,11 @@ function createPartnerSyncServer({
 
   app.use(limiter);
   app.use(express.json({ limit: '1mb' }));
+
+  app.get('/metrics/ops', async (req, res) => {
+    res.set('Content-Type', opsMetrics.contentType());
+    res.send(await opsMetrics.metricsSnapshot());
+  });
 
   app.get('/vaultfire/handshake', (req, res) => {
     try {
@@ -557,6 +569,17 @@ function createPartnerSyncServer({
               visibility: { partner: false, ethics: true, audit: true },
             }
           );
+          auditLogger.logDecision({
+            decisionType: `governance.alert.${alert.type}`,
+            actorWallet: entry.wallet,
+            policyChange: enforcement.status,
+            notes: JSON.stringify({
+              tier: entry.tier,
+              multiplier: entry.multiplier,
+              beliefScore: summary.beliefScore,
+              severity: alert.severity || null,
+            }),
+          });
         });
         await Promise.all(governanceAlerts.map((alert) => notifyWebhooks('governance.alert', alert)));
         socketRelay.emit('governance-alert', governanceAlerts);
@@ -702,8 +725,9 @@ if (require.main === module) {
     ? process.env.PARTNER_SYNC_WEBHOOKS.split(',').map((target) => target.trim()).filter(Boolean)
     : [];
 
-  const { config: governanceConfig } = loadGovernanceConfig({ argv: process.argv });
-  const server = createPartnerSyncServer({ webhookTargets, governance: governanceConfig });
+  const auditLogger = createAuditLogger();
+  const { config: governanceConfig } = loadGovernanceConfig({ argv: process.argv, auditLogger });
+  const server = createPartnerSyncServer({ webhookTargets, governance: governanceConfig, auditLogger });
   const port = process.env.PARTNER_SYNC_PORT ? Number(process.env.PARTNER_SYNC_PORT) : 4050;
   server
     .start({ port })

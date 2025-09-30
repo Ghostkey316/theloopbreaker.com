@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const YAML = require('yamljs');
+const { createAuditLogger } = require('./auditLogger');
 
 const DEFAULT_THRESHOLDS = {
   multiplierCritical: 1.0,
@@ -74,7 +75,7 @@ function resolveConfigPath({ argv = process.argv, cwd = process.cwd() } = {}) {
 }
 
 function loadGovernanceConfig(options = {}) {
-  const { argv = process.argv, cwd = process.cwd(), defaultConfig = DEFAULT_CONFIG } = options;
+  const { argv = process.argv, cwd = process.cwd(), defaultConfig = DEFAULT_CONFIG, auditLogger } = options;
   const configPath = resolveConfigPath({ argv, cwd });
   let loadedConfig = { ...defaultConfig };
   let usingDefaults = true;
@@ -109,11 +110,22 @@ function loadGovernanceConfig(options = {}) {
     );
   }
 
-  return {
+  const result = {
     config: loadedConfig,
     source,
     usingDefaults,
   };
+
+  if (auditLogger) {
+    auditLogger.logDecision({
+      decisionType: 'governance.config.load',
+      actorWallet: null,
+      policyChange: source,
+      notes: JSON.stringify({ usingDefaults, thresholds }),
+    });
+  }
+
+  return result;
 }
 
 function auditGovernanceConfig(config = {}) {
@@ -186,8 +198,8 @@ function logRuntimeEvent(message, { level = 'info', details = {}, config = DEFAU
   return entry;
 }
 
-function runAudit(argv = process.argv) {
-  const { config } = loadGovernanceConfig({ argv });
+function runAudit(argv = process.argv, { auditLogger } = {}) {
+  const { config } = loadGovernanceConfig({ argv, auditLogger });
   const outcome = auditGovernanceConfig(config);
   config.auditPassed = outcome.ok && outcome.errors.length === 0;
   const logLevel = outcome.ok ? 'info' : 'error';
@@ -195,6 +207,12 @@ function runAudit(argv = process.argv) {
     level: logLevel,
     details: outcome,
     config,
+  });
+  auditLogger?.logDecision({
+    decisionType: 'governance.audit.summary',
+    actorWallet: null,
+    policyChange: outcome.ok ? 'approved' : 'blocked',
+    notes: JSON.stringify(outcome),
   });
   if (!outcome.ok) {
     outcome.errors.forEach((error) => {
@@ -205,14 +223,15 @@ function runAudit(argv = process.argv) {
 }
 
 if (require.main === module) {
+  const auditLogger = createAuditLogger();
   const shouldAudit = process.argv.slice(2).some((token) => token === '--audit');
   if (shouldAudit) {
-    const outcome = runAudit(process.argv);
+    const outcome = runAudit(process.argv, { auditLogger });
     if (!outcome.ok) {
       process.exitCode = 1;
     }
   } else {
-    const { config, source } = loadGovernanceConfig({ argv: process.argv });
+    const { config, source } = loadGovernanceConfig({ argv: process.argv, auditLogger });
     logRuntimeEvent('governance.config.loaded', {
       details: { source },
       config,

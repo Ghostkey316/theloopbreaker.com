@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "vaultfire.fullname" . }}
+  labels:
+    {{- include "vaultfire.labels" . | nindent 4 }}
+spec:
+  replicas: {{ if .Values.autoscaling.enabled }}{{ .Values.autoscaling.minReplicas }}{{ else }}{{ .Values.desiredCount | default 2 }}{{ end }}
+  selector:
+    matchLabels:
+      {{- include "vaultfire.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "vaultfire.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "vaultfire.serviceAccountName" . }}
+      containers:
+        - name: trust-sync
+          image: {{ .Values.image.trustSync }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.trustSyncPort }}
+              name: trust-sync
+          env:
+            - name: PORT
+              value: "{{ .Values.service.trustSyncPort }}"
+            {{- range .Values.env.trustSync }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: trust-sync
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: trust-sync
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+        - name: partner-sync
+          image: {{ .Values.image.partnerSync }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.partnerSyncPort }}
+              name: partner-sync
+          env:
+            - name: PARTNER_SYNC_PORT
+              value: "{{ .Values.service.partnerSyncPort }}"
+            {{- range .Values.env.partnerSync }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /status
+              port: partner-sync
+          livenessProbe:
+            httpGet:
+              path: /status
+              port: partner-sync
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

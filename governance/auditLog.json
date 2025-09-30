@@ -1,0 +1,9 @@
+[
+  {
+    "timestamp": "2024-01-01T00:00:00.000Z",
+    "decisionType": "init.bootstrap",
+    "actorWallet": null,
+    "policyChange": "audit-log-initialised",
+    "notes": "Baseline entry establishing the governance audit log schema."
+  }
+]

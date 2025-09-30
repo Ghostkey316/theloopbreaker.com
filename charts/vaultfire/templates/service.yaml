@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "vaultfire.fullname" . }}
+  labels:
+    {{- include "vaultfire.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    {{- include "vaultfire.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: trust-sync
+      port: {{ .Values.service.trustSyncPort }}
+      targetPort: trust-sync
+    - name: partner-sync
+      port: {{ .Values.service.partnerSyncPort }}
+      targetPort: partner-sync
+    - name: metrics
+      port: {{ .Values.service.metricsPort }}
+      targetPort: trust-sync

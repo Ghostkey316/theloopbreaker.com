@@ -1,0 +1,46 @@
+image:
+  trustSync: public.ecr.aws/vaultfire/trust-sync:latest
+  partnerSync: public.ecr.aws/vaultfire/partner-sync:latest
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  create: true
+
+service:
+  type: ClusterIP
+  trustSyncPort: 4002
+  partnerSyncPort: 4050
+  metricsPort: 9090
+
+desiredCount: 2
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: vaultfire.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources: {}
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+env:
+  trustSync: []
+  partnerSync: []
+
+metrics:
+  enabled: true
+  path: /metrics/ops
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    additionalLabels: {}
