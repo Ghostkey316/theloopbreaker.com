@@ -5,6 +5,8 @@
 - Introduced governance config loader supporting `.govrc`/`--config-path=` overrides, default-threshold warnings, and `npm run audit:gov` self-audits.
 - Hardened telemetry fallbacks with JSON sink mirroring, partner hook adapters, and residency-aware docs for compliance teams.
 - Refreshed partner documentation with a risk matrix, governance tuning playbook, and telemetry residency guidance.
+- Expanded Vaultfire Core to support multi-wallet whitelists via `WALLET_WHITELIST` overrides while keeping single-wallet mode as the default.
+- Added operational runbooks and onboarding coverage tooling so every module ships with setup, risk, and recovery guidance.
 
 ## 2025-02-20 — Pilot Upgrade Readiness
 - Enabled belief sandbox observability with `/debug/belief-sandbox` and JSON logging for belief mechanics, loyalty engine, and multiplier core sandboxes.

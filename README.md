@@ -13,6 +13,11 @@ Vaultfire is a production-ready, morals-first protocol that fuses belief-driven 
 
 All modules are wallet-first. No email capture, no digital ID fallback—ever.
 
+## 🏁 Onboarding Test Checklist
+- Review the [Operational Onboarding Checklist](./docs/runbooks/onboarding-test-checklist.md) before inviting new partners.
+- Run `node scripts/run-test-suite.js` to execute module-by-module coverage checks and surface any gaps below 80%.
+- Capture generated artefacts (coverage reports and `logs/test-report.json`) for compliance sign-off.
+
 ## Module Scope Modes
 
 Vaultfire ships with a scoped loader for pilot programmes. Set `VAULTFIRE_MODULE_SCOPE` in your environment (or `.env`) and run
