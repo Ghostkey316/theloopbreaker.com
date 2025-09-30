@@ -53,6 +53,16 @@ function logError(message) {
   console.error(formatLine(`✖ ${message}`, (value) => chalk.red(value)));
 }
 
+function logMobileSummary() {
+  const summary = [
+    '📱 Vaultfire preflight (mobile mode)',
+    '• Residency enforcement checks: skipped for mobile shell.',
+    '• Peer dependency scan: deferred until desktop run.',
+    '• Run `npm run preflight` without MOBILE_MODE for the full report.',
+  ];
+  summary.forEach((line) => console.log(chalk.cyan(line)));
+}
+
 function loadPackageJson() {
   const pkgPath = path.join(__dirname, '..', 'package.json');
   const raw = fs.readFileSync(pkgPath, 'utf8');
@@ -179,7 +189,7 @@ function checkTelemetryResidency() {
 
 (function run() {
   if (isMobileModeActive()) {
-    logInfo('Mobile mode detected. Skipping Vaultfire preflight CLI checks.');
+    logMobileSummary();
     process.exitCode = 0;
     return;
   }

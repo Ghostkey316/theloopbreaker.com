@@ -1,5 +1,15 @@
 # Vaultfire Partner Changelog
 
+## 2025-10-12 — Mobile Telemetry Hardening & Safety Controls
+- Added mobile-aware residency, partner hook, and node telemetry updates that honour the `MOBILE_MODE` environment flag and
+  hybrid runtime override.
+- Introduced compact preflight output for `MOBILE_MODE=true npm run preflight` and expanded documentation covering dual test
+  runs and optional Sentry fallbacks.
+- Restored Jest stability when `@sentry/react` is absent by auto-mocking `withProfiler` and surfacing postinstall guidance.
+- Sandboxed Hardhat/solc workflows via `infra/hardhat-sandbox.js` to mitigate the `cookie` and `tmp` advisories until upstream
+  patches land.
+- Expanded telemetry-focused Jest coverage to validate residency guard relaxations, partner hook skips, and Sentry fallbacks.
+
 ## 2025-10-02 — Residency Enforcement Sprint
 - Introduced `telemetry/residencyGuard` with wildcard-aware host policies for telemetry DSNs and partner hooks.
 - Updated `telemetry/nodeTelemetry` and partner hook adapters to block endpoints outside approved residency regions.
