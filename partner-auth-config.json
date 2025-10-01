@@ -1,0 +1,6 @@
+{
+  "partner_xyz": "wallet",
+  "partner_beta": "email_otp",
+  "partner_creators": "oauth_google",
+  "partner_github_ops": "oauth_github"
+}

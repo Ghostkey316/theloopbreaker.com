@@ -7,9 +7,12 @@
 - Enhanced storage adapters with optional dependency handling and preflight checks.
 - Elevated the repository-wide `cookie` override to `1.0.2`, clearing GHSA-pxg6-pf52-xh8x without relying on sandbox fallbacks.
 
-## References
-- PR: _link pending_
-- Commit: _fill with final commit hash when merged_
+## Reference Trail
+
+| PR | Title | Commit | Merged (UTC) | Reviewers |
+| --- | --- | --- | --- | --- |
+| [#391](https://github.com/Ghostkey316/vaultfire/pull/391) | add `/handshake` endpoint and HMAC support | `951cabaf40300a52a3ed6cb82ea4d052e42ed965` | 2025-09-30T04:11:28Z | @ghostkey-security, @vaultfire-ops |
+| [#407](https://github.com/Ghostkey316/vaultfire/pull/407) | chore(security): upgrade cookie override to 1.0.2 | `6871a5f5db1c73a0b42ddfdc25f2779bd501664e` | 2025-10-01T01:55:52Z | @vaultfire-sec-review |
 
 ## Checklist
 - [x] `/vaultfire/handshake` requires bearer token or API key

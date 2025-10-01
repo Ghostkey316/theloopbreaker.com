@@ -7,10 +7,19 @@ function resolveEnv() {
     return globalThis.__VAULTFIRE_DASHBOARD_ENV__;
   }
   try {
-    return (typeof import !== 'undefined' && import.meta?.env) || {};
+    const metaEnv = Function(
+      'return typeof import.meta !== "undefined" ? import.meta.env : undefined;',
+    )();
+    if (metaEnv) {
+      return metaEnv;
+    }
   } catch (error) {
-    return {};
+    // ignore and continue to other fallbacks
   }
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env;
+  }
+  return {};
 }
 
 const runtimeEnv = resolveEnv();

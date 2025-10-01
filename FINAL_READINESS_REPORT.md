@@ -2,7 +2,7 @@
 
 - No syntax errors detected across Python modules (`python -m py_compile`).
 - Integrity check executed via `system_integrity_check.py` returned no issues.
-- Node syntax check skipped for JSX/TypeScript sources (unsupported by `node --check`).
+- JSX/TypeScript syntax verification executed via `npm run lint:syntax` (ESLint + TypeScript parser).
 - Jest tests executed via ghostTestSim harness. Python tests: 44 passed, 1 skipped.
 - Build locked unless overridden by **ghostkey316.eth**.
 

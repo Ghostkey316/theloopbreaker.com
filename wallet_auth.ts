@@ -11,7 +11,7 @@ const ALLOWED_DOMAINS = ['.eth', '.cb.id'];
 const FALLBACK_DOMAIN = 'vaultfire.eth';
 
 function isValidIdentifier(name: string): boolean {
-  return /^[a-z0-9.-]+$/.test(name) && !(/[\\s\/]/.test(name));
+  return /^[a-z0-9.-]+$/.test(name) && !(/[\s/]/.test(name));
 }
 
 export function authenticateWallet(identifier: string, acceptedDomains: string[] = ALLOWED_DOMAINS): string {
