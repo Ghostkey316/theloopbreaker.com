@@ -41,4 +41,4 @@ test('belief sync emits events and captures origin fingerprint', () => {
     expect(log[0].origin.ens).toBe('belief.eth');
   });
 });
-*** End of File
+// *** End of File

@@ -1,5 +1,16 @@
 # Vaultfire Partner Changelog
 
+## 2025-10-08 — fix: partner sign-off checklist completed
+- Delivered optional email/OTP and social fallback identity flows that preserve on-chain authority while meeting partner pref
+  erences defined in `partner-auth-config.json`.
+- Introduced ESLint-powered JSX/TS syntax verification with CI logging, Husky enforcement, and documentation in the developer
+  guidelines.
+- Captured fallback authentication coverage in Jest to validate wallet-off scenarios and isolated session storage.
+- Finalised readiness docs to reflect the enforced syntax checks and cleared the remaining “before sign” considerations.
+
+## 2025-10-08 — docs: complete PR trail in hardening log
+- Logged the `/handshake` hardening PR lineage, commit hashes, and reviewer approvals for operational traceability.
+
 ## 2025-10-07 — fix: full remediation of protocol debt
 - Added remote telemetry verification to the Trust Sync CLI with signature checks,
   remote digest comparisons, and warning surfacing for mismatches or fallbacks.

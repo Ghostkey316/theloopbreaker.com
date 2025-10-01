@@ -3,6 +3,7 @@ logs/
 !logs/loopmirror_echo_v13.log
 !logs/trustengine_sync_v14.log
 !logs/pathatlas_consequence_v16.log
+coverage/
 __pycache__/
 node_modules/
 artifacts/
