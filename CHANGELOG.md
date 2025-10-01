@@ -11,7 +11,7 @@
   the new retry, telemetry, and rewards integrations.
 
 ## 2025-09-30 — SECURITY: Fixed moderate transitive npm vulnerabilities
-- Resolved GHSA-pxg6-pf52-xh8x by forcing all `cookie` consumers, including Hardhat's bundled `@sentry/node`, onto the patched `0.7.2` release via `npm overrides`.
+- Resolved GHSA-pxg6-pf52-xh8x by forcing all `cookie` consumers, including Hardhat's bundled `@sentry/node`, onto the patched `1.0.2` release via `npm overrides`.
 - Eliminated GHSA-52f5-9888-hmc6 by pinning `tmp` to `0.2.5` for `solc` and any future consumers, removing the need for sandbox wrappers.
 - Added a Husky pre-commit hook that blocks commits when `npm audit` reports vulnerabilities and scheduled a weekly CI audit watchdog that auto-files GitHub issues with advisory context.
 
