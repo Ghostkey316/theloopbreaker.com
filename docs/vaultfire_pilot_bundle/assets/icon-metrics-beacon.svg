@@ -1,0 +1,14 @@
+<svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="beaconGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2a1b1b" />
+      <stop offset="100%" stop-color="#ff6d3c" />
+    </linearGradient>
+  </defs>
+  <rect x="26" y="22" width="44" height="52" rx="12" fill="none" stroke="#ffb695" stroke-width="4" />
+  <path d="M32 60 L44 42 L54 54 L64 34" fill="none" stroke="url(#beaconGradient)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="48" cy="20" r="8" fill="#ff6d3c" />
+  <line x1="48" y1="12" x2="48" y2="6" stroke="#ffb695" stroke-width="3" stroke-linecap="round" />
+  <line x1="36" y1="18" x2="30" y2="14" stroke="#ffb695" stroke-width="3" stroke-linecap="round" />
+  <line x1="60" y1="18" x2="66" y2="14" stroke="#ffb695" stroke-width="3" stroke-linecap="round" />
+</svg>
