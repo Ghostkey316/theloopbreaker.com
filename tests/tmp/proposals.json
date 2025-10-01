@@ -1,0 +1,11 @@
+[
+  {
+    "id": "prop-1",
+    "title": "Integrity Check",
+    "choices": {
+      "a": "Advance",
+      "b": "Hold",
+      "c": "Recalibrate"
+    }
+  }
+]

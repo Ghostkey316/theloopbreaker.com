@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="220" height="32" role="img" aria-label="Vaultfire trust coverage: 76%">
-  <title>Vaultfire trust coverage: 76%</title>
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="32" role="img" aria-label="Vaultfire trust coverage: 79.5%">
+  <title>Vaultfire trust coverage: 79.5%</title>
   <g shape-rendering="crispEdges">
     <rect width="140" height="32" fill="#1f2937" />
     <rect x="140" width="80" height="32" fill="#db4437" />
   </g>
   <g fill="#fff" text-anchor="middle" font-family="'Verdana', sans-serif" font-size="14">
     <text x="70" y="21">trust coverage</text>
-    <text x="180" y="21">76%</text>
+    <text x="180" y="21">79.5%</text>
   </g>
 </svg>

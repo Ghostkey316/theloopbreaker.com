@@ -1,0 +1,12 @@
+[
+  {
+    "proposalId": "prop-1",
+    "choice": "a",
+    "wallet": "0xF468ccA18b09460eF8fBf42a41670fa37cF2dBE0",
+    "ens": null,
+    "weight": 1.8535,
+    "tier": "Mythic",
+    "timestamp": "2025-10-01T22:45:51.434Z",
+    "messageDigest": "0xc21cba17329a3fa7f251f9b28ad7223c340ac833d13088b96ace445959a85f07"
+  }
+]

@@ -1,0 +1,29 @@
+{
+  "grafts": [
+    {
+      "action": "graft",
+      "source": "override.log",
+      "context": "ctx",
+      "timestamp": 123
+    }
+  ],
+  "bindings": [
+    {
+      "action": "bind",
+      "anchor": "ghostkey316.eth",
+      "tag": "ethics_foundation"
+    }
+  ],
+  "locks": [
+    {
+      "action": "lock",
+      "tag": "ethics_foundation",
+      "checksum": "abc123"
+    }
+  ],
+  "anchors": {
+    "ghostkey316.eth": {
+      "tag": "ethics_foundation"
+    }
+  }
+}

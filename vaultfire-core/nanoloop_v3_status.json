@@ -1,0 +1,15 @@
+{
+  "predictions": [
+    {
+      "action": "predict",
+      "region": "sys",
+      "signalVolatility": 0.8
+    }
+  ],
+  "shields": [
+    {
+      "action": "shield",
+      "region": "sys"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+[
+  {
+    "id": "partner-a",
+    "endpoint": "https://relay.invalid/payload",
+    "relayKey": null,
+    "partnerId": null,
+    "ens": null
+  },
+  {
+    "id": "partner-b",
+    "endpoint": "https://relay.invalid/payload",
+    "relayKey": null,
+    "partnerId": null,
+    "ens": null
+  }
+]
