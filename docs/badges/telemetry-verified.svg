@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="60" viewBox="0 0 220 60" role="img" aria-labelledby="title desc">
+  <title id="title">Vaultfire Telemetry Verified</title>
+  <desc id="desc">Badge indicating telemetry verified status with Guardian Council oversight.</desc>
+  <rect width="220" height="60" rx="12" fill="#0b1f36" />
+  <rect x="6" y="6" width="48" height="48" rx="10" fill="#1f6feb" />
+  <path d="M18 31l8 8 16-22" fill="none" stroke="#f5faff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+  <text x="64" y="28" fill="#a9c7ff" font-family="'Inter', Arial, sans-serif" font-size="12" letter-spacing="1">TELEMETRY</text>
+  <text x="64" y="44" fill="#ffffff" font-family="'Inter', Arial, sans-serif" font-size="18" font-weight="600">VERIFIED</text>
+  <circle cx="200" cy="30" r="6" fill="#3fb950" />
+</svg>

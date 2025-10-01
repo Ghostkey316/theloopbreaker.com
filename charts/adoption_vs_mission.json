@@ -1,0 +1,39 @@
+{
+  "title": "Adoption vs Mission Outcomes",
+  "x_label": "Weeks Since Launch",
+  "y_label_left": "Wallet Activation (cumulative)",
+  "y_label_right": "Mission Completion Rate",
+  "series": [
+    {
+      "name": "Mid-Market Wallet Activation",
+      "axis": "left",
+      "values": [[1, 3200], [4, 8900], [8, 15000], [12, 18250]]
+    },
+    {
+      "name": "Fortune 100 Wallet Activation",
+      "axis": "left",
+      "values": [[1, 2800], [4, 7600], [8, 12200], [12, 14600]]
+    },
+    {
+      "name": "Impact Nonprofit Wallet Activation",
+      "axis": "left",
+      "values": [[1, 1500], [4, 4200], [8, 6200], [12, 8100]]
+    },
+    {
+      "name": "Mid-Market Mission Completion",
+      "axis": "right",
+      "values": [[1, 0.32], [4, 0.54], [8, 0.62], [12, 0.68]]
+    },
+    {
+      "name": "Fortune 100 Mission Completion",
+      "axis": "right",
+      "values": [[1, 0.28], [4, 0.48], [8, 0.55], [12, 0.59]]
+    },
+    {
+      "name": "Impact Nonprofit Mission Completion",
+      "axis": "right",
+      "values": [[1, 0.41], [4, 0.63], [8, 0.70], [12, 0.74]]
+    }
+  ],
+  "badge": "docs/badges/telemetry-verified.svg"
+}

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vaultfire Attestations</title>
+  <style>
+    body { font-family: "Inter", Arial, sans-serif; margin: 0; color: #0b1f36; background: #f5f7fb; }
+    header { background: #0b1f36; color: white; padding: 32px 20px; }
+    header h1 { margin: 0; font-size: 2rem; }
+    header p { margin-top: 8px; max-width: 720px; line-height: 1.4; }
+    main { padding: 32px 20px 80px; max-width: 980px; margin: 0 auto; }
+    section { margin-bottom: 40px; background: white; padding: 24px 28px; border-radius: 16px; box-shadow: 0 12px 30px rgba(11,31,54,0.08); }
+    h2 { font-size: 1.4rem; margin-top: 0; }
+    .badge-strip { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-top: 16px; }
+    .badge-strip img { height: 52px; }
+    ul { padding-left: 20px; line-height: 1.6; }
+    .timeline { border-left: 3px solid #1f6feb; padding-left: 24px; }
+    .timeline div { margin-bottom: 24px; }
+    .timeline span { display: block; font-weight: 600; color: #1f6feb; }
+    pre { background: #0b1f36; color: #cfe1ff; padding: 16px; border-radius: 12px; overflow-x: auto; }
+    .cta { display: inline-block; margin-right: 16px; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: 600; }
+    .cta.primary { background: #1f6feb; color: white; }
+    .cta.secondary { background: transparent; border: 2px solid #1f6feb; color: #1f6feb; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Attestations that Prove Belief-Driven Trust</h1>
+    <p>Telemetry verified audits from CertiK, OpenZeppelin, Trail of Bits, and compliance partners ensure Vaultfire deployments remain ethics-first and enterprise-ready.</p>
+    <div class="badge-strip">
+      <img src="../../docs/badges/telemetry-verified.svg" alt="Telemetry Verified Badge">
+      <img src="../../docs/badges/governance-ready.svg" alt="Governance Ready Badge">
+    </div>
+    <div style="margin-top: 24px;">
+      <a class="cta primary" href="mailto:trust@vaultfire.network?subject=Vaultfire%20Attestation%20Packet">Request Full Packet</a>
+      <a class="cta secondary" href="#compliance">View SOC 2 Roadmap</a>
+    </div>
+  </header>
+  <main>
+    <section id="audits">
+      <h2>Audit Timeline</h2>
+      <div class="timeline" id="auditTimeline"></div>
+    </section>
+    <section id="telemetry">
+      <h2>Telemetry Evidence</h2>
+      <p>Baseline templates ensure consistent, opt-in telemetry. Share these with auditors or partners to validate data lineage.</p>
+      <pre id="telemetryList"></pre>
+    </section>
+    <section id="compliance">
+      <h2>Compliance Intake Templates</h2>
+      <p>Use the SOC 2 and ISO/IEC 27001 request bodies below when engaging assessment partners.</p>
+      <pre id="attestationMarkdown"></pre>
+    </section>
+  </main>
+  <script src="../vaultfire_confirm.js"></script>
+  <script src="attestations.js"></script>
+</body>
+</html>

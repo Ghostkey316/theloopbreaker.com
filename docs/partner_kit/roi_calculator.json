@@ -1,0 +1,54 @@
+{
+  "version": "1.0",
+  "description": "Vaultfire ROI calculator inputs for partner engagements.",
+  "fields": [
+    {"name": "segment", "type": "string", "description": "Partner segment (mid_market, fortune_100, nonprofit)."},
+    {"name": "wallet_activation_rate", "type": "float", "description": "Percentage expressed as decimal (0-1)."},
+    {"name": "mission_completion_rate", "type": "float", "description": "Percentage expressed as decimal (0-1)."},
+    {"name": "retention_day30", "type": "float", "description": "30-day retention decimal (0-1)."},
+    {"name": "xp_issued", "type": "integer", "description": "Total XP issued during measurement window."},
+    {"name": "avg_mission_value_usd", "type": "float", "description": "Monetary or social value per mission completion."},
+    {"name": "xp_to_revenue_ratio", "type": "float", "description": "Revenue per XP unit redeemed."},
+    {"name": "program_costs_usd", "type": "float", "description": "All-in program costs for the window."},
+    {"name": "guardian_override_rate", "type": "float", "description": "Percentage of XP transactions requiring guardian override."}
+  ],
+  "example_inputs": [
+    {
+      "segment": "mid_market",
+      "wallet_activation_rate": 0.82,
+      "mission_completion_rate": 0.68,
+      "retention_day30": 0.64,
+      "xp_issued": 2450000,
+      "avg_mission_value_usd": 185,
+      "xp_to_revenue_ratio": 0.00042,
+      "program_costs_usd": 1950000,
+      "guardian_override_rate": 0.012
+    },
+    {
+      "segment": "fortune_100",
+      "wallet_activation_rate": 0.78,
+      "mission_completion_rate": 0.59,
+      "retention_day30": 0.58,
+      "xp_issued": 3100000,
+      "avg_mission_value_usd": 420,
+      "xp_to_revenue_ratio": 0.00036,
+      "program_costs_usd": 3450000,
+      "guardian_override_rate": 0.018
+    },
+    {
+      "segment": "nonprofit",
+      "wallet_activation_rate": 0.74,
+      "mission_completion_rate": 0.74,
+      "retention_day30": 0.71,
+      "xp_issued": 1280000,
+      "avg_mission_value_usd": 95,
+      "xp_to_revenue_ratio": 0.00028,
+      "program_costs_usd": 780000,
+      "guardian_override_rate": 0.006
+    }
+  ],
+  "calculation": {
+    "equation": "roi = ((avg_mission_value_usd * mission_completion_rate) + (xp_to_revenue_ratio * xp_issued) - program_costs_usd) / program_costs_usd",
+    "notes": "Multiply result by 100 for percentage. Ensure guardian_override_rate < 0.05 for compliance readiness."
+  }
+}

@@ -1,0 +1,37 @@
+# Vaultfire Retention Telemetry Baseline
+schema_version: 1.0
+collection_name: retention_cohorts_weekly
+purpose: "Track mission-aligned retention and belief-signal resonance across cohorts."
+pii_handling:
+  consent_required: true
+  retention_days: 730
+  anonymization: hashed_wallet_ids
+fields:
+  - name: cohort_start_date
+    type: date
+    description: "Start date for the weekly cohort."
+  - name: segment
+    type: string
+    description: "Segment identifier (e.g., mid_market, fortune_100, nonprofit)."
+  - name: week_number
+    type: integer
+    description: "Week index since cohort inception."
+  - name: retention_percentage
+    type: float
+    description: "Percentage of wallets remaining active in the cohort."
+  - name: mission_completion_rate
+    type: float
+    description: "Percentage of cohort completing at least one mission checkpoint."
+  - name: belief_alignment_score
+    type: float
+    description: "Average belief alignment score (0-100) derived from verified telemetry."
+  - name: notes
+    type: string
+    description: "Optional insights for governance reviews."
+quality_controls:
+  - check: "0 <= retention_percentage <= 100"
+  - check: "0 <= mission_completion_rate <= 100"
+  - check: "0 <= belief_alignment_score <= 100"
+publishing_targets:
+  - dashboards/adoption_mission_dashboard.json
+  - docs/vaultfire_pilot_bundle/case_studies.md
