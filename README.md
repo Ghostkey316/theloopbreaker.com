@@ -8,6 +8,16 @@
 ## Project Overview
 Vaultfire is a production-ready, morals-first protocol that fuses belief-driven intelligence with verifiable human identity. It orchestrates Codex reasoning engines, NFT-based identity anchors, and partner-focused loyalty modules to deliver a resilient activation stack for ethical AI collaboration.
 
+## Simulated Use Case Pilots (v1)
+- **Important:** Every asset linked in this section is a simulation artifact only. Partners must not treat the narratives or metrics as evidence of live deployments.
+- [Simulated Community XP Pilot](./sim-pilots/community-xp-pilot.md) — belief-aligned engagement loop showcasing mission dispatch, belief logging, and simulated XP uplift (Simulated Pilot Verified ✅).
+- [Simulated Cross-Platform Education Pilot](./sim-pilots/cross-platform-education.md) — NS3 assessment preview with governance mirror rehearsals and device continuity safeguards (Simulated Pilot Verified ✅).
+- [Simulated Global Retail Loyalty Flow](./sim-pilots/global-retail-loyalty.md) — streaming rewards engine demonstration with belief multipliers and compliance mirrors (Simulated Pilot Verified ✅).
+- [Telemetry & ROI Baseline](./sim-pilots/telemetry-baseline.md) — mocked telemetry dataset and belief-driven ROI projections for partner planning (Simulated Pilot Verified ✅).
+- [Partner Kit Bundle](./sim-pilots/partner-kit.md) — consolidated dossier ready for GitHub Wiki publication or PDF export, including roadmap and activation checklist (Simulated Pilot Verified ✅).
+
+Live pilot deployments targeted for Q4 roadmap; current examples demonstrate architectural readiness and CLI flow integrity across simulated environments only, with no live user data or revenue represented.
+
 ## Trust & Transparency
 - **Automated proof:** `npm test` now runs Jest with full coverage, React Testing Library checks, and CLI integrations. Snapshot artifacts are uploaded on every CI run.
 - **Security posture:** Express surfaces Helmet headers, safe-list CORS defaults, and SSRF-hardened webhook validation alongside regression tests for invalid JWT and malformed wallet payloads.
