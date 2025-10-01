@@ -1,11 +1,12 @@
 const { ethers } = require('ethers');
+const RewardContractInterface = require('../src/rewards/contractInterface');
 
 const MULTIPLIER_ABI = [
   'function streamMultiplier(address user, uint256 baseRateBps, uint256 beliefScoreBps, uint256 loyaltyScoreBps) external returns (uint256)',
 ];
 
 class RewardStreamPlanner {
-  constructor({ telemetry, config = {} } = {}) {
+  constructor({ telemetry, config = {}, contractInterface = null, nowFn = () => Date.now() } = {}) {
     this.telemetry = telemetry || null;
     this.config = config;
     this.fallbackMultiplier = typeof config.fallbackMultiplier === 'number' ? config.fallbackMultiplier : 1;
@@ -15,6 +16,8 @@ class RewardStreamPlanner {
     this.signer = config.signer || null;
     this.contractsReady = false;
     this.multiplierContract = null;
+    this.now = typeof nowFn === 'function' ? nowFn : () => Date.now();
+    this.contractInterface = contractInterface || null;
 
     if (!this.provider && config.providerUrl && this.multiplierAddress && this.rewardStreamAddress) {
       try {
@@ -38,6 +41,15 @@ class RewardStreamPlanner {
           { tags: ['rewards', 'fallback'], visibility: { partner: true, ethics: false, audit: true } }
         );
       }
+    }
+
+    const useMock =
+      config.stream?.useMock === true || !this.provider || !this.rewardStreamAddress || !this.multiplierAddress;
+    if (!this.contractInterface && useMock) {
+      this.contractInterface = new RewardContractInterface({
+        provider: this.provider,
+        contractAddress: this.rewardStreamAddress,
+      });
     }
   }
 
@@ -115,6 +127,117 @@ class RewardStreamPlanner {
     return numeric / 10000;
   }
 
+  async #simulateStream(walletId, metrics) {
+    const normalizedWallet = walletId || null;
+    if (await this.#ensureContracts()) {
+      try {
+        const staticResult = await this.multiplierContract.streamMultiplier.staticCall(
+          normalizedWallet,
+          metrics.baseRateBps,
+          metrics.beliefScoreBps,
+          metrics.loyaltyScoreBps
+        );
+        const multiplierValue = this.#asFloatMultiplier(staticResult);
+        return {
+          status: 'on-chain',
+          multiplier: multiplierValue,
+          contracts: {
+            multiplier: this.multiplierAddress,
+            stream: this.rewardStreamAddress,
+          },
+        };
+      } catch (error) {
+        this.telemetry?.record(
+          'rewards.stream.simulation_failed',
+          { walletId: normalizedWallet, reason: error.message, metrics },
+          { tags: ['rewards', 'fallback'], visibility: { partner: true, ethics: false, audit: true } }
+        );
+      }
+    }
+
+    if (this.contractInterface) {
+      const multiplierValue = metrics.baseRateBps / 10000;
+      return {
+        status: 'mocked',
+        multiplier: multiplierValue,
+        contracts: {
+          stream: this.contractInterface.contractAddress || null,
+        },
+      };
+    }
+
+    return {
+      status: 'fallback',
+      multiplier: this.fallbackMultiplier,
+      contracts: null,
+    };
+  }
+
+  async #executeStream(walletId, metrics) {
+    const normalizedWallet = walletId || null;
+    if (await this.#ensureContracts()) {
+      try {
+        const staticResult = await this.multiplierContract.streamMultiplier.staticCall(
+          normalizedWallet,
+          metrics.baseRateBps,
+          metrics.beliefScoreBps,
+          metrics.loyaltyScoreBps
+        );
+        const tx = await this.multiplierContract.streamMultiplier(
+          normalizedWallet,
+          metrics.baseRateBps,
+          metrics.beliefScoreBps,
+          metrics.loyaltyScoreBps
+        );
+        const receipt = await tx.wait();
+        const multiplierValue = this.#asFloatMultiplier(staticResult);
+        return {
+          status: 'on-chain',
+          multiplier: multiplierValue,
+          transactionHash: receipt.hash,
+          contracts: {
+            multiplier: this.multiplierAddress,
+            stream: this.rewardStreamAddress,
+          },
+        };
+      } catch (error) {
+        this.telemetry?.record(
+          'rewards.stream.execution_failed',
+          { walletId: normalizedWallet, reason: error.message, metrics },
+          { tags: ['rewards', 'fallback'], visibility: { partner: true, ethics: false, audit: true } }
+        );
+      }
+    }
+
+    if (this.contractInterface) {
+      try {
+        const multiplierValue = metrics.baseRateBps / 10000;
+        const response = await this.contractInterface.sendMultiplierUpdate(normalizedWallet, multiplierValue);
+        return {
+          status: 'mocked',
+          multiplier: multiplierValue,
+          transactionHash: response?.hash || null,
+          contracts: {
+            stream: this.contractInterface.contractAddress || null,
+          },
+        };
+      } catch (error) {
+        this.telemetry?.record(
+          'rewards.stream.execution_failed',
+          { walletId: normalizedWallet, reason: error.message, metrics },
+          { tags: ['rewards', 'fallback'], visibility: { partner: true, ethics: false, audit: true } }
+        );
+      }
+    }
+
+    return {
+      status: 'fallback',
+      multiplier: this.fallbackMultiplier,
+      transactionHash: null,
+      contracts: null,
+    };
+  }
+
   async previewStream(walletId, { partnerId, currentYield } = {}) {
     const normalizedWallet = walletId || null;
     const metrics = this.#prepareMetrics(currentYield || {});
@@ -133,68 +256,76 @@ class RewardStreamPlanner {
       metrics,
     };
 
-    const contractsReady = await this.#ensureContracts();
-    if (!contractsReady) {
-      this.telemetry?.record(
-        'rewards.stream.fallback',
-        { walletId: normalizedWallet, partnerId, reason: 'contracts_unavailable', metrics },
-        { tags: ['rewards', 'fallback'], visibility: { partner: true, ethics: false, audit: true } }
-      );
-      return preview;
-    }
+    const simulation = await this.#simulateStream(normalizedWallet, metrics);
 
-    try {
-      const staticResult = await this.multiplierContract.streamMultiplier.staticCall(
-        normalizedWallet,
-        metrics.baseRateBps,
-        metrics.beliefScoreBps,
-        metrics.loyaltyScoreBps
-      );
-      const tx = await this.multiplierContract.streamMultiplier(
-        normalizedWallet,
-        metrics.baseRateBps,
-        metrics.beliefScoreBps,
-        metrics.loyaltyScoreBps
-      );
-      const receipt = await tx.wait();
-      const multiplierValue = this.#asFloatMultiplier(staticResult);
+    if (simulation.status === 'on-chain') {
       preview.status = 'streaming';
       preview.multiplier = {
-        value: multiplierValue,
+        value: simulation.multiplier,
         source: 'on-chain',
-        transactionHash: receipt.hash,
       };
-      preview.contracts = {
-        multiplier: this.multiplierAddress,
-        stream: this.rewardStreamAddress,
+      preview.contracts = simulation.contracts;
+    } else if (simulation.status === 'mocked') {
+      preview.status = 'mocked';
+      preview.multiplier = {
+        value: simulation.multiplier,
+        source: 'mock',
       };
-
-      this.telemetry?.record(
-        'rewards.stream.dispatched',
-        {
-          walletId: normalizedWallet,
-          partnerId,
-          multiplier: multiplierValue,
-          transactionHash: receipt.hash,
-          metrics,
-        },
-        { tags: ['rewards', 'on-chain'], visibility: { partner: true, ethics: false, audit: true } }
-      );
-
-      return preview;
-    } catch (error) {
-      this.telemetry?.record(
-        'rewards.stream.fallback',
-        { walletId: normalizedWallet, partnerId, reason: error.message, metrics },
-        { tags: ['rewards', 'fallback'], visibility: { partner: true, ethics: false, audit: true } }
-      );
+      preview.contracts = simulation.contracts;
+    } else {
+      preview.status = 'fallback';
       preview.multiplier = {
         value: this.fallbackMultiplier,
         source: 'fallback',
-        reason: error.message,
       };
-      return preview;
     }
+
+    this.telemetry?.record(
+      'rewards.stream.preview',
+      {
+        walletId: normalizedWallet,
+        partnerId,
+        status: preview.status,
+        multiplier: preview.multiplier.value,
+        metrics,
+      },
+      {
+        tags: ['rewards', preview.status === 'fallback' ? 'fallback' : 'on-chain'],
+        visibility: { partner: true, ethics: false, audit: true },
+      }
+    );
+
+    return preview;
+  }
+
+  async applyContribution(walletId, { partnerId, currentYield = {}, telemetryId = null, metadata = {} } = {}) {
+    const normalizedWallet = walletId || null;
+    const metrics = this.#prepareMetrics(currentYield || {});
+    const execution = await this.#executeStream(normalizedWallet, metrics);
+
+    const payload = {
+      walletId: normalizedWallet,
+      partnerId: partnerId || null,
+      telemetryId,
+      multiplier: execution.multiplier,
+      status: execution.status,
+      transactionHash: execution.transactionHash || null,
+      metrics,
+      metadata,
+      appliedAt: new Date(this.now()).toISOString(),
+    };
+
+    const telemetryEvent = execution.status === 'fallback' ? 'rewards.stream.fallback' : 'rewards.stream.applied';
+    this.telemetry?.record(
+      telemetryEvent,
+      payload,
+      {
+        tags: ['rewards', execution.status === 'fallback' ? 'fallback' : 'on-chain'],
+        visibility: { partner: true, ethics: false, audit: true },
+      }
+    );
+
+    return { ...payload, contracts: execution.contracts };
   }
 }
 

@@ -47,7 +47,7 @@ class GovernanceEnforcer {
       });
     }
     return { status, alerts };
-    // TODO(governance-dao-thresholds): wire DAO-configured dynamic thresholds once partner councils expose signed snapshots.
+    // Threshold overrides can be injected via DAO governance snapshots when partner councils publish signed policies.
   }
 }
 

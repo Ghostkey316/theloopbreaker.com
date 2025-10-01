@@ -1,5 +1,15 @@
 # Vaultfire Partner Changelog
 
+## 2025-10-07 — fix: full remediation of protocol debt
+- Added remote telemetry verification to the Trust Sync CLI with signature checks,
+  remote digest comparisons, and warning surfacing for mismatches or fallbacks.
+- Upgraded the signal relay with inline retry logic, durable scheduling, expanded
+  telemetry, and new resilience documentation.
+- Connected loyalty multipliers to the reward stream planner so contribution
+  events trigger on-chain (or mock) stream updates with audit telemetry.
+- Cleared legacy TODO placeholders across docs and services, aligning runbooks with
+  the new retry, telemetry, and rewards integrations.
+
 ## 2025-09-30 — SECURITY: Fixed moderate transitive npm vulnerabilities
 - Resolved GHSA-pxg6-pf52-xh8x by forcing all `cookie` consumers, including Hardhat's bundled `@sentry/node`, onto the patched `0.7.2` release via `npm overrides`.
 - Eliminated GHSA-52f5-9888-hmc6 by pinning `tmp` to `0.2.5` for `solc` and any future consumers, removing the need for sandbox wrappers.

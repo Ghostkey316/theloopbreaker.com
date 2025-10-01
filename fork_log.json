@@ -64,5 +64,83 @@
       "method": "wallet"
     },
     "timestamp": 1759272817926
+  },
+  {
+    "session_id": "session-1",
+    "ghost_id": "0xabcabcabcabcabcabcabcabcabcabcabcabcabca",
+    "belief_fork_id": "fork-1",
+    "choice": "choice-a",
+    "origin": {
+      "wallet": "0xabcabcabcabcabcabcabcabcabcabcabcabcabca",
+      "ens": null,
+      "fingerprint": "6074f29e93469b79cfdd5eae1cc12a291b379f99184ed2b88d74bdd5d3203b70",
+      "method": "wallet"
+    },
+    "timestamp": 1759279428198
+  },
+  {
+    "session_id": "session-2",
+    "ghost_id": "0x1234567890123456789012345678901234567890",
+    "belief_fork_id": "fork-2",
+    "choice": "choice-b",
+    "origin": {
+      "wallet": "0x1234567890123456789012345678901234567890",
+      "ens": null,
+      "fingerprint": "3fdf4b2abed2ca6b4de3ffc65bdb26a30820a57668ffde8c149c37fdce5af86c",
+      "method": "wallet"
+    },
+    "timestamp": 1759279428209
+  },
+  {
+    "session_id": "session-1",
+    "ghost_id": "0xabcabcabcabcabcabcabcabcabcabcabcabcabca",
+    "belief_fork_id": "fork-1",
+    "choice": "choice-a",
+    "origin": {
+      "wallet": "0xabcabcabcabcabcabcabcabcabcabcabcabcabca",
+      "ens": null,
+      "fingerprint": "6074f29e93469b79cfdd5eae1cc12a291b379f99184ed2b88d74bdd5d3203b70",
+      "method": "wallet"
+    },
+    "timestamp": 1759279476211
+  },
+  {
+    "session_id": "session-2",
+    "ghost_id": "0x1234567890123456789012345678901234567890",
+    "belief_fork_id": "fork-2",
+    "choice": "choice-b",
+    "origin": {
+      "wallet": "0x1234567890123456789012345678901234567890",
+      "ens": null,
+      "fingerprint": "3fdf4b2abed2ca6b4de3ffc65bdb26a30820a57668ffde8c149c37fdce5af86c",
+      "method": "wallet"
+    },
+    "timestamp": 1759279476241
+  },
+  {
+    "session_id": "session-1",
+    "ghost_id": "0xabcabcabcabcabcabcabcabcabcabcabcabcabca",
+    "belief_fork_id": "fork-1",
+    "choice": "choice-a",
+    "origin": {
+      "wallet": "0xabcabcabcabcabcabcabcabcabcabcabcabcabca",
+      "ens": null,
+      "fingerprint": "6074f29e93469b79cfdd5eae1cc12a291b379f99184ed2b88d74bdd5d3203b70",
+      "method": "wallet"
+    },
+    "timestamp": 1759279567052
+  },
+  {
+    "session_id": "session-2",
+    "ghost_id": "0x1234567890123456789012345678901234567890",
+    "belief_fork_id": "fork-2",
+    "choice": "choice-b",
+    "origin": {
+      "wallet": "0x1234567890123456789012345678901234567890",
+      "ens": null,
+      "fingerprint": "3fdf4b2abed2ca6b4de3ffc65bdb26a30820a57668ffde8c149c37fdce5af86c",
+      "method": "wallet"
+    },
+    "timestamp": 1759279567064
   }
 ]

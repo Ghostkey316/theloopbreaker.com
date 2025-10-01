@@ -2,6 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
+const { RetryRelayHandler, RetryRelayError } = require('./retryRelayHandler');
+
 function ensureDir(dirPath) {
   if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
@@ -23,6 +25,9 @@ class SignalRelay {
     jitter = 0.25,
     nowFn = () => Date.now(),
     circuitBreaker = {},
+    retryHandler = null,
+    retryOptions = {},
+    logger = null,
   } = {}) {
     this.fetch =
       typeof fetchImpl === 'function'
@@ -47,6 +52,32 @@ class SignalRelay {
       cooldownMs: Math.max(1000, circuitBreaker.cooldownMs || 60 * 1000),
     };
     this.circuitState = new Map();
+    const handlerOptions = {
+      maxAttempts: Math.max(1, retryOptions.maxAttempts || maxAttempts || 1),
+      baseDelayMs: Math.max(1, retryOptions.baseDelayMs || baseDelayMs || 1),
+      backoffFactor: Math.max(1, retryOptions.backoffFactor || backoffFactor || 1),
+      maxDelayMs: Math.max(this.baseDelayMs, retryOptions.maxDelayMs || maxDelayMs || this.baseDelayMs),
+      jitter: Math.max(0, retryOptions.jitter ?? this.jitter),
+      scheduler:
+        typeof retryOptions.scheduler === 'function'
+          ? retryOptions.scheduler
+          : (cb, delay) => {
+              setTimeout(cb, Math.max(0, Math.min(delay || 0, 0)));
+            },
+      randomFn: retryOptions.randomFn || this.randomFn,
+      logger: retryOptions.logger || logger || null,
+      softFailDelayMs: retryOptions.softFailDelayMs || undefined,
+    };
+    this.retryHandler =
+      retryHandler instanceof RetryRelayHandler
+        ? retryHandler
+        : new RetryRelayHandler({
+            ...handlerOptions,
+          });
+    this.logger = handlerOptions.logger || logger || {
+      warn: () => {},
+      error: () => {},
+    };
   }
 
   #createStorage(queueFilePath) {
@@ -191,23 +222,68 @@ class SignalRelay {
   async dispatch(node, payload, { telemetryId = null } = {}) {
     const nodeId = node?.id || node?.partnerId || 'unknown';
     const nowTs = this.now();
-    const result = await this.#send(node?.endpoint, payload);
-    if (result.ok) {
+    const attemptDelivery = async ({ attempt }) => {
+      const result = await this.#send(node?.endpoint, payload);
+      if (result.ok) {
+        return { response: result };
+      }
+      const errorCode = result.error || `status:${result.status}`;
+      const retryable = !result.status || result.status >= 500;
+      throw new RetryRelayError('relay-delivery-failed', {
+        code: errorCode,
+        retryable,
+        cause: result,
+      });
+    };
+
+    const outcome = await this.retryHandler.run(attemptDelivery, {
+      context: { nodeId, telemetryId, endpoint: node?.endpoint || null },
+    });
+
+    if (outcome.status === 'success') {
       this.#registerSuccess(nodeId);
       this.#record('signal.relay.delivered', {
         nodeId,
         endpoint: node?.endpoint || null,
         telemetryId,
-        attempts: 0,
-        dispatchedAt: new Date(nowTs).toISOString(),
+        attempts: outcome.attempts,
+        dispatchedAt: new Date(this.now()).toISOString(),
       });
-      return { status: 'delivered', attempts: 0 };
+      return { status: 'delivered', attempts: outcome.attempts };
     }
 
-    this.#registerFailure(nodeId, nowTs);
+    const errorCode = outcome.error?.code || outcome.error?.message || 'relay-error';
+    const retryable = outcome.status !== 'failed';
+    const queued = this.#queueJob({
+      node,
+      nodeId,
+      payload,
+      telemetryId,
+      attempts: outcome.attempts || 0,
+      errorCode,
+      retryable,
+      failureTs: nowTs,
+    });
 
-    const delay = this.#computeDelay(1);
-    const nextAttemptTs = this.#applyCircuitDelay(nodeId, nowTs + delay, nowTs);
+    if (!retryable) {
+      this.#record('signal.relay.failed', {
+        nodeId,
+        endpoint: node?.endpoint || null,
+        telemetryId,
+        attempts: outcome.attempts || 0,
+        error: errorCode,
+      });
+      return { status: 'failed', attempts: outcome.attempts || 0, job: queued };
+    }
+
+    return { status: 'scheduled', attempts: outcome.attempts || 0, job: queued };
+  }
+
+  #queueJob({ node, nodeId, payload, telemetryId, attempts, errorCode, retryable, failureTs }) {
+    const baseAttempts = Number.isFinite(attempts) ? Math.max(0, attempts) : 0;
+    const delay = this.#computeDelay(baseAttempts + 1);
+    const nextAttemptTs = this.#applyCircuitDelay(nodeId, (failureTs || this.now()) + delay, failureTs || this.now());
+    this.#registerFailure(nodeId, failureTs || this.now());
 
     const queue = this.#loadQueue();
     const job = {
@@ -215,21 +291,25 @@ class SignalRelay {
       nodeId,
       endpoint: node?.endpoint || null,
       payload,
-      attempts: 0,
+      attempts: baseAttempts,
       telemetryId,
       nextAttemptAt: new Date(nextAttemptTs).toISOString(),
-      createdAt: new Date(nowTs).toISOString(),
-      lastError: result.error || `status:${result.status}`,
+      createdAt: new Date(failureTs || this.now()).toISOString(),
+      lastError: errorCode,
       circuitState: this.#snapshotCircuit(nodeId),
+      retryable: retryable !== false,
     };
     queue.push(job);
     this.#writeQueue(queue);
 
     if (this.fallbackWriter) {
       try {
-        this.fallbackWriter(node || { id: nodeId }, payload, { status: 'queued' });
+        this.fallbackWriter(node || { id: nodeId }, payload, {
+          status: retryable === false ? 'failed' : 'queued',
+          error: errorCode,
+        });
       } catch (error) {
-        // Ignore fallback errors to keep relay flow resilient
+        // ignore fallback errors
       }
     }
 
@@ -237,13 +317,14 @@ class SignalRelay {
       nodeId,
       endpoint: node?.endpoint || null,
       telemetryId,
-      attempts: 0,
+      attempts: baseAttempts,
       nextAttemptAt: job.nextAttemptAt,
       error: job.lastError,
       circuit: job.circuitState,
+      retryable: job.retryable,
     });
 
-    return { status: 'scheduled', attempts: 0, job };
+    return job;
   }
 
   async retry({ now = this.now(), maxAttempts = this.maxAttempts } = {}) {
@@ -272,6 +353,17 @@ class SignalRelay {
           ...job,
           nextAttemptAt: new Date(retryAt).toISOString(),
           circuitState: this.#snapshotCircuit(nodeId),
+        });
+        continue;
+      }
+
+      if (job.retryable === false) {
+        this.#record('signal.relay.failed', {
+          nodeId,
+          endpoint: job.endpoint,
+          telemetryId: job.telemetryId || null,
+          attempts: job.attempts || 0,
+          error: job.lastError || 'non-retryable',
         });
         continue;
       }

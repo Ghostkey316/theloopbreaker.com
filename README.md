@@ -193,7 +193,8 @@ Automation touchpoints remain unchanged: GitHub Actions runs tests (`.github/wor
 - Prototype contract: [`contracts/RewardStream.sol`](./contracts/RewardStream.sol) – manages multiplier updates for future streaming payouts.
 - Integration interface: [`src/rewards/contractInterface.js`](./src/rewards/contractInterface.js) – simulates RPC calls until the chain deployment is finalized.
 - Roadmap reference: [`docs/gamified_yield_layer.md`](./docs/gamified_yield_layer.md) – outlines the loyalty mechanics the stream will eventually power.
-- TODO: Treasury vault orchestration and distribution logic for automated multiplier settlements.
+- Treasury vault orchestration and automated multiplier settlements are handled by the reward stream planner and documented in
+  [`docs/rewards.md`](./docs/rewards.md).
 
 ### 🧪 Codex Integrity Test Suite (`tests/integrity.test.js`)
 - Jest-powered guardrails validating wallet-only identity, mirror math, CLI vote flow, and dashboard truth.

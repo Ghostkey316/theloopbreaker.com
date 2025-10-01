@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const fetch = require('node-fetch');
 const { ROLES } = require('../auth/roles');
 const MultiTierTelemetryLedger = require('../services/telemetryLedger');
@@ -214,7 +215,166 @@ function computeMaturity(entries) {
   };
 }
 
-function verifyTrustSync({ configPath, wallet, ens, includeHistory = false } = {}) {
+function computeEntryHash(entry) {
+  if (!entry || typeof entry !== 'object') {
+    return null;
+  }
+  if (typeof entry.hash === 'string') {
+    return entry.hash;
+  }
+  const payload = {
+    eventType: entry.eventType || null,
+    timestamp: entry.timestamp || null,
+    wallet: entry.payload?.walletId || entry.payload?.wallet || entry.payload?.origin?.wallet || null,
+    beliefScore: entry.payload?.beliefScore ?? null,
+    ensAlias: entry.payload?.ensAlias || entry.payload?.origin?.ens || null,
+  };
+  return crypto.createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+}
+
+function computeTelemetryDigest(entries) {
+  const hashes = (entries || [])
+    .map((entry) => computeEntryHash(entry))
+    .filter(Boolean)
+    .sort();
+  if (!hashes.length) {
+    return null;
+  }
+  return crypto.createHash('sha256').update(hashes.join(':')).digest('hex');
+}
+
+function sanitiseRemoteEntries(entries = []) {
+  return entries.map((entry) => ({
+    hash: computeEntryHash(entry),
+    eventType: entry.eventType || null,
+    timestamp: entry.timestamp || null,
+    payload: entry.payload || null,
+  }));
+}
+
+async function fetchRemoteTelemetry(remoteConfig = {}, { wallet, ens }) {
+  const warnings = [];
+  if (!remoteConfig.telemetryEndpoint) {
+    return { telemetry: { status: 'skipped' }, warnings };
+  }
+
+  let url;
+  try {
+    url = new URL(remoteConfig.telemetryEndpoint);
+  } catch (error) {
+    const reason = `Invalid remote telemetry endpoint: ${error.message}`;
+    if (remoteConfig.allowFallback === false) {
+      throw new Error(reason);
+    }
+    warnings.push(reason);
+    return { telemetry: { status: 'fallback', reason }, warnings };
+  }
+
+  url.searchParams.set('wallet', wallet);
+  if (ens) {
+    url.searchParams.set('ens', ens);
+  }
+
+  const headers = {
+    Accept: 'application/json',
+    ...(remoteConfig.telemetryHeaders || {}),
+  };
+  const apiKey = remoteConfig.telemetryApiKey || remoteConfig.apiKey;
+  if (apiKey) {
+    headers.Authorization = `Bearer ${apiKey}`;
+  }
+
+  let response;
+  try {
+    response = await fetch(url.toString(), { headers });
+  } catch (error) {
+    const reason = `Remote telemetry request failed: ${error.message}`;
+    if (remoteConfig.allowFallback === false) {
+      throw new Error(reason);
+    }
+    warnings.push(reason);
+    return { telemetry: { status: 'fallback', reason }, warnings };
+  }
+
+  if (!response.ok) {
+    const reason = `Remote telemetry returned HTTP ${response.status}`;
+    if (remoteConfig.allowFallback === false) {
+      throw new Error(reason);
+    }
+    warnings.push(reason);
+    return { telemetry: { status: 'fallback', reason }, warnings };
+  }
+
+  let body;
+  try {
+    body = await response.json();
+  } catch (error) {
+    const reason = `Unable to parse remote telemetry payload: ${error.message}`;
+    if (remoteConfig.allowFallback === false) {
+      throw new Error(reason);
+    }
+    warnings.push(reason);
+    return { telemetry: { status: 'fallback', reason }, warnings };
+  }
+
+  const rawEntries = Array.isArray(body.entries) ? body.entries : [];
+  const sanitized = sanitiseRemoteEntries(rawEntries);
+  const computedSignature = computeTelemetryDigest(sanitized);
+  return {
+    telemetry: {
+      status: 'ok',
+      entries: sanitized,
+      signature: typeof body.signature === 'string' ? body.signature : null,
+      computedSignature,
+      signer: body.signer || null,
+      timestamp: body.timestamp || null,
+    },
+    warnings,
+  };
+}
+
+function evaluateRemoteTelemetry(remote, localEntries, { includeHistory }) {
+  if (!remote || remote.status !== 'ok') {
+    return { telemetry: remote, warnings: [] };
+  }
+
+  const warnings = [];
+  const localHashes = new Set((localEntries || []).map((entry) => computeEntryHash(entry)).filter(Boolean));
+  const remoteHashes = new Set(remote.entries.map((entry) => entry.hash).filter(Boolean));
+  const missingLocal = [...localHashes].filter((hash) => !remoteHashes.has(hash));
+  const remoteOnly = remote.entries.filter((entry) => entry.hash && !localHashes.has(entry.hash));
+
+  let status = 'verified';
+  if (remote.signature && remote.signature !== remote.computedSignature) {
+    warnings.push('Remote telemetry signature mismatch.');
+    status = 'mismatch';
+  }
+  if (missingLocal.length) {
+    warnings.push(`Remote telemetry missing ${missingLocal.length} local entries.`);
+    status = 'mismatch';
+  }
+  if (remoteOnly.length) {
+    warnings.push(`Remote telemetry contains ${remoteOnly.length} unknown entries.`);
+    status = 'mismatch';
+  }
+
+  const history = includeHistory ? remote.entries : remote.entries.slice(-5);
+  return {
+    telemetry: {
+      status,
+      signature: remote.signature,
+      computedSignature: remote.computedSignature,
+      signer: remote.signer,
+      timestamp: remote.timestamp,
+      entries: history,
+      missingLocal,
+      remoteOnly: remoteOnly.map((entry) => entry.hash),
+    },
+    warnings,
+  };
+}
+
+async function verifyTrustSync({ configPath, wallet, ens, includeHistory = false } = {}) {
   const config = loadConfig(configPath);
   const targetWallet = (wallet || config.walletAddress || '').toLowerCase();
   if (!targetWallet) {
@@ -231,6 +391,19 @@ function verifyTrustSync({ configPath, wallet, ens, includeHistory = false } = {
   const maturity = computeMaturity(relevant);
   const status = maturity.maturityScore >= 0.55 ? 'READY' : 'OBSERVE';
   const timeline = includeHistory ? buildTimeline(relevant) : buildTimeline(relevant.slice(-5));
+  const localDigest = computeTelemetryDigest(relevant);
+
+  const remoteResult = await fetchRemoteTelemetry(trustConfig.verification?.remote || {}, {
+    wallet: targetWallet,
+    ens: targetEns,
+  });
+  const remoteEvaluation =
+    remoteResult.telemetry.status === 'ok'
+      ? evaluateRemoteTelemetry(remoteResult.telemetry, relevant, { includeHistory })
+      : { telemetry: remoteResult.telemetry, warnings: [] };
+
+  const warnings = [...(remoteResult.warnings || []), ...(remoteEvaluation.warnings || [])];
+
   return {
     partnerId: config.partnerId,
     wallet: targetWallet,
@@ -238,6 +411,9 @@ function verifyTrustSync({ configPath, wallet, ens, includeHistory = false } = {
     status,
     maturity,
     timeline,
+    localDigest,
+    remoteTelemetry: remoteEvaluation.telemetry,
+    warnings,
   };
 }
 

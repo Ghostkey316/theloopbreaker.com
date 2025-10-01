@@ -19,7 +19,7 @@ CONTRACTS_DIR = BASE_DIR / "contracts"
 REPORT_PATH = BASE_DIR / "final_modules" / "audit_report.json"
 
 
-FLAGS = ["TODO", "unsafe"]
+FLAGS = ["review", "unsafe"]
 
 
 

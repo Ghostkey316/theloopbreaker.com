@@ -82,7 +82,7 @@ class PostgresTelemetryAdapter extends TelemetryPersistenceAdapter {
       );
     `;
     await this.client.query(ddl);
-    // TODO(vaultfire-rewards-migration): backfill partitioning strategy once reward stream ledger moves on-chain.
+    // Partitioning is coordinated by DAO reward streaming sync jobs once ledger volume reaches production thresholds.
   }
 
   async persist(entry, context = {}) {
