@@ -1,0 +1,13 @@
+<svg width="200" height="80" viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="auditGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1f2a44" />
+      <stop offset="100%" stop-color="#3c5d92" />
+    </linearGradient>
+  </defs>
+  <rect x="5" y="5" width="190" height="70" rx="12" fill="url(#auditGradient)" stroke="#8fd3ff" stroke-width="2" />
+  <text x="100" y="38" font-family="'Montserrat', sans-serif" font-size="16" fill="#e3f4ff" text-anchor="middle">AUDIT</text>
+  <text x="100" y="58" font-family="'Montserrat', sans-serif" font-size="14" fill="#e3f4ff" text-anchor="middle">PENDING</text>
+  <circle cx="30" cy="40" r="12" fill="#8fd3ff" opacity="0.8" />
+  <path d="M26 40 l4 4 8-8" stroke="#1f2a44" stroke-width="3" fill="none" stroke-linecap="round" />
+</svg>
