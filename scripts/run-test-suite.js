@@ -10,12 +10,42 @@ const coverageDir = path.join(rootDir, 'coverage');
 const coverageThreshold = 80;
 
 const modules = [
-  { name: 'cli', testDir: path.join('cli', '__tests__') },
-  { name: 'dashboard', testDir: path.join('dashboard', '__tests__') },
-  { name: 'governance', testDir: path.join('governance', '__tests__') },
-  { name: 'telemetry', testDir: path.join('telemetry', '__tests__') },
-  { name: 'belief-engine', testDir: path.join('belief-engine', '__tests__') },
-  { name: 'vaultfire-core', testDir: path.join('vaultfire_core', '__tests__') },
+  {
+    name: 'cli',
+    testDir: path.join('cli', '__tests__'),
+    coverage: ['cli/**/*.js'],
+  },
+  {
+    name: 'dashboard',
+    testDir: path.join('dashboard', '__tests__'),
+    coverage: ['dashboard/src/services/**/*.js'],
+  },
+  {
+    name: 'governance',
+    testDir: path.join('governance', '__tests__'),
+    coverage: ['governance/**/*.js'],
+  },
+  {
+    name: 'telemetry',
+    testDir: path.join('telemetry', '__tests__'),
+    coverage: ['telemetry/**/*.js'],
+  },
+  {
+    name: 'belief-engine',
+    testDir: path.join('belief-engine', '__tests__'),
+    coverage: ['belief_sync_engine.js', 'services/retryRelayHandler.js', 'services/signalRelay.js', 'services/originFingerprint.js'],
+  },
+  {
+    name: 'vaultfire-core',
+    testDir: path.join('vaultfire_core', '__tests__'),
+    coverage: [
+      'vaultfire_core/**/*.js',
+      'compliance/exportLogs.js',
+      'mirror/**/*.js',
+      'services/telemetrySinks.js',
+      'utils/identityGuards.js',
+    ],
+  },
 ];
 
 function ensureCoverageDir(dirPath) {
@@ -39,6 +69,7 @@ function readCoverageSummary(moduleName) {
 function runModuleTests(moduleName, testDir) {
   console.log(`\n▶ Running ${moduleName} tests...`);
   ensureCoverageDir(path.join(coverageDir, moduleName));
+  const coverageArgs = (moduleInfo.coverage || []).map((pattern) => `--collectCoverageFrom=${pattern}`);
   const result = spawnSync(
     process.platform === 'win32' ? 'npx.cmd' : 'npx',
     [
@@ -47,6 +78,7 @@ function runModuleTests(moduleName, testDir) {
       '--runInBand',
       '--coverage',
       `--coverageDirectory=${path.join('coverage', moduleName)}`,
+      ...coverageArgs,
     ],
     {
       cwd: rootDir,

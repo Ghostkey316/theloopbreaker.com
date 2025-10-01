@@ -1,0 +1,35 @@
+{
+  "actions": [
+    {
+      "action": "capture",
+      "user": "user1",
+      "beliefSig": "beliefX",
+      "event": {
+        "type": "click"
+      },
+      "weight": 0,
+      "uuid": "3a3eb59d-845d-47f2-aaff-93a67bf2b4fe"
+    }
+  ],
+  "trails": [
+    {
+      "action": "trail",
+      "user": "user1",
+      "beliefSig": "beliefX",
+      "outcome": "success",
+      "weight": 0,
+      "uuid": "d56ac407-f2ad-4fe5-ab39-2716637532a8"
+    }
+  ],
+  "predictions": [
+    {
+      "action": "predict",
+      "belief": "beliefX",
+      "probability": 0,
+      "uuid": "df7b7b4b-46e6-4011-ba08-f5ccf7ee3dbf"
+    }
+  ],
+  "vectors": {
+    "beliefX": 0
+  }
+}

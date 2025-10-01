@@ -1,0 +1,10 @@
+[
+  {
+    "wallet": "verified_wallet",
+    "trade": {
+      "pair": "BTC/USD",
+      "amount": 1
+    },
+    "timestamp": "2025-10-01T22:46:04.886841Z"
+  }
+]

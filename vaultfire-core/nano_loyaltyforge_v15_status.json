@@ -1,0 +1,59 @@
+{
+  "profiles": {
+    "g316": {
+      "wallet": "wallet1",
+      "loyalty": 15,
+      "tier": "Tier3",
+      "tokens": [
+        {
+          "timestamp": "now",
+          "signature": "sig"
+        }
+      ]
+    }
+  },
+  "updates": [
+    {
+      "action": "init",
+      "user": "g316",
+      "wallet": "wallet1"
+    },
+    {
+      "action": "update",
+      "user": "g316",
+      "activity": "action1",
+      "delta": 10
+    },
+    {
+      "action": "update",
+      "user": "g316",
+      "activity": "action2",
+      "delta": 5
+    },
+    {
+      "action": "multiplier",
+      "user": "g316",
+      "tier": "Tier3"
+    }
+  ],
+  "syncs": [
+    {
+      "action": "sync",
+      "user": "g316",
+      "trigger": "t",
+      "payload": "p",
+      "bonus": "b"
+    }
+  ],
+  "minted": [
+    {
+      "action": "mint",
+      "user": "g316",
+      "wallet": "wallet1",
+      "token": {
+        "timestamp": "now",
+        "signature": "sig"
+      }
+    }
+  ]
+}

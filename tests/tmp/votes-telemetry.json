@@ -1,0 +1,30 @@
+[
+  {
+    "wallet": "0xF468ccA18b09460eF8fBf42a41670fa37cF2dBE0",
+    "ens": null,
+    "type": "vote",
+    "multiplier": 1.8535,
+    "tier": "Mythic",
+    "metrics": {
+      "loyalty": 68,
+      "ethics": 88,
+      "frequency": 60,
+      "alignment": 80,
+      "holdDuration": 55
+    },
+    "origin": "belief-vote-cli",
+    "timestamp": "2025-10-01T22:45:51.434Z",
+    "configOverrides": false,
+    "scoring": {
+      "weights": {
+        "loyalty": 0.4,
+        "ethics": 0.3,
+        "frequency": 0.15,
+        "alignment": 0.1,
+        "holdDuration": 0.05
+      },
+      "baseline": 1.12,
+      "overrides": []
+    }
+  }
+]

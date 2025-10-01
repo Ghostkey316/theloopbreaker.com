@@ -1,0 +1,30 @@
+[
+  {
+    "wallet": "0x0000000000000000000000000000000000000001",
+    "ens": null,
+    "type": "quiz",
+    "multiplier": 1.83,
+    "tier": "Mythic",
+    "metrics": {
+      "loyalty": 80,
+      "ethics": 90,
+      "frequency": 70,
+      "alignment": 65,
+      "holdDuration": 40
+    },
+    "origin": "mirror-engine",
+    "timestamp": "2025-10-01T22:45:51.279Z",
+    "configOverrides": false,
+    "scoring": {
+      "weights": {
+        "loyalty": 0.4,
+        "ethics": 0.3,
+        "frequency": 0.15,
+        "alignment": 0.1,
+        "holdDuration": 0.05
+      },
+      "baseline": 1.05,
+      "overrides": []
+    }
+  }
+]

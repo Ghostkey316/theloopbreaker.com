@@ -1,0 +1,47 @@
+{
+  "trustMap": {
+    "g316": {
+      "wallet": "wallet1",
+      "score": 15
+    }
+  },
+  "updates": [
+    {
+      "action": "init",
+      "contributor": "g316",
+      "wallet": "wallet1"
+    },
+    {
+      "action": "update",
+      "contributor": "g316",
+      "activity": "action1",
+      "delta": 5
+    },
+    {
+      "action": "update",
+      "contributor": "g316",
+      "activity": "action2",
+      "delta": 10
+    }
+  ],
+  "validations": [
+    {
+      "action": "validate",
+      "wallet": "wallet1"
+    }
+  ],
+  "syncs": [
+    {
+      "action": "sync",
+      "contributor": "g316"
+    }
+  ],
+  "fingerprints": [
+    {
+      "action": "lock",
+      "contributor": "g316",
+      "wallet": "wallet1",
+      "protocol": "proto"
+    }
+  ]
+}

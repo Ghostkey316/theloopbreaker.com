@@ -1,0 +1,43 @@
+{
+  "echoes": [
+    {
+      "action": "echo",
+      "agent": "Ghostkey-316",
+      "thought": "internal thought"
+    }
+  ],
+  "listens": [
+    {
+      "action": "listen",
+      "agent": "Ghostkey-316"
+    }
+  ],
+  "biaschecks": [
+    {
+      "action": "biascheck",
+      "agent": "Ghostkey-316"
+    }
+  ],
+  "whispers": [
+    {
+      "action": "whisper",
+      "agent": "Ghostkey-316",
+      "message": "remember this"
+    }
+  ],
+  "resolves": [
+    {
+      "action": "resolve",
+      "agent": "Ghostkey-316"
+    }
+  ],
+  "agents": {
+    "Ghostkey-316": {
+      "lastEcho": "internal thought",
+      "lastListen": true,
+      "lastBiascheck": true,
+      "lastWhisper": "remember this",
+      "lastResolve": true
+    }
+  }
+}

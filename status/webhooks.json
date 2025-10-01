@@ -1,0 +1,9 @@
+[
+  {
+    "partnerId": "jest",
+    "url": "https://alerts.demo/hook",
+    "headers": {
+      "Authorization": "token"
+    }
+  }
+]

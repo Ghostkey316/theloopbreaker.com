@@ -1,0 +1,13 @@
+[
+  {
+    "action": "predict",
+    "region": "sys",
+    "signalVolatility": 0.8,
+    "timestamp": "2025-10-01T22:46:20.902Z"
+  },
+  {
+    "action": "shield",
+    "region": "sys",
+    "timestamp": "2025-10-01T22:46:20.902Z"
+  }
+]
