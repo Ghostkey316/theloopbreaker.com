@@ -21,6 +21,7 @@ from flask import Flask, request, jsonify
 
 from geolock_filter import has_gps_exif
 from belief_trigger_engine import CHAIN_LOG_PATH
+from utils.notify_partner import notify_partner
 
 
 SECRET_KEY = b"supersecretkey0123456789abcdef"  # 32 bytes for HMAC
@@ -140,7 +141,15 @@ def _pin_ipfs(data: bytes) -> str:
         import ipfshttpclient  # type: ignore
         client = ipfshttpclient.connect()
         return client.add_bytes(data)
-    except Exception:
+    except Exception as exc:
+        notify_partner(
+            {
+                "type": "error",
+                "module": "ipfs",
+                "message": "IPFS pin failed",
+                "details": {"error": str(exc)},
+            }
+        )
         return hashlib.sha256(data).hexdigest()
 
 

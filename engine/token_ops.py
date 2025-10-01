@@ -8,6 +8,7 @@ from .marketplace import currency_allowed
 from .wallet_loyalty import update_wallet_loyalty
 from .activation_gate import enforce_activation
 from .immutable_log import append_entry
+from utils.notify_partner import notify_partner
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 LEDGER_PATH = BASE_DIR / "logs" / "token_ledger.json"
@@ -36,7 +37,16 @@ def send_token(wallet: str, amount: float, token: str) -> None:
     """
     enforce_activation()
     if not currency_allowed(token):
-        raise ValueError(f"Token {token} not supported by marketplace")
+        error = ValueError(f"Token {token} not supported by marketplace")
+        notify_partner(
+            {
+                "type": "error",
+                "module": "token",
+                "message": "Issuance failed",
+                "details": {"wallet": wallet, "token": token, "reason": "token_not_supported"},
+            }
+        )
+        raise error
     ledger = _load_json(LEDGER_PATH, [])
     entry = {
         "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -48,7 +58,14 @@ def send_token(wallet: str, amount: float, token: str) -> None:
     _write_json(LEDGER_PATH, ledger)
     try:
         update_wallet_loyalty(wallet, amount)
-    except Exception:
-        pass
+    except Exception as exc:  # pragma: no cover - defensive fallback
+        notify_partner(
+            {
+                "type": "error",
+                "module": "token",
+                "message": "Post-issuance loyalty update failed",
+                "details": {"wallet": wallet, "token": token, "error": str(exc)},
+            }
+        )
     append_entry("token_transfer", entry)
     return None

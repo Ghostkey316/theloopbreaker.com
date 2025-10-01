@@ -34,6 +34,10 @@ Telemetry events recorded via `MultiTierTelemetryLedger` now include:
 
 Events surface in partner, ethics, and audit logs according to the configured visibility settings. Partners can stream these logs into SIEM tooling or leverage the bundled `partnerHooks` service for webhook-based notifications.
 
+## Log Rotation & Cloud Durability
+
+All Node services share the Winston logger defined in `services/logging/index.js`. Application and audit streams rotate daily, retain 30 days of history, and are forwarded to the configured cloud provider (`VAULTFIRE_LOG_CLOUD_PROVIDER`). Set `VAULTFIRE_LOG_ENDPOINT` to an HTTPS collector (e.g. API Gateway fronting S3) or `VAULTFIRE_LOG_IPFS_ENDPOINT` to a pinning gateway. When the provider is omitted the logger buffers entries to `logs/cloud-buffer.log` so operators can replay them after connectivity is restored. The rotation policy applies to Python services as well because they write through the same audit directories.
+
 ## Alerting Suggestions
 
 1. **Queue Backlog:** Alert when `vaultfire_webhook_delivery_queue_depth{state="queued"}` exceeds 50 for more than 5 minutes.
