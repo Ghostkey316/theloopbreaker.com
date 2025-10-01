@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="80" viewBox="0 0 220 80" role="img" aria-labelledby="title desc">
+  <title id="title">Vaultfire Audit Pending Badge</title>
+  <desc id="desc">Rounded rectangular badge with amber gradient background and the words Audit Pending.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFB347" />
+      <stop offset="100%" stop-color="#FF7F11" />
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="216" height="76" rx="18" fill="url(#bg)" stroke="#5C2B00" stroke-width="4" />
+  <g fill="#1B0B00" font-family="'Inter', 'Segoe UI', sans-serif">
+    <text x="110" y="48" font-size="28" text-anchor="middle" font-weight="700">Audit Pending</text>
+  </g>
+  <circle cx="36" cy="40" r="16" fill="none" stroke="#1B0B00" stroke-width="3" />
+  <path d="M28 40h16" stroke="#1B0B00" stroke-width="3" stroke-linecap="round" />
+  <path d="M33 46l7-12" stroke="#1B0B00" stroke-width="3" stroke-linecap="round" />
+</svg>

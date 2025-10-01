@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="80" viewBox="0 0 220 80" role="img" aria-labelledby="title desc">
+  <title id="title">Vaultfire Enterprise Ready Badge</title>
+  <desc id="desc">Rounded badge with indigo gradient background and the words Enterprise Ready.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A18CD1" />
+      <stop offset="100%" stop-color="#5D4BC2" />
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="216" height="76" rx="18" fill="url(#bg)" stroke="#2A1E60" stroke-width="4" />
+  <g fill="#0F0A1C" font-family="'Inter', 'Segoe UI', sans-serif" font-weight="700">
+    <text x="110" y="36" font-size="24" text-anchor="middle">Enterprise</text>
+    <text x="110" y="58" font-size="24" text-anchor="middle">Ready</text>
+  </g>
+  <path d="M34 28h12l6 12-6 12H34l-6-12z" fill="none" stroke="#0F0A1C" stroke-width="3" />
+  <path d="M38 32h4l4 8-4 8h-4l-4-8z" fill="#0F0A1C" />
+</svg>

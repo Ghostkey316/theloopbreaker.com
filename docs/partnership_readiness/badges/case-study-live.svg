@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="80" viewBox="0 0 220 80" role="img" aria-labelledby="title desc">
+  <title id="title">Vaultfire Case Study Live Badge</title>
+  <desc id="desc">Rounded badge with teal gradient background and the words Case Study Live.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5EE7DF" />
+      <stop offset="100%" stop-color="#3DCCC7" />
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="216" height="76" rx="18" fill="url(#bg)" stroke="#0F3B3A" stroke-width="4" />
+  <g fill="#042726" font-family="'Inter', 'Segoe UI', sans-serif" font-weight="700">
+    <text x="110" y="38" font-size="26" text-anchor="middle">Case Study</text>
+    <text x="110" y="60" font-size="24" text-anchor="middle">Live</text>
+  </g>
+  <path d="M36 28l28 12-28 12z" fill="#042726"/>
+  <circle cx="36" cy="40" r="20" fill="none" stroke="#042726" stroke-width="3" />
+</svg>
