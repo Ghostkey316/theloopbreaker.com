@@ -57,7 +57,14 @@ const DEFAULT_CONFIG = {
     outputChannel: 'cli',
   },
   verification: {
-    remote: null,
+    remote: {
+      endpoint: null,
+      apiKey: null,
+      telemetryEndpoint: null,
+      telemetryApiKey: null,
+      telemetryHeaders: {},
+      allowFallback: true,
+    },
     externalValidationEndpoint: null,
   },
   rewards: {
@@ -178,7 +185,11 @@ function loadTrustSyncConfig() {
     merged.telemetry.dsn = null;
   }
   if (merged.verification && typeof merged.verification === 'object') {
-    merged.verification.remote = merged.verification.remote || null;
+    if (merged.verification.remote && typeof merged.verification.remote === 'object') {
+      merged.verification.remote = mergeConfig(DEFAULT_CONFIG.verification.remote, merged.verification.remote);
+    } else {
+      merged.verification.remote = { ...DEFAULT_CONFIG.verification.remote };
+    }
     merged.verification.externalValidationEndpoint =
       merged.verification.externalValidationEndpoint ?? null;
   }

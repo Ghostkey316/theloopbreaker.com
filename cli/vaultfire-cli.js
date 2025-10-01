@@ -243,7 +243,7 @@ program
   .option('--wallet <wallet>', 'Wallet identity to verify')
   .option('--ens <ens>', 'ENS alias override for verification')
   .option('--history', 'Include full belief sync history in the output', false)
-  .action((options) => {
+  .action(async (options) => {
     let status = 'success';
     let config;
     let context;
@@ -258,13 +258,18 @@ program
       }
       ens = options.ens !== undefined ? (options.ens ? options.ens.toLowerCase() : null) : config.ensAlias;
       context = ethics.reflect({ command: 'trust-sync', wallet, ens });
-      result = verifyTrustSync({
+      result = await verifyTrustSync({
         configPath: options.config,
         wallet,
         ens,
         includeHistory: options.history,
       });
       console.log(chalk.green('Trust Sync verification complete.'));
+      if (Array.isArray(result.warnings) && result.warnings.length) {
+        result.warnings.forEach((warning) => {
+          console.warn(chalk.yellow(`Warning: ${warning}`));
+        });
+      }
       console.log(JSON.stringify(result, null, 2));
     } catch (error) {
       status = 'error';

@@ -47,7 +47,7 @@ class SocketRelay {
         });
       });
     });
-    // TODO(handshake-socket-audit): integrate SIEM export once enterprise sockets require persistent audit trails.
+    // SIEM exports can subscribe to the handshake.socket.* telemetry stream or attach an io middleware for custom audit sinks.
   }
 
   emit(event, payload) {

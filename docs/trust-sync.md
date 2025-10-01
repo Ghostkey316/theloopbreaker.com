@@ -1,16 +1,40 @@
 # Trust Sync External Validation
 
-## Current Local Log Flow
-- Trust Sync stores anchor verification attempts in the local telemetry ledger for fast operator review.
-- Each anchor is annotated with decision metadata (accepted, rejected, deferred) and correlated with the originating wallet session.
-- Local log retention is capped at 30 days and replicated to the internal observability cluster during nightly syncs.
+The Trust Sync phase anchors wallet identities to belief telemetry and exposes both
+local and remote verification paths so partners can audit the full trail.
 
-## Roadmap: Remote RPC Expansion
-- Establish an external RPC verifier that can replay trust anchors against partner attestations.
-- Expose a signed webhook that partners can implement to confirm anchor authenticity during replay.
-- Support batched verification windows so partners can preflight large data migrations before going live.
+## Local Telemetry Ledger
+- Trust Sync stores anchor verification attempts in the local telemetry ledger for
+  fast operator review.
+- Each anchor is annotated with decision metadata (accepted, rejected, deferred)
+  and correlated with the originating wallet session.
+- Local log retention is capped at 30 days and replicated to the internal
+  observability cluster during nightly syncs.
 
-## External Attestation Partners (Planned)
-- **Summit Relay Cooperative** – pioneering cross-relay audit trails for encrypted payloads.
-- **Aurora Grid Validators** – providing zero-knowledge attestations for cross-chain sessions.
-- **Lumen Compliance Collective** – delivering jurisdiction-specific audit receipts for regulated markets.
+## Remote RPC Verification
+- Configure `trustSync.verification.remote.telemetryEndpoint` to expose a signed
+  telemetry feed for wallets under review.
+- The CLI fetches remote entries, validates the signature digest, and compares the
+  hashes against the local audit trail. Mismatches are reported as warnings.
+- Remote attestors can return `{ entries, signature, signer, timestamp }` where the
+  signature is the SHA-256 digest of sorted entry hashes. The CLI recomputes the
+  digest to guarantee integrity.
+- Set `allowFallback: false` if remote validation must be enforced; otherwise the
+  CLI will warn and continue when the remote endpoint is unavailable.
+
+## CLI Usage
+Run `vaultfire trust-sync --wallet <address> [--history]` to produce a readiness
+report. The output now includes:
+
+- Local maturity metrics and digest of the on-disk telemetry entries.
+- Remote telemetry status (`verified`, `mismatch`, `fallback`, or `skipped`).
+- Warning messages when signatures mismatch, entries are missing, or remote
+  services are unreachable.
+
+## Operational Tips
+- Keep the remote telemetry endpoint behind partner authentication; the CLI sends
+  the configured bearer token from `telemetryApiKey` when present.
+- Automate daily comparisons of the local digest and remote signature to catch
+  drift early.
+- Partners can replay the fallback ledger by re-posting entries that landed in
+  `logs/telemetry/remote-fallback.jsonl` during outages.

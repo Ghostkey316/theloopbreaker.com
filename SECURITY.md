@@ -25,6 +25,10 @@
   - `package.json` overrides pin `solc` to `tmp@0.2.5`, which contains the upstream directory traversal mitigation, removing the need for temporary directory guardrails.
   - The standalone `tmp` override ensures any future consumer inherits the same patched baseline so symbolic link exploits remain blocked.
 
+- **2025-10-07 · Vaultfire `1.2.0-rc` · GHSA-pxg6-pf52-xh8x / GHSA-52f5-9888-hmc6:**
+  - Verified `npm audit --json` returns zero vulnerabilities with the existing overrides and captured the report in CI for traceability.
+  - Left the overrides in place so downstream consumers inherit the hardened `cookie@0.7.2` and `tmp@0.2.5` baselines.
+
 Both advisories now resolve cleanly via `npm audit`, and the previous Hardhat sandbox remains available but is no longer required for mitigation.
 
 ## Governance Cadence

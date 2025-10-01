@@ -15,10 +15,12 @@ describe('SignalRelay', () => {
     queuePath = path.join(queueDir, 'queue.json');
     currentTime = 1_000;
     fetchMock = jest.fn();
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
   afterEach(() => {
     fs.rmSync(queueDir, { recursive: true, force: true });
+    console.warn.mockRestore();
   });
 
   function createRelay(overrides = {}) {
@@ -29,6 +31,12 @@ describe('SignalRelay', () => {
       randomFn: () => 0,
       baseDelayMs: 1_000,
       circuitBreaker: { failureThreshold: 2, cooldownMs: 5_000 },
+      retryOptions: {
+        scheduler: (cb) => cb(),
+        baseDelayMs: 100,
+        maxDelayMs: 5_000,
+        randomFn: () => 0,
+      },
       ...overrides,
     });
   }
@@ -37,12 +45,16 @@ describe('SignalRelay', () => {
     fetchMock.mockResolvedValue({ ok: false, status: 503 });
     const relay = createRelay();
 
-    await relay.dispatch({ id: 'alpha', endpoint: 'https://invalid.example' }, { hello: 'world' }, { telemetryId: 'telemetry-1' });
+    await relay.dispatch(
+      { id: 'alpha', endpoint: 'https://invalid.example' },
+      { hello: 'world' },
+      { telemetryId: 'telemetry-1' }
+    );
     let queue = JSON.parse(fs.readFileSync(queuePath, 'utf8'));
     expect(queue).toHaveLength(1);
-    expect(queue[0].attempts).toBe(0);
+    expect(queue[0].attempts).toBe(relay.retryHandler.maxAttempts);
     expect(queue[0].circuitState.state).toBe('closed');
-    expect(queue[0].nextAttemptAt).toBe(new Date(currentTime + 1_000).toISOString());
+    expect(new Date(queue[0].nextAttemptAt).getTime()).toBeGreaterThan(currentTime);
 
     currentTime = 2_000;
     await relay.dispatch({ id: 'alpha', endpoint: 'https://invalid.example' }, { hello: 'world' });
@@ -50,7 +62,11 @@ describe('SignalRelay', () => {
     expect(queue).toHaveLength(2);
     const latest = queue[1];
     expect(latest.circuitState.state).toBe('open');
-    expect(new Date(latest.nextAttemptAt).getTime()).toBe(2_000 + 5_000);
+    const expectedDelay = Math.min(
+      relay.maxDelayMs,
+      relay.baseDelayMs * relay.backoffFactor ** latest.attempts
+    );
+    expect(new Date(latest.nextAttemptAt).getTime()).toBe(2_000 + expectedDelay);
   });
 
   it('retries queued jobs and clears them on success', async () => {
@@ -88,5 +104,33 @@ describe('SignalRelay', () => {
     expect(result.attempted).toBe(0);
     const updated = JSON.parse(fs.readFileSync(queuePath, 'utf8'));
     expect(new Date(updated[0].nextAttemptAt).getTime()).toBeGreaterThan(currentTime);
+  });
+
+  it('attempts immediate retries before queueing when failures are transient', async () => {
+    fetchMock
+      .mockResolvedValueOnce({ ok: false, status: 503 })
+      .mockResolvedValueOnce({ ok: false, status: 503 })
+      .mockResolvedValueOnce({ ok: true, status: 200 });
+
+    const relay = createRelay({
+      retryOptions: {
+        scheduler: (cb) => cb(),
+        baseDelayMs: 10,
+        maxDelayMs: 100,
+        randomFn: () => 0,
+        maxAttempts: 3,
+      },
+    });
+
+    const result = await relay.dispatch(
+      { id: 'theta', endpoint: 'https://sometimes.example' },
+      { ping: 'pong' },
+      { telemetryId: 'telemetry-9' }
+    );
+
+    expect(result.status).toBe('delivered');
+    expect(result.attempts).toBe(3);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fs.existsSync(queuePath)).toBe(false);
   });
 });

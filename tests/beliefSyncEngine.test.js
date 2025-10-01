@@ -9,6 +9,7 @@ describe('BeliefSyncEngine remote relay scheduling', () => {
   beforeEach(() => {
     fs.rmSync(RELAY_DIR, { recursive: true, force: true });
     fetchMock.resetMocks();
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
   it('schedules retry entries when relay delivery fails', async () => {
@@ -17,7 +18,10 @@ describe('BeliefSyncEngine remote relay scheduling', () => {
     engine.registerExternalNode({ id: 'partner-a', endpoint: 'https://relay.invalid/payload' });
 
     engine.syncChoice('fork-1', 'choice-a');
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    for (let i = 0; i < 10 && !fs.existsSync(RETRY_PATH); i += 1) {
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
 
     expect(fs.existsSync(RETRY_PATH)).toBe(true);
     const schedule = JSON.parse(fs.readFileSync(RETRY_PATH, 'utf8')).filter(
@@ -25,7 +29,7 @@ describe('BeliefSyncEngine remote relay scheduling', () => {
     );
     expect(schedule).toHaveLength(1);
     expect(schedule[0].nodeId).toBe('partner-a');
-    expect(schedule[0].attempts).toBe(0);
+    expect(schedule[0].attempts).toBe(engine.signalRelay.retryHandler.maxAttempts);
   });
 
   it('retries scheduled entries and clears them on success', async () => {
@@ -34,7 +38,10 @@ describe('BeliefSyncEngine remote relay scheduling', () => {
     engine.registerExternalNode({ id: 'partner-b', endpoint: 'https://relay.invalid/payload' });
 
     engine.syncChoice('fork-2', 'choice-b');
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    for (let i = 0; i < 10 && !fs.existsSync(RETRY_PATH); i += 1) {
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
 
     let schedule = JSON.parse(fs.readFileSync(RETRY_PATH, 'utf8'));
     schedule = schedule.filter((entry) => entry.nodeId === 'partner-b');
@@ -49,5 +56,9 @@ describe('BeliefSyncEngine remote relay scheduling', () => {
 
     schedule = JSON.parse(fs.readFileSync(RETRY_PATH, 'utf8'));
     expect(schedule).toHaveLength(0);
+  });
+
+  afterEach(() => {
+    console.warn.mockRestore();
   });
 });

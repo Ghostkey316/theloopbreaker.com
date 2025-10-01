@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const EventEmitter = require('events');
 
 const { createFingerprint } = require('./services/originFingerprint');
+const { RetryRelayHandler } = require('./services/retryRelayHandler');
 const { createSignalRelay } = require('./services/signalRelay');
 
 const GLOBAL_BUS = new EventEmitter();
@@ -103,6 +104,12 @@ class BeliefSyncEngine extends EventEmitter {
         }
       },
       nowFn: () => Date.now(),
+      retryHandler: new RetryRelayHandler({
+        maxAttempts: 3,
+        baseDelayMs: 30_000,
+        maxDelayMs: 15 * 60 * 1000,
+        scheduler: (cb) => cb(),
+      }),
     });
     GLOBAL_BUS.on('sync', e => {
       if (e.session_id === this.session_id && e.ghost_id !== this.ghost_id) {

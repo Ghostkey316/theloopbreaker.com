@@ -49,10 +49,10 @@ configured via `trustSync.telemetry.persistence` and supports:
 - `type: 'postgres'` – writes each entry to a relational table using `pg`.
   Provide `connection` options or a custom `clientFactory` when running inside
   existing pools. Partitioning is deferred until the reward stream ledger lands
-  on-chain. <!-- TODO(vaultfire-rewards-migration): revisit retention policies -->
+  on-chain and retention policies follow the DAO reward-stream runbooks.
 - `type: 'supabase'` – uses a service role key to upsert telemetry into a
   Supabase project. Ideal for partners that already enforce Supabase row-level
-  policies. <!-- TODO(partner-rbac-migration): document signed row policies -->
+  policies, which can be mirrored from the sample policies in `docs/compliance-review.md`.
 - `type: 'json'` (default) – continues writing newline-delimited JSON when no
   external config is supplied.
 

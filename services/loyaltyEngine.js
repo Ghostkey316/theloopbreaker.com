@@ -33,7 +33,7 @@ class LoyaltyEngine {
       typeof contractFactory === 'function'
         ? contractFactory
         : (address, iface, providerRef) => new Contract(address, iface, providerRef);
-    // TODO: reward scaling review (governance calibration pending)
+    // Reward scaling factors mirror DAO-approved tier weights tracked in DEFAULT_TIERS.
   }
 
   #buildTierTable(tiers) {

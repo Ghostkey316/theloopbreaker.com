@@ -59,7 +59,7 @@ Partners can opt into remote verification by configuring
 `trustSync.verification.remote`. When present the Trust Sync API forwards anchor
 payloads to the remote verifier and includes the verdict in the response. A
 rejected verdict returns HTTP `409` so client SDKs can surface actionable
-messages. <!-- TODO(trust-sync-remote-migration): wire verifier retries into job queue -->
+messages.
 
 ### `trustSync.verify()`
 

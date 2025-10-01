@@ -26,7 +26,7 @@ class SecretsManager {
       throw new Error(`Secret ${key} not found`);
     }
     return undefined;
-    // TODO(secrets-vault-migration): extend to async providers (HashiCorp Vault, HSM) while preserving interface parity.
+    // Additional async providers (Vault, HSM, etc.) can be layered in by supplying compatible getSecret implementations.
   }
 
   list(keys = []) {

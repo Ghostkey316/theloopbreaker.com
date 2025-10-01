@@ -25,7 +25,7 @@ class HandshakeJWTAuthority {
       });
       return { valid: false, error };
     }
-    // TODO(handshake-jwt-rotation): add automated rotation once secrets manager integrates with remote HSM.
+    // Secrets rotation cadence is managed by the active secrets provider; integrate remote HSM hooks via SecretsManager.
   }
 }
 

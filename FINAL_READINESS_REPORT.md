@@ -15,9 +15,9 @@ Timestamp (UTC): 2025-07-23 00:28:48Z
 Vaultfire Final Commit: July 30, 2025 — 12:29 AM ET
 
 ## Final Push Edge Notes
-- **Signal relays**: encrypted relay fallbacks queue into `logs/partner_relays/`. TODO: integrate remote delivery retry scheduler for offline partner nodes.
-- **Trust Sync CLI**: verification flow surfaces maturity score but still relies on local telemetry logs. TODO: add remote RPC validation once partner APIs expose trust snapshots.
-- **Reward streams**: passive stream multipliers persisted in `dao_reward_config.json`. TODO: wire stream multipliers into onchain streaming contract once DAO finalizes payout cadence.
+- **Signal relays**: encrypted relay fallbacks now auto-retry via the durable schedule in `logs/partner_relays/` with exponential backoff and circuit-aware gating for offline nodes.
+- **Trust Sync CLI**: verification includes remote RPC telemetry checks and signature validation, falling back gracefully when remote attestations are unavailable.
+- **Reward streams**: loyalty multipliers trigger the reward stream planner, which updates the token stream contract (or mock interface in dev mode) whenever contribution events are recorded.
 - **Ethics guardrails**: `tools/lint_guardrails.js` blocks biometric/KYC imports; extend list when new surveillance vendors emerge.
 - **Residency enforcement**: Telemetry DSNs and partner hooks must satisfy `trustSync.telemetry.residency` allow-lists; preflight now fails without region coverage, closing the open question on remote sink compliance.
 

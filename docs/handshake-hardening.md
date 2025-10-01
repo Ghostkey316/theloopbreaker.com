@@ -28,7 +28,5 @@ reviews can reason about each trust boundary independently.
 3. Monitor `governance.alert` entries emitted by the enforcer; they include the
    computed severity and will be forwarded to partner webhooks.
 4. Record API key provisioning in your secrets manager audit trail. The default
-   environment provider can be replaced with Vault or HSM-backed providers once
-   the TODO migrations are scheduled.
-
-<!-- TODO(handshake-observability-roadmap): integrate SIEM shipping for socket relay metrics. -->
+   environment provider can be replaced with Vault or HSM-backed providers as
+   soon as partner deployments require hardware-backed rotation.

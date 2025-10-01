@@ -327,6 +327,17 @@ app.get(
       .onRewardEarned({ walletId: req.params.walletId, partnerId: req.user.partnerId, yield: response.currentYield })
       .catch((error) => console.warn('Reward hook delivery error', error));
 
+    if (trustConfig.rewards?.stream?.autoDistribute) {
+      rewardStreamPlanner
+        .applyContribution(req.params.walletId, {
+          partnerId: req.user.partnerId,
+          currentYield,
+          telemetryId: req.user?.telemetryId || null,
+          metadata: { trigger: 'reward-preview' },
+        })
+        .catch((error) => console.warn('Reward stream dispatch failed', error.message || error));
+    }
+
     return res.json(response);
   }
 );
