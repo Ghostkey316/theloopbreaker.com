@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from vaultfire.enterprise import EnterpriseMissionControl
+from vaultfire._purposeful_scale import DEFAULT_MISSION_TAGS
 
 
 @pytest.fixture()
@@ -79,3 +80,35 @@ def test_compile_alignment_checklist_handles_missing_values(mission_control: Ent
 
     assert checklist[0]["all_satisfied"] is False
     assert checklist[0]["checks"][0]["observed"] == {}
+
+
+def test_assess_partner_always_seeds_default_mission_tags(
+    tmp_path: Path, commitments_file: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured: dict[str, list[str]] = {}
+
+    def fake_authorize(identity, operation, extra_tags=None):
+        extra_list = list(extra_tags or [])
+        captured["extra_tags"] = extra_list
+        request = {
+            "mission_tags": extra_list,
+            "declared_purpose": identity.get("declaredPurpose"),
+            "belief_density": 0.91,
+            "operation_user": identity.get("wallet"),
+        }
+        trace = {"approved": True, "alignment_guard": {"status": "approved"}}
+        return True, None, request, trace
+
+    monkeypatch.setattr("vaultfire.enterprise.mission_control.authorize_scale", fake_authorize)
+    controller = EnterpriseMissionControl(
+        commitments_path=commitments_file,
+        log_path=tmp_path / "mission_control.json",
+        extra_tags=("enterprise", "activation"),
+    )
+
+    controller.assess_partner({"wallet": "0xpartner"}, log=False)
+
+    assert captured["extra_tags"][: len(DEFAULT_MISSION_TAGS)] == list(DEFAULT_MISSION_TAGS)
+    assert len({tag for tag in captured["extra_tags"] if tag in DEFAULT_MISSION_TAGS}) == len(
+        DEFAULT_MISSION_TAGS
+    )

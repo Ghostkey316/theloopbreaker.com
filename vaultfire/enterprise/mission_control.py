@@ -276,12 +276,25 @@ class EnterpriseMissionControl:
             return str(self.log_path)
 
     def _resolve_extra_tags(self) -> List[str]:
+        base_tags = list(DEFAULT_MISSION_TAGS)
         if self.extra_tags is None:
-            return list(DEFAULT_MISSION_TAGS)
-        if isinstance(self.extra_tags, str):
-            return [*DEFAULT_MISSION_TAGS, self.extra_tags]
-        resolved = [tag for tag in self.extra_tags if isinstance(tag, str) and tag.strip()]
-        return resolved or list(DEFAULT_MISSION_TAGS)
+            extras: Iterable[str] = ()
+        elif isinstance(self.extra_tags, str):
+            extras = (self.extra_tags,)
+        else:
+            extras = (
+                tag.strip()
+                for tag in self.extra_tags
+                if isinstance(tag, str) and tag.strip()
+            )
+
+        ordered: List[str] = []
+        seen = set()
+        for tag in [*base_tags, *extras]:
+            if tag not in seen:
+                ordered.append(tag)
+                seen.add(tag)
+        return ordered
 
 
 __all__ = ["EnterpriseMissionControl"]
