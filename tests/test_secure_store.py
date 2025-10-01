@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 
 import pytest
+from cryptography.exceptions import InvalidTag
 
 from utils.crypto import derive_key
 from vaultfire_securestore import SecureStore
@@ -63,3 +64,22 @@ def test_retry_pipeline_buffers_failures(tmp_path: Path, sample_files: list[Path
     payload = json.loads(retries[0].read_text())
     assert payload['error'] == 'permanent-failure'
     assert any(entry['status'] == 'retry-buffered' for entry in decisions)
+
+
+def test_decrypt_rejects_tampered_metadata(tmp_path: Path) -> None:
+    key = derive_key('vaultfire-metadata-guard')
+    store = SecureStore(key, tmp_path)
+
+    payload_path = tmp_path / 'payload.bin'
+    payload_path.write_bytes(b'vaultfire-protocol')
+
+    metadata = store.encrypt_and_store(payload_path, 'wallet-123', 'gold', 77)
+    tampered = dict(metadata)
+    tampered['wallet'] = 'wallet-spoof'
+    signature_payload = {
+        k: tampered[k] for k in ['wallet', 'tier', 'score', 'timestamp', 'content_hash', 'cid']
+    }
+    tampered['signature'] = store._sign(signature_payload)  # type: ignore[attr-defined]
+
+    with pytest.raises(InvalidTag):
+        store.decrypt(metadata['cid'], tampered)

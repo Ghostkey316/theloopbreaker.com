@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 import time
 from pathlib import Path
-from typing import Callable, Iterable, Optional
+from typing import Any, Callable, Iterable, Optional
 
 from geolock_filter import strip_exif
 from utils.crypto import decrypt_bytes, encrypt_bytes
@@ -80,12 +80,21 @@ class SecureStore:
         retry_path.write_text(json.dumps(payload, indent=2))
         return retry_path
 
+    def _build_associated_data(self, wallet: Any, tier: Any) -> bytes:
+        """Return authenticated data binding the encrypted payload to its owner."""
+        if not isinstance(wallet, str) or not wallet:
+            raise ValueError("wallet must be a non-empty string")
+        if not isinstance(tier, str) or not tier:
+            raise ValueError("tier must be a non-empty string")
+        return json.dumps({"wallet": wallet, "tier": tier}).encode()
+
     def _attempt_store(self, file_path: Path, wallet: str, tier: str, score: int) -> dict:
         raw = file_path.read_bytes()
         cleaned = strip_exif(raw)
         content_hash = hashlib.sha256(cleaned).hexdigest()
 
-        payload = encrypt_bytes(self.key, cleaned)
+        associated_data = self._build_associated_data(wallet, tier)
+        payload = encrypt_bytes(self.key, cleaned, associated_data=associated_data)
         ciphertext = payload.ciphertext
         cid = hashlib.sha256(payload.nonce + ciphertext).hexdigest()
         enc_path = self.bucket / f"{cid}.bin"
@@ -175,7 +184,15 @@ class SecureStore:
         if not nonce_hex:
             raise ValueError("Missing nonce in metadata")
         nonce = bytes.fromhex(nonce_hex)
-        return decrypt_bytes(self.key, nonce, ciphertext)
+        wallet = metadata.get("wallet")
+        tier = metadata.get("tier")
+        associated_data = self._build_associated_data(wallet, tier)
+        return decrypt_bytes(
+            self.key,
+            nonce,
+            ciphertext,
+            associated_data=associated_data,
+        )
 
     def validate_pipeline(
         self,
