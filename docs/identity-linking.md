@@ -5,6 +5,10 @@ an onchain wallet. Anchors are encrypted before being written to storage so
 partners can maintain a verifiable link without exposing belief data in plain
 text.
 
+## Real-time Resolver
+
+Partners can resolve wallet trust metadata without cloning repository JSON snapshots by querying the identity resolver microservice described in `docs/production-readiness.md`. The resolver mirrors the encrypted anchor store and surfaces belief scores via `GET /resolve/:walletId`. When a wallet has no live data the service responds with the default fallback payload so partner systems can degrade gracefully while waiting for first contact.
+
 ## API Overview
 
 `POST /link-identity`

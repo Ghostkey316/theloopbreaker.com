@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Dict
 
 from utils.json_io import load_json, write_json
+from utils.notify_partner import notify_partner
 
 from .token_ops import send_token
 # ``vaultfire_signal_parser`` lives at the repo root rather than within
@@ -37,7 +38,15 @@ def record_belief_action(user_id: str, wallet: str, text: str) -> Dict:
         try:
             send_token(wallet, 1, "LOYAL")
             entry["token_awarded"] = True
-        except Exception:
+        except Exception as exc:
+            notify_partner(
+                {
+                    "type": "error",
+                    "module": "token",
+                    "message": "Issuance failed",
+                    "details": {"wallet": wallet, "reason": "proof_of_loyalty", "error": str(exc)},
+                }
+            )
             entry["token_awarded"] = False
     else:
         entry["token_awarded"] = False
