@@ -80,13 +80,13 @@
   },
   "overrides": {
     "@sentry/node": {
-      "cookie": "^0.7.2"
+      "cookie": "^1.0.2"
     },
     "solc": {
       "tmp": "^0.2.5"
     },
     "tmp": "^0.2.5",
-    "cookie": "^0.7.2"
+    "cookie": "^1.0.2"
   },
   "peerDependencies": {
     "@supabase/supabase-js": "^2.43.1",

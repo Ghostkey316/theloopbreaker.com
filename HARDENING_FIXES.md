@@ -5,6 +5,7 @@
 - Added admin-only rotation status endpoint with sanitized metadata.
 - Documented operational readiness (ops/ folder) and runtime requirements.
 - Enhanced storage adapters with optional dependency handling and preflight checks.
+- Elevated the repository-wide `cookie` override to `1.0.2`, clearing GHSA-pxg6-pf52-xh8x without relying on sandbox fallbacks.
 
 ## References
 - PR: _link pending_

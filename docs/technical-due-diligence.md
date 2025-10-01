@@ -27,7 +27,7 @@
 The latest `npm audit` execution produced the following summary:
 
 ```
-Info: 0 | Low: 0 | Moderate: 2 | High: 0 | Critical: 0 | Total: 2
+Info: 0 | Low: 0 | Moderate: 0 | High: 0 | Critical: 0 | Total: 0
 ```
 
-Moderate advisories GHSA-pxg6-pf52-xh8x (`cookie` <0.7.0 via Hardhat Sentry) and GHSA-52f5-9888-hmc6 (`tmp` <=0.2.3 via `solc`) persist upstream. Vaultfire applies sandbox guards (`infra/hardhat-sandbox.js`) to neutralize the attack surface and records weekly `npm audit` output through `npm run security:watch`. Maintain the controls until patched releases land, then update `package-lock.json` and retire the wrappers.
+Moderate advisories GHSA-pxg6-pf52-xh8x (`cookie`) and GHSA-52f5-9888-hmc6 (`tmp`) are now cleared. All `cookie` consumers are forced onto the patched `1.0.2` release through overrides, while `tmp` remains pinned at `0.2.5`. The Hardhat sandbox (`infra/hardhat-sandbox.js`) stays available for partners who want additional isolation, and weekly `npm run security:watch` jobs continue to archive audit output for traceability.

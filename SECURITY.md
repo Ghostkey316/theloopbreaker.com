@@ -19,7 +19,7 @@
 
 ## Dependency Remediation Log
 - **2025-09-30 · Vaultfire `1.2.0-rc` · GHSA-pxg6-pf52-xh8x (`cookie` <0.7.0 via `hardhat` → `@sentry/node@5.30.0`):**
-  - Hardhat's transitive `@sentry/node` dependency is now forced to consume `cookie@0.7.2` through `package.json` overrides, eliminating the out-of-bounds cookie parsing vector without relying on sandbox stubs.
+  - Hardhat's transitive `@sentry/node` dependency is now forced to consume `cookie@1.0.2` through `package.json` overrides, eliminating the out-of-bounds cookie parsing vector without relying on sandbox stubs.
   - The repository-wide override also dedupes all other `cookie` consumers (Express, Socket.IO) on the same patched release to guarantee uniform behaviour.
 - **2025-09-30 · Vaultfire `1.2.0-rc` · GHSA-52f5-9888-hmc6 (`tmp` <=0.2.3 via `solc`):**
   - `package.json` overrides pin `solc` to `tmp@0.2.5`, which contains the upstream directory traversal mitigation, removing the need for temporary directory guardrails.
@@ -27,7 +27,7 @@
 
 - **2025-10-07 · Vaultfire `1.2.0-rc` · GHSA-pxg6-pf52-xh8x / GHSA-52f5-9888-hmc6:**
   - Verified `npm audit --json` returns zero vulnerabilities with the existing overrides and captured the report in CI for traceability.
-  - Left the overrides in place so downstream consumers inherit the hardened `cookie@0.7.2` and `tmp@0.2.5` baselines.
+  - Left the overrides in place so downstream consumers inherit the hardened `cookie@1.0.2` and `tmp@0.2.5` baselines.
 
 Both advisories now resolve cleanly via `npm audit`, and the previous Hardhat sandbox remains available but is no longer required for mitigation.
 
