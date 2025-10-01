@@ -1,0 +1,65 @@
+name: Weekly npm audit watchdog
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Run npm audit
+        run: npm audit --json > audit-report.json
+      - name: Evaluate audit report
+        id: audit
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const report = JSON.parse(fs.readFileSync('audit-report.json', 'utf8'));
+          const total = report?.metadata?.vulnerabilities?.total ?? 0;
+          fs.writeFileSync('audit-total.txt', String(total));
+          if (total > 0) {
+            const lines = [];
+            lines.push('# npm audit report');
+            lines.push('');
+            lines.push(`Total vulnerabilities: ${total}`);
+            lines.push('');
+            lines.push('## Advisories');
+            for (const [id, entry] of Object.entries(report.vulnerabilities || {})) {
+              const via = (entry.via || []).map((v) => typeof v === 'string' ? v : v.name).filter(Boolean);
+              lines.push(`- ${id} (${entry.severity})`);
+              lines.push(`  - package: ${entry.name}`);
+              if (via.length) {
+                lines.push(`  - via: ${[...new Set(via)].join(', ')}`);
+              }
+              if (entry.nodes?.length) {
+                lines.push(`  - paths: ${entry.nodes.join(', ')}`);
+              }
+              if (entry.range) {
+                lines.push(`  - range: ${entry.range}`);
+              }
+            }
+            fs.writeFileSync('audit-summary.md', `${lines.join('\n')}\n`);
+          }
+          NODE
+          total=$(cat audit-total.txt)
+          echo "total=$total" >> "$GITHUB_OUTPUT"
+      - name: Create GitHub issue for vulnerabilities
+        if: steps.audit.outputs.total != '0'
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: 'Security alert: npm audit detected vulnerabilities'
+          content-filepath: audit-summary.md
+          labels: security, automated

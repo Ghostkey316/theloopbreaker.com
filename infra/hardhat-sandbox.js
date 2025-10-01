@@ -4,6 +4,37 @@ const fs = require('fs');
 const path = require('path');
 const Module = require('module');
 
+function isVersionAtLeast(version, baseline) {
+  if (!version) {
+    return false;
+  }
+
+  const parse = (input) =>
+    String(input)
+      .split('-')[0]
+      .split('.')
+      .map((segment) => {
+        const value = Number.parseInt(segment, 10);
+        return Number.isNaN(value) ? 0 : value;
+      });
+
+  const left = parse(version);
+  const right = parse(baseline);
+  const length = Math.max(left.length, right.length);
+
+  for (let index = 0; index < length; index += 1) {
+    const delta = (left[index] || 0) - (right[index] || 0);
+    if (delta > 0) {
+      return true;
+    }
+    if (delta < 0) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 const HARDHAT_TAG = `${path.sep}node_modules${path.sep}hardhat${path.sep}`;
 const SOLC_TAG = `${path.sep}node_modules${path.sep}solc${path.sep}`;
 
@@ -54,6 +85,18 @@ function createSentryStub() {
 
 function createSafeTmpWrapper(tmpModule, baseDir) {
   if (!tmpModule || tmpModule.__vaultfireGuarded) {
+    return tmpModule;
+  }
+
+  let tmpVersion = null;
+  try {
+    // eslint-disable-next-line global-require, import/no-dynamic-require
+    tmpVersion = require('tmp/package.json').version;
+  } catch (error) {
+    tmpVersion = null;
+  }
+
+  if (isVersionAtLeast(tmpVersion, '0.2.4')) {
     return tmpModule;
   }
 

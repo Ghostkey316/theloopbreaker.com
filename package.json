@@ -20,8 +20,10 @@
     "postinstall": "node scripts/check-mobile-optional.js",
     "deploy:sandbox": "node cli/deployVaultfire.js --env sandbox",
     "deploy:production": "node cli/deployVaultfire.js --env production",
+    "audit": "npm audit",
     "audit:gov": "node governance/governance-core.js --audit",
-    "security:watch": "node tools/security-watch.js"
+    "security:watch": "node tools/security-watch.js",
+    "prepare": "husky"
   },
   "keywords": [],
   "author": "",
@@ -40,6 +42,7 @@
     "@types/node": "^22.9.0",
     "@vitejs/plugin-react": "^5.0.4",
     "babel-jest": "^29.6.1",
+    "husky": "^9.1.6",
     "hardhat": "^2.22.7",
     "jest": "^29.6.1",
     "jest-fetch-mock": "^3.0.3",
@@ -74,6 +77,16 @@
     "socket.io-client": "^4.7.5",
     "swagger-ui-express": "^4.6.3",
     "yamljs": "^0.3.0"
+  },
+  "overrides": {
+    "@sentry/node": {
+      "cookie": "^0.7.2"
+    },
+    "solc": {
+      "tmp": "^0.2.5"
+    },
+    "tmp": "^0.2.5",
+    "cookie": "^0.7.2"
   },
   "peerDependencies": {
     "@supabase/supabase-js": "^2.43.1",
