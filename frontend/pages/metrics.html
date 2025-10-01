@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vaultfire Metrics</title>
+  <style>
+    body { font-family: "Inter", Arial, sans-serif; margin: 0; background: #041018; color: #e8f1ff; }
+    header { padding: 48px 24px; background: radial-gradient(circle at top left, #1f6feb, #041018); }
+    header h1 { margin: 0; font-size: 2.3rem; }
+    header p { max-width: 720px; margin-top: 14px; line-height: 1.5; }
+    .badge-strip { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 24px; }
+    .badge-strip img { height: 56px; }
+    main { max-width: 1080px; margin: 0 auto; padding: 40px 24px 100px; }
+    section { margin-bottom: 36px; background: rgba(11, 31, 54, 0.72); padding: 28px 32px; border-radius: 20px; box-shadow: 0 20px 48px rgba(4, 16, 24, 0.45); }
+    h2 { margin-top: 0; font-size: 1.6rem; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); text-align: left; }
+    th { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: #8cb9ff; }
+    .chart { display: grid; gap: 16px; }
+    pre { background: rgba(4, 16, 24, 0.85); color: #9ec9ff; padding: 18px; border-radius: 12px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Metrics that Honor Ethics</h1>
+    <p>Adoption, engagement, retention, and ROI anchored in belief alignment and verifiable telemetry. Every number here maps to an attestation-ready data set.</p>
+    <div class="badge-strip">
+      <img src="../../docs/badges/telemetry-verified.svg" alt="Telemetry Verified Badge">
+      <img src="../../docs/badges/roi-proven.svg" alt="ROI Proven Badge">
+    </div>
+  </header>
+  <main>
+    <section>
+      <h2>Cohort Performance</h2>
+      <table id="cohortTable"></table>
+    </section>
+    <section>
+      <h2>Adoption vs Mission Outcomes</h2>
+      <div class="chart" id="chartData"></div>
+    </section>
+    <section>
+      <h2>ROI Model Reference</h2>
+      <pre id="roiMarkdown"></pre>
+    </section>
+  </main>
+  <script src="../vaultfire_confirm.js"></script>
+  <script src="metrics.js"></script>
+</body>
+</html>

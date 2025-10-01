@@ -1,0 +1,34 @@
+# Vaultfire Wallet Activity Telemetry Baseline
+schema_version: 1.0
+collection_name: wallet_activity_daily
+purpose: "Quantify active, returning, and mission-aligned wallets with opt-in consent."
+pii_handling:
+  consent_required: true
+  retention_days: 365
+  anonymization: hashed_wallet_ids
+fields:
+  - name: observation_date
+    type: date
+    description: "ISO-8601 date for aggregated activity snapshot."
+  - name: active_wallets
+    type: integer
+    description: "Count of unique wallets performing at least one signed action."
+  - name: guardian_verified_wallets
+    type: integer
+    description: "Wallets co-signed by Guardian multisig for elevated permissions."
+  - name: mission_checkpoint_completions
+    type: integer
+    description: "Belief-aligned mission checkpoints completed within 24h."
+  - name: attestation_hash
+    type: string
+    description: "SHA-256 hash referencing signed telemetry attestation."
+  - name: notes
+    type: string
+    description: "Optional compliance or anomaly notes (max 240 chars)."
+quality_controls:
+  - check: "active_wallets >= guardian_verified_wallets"
+  - check: "mission_checkpoint_completions >= 0"
+  - check: "attestation_hash must match /^[a-f0-9]{64}$/"
+publishing_targets:
+  - dashboards/adoption_mission_dashboard.json
+  - docs/attestations/attestation_requests.md

@@ -1,0 +1,34 @@
+# Vaultfire XP Yield Telemetry Baseline
+schema_version: 1.0
+collection_name: xp_yield_hourly
+purpose: "Measure XP issuance, burn, and ethics-weighted multipliers for loyalty engine ROI modeling."
+pii_handling:
+  consent_required: true
+  retention_days: 180
+  anonymization: hashed_wallet_ids
+fields:
+  - name: observation_hour
+    type: datetime
+    description: "UTC timestamp rounded to the hour."
+  - name: xp_issued
+    type: integer
+    description: "Total XP minted during the hour."
+  - name: xp_burned
+    type: integer
+    description: "XP retired via mission completion or redemption."
+  - name: ethics_multiplier_average
+    type: float
+    description: "Average multiplier applied after ethics alignment scoring (0.0-2.0)."
+  - name: guardian_overrides
+    type: integer
+    description: "Number of XP transactions reviewed or overridden by Guardian Council."
+  - name: retention_signal_strength
+    type: float
+    description: "Correlation coefficient between XP earners and 30-day retention segments."
+quality_controls:
+  - check: "xp_issued >= xp_burned"
+  - check: "0.0 <= ethics_multiplier_average <= 2.0"
+  - check: "-1.0 <= retention_signal_strength <= 1.0"
+publishing_targets:
+  - docs/loyalty_engine_roi_model.md
+  - dashboards/adoption_mission_dashboard.json

@@ -1,0 +1,50 @@
+# Vaultfire Guardian Council Multisig Template
+multisig_name: Vaultfire Guardian Council
+version: 1.0
+network: ethereum_mainnet
+address_placeholder: "0xMULTISIGPLACEHOLDER"
+threshold: 3
+signers:
+  - role: "Guardian - Ethics"
+    name: "Guardian A"
+    contact: ethics.guardian@vaultfire.network
+  - role: "Guardian - Security"
+    name: "Guardian B"
+    contact: security.guardian@vaultfire.network
+  - role: "Guardian - Community"
+    name: "Guardian C"
+    contact: community.guardian@vaultfire.network
+  - role: "Guardian - Compliance"
+    name: "Guardian D"
+    contact: compliance.guardian@vaultfire.network
+  - role: "Guardian - Resilience"
+    name: "Guardian E"
+    contact: resilience.guardian@vaultfire.network
+transaction_policies:
+  critical_actions:
+    threshold: 5
+    description: "Protocol upgrades, emergency shutdowns, treasury transfers > 1M VFIRE."
+  standard_actions:
+    threshold: 3
+    description: "Reward schedule updates, attestation hash publications, guardian rotation."
+  fast_track:
+    threshold: 3
+    requirements:
+      - "Guardian - Ethics" must sign
+      - "Guardian - Security" or "Guardian - Compliance" must sign
+    description: "Incident response actions within SLA or humanitarian relief missions."
+operational_controls:
+  - name: dual_attestation
+    description: "Require attestation hash referencing latest audit in docs/attestations/signed/."
+  - name: telemetry_verification
+    description: "Confirm telemetry baselines signed within previous 14 days."
+  - name: escalation_path
+    description: "If consensus not met within 24h for incident response, trigger DAO continuity vote."
+logging:
+  ledger_file: governance-ledger.json
+  audit_log: governance/auditLog.json
+  retention_policy_days: 1095
+compliance_alignment:
+  - "SOC 2 CC6.6 Change Management Authorization"
+  - "ISO/IEC 27001 A.12.1.2 Change Management"
+  - "MMFA Fork Compliance Clause 4"
