@@ -5,23 +5,45 @@ from moral_alignment import evaluate_entry
 from utils import get_timestamp
 
 
+MENU_TEXT = "💠 Welcome to Humanity Mirror\n1. Daily Reflection  2. Self-Audit  3. Exit"
+
+
+def _handle_reflection() -> None:
+    entry = input("Reflect freely (feelings, choices, doubts):\n")
+    timestamp = get_timestamp()
+
+    alignment = evaluate_entry(entry)
+    graph_node = update_graph(
+        entry,
+        timestamp=timestamp,
+        alignment_score=alignment.get("normalized"),
+    )
+    log_sample(
+        entry,
+        timestamp,
+        tags=graph_node.get("themes"),
+        alignment_score=alignment.get("normalized"),
+    )
+    rewards.calculate(
+        entry,
+        alignment=alignment,
+        graph_node=graph_node,
+        timestamp=timestamp,
+    )
+
+
+def _handle_self_audit() -> None:
+    print(self_audit_template())
+
+
 def get_user_input():
-    print("\U0001F4A0 Welcome to Humanity Mirror")
-    print("1. Daily Reflection  2. Self-Audit  3. Exit")
+    print(MENU_TEXT)
     choice = input("Choose (1/2/3): ")
 
     if choice == "1":
-        entry = input("Reflect freely (feelings, choices, doubts):\n")
-        timestamp = get_timestamp()
-        with open("mirror_log/log_sample.md", "a") as f:
-            f.write(f"\n## {timestamp}\n{entry}\n")
-        update_graph(entry)
-        evaluate_entry(entry)
-        rewards.calculate(entry)
-
+        _handle_reflection()
     elif choice == "2":
-        with open("mirror_log/self_audit_template.md", "r") as f:
-            print(f.read())
+        _handle_self_audit()
     else:
         print("Goodbye.")
 
