@@ -1,4 +1,3 @@
-const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const EventEmitter = require('events');
@@ -6,102 +5,47 @@ const EventEmitter = require('events');
 const { createFingerprint } = require('./services/originFingerprint');
 const { RetryRelayHandler } = require('./services/retryRelayHandler');
 const { createSignalRelay } = require('./services/signalRelay');
+const { createBeliefSyncStorage } = require('./lib/beliefSyncStorageRuntime');
 
 const GLOBAL_BUS = new EventEmitter();
 
-const LOG_PATH = path.join(__dirname, 'fork_log.json');
-const PARTNER_NODE_PATH = path.join(__dirname, 'partner_port', 'external_nodes.json');
-const RELAY_DIR = path.join(__dirname, 'logs', 'partner_relays');
-const RETRY_SCHEDULE_PATH = path.join(RELAY_DIR, 'retry-schedule.json');
-
-function _loadLog() {
-  if (!fs.existsSync(LOG_PATH)) return [];
-  try {
-    const raw = fs.readFileSync(LOG_PATH, 'utf8');
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
-}
-
-function _writeLog(data) {
-  fs.writeFileSync(LOG_PATH, JSON.stringify(data, null, 2));
-}
-
-function _loadPartnerNodes() {
-  if (!fs.existsSync(PARTNER_NODE_PATH)) {
-    return [];
-  }
-  try {
-    const raw = fs.readFileSync(PARTNER_NODE_PATH, 'utf8');
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (error) {
-    return [];
-  }
-}
-
-function _writePartnerNodes(nodes) {
-  const dir = path.dirname(PARTNER_NODE_PATH);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  fs.writeFileSync(PARTNER_NODE_PATH, JSON.stringify(nodes, null, 2));
-}
-
-function _ensureRelayDir() {
-  if (!fs.existsSync(RELAY_DIR)) {
-    fs.mkdirSync(RELAY_DIR, { recursive: true });
-  }
-}
-
-function _encryptRelayPayload(entry, key) {
-  if (!key) {
-    return { mode: 'plain', payload: Buffer.from(JSON.stringify(entry)).toString('base64') };
-  }
-  try {
-    const secret = crypto.createHash('sha256').update(String(key)).digest();
-    const iv = crypto.randomBytes(12);
-    const cipher = crypto.createCipheriv('aes-256-gcm', secret, iv);
-    const ciphertext = Buffer.concat([cipher.update(JSON.stringify(entry), 'utf8'), cipher.final()]);
-    const tag = cipher.getAuthTag();
-    return {
-      mode: 'aes-256-gcm',
-      iv: iv.toString('base64'),
-      tag: tag.toString('base64'),
-      payload: ciphertext.toString('base64'),
-    };
-  } catch (error) {
-    return { mode: 'plain', payload: Buffer.from(JSON.stringify(entry)).toString('base64') };
-  }
-}
-
-function _writeRelayFallback(node, entry) {
-  _ensureRelayDir();
-  const relayPath = path.join(RELAY_DIR, `${node.id || node.partnerId || 'partner'}.jsonl`);
-  const record = {
-    timestamp: new Date().toISOString(),
-    node: node.id || node.partnerId || 'unknown',
-    encrypted: _encryptRelayPayload(entry, node.relayKey),
-  };
-  fs.appendFileSync(relayPath, `${JSON.stringify(record)}\n`, { encoding: 'utf8' });
-  return record;
-}
+const DEFAULT_ARCHIVE_DIR = path.join(__dirname, 'sync-archive');
+const RETRY_SCHEDULE_PATH = path.join(__dirname, 'logs', 'partner_relays', 'retry-schedule.json');
 
 class BeliefSyncEngine extends EventEmitter {
-  constructor(session_id, ghost_id) {
+  constructor(session_id, ghost_id, options = {}) {
     super();
     this.session_id = session_id;
     this.ghost_id = ghost_id;
-    this.partnerNodes = _loadPartnerNodes();
+    this.logger = options.logger || console;
+    this.partnerNodes = [];
+    this.storage =
+      options.storage ||
+      createBeliefSyncStorage({
+        dbPath: options.dbPath,
+        archiveDir: options.archiveDir || DEFAULT_ARCHIVE_DIR,
+        logger: this.logger,
+      });
+    this.syncSequence = 0;
+    this.readyPromise = this.storage
+      .init()
+      .then(async () => {
+        await this.#reloadNodes();
+        if (options.autoArchive !== false) {
+          try {
+            await this.storage.archiveStale();
+          } catch (error) {
+            this.logger.warn?.('[belief-sync] archive sweep failed', { error: error.message });
+          }
+        }
+      })
+      .catch((error) => {
+        this.logger.error?.('[belief-sync] storage initialisation failed', { error: error.message });
+      });
     this.signalRelay = createSignalRelay({
       queueFilePath: RETRY_SCHEDULE_PATH,
-      fallbackWriter: (node, payload) => {
-        try {
-          _writeRelayFallback(node, payload);
-        } catch (error) {
-          // ignore fallback write errors to keep relay attempts non-blocking
-        }
+      fallbackWriter: (node, payload, meta) => {
+        this.#handleFallback(node, payload, meta).catch(() => {});
       },
       nowFn: () => Date.now(),
       retryHandler: new RetryRelayHandler({
@@ -118,8 +62,8 @@ class BeliefSyncEngine extends EventEmitter {
     });
   }
 
-  registerExternalNode(node) {
-    const nodes = _loadPartnerNodes();
+  async registerExternalNode(node) {
+    await this.#ensureReady();
     const sanitized = {
       id: node.id || node.partnerId || crypto.randomUUID(),
       endpoint: node.endpoint || null,
@@ -127,14 +71,8 @@ class BeliefSyncEngine extends EventEmitter {
       partnerId: node.partnerId || null,
       ens: node.ens || null,
     };
-    const existingIndex = nodes.findIndex(n => n.id === sanitized.id);
-    if (existingIndex >= 0) {
-      nodes[existingIndex] = sanitized;
-    } else {
-      nodes.push(sanitized);
-    }
-    _writePartnerNodes(nodes);
-    this.partnerNodes = nodes;
+    await this.storage.registerNode(sanitized);
+    await this.#reloadNodes();
     return sanitized;
   }
 
@@ -150,47 +88,166 @@ class BeliefSyncEngine extends EventEmitter {
   }
 
   async #broadcast(entry) {
-    const payload = { ...entry };
+    await this.#ensureReady();
     if (!this.partnerNodes.length) {
       return;
     }
+    const payload = this.#buildPayload(entry);
+    const nonce = entry.nonce ?? this.#nextNonce();
     await Promise.all(
       this.partnerNodes.map(async (node) => {
-        await this.signalRelay.dispatch(node, payload, {
+        const nodeId = node.id || node.partnerId || 'unknown';
+        const { record } = await this.storage.recordSyncEvent({
+          nodeId,
+          payload,
+          timestamp: entry.timestamp,
+          status: 'queued',
+          nonce,
+        });
+        const syncHash = record?.syncHash || null;
+        const outcome = await this.signalRelay.dispatch(node, payload, {
           telemetryId: entry.session_id,
         });
+        if (!syncHash) {
+          return;
+        }
+        const baseUpdate = { retryCount: outcome.attempts || 0 };
+        if (outcome.status === 'delivered') {
+          await this.storage.updateSyncStatus(nodeId, syncHash, 'delivered', baseUpdate);
+        } else if (outcome.status === 'failed') {
+          await this.storage.updateSyncStatus(nodeId, syncHash, 'failed', {
+            ...baseUpdate,
+            lastError: outcome.job?.lastError || 'relay-failed',
+          });
+        } else {
+          await this.storage.updateSyncStatus(nodeId, syncHash, 'scheduled', baseUpdate);
+        }
       })
     );
   }
 
-  syncChoice(belief_fork_id, choice, options = {}) {
+  async syncChoice(belief_fork_id, choice, options = {}) {
+    await this.#ensureReady();
+    const nonce = this.#nextNonce();
     const entry = {
       session_id: this.session_id,
       ghost_id: this.ghost_id,
       belief_fork_id,
       choice,
       origin: this.#originPayload(options),
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      nonce,
     };
-    const log = _loadLog();
-    log.push(entry);
-    _writeLog(log);
+    const payload = this.#buildPayload(entry);
+    await this.storage.recordSyncEvent({
+      nodeId: `session:${this.session_id}`,
+      payload,
+      timestamp: entry.timestamp,
+      status: 'logged',
+      nonce,
+    });
     GLOBAL_BUS.emit('sync', entry);
     this.#broadcast(entry).catch(() => {});
     return entry;
   }
 
-  getStats() {
-    const log = _loadLog();
+  async getStats() {
+    await this.#ensureReady();
+    const events = await this.storage.getRecentEvents(250);
     const counts = {};
-    for (const entry of log) {
-      counts[entry.choice] = (counts[entry.choice] || 0) + 1;
+    for (const record of events) {
+      if (!record || record.nodeId !== `session:${this.session_id}`) {
+        continue;
+      }
+      const payload = this.#normalizePayload(record.payload);
+      const choice = payload?.choice;
+      if (!choice) {
+        continue;
+      }
+      counts[choice] = (counts[choice] || 0) + 1;
     }
     return counts;
   }
 
   async processRetryQueue({ now = Date.now(), maxAttempts = 5 } = {}) {
     return this.signalRelay.retry({ now, maxAttempts });
+  }
+
+  async #ensureReady() {
+    if (this.readyPromise) {
+      await this.readyPromise;
+      this.readyPromise = null;
+    }
+    if (!Array.isArray(this.partnerNodes)) {
+      this.partnerNodes = [];
+    }
+  }
+
+  async #reloadNodes() {
+    try {
+      this.partnerNodes = await this.storage.listNodes();
+    } catch (error) {
+      this.logger.warn?.('[belief-sync] failed to load partner nodes', { error: error.message });
+      this.partnerNodes = [];
+    }
+    return this.partnerNodes;
+  }
+
+  #buildPayload(entry) {
+    return {
+      session_id: entry.session_id,
+      ghost_id: entry.ghost_id,
+      belief_fork_id: entry.belief_fork_id,
+      choice: entry.choice,
+      origin: entry.origin,
+      timestamp: entry.timestamp,
+      nonce: entry.nonce ?? null,
+    };
+  }
+
+  async #handleFallback(node, payload, meta = {}) {
+    try {
+      await this.#ensureReady();
+    } catch (error) {
+      this.logger.warn?.('[belief-sync] fallback invoked before storage ready', { error: error.message });
+    }
+    const nodeId = node?.id || node?.partnerId || 'unknown';
+    const timestamp = payload?.timestamp || Date.now();
+    const nonce = payload?.nonce ?? this.#nextNonce();
+    const { record } = await this.storage.recordSyncEvent({
+      nodeId,
+      payload: this.#buildPayload(payload),
+      timestamp,
+      status: meta?.status || 'queued',
+      nonce,
+    });
+    if (record?.syncHash) {
+      await this.storage.updateSyncStatus(nodeId, record.syncHash, meta?.status || 'queued', {
+        lastError: meta?.error || null,
+      });
+    }
+    return record;
+  }
+
+  #normalizePayload(rawPayload) {
+    if (!rawPayload) {
+      return null;
+    }
+    if (typeof rawPayload === 'string') {
+      try {
+        const parsed = JSON.parse(rawPayload);
+        return typeof parsed === 'object' && parsed !== null ? parsed : null;
+      } catch (error) {
+        this.logger.warn?.('[belief-sync] failed to parse stored payload', { error: error.message });
+        return null;
+      }
+    }
+    return rawPayload;
+  }
+
+  #nextNonce() {
+    this.syncSequence = (this.syncSequence + 1) % Number.MAX_SAFE_INTEGER;
+    return `${this.session_id}:${Date.now()}:${this.syncSequence}`;
   }
 }
 

@@ -1,14 +1,9 @@
-const ENS_MAP: Record<string, string> = {
-  'ghostkey316.eth': '0x9abCDEF1234567890abcdefABCDEF1234567890',
-  'sample.eth': '0x0000000000000000000000000000000000000001',
-};
-
-const CB_ID_MAP: Record<string, string> = {
-  'bpow20.cb.id': 'cb1qexampleaddress0000000000000000000000',
-};
+import { getDefaultIdentityResolver, IdentityResolver } from './lib/identityResolver';
 
 const ALLOWED_DOMAINS = ['.eth', '.cb.id'];
 const FALLBACK_DOMAIN = 'vaultfire.eth';
+
+const defaultResolver = getDefaultIdentityResolver();
 
 function isValidIdentifier(name: string): boolean {
   return /^[a-z0-9.-]+$/.test(name) && !(/[\s/]/.test(name));
@@ -16,6 +11,9 @@ function isValidIdentifier(name: string): boolean {
 
 export function authenticateWallet(identifier: string, acceptedDomains: string[] = ALLOWED_DOMAINS): string {
   let name = identifier.trim().toLowerCase();
+  if (/^0x[a-f0-9]{40}$/.test(name)) {
+    return name;
+  }
   const hasDomain = /\.[^\.\s]+$/.test(name);
 
   if (!isValidIdentifier(name)) {
@@ -37,16 +35,23 @@ export function authenticateWallet(identifier: string, acceptedDomains: string[]
   throw new Error('Wallet domain not accepted');
 }
 
-export function resolveAddress(identifier: string): string | null {
-  if (!isValidIdentifier(identifier.trim().toLowerCase())) {
+export async function resolveAddress(identifier: string, resolver: IdentityResolver = defaultResolver): Promise<string | null> {
+  const normalized = identifier.trim().toLowerCase();
+  if (!isValidIdentifier(normalized)) {
     return null;
   }
-  const wallet = authenticateWallet(identifier);
-  if (wallet.endsWith('.eth')) {
-    return ENS_MAP[wallet] || null;
+  const wallet = authenticateWallet(normalized);
+  try {
+    const resolved = await resolver.resolve(wallet);
+    if (resolved) {
+      return resolved;
+    }
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.warn('[wallet-auth] dynamic identity resolution failed', error instanceof Error ? error.message : error);
   }
-  if (wallet.endsWith('.cb.id')) {
-    return CB_ID_MAP[wallet] || null;
+  if (wallet.startsWith('0x') && wallet.length === 42) {
+    return wallet;
   }
   return null;
 }

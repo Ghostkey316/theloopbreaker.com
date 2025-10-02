@@ -1,0 +1,23 @@
+[
+  {
+    "identifier": "ghostkey316.eth",
+    "address": "0x9abCDEF1234567890abcdefABCDEF1234567890",
+    "tags": ["architect", "pilot"],
+    "lastVerified": "2025-08-01T00:00:00Z",
+    "source": "Staging / Simulated / Pre-Production Only"
+  },
+  {
+    "identifier": "bpow20.cb.id",
+    "address": "cb1qexampleaddress0000000000000000000000",
+    "tags": ["legacy", "cb.id"],
+    "lastVerified": "2025-07-15T00:00:00Z",
+    "source": "Staging / Simulated / Pre-Production Only"
+  },
+  {
+    "identifier": "atlantech.cb.id",
+    "address": "cb1qatlantech0000000000000000000000000",
+    "tags": ["partner", "ecosystem"],
+    "lastVerified": "2025-06-30T00:00:00Z",
+    "source": "Staging / Simulated / Pre-Production Only"
+  }
+]

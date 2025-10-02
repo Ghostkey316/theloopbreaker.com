@@ -1,17 +1,42 @@
-const ENS_MAP = {
-  'ghostkey316.eth': '0x9abCDEF1234567890abcdefABCDEF1234567890',
-  'sample.eth': '0x0000000000000000000000000000000000000001',
-};
-
-const CB_ID_MAP = {
-  'bpow20.cb.id': 'cb1qexampleaddress0000000000000000000000',
-};
-
 const ALLOWED_DOMAINS = ['.eth', '.cb.id'];
 const FALLBACK_DOMAIN = 'vaultfire.eth';
+const ROSTER_URL = '../data/partner-roster.json';
+
+let rosterPromise = null;
+
+async function loadRoster() {
+  if (!rosterPromise) {
+    rosterPromise = fetch(ROSTER_URL)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Unable to load pilot roster');
+        }
+        return response.json();
+      })
+      .then((payload) => {
+        if (!Array.isArray(payload)) {
+          return [];
+        }
+        return payload
+          .map((entry) => ({
+            identifier: typeof entry.identifier === 'string' ? entry.identifier.toLowerCase() : null,
+            address: entry.address || null,
+          }))
+          .filter((entry) => entry.identifier && entry.address);
+      })
+      .catch((error) => {
+        console.warn('[live-pilot] failed to load roster', error); // staging log only
+        return [];
+      });
+  }
+  return rosterPromise;
+}
 
 function authenticateWallet(identifier, acceptedDomains = ALLOWED_DOMAINS) {
   let name = identifier.trim().toLowerCase();
+  if (/^0x[a-f0-9]{40}$/.test(name)) {
+    return name;
+  }
   const hasDomain = /\.[^\.\s]+$/.test(name);
 
   if (hasDomain) {
@@ -28,23 +53,22 @@ function authenticateWallet(identifier, acceptedDomains = ALLOWED_DOMAINS) {
   throw new Error('Wallet domain not accepted');
 }
 
-function resolveAddress(identifier) {
+async function resolveAddress(identifier) {
   const wallet = authenticateWallet(identifier);
-  if (wallet.endsWith('.eth')) {
-    return ENS_MAP[wallet] || (wallet === 'ghostkey316.eth' ? CB_ID_MAP['bpow20.cb.id'] : null);
+  if (wallet.startsWith('0x')) {
+    return wallet;
   }
-  if (wallet.endsWith('.cb.id')) {
-    return CB_ID_MAP[wallet] || null;
-  }
-  return null;
+  const roster = await loadRoster();
+  const match = roster.find((entry) => entry.identifier === wallet);
+  return match ? match.address : null;
 }
 
-function handleLogin(event) {
+async function handleLogin(event) {
   event.preventDefault();
   const input = document.getElementById('walletInput');
   const result = document.getElementById('walletResult');
   try {
-    const addr = resolveAddress(input.value);
+    const addr = await resolveAddress(input.value);
     result.textContent = addr || 'Unknown wallet';
   } catch (err) {
     result.textContent = err.message;

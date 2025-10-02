@@ -14,10 +14,10 @@ describe('BeliefSyncEngine remote relay scheduling', () => {
 
   it('schedules retry entries when relay delivery fails', async () => {
     fetchMock.mockResolvedValue({ ok: false });
-    const engine = new BeliefSyncEngine('session-1', '0xabcabcabcabcabcabcabcabcabcabcabcabcabca');
-    engine.registerExternalNode({ id: 'partner-a', endpoint: 'https://relay.invalid/payload' });
+    const engine = new BeliefSyncEngine('session-1', '0xabcabcabcabcabcabcabcabcabcabcabcabcabca', { autoArchive: false });
+    await engine.registerExternalNode({ id: 'partner-a', endpoint: 'https://relay.invalid/payload' });
 
-    engine.syncChoice('fork-1', 'choice-a');
+    await engine.syncChoice('fork-1', 'choice-a');
     for (let i = 0; i < 10 && !fs.existsSync(RETRY_PATH); i += 1) {
       // eslint-disable-next-line no-await-in-loop
       await new Promise((resolve) => setTimeout(resolve, 5));
@@ -34,10 +34,10 @@ describe('BeliefSyncEngine remote relay scheduling', () => {
 
   it('retries scheduled entries and clears them on success', async () => {
     fetchMock.mockResolvedValue({ ok: false });
-    const engine = new BeliefSyncEngine('session-2', '0x1234567890123456789012345678901234567890');
-    engine.registerExternalNode({ id: 'partner-b', endpoint: 'https://relay.invalid/payload' });
+    const engine = new BeliefSyncEngine('session-2', '0x1234567890123456789012345678901234567890', { autoArchive: false });
+    await engine.registerExternalNode({ id: 'partner-b', endpoint: 'https://relay.invalid/payload' });
 
-    engine.syncChoice('fork-2', 'choice-b');
+    await engine.syncChoice('fork-2', 'choice-b');
     for (let i = 0; i < 10 && !fs.existsSync(RETRY_PATH); i += 1) {
       // eslint-disable-next-line no-await-in-loop
       await new Promise((resolve) => setTimeout(resolve, 5));
