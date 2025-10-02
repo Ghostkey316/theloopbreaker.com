@@ -4,75 +4,47 @@ const fs = require('fs');
 const path = require('path');
 
 const projectRoot = path.resolve(__dirname, '..', '..');
-const logPath = path.join(projectRoot, 'fork_log.json');
-const nodesPath = path.join(projectRoot, 'partner_port', 'external_nodes.json');
 const relayDir = path.join(projectRoot, 'logs', 'partner_relays');
 const retryPath = path.join(relayDir, 'retry-schedule.json');
 
-function backupFile(filePath, backups) {
-  if (fs.existsSync(filePath)) {
-    backups.set(filePath, fs.readFileSync(filePath));
-  } else {
-    backups.set(filePath, null);
-  }
-}
-
-function restoreFile(filePath, backups) {
-  if (!backups.has(filePath)) {
-    return;
-  }
-  const original = backups.get(filePath);
-  if (original === null) {
-    if (fs.existsSync(filePath)) {
-      fs.rmSync(filePath, { force: true });
-    }
-  } else {
-    fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    fs.writeFileSync(filePath, original);
-  }
+function resetRetryQueue() {
+  fs.mkdirSync(relayDir, { recursive: true });
+  fs.writeFileSync(retryPath, '[]');
 }
 
 describe('belief_sync_engine', () => {
-  let backups;
-
   beforeEach(() => {
     jest.resetModules();
-    backups = new Map();
-    fs.mkdirSync(path.dirname(nodesPath), { recursive: true });
-    fs.mkdirSync(relayDir, { recursive: true });
-    backupFile(logPath, backups);
-    backupFile(nodesPath, backups);
-    backupFile(retryPath, backups);
-    fs.writeFileSync(logPath, '[]');
-    fs.writeFileSync(nodesPath, '[]');
-    fs.writeFileSync(retryPath, '[]');
+    resetRetryQueue();
   });
 
   afterEach(() => {
-    restoreFile(retryPath, backups);
-    restoreFile(nodesPath, backups);
-    restoreFile(logPath, backups);
+    if (fs.existsSync(retryPath)) {
+      fs.rmSync(retryPath, { force: true });
+    }
   });
 
-  it('registers external nodes and persists sanitised payloads', () => {
+  it('registers external nodes and persists sanitised payloads', async () => {
     const { BeliefSyncEngine } = require('../../belief_sync_engine');
-    const engine = new BeliefSyncEngine('session-1', 'ghost-id');
-    const registered = engine.registerExternalNode({ partnerId: 'alpha', endpoint: 'https://example.com', relayKey: 'secret' });
+    const engine = new BeliefSyncEngine('session-1', 'ghost-id', { autoArchive: false });
+    const registered = await engine.registerExternalNode({ partnerId: 'alpha', endpoint: 'https://example.com', relayKey: 'secret' });
     expect(registered.id).toBeTruthy();
-    const stored = JSON.parse(fs.readFileSync(nodesPath, 'utf8'));
+    const stored = await engine.storage.listNodes();
     expect(stored).toHaveLength(1);
     expect(stored[0].endpoint).toBe('https://example.com');
   });
 
-  it('logs sync choices and writes entries to the fork log', () => {
+  it('logs sync choices and writes entries to storage', async () => {
     const { BeliefSyncEngine } = require('../../belief_sync_engine');
-    const engine = new BeliefSyncEngine('session-2', 'ghost-id');
-    engine.registerExternalNode({ endpoint: null });
-    const entry = engine.syncChoice('fork-1', 'choice-a', { originEns: 'vaultfire.eth' });
+    const engine = new BeliefSyncEngine('session-2', 'ghost-id', { autoArchive: false });
+    await engine.registerExternalNode({ endpoint: null });
+    const entry = await engine.syncChoice('fork-1', 'choice-a', { originEns: 'vaultfire.eth' });
     expect(entry.choice).toBe('choice-a');
-    const log = JSON.parse(fs.readFileSync(logPath, 'utf8'));
-    expect(log).toHaveLength(1);
-    expect(log[0].origin.ens).toBe('vaultfire.eth');
+    const events = await engine.storage.getRecentEvents(5);
+    const local = events.find((item) => item.nodeId === 'session:session-2');
+    expect(local).toBeDefined();
+    const payload = typeof local.payload === 'string' ? JSON.parse(local.payload) : local.payload;
+    expect(payload.origin.ens).toBe('vaultfire.eth');
   });
 
   it('retries queued jobs and reschedules on failure', async () => {
@@ -89,7 +61,7 @@ describe('belief_sync_engine', () => {
     fs.writeFileSync(retryPath, JSON.stringify(retryEntry));
     global.fetch = jest.fn().mockResolvedValue({ ok: false });
     const { BeliefSyncEngine } = require('../../belief_sync_engine');
-    const engine = new BeliefSyncEngine('session-3', 'ghost-id');
+    const engine = new BeliefSyncEngine('session-3', 'ghost-id', { autoArchive: false });
     const outcome = await engine.processRetryQueue({ now: Date.now(), maxAttempts: 3 });
     expect(outcome.attempted).toBe(1);
     const queue = JSON.parse(fs.readFileSync(retryPath, 'utf8'));
