@@ -25,6 +25,28 @@ DEFAULT_BOOTSTRAP_MISSION = (
 )
 
 
+def _safe_float(value: Any) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _parse_timestamp(value: Any) -> datetime | None:
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        candidate = value.strip()
+        if not candidate:
+            return None
+        candidate = candidate.replace("Z", "+00:00")
+        try:
+            return datetime.fromisoformat(candidate)
+        except ValueError:
+            return None
+    return None
+
+
 def _normalize_tags(tags: Iterable[Any]) -> List[str]:
     normalized: List[str] = []
     for tag in tags:
@@ -478,6 +500,154 @@ def purpose_recall_indexing(
     return index
 
 
+def _sorted_history(entries: Sequence[Mapping[str, Any]]) -> List[Mapping[str, Any]]:
+    def _sort_key(item: Mapping[str, Any]) -> Tuple[int, str]:
+        ts = _parse_timestamp(item.get("timestamp"))
+        if ts:
+            return (0, ts.isoformat())
+        return (1, str(item.get("timestamp", "")))
+
+    return sorted(entries, key=_sort_key)
+
+
+def _summarize_guard(guard: Mapping[str, Any] | Sequence[Any] | None) -> Mapping[str, Any] | None:
+    if guard is None:
+        return None
+    if isinstance(guard, Mapping):
+        summary = {k: guard[k] for k in ("outcome", "score", "version") if k in guard}
+        if not summary and guard:
+            # fall back to shallow copy of simple serializable values
+            summary = {
+                k: v
+                for k, v in guard.items()
+                if isinstance(v, (str, int, float, bool))
+            }
+        return summary or None
+    if isinstance(guard, Sequence) and not isinstance(guard, (str, bytes, bytearray)):
+        condensed: List[Any] = []
+        for item in guard:
+            if isinstance(item, Mapping):
+                condensed.append(
+                    {
+                        k: item[k]
+                        for k in ("check", "outcome", "score")
+                        if k in item
+                    }
+                )
+            else:
+                condensed.append(item)
+        return {"checks": condensed}
+    return None
+
+
+def _sanitize_decision(
+    entry: Mapping[str, Any],
+    *,
+    redact_denials: bool,
+) -> Dict[str, Any]:
+    mission_tags = _merge_ordered_strings(entry.get("mission_tags", []))
+    record: Dict[str, Any] = {
+        "timestamp": entry.get("timestamp"),
+        "operation": entry.get("operation"),
+        "mission": entry.get("mission"),
+        "mission_tags": mission_tags,
+        "approved": bool(entry.get("approved")),
+        "belief_density": _safe_float(entry.get("belief_density")),
+        "alignment": _safe_float(entry.get("alignment")),
+    }
+    reason = entry.get("reason")
+    if reason and (record["approved"] or not redact_denials):
+        record["reason"] = str(reason)
+    elif not record["approved"] and redact_denials:
+        record["reason"] = "redacted"
+    guard_summary = _summarize_guard(entry.get("alignment_guard"))
+    if guard_summary:
+        record["alignment_guard"] = guard_summary
+    return record
+
+
+def generate_attestation_pack(
+    user_id: str,
+    *,
+    history_limit: int | None = 10,
+    include_index: bool = True,
+    redact_denials: bool = False,
+) -> Dict[str, Any]:
+    """Compile an auditable attestation pack for a guardian."""
+
+    user_key = str(user_id or "").strip()
+    if not user_key:
+        raise ValueError("user_id is required for attestation generation")
+
+    profile = _load_profile(user_key)
+    mission = str(profile.get("mission") or _load_mission(user_key)).strip()
+    traits = profile.get("traits") if isinstance(profile.get("traits"), Sequence) else []
+    mission_source = profile.get("mission_source") if isinstance(profile.get("mission_source"), str) else None
+
+    log: Sequence[Mapping[str, Any]] = load_json(SCALE_LOG_PATH, [])
+    history = [entry for entry in log if entry.get("user_id") == user_key]
+    history = _sorted_history(history)
+    if history_limit is not None and history_limit >= 0:
+        history = history[-history_limit or None :]
+
+    sanitized = [_sanitize_decision(entry, redact_denials=redact_denials) for entry in history]
+    approved = [entry for entry in sanitized if entry.get("approved")]
+    denied = [entry for entry in sanitized if not entry.get("approved")]
+    belief_values = [entry.get("belief_density", 0.0) for entry in sanitized if entry.get("belief_density")]
+    approved_belief = [entry.get("belief_density", 0.0) for entry in approved if entry.get("belief_density")]
+
+    def _avg(values: Sequence[float]) -> float:
+        return round(sum(values) / len(values), 4) if values else 0.0
+
+    stats = {
+        "total": len(sanitized),
+        "approved": len(approved),
+        "denied": len(denied),
+        "approval_rate": round(len(approved) / len(sanitized), 4) if sanitized else 0.0,
+        "belief_density_avg": _avg(belief_values),
+        "belief_density_approved_avg": _avg(approved_belief),
+    }
+
+    attestation = {
+        "user_id": user_key,
+        "generated_at": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+        "mission_profile": {
+            "mission": mission,
+            "traits": list(traits) if traits else [],
+            "mission_source": mission_source,
+        },
+        "decision_stats": stats,
+        "decision_history": sanitized,
+    }
+
+    if include_index:
+        tag_index: Dict[str, List[Dict[str, Any]]] = {}
+        index = load_json(PURPOSE_INDEX_PATH, {})
+        relevant_tags = {
+            tag
+            for entry in sanitized
+            for tag in entry.get("mission_tags", [])
+            if tag
+        }
+        for tag in sorted(relevant_tags):
+            nodes = [dict(node) for node in index.get(tag, [])]
+            if history_limit and history_limit > 0:
+                nodes = nodes[-history_limit:]
+            tag_index[tag] = nodes
+        attestation["mission_recall_snapshot"] = tag_index
+
+    digest_payload = {
+        "user_id": attestation["user_id"],
+        "generated_at": attestation["generated_at"],
+        "stats": stats,
+        "history": sanitized,
+    }
+    token = json.dumps(digest_payload, sort_keys=True, default=str).encode()
+    attestation["attestation_hash"] = hashlib.sha256(token).hexdigest()
+
+    return attestation
+
+
 __all__ = [
     "belief_trace",
     "behavioral_resonance_filter",
@@ -485,4 +655,5 @@ __all__ = [
     "get_recorded_mission",
     "DEFAULT_BELIEF_THRESHOLD",
     "ensure_mission_profile",
+    "generate_attestation_pack",
 ]
