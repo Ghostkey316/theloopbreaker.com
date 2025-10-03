@@ -30,6 +30,26 @@ function createToken(overrides = {}) {
   });
 }
 
+function createAdminToken(overrides = {}) {
+  return tokenService.createAccessToken({
+    wallet: WALLET_PARTNER,
+    role: ROLES.ADMIN,
+    partnerId: 'trust-partner',
+    scopes: ['belief:sync'],
+    ...overrides,
+  });
+}
+
+function createContributorToken(overrides = {}) {
+  return tokenService.createAccessToken({
+    wallet: WALLET_CONTRIBUTOR,
+    role: ROLES.CONTRIBUTOR,
+    partnerId: 'trust-partner',
+    scopes: ['belief:sync'],
+    ...overrides,
+  });
+}
+
 function mockVerification(result = { accepted: true }, { status = 200, attestation } = {}) {
   fetchMock.mockResolvedValueOnce({
     ok: status >= 200 && status < 300,
@@ -176,6 +196,65 @@ describe('Trust Sync protocol', () => {
       multiplier: expect.any(Object),
     });
     expect(res.body.streamPreview.multiplier.value).toBeGreaterThan(0);
+    expect(res.body.hybridCompliance).toBeDefined();
+    expect(res.body.currentYield).toHaveProperty('apr');
+  });
+
+  it('exposes deployment status and allows admin toggles', async () => {
+    const status = await request(app).get('/deployment/status');
+    expect(status.status).toBe(200);
+    expect(status.body.indicator).toHaveProperty('label');
+    const adminToken = createAdminToken();
+    const toggle = await request(app)
+      .post('/deployment/mode')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ mode: 'live' });
+    expect(toggle.status).toBe(200);
+    expect(toggle.body.status.mode).toBe('live');
+    expect(toggle.body.status.indicator.label).toBe('LIVE');
+    await request(app)
+      .post('/deployment/mode')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ mode: 'simulated' });
+  });
+
+  it('ingests realtime telemetry using obfuscated payloads', async () => {
+    const token = createToken();
+    const res = await request(app)
+      .post('/telemetry/realtime')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ events: [{ walletId: WALLET_STREAM, beliefScore: 0.66 }], channel: 'telemetry.mock' });
+    expect(res.status).toBe(202);
+    expect(res.body.ingestion.totalAccepted).toBe(1);
+    expect(res.body.ingestion.accepted[0].payload.walletHash).toHaveLength(64);
+  });
+
+  it('provides a trust map narrative for partners', async () => {
+    const token = createToken();
+    mockVerification();
+    await request(app)
+      .post('/link-wallet')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ wallet: WALLET_CENTRAL, beliefScore: 0.84, metadata: { intents: ['soul-linkers'] } });
+    const res = await request(app)
+      .get('/trust-map')
+      .set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.map.nodes).toBeDefined();
+    expect(Object.keys(res.body.map.nodes).length).toBeGreaterThan(0);
+    expect(res.body.narrative.nodes.length).toBeGreaterThan(0);
+    expect(res.body.narrative.nodes[0]).toHaveProperty('enterpriseIntent');
+  });
+
+  it('records belief action signatures for onchain simulation', async () => {
+    const contributorToken = createContributorToken();
+    const res = await request(app)
+      .post('/belief/actions/sign')
+      .set('Authorization', `Bearer ${contributorToken}`)
+      .send({ walletId: WALLET_CONTRIBUTOR, action: 'mission.completed', signature: '0xdeadbeef' });
+    expect(res.status).toBe(202);
+    expect(res.body.ledgerEntry.walletHash).toHaveLength(64);
+    expect(res.body.status).toBe('queued');
   });
 
   describe('Signal Compass streaming', () => {

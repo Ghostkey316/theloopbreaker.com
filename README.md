@@ -24,6 +24,13 @@ Live pilot deployments targeted for Q4 roadmap; current examples demonstrate arc
 - **Telemetry ethics:** Wallet-level consent toggles route opt-in signals to Sentry, logging dashboard renders, wallet logins, and belief vote casts only when explicitly approved.
 - **Trust badge:** The coverage-driven badge above is auto-generated from `coverage/coverage-summary.json` via `node tools/generateCoverageBadge.js` after each test run.
 
+## Enterprise Bridge Enhancements (Resolved)
+- **Live adoption status:** `/deployment/status` and `/deployment/mode` expose a simulated/live toggle with a green-dot `LIVE` indicator, real-time telemetry ingestion (`POST /telemetry/realtime`), and onchain-ready signature logging (`POST /belief/actions/sign`). Partners can explore the view through the new `/trust-map` endpoint or the `cli/belief-mapper.js --map` CLI.
+- **Financial model clarity:** Rewards now surface hybrid-compliance posture, reputation-to-yield conversions, and partner revenue bridge previews directly from `/vaultfire/rewards/:walletId`. Config schemas accept `vaultfire.partnerReady`, deployment profiles, and partner revenue templates so governance votes can unlock real payouts on demand.
+- **Integration complexity:** The interpreter module converts belief jargon into enterprise tags, the trust map endpoint powers dashboards, and conservative deployment presets live under `deployment/sample-suite/` to disable advanced semantics until explicitly enabled. Run `node cli/belief-mapper.js --term multipliers` for instant mapping.
+
+> Sample manifests in `deployment/sample-suite/` codify both simulated and live-ready launches, ensuring partner-ready deployments flip `vaultfire.partnerReady = true` and enable the bridge features automatically.
+
 ## Installation
 1. Clone this repository and install dependencies: `npm install`
 2. Launch the wallet-only Partner Sync interface: `node partnerSync.js`
