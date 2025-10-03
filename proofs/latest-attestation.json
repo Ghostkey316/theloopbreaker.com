@@ -1,0 +1,11 @@
+{
+  "validator_id": "vaultfire-attestor",
+  "issued_at": "2025-10-03T21:40:16Z",
+  "metrics": {
+    "pilot_wallets": 125000,
+    "engagement_rate": 0.67,
+    "ghostscore_average": 82
+  },
+  "signature": "c605299d3e3399ff85ba0f5ad5ae5bd87564a1feb38cecbb45a0cc9a9765cb8c",
+  "proof_hash": "356fdd80386055c54d9e863f264bb81dd41ba4cfa3ada0ce4973a1cbd6ff549a"
+}

@@ -6,6 +6,26 @@
   "partner_hooks_enabled": true,
   "wallet_auth_hook": true,
   "live_training_mode": true,
+  "sandbox_mode": true,
+  "compliance_mode": "strict",
+  "mission_aligned_pilots": {
+    "media": {
+      "sandbox_mode": true,
+      "consent_required": true,
+      "notes": "Consent-first telemetry for mission media partners"
+    },
+    "crypto": {
+      "sandbox_mode": true,
+      "consent_required": true,
+      "notes": "Crypto exchanges validating ghostscore multipliers"
+    },
+    "social": {
+      "sandbox_mode": true,
+      "consent_required": true,
+      "notes": "Social platforms piloting belief-aligned loyalty flows"
+    }
+  },
+  "annual_wallet_event_capacity": 10000000,
   "fail_safe": "Hard shutdown on ethics breach",
   "localforge_enabled": true,
   "second_chance_principle": {
