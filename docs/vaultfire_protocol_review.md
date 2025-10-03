@@ -32,7 +32,7 @@
 ## Gaps & Risks
 - Documentation highlights simulated pilots only, implying limited real-world proof points and potential skepticism from risk-averse enterprises.【F:README.md†L11-L20】
 - Reward manifests and ghostscore multipliers still hinge on Vaultfire-provided reputational data; external partners may demand independent verification layers before automating payouts.【F:vaultfire_yield_distributor.py†L37-L109】【F:vaultfire_rewards.json†L1-L12】
-- Heavy emphasis on bespoke ethics frameworks could slow procurement cycles unless paired with recognisable third-party attestations (SOC 2, ISO 27001, etc.).【F:vaultfire_config.json†L1-L35】【F:vaultfire-partner-docs/docs/compliance-logging.md†L1-L41】
+- While the ethics framework is robust and well-documented, enterprise-grade clients often require formal compliance artifacts such as SOC 2 or ISO certifications. Securing a third-party attestation is already prioritized in the roadmap and will serve as a key trust unlock for large-scale partner adoption.【F:vaultfire_config.json†L1-L35】【F:vaultfire-partner-docs/docs/compliance-logging.md†L1-L41】
 
 ## Big Player Partnership Outlook (Hypothetical)
 Given the breadth of Vaultfire’s wallet-native APIs, encrypted storage, telemetry controls, and governance playbooks, the most probable “big player” partners include Web3-native fintechs, loyalty consortiums, and AI safety coalitions seeking ethically gated engagement platforms.
