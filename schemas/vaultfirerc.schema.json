@@ -30,6 +30,22 @@
         "additionalProperties": true
       }
     },
+    "vaultfire": {
+      "type": "object",
+      "properties": {
+        "partnerReady": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "deployment": {
+      "type": "object",
+      "properties": {
+        "mode": { "type": "string", "enum": ["simulated", "live"] },
+        "defaultMode": { "type": "string", "enum": ["simulated", "live"] },
+        "advancedSemantics": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
     "trustSync": {
       "type": "object",
       "required": ["identityStore", "telemetry", "verification"],
@@ -94,7 +110,38 @@
             "autoDistribute": { "type": "boolean" }
           },
           "additionalProperties": true
-        }
+        },
+        "hybridCompliance": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "governanceApproved": { "type": "boolean" }
+          },
+          "additionalProperties": true
+        },
+        "reputationThresholds": {
+          "type": "object",
+          "properties": {
+            "beliefScore": { "type": "number", "minimum": 0, "maximum": 1 },
+            "contributionCount": { "type": "integer", "minimum": 0 },
+            "yieldBonus": { "type": "number", "minimum": 0 }
+          },
+          "additionalProperties": true
+        },
+        "partnerRevenueProviders": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "description"],
+            "properties": {
+              "id": { "type": "string" },
+              "description": { "type": "string" },
+              "multiplier": { "type": "number", "minimum": 0 }
+            },
+            "additionalProperties": true
+          }
+        },
+        "baseApr": { "type": "number", "minimum": 0 }
       },
       "additionalProperties": true
     }

@@ -1,7 +1,7 @@
 const EventEmitter = require('events');
 
 class SignalCompass extends EventEmitter {
-  constructor({ telemetry, retentionLimit = 200 } = {}) {
+  constructor({ telemetry, retentionLimit = 200, interpreter = null, deployment } = {}) {
     super();
     this.telemetry = telemetry;
     this.retentionLimit = retentionLimit;
@@ -9,6 +9,9 @@ class SignalCompass extends EventEmitter {
     this.intentFrequency = new Map();
     this.ethicsTriggers = [];
     this.incoming = [];
+    this.interpreter = interpreter;
+    this.deployment = deployment;
+    this.trustWeights = new Map();
   }
 
   recordPayload({
@@ -55,6 +58,24 @@ class SignalCompass extends EventEmitter {
       }
     }
 
+    const weight = Number((beliefScore * (1 + intents.length * 0.05)).toFixed(4));
+    const current = this.trustWeights.get(walletId) || {
+      walletId,
+      weight: 0,
+      samples: 0,
+      dominantIntent: null,
+      lastEntry: null,
+    };
+    const updatedWeight = Number(((current.weight * current.samples + weight) / (current.samples + 1)).toFixed(4));
+    const dominantIntent = intents.length ? intents[0] : current.dominantIntent;
+    this.trustWeights.set(walletId, {
+      walletId,
+      weight: updatedWeight,
+      samples: current.samples + 1,
+      dominantIntent,
+      lastEntry: entry,
+    });
+
     this.telemetry?.record('signal.compass.payload', entry, {
       tags: ['signal', 'compass'],
       visibility: { partner: true, ethics: true, audit: true },
@@ -62,6 +83,7 @@ class SignalCompass extends EventEmitter {
 
     const snapshot = this.snapshot();
     this.emit('update', snapshot);
+    this.emit('trust-map:update', this.trustMap());
     return snapshot;
   }
 
@@ -77,12 +99,39 @@ class SignalCompass extends EventEmitter {
     };
   }
 
+  trustMap() {
+    const nodes = {};
+    this.trustWeights.forEach((value, walletId) => {
+      const interpreterSummary = this.interpreter?.interpret(value.lastEntry) || null;
+      nodes[walletId] = {
+        weight: value.weight,
+        samples: value.samples,
+        confidence: value.lastEntry?.beliefScore ?? null,
+        dominantIntent: value.dominantIntent,
+        interpreterSummary,
+      };
+    });
+    return {
+      generatedAt: new Date().toISOString(),
+      mode: this.deployment?.getStatus().mode || 'simulated',
+      indicator: this.deployment?.getStatus().indicator || { color: 'amber', label: 'SIMULATED' },
+      nodes,
+    };
+  }
+
   bindSocket(io) {
     this.on('update', (snapshot) => {
       io.emit('signal-compass:update', snapshot);
     });
+    this.on('mode', () => {
+      io.emit('trust-map:update', this.trustMap());
+    });
+    this.on('trust-map:update', () => {
+      io.emit('trust-map:update', this.trustMap());
+    });
     io.on('connection', (socket) => {
       socket.emit('signal-compass:update', this.snapshot());
+      socket.emit('trust-map:update', this.trustMap());
     });
   }
 }

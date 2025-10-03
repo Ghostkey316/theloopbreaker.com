@@ -20,6 +20,9 @@ const DEFAULT_CONFIG = {
   rejectExternalID: true,
   pseudonymousMode: 'always',
   telemetryMode: 'wallet-anonymous',
+  vaultfire: {
+    partnerReady: false,
+  },
   identity: {
     useWalletAsIdentity: true,
     rejectExternalID: true,
@@ -74,6 +77,20 @@ const DEFAULT_CONFIG = {
     providerUrl: null,
     stream: {
       autoDistribute: false,
+    },
+    hybridCompliance: {
+      enabled: false,
+      governanceApproved: false,
+    },
+  },
+  deployment: {
+    mode: 'simulated',
+    defaultMode: 'simulated',
+    partnerReady: false,
+    advancedSemantics: false,
+    hybridCompliance: {
+      enabled: false,
+      governanceApproved: false,
     },
   },
 };
@@ -198,6 +215,28 @@ function loadTrustSyncConfig() {
     merged.rewards.stream = mergeConfig(DEFAULT_CONFIG.rewards.stream, merged.rewards.stream);
   } else {
     merged.rewards = { ...DEFAULT_CONFIG.rewards };
+  }
+  merged.rewards.hybridCompliance = mergeConfig(
+    DEFAULT_CONFIG.rewards.hybridCompliance,
+    merged.rewards.hybridCompliance
+  );
+
+  merged.vaultfire = mergeConfig(DEFAULT_CONFIG.vaultfire, fileConfig.vaultfire || merged.vaultfire);
+  merged.deployment = mergeConfig(DEFAULT_CONFIG.deployment, merged.deployment || {});
+  merged.deployment = mergeConfig(merged.deployment, fileConfig.deployment || {});
+  merged.deployment.hybridCompliance = mergeConfig(
+    merged.deployment.hybridCompliance,
+    merged.rewards.hybridCompliance
+  );
+  if (merged.vaultfire.partnerReady) {
+    merged.deployment.partnerReady = true;
+    merged.rewards.hybridCompliance.enabled = true;
+  }
+  if (merged.deployment.partnerReady && !merged.deployment.mode) {
+    merged.deployment.mode = merged.deployment.defaultMode || 'simulated';
+  }
+  if (merged.deployment.hybridCompliance?.governanceApproved) {
+    merged.rewards.hybridCompliance.governanceApproved = true;
   }
   return merged;
 }

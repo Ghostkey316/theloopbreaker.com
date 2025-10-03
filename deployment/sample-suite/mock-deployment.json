@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "partnerType": "analytics",
+  "vaultfire": {
+    "partnerReady": false
+  },
+  "deployment": {
+    "mode": "simulated",
+    "defaultMode": "simulated",
+    "advancedSemantics": false
+  },
+  "trustSync": {
+    "identityStore": {
+      "provider": "memory",
+      "breachThreshold": 0.35
+    },
+    "telemetry": {
+      "baseDir": "./logs/telemetry/mock",
+      "fallback": {
+        "enabled": true,
+        "fileName": "mock-fallback.jsonl"
+      }
+    },
+    "verification": {
+      "remote": null,
+      "externalValidationEndpoint": null
+    }
+  },
+  "rewards": {
+    "fallbackMultiplier": 1,
+    "hybridCompliance": {
+      "enabled": true,
+      "governanceApproved": false
+    },
+    "reputationThresholds": {
+      "beliefScore": 0.7,
+      "contributionCount": 2,
+      "yieldBonus": 0.01
+    },
+    "partnerRevenueProviders": []
+  }
+}

@@ -21,6 +21,12 @@ const { loadTrustSyncConfig } = require('../config/trustSyncConfig');
 const TrustSyncVerifier = require('../services/trustSyncVerifier');
 const RewardStreamPlanner = require('../services/rewardStreamPlanner');
 const { createOpsMetrics } = require('../services/opsMetrics');
+const { DeploymentModeController } = require('../services/deploymentMode');
+const RealtimeTelemetryIngestor = require('../services/realtimeTelemetry');
+const BeliefActionLedger = require('../services/beliefActionLedger');
+const ReputationYieldBridge = require('../services/reputationYieldBridge');
+const PartnerRevenueBridge = require('../services/revenueBridge');
+const BeliefInterpreterModule = require('../services/interpreterModule');
 
 const app = express();
 const port = process.env.PORT || 4002;
@@ -42,9 +48,31 @@ const tokenService = new TokenService();
 const ethicsGuard = createEthicsGuard();
 const trustConfig = loadTrustSyncConfig();
 const telemetryLedger = new MultiTierTelemetryLedger(trustConfig.telemetry);
+const deploymentMode = new DeploymentModeController({
+  config: {
+    ...trustConfig.deployment,
+    partnerReady: trustConfig.deployment?.partnerReady || trustConfig.vaultfire?.partnerReady,
+    hybridCompliance: trustConfig.deployment?.hybridCompliance || trustConfig.rewards?.hybridCompliance,
+  },
+  telemetry: telemetryLedger,
+});
 const identityStore = new EncryptedIdentityStore(trustConfig.identityStore, telemetryLedger);
 const identityStoreReady = identityStore.init();
-const signalCompass = new SignalCompass({ telemetry: telemetryLedger, ...(trustConfig.signalCompass || {}) });
+const interpreterModule = new BeliefInterpreterModule({
+  telemetry: telemetryLedger,
+  terminology: trustConfig.interpreter?.terminology,
+});
+const signalCompass = new SignalCompass({
+  telemetry: telemetryLedger,
+  ...(trustConfig.signalCompass || {}),
+  interpreter: interpreterModule,
+  deployment: deploymentMode,
+});
+const realtimeTelemetry = new RealtimeTelemetryIngestor({
+  ledger: telemetryLedger,
+  obfuscate: trustConfig.telemetry?.obfuscate ?? true,
+});
+const beliefActionLedger = new BeliefActionLedger({ telemetry: telemetryLedger });
 const opsMetrics = createOpsMetrics();
 const partnerHooks = new PartnerHookRegistry({ telemetry: telemetryLedger, metrics: opsMetrics });
 const mirrorAgent = new AIMirrorAgent({ telemetry: telemetryLedger, ...(trustConfig.mirror || {}) });
@@ -54,9 +82,28 @@ const trustVerifier = new TrustSyncVerifier({
   externalValidationEndpoint: trustConfig.verification?.externalValidationEndpoint || null,
 });
 const rewardStreamPlanner = new RewardStreamPlanner({ telemetry: telemetryLedger, config: trustConfig.rewards });
+const reputationBridge = new ReputationYieldBridge({
+  telemetry: telemetryLedger,
+  thresholds: trustConfig.rewards?.reputationThresholds,
+  baseApr: trustConfig.rewards?.baseApr,
+});
+const revenueBridge = new PartnerRevenueBridge({
+  telemetry: telemetryLedger,
+  providers: trustConfig.rewards?.partnerRevenueProviders,
+});
 const BELIEF_BREACH_THRESHOLD = trustConfig.identityStore?.breachThreshold ?? 0.35;
 const SANDBOX_CONFIG_PATH = path.join(__dirname, '../configs/module_sandbox.json');
 const BELIEF_SANDBOX_LOG = path.join(__dirname, '../logs/belief-sandbox.json');
+
+deploymentMode.on('mode', (status) => {
+  signalCompass.emit('mode', status);
+});
+deploymentMode.on('hybridCompliance', () => {
+  signalCompass.emit('trust-map:update', signalCompass.trustMap());
+});
+deploymentMode.on('semantics', () => {
+  signalCompass.emit('trust-map:update', signalCompass.trustMap());
+});
 
 function loadSandboxConfig() {
   try {
@@ -170,8 +217,38 @@ app.get('/health', (req, res) => {
       pseudonymousMode: trustConfig.pseudonymousMode,
     },
     telemetryMode: trustConfig.telemetryMode,
+    deployment: deploymentMode.getStatus(),
+    realtimeTelemetry: realtimeTelemetry.status(),
   });
 });
+
+app.get('/deployment/status', (req, res) => {
+  const status = deploymentMode.getStatus();
+  res.json({
+    mode: status.mode,
+    indicator: status.indicator,
+    partnerReady: status.partnerReady,
+    liveSince: status.liveSince,
+    simulatedSince: status.simulatedSince,
+    lastTransition: status.lastTransition,
+    hybridCompliance: status.hybridCompliance,
+  });
+});
+
+app.post(
+  '/deployment/mode',
+  ...createAuthMiddleware({ requiredRoles: [ROLES.ADMIN], tokenService }),
+  ethicsGuard,
+  async (req, res) => {
+    const { mode } = req.body || {};
+    const status = await deploymentMode.setMode(mode, {
+      actor: req.user.wallet,
+      reason: 'api_toggle',
+    });
+    signalCompass.emit('trust-map:update', signalCompass.trustMap());
+    res.json({ status });
+  }
+);
 
 app.get('/debug/belief-sandbox', (req, res) => {
   const limit = Number.parseInt(req.query.limit, 10);
@@ -301,21 +378,67 @@ app.post(
   }
 );
 
+app.post(
+  '/telemetry/realtime',
+  ...createAuthMiddleware({ requiredRoles: [ROLES.PARTNER, ROLES.ADMIN], tokenService }),
+  ethicsGuard,
+  (req, res) => {
+    const { events, channel, obfuscate } = req.body || {};
+    if (typeof obfuscate === 'boolean') {
+      realtimeTelemetry.obfuscate = obfuscate;
+    }
+    const ingestion = realtimeTelemetry.ingest(events, {
+      channel: channel || 'telemetry.realtime',
+      metadata: { partnerId: req.user.partnerId, mode: deploymentMode.getStatus().mode },
+    });
+    res.status(202).json({
+      status: 'accepted',
+      ingestion,
+      indicator: deploymentMode.getStatus().indicator,
+    });
+  }
+);
+
 app.get(
   '/vaultfire/rewards/:walletId',
   ...createAuthMiddleware({ requiredRoles: [ROLES.PARTNER, ROLES.ADMIN], tokenService }),
   ethicsGuard,
   async (req, res) => {
-    const currentYield = { apr: 6.4, multiplier: 1.15, tierLevel: 'flame' };
+    const baseApr = trustConfig.rewards?.baseApr || 6.4;
+    const beliefScore = Number.parseFloat(req.query.beliefScore ?? 0.72);
+    const contributionCount = Number.parseInt(req.query.contributionCount ?? 0, 10);
+    const currentYield = { apr: baseApr, multiplier: 1.15, tierLevel: 'flame' };
+    const reputationSummary = reputationBridge.evaluate({
+      beliefScore: Number.isNaN(beliefScore) ? 0 : beliefScore,
+      contributionCount: Number.isNaN(contributionCount) ? 0 : contributionCount,
+      currentApr: baseApr,
+      walletId: req.params.walletId,
+    });
+    currentYield.apr = reputationSummary.totalApr;
+    const hybridCompliance = {
+      ...trustConfig.rewards?.hybridCompliance,
+      ...deploymentMode.getStatus().hybridCompliance,
+    };
+    if (!hybridCompliance?.governanceApproved) {
+      currentYield.symbolic = !reputationSummary.unlocked;
+    }
     const streamPreview = await rewardStreamPlanner.previewStream(req.params.walletId, {
       partnerId: req.user.partnerId,
       currentYield,
+    });
+    const revenuePreview = revenueBridge.preview({
+      walletId: req.params.walletId,
+      baseMultiplier: streamPreview?.multiplier?.value || currentYield.multiplier || 1,
     });
     const response = {
       walletId: req.params.walletId,
       currentYield,
       signalsReviewed: true,
       streamPreview,
+      reputationSummary,
+      revenuePreview,
+      hybridCompliance,
+      deployment: deploymentMode.getStatus(),
     };
 
     telemetryLedger.record('vaultfire.rewards.view', { walletId: req.params.walletId, partnerId: req.user.partnerId }, {
@@ -508,6 +631,17 @@ app.get(
   }
 );
 
+app.get(
+  '/trust-map',
+  ...createAuthMiddleware({ requiredRoles: [ROLES.PARTNER, ROLES.ADMIN], tokenService }),
+  ethicsGuard,
+  (req, res) => {
+    const map = signalCompass.trustMap();
+    const narrative = interpreterModule.explainTrustMap(map);
+    res.json({ map, narrative });
+  }
+);
+
 app.post(
   '/vaultfire/mirror',
   ...createAuthMiddleware({ requiredRoles: [ROLES.CONTRIBUTOR, ROLES.PARTNER], tokenService }),
@@ -575,6 +709,27 @@ app.post(
   }
 );
 
+app.post(
+  '/belief/actions/sign',
+  ...createAuthMiddleware({ requiredRoles: [ROLES.CONTRIBUTOR, ROLES.PARTNER, ROLES.ADMIN], tokenService }),
+  ethicsGuard,
+  (req, res) => {
+    const { walletId, action, signature, metadata = {} } = req.body || {};
+    if (!walletId || !validateWallet(walletId)) {
+      return res.status(400).json({
+        error: { code: 'belief.invalid_wallet', message: 'walletId is required and must be a valid address' },
+      });
+    }
+    const ledgerEntry = beliefActionLedger.registerSignature({
+      walletId: walletId.toLowerCase(),
+      action,
+      signature,
+      metadata: { ...metadata, partnerId: req.user.partnerId, mode: deploymentMode.getStatus().mode },
+    });
+    res.status(202).json({ status: 'queued', ledgerEntry });
+  }
+);
+
 function createServer({ corsOrigins } = {}) {
   const allowedOrigins = resolveAllowedOrigins(corsOrigins);
   const server = http.createServer(app);
@@ -607,4 +762,10 @@ module.exports = {
   mirrorAgent,
   createServer,
   opsMetrics,
+  deploymentMode,
+  realtimeTelemetry,
+  beliefActionLedger,
+  reputationBridge,
+  revenueBridge,
+  interpreterModule,
 };

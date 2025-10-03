@@ -1,4 +1,11 @@
 {
+  "vaultfire": {
+    "partnerReady": true
+  },
+  "deployment": {
+    "defaultMode": "simulated",
+    "advancedSemantics": false
+  },
   "trustSync": {
     "identityStore": {
       "provider": "memory",
@@ -81,6 +88,27 @@
     "providerUrl": "http://localhost:8545",
     "stream": {
       "autoDistribute": false
-    }
+    },
+    "hybridCompliance": {
+      "enabled": true,
+      "governanceApproved": false
+    },
+    "reputationThresholds": {
+      "beliefScore": 0.78,
+      "contributionCount": 3,
+      "yieldBonus": 0.015
+    },
+    "partnerRevenueProviders": [
+      {
+        "id": "superfluid-sim",
+        "description": "Mock USDC stream via Superfluid sandbox",
+        "multiplier": 1.04
+      },
+      {
+        "id": "stripe-crypto-sim",
+        "description": "Stripe crypto rails test harness",
+        "multiplier": 1.01
+      }
+    ]
   }
 }

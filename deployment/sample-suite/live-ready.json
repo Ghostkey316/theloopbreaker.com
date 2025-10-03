@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "partnerType": "infra-integrator",
+  "vaultfire": {
+    "partnerReady": true
+  },
+  "deployment": {
+    "mode": "live",
+    "defaultMode": "live",
+    "advancedSemantics": true
+  },
+  "trustSync": {
+    "identityStore": {
+      "provider": "postgres",
+      "breachThreshold": 0.4
+    },
+    "telemetry": {
+      "baseDir": "./logs/telemetry/live",
+      "fallback": {
+        "enabled": true,
+        "fileName": "live-fallback.jsonl"
+      }
+    },
+    "verification": {
+      "remote": {
+        "endpoint": "https://verification.vaultfire.live/api",
+        "apiKey": "vaultfire-live-sim"
+      },
+      "externalValidationEndpoint": "https://attest.vaultfire.live/sim"
+    }
+  },
+  "rewards": {
+    "fallbackMultiplier": 1.05,
+    "hybridCompliance": {
+      "enabled": true,
+      "governanceApproved": true
+    },
+    "reputationThresholds": {
+      "beliefScore": 0.8,
+      "contributionCount": 5,
+      "yieldBonus": 0.025
+    },
+    "partnerRevenueProviders": [
+      {
+        "id": "superfluid-live",
+        "description": "Superfluid USDC stream",
+        "multiplier": 1.07
+      },
+      {
+        "id": "stripe-crypto-live",
+        "description": "Stripe crypto rails",
+        "multiplier": 1.03
+      }
+    ]
+  }
+}
