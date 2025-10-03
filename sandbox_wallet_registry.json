@@ -1,0 +1,18 @@
+{
+  "metadata": {
+    "min_wallets": 250000,
+    "max_wallets": 750000,
+    "sample_limit": 1000,
+    "mission_aligned_verticals": [
+      "media",
+      "crypto",
+      "social"
+    ]
+  },
+  "totals": {
+    "unique_wallets": 0,
+    "capacity_status": "under_target"
+  },
+  "sampled_wallets": [],
+  "fingerprints": []
+}

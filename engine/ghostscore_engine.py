@@ -92,9 +92,43 @@ def get_ghostscore(ens: str) -> int:
     return int(info.get("score", 0))
 
 
+def ghostscore_handoff(user_id: str) -> dict:
+    """Compare sandbox and production multipliers for ``user_id``.
+
+    The handoff validates that a pilot's ghostscore-driven multiplier carries over
+    from sandbox evaluations into production readiness without drift. The output
+    records both multiplier contexts alongside a stability signal so partners can
+    audit the transition when they graduate from mission-aligned pilots.
+    """
+
+    from .belief_multiplier import belief_multiplier
+
+    sandbox_multiplier, sandbox_tier = belief_multiplier(user_id, sandbox_mode=True)
+    production_multiplier, production_tier = belief_multiplier(user_id, sandbox_mode=False)
+    score = get_ghostscore(user_id)
+    carryover_delta = round(production_multiplier - sandbox_multiplier, 5)
+    carryover_stable = abs(carryover_delta) <= 0.0005
+
+    return {
+        "user_id": user_id,
+        "ghostscore": score,
+        "sandbox": {
+            "multiplier": sandbox_multiplier,
+            "tier": sandbox_tier,
+        },
+        "production": {
+            "multiplier": production_multiplier,
+            "tier": production_tier,
+        },
+        "carryover_delta": carryover_delta,
+        "carryover_stable": carryover_stable,
+    }
+
+
 __all__ = [
     "record_belief_sync",
     "record_partner_activation",
     "record_yield_claim",
     "get_ghostscore",
+    "ghostscore_handoff",
 ]

@@ -1,0 +1,25 @@
+technical_readiness:
+  sandbox_mode: true
+  compliance_mode: strict
+  annual_wallet_event_capacity: 10000000
+  modules:
+    - engine.belief_multiplier.multiplier_capacity_plan
+    - sandbox_wallet_registry.SandboxWalletRegistry
+    - ghostyield_simulator.GhostYieldSimulator
+
+pilot_metrics_validator:
+  attestation_engine: engine.attestation_engine.attestation_engine
+  telemetry_baseline: telemetry/telemetry_baseline.json
+  adapters:
+    - telemetry.adapters.verticalAdapters.sportsFandomAdapter
+    - telemetry.adapters.verticalAdapters.eduCredLinker
+    - telemetry.adapters.verticalAdapters.fandomEconomyDriver
+  sandbox_wallet_registry: sandbox_wallet_registry.json
+
+audit_trail_integration:
+  activation_to_yield: activation_to_yield.activationToYield
+  yield_api_audit_log: logs/yield-audit.jsonl
+  trust_artifact_bundle: proofs/partner-proof-bundle.json
+
+vaultfire:
+  partnerReady: true

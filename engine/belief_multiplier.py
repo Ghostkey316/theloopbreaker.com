@@ -15,6 +15,7 @@ SANDBOX_CONFIG_PATH = BASE_DIR / "configs" / "module_sandbox.json"
 DEFAULT_SANDBOX_LOG_PATH = BASE_DIR / "logs" / "belief-sandbox.json"
 SANDBOX_CONFIG_FLAG = False
 SANDBOX_LOG_PATH = DEFAULT_SANDBOX_LOG_PATH
+ANNUAL_WALLET_EVENT_CAPACITY = 10_000_000
 
 TIER_RULES = (
     {"threshold": 100, "tier": TIER_NAMES[3], "multiplier": 1.2},
@@ -155,10 +156,23 @@ def belief_multiplier(user_id: str, *, sandbox_mode: bool | None = None) -> Tupl
             "base_multiplier": base_multiplier,
             "multiplier": multiplier,
             "collisionResolved": collision_resolved,
+            "annualWalletEventCapacity": ANNUAL_WALLET_EVENT_CAPACITY,
         }
         _log_sandbox_metrics(entry)
 
     return multiplier, tier
 
 
-__all__ = ["record_belief_action", "belief_multiplier"]
+def multiplier_capacity_plan() -> dict:
+    """Return scale assumptions for audit dashboards."""
+
+    return {
+        "annual_wallet_event_capacity": ANNUAL_WALLET_EVENT_CAPACITY,
+        "tiers": [
+            {"name": rule["tier"], "threshold": rule["threshold"], "multiplier": rule["multiplier"]}
+            for rule in TIER_RULES
+        ],
+    }
+
+
+__all__ = ["record_belief_action", "belief_multiplier", "multiplier_capacity_plan"]

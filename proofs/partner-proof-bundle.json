@@ -1,0 +1,24 @@
+{
+  "bundle": {
+    "version": "2024.09",
+    "attestor": "vaultfire-attestor",
+    "third_party_signature_ready": true,
+    "artifacts": {
+      "telemetry_baseline": "telemetry/telemetry_baseline.json",
+      "sandbox_wallet_registry": "sandbox_wallet_registry.json",
+      "attestation_output": "proofs/latest-attestation.json"
+    },
+    "signatures": [
+      {
+        "type": "sha256-hmac",
+        "issued_at": "pending",
+        "validator_id": "vaultfire-attestor",
+        "proof_placeholder": "attach-latest-attestation"
+      }
+    ],
+    "notes": [
+      "Bundle ready for third-party countersignature.",
+      "Use engine.attestation_engine to refresh proof before distribution."
+    ]
+  }
+}
