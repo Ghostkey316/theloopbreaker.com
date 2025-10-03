@@ -19,6 +19,8 @@
   "partner_hooks_enabled": true,
   "wallet_auth_hook": true,
   "live_training_mode": true,
+  "live_test_flag": false,
+  "telemetry_interval_seconds": 86400,
   "fail_safe": "Hard shutdown on ethics breach",
   "localforge_enabled": true,
   "use_database": true,
