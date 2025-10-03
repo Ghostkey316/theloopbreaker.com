@@ -23,3 +23,4 @@
 - Strong emphasis on ethics-first onboarding, telemetry consent, and mission continuity.
 - Rich documentation for partner integrations, observability, and technical due diligence.
 - Future opportunity: publish anonymized case studies and third-party attestations to accelerate Fortune 500 trust.
+- New mission-aligned enhancement plan outlines transparency, observability, and co-governance upgrades to entice larger partners without relaxing safeguards, and now includes a live attestation export that compiles Purposeful Scale history into signed partner-ready briefs.

@@ -259,3 +259,43 @@ def test_echo_deploy_respects_purposeful_scale(scale_env, echo_env):
     log_entries = json.loads(log_path.read_text())
     assert len(log_entries) == 2
     assert any(entry["scale_authorized"] is False for entry in log_entries)
+
+
+def test_attestation_pack_compiles_signed_history(scale_env):
+    profiles, _, _, _ = scale_env
+    mission = "Safeguard Vaultfire threads with integrity"
+    _write_profiles(profiles, "guardian.eth", mission)
+
+    denied = purposeful_scale.belief_trace(
+        "guardian.eth",
+        {
+            "operation": "growth.prepare_v26",
+            "mission_tags": ["Vaultfire", "NS3"],
+            "declared_purpose": mission,
+            "belief_density": purposeful_scale.DEFAULT_BELIEF_THRESHOLD - 0.2,
+        },
+    )
+    assert denied["approved"] is False
+
+    approved = purposeful_scale.belief_trace(
+        "guardian.eth",
+        {
+            "operation": "growth.prepare_v26",
+            "mission_tags": ["Vaultfire", "NS3", "Ghostkey-316"],
+            "declared_purpose": mission,
+            "belief_density": purposeful_scale.DEFAULT_BELIEF_THRESHOLD + 0.2,
+        },
+    )
+    assert approved["approved"] is True
+
+    pack = purposeful_scale.generate_attestation_pack("guardian.eth", history_limit=5)
+    assert pack["user_id"] == "guardian.eth"
+    assert pack["mission_profile"]["mission"] == mission
+    assert pack["decision_stats"]["total"] == 2
+    assert pack["decision_stats"]["approved"] == 1
+    assert pack["decision_stats"]["denied"] == 1
+    assert pack["decision_history"][0]["approved"] is False
+    assert pack["decision_history"][1]["approved"] is True
+    assert pack["mission_recall_snapshot"]
+    assert isinstance(pack["attestation_hash"], str)
+    assert len(pack["attestation_hash"]) == 64
