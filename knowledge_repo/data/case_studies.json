@@ -1,7 +1,7 @@
 [
   {
     "id": "ghostkey_316",
-    "status": "active_live",
+    "status": "enterprise_ready",
     "mission_id": "vault-ghostkey-001",
     "wallet": "bpow20.cb.id",
     "yield_multiplier": "loyalty_tier_1",
@@ -20,6 +20,8 @@
     ],
     "timestamp": "2025-10-03T00:00:00Z",
     "verified": true,
-    "verification_notes": "Ghostkey-316 designated as the inaugural Vaultfire-verified case study following protocol review."
+    "verification_notes": "Ghostkey-316 designated as the inaugural Vaultfire-verified case study following protocol review.",
+    "enterprise_ready": true,
+    "ready_timestamp": "2025-10-04T02:00:23.486414+00:00"
   }
 ]
