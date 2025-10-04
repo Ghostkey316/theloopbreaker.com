@@ -1,41 +1,44 @@
-"""FastAPI application exposing yield insights."""
+"""FastAPI application exposing yield insights and mission proofs."""
 
 from __future__ import annotations
 
 import json
 from collections import deque
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from hashlib import sha256
+from pathlib import Path
+from statistics import mean
 from typing import Deque, Dict, List, Optional, Tuple
 
 from fastapi import Depends, FastAPI, HTTPException, Request
-from contextlib import asynccontextmanager
 
 from .config import settings
 from .converter import case_studies_to_yield_insights, convert_pilot_logs, load_case_studies
+from .audit_storage import (
+    AuditStorage,
+    CLOUD_ENVIRONMENT,
+    LOCAL_ENVIRONMENT,
+)
 
 RequestLog = Deque[datetime]
 _rate_log: Dict[str, RequestLog] = {}
+_repo_root = Path(__file__).resolve().parents[1]
+_case_study_index = _repo_root / "knowledge_repo" / "data" / "case_studies.json"
 
 
 def _hash_ip(value: str) -> str:
     return sha256(value.encode("utf-8")).hexdigest()
 
 
-def _log_audit(entry: dict) -> None:
-    path = settings.attestations_path
-    path.parent.mkdir(parents=True, exist_ok=True)
-    if path.exists():
-        with path.open("r", encoding="utf-8") as handle:
-            try:
-                data = json.load(handle)
-            except json.JSONDecodeError:
-                data = []
-    else:
-        data = []
-    data.append(entry)
-    with path.open("w", encoding="utf-8") as handle:
-        json.dump(data, handle, indent=2)
+def _resolve_environment(path: Path) -> AuditStorage:
+    resolved = Path(path)
+    environment = CLOUD_ENVIRONMENT if str(resolved).startswith("/var") else LOCAL_ENVIRONMENT
+    return AuditStorage(resolved, environment=environment)
+
+
+def _audit_store() -> AuditStorage:
+    return _resolve_environment(settings.attestations_path)
 
 
 def rate_limiter(request: Request) -> None:
@@ -93,6 +96,19 @@ def filter_case_studies(
     return filtered
 
 
+def _load_case_study_record(case_id: str = "ghostkey_316") -> Optional[dict]:
+    if not _case_study_index.exists():
+        return None
+    try:
+        data = json.loads(_case_study_index.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+    for entry in data:
+        if entry.get("id") == case_id:
+            return entry
+    return None
+
+
 @asynccontextmanager
 async def _lifespan(_: FastAPI):
     convert_pilot_logs()
@@ -123,8 +139,46 @@ def create_app() -> FastAPI:
             "segment": segment_id,
             "results": len(filtered),
         }
-        _log_audit(audit_entry)
+        _audit_store().append(audit_entry)
         return filtered
+
+    @app.get("/api/proof/v1/ghostkey-316")
+    async def get_ghostkey_proof() -> dict:
+        convert_pilot_logs()
+        studies = load_case_studies()
+        average_roi = mean(study.ghostscore_roi for study in studies) if studies else 0.0
+        mission_hashes = sorted({study.mission_hash for study in studies})
+        metadata = _load_case_study_record() or {}
+        audit_descriptor = _audit_store().as_descriptor()
+        audit_descriptor["environments"] = [
+            {
+                "name": env.name,
+                "vaultfire_env": env.vaultfire_env,
+                "beta_compatible": env.beta_compatible,
+            }
+            for env in (LOCAL_ENVIRONMENT, CLOUD_ENVIRONMENT)
+        ]
+
+        response = {
+            "ghostkey_case": "first externally-visible proof point",
+            "partner_ready": True,
+            "mission_hashes": mission_hashes,
+            "activation_to_yield": {
+                "total_cases": len(studies),
+                "average_ghostscore_delta": round(average_roi, 2),
+            },
+            "case_study": metadata,
+            "reward_interface": {
+                "stream_ready": True,
+                "on_chain_ready": False,
+                "rpc_integration": {
+                    "beta_compatible": True,
+                    "flag": "rpc_placeholder",
+                },
+            },
+            "audit_storage": audit_descriptor,
+        }
+        return response
 
     return app
 
