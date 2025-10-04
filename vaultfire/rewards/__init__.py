@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Iterable, List, Mapping, Optional
+from typing import Any, Dict, Iterable, List, Mapping, Optional
 
 import sys
 
@@ -15,6 +15,7 @@ if _SRC_DIR.exists() and str(_SRC_DIR) not in sys.path:
     sys.path.insert(0, str(_SRC_DIR))
 
 from mirror_log import reward_stream_path
+from vaultfire.security.fhe import FHECipherSuite
 
 BASE_REWARD = 10.0
 ALIGNMENT_WEIGHT = 0.6
@@ -84,6 +85,9 @@ def calculate(
     alignment: Optional[Mapping[str, object]] = None,
     graph_node: Optional[Mapping[str, object]] = None,
     timestamp: Optional[str] = None,
+    cipher_suite: FHECipherSuite | None = None,
+    private_metadata: Mapping[str, Any] | None = None,
+    zero_knowledge_context: Optional[str] = None,
 ) -> Dict[str, object]:
     """Compute a reflection reward event and persist it to the reward stream."""
 
@@ -111,7 +115,7 @@ def calculate(
 
     event_timestamp = timestamp or datetime.now(timezone.utc).isoformat()
 
-    event = {
+    event: Dict[str, Any] = {
         "timestamp": event_timestamp,
         "base_amount": BASE_REWARD,
         "total_multiplier": total_multiplier,
@@ -133,7 +137,49 @@ def calculate(
         f" (multiplier {total_multiplier})."
     )
 
+    if cipher_suite:
+        sensitive_payload = {
+            "calculated_amount": calculated_amount,
+            "partners": event["partners"],
+            "alignment_score": normalized_score,
+            **dict(private_metadata or {}),
+        }
+        ciphertext = cipher_suite.encrypt_record(
+            sensitive_payload,
+            sensitive_fields=sensitive_payload.keys(),
+        )
+        event["fhe"] = {
+            "ciphertext": ciphertext.serialize(),
+            "commitment": cipher_suite.generate_zero_knowledge_commitment(
+                ciphertext, context=zero_knowledge_context or "rewards.yield"
+            ),
+            "moral_tag": cipher_suite.moral_tag,
+        }
+
     return event
 
 
-__all__ = ["calculate"]
+def calculate_private_yield(
+    entry: str,
+    *,
+    alignment: Optional[Mapping[str, object]] = None,
+    graph_node: Optional[Mapping[str, object]] = None,
+    timestamp: Optional[str] = None,
+    cipher_suite: FHECipherSuite,
+    private_metadata: Mapping[str, Any] | None = None,
+    zero_knowledge_context: Optional[str] = None,
+) -> Dict[str, object]:
+    """Convenience wrapper that enforces encrypted yield output."""
+
+    return calculate(
+        entry,
+        alignment=alignment,
+        graph_node=graph_node,
+        timestamp=timestamp,
+        cipher_suite=cipher_suite,
+        private_metadata=private_metadata,
+        zero_knowledge_context=zero_knowledge_context,
+    )
+
+
+__all__ = ["calculate", "calculate_private_yield"]
