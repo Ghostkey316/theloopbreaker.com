@@ -3,5 +3,23 @@
 from __future__ import annotations
 
 from .audit import validate_securestore_fallback
+from .fhe import (
+    Ciphertext,
+    ConsentProof,
+    DisclosurePacket,
+    FHECipherSuite,
+    PlaceholderFHEBackend,
+    PrivacyEngine,
+    SoulboundKey,
+)
 
-__all__ = ["validate_securestore_fallback"]
+__all__ = [
+    "Ciphertext",
+    "ConsentProof",
+    "DisclosurePacket",
+    "FHECipherSuite",
+    "PlaceholderFHEBackend",
+    "PrivacyEngine",
+    "SoulboundKey",
+    "validate_securestore_fallback",
+]
