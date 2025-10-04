@@ -1,7 +1,10 @@
 [
   {
+    "id": "ghostkey_316",
+    "status": "active_live",
     "mission_id": "vault-ghostkey-001",
     "wallet": "bpow20.cb.id",
+    "yield_multiplier": "loyalty_tier_1",
     "ens": "ghostkey316.eth",
     "yield_type": [
       "activation",
@@ -12,8 +15,8 @@
     "outcome_summary": "Behavior-synced across AI, crypto, and protocol layers under Vaultfire ethics framework.",
     "proof": [
       "Vaultfire logs",
-      "ChatGPT protocol records",
-      "NS3 quiz interaction"
+      "NS3 quiz",
+      "ChatGPT thread"
     ],
     "timestamp": "2025-10-03T00:00:00Z",
     "verified": true,

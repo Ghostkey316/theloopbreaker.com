@@ -12,7 +12,7 @@ import os
 import urllib.request
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Iterable, List
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -28,7 +28,21 @@ DEFAULT_SETTINGS = {
     "notify_trader_activity": False,
     "notification_channel": "log_to_terminal",
     "webhook_url": "http://localhost:8060/notify",
+    "extra_channels": [],
 }
+
+NOTIFIER_ENVIRONMENTS = [
+    {
+        "name": "local",
+        "vaultfire_env": "ghostkey_testbed",
+        "beta_compatible": True,
+    },
+    {
+        "name": "cloud",
+        "vaultfire_env": "prod_ready",
+        "beta_compatible": True,
+    },
+]
 
 
 def _load_json(path: Path, default: Any) -> Any:
@@ -78,6 +92,14 @@ def validate_notification_payload(payload: Dict) -> bool:
     return all(key in payload for key in required_keys)
 
 
+def _normalize_channels(channel_config: Any) -> List[str]:
+    if isinstance(channel_config, str):
+        return [channel_config]
+    if isinstance(channel_config, Iterable):
+        return [item for item in channel_config if isinstance(item, str)]
+    return []
+
+
 def notify_event(event: str, payload: Dict) -> Dict:
     settings = _load_json(_get_settings_path(), DEFAULT_SETTINGS)
     if not settings.get("notify_trader_activity"):
@@ -88,26 +110,33 @@ def notify_event(event: str, payload: Dict) -> Dict:
             "action": payload.get("action", "unknown"),
             "confidence": payload.get("confidence", 0.0),
         }
-    channel = settings.get("notification_channel", "log_to_terminal")
+    channels = set(_normalize_channels(settings.get("notification_channel", "log_to_terminal")))
+    channels.update(_normalize_channels(settings.get("extra_channels", [])))
+    if not channels:
+        channels = {"log_to_terminal"}
     message = _format_message(event, payload)
-    entry = {
-        "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "event": event,
-        "payload": payload,
-        "channel": channel,
-        "message": message,
-        "id": "Ghostkey-316",
-    }
-    if channel == "log_to_terminal":
-        print(message)
-    elif channel == "email":
-        _send_email(message)
-    elif channel == "mobile_webhook":
-        _send_webhook(settings.get("webhook_url", ""), entry)
+    entries = []
+    for channel in channels:
+        entry = {
+            "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "event": event,
+            "payload": payload,
+            "channel": channel,
+            "message": message,
+            "id": "Ghostkey-316",
+            "beta_compatible": True,
+        }
+        if channel == "log_to_terminal":
+            print(message)
+        elif channel == "email":
+            _send_email(message)
+        elif channel == "mobile_webhook":
+            _send_webhook(settings.get("webhook_url", ""), entry)
+        entries.append(entry)
     log = _load_json(LOG_PATH, [])
-    log.append(entry)
+    log.extend(entries)
     _write_json(LOG_PATH, log)
-    return entry
+    return {"sent": True, "channels": entries, "environments": NOTIFIER_ENVIRONMENTS}
 
 
-__all__ = ["notify_event", "validate_notification_payload"]
+__all__ = ["notify_event", "validate_notification_payload", "NOTIFIER_ENVIRONMENTS"]

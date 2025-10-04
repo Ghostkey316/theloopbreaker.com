@@ -1,0 +1,16 @@
+{
+  "ghostkey_trader_notifications": {
+    "beta_compatible": true,
+    "environments": [
+      {"name": "local", "vaultfire_env": "ghostkey_testbed"},
+      {"name": "cloud", "vaultfire_env": "prod_ready"}
+    ]
+  },
+  "audit_storage": {
+    "beta_compatible": true,
+    "environments": [
+      {"name": "local", "vaultfire_env": "ghostkey_testbed"},
+      {"name": "cloud", "vaultfire_env": "prod_ready"}
+    ]
+  }
+}

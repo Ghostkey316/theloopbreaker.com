@@ -81,3 +81,30 @@ def test_simulate_activation_to_yield(tmp_path, monkeypatch):
     assert result["mission_hashes"]
     report_files = list((tmp_path / "reports").glob("*.json"))
     assert report_files
+
+
+def test_proof_route_exposes_readiness(tmp_path, monkeypatch):
+    source = tmp_path / "missions"
+    dest = tmp_path / "cases"
+    attestations = tmp_path / "attestations.json"
+    source.mkdir()
+    _write_pilot_log(source / "mission_one.json", "mission-one", "belief-convert-01", 12.0)
+
+    monkeypatch.setattr(settings, "mission_logs_dir", source)
+    monkeypatch.setattr(settings, "case_study_dir", dest)
+    monkeypatch.setattr(settings, "attestations_path", attestations)
+    monkeypatch.setattr(settings, "api_key", None)
+
+    app = create_app()
+    client = TestClient(app)
+    response = client.get("/api/proof/v1/ghostkey-316")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["partner_ready"] is True
+    assert payload["ghostkey_case"] == "first externally-visible proof point"
+    assert payload["reward_interface"]["stream_ready"] is True
+    assert payload["reward_interface"]["on_chain_ready"] is False
+    assert payload["audit_storage"]["beta_compatible"] is True
+    environments = payload["audit_storage"].get("environments", [])
+    tags = {entry["vaultfire_env"] for entry in environments}
+    assert {"ghostkey_testbed", "prod_ready"}.issubset(tags)

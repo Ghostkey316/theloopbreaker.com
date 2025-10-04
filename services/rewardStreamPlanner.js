@@ -1,5 +1,6 @@
 const { ethers } = require('ethers');
 const RewardContractInterface = require('../src/rewards/contractInterface');
+const RewardRpcPlaceholder = require('../src/rewards/rpcPlaceholder');
 
 const MULTIPLIER_ABI = [
   'function streamMultiplier(address user, uint256 baseRateBps, uint256 beliefScoreBps, uint256 loyaltyScoreBps) external returns (uint256)',
@@ -17,6 +18,7 @@ class RewardStreamPlanner {
     this.contractsReady = false;
     this.multiplierContract = null;
     this.now = typeof nowFn === 'function' ? nowFn : () => Date.now();
+    this.rpcIntegrationEnabled = Boolean(config.stream?.rpcIntegrationEnabled);
     this.contractInterface = contractInterface || null;
 
     if (!this.provider && config.providerUrl && this.multiplierAddress && this.rewardStreamAddress) {
@@ -43,14 +45,28 @@ class RewardStreamPlanner {
       }
     }
 
-    const useMock =
-      config.stream?.useMock === true || !this.provider || !this.rewardStreamAddress || !this.multiplierAddress;
-    if (!this.contractInterface && useMock) {
-      this.contractInterface = new RewardContractInterface({
-        provider: this.provider,
-        contractAddress: this.rewardStreamAddress,
-      });
+    const hasRpcPrereqs = Boolean(this.provider && this.rewardStreamAddress && this.multiplierAddress);
+    const allowRpcIntegration = hasRpcPrereqs && this.rpcIntegrationEnabled;
+    if (!this.contractInterface) {
+      if (allowRpcIntegration) {
+        this.contractInterface = new RewardContractInterface({
+          provider: this.provider,
+          contractAddress: this.rewardStreamAddress,
+        });
+      } else {
+        this.contractInterface = new RewardRpcPlaceholder({
+          rpcIntegrationEnabled: this.rpcIntegrationEnabled,
+          contractAddress: this.rewardStreamAddress,
+        });
+      }
     }
+
+    this.readiness = {
+      stream_ready: true,
+      on_chain_ready: Boolean(allowRpcIntegration),
+      rpc_integration_enabled: this.rpcIntegrationEnabled,
+      beta_compatible: true,
+    };
   }
 
   #normalizeAddress(value) {
