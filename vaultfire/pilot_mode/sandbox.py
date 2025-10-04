@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from typing import Dict, Iterable, List, Mapping, MutableMapping, Optional
 
 from . import storage
+from .privacy import PilotPrivacyLedger
 
 __all__ = ["SandboxResult", "YieldSandbox"]
 
@@ -54,10 +55,29 @@ class YieldSandbox:
         yield_log_path=None,
         behavior_log_path=None,
         secret_salt: str | None = None,
+        ledger: Optional[PilotPrivacyLedger] = None,
     ) -> None:
         self._yield_log_path = yield_log_path or storage.YIELD_LOG_PATH
         self._behavior_log_path = behavior_log_path or storage.BEHAVIOR_LOG_PATH
         self._secret_salt = secret_salt or uuid.uuid4().hex
+        self._ledger = ledger
+        self._simulate_real_load = False
+        self._load_multiplier = 1.0
+        self._load_profile: MutableMapping[str, object] = {}
+
+    def attach_ledger(self, ledger: PilotPrivacyLedger) -> None:
+        self._ledger = ledger
+
+    def set_real_load_simulation(
+        self,
+        enabled: bool,
+        *,
+        load_multiplier: float = 1.0,
+        profile: Optional[Mapping[str, object]] = None,
+    ) -> None:
+        self._simulate_real_load = bool(enabled)
+        self._load_multiplier = max(load_multiplier, 0.1)
+        self._load_profile = dict(profile or {})
 
     def _fingerprint_wallet(self, wallet_id: str) -> str:
         if not wallet_id or not wallet_id.strip():
@@ -81,7 +101,12 @@ class YieldSandbox:
         if sample_size <= 0:
             raise ValueError("sample_size must be positive")
         wallet_fingerprint = self._fingerprint_wallet(wallet_id)
-        seed_material = f"{partner_tag}:{session_id}:{strategy_id}:{wallet_fingerprint}:{sample_size}"
+        applied_sample_size = sample_size
+        if self._simulate_real_load:
+            applied_sample_size = max(1, int(sample_size * self._load_multiplier))
+        seed_material = (
+            f"{partner_tag}:{session_id}:{strategy_id}:{wallet_fingerprint}:{applied_sample_size}"
+        )
         digest = hashlib.sha256(seed_material.encode("utf-8")).digest()
         apr = (int.from_bytes(digest[:2], "big") % 5000) / 100  # up to 50% APR in sandbox
         deviation = (int.from_bytes(digest[2:4], "big") % 250) / 100  # +/- 2.5 spread
@@ -92,14 +117,32 @@ class YieldSandbox:
             partner_tag=partner_tag,
             wallet_fingerprint=wallet_fingerprint,
             strategy_id=strategy_id,
-            sample_size=sample_size,
+            sample_size=applied_sample_size,
             projected_apr=apr,
             confidence_interval=deviation,
             engagement_score=engagement_score,
             generated_at=datetime.now(timezone.utc),
             metadata=dict(telemetry_flags or {}),
         )
-        self._record(self._yield_log_path, result.export())
+        payload = result.export()
+        if self._ledger is None:
+            self._record(self._yield_log_path, payload)
+        else:
+            metadata = dict(payload.get("metadata", {}))
+            metadata.update(
+                {
+                    "load_simulation_enabled": self._simulate_real_load,
+                    "load_multiplier": self._load_multiplier,
+                }
+            )
+            if self._load_profile:
+                metadata["load_profile"] = dict(self._load_profile)
+            self._ledger.record_reference(
+                partner_tag=partner_tag,
+                reference_type="yield",
+                payload=payload,
+                metadata=metadata,
+            )
         return result
 
     def log_behavior(
@@ -121,7 +164,18 @@ class YieldSandbox:
             "payload": dict(payload),
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
-        self._record(self._behavior_log_path, record)
+        if self._ledger is None:
+            self._record(self._behavior_log_path, record)
+        else:
+            metadata = {"event_type": record["event_type"]}
+            if self._simulate_real_load:
+                metadata["load_simulation_enabled"] = True
+            self._ledger.record_reference(
+                partner_tag=partner_tag,
+                reference_type="behavior",
+                payload=record,
+                metadata=metadata,
+            )
 
     def summarize_behavior(self, *, limit: int = 10) -> Iterable[Dict[str, object]]:
         if limit <= 0:

@@ -22,12 +22,14 @@ __all__ = [
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 PILOT_MODE_ROOT = _REPO_ROOT / "telemetry" / "pilot_mode"
+PRIVATE_LEDGER_ROOT = PILOT_MODE_ROOT / "private"
 PARTNER_REGISTRY_PATH = PILOT_MODE_ROOT / "partners.json"
 PROTOCOL_KEYS_PATH = PILOT_MODE_ROOT / "protocol_keys.json"
 SESSION_LOG_PATH = PILOT_MODE_ROOT / "sessions.jsonl"
 YIELD_LOG_PATH = PILOT_MODE_ROOT / "yield_log.jsonl"
 BEHAVIOR_LOG_PATH = PILOT_MODE_ROOT / "behavior_log.jsonl"
 FEEDBACK_LOG_PATH = PILOT_MODE_ROOT / "feedback.jsonl"
+PRIVATE_REFERENCE_LOG_PATH = PRIVATE_LEDGER_ROOT / "pilot_references.jsonl"
 
 _LOCK = Lock()
 
