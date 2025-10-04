@@ -14,6 +14,7 @@ const {
 const { registerBeliefVoteCommand } = require('./beliefVote');
 const { ROLES } = require('../auth/roles');
 const { recordCliEvent } = require('../codex/ledger');
+const RewardContractInterface = require('../src/rewards/contractInterface');
 const ethics = require('../services/ethicsEngineV2');
 
 const program = new Command();
@@ -287,6 +288,70 @@ program
         digest: context?.digest,
       });
       ethics.checkpoint({ command: 'trust-sync', status, digest: context?.digest });
+    }
+  });
+
+program
+  .command('trigger-reward')
+  .description('Trigger an on-chain Vaultfire reward stream for a contributor wallet')
+  .argument('<userId>', 'Vaultfire user identifier')
+  .requiredOption('--wallet <address>', 'Recipient wallet address')
+  .option('--ens <ens>', 'Optional ENS alias for the recipient')
+  .option('--multiplier <value>', 'Reward multiplier to encode', '1')
+  .option('--duration <seconds>', 'Stream duration in seconds', '604800')
+  .option('--metadata <uri>', 'Metadata URI override for the minted NFT')
+  .option('--rpc <url>', 'RPC endpoint', process.env.VF_REWARD_RPC_URL)
+  .option('--contract <address>', 'Deployed VaultfireStreamNFT contract address', process.env.VF_REWARD_CONTRACT)
+  .option('--private-key <key>', 'Private key that holds the STREAM_MANAGER_ROLE', process.env.VF_REWARD_PRIVATE_KEY)
+  .option('--simulate', 'Skip on-chain execution and emit a compliance log only', false)
+  .action(async (userId, options) => {
+    const wallet = (options.wallet || '').toLowerCase();
+    const ensAlias = options.ens ? options.ens.toLowerCase() : null;
+    const context = ethics.reflect({ command: 'trigger-reward', wallet, ens: ensAlias });
+    let status = 'success';
+    let attestationDigest = context?.digest || null;
+
+    try {
+      const multiplier = Number(options.multiplier);
+      if (!Number.isFinite(multiplier) || multiplier <= 0) {
+        throw new Error('Multiplier must be a positive number');
+      }
+      const durationSeconds = Number(options.duration);
+      if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) {
+        throw new Error('Duration must be greater than zero seconds');
+      }
+
+      const contractInterface = new RewardContractInterface({
+        providerUrl: options.rpc,
+        contractAddress: options.contract,
+        privateKey: options.privateKey,
+        defaultDurationSeconds: durationSeconds,
+      });
+
+      const result = await contractInterface.triggerRewardStream({
+        wallet,
+        userId,
+        multiplier,
+        durationSeconds,
+        metadataURI: options.metadata || null,
+        simulate: options.simulate,
+      });
+
+      attestationDigest = result.digest || attestationDigest;
+      console.log(JSON.stringify(result, null, 2));
+    } catch (error) {
+      status = 'error';
+      console.error(chalk.red(`Failed to trigger reward stream: ${error.message}`));
+      process.exitCode = 1;
+    } finally {
+      recordCliEvent({
+        command: 'trigger-reward',
+        wallet,
+        ens: ensAlias,
+        status,
+        digest: attestationDigest,
+      });
+      ethics.checkpoint({ command: 'trigger-reward', status, digest: attestationDigest });
     }
   });
 

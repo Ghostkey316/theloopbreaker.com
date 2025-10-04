@@ -1,0 +1,19 @@
+{
+  "generated_at": "2025-10-04T00:34:47.484537+00:00",
+  "next_run_after": "2025-10-05T00:34:47.484537+00:00",
+  "sources": {
+    "ledger": {
+      "path": "/workspace/ghostkey-316-vaultfire-init/codex/VAULTFIRE_CLI_LEDGER.jsonl",
+      "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "runbook": {
+      "path": "/workspace/ghostkey-316-vaultfire-init/governance_runbook.yaml",
+      "hash": "438e95a071e8f5db0bbc63241c5865130a2902178af083f03bbc0d4f3116fd77"
+    },
+    "script": {
+      "path": "/workspace/ghostkey-316-vaultfire-init/compliance/auto_attestation.py",
+      "hash": "6d7444264566a371cb11f265ed0f65490eeca9876396a3790609bc67dd167388"
+    }
+  },
+  "snapshots": []
+}
