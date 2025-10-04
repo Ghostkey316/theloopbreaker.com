@@ -1,0 +1,12 @@
+{
+  "mission_id": "mission-gamma",
+  "pilot_id": "pilot-003",
+  "belief_id": "belief-convert-09",
+  "timestamp": "2024-12-03T08:30:00Z",
+  "trigger_event": "Converted free trial to paid tier",
+  "ghostscore_delta": 35.4,
+  "activation_signals": [
+    {"signal": "referral_generated", "weight": 0.5},
+    {"signal": "upgrade_click", "weight": 0.5}
+  ]
+}

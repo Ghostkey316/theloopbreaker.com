@@ -1,0 +1,11 @@
+{
+  "user_hash": "24b8fc0dadce841e51822d4278ed09e74092b10f015fb9bdd7d9a3a56a8cb5d0",
+  "mission_hashes": [
+    "09acef66679dd891df5ef674fa49fa31c93285c9fe8906fb3d53412805b17be1"
+  ],
+  "estimated_retention_boost": 0.475,
+  "referral_probability": 0.4,
+  "projected_active_minutes": 67.5,
+  "generated_at": "2025-10-04T00:54:30.086310Z",
+  "notes": "Derived from historical ghostscore trends."
+}

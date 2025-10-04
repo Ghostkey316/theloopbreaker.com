@@ -29,6 +29,13 @@ Live pilot deployments targeted for Q4 roadmap; current examples demonstrate arc
 - **Unified scale health snapshot:** `./tools/scale_readiness_report.py --pretty` compiles recent Purposeful Scale decisions, thread coverage, belief-density stats, and attestation freshness into a single JSON payload so partners can gate launches on objective readiness signals.
 - **Staleness guards baked in:** The readiness report fails the `scale_ready` flag if approvals drop below 60% or if the last aligned expansion is older than six hours, keeping the protocol’s ethics-first mission central while scaling.
 
+## Yield Insights Pipeline
+- **Mission log conversion:** `python scripts/run_yield_pipeline.py` ingests `/missions/pilot_logs/*.json`, strips pilot identifiers, hashes mission IDs with SHA256, and publishes anonymized case studies to `/public/case_studies/` following `schemas/yield_case_study.schema.json`.
+- **Public API:** Launch the FastAPI service with `uvicorn yield_pipeline.api:app --reload` and query `/api/yield-insights?segment_id=belief-01`. Responses are rate limited to 30 requests/minute per IP, accept optional `date_range=start,end`, and require the `X-API-Key` header when `YIELD_API_KEY` is set.
+- **Repeatable activation modelling:** `python -c "from yield_pipeline.engine import simulate_activation_to_yield; import json; print(json.dumps(simulate_activation_to_yield('pilot-001'), indent=2))"` calculates retention, referral, and time projections, persisting audit-friendly reports in `/yield_reports/`.
+- **Attestations:** Every API call writes an anonymized audit record to `/attestations/yield-api-activity.json` so compliance teams can trace public insight access.
+- **Dashboard:** `streamlit run dashboard/yield_dashboard.py` renders belief-segment filters, ROI visualizations, and mission drilldowns sourced from the published case studies for transparent partner storytelling.
+
 ## Enterprise Bridge Enhancements (Resolved)
 - **Live adoption status:** `/deployment/status` and `/deployment/mode` expose a simulated/live toggle with a green-dot `LIVE` indicator, real-time telemetry ingestion (`POST /telemetry/realtime`), and onchain-ready signature logging (`POST /belief/actions/sign`). Partners can explore the view through the new `/trust-map` endpoint or the `cli/belief-mapper.js --map` CLI.
 - **Financial model clarity:** Rewards now surface hybrid-compliance posture, reputation-to-yield conversions, and partner revenue bridge previews directly from `/vaultfire/rewards/:walletId`. Config schemas accept `vaultfire.partnerReady`, deployment profiles, and partner revenue templates so governance votes can unlock real payouts on demand.

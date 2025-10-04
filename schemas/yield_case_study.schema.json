@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "YieldCaseStudy",
+  "type": "object",
+  "required": [
+    "timestamp",
+    "belief_segment",
+    "yield_classification",
+    "ghostscore_roi",
+    "trigger_summary",
+    "mission_hash"
+  ],
+  "properties": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "belief_segment": {
+      "type": "string",
+      "description": "An anonymized segment identifier"
+    },
+    "yield_classification": {
+      "type": "string",
+      "enum": ["engagement", "conversion", "retention", "risk"]
+    },
+    "ghostscore_roi": {
+      "type": "number"
+    },
+    "trigger_summary": {
+      "type": "string"
+    },
+    "mission_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "additionalProperties": false
+}
