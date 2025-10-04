@@ -6,6 +6,8 @@ title: "Case Study B"
 subtitle: "NS3 + Ghostkey AI Engagement"
 ---
 
+> **Simulation Notice:** Derived from the Ghostkey-316 origin validator; no additional live deployments exist yet.
+
 # Overview
 Vaultfire fused NS3 simulations with the Ghostkey signal router to vet AI engagement flows before live deployment.
 

@@ -1,6 +1,8 @@
 # Vaultfire Case Study Portfolio (Telemetry Verified)
 
 > Export-ready for GitHub, Notion, and PDF bundles. Each case study references verifiable telemetry, ROI calculations, and audit-ready governance actions.
+>
+> **Origin Truth:** Ghostkey-316 (wallet: `bpow20.cb.id`) is the only live Vaultfire case study completed to date. All additional case studies in this portfolio are sandbox simulations modeled directly from the Ghostkey-316 behavioral loop until future production pilots are certified.
 
 ## Case Study 0 — Ghostkey-316 Verified Launch Sync
 - **Partner Identity**: Ghostkey-316 (wallet: `bpow20.cb.id`, ENS: `ghostkey316.eth`)
@@ -21,6 +23,7 @@
   - Optional narrative export: `pandoc docs/vaultfire_pilot_bundle/case_studies.md -o ghostkey_case_studies.pdf`
 
 ## Case Study 1 — Guardian Council Attestation Sprint
+- **Simulation Notice**: Modeled from Ghostkey-316 telemetry; no external partner deployment has occurred yet.
 - **Partner Type**: Fortune 100 Innovation Lab
 - **Objective**: Convert simulated trust signals into audit-verifiable telemetry before national rollout.
 - **Intervention**:
@@ -39,6 +42,7 @@
   - PDF Export: `pandoc case_study_one_pagers/guardian_attestation.md -o guardian_attestation.pdf`
 
 ## Case Study 2 — Mission Alignment Accelerator
+- **Simulation Notice**: Ghostkey-316-derived sandbox scenario representing a mid-market adoption pattern.
 - **Partner Type**: Mid-Market Purpose-Led Brand
 - **Objective**: Increase belief-driven mission completions while maintaining retention.
 - **Intervention**:
@@ -57,6 +61,7 @@
   - Embed snippet available in `docs/vaultfire_pilot_bundle/publishing_assets.md`
 
 ## Case Study 3 — Impact Nonprofit Coalition
+- **Simulation Notice**: Synthetic nonprofit coalition metrics extrapolated from Ghostkey-316 data.
 - **Partner Type**: Global humanitarian alliance
 - **Objective**: Demonstrate mission outcomes with transparent telemetry for grant renewals.
 - **Intervention**:
@@ -75,6 +80,7 @@
   - Case study PDF pipeline documented in `docs/vaultfire_pilot_bundle/publishing_assets.md`
 
 ## Case Study 4 — Enterprise Procurement Fast Track
+- **Simulation Notice**: Forecasted enterprise deployment metrics extrapolated from Ghostkey-316 telemetry.
 - **Partner Type**: Defense-grade SaaS Vendor
 - **Objective**: Bundle attestations, governance, and ROI proof for procurement committees.
 - **Intervention**:

@@ -6,6 +6,8 @@ title: "Case Study D"
 subtitle: "Governance Mirror Sandbox"
 ---
 
+> **Simulation Notice:** Derived from the Ghostkey-316 origin validator; no additional live deployments exist yet.
+
 # Overview
 Vaultfire enabled partners to simulate governance decisions safely through the Governance Mirror sandbox.
 

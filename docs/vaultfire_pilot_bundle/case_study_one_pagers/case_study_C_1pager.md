@@ -6,6 +6,8 @@ title: "Case Study C"
 subtitle: "Ethics-First Web3 Loyalty"
 ---
 
+> **Simulation Notice:** Derived from the Ghostkey-316 origin validator; no additional live deployments exist yet.
+
 # Overview
 Vaultfire partnered with a mission-led brand to launch an ethics-first loyalty program that preserved privacy and stable mainnet economics.
 

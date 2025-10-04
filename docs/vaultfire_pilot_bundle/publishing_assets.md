@@ -2,6 +2,8 @@
 
 Belief-driven, ethics-first, enterprise credible.
 
+> **Reality Check:** All current case study data is modeled from the real behavior loop of Ghostkey-316, the protocol's origin validator and loyalty stress tester. No commercial trials have yet been run beyond this wallet-based pilot layer. Treat every additional deployment narrative in this bundle as a sandbox simulation until new live validators are verified.
+
 ## GitHub / Notion Overview Sections
 
 ### Attestations & Compliance (Markdown Snippet)
@@ -19,6 +21,7 @@ Belief-driven, ethics-first, enterprise credible.
 ### Case Studies Snapshot (Markdown Snippet)
 ```
 ## Case Studies
+- All data below is simulated from the Ghostkey-316 origin validator; no additional live deployments exist yet.
 - Guardian Council attestation sprint: 14.6K wallets, ROI 24%
 - Mission alignment accelerator: 18.2K wallets, ROI 27%
 - Impact nonprofit coalition: 8.1K wallets, retention 71%, ROI 31%
@@ -73,10 +76,12 @@ cta_secondary: "View SOC 2 Roadmap"
 ---
 layout: landing
 hero_title: "Belief-Driven Impact Stories"
-hero_subtitle: "Sandbox-proven pilots for mid-market innovators and Fortune 100 leaders"
+hero_subtitle: "Sandbox-modeled pilots derived from the Ghostkey-316 origin validator"
 cta_primary: "Download 1-Pagers"
 cta_secondary: "Book a Sandbox Session"
 ---
+
+> All case studies are Ghostkey-316 simulations until additional pilots are verified.
 
 {{ include '../case_studies.md' }}
 

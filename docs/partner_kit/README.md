@@ -2,6 +2,8 @@
 
 This kit bundles audit evidence, governance documentation, ROI calculators, and case studies for enterprise procurement teams.
 
+> **Case Study Notice:** Only the Ghostkey-316 wallet pilot has run live so far. All other case studies and deployment metrics in this kit are sandbox simulations derived from Ghostkey-316 telemetry until new validators are verified in production.
+
 ## Contents
 1. **Attestation Packet**
    - Request templates: `docs/attestations/attestation_requests.md`

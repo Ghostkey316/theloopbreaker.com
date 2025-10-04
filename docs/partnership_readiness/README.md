@@ -2,6 +2,8 @@
 
 Vaultfire partners, validators, and enterprise collaborators can use this bundle to accelerate diligence, demonstrate belief-aligned impact, and share deployment wins with confidence. Every block below is formatted for GitHub or Notion so it can be dropped into partner hubs without additional styling.
 
+> **Case Study Disclosure:** All deployment wins referenced here—outside of the Ghostkey-316 wallet pilot—are sandbox simulations modeled from Ghostkey-316 telemetry. No other commercial, institutional, or community deployments have been executed live yet.
+
 ---
 
 ## Attestation Templates
@@ -202,7 +204,7 @@ Vaultfire invites independent auditors and compliance partners to validate our b
 ### /case-studies Landing Block
 ```
 # Vaultfire in the Field
-See how belief-driven orchestration empowers communities, validators, and enterprise partners. Each case study demonstrates measurable outcomes rooted in ethics.
+See how belief-driven orchestration empowers communities, validators, and enterprise partners. Each case study demonstrates measurable outcomes rooted in ethics, and aside from Ghostkey-316 every scenario is a Ghostkey-modeled simulation awaiting live validation.
 
 **Featured Stories**
 - Belief-Based Yield Pilot for Discord & X (Community stewardship at scale)
