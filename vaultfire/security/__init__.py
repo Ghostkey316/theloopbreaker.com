@@ -12,6 +12,13 @@ from .fhe import (
     PrivacyEngine,
     SoulboundKey,
 )
+from .resilience_simulator import (
+    PilotConfig,
+    PilotRunResult,
+    ResilienceScenario,
+    ResilienceSimulator,
+    SimulationEvent,
+)
 
 __all__ = [
     "Ciphertext",
@@ -22,4 +29,9 @@ __all__ = [
     "PrivacyEngine",
     "SoulboundKey",
     "validate_securestore_fallback",
+    "PilotConfig",
+    "PilotRunResult",
+    "ResilienceScenario",
+    "ResilienceSimulator",
+    "SimulationEvent",
 ]
