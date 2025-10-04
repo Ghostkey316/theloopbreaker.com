@@ -10,13 +10,23 @@ from .fhe_bridge import (
     seal_belief_yield_event,
     verify_cross_chain_payload,
 )
+from .ghostkey_ai import GhostkeyAINetwork, GhostkeyAINode
+from .identity_gate import BiometricYieldRouter, ZKIdentityVerifier
 from .logs import log_private_behavioral_signal, log_telemetry_event
 from .private_staking import ConfidentialVaultScoring, PrivateStake, PrivateStakingLedger
+from .reputation_tokens import EncryptedTrustToken, ReputationLedger
+from .secure_collaboration import MPCContribution, MPCFabric
 from .telemetry import activate_trace_stream
+from .telemetry import ZKFog
+from .consent_mirror import ConsentMirror, ConsentRecord
 
 __all__ = [
     "activate_trace_stream",
     "get_case_by_id",
+    "GhostkeyAINetwork",
+    "GhostkeyAINode",
+    "BiometricYieldRouter",
+    "ZKIdentityVerifier",
     "PrivateSignal",
     "PrivateStake",
     "PrivateStakingLedger",
@@ -28,4 +38,11 @@ __all__ = [
     "log_telemetry_event",
     "log_private_behavioral_signal",
     "mark_case_as_ready",
+    "EncryptedTrustToken",
+    "ReputationLedger",
+    "MPCContribution",
+    "MPCFabric",
+    "ZKFog",
+    "ConsentMirror",
+    "ConsentRecord",
 ]
