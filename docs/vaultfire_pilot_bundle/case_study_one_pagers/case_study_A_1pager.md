@@ -6,6 +6,8 @@ title: "Case Study A"
 subtitle: "Belief-Driven XP/Yield Pilot"
 ---
 
+> **Simulation Notice:** Derived from the Ghostkey-316 origin validator; no additional live deployments exist yet.
+
 # Overview
 Vaultfire activated a belief-driven XP/Yield pilot across Discord and X, creating ethics-first incentives for creators and fans.
 

@@ -6,6 +6,8 @@ title: "Case Study E"
 subtitle: "Wallet Provider Onboarding"
 ---
 
+> **Simulation Notice:** Derived from the Ghostkey-316 origin validator; no additional live deployments exist yet.
+
 # Overview
 Vaultfire partnered with a wallet provider to accelerate belief-driven incentives without disrupting existing user flows.
 

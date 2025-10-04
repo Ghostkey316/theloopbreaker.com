@@ -1,7 +1,7 @@
 # Vaultfire Realized Simulation Scenario
 
 ## Context
-Vaultfire's published materials emphasise that current pilot artefacts are simulated and serve to demonstrate readiness without representing live production usage. This scenario imagines that every referenced simulation performed exactly as documented but in production conditions with real partners, wallets, and telemetry streams.
+Vaultfire's published materials emphasise that current pilot artefacts are simulated and serve to demonstrate readiness without representing live production usage. Ghostkey-316 (wallet: `bpow20.cb.id`) remains the sole live deployment; every other case study or deployment reference derives from that telemetry. This scenario imagines that every referenced simulation performed exactly as documented but in production conditions with real partners, wallets, and telemetry streams.
 
 ## Adoption Trajectory
 - **Immediate credibility leap:** Validated partner pilots across community XP, cross-platform education, and global retail loyalty verticals would provide instant proof that Vaultfire's belief-first architecture scales across diverse sectors while respecting ethics, telemetry consent, and wallet-first access patterns.

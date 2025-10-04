@@ -8,6 +8,8 @@
 ## Project Overview
 Vaultfire is a production-ready, morals-first protocol that fuses belief-driven intelligence with verifiable human identity. It orchestrates Codex reasoning engines, NFT-based identity anchors, and partner-focused loyalty modules to deliver a resilient activation stack for ethical AI collaboration.
 
+> **Case Study Reality Check:** All current case study data is modeled from the real behavior loop of Ghostkey-316, the protocol's origin validator and loyalty stress tester. No commercial trials have yet been run beyond this wallet-based pilot layer. Every additional "deployment" or "case study" referenced in this repository is a sandboxed simulation derived from Ghostkey-316 telemetry until further notice.
+
 ## Simulated Use Case Pilots (v1)
 - **Important:** Every asset linked in this section is a simulation artifact only. Partners must not treat the narratives or metrics as evidence of live deployments.
 - [Simulated Community XP Pilot](./sim-pilots/community-xp-pilot.md) — belief-aligned engagement loop showcasing mission dispatch, belief logging, and simulated XP uplift (Simulated Pilot Verified ✅).
@@ -70,6 +72,7 @@ guidance and Jest falls back to an identity profiler so mobile pipelines keep pa
 - Track change governance through the [Change Management Playbook](./docs/change-management.md) and automated checks in [`scripts/security-audit.sh`](./scripts/security-audit.sh).
 - Bundle audit receipts via `scripts/collect-live-evidence.py` so partners receive a signed digest (recorded in `immutable_log.jsonl`) for their compliance teams.
 - Vaultfire maintains transparent partner communications, surfacing scan results, scheduled audits, and rollout notices before each production pilot.
+- When referencing the [Reference Deployments](./status/reference-deployments.md) rollup or any partner-facing summaries, remember that only the Ghostkey-316 wallet pilot has been executed live; all other deployments remain simulations based on that source telemetry.
 
 ## Module Scope Modes
 
