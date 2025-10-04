@@ -12,12 +12,14 @@ import hashlib
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 BASE_DIR = Path(__file__).resolve().parent
 AUDIT_PATH = BASE_DIR / "vaultfire_audit_report.txt"
 READY_FLAG_PATH = BASE_DIR / "vaultfire_ready.flag"
 PARTNER_FORK_PATH = BASE_DIR / "vaultbundle_partner_fork.json"
+ATTESTATION_DIR = BASE_DIR / "attestations"
+LOGS_DIR = BASE_DIR / "logs"
 
 CORE_FILES = {
     "vaultfire_core.py": """from pathlib import Path
@@ -108,6 +110,9 @@ def _ensure_files() -> None:
                 path.write_text(json.dumps(content, indent=2))
             _log(f"created {name}")
 
+    LOGS_DIR.mkdir(parents=True, exist_ok=True)
+    ATTESTATION_DIR.mkdir(parents=True, exist_ok=True)
+
 
 def _validate_scripts() -> List[str]:
     errors: List[str] = []
@@ -156,7 +161,66 @@ def _simulate_actions() -> List[str]:
         fanforge_vr.vr_check_in("demo", "team")
     except Exception as e:
         errors.append(f"action simulation failed: {e}")
+
+    try:
+        from engine import purposeful_scale
+
+        guardian_identity = {
+            "ens": "guardian.eth",
+            "wallet": "guardian.wallet",
+            "missionTags": ["Vaultfire", "NS3", "Ghostkey-316"],
+            "beliefDensity": purposeful_scale.DEFAULT_BELIEF_THRESHOLD + 0.2,
+            "declaredPurpose": (
+                "Safeguard Vaultfire, NS3, and Ghostkey-316 mission threads with moral coherence"
+            ),
+        }
+
+        mission = purposeful_scale.ensure_mission_profile("guardian.eth", guardian_identity)
+
+        scale_request = {
+            "operation": "system.readiness",
+            "mission_tags": guardian_identity["missionTags"],
+            "declared_purpose": mission,
+            "belief_density": guardian_identity["beliefDensity"],
+        }
+
+        purposeful_scale.belief_trace(
+            "guardian.eth",
+            scale_request,
+            identity=guardian_identity,
+        )
+
+        purposeful_scale.behavioral_resonance_filter("guardian.eth", scale_request)
+
+        purposeful_scale.generate_attestation_pack("guardian.eth", history_limit=5)
+    except Exception as e:
+        errors.append(f"purposeful scale simulation failed: {e}")
     return errors
+
+
+def _generate_attestation(user_id: str, history_limit: int | None) -> Tuple[Path, Dict[str, Any]]:
+    from engine import purposeful_scale
+
+    guardian_identity = {
+        "ens": user_id,
+        "wallet": f"{user_id}.vaultfire",
+        "missionTags": ["Vaultfire", "NS3", "Ghostkey-316"],
+        "beliefDensity": purposeful_scale.DEFAULT_BELIEF_THRESHOLD + 0.15,
+        "declaredPurpose": (
+            "Safeguard Vaultfire, NS3, and Ghostkey-316 mission threads with moral coherence"
+        ),
+    }
+
+    purposeful_scale.ensure_mission_profile(user_id, guardian_identity)
+    attestation = purposeful_scale.generate_attestation_pack(
+        user_id,
+        history_limit=history_limit,
+        include_index=True,
+    )
+    destination = ATTESTATION_DIR / f"{user_id.replace('/', '_')}_attestation.json"
+    destination.write_text(json.dumps(attestation, indent=2))
+    _log(f"generated attestation for {user_id}")
+    return destination, attestation
 
 
 def _generate_partner_fork(wallet: str) -> None:
@@ -186,6 +250,18 @@ def _system_hash() -> str:
 def main(argv: List[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Vaultfire system readiness")
     parser.add_argument("--partner-mode", metavar="WALLET", help="generate partner fork")
+    parser.add_argument(
+        "--attest",
+        metavar="USER",
+        help="generate a purposeful scale attestation for USER",
+    )
+    parser.add_argument(
+        "--attest-history",
+        metavar="N",
+        type=int,
+        default=10,
+        help="limit the attestation decision history (default: 10)",
+    )
     args = parser.parse_args(argv)
 
     _ensure_files()
@@ -197,6 +273,14 @@ def main(argv: List[str] | None = None) -> int:
 
     if args.partner_mode:
         _generate_partner_fork(args.partner_mode)
+
+    if args.attest:
+        try:
+            path, attestation = _generate_attestation(args.attest, args.attest_history)
+            _log(f"attestation stored at {path}")
+            _log(f"attestation hash {attestation.get('attestation_hash')}")
+        except Exception as exc:
+            issues.append(f"failed to generate attestation: {exc}")
 
     moral_violations = []
     banned = {"gamble", "casino", "surveillance", "coercion"}

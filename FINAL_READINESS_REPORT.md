@@ -20,6 +20,7 @@ Vaultfire Final Commit: July 30, 2025 — 12:29 AM ET
 - **Reward streams**: loyalty multipliers trigger the reward stream planner, which updates the token stream contract (or mock interface in dev mode) whenever contribution events are recorded.
 - **Ethics guardrails**: `tools/lint_guardrails.js` blocks biometric/KYC imports; extend list when new surveillance vendors emerge.
 - **Residency enforcement**: Telemetry DSNs and partner hooks must satisfy `trustSync.telemetry.residency` allow-lists; preflight now fails without region coverage, closing the open question on remote sink compliance.
+- **Scale attestations**: `vaultfire_system_ready.py --attest <guardian>` now bakes a Purposeful Scale attestation (with mission bootstrap + alignment replay) into `attestations/`, and partners can score readiness using `tools/scale_readiness_report.py` before flipping live traffic.
 
 ### Safe Partner Testnet Entry Points
 - `https://partner-sandbox.vaultfire.xyz` — mirrored belief sync with wallet-only auth.

@@ -24,6 +24,11 @@ Live pilot deployments targeted for Q4 roadmap; current examples demonstrate arc
 - **Telemetry ethics:** Wallet-level consent toggles route opt-in signals to Sentry, logging dashboard renders, wallet logins, and belief vote casts only when explicitly approved.
 - **Trust badge:** The coverage-driven badge above is auto-generated from `coverage/coverage-summary.json` via `node tools/generateCoverageBadge.js` after each test run.
 
+## Scale Readiness Automation
+- **Guardian attestations on demand:** `./vaultfire_system_ready.py --attest guardian.eth` now provisions mission profiles, runs alignment simulations, and emits an attestation pack under `attestations/` with the digest logged for audit trails.
+- **Unified scale health snapshot:** `./tools/scale_readiness_report.py --pretty` compiles recent Purposeful Scale decisions, thread coverage, belief-density stats, and attestation freshness into a single JSON payload so partners can gate launches on objective readiness signals.
+- **Staleness guards baked in:** The readiness report fails the `scale_ready` flag if approvals drop below 60% or if the last aligned expansion is older than six hours, keeping the protocol’s ethics-first mission central while scaling.
+
 ## Enterprise Bridge Enhancements (Resolved)
 - **Live adoption status:** `/deployment/status` and `/deployment/mode` expose a simulated/live toggle with a green-dot `LIVE` indicator, real-time telemetry ingestion (`POST /telemetry/realtime`), and onchain-ready signature logging (`POST /belief/actions/sign`). Partners can explore the view through the new `/trust-map` endpoint or the `cli/belief-mapper.js --map` CLI.
 - **Financial model clarity:** Rewards now surface hybrid-compliance posture, reputation-to-yield conversions, and partner revenue bridge previews directly from `/vaultfire/rewards/:walletId`. Config schemas accept `vaultfire.partnerReady`, deployment profiles, and partner revenue templates so governance votes can unlock real payouts on demand.
