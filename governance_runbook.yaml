@@ -1,0 +1,39 @@
+version: 1
+updated_at: 2025-02-15T00:00:00Z
+description: >-
+  Vaultfire governance runbook defining SOC2-aligned controls for automated
+  reward streaming and compliance attestation.
+controls:
+  - id: VF-C1
+    name: CLI execution immutability
+    applies_to: ['cli']
+    description: >-
+      Every Vaultfire CLI invocation must produce a hashed execution log entry
+      that is chained to the prior digest and stored in codex/VAULTFIRE_CLI_LEDGER.jsonl.
+    verification:
+      cadence: daily
+      data_source: codex/VAULTFIRE_CLI_LEDGER.jsonl
+      metric: execution_hash
+      tolerance_seconds: 90
+  - id: VF-C2
+    name: Identity binding for automation
+    applies_to: ['cli']
+    description: >-
+      Automation events are only valid when a wallet or ENS alias is present and
+      matches the recorded fingerprint for the command issuer.
+    verification:
+      cadence: per-execution
+      data_source: codex/VAULTFIRE_CLI_LEDGER.jsonl
+      metric: identity_match
+      threshold: required
+  - id: VF-C3
+    name: Attestation chain-of-custody
+    applies_to: ['attestation-engine']
+    description: >-
+      The attestation engine must hash its own source code and the governing
+      runbook on every emission, ensuring tamper evident compliance outputs.
+    verification:
+      cadence: daily
+      data_source: compliance/auto_attestation.py
+      metric: script_hash
+      digest_required: true
