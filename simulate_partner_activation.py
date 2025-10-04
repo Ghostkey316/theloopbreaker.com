@@ -5,46 +5,123 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import logging
+import time
 from datetime import datetime
 from pathlib import Path
+from typing import Iterable
 
 from engine import storage
 from engine.loyalty_engine import update_loyalty_ranks
 from engine.identity_resolver import resolve_identity
 from system_integrity_check import run_integrity_check
+from vaultfire.ghost_audit import GhostAuditLogger
 
 BASE_DIR = Path(__file__).resolve().parent
 CONFIG_PATH = BASE_DIR / "vaultfire-core" / "vaultfire_config.json"
 PARTNERS_PATH = BASE_DIR / "partners.json"
 ALIGNMENT_PHRASE = "Morals Before Metrics."
 
+logger = logging.getLogger("vaultfire.partner_activation")
+_AUDIT_LOGGER = GhostAuditLogger()
 
-def simulate_activation(partner_id: str, wallets: list[str],
-                        phrase: str = ALIGNMENT_PHRASE,
-                        test_mode: bool = False) -> dict:
-    """Run activation checks and return a result object."""
+
+def simulate_activation(
+    partner_id: str,
+    wallets: list[str],
+    phrase: str = ALIGNMENT_PHRASE,
+    test_mode: bool = False,
+    *,
+    audit_logger: GhostAuditLogger | None = None,
+    redact_sensitive: bool | None = None,
+    validators: Iterable[str] | None = None,
+) -> dict:
+    """Run activation checks and return a result object with audit logging."""
+
+    started = time.monotonic()
+    audit_logger = audit_logger or _AUDIT_LOGGER
+
     failures: list[str] = []
+    decision_tree: list[dict[str, object]] = []
 
-    if not partner_id:
+    partner_present = bool(partner_id)
+    decision_tree.append(
+        {
+            "id": "inputs.partner_id",
+            "description": "Partner identifier supplied",
+            "observed": "present" if partner_present else "missing",
+            "outcome": "pass" if partner_present else "fail",
+        }
+    )
+    if not partner_present:
         failures.append("partner_id missing")
-    if not wallets:
+
+    wallets_present = bool(wallets)
+    decision_tree.append(
+        {
+            "id": "inputs.wallet_roster",
+            "description": "Wallet roster provided",
+            "observed": len(wallets),
+            "outcome": "pass" if wallets_present else "fail",
+        }
+    )
+    if not wallets_present:
         failures.append("wallets missing")
 
-    if not check_alignment_phrase(phrase):
+    phrase_ok = check_alignment_phrase(phrase)
+    decision_tree.append(
+        {
+            "id": "controls.alignment_phrase",
+            "description": "Alignment phrase matches canonical charter",
+            "observed": "match" if phrase_ok else "mismatch",
+            "outcome": "pass" if phrase_ok else "fail",
+        }
+    )
+    if not phrase_ok:
         failures.append("alignment phrase mismatch")
 
-    if not check_ethics_anchor():
+    ethics_ok = check_ethics_anchor()
+    decision_tree.append(
+        {
+            "id": "controls.ethics_anchor",
+            "description": "Ethics anchor enabled in configuration",
+            "observed": ethics_ok,
+            "outcome": "pass" if ethics_ok else "fail",
+        }
+    )
+    if not ethics_ok:
         failures.append("ethics_anchor disabled")
 
-    if not init_loyalty_engine():
+    loyalty_ok = init_loyalty_engine()
+    decision_tree.append(
+        {
+            "id": "systems.loyalty_engine",
+            "description": "Loyalty engine initialised",
+            "observed": loyalty_ok,
+            "outcome": "pass" if loyalty_ok else "fail",
+        }
+    )
+    if not loyalty_ok:
         failures.append("loyalty_engine initialization failed")
 
     success = not failures
     resolved_wallets = resolve_wallets(wallets) if success else wallets
+    activation_recorded = False
     if success and not test_mode:
         activate_partner(partner_id, wallets, resolved_wallets)
+        activation_recorded = True
 
-    return {
+    decision_tree.append(
+        {
+            "id": "outcome.activation",
+            "description": "Overall activation status",
+            "observed": "activated" if success else "blocked",
+            "outcome": "pass" if success else "fail",
+            "notes": failures if not success else ["All readiness checks satisfied."],
+        }
+    )
+
+    result = {
         "partner_id": partner_id,
         "wallets": resolved_wallets,
         "input_wallets": wallets,
@@ -54,6 +131,41 @@ def simulate_activation(partner_id: str, wallets: list[str],
         "status": "PASS" if success else "FAIL",
         "integration_readiness": "10/10" if success else "0/10",
     }
+
+    duration_ms = round((time.monotonic() - started) * 1000, 3)
+    performance_metrics = {
+        "duration_ms": duration_ms,
+        "checks_total": len(decision_tree),
+        "checks_failed": len(failures),
+        "wallets_submitted": len(wallets),
+        "activation_recorded": activation_recorded,
+        "success": success,
+    }
+
+    run_context = {
+        "partner_id": partner_id,
+        "wallets": wallets,
+        "resolved_wallets": resolved_wallets,
+        "test_mode": test_mode,
+        "phrase": phrase,
+    }
+
+    try:
+        audit_logger.log_simulation(
+            protocol_name="partner_activation",
+            scenario=partner_id or "unassigned-partner",
+            decision_tree={"nodes": decision_tree},
+            performance=performance_metrics,
+            run_context=run_context,
+            outcome=result,
+            protocol_version="activation.v1",
+            validators=validators,
+            redact_sensitive=redact_sensitive,
+        )
+    except Exception as exc:  # pragma: no cover - audit logging must not break flow
+        logger.warning("Failed to persist GhostAudit record: %s", exc)
+
+    return result
 
 
 def _load_json(path: Path, default):

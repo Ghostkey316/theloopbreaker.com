@@ -16,6 +16,7 @@ __all__ = [
     "satellite",
     "enterprise",
     "rewards",
+    "ghost_audit",
     "refund",
     "pilot_mode",
     "auto_refund",
@@ -31,6 +32,7 @@ _LAZY_MODULES: Dict[str, str] = {
     "satellite": ".satellite",
     "enterprise": ".enterprise",
     "rewards": ".rewards",
+    "ghost_audit": ".ghost_audit",
     "refund": ".refund",
     "pilot_mode": ".pilot_mode",
 }
