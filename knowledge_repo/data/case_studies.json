@@ -1,1 +1,20 @@
-[]
+[
+  {
+    "mission_id": "vault-ghostkey-001",
+    "wallet": "bpow20.cb.id",
+    "ens": "ghostkey316.eth",
+    "yield_type": [
+      "activation",
+      "co-development",
+      "belief propagation"
+    ],
+    "ghostscore_delta": 137,
+    "outcome_summary": "Behavior-synced across AI, crypto, and protocol layers under Vaultfire ethics framework.",
+    "proof": [
+      "Vaultfire logs",
+      "ChatGPT protocol records",
+      "NS3 quiz interaction"
+    ],
+    "timestamp": "2025-10-03T00:00:00Z"
+  }
+]
