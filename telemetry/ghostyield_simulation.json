@@ -6,24 +6,24 @@
   },
   "scenarios": [
     {
-      "wallet_count": 250000,
-      "belief_multiplier": 1.05,
-      "loyalty_multiplier": 1.1,
-      "projected_yield": 1154979.0,
+      "wallet_count": 3,
+      "belief_multiplier": 1.12,
+      "loyalty_multiplier": 1.1733,
+      "projected_yield": 1000000,
       "currency": "$GHOSTYIELD"
     },
     {
-      "wallet_count": 500000,
-      "belief_multiplier": 1.08,
-      "loyalty_multiplier": 1.1314,
-      "projected_yield": 2375956.8,
+      "wallet_count": 5,
+      "belief_multiplier": 1.18,
+      "loyalty_multiplier": 1.2362,
+      "projected_yield": 1000000,
       "currency": "$GHOSTYIELD"
     },
     {
-      "wallet_count": 750000,
-      "belief_multiplier": 1.1,
-      "loyalty_multiplier": 1.1524,
-      "projected_yield": 3629934.0,
+      "wallet_count": 8,
+      "belief_multiplier": 1.24,
+      "loyalty_multiplier": 1.299,
+      "projected_yield": 1000000,
       "currency": "$GHOSTYIELD"
     }
   ],
