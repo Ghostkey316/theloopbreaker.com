@@ -1,0 +1,11 @@
+{
+  "name": "Core Warehouse Sink",
+  "description": "Primary analytics warehouse running in the guarded production VPC.",
+  "testPayload": "vaultfire-live-telemetry-probe",
+  "expectedChecksum": "eb26878117abd6b91605bb04157bc04bcfc16e771065bc552463a999f9c87bab",
+  "signatureProbe": {
+    "algorithm": "sha256",
+    "testSecret": "guardian-shared-salt",
+    "expected": "9015227d2308ff014304f93e706568852b287478a577c69907089f4705109182"
+  }
+}

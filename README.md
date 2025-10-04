@@ -18,16 +18,20 @@ Vaultfire is a production-ready, morals-first protocol that fuses belief-driven 
 
 Live pilot deployments targeted for Q4 roadmap; current examples demonstrate architectural readiness and CLI flow integrity across simulated environments only, with no live user data or revenue represented.
 
+Partners who want a step-by-step launch plan can review the new [Live Rollout Readiness Blueprint](./docs/live-rollout-readiness.md), which documents the evidence pack, Guardian sign-offs, and telemetry controls required before the production switch flips.
+
 ## Trust & Transparency
 - **Automated proof:** `npm test` now runs Jest with full coverage, React Testing Library checks, and CLI integrations. Snapshot artifacts are uploaded on every CI run.
 - **Security posture:** Express surfaces Helmet headers, safe-list CORS defaults, and SSRF-hardened webhook validation alongside regression tests for invalid JWT and malformed wallet payloads.
 - **Telemetry ethics:** Wallet-level consent toggles route opt-in signals to Sentry, logging dashboard renders, wallet logins, and belief vote casts only when explicitly approved.
+- **Sink verification:** `npm run telemetry:verify` hashes the live telemetry probes defined in `telemetry/sinks/` and fails fast if a downstream checksum or signature drifts from the approved baseline.
 - **Trust badge:** The coverage-driven badge above is auto-generated from `coverage/coverage-summary.json` via `node tools/generateCoverageBadge.js` after each test run.
 
 ## Scale Readiness Automation
 - **Guardian attestations on demand:** `./vaultfire_system_ready.py --attest guardian.eth` now provisions mission profiles, runs alignment simulations, and emits an attestation pack under `attestations/` with the digest logged for audit trails.
 - **Unified scale health snapshot:** `./tools/scale_readiness_report.py --pretty` compiles recent Purposeful Scale decisions, thread coverage, belief-density stats, and attestation freshness into a single JSON payload so partners can gate launches on objective readiness signals.
 - **Staleness guards baked in:** The readiness report fails the `scale_ready` flag if approvals drop below 60% or if the last aligned expansion is older than six hours, keeping the protocol’s ethics-first mission central while scaling.
+- **Golden environment gate:** `./scripts/check-golden-env.sh` enforces the canonical Node, Python, and CLI versions defined in `configs/golden-environment.json` so scale reviews start with aligned toolchains.
 
 ## Yield Insights Pipeline
 - **Mission log conversion:** `python scripts/run_yield_pipeline.py` ingests `/missions/pilot_logs/*.json`, strips pilot identifiers, hashes mission IDs with SHA256, and publishes anonymized case studies to `/public/case_studies/` following `schemas/yield_case_study.schema.json`.
@@ -58,11 +62,13 @@ guidance and Jest falls back to an identity profiler so mobile pipelines keep pa
 - Review the [Operational Onboarding Checklist](./docs/runbooks/onboarding-test-checklist.md) before inviting new partners.
 - Run `node scripts/run-test-suite.js` to execute module-by-module coverage checks and surface any gaps below 80%.
 - Capture generated artefacts (coverage reports and `logs/test-report.json`) for compliance sign-off.
+- Archive live readiness artefacts with `python scripts/collect-live-evidence.py` once the Guardian Council signs the production bundle.
 
 ## Due Diligence & Maturity Signals
 - Review the [Technical Due Diligence](./docs/technical-due-diligence.md) brief for architecture, threat modeling, and dependency health snapshots.
 - Monitor uptime trends and reference deployments via the [Operational Metrics](./status/metrics.md), [Reference Deployments](./status/reference-deployments.md), and [Security Report](./status/security-report.md) rollups.
 - Track change governance through the [Change Management Playbook](./docs/change-management.md) and automated checks in [`scripts/security-audit.sh`](./scripts/security-audit.sh).
+- Bundle audit receipts via `scripts/collect-live-evidence.py` so partners receive a signed digest (recorded in `immutable_log.jsonl`) for their compliance teams.
 - Vaultfire maintains transparent partner communications, surfacing scan results, scheduled audits, and rollout notices before each production pilot.
 
 ## Module Scope Modes
