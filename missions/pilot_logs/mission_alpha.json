@@ -1,0 +1,12 @@
+{
+  "mission_id": "mission-alpha",
+  "pilot_id": "pilot-001",
+  "belief_id": "belief-engage-01",
+  "timestamp": "2024-12-01T10:15:00Z",
+  "trigger_event": "Completed onboarding flow",
+  "ghostscore_delta": 12.5,
+  "activation_signals": [
+    {"signal": "tutorial_complete", "weight": 0.6},
+    {"signal": "first_share", "weight": 0.4}
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "mission_id": "mission-beta",
+  "pilot_id": "pilot-002",
+  "belief_id": "belief-retain-05",
+  "timestamp": "2024-12-02T14:45:00Z",
+  "trigger_event": "Unlocked community badge",
+  "ghostscore_delta": 20.1,
+  "activation_signals": [
+    {"signal": "community_post", "weight": 0.7},
+    {"signal": "event_attendance", "weight": 0.3}
+  ]
+}

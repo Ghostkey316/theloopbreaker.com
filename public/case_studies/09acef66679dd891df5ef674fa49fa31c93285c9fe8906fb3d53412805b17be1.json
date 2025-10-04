@@ -1,0 +1,8 @@
+{
+  "timestamp": "2024-12-01T10:15:00Z",
+  "belief_segment": "belief-01",
+  "yield_classification": "engagement",
+  "ghostscore_roi": 12.5,
+  "trigger_summary": "Completed onboarding flow",
+  "mission_hash": "09acef66679dd891df5ef674fa49fa31c93285c9fe8906fb3d53412805b17be1"
+}
