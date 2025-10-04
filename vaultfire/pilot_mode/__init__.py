@@ -3,6 +3,7 @@
 from .access_layer import PilotAccessLayer
 from .feedback import FeedbackCollector, FeedbackRecord
 from .keys import ProtocolKey, ProtocolKeyManager
+from .privacy import PilotPrivacyLedger, PilotReference
 from .registry import PilotAccessRegistry, PartnerRecord
 from .sandbox import SandboxResult, YieldSandbox
 from .session import PilotSession, SessionFactory
@@ -15,6 +16,8 @@ __all__ = [
     "ProtocolKeyManager",
     "PilotAccessRegistry",
     "PartnerRecord",
+    "PilotPrivacyLedger",
+    "PilotReference",
     "SandboxResult",
     "YieldSandbox",
     "PilotSession",

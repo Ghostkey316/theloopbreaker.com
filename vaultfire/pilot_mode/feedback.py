@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from typing import Dict, Mapping, MutableMapping, Optional
 
 from . import storage
+from .privacy import PilotPrivacyLedger
 
 __all__ = ["FeedbackRecord", "FeedbackCollector"]
 
@@ -44,8 +45,12 @@ class FeedbackRecord:
 class FeedbackCollector:
     """Capture and persist structured pilot feedback."""
 
-    def __init__(self, *, log_path=None) -> None:
+    def __init__(self, *, log_path=None, ledger: Optional[PilotPrivacyLedger] = None) -> None:
         self._log_path = log_path or storage.FEEDBACK_LOG_PATH
+        self._ledger = ledger
+
+    def attach_ledger(self, ledger: PilotPrivacyLedger) -> None:
+        self._ledger = ledger
 
     def submit_feedback(
         self,
@@ -74,7 +79,18 @@ class FeedbackCollector:
             expose_identity=expose_identity,
             partner_id=partner_id,
         )
-        storage.append_jsonl(self._log_path, record.export())
+        if self._ledger:
+            self._ledger.record_reference(
+                partner_tag=partner_tag,
+                reference_type="feedback",
+                payload=record.export(),
+                metadata={
+                    "severity": severity,
+                    "expose_identity": expose_identity,
+                },
+            )
+        else:
+            storage.append_jsonl(self._log_path, record.export())
         return record
 
     def format_cli_payload(

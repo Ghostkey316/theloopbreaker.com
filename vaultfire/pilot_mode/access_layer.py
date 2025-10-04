@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Iterable, MutableMapping, Optional
+from typing import Iterable, Mapping, MutableMapping, Optional
 
 from .feedback import FeedbackCollector
 from .keys import ProtocolKeyManager
+from .privacy import PilotPrivacyLedger
 from .registry import PilotAccessRegistry, PartnerRecord
 from .sandbox import YieldSandbox
 from .session import PilotSession, SessionFactory
@@ -23,10 +24,22 @@ class PilotAccessLayer:
         key_manager: Optional[ProtocolKeyManager] = None,
         sandbox: Optional[YieldSandbox] = None,
         feedback: Optional[FeedbackCollector] = None,
+        ledger: Optional[PilotPrivacyLedger] = None,
     ) -> None:
         self._registry = registry or PilotAccessRegistry()
         self._keys = key_manager or ProtocolKeyManager()
-        self._session_factory = SessionFactory(sandbox=sandbox, feedback=feedback)
+        self._ledger = ledger or PilotPrivacyLedger()
+        sandbox_instance = sandbox or YieldSandbox(ledger=self._ledger)
+        if sandbox and hasattr(sandbox, "attach_ledger"):
+            sandbox.attach_ledger(self._ledger)
+        feedback_instance = feedback or FeedbackCollector(ledger=self._ledger)
+        if feedback and hasattr(feedback, "attach_ledger"):
+            feedback.attach_ledger(self._ledger)
+        self._session_factory = SessionFactory(
+            sandbox=sandbox_instance,
+            feedback=feedback_instance,
+            ledger=self._ledger,
+        )
 
     @property
     def registry(self) -> PilotAccessRegistry:
@@ -35,6 +48,10 @@ class PilotAccessLayer:
     @property
     def key_manager(self) -> ProtocolKeyManager:
         return self._keys
+
+    @property
+    def ledger(self) -> PilotPrivacyLedger:
+        return self._ledger
 
     def register_partner(
         self,
@@ -85,6 +102,10 @@ class PilotAccessLayer:
         wallet_signature: Optional[str] = None,
         signature_message: str = "vaultfire-pilot-access",
         watermark_override: Optional[bool] = None,
+        protocols: Optional[Iterable[str]] = None,
+        simulate_real_user_load: bool = False,
+        load_multiplier: float = 1.0,
+        load_profile: Optional[Mapping[str, object]] = None,
     ) -> PilotSession:
         if not protocol_key or not protocol_key.strip():
             raise ValueError("protocol_key must be provided")
@@ -105,6 +126,10 @@ class PilotAccessLayer:
             partner=partner,
             protocol_key=key_record,
             watermark_override=watermark_override,
+            protocols=protocols,
+            simulate_real_user_load=simulate_real_user_load,
+            load_multiplier=load_multiplier,
+            load_profile=load_profile,
         )
         return session
 
