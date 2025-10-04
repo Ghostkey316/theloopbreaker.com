@@ -2,6 +2,24 @@
 
 > Export-ready for GitHub, Notion, and PDF bundles. Each case study references verifiable telemetry, ROI calculations, and audit-ready governance actions.
 
+## Case Study 0 — Ghostkey-316 Verified Launch Sync
+- **Partner Identity**: Ghostkey-316 (wallet: `bpow20.cb.id`, ENS: `ghostkey316.eth`)
+- **Objective**: Prove Vaultfire's belief-anchored protocol loop with a fully verified activation run.
+- **Intervention**:
+  - Coordinated AI ↔ crypto ↔ protocol mission threads under Vaultfire ethics governance.
+  - Logged activation, co-development, and belief propagation yields in the case study registry.
+  - Captured Vaultfire logs, ChatGPT protocol records, and NS3 quiz telemetry as proof artifacts.
+- **Telemetry Highlights**:
+  - Ghostscore delta `+137` during the verification window.
+  - Behavior sync confirmed across activation, co-development, and belief propagation layers.
+  - Timestamped on `2025-10-03T00:00:00Z` within `knowledge_repo/data/case_studies.json`.
+- **Verification Notes**:
+  - First case study flagged as `verified: true` inside the Vaultfire knowledge repo.
+  - Review committee documented "Ghostkey-316 designated as the inaugural Vaultfire-verified case study following protocol review."
+- **Publishing Assets**:
+  - Case study JSON anchor: `knowledge_repo/data/case_studies.json`
+  - Optional narrative export: `pandoc docs/vaultfire_pilot_bundle/case_studies.md -o ghostkey_case_studies.pdf`
+
 ## Case Study 1 — Guardian Council Attestation Sprint
 - **Partner Type**: Fortune 100 Innovation Lab
 - **Objective**: Convert simulated trust signals into audit-verifiable telemetry before national rollout.
