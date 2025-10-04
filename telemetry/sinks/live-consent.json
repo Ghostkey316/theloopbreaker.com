@@ -1,0 +1,11 @@
+{
+  "name": "Consent Journal Sink",
+  "description": "Opt-in consent ledger stored in the encrypted consent cluster.",
+  "testPayload": "vaultfire-live-consent-probe",
+  "expectedChecksum": "aa5ce838f405b2a503df48bd8196d7fe31a4d633edaf12fdea4da2a531848901",
+  "signatureProbe": {
+    "algorithm": "sha256",
+    "testSecret": "consent-guardian-seed",
+    "expected": "fc42868c71a58738430cef69271deaf0ac52feaf7df067925708ba1f2c1aac8d"
+  }
+}
