@@ -5,15 +5,18 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Mapping, Optional
 
 from . import storage
+from vaultfire.security.fhe import FHECipherSuite
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 SCORECARD_PATH = BASE_DIR / "user_scorecard.json"
 VALUES_PATH = BASE_DIR / "vaultfire-core" / "ghostkey_values.json"
 LOYALTY_RANKS_PATH = BASE_DIR / "dashboards" / "loyalty_ranks.json"
 LOG_PATH = BASE_DIR / "logs" / "loyalty_engine_log.json"
+CONFIDENTIAL_LOG_PATH = BASE_DIR / "logs" / "loyalty_wallet_activity.enc.json"
+KYC_REGISTRY_PATH = BASE_DIR / "logs" / "loyalty_kyc_registry.json"
 SANDBOX_CONFIG_PATH = BASE_DIR / "configs" / "module_sandbox.json"
 DEFAULT_SANDBOX_LOG_PATH = BASE_DIR / "logs" / "belief-sandbox.json"
 SANDBOX_LOG_PATH = DEFAULT_SANDBOX_LOG_PATH
@@ -33,6 +36,22 @@ def _log(entry: dict) -> None:
     timestamp = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
     entry_with_time = {"timestamp": timestamp, **entry}
     storage.append_log(LOG_PATH, entry_with_time)
+
+
+def _moral_attestation(notes: str | None) -> dict:
+    if not notes:
+        return {}
+    try:
+        from src.moral_alignment import evaluate_entry
+
+        evaluation = evaluate_entry(notes)
+    except Exception:
+        return {}
+    return {
+        "normalized": evaluation.get("normalized"),
+        "orientation": evaluation.get("orientation"),
+        "keywords": evaluation.get("keywords", []),
+    }
 
 
 def _resolve_log_path(value: str | None) -> Path:
@@ -172,6 +191,72 @@ def loyalty_enhanced_score(
     return info
 
 
+def record_confidential_wallet_activity(
+    user_id: str,
+    wallet_id: str,
+    activity: Mapping[str, object],
+    *,
+    cipher_suite: FHECipherSuite,
+    notes: str | None = None,
+    cross_chain_domains: list[str] | None = None,
+) -> dict:
+    """Record encrypted wallet activity for loyalty assessments."""
+
+    sensitive_payload = {**dict(activity), "user_id": user_id, "wallet_id": wallet_id}
+    ciphertext = cipher_suite.encrypt_record(
+        sensitive_payload,
+        sensitive_fields=activity.keys(),
+    )
+    commitment = cipher_suite.generate_zero_knowledge_commitment(
+        ciphertext, context="loyalty.wallet_activity"
+    )
+    entry = {
+        "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "wallet_id": wallet_id,
+        "user_id": user_id,
+        "fhe": {
+            "ciphertext": ciphertext.serialize(),
+            "commitment": commitment,
+            "domains": list(cross_chain_domains or ()),
+            "moral_tag": cipher_suite.moral_tag,
+        },
+        "moral_attestation": _moral_attestation(notes),
+    }
+    storage.append_log(CONFIDENTIAL_LOG_PATH, entry)
+    return entry
+
+
+def store_private_kyc_hash(
+    user_id: str,
+    kyc_hash: str,
+    *,
+    cipher_suite: FHECipherSuite,
+    attestor: str,
+    jurisdiction: str,
+    notes: str | None = None,
+) -> dict:
+    """Persist an encrypted representation of a contributor's KYC hash."""
+
+    payload = {"user_id": user_id, "kyc_hash": kyc_hash, "attestor": attestor, "jurisdiction": jurisdiction}
+    ciphertext = cipher_suite.encrypt_record(payload, sensitive_fields=("kyc_hash",))
+    registry = _load_json(KYC_REGISTRY_PATH, {})
+    registry[user_id] = {
+        "fhe": {
+            "ciphertext": ciphertext.serialize(),
+            "commitment": cipher_suite.generate_zero_knowledge_commitment(
+                ciphertext, context="loyalty.kyc"
+            ),
+            "moral_tag": cipher_suite.moral_tag,
+        },
+        "attestor": attestor,
+        "jurisdiction": jurisdiction,
+        "moral_attestation": _moral_attestation(notes),
+        "updated_at": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+    _write_json(KYC_REGISTRY_PATH, registry)
+    return registry[user_id]
+
+
 def update_loyalty_ranks(*, sandbox_mode: bool | None = None) -> list[dict]:
     scorecard = _load_json(SCORECARD_PATH, {})
     ranks = [loyalty_score(uid, sandbox_mode=sandbox_mode) for uid in scorecard.keys()]
@@ -198,6 +283,8 @@ __all__ = [
     "loyalty_score",
     "update_loyalty_ranks",
     "loyalty_enhanced_score",
+    "record_confidential_wallet_activity",
+    "store_private_kyc_hash",
 ]
 
 
