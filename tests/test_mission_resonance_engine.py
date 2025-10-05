@@ -55,6 +55,8 @@ def test_integrity_report_exposes_breakdown_and_attested_enclaves() -> None:
     assert report["technique_breakdown"]["confidential-ml"]["count"] == 1
     assert report["technique_breakdown"]["edge-llm"]["avg_score"] == 0.75
     assert report["attested_enclaves"] == {"enclave-alpha": "verified", "enclave-beta": "verified"}
+    assert report["gradient_window_seconds"] == engine.gradient_window_seconds
+    assert "confidential-ml" in report["gradient_breakdown"]
 
 
 def test_resonance_gradient_uses_recent_window(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -93,3 +95,43 @@ def test_resonance_gradient_requires_positive_window() -> None:
 
     with pytest.raises(ValueError):
         engine.resonance_gradient(window_seconds=0)
+
+
+def test_technique_gradients_track_recent_and_historical(monkeypatch: pytest.MonkeyPatch) -> None:
+    attestor = _make_attestor()
+    engine = MissionResonanceEngine(confidential_attestor=attestor)
+
+    clock = {"now": 1_000_000.0}
+
+    def fake_time() -> float:
+        return clock["now"]
+
+    monkeypatch.setattr(mission_resonance.time, "time", fake_time)
+
+    engine.ingest_signal(source="historical-edge", technique="edge-llm", score=0.4)
+    engine.ingest_signal(
+        source="historical-confidential",
+        technique="confidential-ml",
+        score=0.5,
+        metadata={"enclave_id": "enclave-alpha", "measurement": "m-123"},
+    )
+
+    clock["now"] += 4000
+
+    engine.ingest_signal(source="recent-edge", technique="edge-llm", score=0.9)
+    engine.ingest_signal(
+        source="recent-confidential",
+        technique="confidential-ml",
+        score=0.7,
+        metadata={"enclave_id": "enclave-beta", "measurement": "m-456"},
+    )
+
+    gradients = engine.technique_gradients(window_seconds=3600)
+
+    assert gradients["edge-llm"]["recent_avg"] == pytest.approx(0.9, abs=1e-6)
+    assert gradients["edge-llm"]["historical_avg"] == pytest.approx(0.4, abs=1e-6)
+    assert gradients["edge-llm"]["gradient"] == pytest.approx(0.5, abs=1e-6)
+
+    assert gradients["confidential-ml"]["recent_avg"] == pytest.approx(0.7, abs=1e-6)
+    assert gradients["confidential-ml"]["historical_avg"] == pytest.approx(0.5, abs=1e-6)
+    assert gradients["confidential-ml"]["gradient"] == pytest.approx(0.2, abs=1e-6)

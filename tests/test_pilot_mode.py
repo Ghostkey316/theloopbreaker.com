@@ -183,3 +183,60 @@ def test_wallet_signature_activation_and_feedback_identity(tmp_path):
             wallet_signature=signature,
             signature_message=signature_message,
         )
+
+
+def test_resonance_signal_capture_and_visibility(tmp_path):
+    layer = PilotAccessLayer(accepted_enclaves={"enclave-alpha": "m-123"})
+
+    partner = layer.register_partner("stealth-ai", api_keys=["stealth-key"], default_watermark=False)
+    token = layer.issue_protocol_key(partner.partner_id, max_uses=5)
+
+    session = layer.activate_session(
+        partner.partner_id,
+        protocol_key=token,
+        api_key="stealth-key",
+    )
+
+    first_signal = session.capture_resonance_signal(
+        source="alpha-node",
+        technique="confidential-ml",
+        score=0.82,
+        metadata={"enclave_id": "enclave-alpha", "measurement": "m-123"},
+    )
+    assert first_signal.signal.technique == "confidential-ml"
+
+    with pytest.raises(PermissionError):
+        session.capture_resonance_signal(
+            source="beta-node",
+            technique="confidential-ml",
+            score=0.91,
+            metadata={"enclave_id": "enclave-beta", "measurement": "m-456"},
+        )
+
+    layer.register_confidential_enclave(enclave_id="enclave-beta", measurement="m-456")
+
+    second_signal = session.capture_resonance_signal(
+        source="beta-node",
+        technique="confidential-ml",
+        score=0.91,
+        metadata={"enclave_id": "enclave-beta", "measurement": "m-456"},
+    )
+    assert second_signal.signal.source == "beta-node"
+
+    digest = session.resonance_digest()
+    assert digest["signal_count"] == 2
+    assert "confidential-ml" in digest["gradient_breakdown"]
+
+    visibility = layer.pilot_visibility_digest()
+    assert visibility["signal_count"] == digest["signal_count"]
+    assert visibility["attested_enclaves"] == {
+        "enclave-alpha": "verified",
+        "enclave-beta": "verified",
+    }
+
+    references = _entries_of_type(_load_references(), "mission-resonance")
+    assert len(references) == 2
+    latest_entry, latest_payload = references[-1]
+    assert latest_payload["session_id"] == session.session_id
+    assert latest_entry["metadata"]["resonance_index"] == visibility["resonance_index"]
+    assert latest_entry["metadata"]["technique"] == "confidential-ml"

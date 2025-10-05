@@ -107,11 +107,15 @@ class MissionResonanceEngine:
         post_quantum_verifier: PostQuantumSignatureVerifier | None = None,
         confidential_attestor: ConfidentialComputeAttestor | None = None,
         default_threshold: float = 0.72,
+        gradient_window_seconds: float = 3600.0,
     ) -> None:
         self._signals: MutableSequence[MissionSignal] = []
         self._verifier = post_quantum_verifier
         self._attestor = confidential_attestor
         self._threshold = default_threshold
+        if gradient_window_seconds <= 0:
+            raise ValueError("gradient_window_seconds must be positive")
+        self._gradient_window = float(gradient_window_seconds)
 
     @property
     def mission(self) -> str:
@@ -120,6 +124,25 @@ class MissionResonanceEngine:
     @property
     def signals(self) -> Sequence[MissionSignal]:
         return tuple(self._signals)
+
+    @property
+    def gradient_window_seconds(self) -> float:
+        """Return the default gradient window used for telemetry snapshots."""
+
+        return self._gradient_window
+
+    @property
+    def attestor(self) -> ConfidentialComputeAttestor | None:
+        """Return the configured confidential compute attestor, if any."""
+
+        return self._attestor
+
+    def attach_attestor(self, attestor: ConfidentialComputeAttestor) -> None:
+        """Attach ``attestor`` to the engine for confidential ML verification."""
+
+        if attestor is None:
+            raise ValueError("attestor must be provided")
+        self._attestor = attestor
 
     def ingest_signal(
         self,
@@ -180,9 +203,16 @@ class MissionResonanceEngine:
         scores = [signal.score for signal in self._signals]
         return round(fmean(scores), 4)
 
-    def integrity_report(self) -> Dict[str, Any]:
+    def integrity_report(self, *, gradient_window_seconds: float | None = None) -> Dict[str, Any]:
         """Summarise mission protection posture for dashboards and attestations."""
 
+        window = (
+            float(gradient_window_seconds)
+            if gradient_window_seconds is not None
+            else self._gradient_window
+        )
+        if window <= 0:
+            raise ValueError("gradient_window_seconds must be positive")
         resonance = self.resonance_index()
         contributing_techniques = {
             signal.technique for signal in self._signals
@@ -194,7 +224,9 @@ class MissionResonanceEngine:
             "techniques": sorted(contributing_techniques),
             "signal_count": len(self._signals),
             "technique_breakdown": self.technique_breakdown(),
-            "resonance_gradient": self.resonance_gradient(),
+            "resonance_gradient": self.resonance_gradient(window_seconds=window),
+            "gradient_window_seconds": window,
+            "gradient_breakdown": self.technique_gradients(window_seconds=window),
             "attested_enclaves": self._attestor.manifest() if self._attestor else {},
         }
 
@@ -219,10 +251,11 @@ class MissionResonanceEngine:
             }
         return dict(sorted(breakdown.items()))
 
-    def resonance_gradient(self, window_seconds: float = 3600.0) -> float:
+    def resonance_gradient(self, window_seconds: float | None = None) -> float:
         """Compute the mission resonance delta between recent and historical signals."""
 
-        if window_seconds <= 0:
+        window = window_seconds if window_seconds is not None else self._gradient_window
+        if window <= 0:
             raise ValueError("window_seconds must be positive")
         if not self._signals:
             return 0.0
@@ -230,11 +263,41 @@ class MissionResonanceEngine:
         recent: MutableSequence[float] = []
         historical: MutableSequence[float] = []
         for signal in self._signals:
-            bucket = recent if now - signal.timestamp <= window_seconds else historical
+            bucket = recent if now - signal.timestamp <= window else historical
             bucket.append(signal.score)
         if not recent or not historical:
             return 0.0
         return round(fmean(recent) - fmean(historical), 4)
+
+    def technique_gradients(
+        self, window_seconds: float | None = None
+    ) -> Dict[str, Dict[str, float]]:
+        """Return gradient metrics per technique using ``window_seconds`` buckets."""
+
+        window = window_seconds if window_seconds is not None else self._gradient_window
+        if window <= 0:
+            raise ValueError("window_seconds must be positive")
+        if not self._signals:
+            return {}
+        now = time.time()
+        recent_scores: MutableMapping[str, MutableSequence[float]] = defaultdict(list)
+        historical_scores: MutableMapping[str, MutableSequence[float]] = defaultdict(list)
+        for signal in self._signals:
+            bucket = recent_scores if now - signal.timestamp <= window else historical_scores
+            bucket[signal.technique].append(signal.score)
+        techniques = set(recent_scores) | set(historical_scores)
+        gradients: Dict[str, Dict[str, float]] = {}
+        for technique in sorted(techniques):
+            recent_list = recent_scores.get(technique, [])
+            historical_list = historical_scores.get(technique, [])
+            recent_avg = round(fmean(recent_list), 4) if recent_list else 0.0
+            historical_avg = round(fmean(historical_list), 4) if historical_list else 0.0
+            gradients[technique] = {
+                "recent_avg": recent_avg,
+                "historical_avg": historical_avg,
+                "gradient": round(recent_avg - historical_avg, 4),
+            }
+        return gradients
 
 
 __all__ = [

@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Iterable, Mapping, MutableMapping, Optional
+from typing import Any, Dict, Iterable, Mapping, MutableMapping, Optional
 
 from .feedback import FeedbackCollector
 from .keys import ProtocolKeyManager
 from .privacy import PilotPrivacyLedger
 from .registry import PilotAccessRegistry, PartnerRecord
+from .resonance import PilotResonanceTelemetry
 from .sandbox import YieldSandbox
 from .session import PilotSession, SessionFactory
 
@@ -25,6 +26,9 @@ class PilotAccessLayer:
         sandbox: Optional[YieldSandbox] = None,
         feedback: Optional[FeedbackCollector] = None,
         ledger: Optional[PilotPrivacyLedger] = None,
+        resonance: Optional[PilotResonanceTelemetry] = None,
+        accepted_enclaves: Optional[Mapping[str, str]] = None,
+        gradient_window_seconds: Optional[float] = None,
     ) -> None:
         self._registry = registry or PilotAccessRegistry()
         self._keys = key_manager or ProtocolKeyManager()
@@ -35,10 +39,16 @@ class PilotAccessLayer:
         feedback_instance = feedback or FeedbackCollector(ledger=self._ledger)
         if feedback and hasattr(feedback, "attach_ledger"):
             feedback.attach_ledger(self._ledger)
+        self._resonance = resonance or PilotResonanceTelemetry(
+            ledger=self._ledger,
+            accepted_measurements=accepted_enclaves,
+            gradient_window_seconds=gradient_window_seconds,
+        )
         self._session_factory = SessionFactory(
             sandbox=sandbox_instance,
             feedback=feedback_instance,
             ledger=self._ledger,
+            resonance=self._resonance,
         )
 
     @property
@@ -52,6 +62,10 @@ class PilotAccessLayer:
     @property
     def ledger(self) -> PilotPrivacyLedger:
         return self._ledger
+
+    @property
+    def resonance(self) -> PilotResonanceTelemetry:
+        return self._resonance
 
     def register_partner(
         self,
@@ -138,3 +152,13 @@ class PilotAccessLayer:
 
     def prune_expired_keys(self) -> None:
         self._keys.prune_expired()
+
+    def register_confidential_enclave(self, *, enclave_id: str, measurement: str) -> None:
+        """Allow runtime registration of attested enclaves."""
+
+        self._resonance.register_enclave(enclave_id=enclave_id, measurement=measurement)
+
+    def pilot_visibility_digest(self) -> Dict[str, Any]:
+        """Expose mission resonance integrity for private pilot dashboards."""
+
+        return self._resonance.integrity_digest()

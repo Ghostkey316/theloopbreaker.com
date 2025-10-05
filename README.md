@@ -56,6 +56,7 @@ Partners who want a step-by-step launch plan can review the new [Live Rollout Re
 - **Integrity snapshot for partners:** `MissionResonanceEngine.integrity_report()` exports a readiness digest (mission, blended resonance index, technique mix, and threshold check) that compliance teams can sign before a new cohort goes live.
 - **Confidential compute verification:** `ConfidentialComputeAttestor` pairs with `MissionResonanceEngine` so confidential-ML enclaves deliver remote-attested signals without exposing model weights or contributor telemetry.
 - **Real-time gradient telemetry:** `MissionResonanceEngine.resonance_gradient()` and `technique_breakdown()` surface time-based resonance deltas and per-technique averages, helping stewards catch mission drift before it impacts the covenant.
+- **Stealth pilot visibility:** [`PilotResonanceTelemetry`](./vaultfire/pilot_mode/resonance.py) feeds confidential-ML signals from pilot sessions into the ledger with gradient breakdowns and attested enclave manifests for private dashboards.
 
 ## Mission Covenant Chain (Foundational)
 - **Exclusive to Vaultfire:** The new `MissionCovenantLedger` forges an unstoppable covenant hash chain that no other protocol ships, binding every partner action to the canonical mission without drift.
