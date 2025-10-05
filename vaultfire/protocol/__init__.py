@@ -11,6 +11,11 @@ from .fhe_bridge import (
     verify_cross_chain_payload,
 )
 from .ghostkey_ai import GhostkeyAINetwork, GhostkeyAINode
+from .mission_resonance import (
+    MissionResonanceEngine,
+    MissionSignal,
+    PostQuantumSignatureVerifier,
+)
 from .identity_gate import BiometricYieldRouter, ZKIdentityVerifier
 from .logs import log_private_behavioral_signal, log_telemetry_event
 from .private_staking import ConfidentialVaultScoring, PrivateStake, PrivateStakingLedger
@@ -25,6 +30,9 @@ __all__ = [
     "get_case_by_id",
     "GhostkeyAINetwork",
     "GhostkeyAINode",
+    "MissionResonanceEngine",
+    "MissionSignal",
+    "PostQuantumSignatureVerifier",
     "BiometricYieldRouter",
     "ZKIdentityVerifier",
     "PrivateSignal",
