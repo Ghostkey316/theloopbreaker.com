@@ -54,6 +54,8 @@ Partners who want a step-by-step launch plan can review the new [Live Rollout Re
 - **Signal fusion with privacy tech:** [`MissionResonanceEngine`](./vaultfire/protocol/mission_resonance.py) blends edge-LLM embeddings, FHE streams, ZK Fog redactions, MPC council updates, and neural-symbolic evaluators while keeping loyalty scores inside encrypted envelopes.
 - **Post-quantum attestations:** The companion [`PostQuantumSignatureVerifier`](./vaultfire/protocol/mission_resonance.py) issues Dilithium-style hashes so partner dashboards can accept lattice-strength mission confirmations without leaking plaintext content.
 - **Integrity snapshot for partners:** `MissionResonanceEngine.integrity_report()` exports a readiness digest (mission, blended resonance index, technique mix, and threshold check) that compliance teams can sign before a new cohort goes live.
+- **Confidential compute verification:** `ConfidentialComputeAttestor` pairs with `MissionResonanceEngine` so confidential-ML enclaves deliver remote-attested signals without exposing model weights or contributor telemetry.
+- **Real-time gradient telemetry:** `MissionResonanceEngine.resonance_gradient()` and `technique_breakdown()` surface time-based resonance deltas and per-technique averages, helping stewards catch mission drift before it impacts the covenant.
 
 ## Mission Covenant Chain (Foundational)
 - **Exclusive to Vaultfire:** The new `MissionCovenantLedger` forges an unstoppable covenant hash chain that no other protocol ships, binding every partner action to the canonical mission without drift.

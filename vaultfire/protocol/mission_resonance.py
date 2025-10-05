@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import math
 import time
+from collections import defaultdict
 from dataclasses import dataclass
 from hashlib import sha3_512
+import secrets
 from statistics import fmean
-from typing import Any, Dict, Mapping, MutableSequence, Sequence
+from typing import Any, Dict, Mapping, MutableMapping, MutableSequence, Sequence
 
 from .constants import MISSION_STATEMENT
 
@@ -19,6 +21,7 @@ _SUPPORTED_TECHNIQUES: Mapping[str, str] = {
     "mpc-fabric": "multi-party computation updates from co-governed councils",
     "neural-symbolic": "hybrid neuro-symbolic analyzers keeping mission context",
     "post-quantum": "dilithium-style signature anchors for mission statements",
+    "confidential-ml": "confidential ML enclaves with remote attestation beacons",
 }
 
 
@@ -61,6 +64,40 @@ class PostQuantumSignatureVerifier:
         return expected == signature
 
 
+class ConfidentialComputeAttestor:
+    """TEE-style attestation verifier for confidential mission analytics."""
+
+    def __init__(self, *, accepted_measurements: Mapping[str, str] | None = None) -> None:
+        self._measurements: MutableMapping[str, str] = {
+            enclave_id: measurement
+            for enclave_id, measurement in (accepted_measurements or {}).items()
+            if enclave_id and measurement
+        }
+
+    def register(self, *, enclave_id: str, measurement: str) -> None:
+        """Register a trusted enclave measurement hash."""
+
+        enclave = enclave_id.strip()
+        if not enclave:
+            raise ValueError("enclave_id cannot be empty")
+        if not measurement:
+            raise ValueError("measurement cannot be empty")
+        self._measurements[enclave] = measurement
+
+    def verify(self, *, enclave_id: str, measurement: str) -> bool:
+        """Verify that an attested enclave matches the expected measurement."""
+
+        expected = self._measurements.get(enclave_id.strip())
+        if not expected:
+            return False
+        return secrets.compare_digest(expected, measurement)
+
+    def manifest(self) -> Mapping[str, str]:
+        """Return a sanitized manifest for integrity reporting."""
+
+        return {enclave_id: "verified" for enclave_id in sorted(self._measurements)}
+
+
 class MissionResonanceEngine:
     """Aggregate mission signals from cutting-edge privacy-preserving surfaces."""
 
@@ -68,10 +105,12 @@ class MissionResonanceEngine:
         self,
         *,
         post_quantum_verifier: PostQuantumSignatureVerifier | None = None,
+        confidential_attestor: ConfidentialComputeAttestor | None = None,
         default_threshold: float = 0.72,
     ) -> None:
         self._signals: MutableSequence[MissionSignal] = []
         self._verifier = post_quantum_verifier
+        self._attestor = confidential_attestor
         self._threshold = default_threshold
 
     @property
@@ -110,6 +149,18 @@ class MissionResonanceEngine:
             if not self._verifier.verify(message=message, signature=signature):
                 raise PermissionError("post-quantum signature failed verification")
 
+        if technique_key == "confidential-ml":
+            if not self._attestor:
+                raise PermissionError("confidential-ml signals require an attestor")
+            enclave_id = str(meta.get("enclave_id", "")).strip()
+            measurement = str(meta.get("measurement", ""))
+            if not enclave_id or not measurement:
+                raise ValueError(
+                    "confidential-ml signals require 'enclave_id' and 'measurement' metadata"
+                )
+            if not self._attestor.verify(enclave_id=enclave_id, measurement=measurement):
+                raise PermissionError("confidential-ml attestation failed verification")
+
         record = MissionSignal(
             source=source,
             technique=technique_key,
@@ -142,6 +193,9 @@ class MissionResonanceEngine:
             "meets_threshold": resonance >= self._threshold,
             "techniques": sorted(contributing_techniques),
             "signal_count": len(self._signals),
+            "technique_breakdown": self.technique_breakdown(),
+            "resonance_gradient": self.resonance_gradient(),
+            "attested_enclaves": self._attestor.manifest() if self._attestor else {},
         }
 
     def supported_techniques(self) -> Mapping[str, str]:
@@ -149,9 +203,43 @@ class MissionResonanceEngine:
 
         return dict(_SUPPORTED_TECHNIQUES)
 
+    def technique_breakdown(self) -> Dict[str, Dict[str, float | int]]:
+        """Return per-technique counts and blended averages for analytics."""
+
+        if not self._signals:
+            return {}
+        aggregates: Dict[str, MutableSequence[float]] = defaultdict(list)
+        for signal in self._signals:
+            aggregates[signal.technique].append(signal.score)
+        breakdown: Dict[str, Dict[str, float | int]] = {}
+        for technique, scores in aggregates.items():
+            breakdown[technique] = {
+                "count": len(scores),
+                "avg_score": round(fmean(scores), 4),
+            }
+        return dict(sorted(breakdown.items()))
+
+    def resonance_gradient(self, window_seconds: float = 3600.0) -> float:
+        """Compute the mission resonance delta between recent and historical signals."""
+
+        if window_seconds <= 0:
+            raise ValueError("window_seconds must be positive")
+        if not self._signals:
+            return 0.0
+        now = time.time()
+        recent: MutableSequence[float] = []
+        historical: MutableSequence[float] = []
+        for signal in self._signals:
+            bucket = recent if now - signal.timestamp <= window_seconds else historical
+            bucket.append(signal.score)
+        if not recent or not historical:
+            return 0.0
+        return round(fmean(recent) - fmean(historical), 4)
+
 
 __all__ = [
     "MissionResonanceEngine",
     "MissionSignal",
     "PostQuantumSignatureVerifier",
+    "ConfidentialComputeAttestor",
 ]
