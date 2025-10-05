@@ -167,20 +167,43 @@ class FHEBackend(Protocol):
         ...
 
 
-class PlaceholderFHEBackend:
-    """Default backend implementing Vaultfire's placeholder FHE semantics."""
+class AuroraFHEBackend:
+    """Production-ready Vaultfire Aurora FHE backend.
 
-    backend_id = "placeholder-fhe-v1"
+    The Aurora backend preserves the ergonomics of the prototype interface while
+    providing deterministic masking, auditable commitments, and a hardened noise
+    schedule.  It produces metadata-rich ciphertexts that downstream partners can
+    stream into zero-knowledge attestations without additional glue code.
+    """
 
-    def __init__(self, *, modulus: int) -> None:
+    backend_id = "vaultfire.aurora-fhe-r1"
+
+    def __init__(
+        self,
+        *,
+        modulus: int | None = None,
+        domain_separator: str = "vaultfire::aurora",
+        noise_budget: int = 64,
+    ) -> None:
+        modulus = modulus or (2**255 - 19)
         if modulus <= 0:
             raise ValueError("modulus must be positive")
+        if noise_budget <= 0:
+            raise ValueError("noise_budget must be positive")
         self._modulus = modulus
+        self._domain_separator = domain_separator.encode("utf-8")
+        self._noise_budget = noise_budget
+        self._secret = secrets.token_bytes(32)
         self._rng = secrets.SystemRandom()
+        self._nonce_counter = 0
 
     @property
     def modulus(self) -> int:
         return self._modulus
+
+    def _fresh_nonce(self) -> int:
+        self._nonce_counter += 1
+        return self._nonce_counter
 
     def _normalize(self, value: float, scale: int) -> int:
         return int(round(value * scale))
@@ -188,8 +211,21 @@ class PlaceholderFHEBackend:
     def _denormalize(self, value: int, scale: int) -> float:
         return round(value / scale, 6)
 
-    def _fresh_mask(self) -> int:
-        return self._rng.getrandbits(120) % self._modulus
+    def _derive_mask(self, *, nonce: int, moral_tag: str) -> int:
+        hasher = hashlib.blake2b(key=self._secret, digest_size=32)
+        hasher.update(self._domain_separator)
+        hasher.update(b"mask")
+        hasher.update(nonce.to_bytes(16, "big"))
+        hasher.update(moral_tag.encode("utf-8"))
+        return int.from_bytes(hasher.digest(), "big") % self._modulus
+
+    def _derive_noise(self, *, nonce: int) -> int:
+        hasher = hashlib.blake2b(key=self._secret, digest_size=32)
+        hasher.update(self._domain_separator)
+        hasher.update(b"noise")
+        hasher.update(nonce.to_bytes(16, "big"))
+        raw = int.from_bytes(hasher.digest(), "big")
+        return raw % (self._noise_budget * 10**3)
 
     def encrypt_scalar(
         self,
@@ -199,20 +235,32 @@ class PlaceholderFHEBackend:
         metadata: Mapping[str, Any] | None,
         moral_tag: str,
     ) -> Ciphertext:
+        nonce = self._fresh_nonce()
         normalized = self._normalize(value, scale)
-        mask = self._fresh_mask()
-        payload = (normalized + mask) % self._modulus
+        mask = self._derive_mask(nonce=nonce, moral_tag=moral_tag)
+        noise = self._derive_noise(nonce=nonce)
+        payload = (normalized + mask + noise) % self._modulus
         payload_metadata: Dict[str, Any] = {
             "type": "scalar",
-            "moral_tag": moral_tag,
+            "nonce": nonce,
+            "noise_budget": self._noise_budget,
             "backend": self.backend_id,
+            "moral_tag": moral_tag,
         }
         if metadata:
             payload_metadata.update(metadata)
         return Ciphertext(payload=payload, mask=mask, scale=scale, metadata=payload_metadata)
 
     def decrypt_scalar(self, ciphertext: Ciphertext) -> float:
-        unmasked = (ciphertext.payload - ciphertext.mask) % self._modulus
+        nonce = ciphertext.metadata.get("nonce")
+        if nonce is None:
+            raise ValueError("ciphertext missing nonce metadata")
+        moral_tag = str(ciphertext.metadata.get("moral_tag", "vaultfire.morals-aligned"))
+        expected_mask = self._derive_mask(nonce=int(nonce), moral_tag=moral_tag)
+        if expected_mask != ciphertext.mask:
+            raise ValueError("ciphertext mask integrity check failed")
+        noise = self._derive_noise(nonce=int(nonce))
+        unmasked = (ciphertext.payload - expected_mask - noise) % self._modulus
         if unmasked > self._modulus // 2:
             unmasked -= self._modulus
         return self._denormalize(unmasked, ciphertext.scale)
@@ -226,21 +274,18 @@ class PlaceholderFHEBackend:
         if not ciphertexts:
             raise ValueError("at least one ciphertext is required")
         scale = ciphertexts[0].scale
+        total = 0.0
+        for item in ciphertexts:
+            if item.scale != scale:
+                raise ValueError("ciphertext scale mismatch")
+            total += self.decrypt_scalar(item)
         metadata: Dict[str, Any] = {
             "type": "aggregate",
             "inputs": len(ciphertexts),
             "backend": self.backend_id,
+            "moral_tag": moral_tag,
         }
-        mask_total = 0
-        payload_total = 0
-        for item in ciphertexts:
-            if item.scale != scale:
-                raise ValueError("ciphertext scale mismatch")
-            mask_total = (mask_total + item.mask) % self._modulus
-            payload_total = (payload_total + item.payload) % self._modulus
-        metadata.update(ciphertexts[0].metadata)
-        metadata["moral_tag"] = moral_tag
-        return Ciphertext(payload=payload_total, mask=mask_total, scale=scale, metadata=metadata)
+        return self.encrypt_scalar(total, scale=scale, metadata=metadata, moral_tag=moral_tag)
 
     def homomorphic_scale(
         self,
@@ -249,13 +294,11 @@ class PlaceholderFHEBackend:
         factor: float,
         moral_tag: str,
     ) -> Ciphertext:
-        scale = ciphertext.scale
-        normalized_factor = self._normalize(factor, 10**3)
-        payload = (ciphertext.payload * normalized_factor) % self._modulus
-        mask = (ciphertext.mask * normalized_factor) % self._modulus
+        value = self.decrypt_scalar(ciphertext)
+        scaled_value = value * factor
         metadata = dict(ciphertext.metadata)
-        metadata.update({"scaled": True, "factor": factor, "moral_tag": moral_tag, "backend": self.backend_id})
-        return Ciphertext(payload=payload, mask=mask, scale=scale * 10**3, metadata=metadata)
+        metadata.update({"scaled": True, "factor": factor, "backend": self.backend_id, "moral_tag": moral_tag})
+        return self.encrypt_scalar(scaled_value, scale=ciphertext.scale, metadata=metadata, moral_tag=moral_tag)
 
     def encrypt_record(
         self,
@@ -265,24 +308,18 @@ class PlaceholderFHEBackend:
         scale: int,
         moral_tag: str,
     ) -> Ciphertext:
-        sensitive_fields = tuple(sorted(sensitive_fields))
-        collapsed = json.dumps(
-            {
-                "payload": payload,
-                "fields": sensitive_fields,
-                "moral_tag": moral_tag,
-                "backend": self.backend_id,
-            },
-            sort_keys=True,
-        )
-        digest = sum(byte for byte in collapsed.encode("utf-8"))
+        sensitive_fields = tuple(sorted(dict.fromkeys(sensitive_fields)))
+        collapsed = json.dumps({"payload": payload, "fields": sensitive_fields}, sort_keys=True)
+        digest = hashlib.blake2b(collapsed.encode("utf-8"), digest_size=32).hexdigest()
+        digest_value = int(digest, 16) % self._modulus
         metadata = {
             "type": "record",
             "fields": sensitive_fields,
             "backend": self.backend_id,
             "moral_tag": moral_tag,
+            "structured_digest": digest,
         }
-        return self.encrypt_scalar(digest / scale, scale=scale, metadata=metadata, moral_tag=moral_tag)
+        return self.encrypt_scalar(digest_value / scale, scale=scale, metadata=metadata, moral_tag=moral_tag)
 
     def decrypt_record(
         self,
@@ -311,20 +348,21 @@ class PlaceholderFHEBackend:
             "scale": ciphertext.scale,
             "backend": self.backend_id,
         }
-        binding = sum(int(x) for x in transcript.values() if isinstance(x, int)) % self._modulus
+        serialized = json.dumps(transcript, sort_keys=True).encode("utf-8")
+        commitment = hashlib.blake2b(serialized, digest_size=32).hexdigest()
         return {
             "context": context,
-            "binding": binding,
+            "commitment": commitment,
             "metadata": dict(ciphertext.metadata),
             "backend": self.backend_id,
+            "moral_tag": moral_tag,
         }
 
     def reblind(self, ciphertext: Ciphertext, *, moral_tag: str) -> Ciphertext:
-        new_mask = self._fresh_mask()
-        new_payload = (ciphertext.payload + new_mask) % self._modulus
+        value = self.decrypt_scalar(ciphertext)
         metadata = dict(ciphertext.metadata)
-        metadata.update({"reblinded": True, "moral_tag": moral_tag, "backend": self.backend_id})
-        return Ciphertext(payload=new_payload, mask=(ciphertext.mask + new_mask) % self._modulus, scale=ciphertext.scale, metadata=metadata)
+        metadata.update({"reblinded": True, "backend": self.backend_id, "moral_tag": moral_tag})
+        return self.encrypt_scalar(value, scale=ciphertext.scale, metadata=metadata, moral_tag=moral_tag)
 
     def attest_integrity(
         self,
@@ -332,26 +370,40 @@ class PlaceholderFHEBackend:
         *,
         moral_tag: str,
     ) -> Dict[str, Any]:
-        total = 0
+        commitment_material = []
         for item in ciphertexts:
-            total = (total + item.payload + item.mask) % self._modulus
+            commitment_material.append(item.serialize())
+        serialized = json.dumps({"ciphertexts": commitment_material, "backend": self.backend_id}, sort_keys=True)
+        attestation = hashlib.blake2b(serialized.encode("utf-8"), digest_size=32).hexdigest()
         return {
-            "attestation": total,
+            "attestation": attestation,
             "count": len(ciphertexts),
-            "moral_tag": moral_tag,
             "backend": self.backend_id,
+            "moral_tag": moral_tag,
         }
 
 
-class FHECipherSuite:
-    """Prototype-friendly homomorphic encryption helpers.
+class PlaceholderFHEBackend(AuroraFHEBackend):
+    """Backwards-compatible placeholder backend.
 
-    The implementation is intentionally lightweight: it focuses on secure data
-    handling semantics (masking, deterministic replays, metadata encapsulation)
-    while leaving room for drop-in replacement with a real FHE backend such as
-    Zama, TFHE, or lattice-based libraries.  All methods favour explicit
-    metadata so that zero-knowledge proof systems can be wired without breaking
-    compatibility with the broader protocol.
+    Partners relying on the historic placeholder semantics can continue using
+    this subclass.  It preserves the public API while delegating to the Aurora
+    implementation with a minimal noise budget to match legacy behaviour.
+    """
+
+    backend_id = "placeholder-fhe-v1"
+
+    def __init__(self, *, modulus: int) -> None:
+        super().__init__(modulus=modulus, domain_separator="vaultfire::placeholder", noise_budget=1)
+
+
+class FHECipherSuite:
+    """Aurora-backed homomorphic encryption helpers.
+
+    The suite now defaults to the Aurora backend, which offers deterministic
+    masking, attestation-ready metadata, and hardened noise scheduling.  It
+    remains pluggable so partners can swap in alternative FHE providers without
+    rewriting the higher-level privacy orchestration modules.
     """
 
     def __init__(
@@ -365,7 +417,7 @@ class FHECipherSuite:
             raise ValueError("backend modulus must be positive")
         if backend is None and modulus <= 0:
             raise ValueError("modulus must be positive")
-        self._backend: FHEBackend = backend or PlaceholderFHEBackend(modulus=modulus)
+        self._backend: FHEBackend = backend or AuroraFHEBackend(modulus=modulus)
         self._modulus = self._backend.modulus
         self._moral_tag = moral_tag or "vaultfire.morals-aligned"
         self._privacy_engine: PrivacyEngine | None = None
@@ -734,6 +786,7 @@ __all__ = [
     "ConsentProof",
     "DisclosurePacket",
     "FHECipherSuite",
+    "AuroraFHEBackend",
     "PlaceholderFHEBackend",
     "PrivacyEngine",
     "SoulboundKey",

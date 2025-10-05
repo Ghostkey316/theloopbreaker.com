@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from .audit import validate_securestore_fallback
 from .fhe import (
+    AuroraFHEBackend,
     Ciphertext,
     ConsentProof,
     DisclosurePacket,
@@ -21,6 +22,7 @@ from .resilience_simulator import (
 )
 
 __all__ = [
+    "AuroraFHEBackend",
     "Ciphertext",
     "ConsentProof",
     "DisclosurePacket",

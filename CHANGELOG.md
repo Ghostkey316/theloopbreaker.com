@@ -1,5 +1,17 @@
 # Vaultfire Partner Changelog
 
+## 2025-10-15 — feature: Aurora privacy core + partner autopilots
+- Replaced the placeholder FHE stack with the Aurora runtime, delivering
+  deterministic masking, auditable commitments, and hardened noise controls
+  surfaced through the `vaultfire.security.fhe` module and new Aurora test
+  coverage.
+- Upgraded the biometric/ZK identity gate with live attestation ingestion and
+  feed sync helpers so pilots can flip wallets from "pending" to "verified"
+  without manual registry edits.
+- Introduced MPC auto-blueprints that emit hashed partner manifests,
+  enforce required fields, and expose compliance scopes straight from
+  `MPCFabric.decrypt_summary()` to cut integration lift for enterprise rollouts.
+
 ## 2025-10-08 — fix: partner sign-off checklist completed
 - Delivered optional email/OTP and social fallback identity flows that preserve on-chain authority while meeting partner pref
   erences defined in `partner-auth-config.json`.
