@@ -5,13 +5,14 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Dict, Iterable, Mapping, MutableMapping, Optional
+from typing import Any, Dict, Iterable, Mapping, MutableMapping, Optional
 
 from .feedback import FeedbackCollector
 from .keys import ProtocolKey
 from .registry import PartnerRecord
 from .sandbox import YieldSandbox
 from .privacy import PilotPrivacyLedger
+from .resonance import PilotResonanceTelemetry, ResonanceSignal
 from . import storage
 
 __all__ = ["PilotSession", "SessionFactory"]
@@ -30,6 +31,7 @@ class PilotSession:
     feedback: FeedbackCollector
     protocol_key: ProtocolKey
     ledger: PilotPrivacyLedger
+    resonance: Optional[PilotResonanceTelemetry] = None
     protocols: tuple[str, ...] = ()
     real_load_enabled: bool = False
     load_multiplier: float = 1.0
@@ -207,6 +209,36 @@ class PilotSession:
             "load_profile": dict(self.load_profile),
         }
 
+    def capture_resonance_signal(
+        self,
+        *,
+        source: str,
+        technique: str,
+        score: float,
+        metadata: Optional[Mapping[str, Any]] = None,
+        mission_override: Optional[str] = None,
+    ) -> ResonanceSignal:
+        """Ingest a mission resonance signal for this pilot session."""
+
+        if self.resonance is None:
+            raise RuntimeError("resonance telemetry is not configured for this session")
+        return self.resonance.ingest_signal(
+            partner_tag=self.partner_tag,
+            session_id=self.session_id,
+            source=source,
+            technique=technique,
+            score=score,
+            metadata=metadata,
+            mission_override=mission_override,
+        )
+
+    def resonance_digest(self) -> Dict[str, Any]:
+        """Return the mission resonance integrity digest for this session."""
+
+        if self.resonance is None:
+            return {}
+        return self.resonance.integrity_digest()
+
 
 class SessionFactory:
     """Factory for initializing pilot sessions with logging."""
@@ -218,6 +250,7 @@ class SessionFactory:
         feedback: Optional[FeedbackCollector] = None,
         session_log_path=None,
         ledger: Optional[PilotPrivacyLedger] = None,
+        resonance: Optional[PilotResonanceTelemetry] = None,
     ) -> None:
         self._ledger = ledger or PilotPrivacyLedger()
         if sandbox is None:
@@ -233,6 +266,7 @@ class SessionFactory:
             if hasattr(self._feedback, "attach_ledger"):
                 self._feedback.attach_ledger(self._ledger)
         self._session_log_path = session_log_path or storage.SESSION_LOG_PATH
+        self._resonance = resonance
 
     def _log_session(self, record: Dict[str, object]) -> None:
         if self._ledger:
@@ -274,6 +308,7 @@ class SessionFactory:
             feedback=self._feedback,
             protocol_key=protocol_key,
             ledger=self._ledger,
+            resonance=self._resonance,
             protocols=protocol_list,
         )
         log_record: Dict[str, object] = {
