@@ -55,6 +55,11 @@ Partners who want a step-by-step launch plan can review the new [Live Rollout Re
 - **Post-quantum attestations:** The companion [`PostQuantumSignatureVerifier`](./vaultfire/protocol/mission_resonance.py) issues Dilithium-style hashes so partner dashboards can accept lattice-strength mission confirmations without leaking plaintext content.
 - **Integrity snapshot for partners:** `MissionResonanceEngine.integrity_report()` exports a readiness digest (mission, blended resonance index, technique mix, and threshold check) that compliance teams can sign before a new cohort goes live.
 
+## Mission Covenant Chain (Foundational)
+- **Exclusive to Vaultfire:** The new `MissionCovenantLedger` forges an unstoppable covenant hash chain that no other protocol ships, binding every partner action to the canonical mission without drift.
+- **Anchor-first issuance:** Covenants can only mint after a Mission Continuity Anchor is registered, so expansions inherit the ethics-locked lineage before scaling.
+- **Auditable exports:** Each covenant exports mission lineage, metadata, and unstoppable proof digests so partners can independently verify covenant integrity without revealing private payloads.
+
 ## Installation
 1. Clone this repository and install dependencies: `npm install`
 2. Launch the wallet-only Partner Sync interface: `node partnerSync.js`
