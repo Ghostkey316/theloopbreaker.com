@@ -1,6 +1,20 @@
 {
   "vaultfire": {
-    "partnerReady": true
+    "partnerReady": true,
+    "stealthPilot": true,
+    "partner": {
+      "scope": "pilot",
+      "sandboxEnabled": true,
+      "ping": true
+    },
+    "visibility": {
+      "backend": ["OpenAI", "NS3", "Assemble AI"]
+    },
+    "metadataLock": {
+      "wallet": "bpow20.cb.id",
+      "ens": "ghostkey316.eth",
+      "archive": "https://ghostkey316.cloud/index"
+    }
   },
   "deployment": {
     "defaultMode": "simulated",

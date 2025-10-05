@@ -1,9 +1,15 @@
 {
   "wallet": "bpow20.cb.id",
+  "ens": "ghostkey316.eth",
+  "metadata_lock": {
+    "wallet": "bpow20.cb.id",
+    "ens": "ghostkey316.eth"
+  },
+  "archive_url": "https://ghostkey316.cloud/index",
   "timestamp": "2025-08-21T22:25:18.099562+00:00",
   "checksums": {
     "ghostkey_asm_sync.py": "d328da60783eb030d0834aa77bc2e9aafcf96ba518f44d71227a3cab4a4c7a38",
-    "contributor_registry.json": "e9679a3ad0449fec83634ef9171bf1dbdf8b0eddb422b405a46d3aedb9798548"
+    "contributor_registry.json": "0085a01b955b5650de78b21399fd75e57949e6be55918e11d4f0d2c6d862c77c"
   },
   "commands": [
     "verify",

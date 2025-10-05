@@ -33,5 +33,25 @@
     "ethics_priority_override": "enabled",
     "second_chance_window": "permanent",
     "public_forgiveness_layer": "active"
-  }
+  },
+  "stealth_pilot": {
+    "enabled": true,
+    "mode": "stealth-sandbox",
+    "notes": "Flagged for Codex Cloud stealth pilot activation.",
+    "visibility_channels": [
+      "OpenAI",
+      "NS3",
+      "Assemble AI"
+    ]
+  },
+  "partner_access": {
+    "scope": "pilot",
+    "sandbox_enabled": true,
+    "ping": true
+  },
+  "contributor_metadata_lock": {
+    "wallet": "bpow20.cb.id",
+    "ens": "ghostkey316.eth"
+  },
+  "contributor_archive": "https://ghostkey316.cloud/index"
 }

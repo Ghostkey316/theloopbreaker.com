@@ -13,6 +13,11 @@
       "ns3-ready"
     ],
     "ens": "ghostkey316.eth",
-    "title": "Core Architect of Vaultfire CLI"
+    "title": "Core Architect of Vaultfire CLI",
+    "metadata_lock": {
+      "wallet": "bpow20.cb.id",
+      "ens": "ghostkey316.eth"
+    },
+    "archive": "https://ghostkey316.cloud/index"
   }
 }
