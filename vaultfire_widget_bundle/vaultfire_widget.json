@@ -1,0 +1,69 @@
+{
+  "name": "GhostkeyVaultfireAgent",
+  "version": "1.0.0-devday",
+  "description": "Mission-ready widget bundle for Vaultfire's stealth pilot orchestration with gradient telemetry streaming.",
+  "models": {
+    "default": "gpt-4o",
+    "fallback": ["gpt-4-turbo"]
+  },
+  "preview": {
+    "instructions": "Operate in DevDay preview mode. Prioritise gradient telemetry visibility while protecting stealth pilot context.",
+    "allowed_tools": ["MissionControl", "TelemetryStream", "MCP"],
+    "stealth_pilot_detection": "passive"
+  },
+  "publish": {
+    "instructions": "Maintain Vaultfire mission control commitments in production and emit resonance digests for every pilot action.",
+    "allowed_tools": ["MissionControl", "TelemetryStream", "MCP", "GradientDisplay"],
+    "stealth_pilot_detection": "active"
+  },
+  "ui": {
+    "panels": [
+      {
+        "id": "gradient-log",
+        "title": "Gradient Resonance Log",
+        "component": "GradientStream",
+        "options": {
+          "include_belief_loop_graph": true,
+          "stream_source": "telemetry/gradient_stream.py"
+        }
+      },
+      {
+        "id": "pilot-state",
+        "title": "Pilot Session State",
+        "component": "PilotState",
+        "options": {
+          "stealth_mode_badge": true,
+          "mission_reference_panel": true
+        }
+      }
+    ],
+    "toggles": [
+      {
+        "id": "temperature",
+        "label": "Model Temperature",
+        "type": "select",
+        "options": [0.2, 0.4, 0.6],
+        "default": 0.2
+      },
+      {
+        "id": "top_p",
+        "label": "Top-p Sampling",
+        "type": "select",
+        "options": [0.8, 0.9, 1.0],
+        "default": 0.9
+      }
+    ]
+  },
+  "telemetry": {
+    "gradient_stream": "telemetry/gradient_stream.py",
+    "mission_hooks": "telemetry/mission_hooks.py"
+  },
+  "mcp": {
+    "signals": "mcp/signal_handler.py"
+  },
+  "security": {
+    "onboarding": "onboarding.md",
+    "stealth_pilot_required": true,
+    "mission_commitment": "Ghostkey Vaultfire mission ledger"
+  }
+}
