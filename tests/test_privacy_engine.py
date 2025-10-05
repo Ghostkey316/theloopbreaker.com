@@ -8,6 +8,7 @@ from vaultfire.security.fhe import Ciphertext, FHECipherSuite, PlaceholderFHEBac
 def test_privacy_engine_consent_and_staking_toggle():
     suite = FHECipherSuite()
     engine = suite.privacy_engine
+    assert suite.backend_id == "vaultfire.aurora-fhe-r1"
 
     ciphertext, proof = engine.consent.encrypt_with_consent(
         42.5,
