@@ -2,6 +2,14 @@
 
 from .access_layer import PilotAccessLayer
 from .feedback import FeedbackCollector, FeedbackRecord
+from .ghostkey_agent import (
+    AgentConfig,
+    AgentLaunchState,
+    AgentWidget,
+    AgentWorkflow,
+    GhostkeyVaultfireAgent,
+    MissionControlPoints,
+)
 from .keys import ProtocolKey, ProtocolKeyManager
 from .privacy import PilotPrivacyLedger, PilotReference
 from .registry import PilotAccessRegistry, PartnerRecord
@@ -13,6 +21,12 @@ __all__ = [
     "PilotAccessLayer",
     "FeedbackCollector",
     "FeedbackRecord",
+    "AgentConfig",
+    "AgentLaunchState",
+    "AgentWidget",
+    "AgentWorkflow",
+    "GhostkeyVaultfireAgent",
+    "MissionControlPoints",
     "ProtocolKey",
     "ProtocolKeyManager",
     "PilotAccessRegistry",
