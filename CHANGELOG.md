@@ -1,5 +1,9 @@
 # Vaultfire Partner Changelog
 
+## 2025-10-18 — docs: mission-locked protocol modernization
+- Upgraded `FORKABLE_PROTOCOL.md` to version 1.1 with zk-SNARK attestation, post-quantum key rotation, and AI collaboration loops that preserve the Ghostkey manifesto mission lock.
+- Expanded `vaultfire_3yr_protocol.yml` with innovation, security, and mission safeguard tracks that integrate edge inference meshes, zero-knowledge verification cadences, and alignment beacons.
+
 ## 2025-10-15 — feature: Aurora privacy core + partner autopilots
 - Replaced the placeholder FHE stack with the Aurora runtime, delivering
   deterministic masking, auditable commitments, and hardened noise controls
@@ -13,10 +17,8 @@
   `MPCFabric.decrypt_summary()` to cut integration lift for enterprise rollouts.
 
 ## 2025-10-08 — fix: partner sign-off checklist completed
-- Delivered optional email/OTP and social fallback identity flows that preserve on-chain authority while meeting partner pref
-  erences defined in `partner-auth-config.json`.
-- Introduced ESLint-powered JSX/TS syntax verification with CI logging, Husky enforcement, and documentation in the developer
-  guidelines.
+- Delivered optional email/OTP and social fallback identity flows that preserve on-chain authority while meeting partner preferences defined in `partner-auth-config.json`.
+- Introduced ESLint-powered JSX/TS syntax verification with CI logging, Husky enforcement, and documentation in the developer guidelines.
 - Captured fallback authentication coverage in Jest to validate wallet-off scenarios and isolated session storage.
 - Finalised readiness docs to reflect the enforced syntax checks and cleared the remaining “before sign” considerations.
 
@@ -39,13 +41,10 @@
 - Added a Husky pre-commit hook that blocks commits when `npm audit` reports vulnerabilities and scheduled a weekly CI audit watchdog that auto-files GitHub issues with advisory context.
 
 ## 2025-10-12 — Mobile Telemetry Hardening & Safety Controls
-- Added mobile-aware residency, partner hook, and node telemetry updates that honour the `MOBILE_MODE` environment flag and
-  hybrid runtime override.
-- Introduced compact preflight output for `MOBILE_MODE=true npm run preflight` and expanded documentation covering dual test
-  runs and optional Sentry fallbacks.
+- Added mobile-aware residency, partner hook, and node telemetry updates that honour the `MOBILE_MODE` environment flag and hybrid runtime override.
+- Introduced compact preflight output for `MOBILE_MODE=true npm run preflight` and expanded documentation covering dual test runs and optional Sentry fallbacks.
 - Restored Jest stability when `@sentry/react` is absent by auto-mocking `withProfiler` and surfacing postinstall guidance.
-- Sandboxed Hardhat/solc workflows via `infra/hardhat-sandbox.js` to mitigate the `cookie` and `tmp` advisories until upstream
-  patches land.
+- Sandboxed Hardhat/solc workflows via `infra/hardhat-sandbox.js` to mitigate the `cookie` and `tmp` advisories until upstream patches land.
 - Expanded telemetry-focused Jest coverage to validate residency guard relaxations, partner hook skips, and Sentry fallbacks.
 
 ## 2025-10-02 — Residency Enforcement Sprint
@@ -60,15 +59,10 @@
 - Created a mobile summary Jest suite and postinstall script to surface optional dependency messaging without breaking mobile pipelines.
 
 ## 2025-09-19 — v2.6.0-alpha Partner Readiness
-- Added `signalRelay.retry()` with exponential backoff and a circuit-breaker
-  guard to stabilise remote belief sync deliveries during partner outages.
-- Hardened Trust Sync verification by enforcing timestamp windows, replay
-  protection, and checksum fallbacks exposed via `trustSync.verify()`.
-- Introduced the JavaScript loyalty engine with on-chain multiplier wiring,
-  telemetry anchors, and the `calculateMultiplier()` interface for partner
-  reward orchestration.
-- Expanded Jest coverage with dedicated suites for the signal relay, Trust Sync
-  verifier, and loyalty engine multiplier mapping.
+- Added `signalRelay.retry()` with exponential backoff and a circuit-breaker guard to stabilise remote belief sync deliveries during partner outages.
+- Hardened Trust Sync verification by enforcing timestamp windows, replay protection, and checksum fallbacks exposed via `trustSync.verify()`.
+- Introduced the JavaScript loyalty engine with on-chain multiplier wiring, telemetry anchors, and the `calculateMultiplier()` interface for partner reward orchestration.
+- Expanded Jest coverage with dedicated suites for the signal relay, Trust Sync verifier, and loyalty engine multiplier mapping.
 
 ## 2025-08-15 — v1.2.0-rc Partner Hardening
 - Added `pilot-loader.js` with `VAULTFIRE_MODULE_SCOPE` controls so pilots boot only CLI, dashboard, and belief engines when `pilot_mode=true`.
@@ -77,9 +71,3 @@
 - Refreshed partner documentation with a risk matrix, governance tuning playbook, and telemetry residency guidance.
 - Expanded Vaultfire Core to support multi-wallet whitelists via `WALLET_WHITELIST` overrides while keeping single-wallet mode as the default.
 - Added operational runbooks and onboarding coverage tooling so every module ships with setup, risk, and recovery guidance.
-
-## 2025-02-20 — Pilot Upgrade Readiness
-- Enabled belief sandbox observability with `/debug/belief-sandbox` and JSON logging for belief mechanics, loyalty engine, and multiplier core sandboxes.
-- Automated manifest version stamping (commit hash + semantic version) during `npm run build` so partners can verify build provenance.
-- Captured Jest summaries in `/logs/test-report.json`, refreshed the test status badge, and enforced the integrity suite inside the pre-push hook.
-- Published governance, data residency, and onboarding quickstart docs to streamline partner due diligence reviews.
