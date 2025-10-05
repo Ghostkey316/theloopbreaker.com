@@ -49,6 +49,12 @@ Partners who want a step-by-step launch plan can review the new [Live Rollout Re
 
 > Sample manifests in `deployment/sample-suite/` codify both simulated and live-ready launches, ensuring partner-ready deployments flip `vaultfire.partnerReady = true` and enable the bridge features automatically.
 
+## Cutting-Edge Mission Resonance Layer
+- **Mission locked to the covenant:** `MISSION_STATEMENT` now ships from [`vaultfire/protocol/constants.py`](./vaultfire/protocol/constants.py) so every new module references the canonical mission text before processing partner data.
+- **Signal fusion with privacy tech:** [`MissionResonanceEngine`](./vaultfire/protocol/mission_resonance.py) blends edge-LLM embeddings, FHE streams, ZK Fog redactions, MPC council updates, and neural-symbolic evaluators while keeping loyalty scores inside encrypted envelopes.
+- **Post-quantum attestations:** The companion [`PostQuantumSignatureVerifier`](./vaultfire/protocol/mission_resonance.py) issues Dilithium-style hashes so partner dashboards can accept lattice-strength mission confirmations without leaking plaintext content.
+- **Integrity snapshot for partners:** `MissionResonanceEngine.integrity_report()` exports a readiness digest (mission, blended resonance index, technique mix, and threshold check) that compliance teams can sign before a new cohort goes live.
+
 ## Installation
 1. Clone this repository and install dependencies: `npm install`
 2. Launch the wallet-only Partner Sync interface: `node partnerSync.js`
