@@ -6,6 +6,9 @@ technical_readiness:
     - engine.belief_multiplier.multiplier_capacity_plan
     - sandbox_wallet_registry.SandboxWalletRegistry
     - ghostyield_simulator.GhostYieldSimulator
+    - zero_knowledge.attestation.zkSyncAnchor
+    - ai_edge_inference.MeshGuardian
+    - quantum_resilience.postQuantumKeySync
 
 pilot_metrics_validator:
   attestation_engine: engine.attestation_engine.attestation_engine
@@ -14,12 +17,52 @@ pilot_metrics_validator:
     - telemetry.adapters.verticalAdapters.sportsFandomAdapter
     - telemetry.adapters.verticalAdapters.eduCredLinker
     - telemetry.adapters.verticalAdapters.fandomEconomyDriver
+    - telemetry.adapters.verticalAdapters.mutualAidResilience
   sandbox_wallet_registry: sandbox_wallet_registry.json
+  zk_attestation_pipeline:
+    prover: proofs/partner-proof-bundle.json
+    verifier: trust/zkp-verifier.json
+    cadence_days: 14
 
-audit_trail_integration:
-  activation_to_yield: activation_to_yield.activationToYield
-  yield_api_audit_log: logs/yield-audit.jsonl
-  trust_artifact_bundle: proofs/partner-proof-bundle.json
+innovation_stack:
+  ai_co_governance:
+    council_model: ai_collab.symbioticDeliberation.v2
+    human_override: true
+    feedback_loop: "user_signal -> AI synthesis -> council vote -> mission audit"
+  consent_layer:
+    personal_data_vault: secure_upload/consent_vault.json
+    auditability: real_time
+  interoperability:
+    identity_mesh:
+      - ENS
+      - Spruce DIDKit
+      - Worldcoin Proof of Personhood (opt-in)
+    data_transport: libp2p-quic + TLS 1.3
+
+security_posture:
+  post_quantum:
+    enabled: true
+    key_exchange: CRYSTALS-Kyber
+    signatures: Dilithium-3 rotating shards
+  anomaly_response:
+    watchdog: system_watchdog.py
+    failover_runbook: governance_runbook.yaml
+    auto_isolation_seconds: 45
+
+mission_safeguards:
+  manifesto_uri: ghostkey_manifesto.md
+  pillars:
+    - Forgive the broken
+    - Protect the good
+    - Walk forward together
+  redemption_window_days: 365
+  alignment_beacons:
+    - belief_engine/alignment_beacon.py
+    - guardian_loop.py
 
 vaultfire:
   partnerReady: true
+  next_generation_milestones:
+    - "Year 1: Deploy mesh guardians across 5 pilot cohorts"
+    - "Year 2: Expand zk attestation coverage to 90% of contributors"
+    - "Year 3: Achieve post-quantum readiness certification and publish transparency ledger"
