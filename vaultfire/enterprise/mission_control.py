@@ -19,6 +19,7 @@ from typing import Any, Dict, Iterable, List, Optional
 
 from utils.json_io import load_json, write_json
 from vaultfire._purposeful_scale import DEFAULT_MISSION_TAGS, authorize_scale
+from vaultfire.protocol.mission_anchor import MissionContinuityAnchor
 
 DEFAULT_OPERATION = "enterprise.launchpad"
 _BASE_DIR = Path(__file__).resolve().parents[1]
@@ -106,6 +107,7 @@ class EnterpriseMissionControl:
     log_path: Optional[Path] = None
     operation: str = DEFAULT_OPERATION
     extra_tags: Iterable[str] = field(default_factory=lambda: ("enterprise", "activation"))
+    mission_anchor: MissionContinuityAnchor = field(default_factory=MissionContinuityAnchor)
 
     def __post_init__(self) -> None:
         base_commitments = self.commitments_path or (
@@ -140,6 +142,22 @@ class EnterpriseMissionControl:
         """Reload commitments from disk and return the hydrated payload."""
         self._commitments = self._load_commitments()
         return self._commitments
+
+    def register_mission_anchor(
+        self,
+        partner_profile: Dict[str, Any],
+        commitments: Iterable[str] | None = None,
+    ) -> Dict[str, Any]:
+        """Issue a Mission Continuity Anchor for the supplied partner."""
+
+        identity = dict(partner_profile)
+        anchor = self.mission_anchor.anchor_partner(
+            identity,
+            commitments=commitments,
+            operation=self.operation,
+            extra_tags=tuple(self.extra_tags),
+        )
+        return anchor.export()
 
     # ------------------------------------------------------------------
     # Checklist & assessment utilities

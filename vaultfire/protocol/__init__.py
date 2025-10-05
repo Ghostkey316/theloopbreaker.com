@@ -18,6 +18,7 @@ from .mission_resonance import (
 )
 from .identity_gate import BiometricYieldRouter, ZKIdentityVerifier
 from .logs import log_private_behavioral_signal, log_telemetry_event
+from .mission_anchor import MissionAnchorRecord, MissionContinuityAnchor
 from .private_staking import ConfidentialVaultScoring, PrivateStake, PrivateStakingLedger
 from .reputation_tokens import EncryptedTrustToken, ReputationLedger
 from .secure_collaboration import MPCContribution, MPCFabric
@@ -39,6 +40,8 @@ __all__ = [
     "PrivateStake",
     "PrivateStakingLedger",
     "ConfidentialVaultScoring",
+    "MissionAnchorRecord",
+    "MissionContinuityAnchor",
     "build_institutional_onboarding_packet",
     "prepare_private_signal",
     "seal_belief_yield_event",
