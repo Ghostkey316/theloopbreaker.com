@@ -19,6 +19,7 @@ __all__ = [
     "ghost_audit",
     "refund",
     "pilot_mode",
+    "telemetry",
     "auto_refund",
     "should_refund",
     "freeze_refunds",
@@ -35,6 +36,7 @@ _LAZY_MODULES: Dict[str, str] = {
     "ghost_audit": ".ghost_audit",
     "refund": ".refund",
     "pilot_mode": ".pilot_mode",
+    "telemetry": ".telemetry",
 }
 
 _REFUND_EXPORTS: Iterable[str] = (
