@@ -5,15 +5,21 @@ from __future__ import annotations
 import argparse
 import json
 from importlib import import_module
-from typing import Any
+from pathlib import Path
+from typing import Any, Iterable, Mapping
 
 from vaultfire.protocol.signal_echo import SignalEchoEngine
 from vaultfire.protocol.timeflare import TimeFlare
 from vaultfire.quantum.hashmirror import QuantumHashMirror
+from vaultfire.modules.ethic_resonant_time_engine import EthicResonantTimeEngine
+from vaultfire.modules.vaultfire_protocol_stack import GiftMatrixV1, VaultfireProtocolStack
 
 _yield_module = import_module("vaultfire.yield")
 PulseSync = getattr(_yield_module, "PulseSync")
 TemporalGiftMatrixEngine = getattr(_yield_module, "TemporalGiftMatrixEngine")
+
+IDENTITY_HANDLE = "bpow20.cb.id"
+IDENTITY_ENS = "ghostkey316.eth"
 
 
 def _load_echo_engine(path: str | None) -> SignalEchoEngine:
@@ -33,6 +39,15 @@ def _parse_wallet_spec(spec: str) -> dict[str, object] | str:
     if len(parts) >= 3 and parts[2]:
         profile["trajectory_bonus"] = float(parts[2])
     return profile
+
+
+def _load_actions(path: str | None) -> list[Mapping[str, object]]:
+    if path is None:
+        return []
+    data = json.loads(Path(path).read_text())
+    if isinstance(data, list):
+        return [dict(item) for item in data if isinstance(item, Mapping)]
+    return []
 
 
 def cmd_echoindex(args: argparse.Namespace) -> None:
@@ -100,6 +115,88 @@ def cmd_yieldclaim(args: argparse.Namespace) -> None:
     print(json.dumps(payload, indent=2))
 
 
+def cmd_timecheck(args: argparse.Namespace) -> None:
+    actions = _load_actions(args.actions)
+    engine = EthicResonantTimeEngine(
+        args.user,
+        identity_handle=IDENTITY_HANDLE,
+        identity_ens=IDENTITY_ENS,
+    )
+    for action in actions:
+        engine.register_action(action)
+    payload = engine.timecheck()
+    print(json.dumps(payload, indent=2))
+
+
+def cmd_pulse(args: argparse.Namespace) -> None:
+    actions = _load_actions(args.actions)
+    engine = EthicResonantTimeEngine(
+        args.user,
+        identity_handle=IDENTITY_HANDLE,
+        identity_ens=IDENTITY_ENS,
+    )
+    for action in actions:
+        engine.register_action(action)
+    payload = engine.pulse()
+    print(json.dumps(payload, indent=2))
+
+
+def _prepare_gift_matrix(
+    *,
+    actions: Iterable[Mapping[str, object]],
+    interaction: str | None,
+    purity: float,
+    branch: str,
+    priority: str,
+    ethic_score: float,
+    alignment_bias: float,
+    wallets: Iterable[str | Mapping[str, object]],
+) -> GiftMatrixV1:
+    stack = VaultfireProtocolStack(actions=tuple(actions))
+    matrix = stack.gift_matrix
+    if interaction:
+        matrix.record_signal(interaction, belief_purity=purity, tags=("cli", "vaultfire"))
+        matrix.register_fork(
+            interaction,
+            branch=branch,
+            priority=priority,
+            ethic_score=ethic_score,
+            alignment_bias=alignment_bias,
+        )
+        matrix.claim(interaction, wallets)
+    return matrix
+
+
+def cmd_unlocknext(args: argparse.Namespace) -> None:
+    actions = _load_actions(args.actions)
+    stack = VaultfireProtocolStack(actions=tuple(actions))
+    payload = stack.unlock_next(args.label)
+    print(json.dumps(payload, indent=2))
+
+
+def cmd_pulsewatch(args: argparse.Namespace) -> None:
+    actions = _load_actions(args.actions)
+    recipients: list[str | Mapping[str, object]] = []
+    if args.wallet:
+        recipients = [_parse_wallet_spec(entry) for entry in args.wallet]
+    elif args.interaction:
+        recipients = [IDENTITY_ENS]
+    matrix = _prepare_gift_matrix(
+        actions=actions,
+        interaction=args.interaction,
+        purity=args.purity,
+        branch=args.branch,
+        priority=args.priority,
+        ethic_score=args.ethic_score,
+        alignment_bias=args.alignment_bias,
+        wallets=recipients,
+    )
+    stack = VaultfireProtocolStack(actions=tuple(actions))
+    stack.gift_matrix = matrix
+    payload = stack.pulsewatch()
+    print(json.dumps(payload, indent=2))
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ghostkey", description="Ghostkey protocol tooling")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -133,6 +230,37 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional seed for deterministic QuantumHashMirror tags",
     )
     p_yield.set_defaults(func=cmd_yieldclaim)
+
+    p_time = sub.add_parser("timecheck", help="Inspect temporal ethics diagnostics")
+    p_time.add_argument("--actions", help="Optional path to ledger actions", default=None)
+    p_time.add_argument("--user", default="ghostkey-316", help="Override the user identifier")
+    p_time.set_defaults(func=cmd_timecheck)
+
+    p_pulse = sub.add_parser("pulse", help="Inspect the latest quantum pulse")
+    p_pulse.add_argument("--actions", help="Optional path to ledger actions", default=None)
+    p_pulse.add_argument("--user", default="ghostkey-316", help="Override the user identifier")
+    p_pulse.set_defaults(func=cmd_pulse)
+
+    p_unlock = sub.add_parser("unlocknext", help="Advance the GiftMatrix protocol layer")
+    p_unlock.add_argument("--label", help="Optional label for the new layer", default=None)
+    p_unlock.add_argument("--actions", help="Optional path to ledger actions", default=None)
+    p_unlock.set_defaults(func=cmd_unlocknext)
+
+    p_watch = sub.add_parser("pulsewatch", help="Render live pulse and yield insights")
+    p_watch.add_argument("--actions", help="Optional path to ledger actions", default=None)
+    p_watch.add_argument("--interaction", help="Interaction id to seed GiftMatrix", default=None)
+    p_watch.add_argument("--purity", type=float, default=0.85, help="Belief purity score")
+    p_watch.add_argument("--branch", default="stable", help="Timeline branch label")
+    p_watch.add_argument("--priority", default="low", help="Timeline priority label")
+    p_watch.add_argument("--ethic-score", dest="ethic_score", type=float, default=0.75)
+    p_watch.add_argument("--alignment-bias", dest="alignment_bias", type=float, default=0.2)
+    p_watch.add_argument(
+        "--wallet",
+        action="append",
+        default=None,
+        help="Recipient wallet (optionally wallet:belief_multiplier:trajectory_bonus)",
+    )
+    p_watch.set_defaults(func=cmd_pulsewatch)
 
     return parser
 
