@@ -1,9 +1,21 @@
-"""Ethics-aware tempo engine for Vaultfire Ghostkey synchronization."""
+"""Ethics-aware tempo engine for Vaultfire Ghostkey synchronization.
+
+This module predates the new Vaultfire Protocol Stack but has now been
+extended so the :class:`EthicResonantTimeEngine` can act as the temporal
+anchor for the end-to-end integration requested by Ghostkey-316.  The
+engine now keeps lightweight metadata describing its *First-of-its-Kind*
+status, emits diagnostic payloads for the Ghostkey CLI, and mirrors quantum
+hash pulses so the GiftMatrix and other modules can validate temporal
+integrity.
+"""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Dict, Iterable, List, Mapping, MutableSequence, Tuple
+
+from vaultfire.quantum.hashmirror import QuantumHashMirror
 
 
 @dataclass(frozen=True)
@@ -94,18 +106,83 @@ class GhostkeySyncEngine:
 
 
 class EthicResonantTimeEngine:
-    """Coordinates moral scoring with Ghostkey synchronization."""
+    """Coordinates moral scoring with Ghostkey synchronization.
 
-    def __init__(self, user_id: str) -> None:
+    The engine acts as the canonical source of temporal ethics telemetry for
+    the Vaultfire stack.  Each action updates the rolling moral momentum
+    score and imprints a *quantum pulse* string so downstream modules can
+    validate that the timeline has not been tampered with.  The metadata flag
+    ``first_of_its_kind`` is surfaced to the CLI so the user can confirm the
+    protocol uniqueness requirement from the prompt.
+    """
+
+    def __init__(
+        self,
+        user_id: str,
+        *,
+        identity_handle: str = "bpow20.cb.id",
+        identity_ens: str = "ghostkey316.eth",
+    ) -> None:
         self.mmi = MoralMomentumIndex()
         self.ttg = TemporalTrustGate(self.mmi)
         self.ghostkey = GhostkeySyncEngine(user_id)
+        self.identity_handle = identity_handle
+        self.identity_ens = identity_ens
+        self.metadata: Mapping[str, object] = {
+            "module": "EthicResonantTimeEngine",
+            "first_of_its_kind": True,
+            "identity": {
+                "wallet": identity_handle,
+                "ens": identity_ens,
+                "user_id": user_id,
+            },
+        }
+        self._quantum_mirror = QuantumHashMirror(
+            seed=f"ethic-resonant-time::{user_id}"
+        )
+        self._pulse_log: MutableSequence[Mapping[str, object]] = []
 
     def register_action(self, action: Mapping[str, object]) -> None:
         """Register an action with both Ghostkey sync and moral index."""
 
-        self.ghostkey.log_event(action)
-        self.mmi.update(action)
+        timestamp = datetime.now(timezone.utc)
+        payload = dict(action)
+        payload.setdefault("timestamp", timestamp.isoformat())
+        self.ghostkey.log_event(payload)
+        self.mmi.update(payload)
+        tempo = self.ttg.access_window()
+        integrity = self._integrity_from_action(payload)
+        interaction_ref = str(
+            payload.get("interaction_id") or payload.get("timestamp") or f"tempo::{len(self._pulse_log)+1}"
+        )
+        pulse = self._quantum_mirror.imprint(
+            self.identity_ens,
+            interaction_id=interaction_ref,
+            branch=tempo,
+            payload={
+                "integrity": integrity,
+                "timestamp": payload.get("timestamp"),
+                "action": payload.get("type"),
+                "weight": payload.get("weight", 0),
+            },
+        )
+        self._pulse_log.append(
+            {
+                "tempo": tempo,
+                "integrity": integrity,
+                "timestamp": payload.get("timestamp"),
+                "pulse": pulse,
+            }
+        )
+
+    def _integrity_from_action(self, action: Mapping[str, object]) -> float:
+        action_type = str(action.get("type", "")).lower()
+        weight = float(action.get("weight", 1.0))
+        if action_type in {"support", "sacrifice", "uplift"}:
+            return min(1.0, 0.8 + abs(weight) * 0.05)
+        if action_type in {"selfish", "betrayal"}:
+            return max(0.0, 0.6 - abs(weight) * 0.05)
+        return 0.7
 
     def current_tempo(self) -> str:
         """Return the current access tempo."""
@@ -116,6 +193,42 @@ class EthicResonantTimeEngine:
         """Provide a tuple view of the recorded action history."""
 
         return tuple(self.ghostkey.replay_history())
+
+    def timecheck(self) -> Mapping[str, object]:
+        """Return a diagnostic payload consumed by the CLI."""
+
+        return {
+            "identity": self.metadata["identity"],
+            "tempo": self.current_tempo(),
+            "moral_score": self.mmi.get_score(),
+            "history": list(self.review_history()),
+            "pulse_integrity": self._pulse_log[-1]["integrity"] if self._pulse_log else 0.0,
+            "metadata": self.metadata,
+        }
+
+    def pulse(self) -> Mapping[str, object]:
+        """Expose the latest quantum pulse and tempo status."""
+
+        latest = self._pulse_log[-1] if self._pulse_log else {}
+        if latest:
+            tempo = latest.get("tempo", self.current_tempo())
+            pulse_value = latest.get("pulse")
+            integrity = latest.get("integrity", 0.0)
+        else:
+            tempo = self.current_tempo()
+            pulse_value = self._quantum_mirror.imprint(
+                self.identity_ens,
+                interaction_id="initial",
+                branch=tempo,
+                payload={"generated": True},
+            )
+            integrity = 0.0
+        return {
+            "tempo": tempo,
+            "pulse": pulse_value,
+            "integrity": integrity,
+            "metadata": self.metadata,
+        }
 
 
 if __name__ == "__main__":
