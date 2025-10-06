@@ -242,6 +242,30 @@ def _build_protocol_suite(
     }
 
 
+def _build_protocol_stack(
+    actions_path: str | None,
+    history_path: str | None,
+    *,
+    user: str = "ghostkey-316",
+) -> VaultfireProtocolStack:
+    actions = tuple(_load_actions(actions_path))
+    stack = VaultfireProtocolStack(
+        identity_handle=IDENTITY_HANDLE,
+        identity_ens=IDENTITY_ENS,
+        actions=actions,
+        mythos_path=str(
+            _default_activation_status_path().with_name(f"{user}.cli.mythos.json")
+        ),
+    )
+    history_entries = _load_soul_history(history_path)
+    for entry in history_entries:
+        event = dict(entry)
+        event.setdefault("type", "event")
+        event.setdefault("channel", "history")
+        stack.myth_mode.record_event(event)
+    return stack
+
+
 def _collect_signals(
     path: str | None,
     inline_entries: Iterable[str] | None,
@@ -263,6 +287,73 @@ def _build_engines(
         suite["mirror"],
         suite["gift"],
     )
+
+
+def _parse_events(entries: Iterable[str] | None) -> list[Mapping[str, object]]:
+    events: list[Mapping[str, object]] = []
+    if not entries:
+        return events
+    for item in entries:
+        if item is None:
+            continue
+        try:
+            parsed = json.loads(item)
+        except json.JSONDecodeError:
+            events.append({"type": "command", "command": item, "channel": "cli"})
+            continue
+        if isinstance(parsed, Mapping):
+            events.append(dict(parsed))
+    return events
+
+
+def cmd_mythos_compress(args: argparse.Namespace) -> None:
+    stack = _build_protocol_stack(args.actions, args.history, user=args.user)
+    for event in _parse_events(args.event):
+        stack.myth_mode.record_event(event)
+    payload = stack.myth_mode.compress(milestone=args.milestone, reason="cli-manual")
+    print(json.dumps(payload, indent=2))
+
+
+def cmd_mythos_view(args: argparse.Namespace) -> None:
+    stack = _build_protocol_stack(args.actions, args.history, user=args.user)
+    if args.id:
+        loop = stack.myth_mode.get_loop(args.id)
+        payload: Mapping[str, object] = loop or {
+            "error": "loop_not_found",
+            "message": f"No myth loop found for id {args.id}",
+        }
+    else:
+        payload = {"loops": list(stack.myth_mode.history())}
+    print(json.dumps(payload, indent=2))
+
+
+def cmd_mythos_export(args: argparse.Namespace) -> None:
+    stack = _build_protocol_stack(args.actions, args.history, user=args.user)
+    payload = stack.myth_mode.export(args.format)
+    print(json.dumps(payload, indent=2))
+
+
+def cmd_mythos_echo(args: argparse.Namespace) -> None:
+    stack = _build_protocol_stack(args.actions, args.history, user=args.user)
+    loop = stack.myth_mode.get_loop(args.id)
+    if not loop:
+        payload: Mapping[str, object] = {
+            "error": "loop_not_found",
+            "message": f"No myth loop found for id {args.id}",
+        }
+    else:
+        encoder = stack.myth_mode.compressor.encoder
+        share_token = encoder.encode({"loop_id": args.id, "timestamp": _now_ts()})
+        payload = {
+            "loop_id": args.id,
+            "archetype": loop.get("archetype"),
+            "myth_rank": loop.get("myth_rank"),
+            "echo_weight": loop.get("echo_weight"),
+            "summary": loop.get("summary"),
+            "codex_tags": loop.get("codex_tags"),
+            "share_token": share_token,
+        }
+    print(json.dumps(payload, indent=2))
 
 
 def cmd_echoindex(args: argparse.Namespace) -> None:
@@ -728,6 +819,52 @@ def cmd_status(args: argparse.Namespace) -> None:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ghostkey", description="Ghostkey protocol tooling")
     sub = parser.add_subparsers(dest="cmd", required=True)
+
+    p_mythos = sub.add_parser("mythos", help="Interact with Myth Compression Mode")
+    myth_sub = p_mythos.add_subparsers(dest="myth_cmd", required=True)
+
+    p_mythos_compress = myth_sub.add_parser("compress", help="Manually compress pending logs")
+    p_mythos_compress.add_argument("--actions", help="Optional path to ledger actions", default=None)
+    p_mythos_compress.add_argument("--history", help="Optional path to soul history", default=None)
+    p_mythos_compress.add_argument(
+        "--event",
+        action="append",
+        default=None,
+        help="Inline event payload to queue before compression (JSON)",
+    )
+    p_mythos_compress.add_argument(
+        "--milestone",
+        action="store_true",
+        help="Mark this compression as a milestone loop",
+    )
+    p_mythos_compress.add_argument("--user", default="ghostkey-316", help="Ghostkey identifier")
+    p_mythos_compress.set_defaults(func=cmd_mythos_compress)
+
+    p_mythos_view = myth_sub.add_parser("view", help="View symbolic loop history")
+    p_mythos_view.add_argument("--actions", help="Optional path to ledger actions", default=None)
+    p_mythos_view.add_argument("--history", help="Optional path to soul history", default=None)
+    p_mythos_view.add_argument("--id", help="Optional specific loop id", default=None)
+    p_mythos_view.add_argument("--user", default="ghostkey-316", help="Ghostkey identifier")
+    p_mythos_view.set_defaults(func=cmd_mythos_view)
+
+    p_mythos_export = myth_sub.add_parser("export", help="Export belief path loops")
+    p_mythos_export.add_argument("--actions", help="Optional path to ledger actions", default=None)
+    p_mythos_export.add_argument("--history", help="Optional path to soul history", default=None)
+    p_mythos_export.add_argument(
+        "--format",
+        choices=("json", "yaml", "pdf"),
+        default="json",
+        help="Export format",
+    )
+    p_mythos_export.add_argument("--user", default="ghostkey-316", help="Ghostkey identifier")
+    p_mythos_export.set_defaults(func=cmd_mythos_export)
+
+    p_mythos_echo = myth_sub.add_parser("echo", help="Share a loop for remix or reflection")
+    p_mythos_echo.add_argument("--actions", help="Optional path to ledger actions", default=None)
+    p_mythos_echo.add_argument("--history", help="Optional path to soul history", default=None)
+    p_mythos_echo.add_argument("--id", required=True, help="Loop id to share")
+    p_mythos_echo.add_argument("--user", default="ghostkey-316", help="Ghostkey identifier")
+    p_mythos_echo.set_defaults(func=cmd_mythos_echo)
 
     p_echo = sub.add_parser("echoindex", help="Inspect the signal echo index")
     p_echo.add_argument("--interaction", help="Filter by interaction id", default=None)

@@ -11,6 +11,7 @@ from vaultfire.modules.conscious_state_engine import ConsciousStateEngine
 from vaultfire.modules.ethic_resonant_time_engine import EthicResonantTimeEngine
 from vaultfire.modules.mission_soul_loop import MissionSoulLoop
 from vaultfire.modules.predictive_yield_fabric import PredictiveYieldFabric
+from vaultfire.modules.myth_compression_mode import MythCompressionMode
 from vaultfire.modules.vaultfire_enhancement_stack import (
     ConscienceMirrorVerificationLayer,
     LoopSingularityDetectorEngine,
@@ -207,11 +208,17 @@ class VaultfireProtocolStack:
             identity_handle=identity_handle,
             identity_ens=identity_ens,
         )
+        self.myth_mode = MythCompressionMode(
+            identity_handle=identity_handle,
+            identity_ens=identity_ens,
+            ghostkey_id=identity_handle,
+        )
         self.mythos = VaultfireMythosEngine(
             identity_handle=identity_handle,
             identity_ens=identity_ens,
             output_path=mythos_path,
         )
+        self.myth_mode.ensure_bootstrap()
         self.behavioral_compression.compress(
             {
                 "type": "activation",
@@ -229,6 +236,17 @@ class VaultfireProtocolStack:
             },
             resonance=0.82 if actions else 0.7,
         )
+        self.myth_mode.record_event(
+            {
+                "type": "response",
+                "channel": "system",
+                "success": True,
+                "note": "Baseline myth weave",
+                "resonance": 0.7,
+            }
+        )
+        if not self.myth_mode.history():
+            self.myth_mode.compress(milestone=True, reason="baseline-weave")
         self.predictive.register_export("core", 1.0)
         self.predictive.forecast(self.conscious.belief_health(), 120.0)
         self.conscience_mirror.conscience_sync("initialisation", threshold=0.55)
@@ -242,8 +260,10 @@ class VaultfireProtocolStack:
                 "yield_forecast": self.predictive.latest_forecast,
                 "enhancements": self.enhancement_confirmation(),
                 "system_status": self.system_status(),
+                "myth_compression": self.myth_mode.status(),
             }
         )
+        summary["myth_echo_bonus"] = summary["myth_compression"]["myth_echo_bonus"]
         return summary
 
     def _ingest_action(self, action: Mapping[str, object]) -> None:
@@ -284,8 +304,44 @@ class VaultfireProtocolStack:
             },
             resonance=belief,
         )
+        tags = tuple(action.get("tags", ()))
+        self.myth_mode.record_event(
+            {
+                "type": "command",
+                "command": str(action.get("command", action.get("type", "action"))),
+                "channel": action.get("channel", "cli"),
+                "success": action_alignment >= 0.5,
+                "intensity": belief,
+                "tags": tags,
+                "confirm": bool(compression["rewards_unlocked"]),
+                "milestone": bool(action.get("milestone")),
+                "metadata": {
+                    "alignment": action_alignment,
+                    "result_alignment": result_alignment,
+                },
+            }
+        )
+        self.myth_mode.record_event(
+            {
+                "type": "response",
+                "channel": action.get("channel", "cli"),
+                "success": result_alignment >= 0.5,
+                "intensity": result_alignment,
+                "tags": tags,
+                "metadata": {
+                    "belief": belief,
+                    "drift": drift_payload,
+                },
+            }
+        )
+        if action.get("milestone"):
+            self.myth_mode.compress(milestone=True, reason="milestone-action")
 
     def unlock_next(self, label: str | None = None) -> Mapping[str, object]:
+        if not self.myth_mode.can_unlock():
+            raise PermissionError(
+                "Myth compression threshold not met; compress myth loops before unlocking"
+            )
         sync = self.conscience_mirror.conscience_sync("unlock", threshold=0.55)
         if not sync["verified"]:
             raise PermissionError("Conscience mirror verification required before unlock")
