@@ -1,5 +1,7 @@
 """Pilot mode namespace for secure partner testing."""
 
+import importlib
+
 from .access_layer import PilotAccessLayer
 from .feedback import FeedbackCollector, FeedbackRecord
 from .ghostkey_agent import (
@@ -38,4 +40,27 @@ __all__ = [
     "YieldSandbox",
     "PilotSession",
     "SessionFactory",
+    "MissionControlHookBundle",
+    "mission_control_setup",
+    "mission_control_hooks",
+    "stealth_telemetry",
 ]
+
+_LAZY_ATTRS = {
+    "mission_control_hooks": ".mission_control_hooks",
+    "stealth_telemetry": ".stealth_telemetry",
+}
+
+
+def __getattr__(name):
+    if name == "MissionControlHookBundle" or name == "mission_control_setup":
+        module = importlib.import_module(".mission_control_hooks", __name__)
+        value = getattr(module, "MissionControlHookBundle" if name == "MissionControlHookBundle" else "setup")
+        globals()[name] = value
+        return value
+    if name in _LAZY_ATTRS:
+        module = importlib.import_module(_LAZY_ATTRS[name], __name__)
+        globals()[name] = module
+        return module
+    raise AttributeError(name)
+
