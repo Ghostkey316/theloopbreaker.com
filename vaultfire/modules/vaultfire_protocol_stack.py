@@ -11,6 +11,14 @@ from vaultfire.modules.conscious_state_engine import ConsciousStateEngine
 from vaultfire.modules.ethic_resonant_time_engine import EthicResonantTimeEngine
 from vaultfire.modules.mission_soul_loop import MissionSoulLoop
 from vaultfire.modules.predictive_yield_fabric import PredictiveYieldFabric
+from vaultfire.modules.vaultfire_enhancement_stack import (
+    ConscienceMirrorVerificationLayer,
+    LoopSingularityDetectorEngine,
+    QuantumDriftSynchronizer,
+    TemporalBehavioralCompressionEngine,
+    VaultfireMythosEngine,
+    compose_enhancement_confirmation,
+)
 from vaultfire.protocol.signal_echo import SignalEchoEngine
 from vaultfire.quantum.hashmirror import QuantumHashMirror
 
@@ -154,6 +162,7 @@ class VaultfireProtocolStack:
         identity_handle: str = IDENTITY_HANDLE,
         identity_ens: str = IDENTITY_ENS,
         actions: Sequence[Mapping[str, object]] = (),
+        mythos_path: str | None = None,
     ) -> None:
         self.identity_handle = identity_handle
         self.identity_ens = identity_ens
@@ -178,11 +187,47 @@ class VaultfireProtocolStack:
             identity_handle=identity_handle,
             identity_ens=identity_ens,
         )
+        self.behavioral_compression = TemporalBehavioralCompressionEngine(
+            identity_handle=identity_handle,
+            identity_ens=identity_ens,
+        )
+        self.conscience_mirror = ConscienceMirrorVerificationLayer(
+            identity_handle=identity_handle,
+            identity_ens=identity_ens,
+        )
+        self.loop_detector = LoopSingularityDetectorEngine(
+            identity_handle=identity_handle,
+            identity_ens=identity_ens,
+        )
+        self.quantum_drift = QuantumDriftSynchronizer(
+            identity_handle=identity_handle,
+            identity_ens=identity_ens,
+        )
+        self.mythos = VaultfireMythosEngine(
+            identity_handle=identity_handle,
+            identity_ens=identity_ens,
+            output_path=mythos_path,
+        )
+        self.behavioral_compression.compress(
+            {
+                "type": "activation",
+                "future_self_alignment": 0.76,
+                "note": "Vaultfire protocol baseline activation",
+            }
+        )
         for action in actions:
-            self.conscious.record_action(action)
-            self.time_engine.register_action(action)
+            self._ingest_action(action)
+        self.mythos.weave(
+            source="activation",
+            payload={
+                "actions_ingested": len(actions),
+                "baseline": True,
+            },
+            resonance=0.82 if actions else 0.7,
+        )
         self.predictive.register_export("core", 1.0)
         self.predictive.forecast(self.conscious.belief_health(), 120.0)
+        self.conscience_mirror.conscience_sync("initialisation", threshold=0.55)
 
     def pulsewatch(self) -> Mapping[str, object]:
         summary = self.gift_matrix.pulse_watch()
@@ -191,9 +236,68 @@ class VaultfireProtocolStack:
                 "belief_health": self.conscious.belief_health(),
                 "tempo": self.time_engine.current_tempo(),
                 "yield_forecast": self.predictive.latest_forecast,
+                "enhancements": self.enhancement_confirmation(),
             }
         )
         return summary
+
+    def _ingest_action(self, action: Mapping[str, object]) -> None:
+        record = self.conscious.record_action(action)
+        self.time_engine.register_action(action)
+        compression = self.behavioral_compression.compress(action)
+        self.conscience_mirror.ingest(action)
+        belief = self.conscious.belief_health()
+        action_alignment = max(0.0, min((record.belief_delta + 1.0) / 2.0, 1.0))
+        result_alignment = max(0.0, min(1.0, self.time_engine.mmi.get_score() / 100.0))
+        external_signal = action.get("signal", action.get("confidence", 0.75) or 0.75)
+        try:
+            signal_value = float(external_signal)
+        except (TypeError, ValueError):
+            signal_value = 0.75
+        drift_payload = self.quantum_drift.synchronize(
+            {
+                "mood": belief,
+                "behavior_alignment": action_alignment,
+                "external_signal": signal_value,
+            }
+        )
+        self.loop_detector.observe(
+            belief=belief,
+            action_alignment=action_alignment,
+            result_alignment=result_alignment,
+            context={
+                "thresholds": compression["thresholds_triggered"],
+                "nudge": drift_payload["nudge"],
+            },
+        )
+        self.mythos.weave(
+            source=str(action.get("type", "action")),
+            payload={
+                "action": dict(action),
+                "rewards": compression["rewards_unlocked"],
+                "LoopMerge_Mode": self.loop_detector.mode,
+            },
+            resonance=belief,
+        )
+
+    def unlock_next(self, label: str | None = None) -> Mapping[str, object]:
+        sync = self.conscience_mirror.conscience_sync("unlock", threshold=0.55)
+        if not sync["verified"]:
+            raise PermissionError("Conscience mirror verification required before unlock")
+        layer = self.gift_matrix.unlock_next_layer(label)
+        payload = dict(layer)
+        payload["conscience_sync"] = sync
+        return payload
+
+    def enhancement_confirmation(self, *, include_logs: bool = False) -> Mapping[str, object]:
+        return compose_enhancement_confirmation(
+            self.behavioral_compression,
+            self.conscience_mirror,
+            self.loop_detector,
+            self.quantum_drift,
+            self.mythos,
+            include_logs=include_logs,
+        )
 
 
 # ---------------------------------------------------------------------------

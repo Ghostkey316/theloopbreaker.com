@@ -18,6 +18,7 @@ from vaultfire.modules import (
     QuantumEchoMirror,
     SoulLoopFabricEngine,
     TemporalDreamcatcherEngine,
+    VaultfireProtocolStack,
 )
 
 
@@ -153,6 +154,17 @@ def _command_pulse(context: dict[str, Any], _: argparse.Namespace) -> Mapping[st
     return context["time"].pulse()
 
 
+def _command_confirm(context: dict[str, Any], args: argparse.Namespace) -> Mapping[str, Any]:
+    identity = context["time"].metadata["identity"]  # type: ignore[index]
+    actions = [dict(entry.payload) for entry in context["conscious"].ledger()]
+    stack = VaultfireProtocolStack(
+        identity_handle=str(identity.get("wallet", "bpow20.cb.id")),
+        identity_ens=str(identity.get("ens", "ghostkey316.eth")),
+        actions=tuple(actions),
+    )
+    return stack.enhancement_confirmation(include_logs=args.include_logs)
+
+
 def _command_soultrace(context: dict[str, Any], args: argparse.Namespace) -> Mapping[str, Any]:
     window = args.window or 5
     trace = context["fabric"].trace(window=window)
@@ -263,6 +275,7 @@ def _command_preview(context: dict[str, Any], args: argparse.Namespace) -> Mappi
 COMMAND_HANDLERS: dict[str, Any] = {
     "timecheck": _command_timecheck,
     "pulse": _command_pulse,
+    "confirm": _command_confirm,
     "soultrace": _command_soultrace,
     "soulpush": _command_soulpush,
     "mirror": _command_mirror,
@@ -283,6 +296,8 @@ def _build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("timecheck")
     sub.add_parser("pulse")
+    confirm = sub.add_parser("confirm")
+    confirm.add_argument("--include-logs", action="store_true")
 
     trace = sub.add_parser("soultrace")
     trace.add_argument("--window", type=int, default=5)

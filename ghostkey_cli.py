@@ -331,6 +331,13 @@ def cmd_pulse(args: argparse.Namespace) -> None:
     print(json.dumps(payload, indent=2))
 
 
+def cmd_confirm(args: argparse.Namespace) -> None:
+    actions = _load_actions(args.actions)
+    stack = VaultfireProtocolStack(actions=tuple(actions))
+    payload = stack.enhancement_confirmation(include_logs=args.include_logs)
+    print(json.dumps(payload, indent=2))
+
+
 def cmd_conscious(args: argparse.Namespace) -> None:
     actions = _load_actions(args.actions)
     engine = ConsciousStateEngine(
@@ -444,7 +451,13 @@ def _prepare_gift_matrix(
 def cmd_unlocknext(args: argparse.Namespace) -> None:
     actions = _load_actions(args.actions)
     stack = VaultfireProtocolStack(actions=tuple(actions))
-    payload = stack.unlock_next(args.label)
+    try:
+        payload = stack.unlock_next(args.label)
+    except PermissionError as exc:
+        payload = {
+            "error": str(exc),
+            "conscience_sync": stack.conscience_mirror.conscience_sync("unlock", threshold=0.55),
+        }
     print(json.dumps(payload, indent=2))
 
 
@@ -718,6 +731,18 @@ def build_parser() -> argparse.ArgumentParser:
     p_pulse.add_argument("--actions", help="Optional path to ledger actions", default=None)
     p_pulse.add_argument("--user", default="ghostkey-316", help="Override the user identifier")
     p_pulse.set_defaults(func=cmd_pulse)
+
+    p_confirm = sub.add_parser(
+        "confirm",
+        help="Output Vaultfire enhancement confirmation including Ghostkey alignment status",
+    )
+    p_confirm.add_argument("--actions", help="Optional path to ledger actions", default=None)
+    p_confirm.add_argument(
+        "--include-logs",
+        action="store_true",
+        help="Include raw enhancement logs in the confirmation output",
+    )
+    p_confirm.set_defaults(func=cmd_confirm)
 
     p_unlock = sub.add_parser("unlocknext", help="Advance the GiftMatrix protocol layer")
     p_unlock.add_argument("--label", help="Optional label for the new layer", default=None)
