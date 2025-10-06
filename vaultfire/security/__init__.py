@@ -13,6 +13,7 @@ from .fhe import (
     PrivacyEngine,
     SoulboundKey,
 )
+from .onboarding_guardrails import OnboardingGuardrails, secure_protocol
 from .resilience_simulator import (
     PilotConfig,
     PilotRunResult,
@@ -31,6 +32,8 @@ __all__ = [
     "PrivacyEngine",
     "SoulboundKey",
     "validate_securestore_fallback",
+    "OnboardingGuardrails",
+    "secure_protocol",
     "PilotConfig",
     "PilotRunResult",
     "ResilienceScenario",
