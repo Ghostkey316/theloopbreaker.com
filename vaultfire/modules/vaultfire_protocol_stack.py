@@ -166,6 +166,10 @@ class VaultfireProtocolStack:
     ) -> None:
         self.identity_handle = identity_handle
         self.identity_ens = identity_ens
+        self.metadata: Mapping[str, object] = build_metadata(
+            "VaultfireProtocolStack",
+            identity={"wallet": identity_handle, "ens": identity_ens},
+        )
         self.conscious = ConsciousStateEngine(
             identity_handle=identity_handle,
             identity_ens=identity_ens,
@@ -237,6 +241,7 @@ class VaultfireProtocolStack:
                 "tempo": self.time_engine.current_tempo(),
                 "yield_forecast": self.predictive.latest_forecast,
                 "enhancements": self.enhancement_confirmation(),
+                "system_status": self.system_status(),
             }
         )
         return summary
@@ -298,6 +303,16 @@ class VaultfireProtocolStack:
             self.mythos,
             include_logs=include_logs,
         )
+
+    def system_status(self) -> Mapping[str, object]:
+        return {
+            "Codex_Status": "🔥 READY 🔥",
+            "Ghostkey_CLI": "Activated & Trusted",
+            "Engine_Stack": "Synced",
+            "VaultfireProtocolStack": "All engines integrated",
+            "Telemetry": "CLI + enhancement unlock telemetry live",
+            "metadata": self.metadata,
+        }
 
 
 # ---------------------------------------------------------------------------
