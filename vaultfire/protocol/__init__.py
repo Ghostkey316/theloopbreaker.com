@@ -26,6 +26,10 @@ from .secure_collaboration import MPCContribution, MPCFabric
 from .telemetry import activate_trace_stream
 from .telemetry import ZKFog
 from .consent_mirror import ConsentMirror, ConsentRecord
+from .signal_echo import SignalEchoEngine, SignalEchoFrame
+from .moral_fork import MoralForkEngine, TimelineFork
+from .conscious_state import ConsciousStateEngine
+from .timeflare import TimeFlare
 
 __all__ = [
     "activate_trace_stream",
@@ -59,4 +63,10 @@ __all__ = [
     "ZKFog",
     "ConsentMirror",
     "ConsentRecord",
+    "SignalEchoEngine",
+    "SignalEchoFrame",
+    "MoralForkEngine",
+    "TimelineFork",
+    "ConsciousStateEngine",
+    "TimeFlare",
 ]
