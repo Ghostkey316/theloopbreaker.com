@@ -8,6 +8,8 @@ from typing import Iterable, Mapping, MutableMapping
 from vaultfire.modules.ethic_resonant_time_engine import EthicResonantTimeEngine
 from vaultfire.modules.living_memory_ledger import LivingMemoryLedger
 
+from ._metadata import build_metadata
+
 
 @dataclass(frozen=True)
 class Allocation:
@@ -42,12 +44,10 @@ class GiftMatrixEngine:
         self.ledger = ledger
         self.identity_handle = identity_handle
         self.identity_ens = identity_ens
-        self.metadata: Mapping[str, object] = {
-            "module": "GiftMatrixEngine",
-            "identity": {"wallet": identity_handle, "ens": identity_ens},
-            "first_of_its_kind": True,
-            "tags": ("FOTK",),
-        }
+        self.metadata: Mapping[str, object] = build_metadata(
+            "GiftMatrixEngine",
+            identity={"wallet": identity_handle, "ens": identity_ens},
+        )
         self._claims: MutableMapping[str, Mapping[str, object]] = {}
 
     # ------------------------------------------------------------------

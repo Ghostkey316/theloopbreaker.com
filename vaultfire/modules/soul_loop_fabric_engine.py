@@ -7,6 +7,8 @@ from typing import Mapping, Sequence
 from vaultfire.modules.ethic_resonant_time_engine import EthicResonantTimeEngine
 from vaultfire.modules.living_memory_ledger import LivingMemoryLedger, MemoryRecord
 
+from ._metadata import build_metadata
+
 
 class SoulLoopFabricEngine:
     """Synchronise intent history with the ethic resonant tempo engine."""
@@ -28,12 +30,10 @@ class SoulLoopFabricEngine:
             identity_handle=identity_handle,
             identity_ens=identity_ens,
         )
-        self.metadata: Mapping[str, object] = {
-            "module": "SoulLoopFabricEngine",
-            "identity": {"wallet": identity_handle, "ens": identity_ens},
-            "first_of_its_kind": True,
-            "tags": ("FOTK",),
-        }
+        self.metadata: Mapping[str, object] = build_metadata(
+            "SoulLoopFabricEngine",
+            identity={"wallet": identity_handle, "ens": identity_ens},
+        )
 
     # ------------------------------------------------------------------
     # intent management
