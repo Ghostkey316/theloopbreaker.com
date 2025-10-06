@@ -10,6 +10,14 @@ from .purpose_parallax_engine import PurposeParallaxEngine
 from .quantum_echo_mirror import QuantumEchoMirror
 from .soul_loop_fabric_engine import SoulLoopFabricEngine
 from .temporal_dreamcatcher_engine import TemporalDreamcatcherEngine
+from .vaultfire_enhancement_stack import (
+    ConscienceMirrorVerificationLayer,
+    LoopSingularityDetectorEngine,
+    QuantumDriftSynchronizer,
+    TemporalBehavioralCompressionEngine,
+    VaultfireMythosEngine,
+    compose_enhancement_confirmation,
+)
 from .vaultfire_protocol_stack import (
     AdaptiveRelicStore,
     GiftMatrixV1,
@@ -30,6 +38,12 @@ __all__ = [
     "QuantumEchoMirror",
     "SoulLoopFabricEngine",
     "TemporalDreamcatcherEngine",
+    "TemporalBehavioralCompressionEngine",
+    "ConscienceMirrorVerificationLayer",
+    "LoopSingularityDetectorEngine",
+    "QuantumDriftSynchronizer",
+    "VaultfireMythosEngine",
+    "compose_enhancement_confirmation",
     "AdaptiveRelicStore",
     "GiftMatrixV1",
     "GhostMemoryArchive",
