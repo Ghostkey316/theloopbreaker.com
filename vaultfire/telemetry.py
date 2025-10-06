@@ -17,6 +17,8 @@ from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Optional,
 
 import json
 
+from vaultfire.privacy_integrity import get_privacy_shield
+
 __all__ = [
     "stream_belief_logs",
     "sync_behavior_data",
@@ -30,6 +32,8 @@ _TELEMETRY_DIR = _REPO_ROOT / "telemetry"
 _BELIEF_LOG_PATH = _TELEMETRY_DIR / "belief-log.json"
 _BASELINE_PATH = _TELEMETRY_DIR / "telemetry_baseline.json"
 _DASHBOARD_PATH = _TELEMETRY_DIR / "mind_mirror_dashboard.json"
+
+_PRIVACY_SHIELD = get_privacy_shield()
 
 
 def _load_json(path: Path, default: Any) -> Any:
@@ -129,7 +133,11 @@ def sync_behavior_data(
     }
     if last_belief_timestamp:
         snapshot["last_belief_timestamp"] = last_belief_timestamp
-    return snapshot
+    return _PRIVACY_SHIELD.sanitize_view(
+        agent_id,
+        snapshot,
+        category="telemetry.behavior",
+    )
 
 
 def extract_loyalty_triggers(behavior_data: Mapping[str, Any]) -> Dict[str, Any]:
@@ -162,12 +170,22 @@ def extract_loyalty_triggers(behavior_data: Mapping[str, Any]) -> Dict[str, Any]
         for tag, count in top_topics
     ]
 
-    return {
+    payload = {
         "agent_id": behavior_data.get("agent_id"),
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "triggers": triggers,
         "signal_strength": round(min(1.0, total / max(1, belief_total_int or 1)), 3),
     }
+    agent_key = str(
+        behavior_data.get("agent_id")
+        or behavior_data.get("user_hash")
+        or "ghostkey-316"
+    )
+    return _PRIVACY_SHIELD.sanitize_view(
+        agent_key,
+        payload,
+        category="telemetry.loyalty",
+    )
 
 
 def mirror_adaptive_learning(
@@ -185,13 +203,18 @@ def mirror_adaptive_learning(
     recent_beliefs.sort(key=lambda item: item.get("timestamp", ""), reverse=True)
     recent_beliefs = recent_beliefs[:5]
 
-    return {
+    payload = {
         "agent_id": agent_id,
         "updated_at": datetime.now(timezone.utc).isoformat(),
         "behavior": dict(behavior_data),
         "recent_beliefs": recent_beliefs,
         "belief_total": behavior_data.get("belief_total", len(recent_beliefs)),
     }
+    return _PRIVACY_SHIELD.sanitize_view(
+        agent_id,
+        payload,
+        category="telemetry.mirror",
+    )
 
 
 def push_mirror_to_dashboard(
@@ -209,27 +232,41 @@ def push_mirror_to_dashboard(
         "loyalty": dict(loyalty_insights),
     }
 
+    tracked = _PRIVACY_SHIELD.track_event(
+        agent_id,
+        payload,
+        category="telemetry.dashboard",
+    )
+    if tracked is None:
+        return _PRIVACY_SHIELD.sanitize_view(
+            agent_id,
+            payload,
+            category="telemetry.dashboard",
+        )
+
     dashboard = _load_json(_DASHBOARD_PATH, {"agents": []})
     agents = []
     if isinstance(dashboard, Mapping):
         agents = list(dashboard.get("agents", [])) if isinstance(dashboard.get("agents"), list) else []
 
     filtered_agents: List[MutableMapping[str, Any]] = []
+    tracked_key = str(tracked.get("user_hash") or tracked.get("agent_id") or "").lower()
     for entry in agents:
         if not isinstance(entry, Mapping):
             continue
-        if str(entry.get("agent_id", "")).strip().lower() == agent_id.strip().lower():
+        entry_key = str(entry.get("user_hash") or entry.get("agent_id") or "").lower()
+        if tracked_key and entry_key == tracked_key:
             continue
         filtered_agents.append(dict(entry))
-    filtered_agents.append(payload)
-    filtered_agents.sort(key=lambda item: str(item.get("agent_id", "")).lower())
+    filtered_agents.append(dict(tracked))
+    filtered_agents.sort(key=lambda item: str(item.get("user_hash") or item.get("agent_id") or "").lower())
 
     _write_json(
         _DASHBOARD_PATH,
         {
             "agents": filtered_agents,
-            "last_updated": payload["synced_at"],
+            "last_updated": tracked.get("logged_at", payload["synced_at"]),
         },
     )
-    return payload
+    return tracked
 

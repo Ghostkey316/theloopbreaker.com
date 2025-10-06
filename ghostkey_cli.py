@@ -22,6 +22,11 @@ from vaultfire.modules.quantum_echo_mirror import QuantumEchoMirror
 from vaultfire.modules.soul_loop_fabric_engine import SoulLoopFabricEngine
 from vaultfire.modules.temporal_dreamcatcher_engine import TemporalDreamcatcherEngine
 from vaultfire.modules.vaultfire_protocol_stack import GiftMatrixV1, VaultfireProtocolStack
+from vaultfire.privacy_integrity import (
+    PrivacyIntegrityShield,
+    get_privacy_shield,
+    persist_privacy_state,
+)
 
 _yield_module = import_module("vaultfire.yield")
 PulseSync = getattr(_yield_module, "PulseSync")
@@ -29,6 +34,10 @@ TemporalGiftMatrixEngine = getattr(_yield_module, "TemporalGiftMatrixEngine")
 
 IDENTITY_HANDLE = "bpow20.cb.id"
 IDENTITY_ENS = "ghostkey316.eth"
+
+
+def _privacy_manager() -> PrivacyIntegrityShield:
+    return get_privacy_shield()
 
 
 def _load_echo_engine(path: str | None) -> SignalEchoEngine:
@@ -816,6 +825,79 @@ def cmd_status(args: argparse.Namespace) -> None:
     print(json.dumps(status, indent=2))
 
 
+def cmd_privacy_status(args: argparse.Namespace) -> None:
+    shield = _privacy_manager()
+    payload = dict(shield.status())
+    if getattr(args, "user", None):
+        user_key = args.user.strip()
+        consent_state = payload.get("consent", {}).get("consents", {}).get(user_key)
+        unlock_state = payload.get("consent", {}).get("unlocks", {}).get(user_key)
+        payload["user"] = {
+            "id": user_key,
+            "consent": consent_state,
+            "unlock": unlock_state,
+        }
+    print(json.dumps(payload, indent=2))
+
+
+def cmd_privacy_toggle(args: argparse.Namespace) -> None:
+    shield = _privacy_manager()
+    enabled = args.state.lower() in {"on", "enable", "enabled", "true", "1"}
+    shield.toggle_tracking(enabled)
+    persist_privacy_state()
+    print(
+        json.dumps(
+            {
+                "telemetry_enabled": shield.telemetry_enabled(),
+                "status": shield.status(),
+            },
+            indent=2,
+        )
+    )
+
+
+def cmd_privacy_erase(_: argparse.Namespace) -> None:
+    shield = _privacy_manager()
+    erased = shield.manual_erase()
+    persist_privacy_state()
+    print(
+        json.dumps(
+            {
+                "traces_erased": erased,
+                "events_cleared": True,
+                "status": shield.status(),
+            },
+            indent=2,
+        )
+    )
+
+
+def cmd_privacy_consent(args: argparse.Namespace) -> None:
+    shield = _privacy_manager()
+    user = args.user.strip()
+    response: dict[str, Any] = {"user": user}
+    if args.unlock:
+        response["unlock_fingerprint"] = shield.register_unlock(user, args.unlock)
+    if args.revoke:
+        shield.revoke_consent(user)
+        response["revoked"] = True
+    if args.refresh:
+        response["consent_fingerprint"] = shield.grant_consent(
+            user,
+            args.refresh,
+            expires_in=args.expires_in,
+            expires_at=args.expires_at,
+        )
+    persist_privacy_state()
+    status = shield.status()
+    response["status"] = {
+        "telemetry_enabled": status.get("telemetry_enabled"),
+        "consent": status.get("consent", {}).get("consents", {}).get(user),
+        "unlock": status.get("consent", {}).get("unlocks", {}).get(user),
+    }
+    print(json.dumps(response, indent=2))
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ghostkey", description="Ghostkey protocol tooling")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -1129,6 +1211,46 @@ def build_parser() -> argparse.ArgumentParser:
     p_status.add_argument("--actions", help="Optional path to ledger actions", default=None)
     p_status.add_argument("--history", help="Optional path to prior intent history", default=None)
     p_status.set_defaults(func=cmd_status)
+
+    p_privacy = sub.add_parser("privacy", help="Privacy Integrity Shield controls")
+    privacy_sub = p_privacy.add_subparsers(dest="privacy_cmd", required=True)
+
+    p_privacy_status = privacy_sub.add_parser("status", help="Inspect privacy shield status")
+    p_privacy_status.add_argument("--user", default=None, help="Optional user identifier focus")
+    p_privacy_status.set_defaults(func=cmd_privacy_status)
+
+    p_privacy_toggle = privacy_sub.add_parser("toggle", help="Enable or disable telemetry tracking")
+    p_privacy_toggle.add_argument(
+        "--state",
+        choices=("on", "off"),
+        required=True,
+        help="Desired telemetry state",
+    )
+    p_privacy_toggle.set_defaults(func=cmd_privacy_toggle)
+
+    p_privacy_erase = privacy_sub.add_parser("erase", help="Erase retained privacy traces")
+    p_privacy_erase.set_defaults(func=cmd_privacy_erase)
+
+    p_privacy_consent = privacy_sub.add_parser(
+        "consent",
+        help="View, revoke, or refresh user consent tokens",
+    )
+    p_privacy_consent.add_argument("--user", default="ghostkey-316", help="User identifier")
+    p_privacy_consent.add_argument("--refresh", default=None, help="Refresh consent with token")
+    p_privacy_consent.add_argument("--revoke", action="store_true", help="Revoke active consent")
+    p_privacy_consent.add_argument(
+        "--expires-in",
+        type=float,
+        default=None,
+        help="Consent expiration window in seconds",
+    )
+    p_privacy_consent.add_argument(
+        "--expires-at",
+        default=None,
+        help="Consent expiration timestamp (ISO8601)",
+    )
+    p_privacy_consent.add_argument("--unlock", default=None, help="Unlock signal fingerprint")
+    p_privacy_consent.set_defaults(func=cmd_privacy_consent)
 
     return parser
 

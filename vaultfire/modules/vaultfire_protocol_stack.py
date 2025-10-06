@@ -22,6 +22,7 @@ from vaultfire.modules.vaultfire_enhancement_stack import (
 )
 from vaultfire.protocol.signal_echo import SignalEchoEngine
 from vaultfire.quantum.hashmirror import QuantumHashMirror
+from vaultfire.privacy_integrity import PrivacyIntegrityShield, get_privacy_shield
 
 _yield_module = import_module("vaultfire.yield")
 PulseSync = getattr(_yield_module, "PulseSync")
@@ -60,6 +61,7 @@ class GiftMatrixV1:
         signal_engine: SignalEchoEngine | None = None,
         pulse_sync: PulseSync | None = None,
         hash_mirror: QuantumHashMirror | None = None,
+        privacy_shield: PrivacyIntegrityShield | None = None,
     ) -> None:
         self.identity_handle = identity_handle
         self.identity_ens = identity_ens
@@ -69,6 +71,7 @@ class GiftMatrixV1:
         self.hash_mirror = hash_mirror or QuantumHashMirror(
             seed=f"gift-matrix::{identity_ens}"
         )
+        self.privacy_shield = privacy_shield or get_privacy_shield()
         self.engine = TemporalGiftMatrixEngine(
             timeflare=self._timeflare,
             signal_engine=self.signal_engine,
@@ -84,6 +87,16 @@ class GiftMatrixV1:
         self._unlocked_layers: List[Mapping[str, object]] = []
         self._last_signal_purity: float = 0.0
         self._last_record: Mapping[str, object] | None = None
+        self.privacy_shield.halo.register_boundary(
+            self.identity_handle,
+            (
+                "active_layers",
+                "forks_tracked",
+                "last_signal_purity",
+                "last_record",
+                "metadata",
+            ),
+        )
 
     def record_signal(
         self,
@@ -126,11 +139,24 @@ class GiftMatrixV1:
 
     def claim(self, interaction_id: str, recipients: Iterable[str | Mapping[str, object]]):
         record = self.engine.generate_matrix(interaction_id, recipients)
-        self._last_record = {
+        payload = {
             "record_id": record.record_id,
             "metadata": dict(record.metadata),
             "allocations": [allocation.__dict__ for allocation in record.allocations],
         }
+        tracked = self.privacy_shield.track_event(
+            self.identity_handle,
+            payload,
+            category="giftmatrix.claim",
+        )
+        if tracked is not None:
+            self._last_record = tracked
+        else:
+            self._last_record = self.privacy_shield.sanitize_view(
+                self.identity_handle,
+                payload,
+                category="giftmatrix.claim",
+            )
         return record
 
     def unlock_next_layer(self, label: str | None = None) -> Mapping[str, object]:
@@ -144,7 +170,7 @@ class GiftMatrixV1:
         return entry
 
     def pulse_watch(self) -> Mapping[str, object]:
-        return {
+        payload = {
             "identity": self.metadata["identity"],
             "active_layers": len(self._unlocked_layers),
             "forks_tracked": len(self._fork_log),
@@ -152,6 +178,11 @@ class GiftMatrixV1:
             "last_record": self._last_record,
             "metadata": self.metadata,
         }
+        return self.privacy_shield.sanitize_view(
+            self.identity_handle,
+            payload,
+            category="giftmatrix.pulse",
+        )
 
 
 class VaultfireProtocolStack:
@@ -164,9 +195,11 @@ class VaultfireProtocolStack:
         identity_ens: str = IDENTITY_ENS,
         actions: Sequence[Mapping[str, object]] = (),
         mythos_path: str | None = None,
+        privacy_shield: PrivacyIntegrityShield | None = None,
     ) -> None:
         self.identity_handle = identity_handle
         self.identity_ens = identity_ens
+        self.privacy_shield = privacy_shield or get_privacy_shield()
         self.metadata: Mapping[str, object] = build_metadata(
             "VaultfireProtocolStack",
             identity={"wallet": identity_handle, "ens": identity_ens},
@@ -191,6 +224,7 @@ class VaultfireProtocolStack:
         self.gift_matrix = GiftMatrixV1(
             identity_handle=identity_handle,
             identity_ens=identity_ens,
+            privacy_shield=self.privacy_shield,
         )
         self.behavioral_compression = TemporalBehavioralCompressionEngine(
             identity_handle=identity_handle,
@@ -252,7 +286,7 @@ class VaultfireProtocolStack:
         self.conscience_mirror.conscience_sync("initialisation", threshold=0.55)
 
     def pulsewatch(self) -> Mapping[str, object]:
-        summary = self.gift_matrix.pulse_watch()
+        summary = dict(self.gift_matrix.pulse_watch())
         summary.update(
             {
                 "belief_health": self.conscious.belief_health(),
@@ -264,7 +298,30 @@ class VaultfireProtocolStack:
             }
         )
         summary["myth_echo_bonus"] = summary["myth_compression"]["myth_echo_bonus"]
-        return summary
+        self.privacy_shield.halo.register_boundary(
+            self.identity_handle,
+            (
+                "belief_health",
+                "tempo",
+                "yield_forecast",
+                "enhancements",
+                "system_status",
+                "myth_compression",
+                "myth_echo_bonus",
+            ),
+        )
+        tracked = self.privacy_shield.track_event(
+            self.identity_handle,
+            summary,
+            category="vaultfire.pulsewatch",
+        )
+        if tracked is not None:
+            return tracked
+        return self.privacy_shield.sanitize_view(
+            self.identity_handle,
+            summary,
+            category="vaultfire.pulsewatch",
+        )
 
     def _ingest_action(self, action: Mapping[str, object]) -> None:
         record = self.conscious.record_action(action)
