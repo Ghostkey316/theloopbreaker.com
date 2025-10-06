@@ -11,7 +11,7 @@ def test_temporal_dreamcatcher_engine_listens_and_traces() -> None:
     engine = TemporalDreamcatcherEngine(time_engine=time_engine, fabric=fabric)
 
     first = engine.capture_signal(0.75, channel="dream", intent="align")
-    assert "Ghostkey-316 Certified" in first["metadata"]["tags"]
+    assert "Ghostkey-316" in first["metadata"]["tags"]
 
     summary = engine.listen(
         [
@@ -24,7 +24,8 @@ def test_temporal_dreamcatcher_engine_listens_and_traces() -> None:
     assert summary["echo"]["metadata"]["first_of_its_kind"] is True
 
     echo = engine.echo(trust_floor=0.5)
-    assert echo["metadata"]["tags"][0] == "First-of-its-Kind"
+    assert echo["metadata"]["tags"][0] == "Ghostkey-316"
+    assert echo["metadata"]["requirements"]["export_format"] == "JSON"
     assert len(echo["timeline"]) >= 1
 
     drift = engine.trace_drift(trust_floor=0.5, window=2)

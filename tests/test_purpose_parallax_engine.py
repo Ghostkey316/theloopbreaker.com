@@ -13,7 +13,8 @@ def test_purpose_parallax_engine_dual_path_selection() -> None:
     )
 
     assert result["selected"]["label"] == "uplift"
-    assert result["metadata"]["tags"][0] == "First-of-its-Kind"
+    assert result["metadata"]["tags"][0] == "Ghostkey-316"
+    assert result["metadata"]["requirements"]["resilient_inputs"] is True
     assert len(result["paths"]) == 2
 
     preview = engine.alignment_preview(tags=("guardian",))

@@ -36,7 +36,7 @@ def test_intention_mapping_integration(tmp_path: Path) -> None:
     assert intention_output["checkpoint"]["profile"]["role"] == "guardian"
 
     timecheck = json.loads(run_cli(["--json", str(path), "timecheck"]))
-    assert "First-of-its-Kind" in timecheck["metadata"]["tags"]
+    assert "Ghostkey-316" in timecheck["metadata"]["tags"]
 
     soulpush = json.loads(run_cli(["--json", str(path), "soulpush"]))
     assert soulpush["record"]["payload"]["intent"] == "mission-drift"
@@ -52,7 +52,8 @@ def test_intention_mapping_integration(tmp_path: Path) -> None:
     assert parallax["selected"]["label"] == "uplift"
 
     alignment_preview = json.loads(run_cli(["--json", str(path), "preview", "--alignmentpath"]))
-    assert alignment_preview["metadata"]["tags"][0] == "First-of-its-Kind"
+    assert alignment_preview["metadata"]["tags"][0] == "Ghostkey-316"
+    assert alignment_preview["metadata"]["requirements"]["CLI_scriptable"] is True
     assert "mission" in alignment_preview["tags"]
 
     drift = json.loads(run_cli(["--json", str(path), "signalpulse", "--trace-drift"]))
