@@ -1,34 +1,38 @@
 """Utility modules for the Vaultfire package."""
 
+from .conscious_state_engine import ConsciousStateEngine
 from .ethic_resonant_time_engine import EthicResonantTimeEngine
 from .gift_matrix_engine import GiftMatrixEngine
 from .living_memory_ledger import LivingMemoryLedger
+from .mission_soul_loop import MissionSoulLoop
+from .predictive_yield_fabric import PredictiveYieldFabric
+from .purpose_parallax_engine import PurposeParallaxEngine
 from .quantum_echo_mirror import QuantumEchoMirror
 from .soul_loop_fabric_engine import SoulLoopFabricEngine
+from .temporal_dreamcatcher_engine import TemporalDreamcatcherEngine
 from .vaultfire_protocol_stack import (
     AdaptiveRelicStore,
-    ConsciousStateEngine,
     GiftMatrixV1,
     GhostMemoryArchive,
-    MissionSoulLoop,
-    PredictiveYieldFabric,
     SignalForge,
     VaultfireDNASyncer,
     VaultfireProtocolStack,
 )
 
 __all__ = [
+    "ConsciousStateEngine",
     "EthicResonantTimeEngine",
     "GiftMatrixEngine",
     "LivingMemoryLedger",
-    "QuantumEchoMirror",
-    "SoulLoopFabricEngine",
-    "AdaptiveRelicStore",
-    "ConsciousStateEngine",
-    "GiftMatrixV1",
-    "GhostMemoryArchive",
     "MissionSoulLoop",
     "PredictiveYieldFabric",
+    "PurposeParallaxEngine",
+    "QuantumEchoMirror",
+    "SoulLoopFabricEngine",
+    "TemporalDreamcatcherEngine",
+    "AdaptiveRelicStore",
+    "GiftMatrixV1",
+    "GhostMemoryArchive",
     "SignalForge",
     "VaultfireDNASyncer",
     "VaultfireProtocolStack",

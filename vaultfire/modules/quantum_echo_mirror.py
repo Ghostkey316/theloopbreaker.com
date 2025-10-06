@@ -8,6 +8,8 @@ from typing import Mapping, Sequence
 from vaultfire.modules.ethic_resonant_time_engine import EthicResonantTimeEngine
 from vaultfire.modules.living_memory_ledger import LivingMemoryLedger, MemoryRecord
 
+from ._metadata import build_metadata
+
 
 class QuantumEchoMirror:
     """Project timelines while respecting trust floors and tempo bounds."""
@@ -27,11 +29,13 @@ class QuantumEchoMirror:
     ) -> None:
         self.time_engine = time_engine
         self.ledger = ledger
-        self.metadata: Mapping[str, object] = {
-            "module": "QuantumEchoMirror",
-            "first_of_its_kind": True,
-            "tags": ("FOTK",),
-        }
+        self.metadata: Mapping[str, object] = build_metadata(
+            "QuantumEchoMirror",
+            identity={
+                "wallet": time_engine.identity_handle,
+                "ens": time_engine.identity_ens,
+            },
+        )
 
     # ------------------------------------------------------------------
     # helpers

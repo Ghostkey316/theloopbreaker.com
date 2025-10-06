@@ -17,6 +17,8 @@ from typing import Dict, Iterable, List, Mapping, MutableSequence, Tuple
 
 from vaultfire.quantum.hashmirror import QuantumHashMirror
 
+from ._metadata import build_metadata, REQUIRED_TAGS
+
 
 @dataclass(frozen=True)
 class ActionRecord:
@@ -128,15 +130,14 @@ class EthicResonantTimeEngine:
         self.ghostkey = GhostkeySyncEngine(user_id)
         self.identity_handle = identity_handle
         self.identity_ens = identity_ens
-        self.metadata: Mapping[str, object] = {
-            "module": "EthicResonantTimeEngine",
-            "first_of_its_kind": True,
-            "identity": {
+        self.metadata: Mapping[str, object] = build_metadata(
+            "EthicResonantTimeEngine",
+            identity={
                 "wallet": identity_handle,
                 "ens": identity_ens,
                 "user_id": user_id,
             },
-        }
+        )
         self._quantum_mirror = QuantumHashMirror(
             seed=f"ethic-resonant-time::{user_id}"
         )
