@@ -13,6 +13,14 @@ from .fhe import (
     PrivacyEngine,
     SoulboundKey,
 )
+from .guardian_trace import (
+    FingerprintActivity,
+    alert_identity_anomalies,
+    auto_lock_unique_signal_origin,
+    log_clone_attempts,
+    track_fingerprint_activity,
+    validate_behavior_signature,
+)
 from .onboarding_guardrails import OnboardingGuardrails, secure_protocol
 from .resilience_simulator import (
     PilotConfig,
@@ -31,6 +39,12 @@ __all__ = [
     "PlaceholderFHEBackend",
     "PrivacyEngine",
     "SoulboundKey",
+    "FingerprintActivity",
+    "track_fingerprint_activity",
+    "validate_behavior_signature",
+    "alert_identity_anomalies",
+    "log_clone_attempts",
+    "auto_lock_unique_signal_origin",
     "validate_securestore_fallback",
     "OnboardingGuardrails",
     "secure_protocol",
