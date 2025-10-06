@@ -20,6 +20,7 @@ __all__ = [
     "refund",
     "pilot_mode",
     "telemetry",
+    "identity",
     "auto_refund",
     "should_refund",
     "freeze_refunds",
@@ -37,6 +38,7 @@ _LAZY_MODULES: Dict[str, str] = {
     "refund": ".refund",
     "pilot_mode": ".pilot_mode",
     "telemetry": ".telemetry",
+    "identity": ".identity",
 }
 
 _REFUND_EXPORTS: Iterable[str] = (
