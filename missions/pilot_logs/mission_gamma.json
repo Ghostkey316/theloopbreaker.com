@@ -8,5 +8,20 @@
   "activation_signals": [
     {"signal": "referral_generated", "weight": 0.5},
     {"signal": "upgrade_click", "weight": 0.5}
+  ],
+  "partner_sync_snapshots": [
+    {
+      "handshake_id": "mission-gamma-sync-01",
+      "wallet_commitment": "8d9c1f7fd36fbe205de0682a7e75f6d84c21b7f623f7f7769446f8c9d0d33711",
+      "protocol": "ASM",
+      "chain": "base",
+      "stealth_yield_batches": [
+        {
+          "batch_id": "mission-gamma-yield-01",
+          "mission_event": "mission-gamma",
+          "attestation_hash": "1f55e1d1140d92a8e0942db1c3f850248f9c02d4b983f0d9e08913de53b25d5a"
+        }
+      ]
+    }
   ]
 }

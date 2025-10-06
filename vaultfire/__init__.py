@@ -27,6 +27,9 @@ __all__ = [
     "signals",
     "quantum",
     "anchor",
+    "partner",
+    "token_registry",
+    "yield_layer",
     "auto_refund",
     "should_refund",
     "freeze_refunds",
@@ -51,6 +54,9 @@ _LAZY_MODULES: Dict[str, str] = {
     "signals": ".signals",
     "quantum": ".quantum",
     "anchor": ".anchor",
+    "partner": ".partner",
+    "token_registry": ".token_registry",
+    "yield_layer": ".yield",
 }
 
 _REFUND_EXPORTS: Iterable[str] = (
