@@ -1,5 +1,13 @@
 # Vaultfire Partner Changelog
 
+## 2025-10-28 — docs: quantum-aligned protocol expansion
+- Elevated `FORKABLE_PROTOCOL.md` to version 1.2 with mission resonance rollups,
+  confidential compute attestations, and FHE-streamed analytics channels while
+  keeping the manifesto lock intact.
+- Infused `vaultfire_3yr_protocol.yml` with sentinel mesh resilience, privacy-
+  preserving analytics, and sustainability metrics so the roadmap scales with
+  cutting-edge tech without compromising the core mission pillars.
+
 ## 2025-10-18 — docs: mission-locked protocol modernization
 - Upgraded `FORKABLE_PROTOCOL.md` to version 1.1 with zk-SNARK attestation, post-quantum key rotation, and AI collaboration loops that preserve the Ghostkey manifesto mission lock.
 - Expanded `vaultfire_3yr_protocol.yml` with innovation, security, and mission safeguard tracks that integrate edge inference meshes, zero-knowledge verification cadences, and alignment beacons.

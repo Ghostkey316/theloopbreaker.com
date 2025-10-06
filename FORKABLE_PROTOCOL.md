@@ -4,7 +4,7 @@ This document captures the baseline settings for Vaultfire forks. It mirrors the
 
 ```yaml
 forkable_protocol:
-  name: Vaultfire Codex v1.1
+  name: Vaultfire Codex v1.2
   origin: ghostkey316.eth
   registry: OpenRouter Alpha Sync (live)
   compatibility:
@@ -35,6 +35,9 @@ forkable_protocol:
     decentralized_identities:
       resolver: ENS + Spruce DIDKit
       revocation_window_days: 3
+    mission_resonance_rollups:
+      ledger: mirror/mission_resonance_ledger.json
+      audit_frequency: "bi-weekly council review"
   security_upgrades:
     post_quantum_ready: true
     pq_suite:
@@ -43,6 +46,12 @@ forkable_protocol:
     secure_inference_mesh:
       provider: EdgeBeam Secure Enclave
       failover: local_validator_pool
+    confidential_compute:
+      remote_attestation: proofs/enclave-attestation.json
+      shared_truth_anchor: proofs/mission_state_rollup.json
+    ai_red_team_ops:
+      cadence_days: 30
+      reporting_channel: governance/ai_red_team_playbooks.md
   ai_collaboration:
     co_processing_channels:
       - name: Symmetric Belief Loop
@@ -55,11 +64,20 @@ forkable_protocol:
         safeguards:
           - consent_required
           - ethics_guardian_alerts
+      - name: Quantum Mission Rollup
+        purpose: Stream mission resonance analytics through FHE-protected channels
+        safeguards:
+          - mission_lock_revalidation
+          - zero_trust_mesh_guard
   observability:
     realtime_dashboards:
       - guardian_loop.py
       - ghostloop_sync.py
     telemetry_sink: telemetry/telemetry_baseline.json
+    mission_streaming: hyperlane.mission_sync_channel
+  privacy_preserving_analytics:
+    fhe_cohort_model: analytics/fhe_mission_stewardship.json
+    secure_mpc_channel: guardian://mpc/mission-outcomes
   fork_id: "\U0001f510 Vaultfire-ForkCore-0001"
 ```
 
