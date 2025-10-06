@@ -11,18 +11,17 @@ from typing import Any, Iterable, Mapping
 from vaultfire.protocol.signal_echo import SignalEchoEngine
 from vaultfire.protocol.timeflare import TimeFlare
 from vaultfire.quantum.hashmirror import QuantumHashMirror
+from vaultfire.modules.conscious_state_engine import ConsciousStateEngine
 from vaultfire.modules.ethic_resonant_time_engine import EthicResonantTimeEngine
 from vaultfire.modules.gift_matrix_engine import GiftMatrixEngine
 from vaultfire.modules.living_memory_ledger import LivingMemoryLedger
+from vaultfire.modules.mission_soul_loop import MissionSoulLoop
+from vaultfire.modules.predictive_yield_fabric import PredictiveYieldFabric
+from vaultfire.modules.purpose_parallax_engine import PurposeParallaxEngine
 from vaultfire.modules.quantum_echo_mirror import QuantumEchoMirror
 from vaultfire.modules.soul_loop_fabric_engine import SoulLoopFabricEngine
-from vaultfire.modules.vaultfire_protocol_stack import (
-    ConsciousStateEngine,
-    GiftMatrixV1,
-    MissionSoulLoop,
-    PredictiveYieldFabric,
-    VaultfireProtocolStack,
-)
+from vaultfire.modules.temporal_dreamcatcher_engine import TemporalDreamcatcherEngine
+from vaultfire.modules.vaultfire_protocol_stack import GiftMatrixV1, VaultfireProtocolStack
 
 _yield_module = import_module("vaultfire.yield")
 PulseSync = getattr(_yield_module, "PulseSync")
@@ -51,22 +50,21 @@ def _parse_wallet_spec(spec: str) -> dict[str, object] | str:
     return profile
 
 
-def _load_actions(path: str | None) -> list[Mapping[str, object]]:
+def _load_payload_list(path: str | None) -> list[Mapping[str, object]]:
     if path is None:
         return []
     data = json.loads(Path(path).read_text())
     if isinstance(data, list):
         return [dict(item) for item in data if isinstance(item, Mapping)]
     return []
+
+
+def _load_actions(path: str | None) -> list[Mapping[str, object]]:
+    return _load_payload_list(path)
 
 
 def _load_soul_history(path: str | None) -> list[Mapping[str, object]]:
-    if path is None:
-        return []
-    data = json.loads(Path(path).read_text())
-    if isinstance(data, list):
-        return [dict(item) for item in data if isinstance(item, Mapping)]
-    return []
+    return _load_payload_list(path)
 
 
 def _parse_export_spec(spec: str) -> tuple[str, float]:
@@ -93,25 +91,73 @@ def _parse_update_spec(entries: Iterable[str] | None) -> dict[str, object]:
     return updates
 
 
-def _build_engines(
+def _parse_json_entries(
+    entries: Iterable[str] | None,
+    *,
+    default_key: str | None = None,
+) -> list[Mapping[str, object]]:
+    payloads: list[Mapping[str, object]] = []
+    if not entries:
+        return payloads
+    for item in entries:
+        if item is None:
+            continue
+        try:
+            value = json.loads(item)
+        except json.JSONDecodeError:
+            if default_key is None:
+                continue
+            try:
+                numeric = float(item)
+            except ValueError:
+                payloads.append({default_key: item})
+            else:
+                payloads.append({default_key: numeric})
+            continue
+        if isinstance(value, Mapping):
+            payloads.append(dict(value))
+        elif default_key is not None:
+            payloads.append({default_key: value})
+    return payloads
+
+
+def _build_protocol_suite(
     actions_path: str | None,
     history_path: str | None,
     *,
     user: str = "ghostkey-316",
-) -> tuple[SoulLoopFabricEngine, QuantumEchoMirror, GiftMatrixEngine]:
+) -> dict[str, object]:
     actions = _load_actions(actions_path)
     history = _load_soul_history(history_path)
+
     time_engine = EthicResonantTimeEngine(
         user,
         identity_handle=IDENTITY_HANDLE,
         identity_ens=IDENTITY_ENS,
     )
-    for action in actions:
-        time_engine.register_action(action)
     ledger = LivingMemoryLedger(
         identity_handle=IDENTITY_HANDLE,
         identity_ens=IDENTITY_ENS,
     )
+    conscious = ConsciousStateEngine(
+        identity_handle=IDENTITY_HANDLE,
+        identity_ens=IDENTITY_ENS,
+    )
+    for action in actions:
+        time_engine.register_action(action)
+        conscious.record_action(action)
+
+    mission = MissionSoulLoop(
+        identity_handle=IDENTITY_HANDLE,
+        identity_ens=IDENTITY_ENS,
+    )
+    for entry in history:
+        mission.log_intent(
+            str(entry.get("intent", "align")),
+            confidence=float(entry.get("confidence", 0.8)),
+            tags=tuple(entry.get("tags", ())),
+        )
+
     fabric = SoulLoopFabricEngine(
         time_engine=time_engine,
         ledger=ledger,
@@ -124,6 +170,7 @@ def _build_engines(
             confidence=float(entry.get("confidence", 0.8)),
             tags=tuple(entry.get("tags", ())),
         )
+
     mirror = QuantumEchoMirror(time_engine=time_engine, ledger=ledger)
     gift = GiftMatrixEngine(
         time_engine=time_engine,
@@ -131,7 +178,66 @@ def _build_engines(
         identity_handle=IDENTITY_HANDLE,
         identity_ens=IDENTITY_ENS,
     )
-    return fabric, mirror, gift
+    predictive = PredictiveYieldFabric(
+        identity_handle=IDENTITY_HANDLE,
+        identity_ens=IDENTITY_ENS,
+    )
+    baseline_purity = max(0.5, conscious.belief_health())
+    predictive.forecast(signal_purity=baseline_purity, base_yield=150.0, horizon=3)
+
+    dreamcatcher = TemporalDreamcatcherEngine(
+        time_engine=time_engine,
+        fabric=fabric,
+        mission=mission,
+        mirror=mirror,
+        identity_handle=IDENTITY_HANDLE,
+        identity_ens=IDENTITY_ENS,
+    )
+    parallax = PurposeParallaxEngine(
+        conscious=conscious,
+        mission=mission,
+        predictive=predictive,
+        identity_handle=IDENTITY_HANDLE,
+        identity_ens=IDENTITY_ENS,
+    )
+
+    return {
+        "actions": actions,
+        "history": history,
+        "time": time_engine,
+        "ledger": ledger,
+        "conscious": conscious,
+        "mission": mission,
+        "fabric": fabric,
+        "mirror": mirror,
+        "gift": gift,
+        "predictive": predictive,
+        "dreamcatcher": dreamcatcher,
+        "parallax": parallax,
+    }
+
+
+def _collect_signals(
+    path: str | None,
+    inline_entries: Iterable[str] | None,
+) -> list[Mapping[str, object]]:
+    payloads = list(_load_payload_list(path))
+    payloads.extend(_parse_json_entries(inline_entries, default_key="signal"))
+    return payloads
+
+
+def _build_engines(
+    actions_path: str | None,
+    history_path: str | None,
+    *,
+    user: str = "ghostkey-316",
+) -> tuple[SoulLoopFabricEngine, QuantumEchoMirror, GiftMatrixEngine]:
+    suite = _build_protocol_suite(actions_path, history_path, user=user)
+    return (
+        suite["fabric"],
+        suite["mirror"],
+        suite["gift"],
+    )
 
 
 def cmd_echoindex(args: argparse.Namespace) -> None:
@@ -443,6 +549,132 @@ def cmd_claim(args: argparse.Namespace) -> None:
     print(json.dumps(payload, indent=2))
 
 
+def cmd_dreamcatcher(args: argparse.Namespace) -> None:
+    suite = _build_protocol_suite(args.actions, args.history, user=args.user)
+    engine: TemporalDreamcatcherEngine = suite["dreamcatcher"]  # type: ignore[assignment]
+    trust_floor = args.trust_floor if args.trust_floor is not None else 0.6
+    signals = _collect_signals(args.signals, args.signal)
+    if args.listen or signals:
+        payload = engine.listen(
+            signals,
+            trust_floor=trust_floor,
+            intent_override=args.intent_override,
+        )
+    else:
+        payload = engine.echo(trust_floor=trust_floor)
+    print(json.dumps(payload, indent=2))
+
+
+def cmd_signalpulse(args: argparse.Namespace) -> None:
+    suite = _build_protocol_suite(args.actions, args.history, user=args.user)
+    engine: TemporalDreamcatcherEngine = suite["dreamcatcher"]  # type: ignore[assignment]
+    trust_floor = args.trust_floor if args.trust_floor is not None else 0.6
+    signals = _collect_signals(args.signals, args.signal)
+    if signals:
+        engine.listen(
+            signals,
+            trust_floor=trust_floor,
+            intent_override=args.intent_override,
+        )
+    if args.trace_drift:
+        payload = engine.trace_drift(trust_floor=trust_floor, window=args.window)
+    else:
+        payload = engine.echo(trust_floor=trust_floor)
+    print(json.dumps(payload, indent=2))
+
+
+def _normalise_paths(
+    source_paths: Iterable[Mapping[str, object]],
+    fallback_actions: Iterable[Mapping[str, object]],
+) -> list[Mapping[str, object]]:
+    normalised: list[Mapping[str, object]] = []
+    entries = list(source_paths)
+    if not entries:
+        for index, action in enumerate(fallback_actions, start=1):
+            if not isinstance(action, Mapping):
+                continue
+            note = action.get("note") or action.get("intent") or action.get("type")
+            normalised.append(
+                {
+                    "label": str(note or f"path-{index}"),
+                    "ethic": str(action.get("ethic", action.get("type", "aligned"))),
+                    "confidence": float(action.get("confidence", action.get("weight", 0.8) or 0.8)),
+                    "impact": float(action.get("impact", action.get("weight", 1.0) or 1.0)),
+                }
+            )
+        return normalised
+    for index, entry in enumerate(entries, start=1):
+        payload = dict(entry)
+        payload.setdefault("label", payload.get("intent", f"path-{index}"))
+        payload.setdefault("ethic", payload.get("type", "aligned"))
+        payload["confidence"] = float(payload.get("confidence", payload.get("weight", 0.8) or 0.8))
+        payload["impact"] = float(payload.get("impact", payload.get("weight", 1.0) or 1.0))
+        normalised.append(payload)
+    return normalised
+
+
+def cmd_parallax(args: argparse.Namespace) -> None:
+    suite = _build_protocol_suite(args.actions, args.history, user=args.user)
+    engine: PurposeParallaxEngine = suite["parallax"]  # type: ignore[assignment]
+    raw_paths = _parse_json_entries(args.path, default_key="label")
+    paths = _normalise_paths(raw_paths, suite["actions"])
+    if args.run_dual:
+        intent = args.intent or "Safeguard the network"
+        payload = engine.run_dual(intent, paths)
+    else:
+        history = engine.history()
+        payload = history[-1] if history else {}
+    print(json.dumps(payload, indent=2))
+
+
+def cmd_intentionmap(args: argparse.Namespace) -> None:
+    suite = _build_protocol_suite(args.actions, args.history, user=args.user)
+    mission: MissionSoulLoop = suite["mission"]  # type: ignore[assignment]
+    entry: Mapping[str, object] | None = None
+    if args.generate:
+        intent = args.intent or "Forge aligned futures"
+        tags = tuple(args.tag or ())
+        entry = mission.log_intent(intent, confidence=args.confidence, tags=tags)
+    updates = _parse_update_spec(args.update)
+    if updates:
+        mission.update_profile(**updates)
+    payload = {
+        "entry": entry,
+        "checkpoint": mission.checkpoint(),
+    }
+    print(json.dumps(payload, indent=2))
+
+
+def cmd_preview(args: argparse.Namespace) -> None:
+    suite = _build_protocol_suite(args.actions, args.history, user=args.user)
+    time_engine: EthicResonantTimeEngine = suite["time"]  # type: ignore[assignment]
+    conscious: ConsciousStateEngine = suite["conscious"]  # type: ignore[assignment]
+    predictive: PredictiveYieldFabric = suite["predictive"]  # type: ignore[assignment]
+    forecast = predictive.latest_forecast
+    payload: dict[str, Any] = {
+        "tempo": time_engine.current_tempo(),
+        "belief_health": conscious.belief_health(),
+        "forecast": forecast,
+        "auto_optimize": predictive.auto_optimize(),
+        "metadata": time_engine.metadata,
+    }
+    if args.stack:
+        payload["stack"] = {
+            "requirements": time_engine.metadata.get("requirements"),
+            "engines": {
+                "time": time_engine.metadata,
+                "conscious": conscious.metadata,
+                "mission": suite["mission"].metadata,  # type: ignore[index]
+                "fabric": suite["fabric"].metadata,  # type: ignore[index]
+                "gift": suite["gift"].metadata,  # type: ignore[index]
+                "dreamcatcher": suite["dreamcatcher"].metadata,  # type: ignore[index]
+                "parallax": suite["parallax"].metadata,  # type: ignore[index]
+                "predictive": predictive.metadata,
+            },
+        }
+    print(json.dumps(payload, indent=2))
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ghostkey", description="Ghostkey protocol tooling")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -615,6 +847,82 @@ def build_parser() -> argparse.ArgumentParser:
         help="Recipient wallet (optionally wallet:belief_multiplier:trajectory_bonus)",
     )
     p_claim.set_defaults(func=cmd_claim)
+
+    p_dreamcatcher = sub.add_parser(
+        "dreamcatcher",
+        help="Capture or replay signals using the Temporal Dreamcatcher Engine",
+    )
+    p_dreamcatcher.add_argument("--actions", help="Optional path to ledger actions", default=None)
+    p_dreamcatcher.add_argument("--history", help="Optional path to prior intent history", default=None)
+    p_dreamcatcher.add_argument("--signals", help="Optional path to signal payloads", default=None)
+    p_dreamcatcher.add_argument(
+        "--signal",
+        action="append",
+        default=None,
+        help="Inline signal payload as JSON or numeric strength",
+    )
+    p_dreamcatcher.add_argument("--listen", action="store_true", help="Stream and return capture summary")
+    p_dreamcatcher.add_argument("--intent-override", default=None, help="Override intent label for ingested signals")
+    p_dreamcatcher.add_argument("--trust-floor", type=float, default=None, help="Trust floor used for projections")
+    p_dreamcatcher.add_argument("--user", default="ghostkey-316", help="Override the user identifier")
+    p_dreamcatcher.set_defaults(func=cmd_dreamcatcher)
+
+    p_signalpulse = sub.add_parser(
+        "signalpulse",
+        help="Trace dreamcatcher pulses and optionally compute drift",
+    )
+    p_signalpulse.add_argument("--actions", help="Optional path to ledger actions", default=None)
+    p_signalpulse.add_argument("--history", help="Optional path to prior intent history", default=None)
+    p_signalpulse.add_argument("--signals", help="Optional path to signal payloads", default=None)
+    p_signalpulse.add_argument(
+        "--signal",
+        action="append",
+        default=None,
+        help="Inline signal payload as JSON or numeric strength",
+    )
+    p_signalpulse.add_argument("--intent-override", default=None, help="Override intent label for ingested signals")
+    p_signalpulse.add_argument("--trust-floor", type=float, default=None, help="Trust floor used for projections")
+    p_signalpulse.add_argument("--trace-drift", action="store_true", help="Return drift tracing output")
+    p_signalpulse.add_argument("--window", type=int, default=None, help="Optional window when tracing drift")
+    p_signalpulse.add_argument("--user", default="ghostkey-316", help="Override the user identifier")
+    p_signalpulse.set_defaults(func=cmd_signalpulse)
+
+    p_parallax = sub.add_parser("parallax", help="Evaluate dual-path moral alignment")
+    p_parallax.add_argument("--actions", help="Optional path to ledger actions", default=None)
+    p_parallax.add_argument("--history", help="Optional path to prior intent history", default=None)
+    p_parallax.add_argument(
+        "--path",
+        action="append",
+        default=None,
+        help="Inline JSON payload describing a moral path",
+    )
+    p_parallax.add_argument("--run-dual", action="store_true", help="Execute parallax evaluation")
+    p_parallax.add_argument("--intent", help="Intent label for evaluation", default=None)
+    p_parallax.add_argument("--user", default="ghostkey-316", help="Override the user identifier")
+    p_parallax.set_defaults(func=cmd_parallax)
+
+    p_intentionmap = sub.add_parser("intentionmap", help="Render or extend the mission intention map")
+    p_intentionmap.add_argument("--actions", help="Optional path to ledger actions", default=None)
+    p_intentionmap.add_argument("--history", help="Optional path to prior intent history", default=None)
+    p_intentionmap.add_argument("--generate", action="store_true", help="Record a new intent entry")
+    p_intentionmap.add_argument("--intent", help="Intent label to record", default=None)
+    p_intentionmap.add_argument("--confidence", type=float, default=0.88, help="Confidence for generated intent")
+    p_intentionmap.add_argument("--tag", action="append", default=None, help="Tag to associate with the intent")
+    p_intentionmap.add_argument(
+        "--update",
+        action="append",
+        default=None,
+        help="Profile field update key=value",
+    )
+    p_intentionmap.add_argument("--user", default="ghostkey-316", help="Override the user identifier")
+    p_intentionmap.set_defaults(func=cmd_intentionmap)
+
+    p_preview = sub.add_parser("preview", help="Preview stack alignment and requirements")
+    p_preview.add_argument("--actions", help="Optional path to ledger actions", default=None)
+    p_preview.add_argument("--history", help="Optional path to prior intent history", default=None)
+    p_preview.add_argument("--stack", action="store_true", help="Include per-engine metadata stack summary")
+    p_preview.add_argument("--user", default="ghostkey-316", help="Override the user identifier")
+    p_preview.set_defaults(func=cmd_preview)
 
     return parser
 
