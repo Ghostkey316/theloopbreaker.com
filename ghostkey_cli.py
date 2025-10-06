@@ -12,6 +12,10 @@ from vaultfire.protocol.signal_echo import SignalEchoEngine
 from vaultfire.protocol.timeflare import TimeFlare
 from vaultfire.quantum.hashmirror import QuantumHashMirror
 from vaultfire.modules.ethic_resonant_time_engine import EthicResonantTimeEngine
+from vaultfire.modules.gift_matrix_engine import GiftMatrixEngine
+from vaultfire.modules.living_memory_ledger import LivingMemoryLedger
+from vaultfire.modules.quantum_echo_mirror import QuantumEchoMirror
+from vaultfire.modules.soul_loop_fabric_engine import SoulLoopFabricEngine
 from vaultfire.modules.vaultfire_protocol_stack import (
     ConsciousStateEngine,
     GiftMatrixV1,
@@ -87,6 +91,47 @@ def _parse_update_spec(entries: Iterable[str] | None) -> dict[str, object]:
         else:
             updates[item.strip()] = True
     return updates
+
+
+def _build_engines(
+    actions_path: str | None,
+    history_path: str | None,
+    *,
+    user: str = "ghostkey-316",
+) -> tuple[SoulLoopFabricEngine, QuantumEchoMirror, GiftMatrixEngine]:
+    actions = _load_actions(actions_path)
+    history = _load_soul_history(history_path)
+    time_engine = EthicResonantTimeEngine(
+        user,
+        identity_handle=IDENTITY_HANDLE,
+        identity_ens=IDENTITY_ENS,
+    )
+    for action in actions:
+        time_engine.register_action(action)
+    ledger = LivingMemoryLedger(
+        identity_handle=IDENTITY_HANDLE,
+        identity_ens=IDENTITY_ENS,
+    )
+    fabric = SoulLoopFabricEngine(
+        time_engine=time_engine,
+        ledger=ledger,
+        identity_handle=IDENTITY_HANDLE,
+        identity_ens=IDENTITY_ENS,
+    )
+    for entry in history:
+        fabric.log_intent(
+            str(entry.get("intent", "align")),
+            confidence=float(entry.get("confidence", 0.8)),
+            tags=tuple(entry.get("tags", ())),
+        )
+    mirror = QuantumEchoMirror(time_engine=time_engine, ledger=ledger)
+    gift = GiftMatrixEngine(
+        time_engine=time_engine,
+        ledger=ledger,
+        identity_handle=IDENTITY_HANDLE,
+        identity_ens=IDENTITY_ENS,
+    )
+    return fabric, mirror, gift
 
 
 def cmd_echoindex(args: argparse.Namespace) -> None:
@@ -320,6 +365,84 @@ def cmd_pulsewatch(args: argparse.Namespace) -> None:
     print(json.dumps(payload, indent=2))
 
 
+def cmd_soultrace(args: argparse.Namespace) -> None:
+    fabric, mirror, _ = _build_engines(args.actions, args.history)
+    payload = {
+        "trace": fabric.trace(window=args.window),
+        "metadata": fabric.metadata,
+    }
+    if args.full_history:
+        payload["history"] = list(fabric.history())
+    if args.future:
+        payload["forecast"] = mirror.project_future(
+            steps=args.steps,
+            trust_floor=args.trust_floor,
+        )
+    print(json.dumps(payload, indent=2))
+
+
+def cmd_soulpush(args: argparse.Namespace) -> None:
+    fabric, _, _ = _build_engines(args.actions, args.history)
+    record = fabric.push_signal(args.signal, intent=args.intent)
+    payload = {
+        "record": record.to_payload(),
+        "trace": fabric.trace(window=args.window),
+    }
+    if args.include_history:
+        payload["history"] = list(fabric.history())
+    print(json.dumps(payload, indent=2))
+
+
+def cmd_echo_future(args: argparse.Namespace) -> None:
+    _, mirror, _ = _build_engines(args.actions, args.history)
+    if args.future:
+        payload = mirror.project_future(
+            steps=args.steps,
+            trust_floor=args.trust_floor,
+        )
+    else:
+        payload = mirror.traceback(
+            trust_floor=args.trust_floor,
+            window=args.window,
+        )
+    print(json.dumps(payload, indent=2))
+
+
+def cmd_mirror_traceback(args: argparse.Namespace) -> None:
+    _, mirror, _ = _build_engines(args.actions, args.history)
+    payload = mirror.traceback(
+        trust_floor=args.trust_floor,
+        window=args.window,
+    )
+    print(json.dumps(payload, indent=2))
+
+
+def cmd_giftmatrix_check(args: argparse.Namespace) -> None:
+    _, _, gift = _build_engines(args.actions, args.history)
+    recipients = [_parse_wallet_spec(entry) for entry in args.recipient or ()]
+    payload = gift.preview_allocations(
+        impact=args.impact,
+        ego=args.ego,
+        recipients=recipients,
+    )
+    payload["checked"] = bool(getattr(args, "check", False))
+    print(json.dumps(payload, indent=2))
+
+
+def cmd_claim(args: argparse.Namespace) -> None:
+    _, _, gift = _build_engines(args.actions, args.history)
+    if not args.recipient:
+        raise SystemExit("At least one --recipient value is required for claim")
+    recipients = [_parse_wallet_spec(entry) for entry in args.recipient]
+    payload = gift.prepare_claim(
+        args.id,
+        impact=args.impact,
+        ego=args.ego,
+        recipients=recipients,
+    )
+    print(json.dumps(payload, indent=2))
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ghostkey", description="Ghostkey protocol tooling")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -424,6 +547,74 @@ def build_parser() -> argparse.ArgumentParser:
         help="Include the entire mission history in the output",
     )
     p_soul.set_defaults(func=cmd_soul)
+
+    p_soultrace = sub.add_parser("soultrace", help="Render Soul Loop Fabric trace output")
+    p_soultrace.add_argument("--actions", help="Optional path to ledger actions", default=None)
+    p_soultrace.add_argument("--history", help="Optional path to prior intent history", default=None)
+    p_soultrace.add_argument("--window", type=int, default=5, help="Window used for trust averaging")
+    p_soultrace.add_argument("--full-history", action="store_true", help="Include recorded history")
+    p_soultrace.add_argument("--future", action="store_true", help="Include future projection")
+    p_soultrace.add_argument("--steps", type=int, default=3, help="Number of future steps to project")
+    p_soultrace.add_argument("--trust-floor", dest="trust_floor", type=float, default=0.6)
+    p_soultrace.set_defaults(func=cmd_soultrace)
+
+    p_soulpush = sub.add_parser("soulpush", help="Push a signal into the Soul Loop Fabric")
+    p_soulpush.add_argument("--signal", type=float, required=True, help="Signal strength to push")
+    p_soulpush.add_argument("--intent", help="Optional label for the signal", default=None)
+    p_soulpush.add_argument("--actions", help="Optional path to ledger actions", default=None)
+    p_soulpush.add_argument("--history", help="Optional path to prior intent history", default=None)
+    p_soulpush.add_argument("--window", type=int, default=5, help="Window used for trust averaging")
+    p_soulpush.add_argument(
+        "--include-history",
+        action="store_true",
+        help="Include the recorded history in the response",
+    )
+    p_soulpush.set_defaults(func=cmd_soulpush)
+
+    p_echo_future = sub.add_parser("echo", help="Interact with the Quantum Echo Mirror")
+    p_echo_future.add_argument("--actions", help="Optional path to ledger actions", default=None)
+    p_echo_future.add_argument("--history", help="Optional path to prior intent history", default=None)
+    p_echo_future.add_argument("--future", action="store_true", help="Return future projection")
+    p_echo_future.add_argument("--steps", type=int, default=3, help="Steps used for future projections")
+    p_echo_future.add_argument("--trust-floor", dest="trust_floor", type=float, default=0.6)
+    p_echo_future.add_argument("--window", type=int, default=None, help="Window for traceback mode")
+    p_echo_future.set_defaults(func=cmd_echo_future)
+
+    p_mirror = sub.add_parser("mirror", help="Traceback using the Quantum Echo Mirror")
+    p_mirror.add_argument("--actions", help="Optional path to ledger actions", default=None)
+    p_mirror.add_argument("--history", help="Optional path to prior intent history", default=None)
+    p_mirror.add_argument("--traceback", action="store_true", help="Include explicit traceback output")
+    p_mirror.add_argument("--window", type=int, default=None, help="Window limit for timeline entries")
+    p_mirror.add_argument("--trust-floor", dest="trust_floor", type=float, default=0.5)
+    p_mirror.set_defaults(func=cmd_mirror_traceback)
+
+    p_giftmatrix = sub.add_parser("giftmatrix", help="Preview Gift Matrix allocations")
+    p_giftmatrix.add_argument("--actions", help="Optional path to ledger actions", default=None)
+    p_giftmatrix.add_argument("--history", help="Optional path to prior intent history", default=None)
+    p_giftmatrix.add_argument("--impact", type=float, required=True, help="Impact score")
+    p_giftmatrix.add_argument("--ego", type=float, required=True, help="Ego score")
+    p_giftmatrix.add_argument(
+        "--recipient",
+        action="append",
+        default=None,
+        help="Recipient wallet (optionally wallet:belief_multiplier:trajectory_bonus)",
+    )
+    p_giftmatrix.add_argument("--check", action="store_true", help="Run eligibility check only")
+    p_giftmatrix.set_defaults(func=cmd_giftmatrix_check)
+
+    p_claim = sub.add_parser("claim", help="Prepare a Gift Matrix claim")
+    p_claim.add_argument("--actions", help="Optional path to ledger actions", default=None)
+    p_claim.add_argument("--history", help="Optional path to prior intent history", default=None)
+    p_claim.add_argument("--id", required=True, help="Claim identifier")
+    p_claim.add_argument("--impact", type=float, required=True, help="Impact score")
+    p_claim.add_argument("--ego", type=float, required=True, help="Ego score")
+    p_claim.add_argument(
+        "--recipient",
+        action="append",
+        required=True,
+        help="Recipient wallet (optionally wallet:belief_multiplier:trajectory_bonus)",
+    )
+    p_claim.set_defaults(func=cmd_claim)
 
     return parser
 
