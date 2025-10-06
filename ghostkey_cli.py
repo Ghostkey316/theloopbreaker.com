@@ -12,7 +12,13 @@ from vaultfire.protocol.signal_echo import SignalEchoEngine
 from vaultfire.protocol.timeflare import TimeFlare
 from vaultfire.quantum.hashmirror import QuantumHashMirror
 from vaultfire.modules.ethic_resonant_time_engine import EthicResonantTimeEngine
-from vaultfire.modules.vaultfire_protocol_stack import GiftMatrixV1, VaultfireProtocolStack
+from vaultfire.modules.vaultfire_protocol_stack import (
+    ConsciousStateEngine,
+    GiftMatrixV1,
+    MissionSoulLoop,
+    PredictiveYieldFabric,
+    VaultfireProtocolStack,
+)
 
 _yield_module = import_module("vaultfire.yield")
 PulseSync = getattr(_yield_module, "PulseSync")
@@ -48,6 +54,39 @@ def _load_actions(path: str | None) -> list[Mapping[str, object]]:
     if isinstance(data, list):
         return [dict(item) for item in data if isinstance(item, Mapping)]
     return []
+
+
+def _load_soul_history(path: str | None) -> list[Mapping[str, object]]:
+    if path is None:
+        return []
+    data = json.loads(Path(path).read_text())
+    if isinstance(data, list):
+        return [dict(item) for item in data if isinstance(item, Mapping)]
+    return []
+
+
+def _parse_export_spec(spec: str) -> tuple[str, float]:
+    parts = spec.split(":", 1)
+    name = parts[0].strip() or "core"
+    weight_str = parts[1] if len(parts) == 2 else ""
+    try:
+        weight = float(weight_str) if weight_str else 1.0
+    except ValueError:
+        weight = 1.0
+    return name, max(weight, 0.0)
+
+
+def _parse_update_spec(entries: Iterable[str] | None) -> dict[str, object]:
+    updates: dict[str, object] = {}
+    if not entries:
+        return updates
+    for item in entries:
+        if "=" in item:
+            key, value = item.split("=", 1)
+            updates[key.strip()] = value.strip()
+        else:
+            updates[item.strip()] = True
+    return updates
 
 
 def cmd_echoindex(args: argparse.Namespace) -> None:
@@ -138,6 +177,90 @@ def cmd_pulse(args: argparse.Namespace) -> None:
     for action in actions:
         engine.register_action(action)
     payload = engine.pulse()
+    print(json.dumps(payload, indent=2))
+
+
+def cmd_conscious(args: argparse.Namespace) -> None:
+    actions = _load_actions(args.actions)
+    engine = ConsciousStateEngine(
+        identity_handle=IDENTITY_HANDLE,
+        identity_ens=IDENTITY_ENS,
+    )
+    for action in actions:
+        engine.record_action(action)
+    if args.action:
+        for spec in args.action:
+            try:
+                action = json.loads(spec)
+            except json.JSONDecodeError:
+                action = {"note": spec, "ethic": "aligned"}
+            engine.record_action(action)
+    payload = engine.sync_diagnostics()
+    print(json.dumps(payload, indent=2))
+
+
+def cmd_yieldfabric(args: argparse.Namespace) -> None:
+    fabric = PredictiveYieldFabric(
+        identity_handle=IDENTITY_HANDLE,
+        identity_ens=IDENTITY_ENS,
+    )
+    for spec in args.export or ():
+        name, weight = _parse_export_spec(spec)
+        fabric.register_export(name, weight)
+
+    captured: list[Mapping[str, float]] = []
+
+    if args.capture:
+
+        def _hook(payload: Mapping[str, float]) -> None:
+            captured.append(dict(payload))
+
+        fabric.register_hook("cli-capture", _hook)
+
+    forecast = fabric.forecast(
+        signal_purity=args.purity,
+        base_yield=args.base,
+        horizon=args.horizon,
+    )
+    payload = {
+        "forecast": forecast,
+        "optimization": fabric.auto_optimize(),
+    }
+    if captured:
+        payload["captured_distribution"] = captured[-1]
+    print(json.dumps(payload, indent=2))
+
+
+def cmd_soul(args: argparse.Namespace) -> None:
+    loop = MissionSoulLoop(
+        identity_handle=IDENTITY_HANDLE,
+        identity_ens=IDENTITY_ENS,
+    )
+    for entry in _load_soul_history(args.history):
+        loop.log_intent(
+            str(entry.get("intent", "sustain")),
+            confidence=float(entry.get("confidence", 0.8)),
+            tags=tuple(entry.get("tags", ())),
+        )
+    if args.intent:
+        loop.log_intent(
+            args.intent,
+            confidence=args.confidence,
+            tags=tuple(args.tag or ()),
+        )
+    updates = _parse_update_spec(args.update)
+    if updates:
+        loop.update_profile(**updates)
+    checkpoint = loop.checkpoint()
+    payload = {
+        "identity": {
+            "wallet": IDENTITY_HANDLE,
+            "ens": IDENTITY_ENS,
+        },
+        "checkpoint": checkpoint,
+    }
+    if args.full_history:
+        payload["history"] = list(loop.history())
     print(json.dumps(payload, indent=2))
 
 
@@ -261,6 +384,46 @@ def build_parser() -> argparse.ArgumentParser:
         help="Recipient wallet (optionally wallet:belief_multiplier:trajectory_bonus)",
     )
     p_watch.set_defaults(func=cmd_pulsewatch)
+
+    p_conscious = sub.add_parser("conscious", help="Inspect conscious state diagnostics")
+    p_conscious.add_argument("--actions", help="Optional path to ledger actions", default=None)
+    p_conscious.add_argument(
+        "--action",
+        action="append",
+        default=None,
+        help="Inline JSON action to append to the ledger",
+    )
+    p_conscious.set_defaults(func=cmd_conscious)
+
+    p_yieldfabric = sub.add_parser("yieldfabric", help="Generate predictive yield insights")
+    p_yieldfabric.add_argument("--export", action="append", default=None, help="Export spec name:weight")
+    p_yieldfabric.add_argument("--purity", type=float, default=0.8, help="Signal purity score")
+    p_yieldfabric.add_argument("--base", type=float, default=150.0, help="Base yield value")
+    p_yieldfabric.add_argument("--horizon", type=int, default=3, help="Forecast horizon")
+    p_yieldfabric.add_argument(
+        "--capture",
+        action="store_true",
+        help="Capture distribution via internal hook for debugging",
+    )
+    p_yieldfabric.set_defaults(func=cmd_yieldfabric)
+
+    p_soul = sub.add_parser("soul", help="Inspect mission soul loop checkpoints")
+    p_soul.add_argument("--history", help="Optional path to prior intent history", default=None)
+    p_soul.add_argument("--intent", help="Optional new intent to record", default=None)
+    p_soul.add_argument("--confidence", type=float, default=0.9, help="Confidence for new intent")
+    p_soul.add_argument("--tag", action="append", default=None, help="Tag for the new intent entry")
+    p_soul.add_argument(
+        "--update",
+        action="append",
+        default=None,
+        help="Profile field update key=value",
+    )
+    p_soul.add_argument(
+        "--full-history",
+        action="store_true",
+        help="Include the entire mission history in the output",
+    )
+    p_soul.set_defaults(func=cmd_soul)
 
     return parser
 
