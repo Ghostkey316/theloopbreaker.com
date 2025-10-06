@@ -1,5 +1,15 @@
 # Vaultfire Partner Changelog
 
+## 2025-11-05 — feature: stealth partner sync and token registry
+- Introduced `vaultfire.partner.sync` to coordinate MPC-backed handshakes with
+  zk attestations and mission ledger mirroring while preserving wallet-only
+  identity semantics.
+- Added the Vaultfire Token Registry with cross-chain wallet commitments,
+  stealth yield minting hooks, and attested ledger logging for Base, Ethereum,
+  and Zora networks.
+- Delivered a stealth yield layer emitter featuring encrypted batch tracking,
+  rollback arbitration, and private loyalty emission aligned with Ghostkey-316.
+
 ## 2025-10-28 — docs: quantum-aligned protocol expansion
 - Elevated `FORKABLE_PROTOCOL.md` to version 1.2 with mission resonance rollups,
   confidential compute attestations, and FHE-streamed analytics channels while
