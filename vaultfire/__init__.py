@@ -24,6 +24,7 @@ __all__ = [
     "identity",
     "optimization",
     "systems",
+    "signals",
     "auto_refund",
     "should_refund",
     "freeze_refunds",
@@ -45,6 +46,7 @@ _LAZY_MODULES: Dict[str, str] = {
     "identity": ".identity",
     "optimization": ".optimization",
     "systems": ".systems",
+    "signals": ".signals",
 }
 
 _REFUND_EXPORTS: Iterable[str] = (
