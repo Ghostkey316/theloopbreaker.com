@@ -3,6 +3,12 @@
 import importlib
 
 from .access_layer import PilotAccessLayer
+from .broadcast_layer import (
+    BroadcastSignals,
+    PilotBroadcastLayer,
+    SyncModuleStatus,
+    initialize_broadcast_layer,
+)
 from .feedback import FeedbackCollector, FeedbackRecord
 from .ghostkey_agent import (
     AgentConfig,
@@ -23,6 +29,10 @@ __all__ = [
     "PilotAccessLayer",
     "FeedbackCollector",
     "FeedbackRecord",
+    "BroadcastSignals",
+    "SyncModuleStatus",
+    "PilotBroadcastLayer",
+    "initialize_broadcast_layer",
     "AgentConfig",
     "AgentLaunchState",
     "AgentWidget",
