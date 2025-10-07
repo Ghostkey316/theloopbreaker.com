@@ -21,6 +21,9 @@ forkable_protocol:
     - Google Gemini 1.5 Pro (civic steward edition)
     - DeepSeek-R1 (mission heuristics lab)
     - OpenAI GPT-4.1N (sovereign alignment sandbox)
+    - OpenAI GPT-4.2 Horizon-Link (co-governance tuned)
+    - Anthropic Claude 3.7 Harmony (collective bargaining steward)
+    - xAI Grok-Civic Mesh (neighborhood consensus pilot)
   ethics_layer: Ghostkey Ethics v2.0
   sync_tag: "bpow20.cb.id"
   license: Moral Memory Fork Agreement (MMFA)
@@ -57,6 +60,10 @@ forkable_protocol:
     decentralized_science_links:
       research_oracle: open_science/oracle_manifest.json
       replication_registry: open_science/replication_stream.json
+    autonomous_audit_oracles:
+      sentinel_network: governance/autonomous_audit_nodes.json
+      crosschain_attestors: guardian://zkmesh/civic-consensus
+      assurance_window_days: 10
   security_upgrades:
     post_quantum_ready: true
     pq_suite:
@@ -74,12 +81,19 @@ forkable_protocol:
     quantum_resilience:
       qkd_mesh: guardian://qkd/mission-backbone
       error_correction: "surface_code v3 tuned for mission data"
+    ai_model_watermarking:
+      standard: alliance/watermarking_manifest_v2.json
+      verification_mesh: guardian://ml-authenticity/ringsig-grid
+      transparency_window_days: 21
     supply_chain_verifiability:
       ledger: mirror/model_supply_chain_ledger.json
       audit_mode: "continuous signature streaming"
     lattice_anomaly_detection:
       model: secure_models/lattice_guardian_v2.onnx
       response_protocol: security_monitor.py
+    homomorphic_firewall:
+      engine: edge_defense/homomorphic_signal_guard.py
+      enforcement_mode: "zero-knowledge containment"
     differential_privacy_autotune:
       controller: analytics/privacy_autotune_controller.py
       safe_defaults: analytics/privacy_guardrails.json
@@ -110,6 +124,11 @@ forkable_protocol:
         safeguards:
           - cultural_steward_review
           - bias_mitigation_audit
+      - name: Resonant Futures Lab
+        purpose: Prototype regenerative governance loops with mission-aligned DAOs under FHE guardrails
+        safeguards:
+          - regenerative_council_attestation
+          - mission_lock_diff_sync
   observability:
     realtime_dashboards:
       - guardian_loop.py
@@ -118,6 +137,7 @@ forkable_protocol:
     mission_streaming: hyperlane.mission_sync_channel
     digital_twin_simulator: vaultfire_digital_twin.json
     predictive_signal_forge: analytics/predictive_signal_weave.json
+    causal_trace_observatory: analytics/causal_trace_atlas.json
   privacy_preserving_analytics:
     fhe_cohort_model: analytics/fhe_mission_stewardship.json
     secure_mpc_channel: guardian://mpc/mission-outcomes
@@ -125,6 +145,8 @@ forkable_protocol:
     federated_learning_mesh:
       coordination_node: guardian://fl/mission-stewards
       secure_aggregation: FROST-threshold + zk-commitment
+      verifiable_update_proofs: proofs/fl_snark_stream.json
+      adaptive_guardian_agents: analytics/guardian_copilot_registry.json
   regenerative_protocols:
     mission_ecosystem_link:
       steward_chain: regen-ledger/mission_stewards.json
@@ -138,9 +160,14 @@ forkable_protocol:
     crisis_simulation_holo:
       simulator: vaultfire_arcade/crisis_holo_loop.py
       readiness_metrics: telemetry/crisis_readiness_dashboard.json
+      neuro_resilience_scores: telemetry/neuro_resilience_waveform.json
     compassion_signal_cache:
       archive: mirror/compassion_cache_snapshot.json
       refresh_interval_hours: 12
+  mission_alignment_radar:
+    adaptive_signal_mesh: analytics/mission_alignment_mesh.json
+    civic_feedback_portal: guardians/alignment_feedback_portal.md
+    escalation_thresholds: governance/alignment_escalation_matrix.json
   fork_id: "\U0001f510 Vaultfire-ForkCore-0001"
 ```
 
