@@ -18,6 +18,9 @@ forkable_protocol:
     - Anthropic Claude 3.5 Sonnet (observatory feed)
     - Mistral Large Guard (safety-tuned)
     - xAI Grok-Next (consent-gated)
+    - Google Gemini 1.5 Pro (civic steward edition)
+    - DeepSeek-R1 (mission heuristics lab)
+    - OpenAI GPT-4.1N (sovereign alignment sandbox)
   ethics_layer: Ghostkey Ethics v2.0
   sync_tag: "bpow20.cb.id"
   license: Moral Memory Fork Agreement (MMFA)
@@ -47,6 +50,13 @@ forkable_protocol:
       substrate: Hyperlane regen-holochain
       verification: guardians/regen_verification_playbook.md
       stewardship_review: "monthly regenerative quorum"
+    soulbound_credentials:
+      issuer_network: regen-ledger/steward_issuers.json
+      attestation_format: EIP-712 + zkEmail proofs
+      renewal_window_days: 45
+    decentralized_science_links:
+      research_oracle: open_science/oracle_manifest.json
+      replication_registry: open_science/replication_stream.json
   security_upgrades:
     post_quantum_ready: true
     pq_suite:
@@ -67,6 +77,12 @@ forkable_protocol:
     supply_chain_verifiability:
       ledger: mirror/model_supply_chain_ledger.json
       audit_mode: "continuous signature streaming"
+    lattice_anomaly_detection:
+      model: secure_models/lattice_guardian_v2.onnx
+      response_protocol: security_monitor.py
+    differential_privacy_autotune:
+      controller: analytics/privacy_autotune_controller.py
+      safe_defaults: analytics/privacy_guardrails.json
   ai_collaboration:
     co_processing_channels:
       - name: Symmetric Belief Loop
@@ -89,6 +105,11 @@ forkable_protocol:
         safeguards:
           - mutual_aid_council_cosign
           - mission_principle_check
+      - name: Lattice Whisper Bridge
+        purpose: Translate multilingual community testimony into mission-safe embeddings
+        safeguards:
+          - cultural_steward_review
+          - bias_mitigation_audit
   observability:
     realtime_dashboards:
       - guardian_loop.py
@@ -96,15 +117,30 @@ forkable_protocol:
     telemetry_sink: telemetry/telemetry_baseline.json
     mission_streaming: hyperlane.mission_sync_channel
     digital_twin_simulator: vaultfire_digital_twin.json
+    predictive_signal_forge: analytics/predictive_signal_weave.json
   privacy_preserving_analytics:
     fhe_cohort_model: analytics/fhe_mission_stewardship.json
     secure_mpc_channel: guardian://mpc/mission-outcomes
     privacy_budget_orchestrator: analytics/differential_privacy_budget.json
+    federated_learning_mesh:
+      coordination_node: guardian://fl/mission-stewards
+      secure_aggregation: FROST-threshold + zk-commitment
   regenerative_protocols:
     mission_ecosystem_link:
       steward_chain: regen-ledger/mission_stewards.json
       climate_treasury_allocation: 0.07
       solidarity_pool: regen-ledger/solidarity_pool.json
+  resilience_layers:
+    adaptive_mission_kernel:
+      model: belief_engine/adaptive_kernel_v3.py
+      council_feedback_window_days: 14
+      rollback_protocol: governance/mission_lock_rollback.md
+    crisis_simulation_holo:
+      simulator: vaultfire_arcade/crisis_holo_loop.py
+      readiness_metrics: telemetry/crisis_readiness_dashboard.json
+    compassion_signal_cache:
+      archive: mirror/compassion_cache_snapshot.json
+      refresh_interval_hours: 12
   fork_id: "\U0001f510 Vaultfire-ForkCore-0001"
 ```
 
