@@ -7,6 +7,7 @@ from importlib import import_module
 from typing import Dict, Iterable, List, Mapping, Sequence
 
 from vaultfire.instinct import InstinctSuite
+from vaultfire.tests import DefenseSuite
 from vaultfire.modules._metadata import build_metadata
 from vaultfire.modules.conscious_state_engine import ConsciousStateEngine
 from vaultfire.modules.ethic_resonant_time_engine import EthicResonantTimeEngine
@@ -301,6 +302,8 @@ class VaultfireProtocolStack:
         self.consent_first_mirror = ConsentFirstMirror(self.ethics_monitor)
         self.disclosure_trail = DisclosureShieldTrailEngine()
         self.instinct_layer: Dict[str, Mapping[str, object]] = {}
+        self.shield_layers: Dict[str, Mapping[str, object]] = {}
+        self.lockbox_layers: Dict[str, Mapping[str, object]] = {}
         self._memory_links: List[Mapping[str, object]] = []
         self._protocol_commits: List[Mapping[str, object]] = []
         self.integration_manifest = self.integrate(
@@ -700,6 +703,75 @@ class VaultfireProtocolStack:
             }
         )
         return {name: dict(payload) for name, payload in snapshot.items()}
+
+    def inject_shield_layer(
+        self, modules: Mapping[str, object]
+    ) -> Mapping[str, Mapping[str, object]]:
+        """Register active shield defenses and broadcast the snapshot."""
+
+        snapshot = DefenseSuite.register_shield(modules)
+        self.shield_layers = {
+            name: self._clone_shield_payload(payload) for name, payload in snapshot.items()
+        }
+        self._moral_telemetry.append(
+            {
+                "type": "shield-layer",
+                "timestamp": _now_ts(),
+                "modules": tuple(sorted(self.shield_layers)),
+            }
+        )
+        return {
+            name: self._clone_shield_payload(payload)
+            for name, payload in self.shield_layers.items()
+        }
+
+    def lock_truth(
+        self, packages: Mapping[str, object]
+    ) -> Mapping[str, Mapping[str, object]]:
+        """Seal truth lockboxes and broadcast the snapshot."""
+
+        snapshot = DefenseSuite.register_lockbox(packages)
+        self.lockbox_layers = {
+            name: self._clone_lockbox_payload(payload)
+            for name, payload in snapshot.items()
+        }
+        self._moral_telemetry.append(
+            {
+                "type": "truth-lockbox",
+                "timestamp": _now_ts(),
+                "modules": tuple(sorted(self.lockbox_layers)),
+            }
+        )
+        return {
+            name: self._clone_lockbox_payload(payload)
+            for name, payload in self.lockbox_layers.items()
+        }
+
+    @staticmethod
+    def _clone_shield_payload(payload: Mapping[str, object]) -> Mapping[str, object]:
+        cloned: Dict[str, object] = {
+            "module": payload["module"],
+            "status": payload["status"],
+            "mode": payload["mode"],
+            "engaged_at": payload["engaged_at"],
+            "config": dict(payload.get("config", {})),
+        }
+        if "whitelist" in payload and payload["whitelist"]:
+            cloned["whitelist"] = tuple(payload["whitelist"])
+        return cloned
+
+    @staticmethod
+    def _clone_lockbox_payload(payload: Mapping[str, object]) -> Mapping[str, object]:
+        cloned: Dict[str, object] = {
+            "module": payload["module"],
+            "status": payload["status"],
+            "sealed_at": payload["sealed_at"],
+            "payload": dict(payload.get("payload", {})),
+            "fingerprint": payload["fingerprint"],
+        }
+        if "keys" in payload:
+            cloned["keys"] = tuple(payload["keys"])
+        return cloned
 
     def sync_with_memory(
         self, channel: str, priority: str = "instinct"
