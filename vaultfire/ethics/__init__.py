@@ -4,9 +4,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Mapping, MutableSequence, Sequence
+from typing import Mapping, MutableMapping, MutableSequence, Sequence
 
-__all__ = ["BehavioralEthicsMonitor", "ConsentFirstMirror", "EthicsAutoCorrectSuite"]
+__all__ = [
+    "BehavioralEthicsMonitor",
+    "ConsentFirstMirror",
+    "EthicsAutoCorrectSuite",
+    "MoralLedger",
+]
 
 
 def _now_ts() -> str:
@@ -242,4 +247,112 @@ class EthicsAutoCorrectSuite:
     @classmethod
     def last_run(cls) -> Mapping[str, object] | None:
         return cls._runs[-1].to_payload() if cls._runs else None
+
+
+class MoralLedger:
+    """Track moral alignment events with lightweight auditing helpers."""
+
+    _enabled: bool = False
+    _config: Mapping[str, object] = {}
+    _entries: MutableSequence[Mapping[str, object]] = []
+    _history: MutableSequence[Mapping[str, object]] = []
+
+    @classmethod
+    def reset(cls) -> None:
+        cls._enabled = False
+        cls._config = {}
+        cls._entries = []
+        cls._history = []
+
+    @classmethod
+    def enable(
+        cls,
+        *,
+        persistence: bool,
+        audit_window: str,
+        visibility: str,
+    ) -> Mapping[str, object]:
+        config = {
+            "persistence": bool(persistence),
+            "audit_window": str(audit_window).strip(),
+            "visibility": str(visibility).strip(),
+            "enabled_at": _now_ts(),
+        }
+        if not config["audit_window"]:
+            raise ValueError("audit_window cannot be empty")
+        if not config["visibility"]:
+            raise ValueError("visibility cannot be empty")
+        cls._enabled = True
+        cls._config = config
+        cls._history.append({
+            "type": "enable",
+            "timestamp": config["enabled_at"],
+            "payload": dict(config),
+        })
+        return dict(config)
+
+    @classmethod
+    def record(
+        cls,
+        action: str,
+        *,
+        weight: float = 1.0,
+        tags: Sequence[str] | None = None,
+        metadata: Mapping[str, object] | None = None,
+    ) -> Mapping[str, object]:
+        if not cls._enabled:
+            raise RuntimeError("MoralLedger must be enabled before recording events")
+        label = str(action).strip()
+        if not label:
+            raise ValueError("action cannot be empty")
+        timestamp = _now_ts()
+        tag_payload = tuple(
+            tag
+            for tag in (str(tag).strip() for tag in tags or ())
+            if tag
+        )
+        entry: MutableMapping[str, object] = {
+            "action": label,
+            "weight": float(weight),
+            "timestamp": timestamp,
+        }
+        if tag_payload:
+            entry["tags"] = tag_payload
+        if metadata is not None:
+            entry["metadata"] = dict(metadata)
+        cls._entries.append(dict(entry))
+        cls._history.append({
+            "type": "record",
+            "timestamp": timestamp,
+            "payload": dict(entry),
+        })
+        return dict(entry)
+
+    @classmethod
+    def audit(cls) -> Mapping[str, object]:
+        entries = tuple(dict(entry) for entry in cls._entries)
+        total_weight = sum(float(entry["weight"]) for entry in entries)
+        return {
+            "enabled": cls._enabled,
+            "config": dict(cls._config),
+            "entries": entries,
+            "summary": {
+                "entries_recorded": len(entries),
+                "total_weight": total_weight,
+            },
+        }
+
+    @classmethod
+    def history(cls) -> Sequence[Mapping[str, object]]:
+        return tuple(dict(entry) for entry in cls._history)
+
+    @classmethod
+    def status(cls) -> Mapping[str, object]:
+        audit_report = cls.audit()
+        return {
+            "enabled": audit_report["enabled"],
+            "config": audit_report["config"],
+            "entries_recorded": audit_report["summary"]["entries_recorded"],
+            "history": cls.history(),
+        }
 
