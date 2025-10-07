@@ -11,7 +11,7 @@ from vaultfire.instinct import InstinctSuite
 from vaultfire.pulse import MissionMonitor
 from vaultfire.purpose import EchoPath
 
-__all__ = ["InstinctSuite", "DefenseSuite", "PurposeSuite"]
+__all__ = ["InstinctSuite", "DefenseSuite", "PurposeSuite", "SoulSuite"]
 
 
 def _timestamp() -> str:
@@ -198,7 +198,6 @@ class DefenseSuite:
         if "whitelist" in payload and payload["whitelist"]:
             cloned["whitelist"] = tuple(payload["whitelist"])
         return cloned
-
     @staticmethod
     def _clone_lockbox_payload(payload: Mapping[str, object]) -> Mapping[str, object]:
         cloned: MutableMapping[str, object] = {
@@ -227,6 +226,42 @@ class DefenseSuite:
             raise ValueError(
                 f"Lockbox module '{name}' seal timestamp must be ISO formatted"
             )
+
+
+class SoulSuite:
+    """Aggregate Ghostprint, MoralLedger and ProvenanceTracer status."""
+
+    @staticmethod
+    def run_all() -> Mapping[str, object]:
+        from vaultfire.signature import Ghostprint
+        from vaultfire.ethics import MoralLedger
+        from vaultfire.trust import ProvenanceTracer
+
+        ghostprint_state = Ghostprint.status()
+        ledger_state = MoralLedger.audit()
+        provenance_state = ProvenanceTracer.status()
+        passed = all(
+            (
+                ghostprint_state.get("identity_bound"),
+                ghostprint_state.get("modules_encoded"),
+                ghostprint_state.get("origin_linked"),
+                ledger_state.get("enabled"),
+                provenance_state.get("initialized"),
+            )
+        )
+        summary = {
+            "ghostprint_modules": len(ghostprint_state.get("modules", ())),
+            "ledger_entries": ledger_state.get("summary", {}).get("entries_recorded", 0),
+            "provenance_traces": provenance_state.get("traces_recorded", 0),
+        }
+        return {
+            "checked_at": _timestamp(),
+            "ghostprint": ghostprint_state,
+            "moral_ledger": ledger_state,
+            "provenance": provenance_state,
+            "summary": summary,
+            "passed": bool(passed),
+        }
 
 
 class PurposeSuite:
