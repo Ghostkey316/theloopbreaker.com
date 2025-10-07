@@ -30,6 +30,7 @@ __all__ = [
     "partner",
     "token_registry",
     "yield_layer",
+    "honorwave",
     "auto_refund",
     "should_refund",
     "freeze_refunds",
@@ -57,6 +58,7 @@ _LAZY_MODULES: Dict[str, str] = {
     "partner": ".partner",
     "token_registry": ".token_registry",
     "yield_layer": ".yield",
+    "honorwave": ".honorwave",
 }
 
 _REFUND_EXPORTS: Iterable[str] = (
