@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Mapping, MutableMapping
+from types import MappingProxyType
+from typing import Mapping, MutableMapping, Sequence
+from uuid import uuid4
 
 from vaultfire.protocol.constants import ARCHITECT_WALLET, ORIGIN_NODE_ID
 
@@ -22,6 +24,8 @@ __all__ = [
     "register_genesis_node",
     "get_signal_anchor_state",
     "reset_signal_anchor_state",
+    "BroadcastReceipt",
+    "GhostkeySignalBoost",
 ]
 
 
@@ -253,3 +257,94 @@ def reset_signal_anchor_state() -> None:
     """Clear the anchor state. Intended for use in tests only."""
 
     _STATE.reset()
+
+
+@dataclass(frozen=True)
+class BroadcastReceipt:
+    """Immutable record representing a single Ghostkey broadcast event."""
+
+    message: str
+    channels: tuple[str, ...]
+    broadcast_id: str
+    sent_at: datetime
+    metadata: Mapping[str, object]
+
+    def export(self) -> Mapping[str, object]:
+        """Return a JSON-serialisable view of the broadcast."""
+
+        return {
+            "message": self.message,
+            "channels": list(self.channels),
+            "broadcast_id": self.broadcast_id,
+            "sent_at": self.sent_at.isoformat(),
+            "metadata": dict(self.metadata),
+        }
+
+
+class GhostkeySignalBoost:
+    """Utility for emitting verified partner-facing broadcasts."""
+
+    _CHANNEL_ALIASES: Mapping[str, str] = {
+        "twitter": "X",
+        "x": "X",
+        "ens": "ENS Relay",
+        "ens relay": "ENS Relay",
+        "partner syncmesh": "Partner SyncMesh",
+        "syncmesh": "Partner SyncMesh",
+    }
+    _history: list[BroadcastReceipt] = []
+
+    @classmethod
+    def _normalise_channel(cls, channel: str) -> str:
+        if not isinstance(channel, str):
+            raise TypeError("channel names must be strings")
+        cleaned = channel.strip()
+        if not cleaned:
+            raise ValueError("channel names must be non-empty")
+        return cls._CHANNEL_ALIASES.get(cleaned.lower(), cleaned)
+
+    @classmethod
+    def send(
+        cls,
+        message: str,
+        *,
+        channels: Sequence[str],
+        metadata: Mapping[str, object] | None = None,
+    ) -> BroadcastReceipt:
+        """Broadcast a message across the specified partner channels."""
+
+        if not isinstance(message, str):
+            raise TypeError("message must be a string")
+        body = message.strip()
+        if not body:
+            raise ValueError("message must be provided")
+        if not channels:
+            raise ValueError("at least one channel must be provided")
+        normalised_channels: list[str] = []
+        seen: set[str] = set()
+        for channel in channels:
+            alias = cls._normalise_channel(channel)
+            if alias not in seen:
+                normalised_channels.append(alias)
+                seen.add(alias)
+        receipt = BroadcastReceipt(
+            message=body,
+            channels=tuple(normalised_channels),
+            broadcast_id=str(uuid4()),
+            sent_at=datetime.now(timezone.utc),
+            metadata=MappingProxyType(dict(metadata or {})),
+        )
+        cls._history.append(receipt)
+        return receipt
+
+    @classmethod
+    def history(cls) -> tuple[BroadcastReceipt, ...]:
+        """Return all broadcast receipts emitted during this runtime."""
+
+        return tuple(cls._history)
+
+    @classmethod
+    def clear_history(cls) -> None:
+        """Reset the in-memory broadcast ledger (primarily for tests)."""
+
+        cls._history.clear()
