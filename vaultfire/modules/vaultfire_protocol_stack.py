@@ -7,7 +7,7 @@ from importlib import import_module
 from typing import Dict, Iterable, List, Mapping, Sequence
 
 from vaultfire.instinct import InstinctSuite
-from vaultfire.tests import DefenseSuite
+from vaultfire.tests import DefenseSuite, PurposeSuite
 from vaultfire.modules._metadata import build_metadata
 from vaultfire.modules.conscious_state_engine import ConsciousStateEngine
 from vaultfire.modules.ethic_resonant_time_engine import EthicResonantTimeEngine
@@ -225,6 +225,7 @@ class VaultfireProtocolStack:
         {"architect": IDENTITY_ENS, "assigned_at": _now_ts()}
     ]
     _adaptive_cycle_config: Mapping[str, object] = {}
+    _update_log: List[Mapping[str, object]] = []
 
     def __init__(
         self,
@@ -819,6 +820,51 @@ class VaultfireProtocolStack:
         self._moral_telemetry.append({"type": "protocol-commit", "payload": record})
         return dict(record)
 
+    @classmethod
+    def commit_update(
+        cls,
+        version: str,
+        *,
+        note: str,
+        source: str | None = None,
+        tags: Sequence[str] | None = None,
+        attach_purpose_report: bool = True,
+    ) -> Mapping[str, object]:
+        """Record a protocol update with optional purpose alignment context."""
+
+        version_id = str(version).strip()
+        if not version_id:
+            raise ValueError("version cannot be empty")
+        note_text = str(note).strip()
+        if not note_text:
+            raise ValueError("note cannot be empty")
+        origin = str(source).strip() if source else cls._architect_handle
+        tag_payload = tuple(
+            tag
+            for tag in (str(tag).strip() for tag in tags or ())
+            if tag
+        )
+        entry: Dict[str, object] = {
+            "version": version_id,
+            "note": note_text,
+            "source": origin,
+            "committed_at": _now_ts(),
+        }
+        if tag_payload:
+            entry["tags"] = tag_payload
+        if attach_purpose_report:
+            try:
+                purpose_report = PurposeSuite.run_all()
+            except Exception as exc:  # pragma: no cover - defensive path
+                entry["purpose"] = {
+                    "status": "unavailable",
+                    "error": str(exc),
+                }
+            else:
+                entry["purpose"] = purpose_report
+        cls._update_log.append(entry)
+        return dict(entry)
+
     def instinct_memory_links(self) -> Sequence[Mapping[str, object]]:
         """Return recorded instinct memory syncs."""
 
@@ -828,6 +874,12 @@ class VaultfireProtocolStack:
         """Return recorded instinct-aware commits."""
 
         return tuple(dict(entry) for entry in self._protocol_commits)
+
+    @classmethod
+    def updates(cls) -> Sequence[Mapping[str, object]]:
+        """Return recorded protocol update commits."""
+
+        return tuple(dict(entry) for entry in cls._update_log)
 
 
 # ---------------------------------------------------------------------------

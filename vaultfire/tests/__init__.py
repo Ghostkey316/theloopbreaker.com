@@ -6,9 +6,12 @@ from collections.abc import Iterable
 from datetime import datetime, timezone
 from typing import Callable, Dict, Mapping, MutableMapping, Sequence
 
+from vaultfire.align import VectorSync
 from vaultfire.instinct import InstinctSuite
+from vaultfire.pulse import MissionMonitor
+from vaultfire.purpose import EchoPath
 
-__all__ = ["InstinctSuite", "DefenseSuite"]
+__all__ = ["InstinctSuite", "DefenseSuite", "PurposeSuite"]
 
 
 def _timestamp() -> str:
@@ -224,3 +227,74 @@ class DefenseSuite:
             raise ValueError(
                 f"Lockbox module '{name}' seal timestamp must be ISO formatted"
             )
+
+
+class PurposeSuite:
+    """Purpose centric validation across mission alignment primitives."""
+
+    _history: Sequence[Mapping[str, object]] = ()
+
+    @classmethod
+    def clear(cls) -> None:
+        cls._history = ()
+        EchoPath.clear_registry()
+        MissionMonitor.clear_registry()
+        VectorSync.clear_registry()
+
+    @classmethod
+    def history(cls) -> Sequence[Mapping[str, object]]:
+        return tuple(dict(entry) for entry in cls._history)
+
+    @classmethod
+    def _ensure_ready(
+        cls,
+    ) -> tuple[Sequence[EchoPath], Sequence[MissionMonitor], Sequence[VectorSync]]:
+        loops = EchoPath.registry()
+        if not loops:
+            raise ValueError("No EchoPath loops have been initiated")
+        monitors = MissionMonitor.registry()
+        if not monitors:
+            raise ValueError("No MissionMonitor instances are tracking values")
+        vectors = VectorSync.registry()
+        if not vectors:
+            raise ValueError("No VectorSync alignments are active")
+        return loops, monitors, vectors
+
+    @classmethod
+    def run_all(cls) -> Mapping[str, object]:
+        loops, monitors, vectors = cls._ensure_ready()
+        echo_payload = [loop.snapshot() for loop in loops]
+        monitor_payload = [monitor.snapshot() for monitor in monitors]
+        vector_payload = [vector.snapshot() for vector in vectors]
+        passed = (
+            all(loop["active"] for loop in echo_payload)
+            and all(
+                monitor["status"] in {"ok", "pending"} for monitor in monitor_payload
+            )
+            and all(vector["active"] for vector in vector_payload)
+        )
+        summary = {
+            "echo_paths": len(echo_payload),
+            "mission_monitors": len(monitor_payload),
+            "vector_syncs": len(vector_payload),
+            "loyalty_events": sum(loop["loyalty_events"] for loop in echo_payload),
+        }
+        report: MutableMapping[str, object] = {
+            "checked_at": _timestamp(),
+            "echo_paths": echo_payload,
+            "mission_monitors": monitor_payload,
+            "vector_syncs": vector_payload,
+            "summary": summary,
+            "passed": passed,
+            "status": "ok" if passed else "attention",
+        }
+        history = list(cls._history)
+        history.append(
+            {
+                "recorded_at": report["checked_at"],
+                "status": report["status"],
+                **summary,
+            }
+        )
+        cls._history = tuple(history)
+        return dict(report)
