@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from importlib import import_module
-from typing import Iterable, List, Mapping, Sequence
+from typing import Dict, Iterable, List, Mapping, Sequence
 
 from vaultfire.modules._metadata import build_metadata
 from vaultfire.modules.conscious_state_engine import ConsciousStateEngine
@@ -19,6 +19,11 @@ from vaultfire.modules.vaultfire_enhancement_stack import (
     QuantumDriftSynchronizer,
     TemporalBehavioralCompressionEngine,
     VaultfireMythosEngine,
+)
+from vaultfire.consciousness import (
+    CognitiveEquilibriumEngine,
+    CompassionOverdriveLayer,
+    TruthfieldResonator,
 )
 from vaultfire.protocol.signal_echo import SignalEchoEngine
 from vaultfire.quantum.hashmirror import QuantumHashMirror
@@ -45,6 +50,15 @@ _DEFAULT_CONFIRMATION_SOURCES = (
     "AnonymizationProof",
     "EthicsValidationHash",
     "DisclosureAuditTrail",
+)
+
+_MORAL_EQUILIBRIUM_SOURCES = (
+    "CognitiveEquilibriumEngine",
+    "BehavioralEthicsMonitor",
+    "TruthfieldResonator",
+    "CompassionOverdriveLayer",
+    "GhostkeyPrivacyHalo",
+    "DisclosureShieldTrailEngine",
 )
 
 
@@ -208,6 +222,7 @@ class VaultfireProtocolStack:
     _architect_history: List[Mapping[str, object]] = [
         {"architect": IDENTITY_ENS, "assigned_at": _now_ts()}
     ]
+    _adaptive_cycle_config: Mapping[str, object] = {}
 
     def __init__(
         self,
@@ -274,6 +289,13 @@ class VaultfireProtocolStack:
             identity_ens=identity_ens,
             output_path=mythos_path,
         )
+        self.cognitive_equilibrium = CognitiveEquilibriumEngine(
+            identity_handle=identity_handle,
+            identity_ens=identity_ens,
+        )
+        self.truthfield_resonator = TruthfieldResonator()
+        self.compassion_overdrive = CompassionOverdriveLayer()
+        self._moral_telemetry: List[Mapping[str, object]] = []
         self.ethics_monitor = BehavioralEthicsMonitor()
         self.consent_first_mirror = ConsentFirstMirror(self.ethics_monitor)
         self.disclosure_trail = DisclosureShieldTrailEngine()
@@ -292,6 +314,9 @@ class VaultfireProtocolStack:
                 DisclosureShieldTrailEngine,
                 BehavioralEthicsMonitor,
                 ConsentFirstMirror,
+                CognitiveEquilibriumEngine,
+                TruthfieldResonator,
+                CompassionOverdriveLayer,
             ]
         )
         from vaultfire.core.cli import GhostkeyCLI
@@ -303,8 +328,23 @@ class VaultfireProtocolStack:
                 "audit trail export",
                 "ethics check/lock-report",
                 "unlock verify --ethics --consent",
+                "truthfield verify",
+                "compassion boost",
+                "balance recalibrate",
+                "ethics monitor --auto-correct",
+                "loopstate visualize",
             ]
         )
+        if not self._adaptive_cycle_config:
+            self.register_adaptive_cycle(
+                {
+                    "calibration_interval": "dynamic",
+                    "reinforcement_model": "belief-integrity-recall",
+                    "error_tolerance": "morality-first",
+                    "auto_correct_bias": True,
+                }
+            )
+        self.adaptive_cycle_manifest = self.adaptive_cycle()
         self.myth_mode.ensure_bootstrap()
         self.behavioral_compression.compress(
             {
@@ -349,6 +389,10 @@ class VaultfireProtocolStack:
                 "enhancements": self.enhancement_confirmation(),
                 "system_status": self.system_status(),
                 "myth_compression": self.myth_mode.status(),
+                "moral_equilibrium": self.cognitive_equilibrium.status(),
+                "truthfield": self.truthfield_resonator.status(),
+                "compassion_overdrive": self.compassion_overdrive.status(),
+                "adaptive_cycle": self.adaptive_cycle_manifest,
             }
         )
         summary["myth_echo_bonus"] = summary["myth_compression"]["myth_echo_bonus"]
@@ -362,6 +406,10 @@ class VaultfireProtocolStack:
                 "system_status",
                 "myth_compression",
                 "myth_echo_bonus",
+                "moral_equilibrium",
+                "truthfield",
+                "compassion_overdrive",
+                "adaptive_cycle",
             ),
         )
         tracked = self.privacy_shield.track_event(
@@ -378,10 +426,17 @@ class VaultfireProtocolStack:
         )
 
     def _ingest_action(self, action: Mapping[str, object]) -> None:
+        def _safe_float(value: object, default: float = 0.0) -> float:
+            try:
+                return float(value)  # type: ignore[arg-type]
+            except (TypeError, ValueError):
+                return default
+
         record = self.conscious.record_action(action)
         self.time_engine.register_action(action)
         compression = self.behavioral_compression.compress(action)
         self.conscience_mirror.ingest(action)
+        tags = tuple(action.get("tags", ()))
         belief = self.conscious.belief_health()
         action_alignment = max(0.0, min((record.belief_delta + 1.0) / 2.0, 1.0))
         result_alignment = max(0.0, min(1.0, self.time_engine.mmi.get_score() / 100.0))
@@ -428,6 +483,50 @@ class VaultfireProtocolStack:
                 "trusted": ethics_review["trusted"],
                 "consent_verified": consent_report["verified"],
             },
+        )
+        moral_pressure = _safe_float(action.get("pressure", action.get("tension", 0.0)))
+        emotion = action.get("emotion") or action.get("ethic", "focus")
+        equilibrium_event = self.cognitive_equilibrium.balance(
+            belief=belief,
+            action_alignment=action_alignment,
+            result_alignment=result_alignment,
+            emotion=str(emotion),
+            moral_pressure=moral_pressure,
+            tags=tags,
+        )
+        confidence_signal = _safe_float(action.get("confidence", belief), belief)
+        bias_signal = _safe_float(action.get("bias", action.get("alignment_bias", 0.0)))
+        truth_snapshot = self.truthfield_resonator.scan(
+            statement=str(
+                action.get(
+                    "statement",
+                    action.get("summary", action.get("type", "action")),
+                )
+            ),
+            confidence=confidence_signal,
+            source=str(action.get("channel", action.get("source", "cli"))),
+            source_bias=bias_signal,
+            tags=tags,
+            contradictions=action.get("contradictions"),
+        )
+        severity_hint = max(
+            _safe_float(action.get("distress"), 0.0),
+            _safe_float(action.get("urgency"), 0.0),
+            _safe_float(action.get("risk"), 0.0),
+        )
+        severity = severity_hint if severity_hint > 0 else abs(result_alignment - belief)
+        compassion_event = self.compassion_overdrive.boost(
+            context=str(action.get("type", "action")),
+            severity=severity,
+            empathy_tags=tags,
+            consent_granted=bool(action.get("consent", True)),
+        )
+        self._moral_telemetry.append(
+            {
+                "equilibrium": equilibrium_event,
+                "truthfield": truth_snapshot,
+                "compassion": compassion_event,
+            }
         )
         self.mythos.weave(
             source=str(action.get("type", "action")),
@@ -512,6 +611,10 @@ class VaultfireProtocolStack:
         status["Enhancement_Confirmation"] = EnhancementConfirmComposer.status()
         status["Integration_Manifest"] = list(self.integration_manifest)
         status["CLI_Manifest"] = self.cli_manifest
+        status["Moral_Equilibrium"] = self.cognitive_equilibrium.status()
+        status["Truthfield"] = self.truthfield_resonator.status()
+        status["Compassion_Overdrive"] = self.compassion_overdrive.status()
+        status["Adaptive_Cycle"] = self.adaptive_cycle_manifest
         status["Architect"] = {"ens": self.architect_ens, "history": list(self.architect_history())}
         return status
 
@@ -528,8 +631,15 @@ class VaultfireProtocolStack:
                     "integrated_at": timestamp,
                 }
             )
-        EnhancementConfirmComposer.sync_with(_DEFAULT_CONFIRMATION_SOURCES)
-        EnhancementConfirmComposer.annotate(integration_manifest=list(manifest))
+        sources = list(dict.fromkeys(_DEFAULT_CONFIRMATION_SOURCES + _MORAL_EQUILIBRIUM_SOURCES))
+        EnhancementConfirmComposer.sync_with(sources)
+        annotations: Dict[str, object] = {
+            "integration_manifest": list(manifest),
+            "moral_equilibrium_loop": list(_MORAL_EQUILIBRIUM_SOURCES),
+        }
+        if cls._adaptive_cycle_config:
+            annotations["adaptive_cycle"] = dict(cls._adaptive_cycle_config)
+        EnhancementConfirmComposer.annotate(**annotations)
         return tuple(manifest)
 
     @classmethod
@@ -547,6 +657,29 @@ class VaultfireProtocolStack:
     @classmethod
     def architect_history(cls) -> Sequence[Mapping[str, object]]:
         return tuple(cls._architect_history)
+
+    @classmethod
+    def register_adaptive_cycle(cls, config: Mapping[str, object]) -> Mapping[str, object]:
+        payload = {
+            "calibration_interval": str(
+                config.get("calibration_interval", "dynamic")
+            ),
+            "reinforcement_model": str(
+                config.get("reinforcement_model", "belief-integrity-recall")
+            ),
+            "error_tolerance": str(config.get("error_tolerance", "morality-first")),
+            "auto_correct_bias": bool(config.get("auto_correct_bias", True)),
+        }
+        cls._adaptive_cycle_config = payload
+        EnhancementConfirmComposer.annotate(adaptive_cycle=dict(payload))
+        return dict(payload)
+
+    @classmethod
+    def adaptive_cycle(cls) -> Mapping[str, object]:
+        return dict(cls._adaptive_cycle_config)
+
+    def moral_telemetry(self) -> Sequence[Mapping[str, object]]:
+        return tuple(self._moral_telemetry)
 
 
 # ---------------------------------------------------------------------------
