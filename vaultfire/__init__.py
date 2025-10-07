@@ -11,6 +11,7 @@ import importlib
 from typing import Any, Dict, Iterable
 
 __all__ = [
+    "echain",
     "echo",
     "growth",
     "satellite",
@@ -39,6 +40,7 @@ __all__ = [
 ]
 
 _LAZY_MODULES: Dict[str, str] = {
+    "echain": ".echain",
     "echo": ".echo",
     "growth": ".growth",
     "satellite": ".satellite",
