@@ -19,6 +19,7 @@ from .soul_loop_fabric_engine import SoulLoopFabricEngine
 from .temporal_dreamcatcher_engine import TemporalDreamcatcherEngine
 from .vaultfire_enhancement_stack import (
     ConscienceMirrorVerificationLayer,
+    EnhancementConfirmComposer,
     LoopSingularityDetectorEngine,
     QuantumDriftSynchronizer,
     TemporalBehavioralCompressionEngine,
@@ -52,6 +53,7 @@ __all__ = [
     "TemporalDreamcatcherEngine",
     "TemporalBehavioralCompressionEngine",
     "ConscienceMirrorVerificationLayer",
+    "EnhancementConfirmComposer",
     "LoopSingularityDetectorEngine",
     "QuantumDriftSynchronizer",
     "VaultfireMythosEngine",

@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
-from typing import Iterable, Mapping, MutableSequence, Sequence
+from typing import Iterable, Mapping, MutableMapping, MutableSequence, Sequence
 
 from vaultfire.quantum.hashmirror import QuantumHashMirror
 
@@ -475,6 +475,87 @@ class VaultfireMythosEngine:
         return bool(self._fragments)
 
 
+class EnhancementConfirmComposer:
+    """Orchestrates the final confirmation payload for enhancement unlocks."""
+
+    _synced_sources: tuple[str, ...] = ()
+    _synced_at: str | None = None
+    _sync_checksum: str | None = None
+    _annotations: MutableMapping[str, object] = {}
+
+    @classmethod
+    def sync_with(cls, sources: Iterable[str]) -> Mapping[str, object]:
+        """Register telemetry sources that participate in the confirmation."""
+
+        normalised: list[str] = []
+        seen: set[str] = set()
+        for source in sources:
+            label = str(source).strip()
+            if not label:
+                continue
+            if label in seen:
+                continue
+            seen.add(label)
+            normalised.append(label)
+        cls._synced_sources = tuple(normalised)
+        cls._synced_at = _now_ts()
+        digest = hashlib.sha256()
+        for label in cls._synced_sources:
+            digest.update(label.encode("utf-8"))
+        digest.update(cls._synced_at.encode("utf-8"))
+        cls._sync_checksum = digest.hexdigest()
+        cls._annotations = {
+            "sources": list(cls._synced_sources),
+            "synced_at": cls._synced_at,
+            "checksum": cls._sync_checksum,
+        }
+        return dict(cls._annotations)
+
+    @classmethod
+    def annotate(cls, **metadata: object) -> Mapping[str, object]:
+        """Attach additional metadata for downstream confirmations."""
+
+        if not cls._annotations:
+            cls.sync_with(())
+        cls._annotations.update({key: metadata[key] for key in metadata})
+        return dict(cls._annotations)
+
+    @classmethod
+    def compose(
+        cls,
+        tbc: TemporalBehavioralCompressionEngine,
+        cmv: ConscienceMirrorVerificationLayer,
+        lsd: LoopSingularityDetectorEngine,
+        qds: QuantumDriftSynchronizer,
+        mythos: VaultfireMythosEngine,
+        *,
+        include_logs: bool = False,
+        extra: Mapping[str, object] | None = None,
+    ) -> Mapping[str, object]:
+        base = compose_enhancement_confirmation(
+            tbc,
+            cmv,
+            lsd,
+            qds,
+            mythos,
+            include_logs=include_logs,
+        )
+        annotations = dict(cls._annotations) if cls._annotations else {}
+        if annotations:
+            base.setdefault("confirmation_sources", annotations)
+        if extra:
+            base.update({key: extra[key] for key in extra})
+        return base
+
+    @classmethod
+    def status(cls) -> Mapping[str, object]:
+        return {
+            "sources": list(cls._synced_sources),
+            "synced_at": cls._synced_at,
+            "checksum": cls._sync_checksum,
+        }
+
+
 def compose_enhancement_confirmation(
     tbc: TemporalBehavioralCompressionEngine,
     cmv: ConscienceMirrorVerificationLayer,
@@ -521,5 +602,6 @@ __all__ = [
     "QuantumDriftSynchronizer",
     "VaultfireMythosEngine",
     "compose_enhancement_confirmation",
+    "EnhancementConfirmComposer",
 ]
 

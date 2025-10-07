@@ -14,15 +14,23 @@ from vaultfire.modules.predictive_yield_fabric import PredictiveYieldFabric
 from vaultfire.modules.myth_compression_mode import MythCompressionMode
 from vaultfire.modules.vaultfire_enhancement_stack import (
     ConscienceMirrorVerificationLayer,
+    EnhancementConfirmComposer,
     LoopSingularityDetectorEngine,
     QuantumDriftSynchronizer,
     TemporalBehavioralCompressionEngine,
     VaultfireMythosEngine,
-    compose_enhancement_confirmation,
 )
 from vaultfire.protocol.signal_echo import SignalEchoEngine
 from vaultfire.quantum.hashmirror import QuantumHashMirror
 from vaultfire.privacy_integrity import PrivacyIntegrityShield, get_privacy_shield
+from vaultfire.privacy import (
+    ConsentGuardianLayer,
+    EchoAnonymizerEngine,
+    GhostkeyPrivacyHalo,
+    VaultTraceEraser,
+)
+from vaultfire.legal import DisclosureShieldTrailEngine
+from vaultfire.ethics import BehavioralEthicsMonitor, ConsentFirstMirror
 
 _yield_module = import_module("vaultfire.yield")
 PulseSync = getattr(_yield_module, "PulseSync")
@@ -30,6 +38,14 @@ TemporalGiftMatrixEngine = getattr(_yield_module, "TemporalGiftMatrixEngine")
 
 IDENTITY_HANDLE = "bpow20.cb.id"
 IDENTITY_ENS = "ghostkey316.eth"
+
+_DEFAULT_CONFIRMATION_SOURCES = (
+    "PulsewatchMetrics",
+    "LoopCompressionLogs",
+    "AnonymizationProof",
+    "EthicsValidationHash",
+    "DisclosureAuditTrail",
+)
 
 
 def _now_ts() -> str:
@@ -188,6 +204,11 @@ class GiftMatrixV1:
 class VaultfireProtocolStack:
     """Convenience wrapper bundling the protocol systems."""
 
+    _architect_handle: str = IDENTITY_ENS
+    _architect_history: List[Mapping[str, object]] = [
+        {"architect": IDENTITY_ENS, "assigned_at": _now_ts()}
+    ]
+
     def __init__(
         self,
         *,
@@ -226,6 +247,7 @@ class VaultfireProtocolStack:
             identity_ens=identity_ens,
             privacy_shield=self.privacy_shield,
         )
+        self.privacy_shield.toggle_tracking(True)
         self.behavioral_compression = TemporalBehavioralCompressionEngine(
             identity_handle=identity_handle,
             identity_ens=identity_ens,
@@ -251,6 +273,37 @@ class VaultfireProtocolStack:
             identity_handle=identity_handle,
             identity_ens=identity_ens,
             output_path=mythos_path,
+        )
+        self.ethics_monitor = BehavioralEthicsMonitor()
+        self.consent_first_mirror = ConsentFirstMirror(self.ethics_monitor)
+        self.disclosure_trail = DisclosureShieldTrailEngine()
+        self.integration_manifest = self.integrate(
+            [
+                TemporalBehavioralCompressionEngine,
+                ConscienceMirrorVerificationLayer,
+                LoopSingularityDetectorEngine,
+                QuantumDriftSynchronizer,
+                VaultfireMythosEngine,
+                MythCompressionMode,
+                ConsentGuardianLayer,
+                EchoAnonymizerEngine,
+                VaultTraceEraser,
+                GhostkeyPrivacyHalo,
+                DisclosureShieldTrailEngine,
+                BehavioralEthicsMonitor,
+                ConsentFirstMirror,
+            ]
+        )
+        from vaultfire.core.cli import GhostkeyCLI
+
+        self.cli_manifest = GhostkeyCLI.add_subcommands(
+            [
+                "mythos compress/view/export/share",
+                "privacy compress/anonymize/consent-verify",
+                "audit trail export",
+                "ethics check/lock-report",
+                "unlock verify --ethics --consent",
+            ]
         )
         self.myth_mode.ensure_bootstrap()
         self.behavioral_compression.compress(
@@ -284,6 +337,7 @@ class VaultfireProtocolStack:
         self.predictive.register_export("core", 1.0)
         self.predictive.forecast(self.conscious.belief_health(), 120.0)
         self.conscience_mirror.conscience_sync("initialisation", threshold=0.55)
+        self.architect_ens = self.architect()
 
     def pulsewatch(self) -> Mapping[str, object]:
         summary = dict(self.gift_matrix.pulse_watch())
@@ -343,6 +397,20 @@ class VaultfireProtocolStack:
                 "external_signal": signal_value,
             }
         )
+        ethics_review = self.ethics_monitor.evaluate(
+            {
+                "ethic": action.get("ethic", action.get("intent", "aligned")),
+                "alignment": action_alignment,
+                "result_alignment": result_alignment,
+                "consent": bool(action.get("consent", True)),
+                "source": action.get("type", "action"),
+            }
+        )
+        consent_report = self.consent_first_mirror.verify(
+            str(action.get("actor", self.identity_handle)),
+            consent=bool(action.get("consent", True)),
+            review=ethics_review,
+        )
         self.loop_detector.observe(
             belief=belief,
             action_alignment=action_alignment,
@@ -350,6 +418,15 @@ class VaultfireProtocolStack:
             context={
                 "thresholds": compression["thresholds_triggered"],
                 "nudge": drift_payload["nudge"],
+            },
+        )
+        self.disclosure_trail.record(
+            "vaultfire.action",
+            {
+                "interaction": str(action.get("interaction_id", action.get("id", "unknown"))),
+                "ethic": ethics_review["ethic"],
+                "trusted": ethics_review["trusted"],
+                "consent_verified": consent_report["verified"],
             },
         )
         self.mythos.weave(
@@ -408,17 +485,23 @@ class VaultfireProtocolStack:
         return payload
 
     def enhancement_confirmation(self, *, include_logs: bool = False) -> Mapping[str, object]:
-        return compose_enhancement_confirmation(
+        extra = {
+            "ethics": self.ethics_monitor.status(),
+            "consent_mirror": self.consent_first_mirror.status(),
+            "disclosure_trail": self.disclosure_trail.status(),
+        }
+        return EnhancementConfirmComposer.compose(
             self.behavioral_compression,
             self.conscience_mirror,
             self.loop_detector,
             self.quantum_drift,
             self.mythos,
             include_logs=include_logs,
+            extra=extra,
         )
 
     def system_status(self) -> Mapping[str, object]:
-        return {
+        status = {
             "Codex_Status": "🔥 READY 🔥",
             "Ghostkey_CLI": "Activated & Trusted",
             "Engine_Stack": "Synced",
@@ -426,6 +509,44 @@ class VaultfireProtocolStack:
             "Telemetry": "CLI + enhancement unlock telemetry live",
             "metadata": self.metadata,
         }
+        status["Enhancement_Confirmation"] = EnhancementConfirmComposer.status()
+        status["Integration_Manifest"] = list(self.integration_manifest)
+        status["CLI_Manifest"] = self.cli_manifest
+        status["Architect"] = {"ens": self.architect_ens, "history": list(self.architect_history())}
+        return status
+
+    @classmethod
+    def integrate(cls, modules: Iterable[type]) -> Sequence[Mapping[str, object]]:
+        manifest = []
+        timestamp = _now_ts()
+        for module in modules:
+            label = getattr(module, "__name__", str(module))
+            manifest.append(
+                {
+                    "module": label,
+                    "namespace": getattr(module, "__module__", ""),
+                    "integrated_at": timestamp,
+                }
+            )
+        EnhancementConfirmComposer.sync_with(_DEFAULT_CONFIRMATION_SOURCES)
+        EnhancementConfirmComposer.annotate(integration_manifest=list(manifest))
+        return tuple(manifest)
+
+    @classmethod
+    def assign_architect(cls, ens: str) -> Mapping[str, object]:
+        entry = {"architect": str(ens), "assigned_at": _now_ts()}
+        cls._architect_handle = str(ens)
+        cls._architect_history.append(entry)
+        EnhancementConfirmComposer.annotate(architect=str(ens))
+        return dict(entry)
+
+    @classmethod
+    def architect(cls) -> str:
+        return cls._architect_handle
+
+    @classmethod
+    def architect_history(cls) -> Sequence[Mapping[str, object]]:
+        return tuple(cls._architect_history)
 
 
 # ---------------------------------------------------------------------------
