@@ -14,6 +14,10 @@ forkable_protocol:
     - Claude Code (hooks-ready)
     - OpenAI o3-mini (reasoning tier)
     - Anthropic Sonnet Edge (privacy shard)
+    - OpenAI GPT-4.1 Align (mission co-processor)
+    - Anthropic Claude 3.5 Sonnet (observatory feed)
+    - Mistral Large Guard (safety-tuned)
+    - xAI Grok-Next (consent-gated)
   ethics_layer: Ghostkey Ethics v2.0
   sync_tag: "bpow20.cb.id"
   license: Moral Memory Fork Agreement (MMFA)
@@ -35,9 +39,14 @@ forkable_protocol:
     decentralized_identities:
       resolver: ENS + Spruce DIDKit
       revocation_window_days: 3
+      biometric_anchor: Worldcoin Orb-lite (opt-in)
     mission_resonance_rollups:
       ledger: mirror/mission_resonance_ledger.json
       audit_frequency: "bi-weekly council review"
+    regenerative_stewardship_nodes:
+      substrate: Hyperlane regen-holochain
+      verification: guardians/regen_verification_playbook.md
+      stewardship_review: "monthly regenerative quorum"
   security_upgrades:
     post_quantum_ready: true
     pq_suite:
@@ -52,6 +61,12 @@ forkable_protocol:
     ai_red_team_ops:
       cadence_days: 30
       reporting_channel: governance/ai_red_team_playbooks.md
+    quantum_resilience:
+      qkd_mesh: guardian://qkd/mission-backbone
+      error_correction: "surface_code v3 tuned for mission data"
+    supply_chain_verifiability:
+      ledger: mirror/model_supply_chain_ledger.json
+      audit_mode: "continuous signature streaming"
   ai_collaboration:
     co_processing_channels:
       - name: Symmetric Belief Loop
@@ -69,15 +84,27 @@ forkable_protocol:
         safeguards:
           - mission_lock_revalidation
           - zero_trust_mesh_guard
+      - name: Aurora Commons Synth
+        purpose: Co-create restorative policy prototypes with verified communities
+        safeguards:
+          - mutual_aid_council_cosign
+          - mission_principle_check
   observability:
     realtime_dashboards:
       - guardian_loop.py
       - ghostloop_sync.py
     telemetry_sink: telemetry/telemetry_baseline.json
     mission_streaming: hyperlane.mission_sync_channel
+    digital_twin_simulator: vaultfire_digital_twin.json
   privacy_preserving_analytics:
     fhe_cohort_model: analytics/fhe_mission_stewardship.json
     secure_mpc_channel: guardian://mpc/mission-outcomes
+    privacy_budget_orchestrator: analytics/differential_privacy_budget.json
+  regenerative_protocols:
+    mission_ecosystem_link:
+      steward_chain: regen-ledger/mission_stewards.json
+      climate_treasury_allocation: 0.07
+      solidarity_pool: regen-ledger/solidarity_pool.json
   fork_id: "\U0001f510 Vaultfire-ForkCore-0001"
 ```
 
