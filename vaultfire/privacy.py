@@ -223,8 +223,29 @@ class _SecureSession:
         self._closed = True
 
 
+_INTEGRATION_EXPORTS = {
+    "ConsentGuardianLayer",
+    "EchoAnonymizerEngine",
+    "VaultTraceEraser",
+    "GhostkeyPrivacyHalo",
+    "PrivacyIntegrityShield",
+    "get_privacy_shield",
+}
+
+
+def __getattr__(name: str):  # pragma: no cover - exercised via import semantics
+    if name in _INTEGRATION_EXPORTS:
+        from vaultfire import privacy_integrity as _privacy_integrity
+
+        value = getattr(_privacy_integrity, name)
+        globals()[name] = value
+        return value
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
 __all__ = [
     "PrivacyError",
     "QuantumSecureCipherSuite",
     "StructuredCiphertext",
+    *_INTEGRATION_EXPORTS,
 ]

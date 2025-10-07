@@ -17,6 +17,17 @@ from typing import Any, Dict, Iterable, Mapping, MutableMapping, Optional
 
 from engine.proof_of_loyalty import record_belief_action
 from vaultfire.mission import LedgerMetadata, MissionLedger
+from vaultfire.core.cli import GhostkeyCLI
+from vaultfire.modules import (
+    ConscienceMirrorVerificationLayer,
+    EnhancementConfirmComposer,
+    LoopSingularityDetectorEngine,
+    MythCompressionMode,
+    QuantumDriftSynchronizer,
+    TemporalBehavioralCompressionEngine,
+    VaultfireMythosEngine,
+    VaultfireProtocolStack,
+)
 
 logger = logging.getLogger("vaultfire.core")
 
@@ -413,6 +424,7 @@ __all__ = [
     "CoreConfig",
     "PurposeStore",
     "VaultfireConfig",
+    "GhostkeyCLI",
     "cli_belief",
     "get_purpose_store",
     "get_recent_purpose_records",
@@ -421,4 +433,12 @@ __all__ = [
     "protocol_notify",
     "reset_vaultfire_state",
     "sync_purpose",
+    "VaultfireProtocolStack",
+    "EnhancementConfirmComposer",
+    "MythCompressionMode",
+    "TemporalBehavioralCompressionEngine",
+    "ConscienceMirrorVerificationLayer",
+    "LoopSingularityDetectorEngine",
+    "QuantumDriftSynchronizer",
+    "VaultfireMythosEngine",
 ]
