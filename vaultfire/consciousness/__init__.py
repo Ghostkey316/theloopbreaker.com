@@ -10,6 +10,7 @@ __all__ = [
     "CognitiveEquilibriumEngine",
     "TruthfieldResonator",
     "CompassionOverdriveLayer",
+    "PulsewatchSyncStatus",
 ]
 
 
@@ -327,3 +328,58 @@ class CompassionOverdriveLayer:
     @property
     def events(self) -> Sequence[Mapping[str, object]]:
         return tuple(event.to_payload() for event in self._history)
+
+
+@dataclass(frozen=True)
+class _PulsewatchAlignment:
+    timestamp: str
+    axes: Sequence[str]
+    status: str
+    telemetry: Mapping[str, object]
+
+    def to_payload(self) -> Mapping[str, object]:
+        return {
+            "timestamp": self.timestamp,
+            "axes": list(self.axes),
+            "status": self.status,
+            "telemetry": dict(self.telemetry),
+        }
+
+
+class PulsewatchSyncStatus:
+    """Tracks cross-domain alignment confirmations for Pulsewatch telemetry."""
+
+    _history: MutableSequence[_PulsewatchAlignment] = []
+
+    @classmethod
+    def confirm_alignment(
+        cls,
+        *axes: str,
+        status: str = "aligned",
+        telemetry: Mapping[str, object] | None = None,
+    ) -> Mapping[str, object]:
+        """Record a synchronisation event across the provided axes."""
+
+        normalised_axes = tuple(
+            axis.strip().lower()
+            for axis in (axes or ("alignment",))
+            if str(axis).strip()
+        )
+        if not normalised_axes:
+            raise ValueError("at least one alignment axis must be provided")
+        payload = _PulsewatchAlignment(
+            timestamp=_now_ts(),
+            axes=normalised_axes,
+            status=str(status or "aligned").lower(),
+            telemetry=dict(telemetry or {}),
+        )
+        cls._history.append(payload)
+        return payload.to_payload()
+
+    @classmethod
+    def history(cls) -> Sequence[Mapping[str, object]]:
+        return tuple(item.to_payload() for item in cls._history)
+
+    @classmethod
+    def last_alignment(cls) -> Mapping[str, object] | None:
+        return cls._history[-1].to_payload() if cls._history else None

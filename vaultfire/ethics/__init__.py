@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Mapping, MutableSequence, Sequence
 
-__all__ = ["BehavioralEthicsMonitor", "ConsentFirstMirror"]
+__all__ = ["BehavioralEthicsMonitor", "ConsentFirstMirror", "EthicsAutoCorrectSuite"]
 
 
 def _now_ts() -> str:
@@ -121,4 +121,125 @@ class ConsentFirstMirror:
             "verifications_recorded": len(self._verifications),
             "last_verification": self._verifications[-1] if self._verifications else None,
         }
+
+
+@dataclass(frozen=True)
+class _AutoCorrectCheck:
+    timestamp: str
+    name: str
+    passed: bool
+    details: Mapping[str, object]
+
+    def to_payload(self) -> Mapping[str, object]:
+        return {
+            "timestamp": self.timestamp,
+            "name": self.name,
+            "passed": self.passed,
+            "details": dict(self.details),
+        }
+
+
+@dataclass(frozen=True)
+class _AutoCorrectRun:
+    timestamp: str
+    checks: Sequence[_AutoCorrectCheck]
+    verified: bool
+    summary: Mapping[str, object]
+
+    def to_payload(self) -> Mapping[str, object]:
+        return {
+            "timestamp": self.timestamp,
+            "verified": self.verified,
+            "checks": [check.to_payload() for check in self.checks],
+            "summary": dict(self.summary),
+        }
+
+
+class EthicsAutoCorrectSuite:
+    """High-level helper that exercises multiple ethics safeguards."""
+
+    _runs: MutableSequence[_AutoCorrectRun] = []
+
+    @classmethod
+    def full_validation(cls, *, threshold: float = 0.72) -> Mapping[str, object]:
+        monitor = BehavioralEthicsMonitor(threshold=threshold)
+        mirror = ConsentFirstMirror(monitor)
+
+        trusted_event = monitor.evaluate(
+            {
+                "ethic": "aligned",
+                "alignment": min(1.0, threshold + 0.15),
+                "consent": True,
+                "source": "auto-correct-suite",
+            }
+        )
+        consent_verification = mirror.verify("baseline", consent=True, review=trusted_event)
+
+        risky_event = monitor.evaluate(
+            {
+                "ethic": "rumor",
+                "alignment": 0.31,
+                "consent": True,
+                "result_alignment": 0.3,
+                "source": "bias-audit",
+            }
+        )
+
+        consent_block = mirror.verify(
+            "consent-block",
+            consent=False,
+            alignment=threshold + 0.2,
+            ethic="aligned",
+        )
+
+        checks = (
+            _AutoCorrectCheck(
+                timestamp=_now_ts(),
+                name="baseline_alignment",
+                passed=bool(trusted_event.get("trusted")),
+                details={"alignment_score": trusted_event.get("alignment_score")},
+            ),
+            _AutoCorrectCheck(
+                timestamp=_now_ts(),
+                name="consent_verification",
+                passed=bool(consent_verification.get("verified")),
+                details={"ethic": consent_verification.get("ethic")},
+            ),
+            _AutoCorrectCheck(
+                timestamp=_now_ts(),
+                name="bias_detection",
+                passed=not bool(risky_event.get("trusted")),
+                details={"ethic": risky_event.get("ethic"), "alignment_score": risky_event.get("alignment_score")},
+            ),
+            _AutoCorrectCheck(
+                timestamp=_now_ts(),
+                name="consent_block",
+                passed=not bool(consent_block.get("verified")),
+                details={"consent": False, "ethic": consent_block.get("ethic")},
+            ),
+        )
+
+        all_passed = all(check.passed for check in checks)
+        summary = {
+            "monitor": monitor.status(),
+            "mirror": mirror.status(),
+            "total_checks": len(checks),
+            "passed": sum(int(check.passed) for check in checks),
+        }
+        run = _AutoCorrectRun(
+            timestamp=_now_ts(),
+            checks=checks,
+            verified=all_passed,
+            summary=summary,
+        )
+        cls._runs.append(run)
+        return run.to_payload()
+
+    @classmethod
+    def history(cls) -> Sequence[Mapping[str, object]]:
+        return tuple(run.to_payload() for run in cls._runs)
+
+    @classmethod
+    def last_run(cls) -> Mapping[str, object] | None:
+        return cls._runs[-1].to_payload() if cls._runs else None
 
