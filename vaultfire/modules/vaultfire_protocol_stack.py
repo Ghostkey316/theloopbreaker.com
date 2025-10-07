@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from importlib import import_module
 from typing import Dict, Iterable, List, Mapping, Sequence
 
+from vaultfire.instinct import InstinctSuite
 from vaultfire.modules._metadata import build_metadata
 from vaultfire.modules.conscious_state_engine import ConsciousStateEngine
 from vaultfire.modules.ethic_resonant_time_engine import EthicResonantTimeEngine
@@ -299,6 +300,9 @@ class VaultfireProtocolStack:
         self.ethics_monitor = BehavioralEthicsMonitor()
         self.consent_first_mirror = ConsentFirstMirror(self.ethics_monitor)
         self.disclosure_trail = DisclosureShieldTrailEngine()
+        self.instinct_layer: Dict[str, Mapping[str, object]] = {}
+        self._memory_links: List[Mapping[str, object]] = []
+        self._protocol_commits: List[Mapping[str, object]] = []
         self.integration_manifest = self.integrate(
             [
                 TemporalBehavioralCompressionEngine,
@@ -680,6 +684,78 @@ class VaultfireProtocolStack:
 
     def moral_telemetry(self) -> Sequence[Mapping[str, object]]:
         return tuple(self._moral_telemetry)
+
+    def inject_instinct_layer(
+        self, modules: Mapping[str, object]
+    ) -> Mapping[str, Mapping[str, object]]:
+        """Attach instinct primitives and broadcast the snapshot."""
+
+        snapshot = InstinctSuite.attach(modules)
+        self.instinct_layer = dict(snapshot)
+        self._moral_telemetry.append(
+            {
+                "type": "instinct-layer",
+                "timestamp": _now_ts(),
+                "modules": tuple(sorted(snapshot)),
+            }
+        )
+        return {name: dict(payload) for name, payload in snapshot.items()}
+
+    def sync_with_memory(
+        self, channel: str, priority: str = "instinct"
+    ) -> Mapping[str, object]:
+        """Record a memory sync event for the instinct layer."""
+
+        if not self.instinct_layer:
+            raise RuntimeError("Instinct layer has not been injected")
+        record = {
+            "channel": str(channel),
+            "priority": str(priority),
+            "synced_at": _now_ts(),
+            "modules": {
+                name: {
+                    "status": payload["status"],
+                    "heartbeat": payload["heartbeat"],
+                }
+                for name, payload in self.instinct_layer.items()
+            },
+        }
+        self._memory_links.append(record)
+        self._moral_telemetry.append({"type": "memory-sync", "payload": record})
+        return dict(record)
+
+    def confirm_commit(
+        self,
+        version: str,
+        *,
+        log: str,
+        sources: Sequence[str] | None = None,
+    ) -> Mapping[str, object]:
+        """Persist a protocol commit acknowledgement with instinct context."""
+
+        record = {
+            "version": str(version),
+            "log": str(log),
+            "confirmed_at": _now_ts(),
+            "sources": tuple(sources or _DEFAULT_CONFIRMATION_SOURCES),
+        }
+        if self.instinct_layer:
+            record["instinct_status"] = {
+                name: payload["status"] for name, payload in self.instinct_layer.items()
+            }
+        self._protocol_commits.append(record)
+        self._moral_telemetry.append({"type": "protocol-commit", "payload": record})
+        return dict(record)
+
+    def instinct_memory_links(self) -> Sequence[Mapping[str, object]]:
+        """Return recorded instinct memory syncs."""
+
+        return tuple(dict(entry) for entry in self._memory_links)
+
+    def instinct_commits(self) -> Sequence[Mapping[str, object]]:
+        """Return recorded instinct-aware commits."""
+
+        return tuple(dict(entry) for entry in self._protocol_commits)
 
 
 # ---------------------------------------------------------------------------
