@@ -1,0 +1,48 @@
+mesh:
+  version: 1
+  ethics_framework: ghostkey-316
+  override_policy:
+    escalation_topic: vaultfire.ethics
+    anomaly_threshold: 0.82
+    halt_on_override: true
+  resonance_channels:
+    - id: aurora-alpha
+      neural_profile: vaultfire-neuro-res-01
+      entropy_budget: 256
+      obfuscation:
+        strategy: belief-randomized-blend
+        intensity: high
+        mix_depth: 5
+      symbolic_guards:
+        - predicate: consent_scope_active
+          action: allow
+        - predicate: anomaly_detected
+          action: attenuate
+    - id: aurora-beta
+      neural_profile: vaultfire-neuro-res-02
+      entropy_budget: 192
+      obfuscation:
+        strategy: cohort-diffusion
+        intensity: medium
+        mix_depth: 3
+      symbolic_guards:
+        - predicate: ethics_override_pending
+          action: pause
+        - predicate: consent_expired
+          action: revoke
+  broadcast_padding:
+    max_jitter_ms: 300
+    dummy_packets_per_minute: 45
+    quorum_threshold: 3
+  federated_learning:
+    aggregation_interval_s: 600
+    privacy_budget_epsilon: 0.4
+    clipping_norm: 1.0
+    adaptive_resonance: true
+  mixnet:
+    preferred_relays:
+      - vaultfire-mix-firo
+      - vaultfire-mix-monero
+      - vaultfire-mix-custom
+    retry_limit: 3
+    proof_required: true
