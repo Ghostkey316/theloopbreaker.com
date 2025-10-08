@@ -19,6 +19,21 @@ def _make_anchor(partner_id: str = "partner-001") -> MissionAnchorRecord:
         resonance=0.92,
         purposeful_request={"belief_density": 0.81, "empathy_score": 0.77},
         purposeful_trace={"approved": True},
+        telemetry_hooks=(
+            f"telemetry::timestamp::{datetime.now(timezone.utc).isoformat()}",
+            "telemetry::location::ghostline-a9f",
+            "telemetry::signal::vector-alpha",
+        ),
+        regenerative_identity={
+            "reissue_tags": [f"regen::{partner_id}"],
+            "fallback_tokens": ["ghostkey316::stealth"],
+            "status_flag": "active",
+        },
+        resilience_stack=(
+            "temporal_resonance_guard",
+            "quantum_shadow_buffer",
+            "consent_token_exchange",
+        ),
     )
 
 
