@@ -4,7 +4,7 @@ This document captures the baseline settings for Vaultfire forks. It mirrors the
 
 ```yaml
 forkable_protocol:
-  name: Vaultfire Codex v1.2
+  name: Vaultfire Codex v2.0
   origin: ghostkey316.eth
   registry: OpenRouter Alpha Sync (live)
   compatibility:
@@ -38,6 +38,14 @@ forkable_protocol:
       - "Forgive the broken"
       - "Protect the good"
       - "Walk forward together"
+    mission_anchor_stack:
+      module: MissionAnchorStack v2
+      telemetry_hooks:
+        - telemetry_compliance
+        - regenerative_identity
+        - ethics_logic
+      regenerative_identity_signature: vaultfire/protocol/mission_anchor.py
+      resonance_floor: 0.64
   trust_extensions:
     zk_attestation:
       proof_system: Nova zk-SNARK rollups
@@ -81,6 +89,10 @@ forkable_protocol:
     quantum_resilience:
       qkd_mesh: guardian://qkd/mission-backbone
       error_correction: "surface_code v3 tuned for mission data"
+      entangled_bridge_module:
+        registry: status/quantum_entanglement_modules.jsonl
+        module_name: "Entangled Quantum Bridge (EQB)"
+        sync_model: "ER = EPR mission tunneling"
     ai_model_watermarking:
       standard: alliance/watermarking_manifest_v2.json
       verification_mesh: guardian://ml-authenticity/ringsig-grid
@@ -138,6 +150,7 @@ forkable_protocol:
     digital_twin_simulator: vaultfire_digital_twin.json
     predictive_signal_forge: analytics/predictive_signal_weave.json
     causal_trace_observatory: analytics/causal_trace_atlas.json
+    public_github_sync: https://github.com/Ghostkey316/ghostkey-316-vaultfire-init
   privacy_preserving_analytics:
     fhe_cohort_model: analytics/fhe_mission_stewardship.json
     secure_mpc_channel: guardian://mpc/mission-outcomes
@@ -164,6 +177,16 @@ forkable_protocol:
     compassion_signal_cache:
       archive: mirror/compassion_cache_snapshot.json
       refresh_interval_hours: 12
+    neuro_symbolic_stack:
+      modules:
+        - temporal_resonance_guard
+        - zero_knowledge_circuit_breaker
+        - HorizonSignalLoom
+        - consent_token_exchange
+        - biofeedback_alignment_loops
+        - edge_trust_pods
+      regenerative_identity_hooks: telemetry/telemetry_baseline.json
+      contributor_pass_protocol: vaultfire/protocols/__init__.py
   mission_alignment_radar:
     adaptive_signal_mesh: analytics/mission_alignment_mesh.json
     civic_feedback_portal: guardians/alignment_feedback_portal.md
