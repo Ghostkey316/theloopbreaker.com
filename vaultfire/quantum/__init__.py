@@ -30,10 +30,15 @@ import json
 import os
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
+from hashlib import sha256
 from pathlib import Path
 from typing import Any, Dict, Iterable, Mapping, Sequence
 
-__all__ = ["integrate_quantum_mirror_module", "QuantumMirrorIntegrationError"]
+__all__ = [
+    "append_protocol_module",
+    "integrate_quantum_mirror_module",
+    "QuantumMirrorIntegrationError",
+]
 
 _REGISTRY_PATH_ENV = "VAULTFIRE_QUANTUM_MIRROR_PATH"
 _ALLOWED_VISIBILITY: Mapping[str, str] = {
@@ -146,6 +151,54 @@ def _load_registry(path: Path) -> Dict[str, Any]:
 def _write_registry(path: Path, registry: Mapping[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(dict(registry), indent=2) + "\n")
+
+
+def _normalise_impact(impact: Sequence[str]) -> list[str]:
+    values: list[str] = []
+    for raw in _ensure_iterable("impact", impact):
+        if not isinstance(raw, str):
+            raise QuantumMirrorIntegrationError("impact entries must be strings")
+        trimmed = raw.strip()
+        if not trimmed:
+            raise QuantumMirrorIntegrationError("impact entries cannot be empty")
+        if trimmed not in values:
+            values.append(trimmed)
+    if not values:
+        raise QuantumMirrorIntegrationError("impact must contain at least one entry")
+    return values
+
+
+def append_protocol_module(
+    *,
+    module_name: str,
+    description: str,
+    source_context: str,
+    impact: Sequence[str],
+    registry_path: str | Path | None = None,
+) -> Dict[str, Any]:
+    """Record an entangled quantum module for operational visibility."""
+
+    normalized_name = _ensure_text("module_name", module_name)
+    normalized_description = _ensure_text("description", description)
+    normalized_context = _ensure_text("source_context", source_context)
+    normalized_impact = _normalise_impact(impact)
+
+    record = {
+        "module_name": normalized_name,
+        "description": normalized_description,
+        "source_context": normalized_context,
+        "impact": normalized_impact,
+        "registered_at": _current_timestamp(),
+    }
+    record["entanglement_hash"] = sha256(
+        json.dumps(record, sort_keys=True).encode("utf-8")
+    ).hexdigest()
+
+    path = Path(registry_path) if registry_path else Path("status") / "quantum_entanglement_modules.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(record, sort_keys=True) + "\n")
+    return record
 
 
 def integrate_quantum_mirror_module(

@@ -25,6 +25,9 @@ class MissionAnchorRecord:
     resonance: float
     purposeful_request: Mapping[str, object]
     purposeful_trace: Mapping[str, object]
+    telemetry_hooks: Tuple[str, ...]
+    regenerative_identity: Mapping[str, object]
+    resilience_stack: Tuple[str, ...]
 
     def export(self) -> Dict[str, object]:
         """Return a JSON-serialisable payload for downstream systems."""
@@ -38,6 +41,9 @@ class MissionAnchorRecord:
             "resonance": self.resonance,
             "purposeful_request": dict(self.purposeful_request),
             "purposeful_trace": dict(self.purposeful_trace),
+            "telemetry_hooks": list(self.telemetry_hooks),
+            "regenerative_identity": dict(self.regenerative_identity),
+            "resilience_stack": list(self.resilience_stack),
         }
 
 
@@ -49,6 +55,19 @@ class MissionContinuityAnchor:
     minimum_resonance: float = 0.64
     default_operation: str = _DEFAULT_OPERATION
     extra_tags: Sequence[str] = ("mission", "continuity")
+    telemetry_hooks: Sequence[str] = (
+        "telemetry_compliance",
+        "regenerative_identity",
+        "ethics_logic",
+    )
+    resilience_stack: Sequence[str] = (
+        "temporal_resonance_guard",
+        "zero_knowledge_circuit_breaker",
+        "HorizonSignalLoom",
+        "consent_token_exchange",
+        "biofeedback_alignment_loops",
+        "edge_trust_pods",
+    )
     _anchors: MutableMapping[str, MissionAnchorRecord] = field(default_factory=dict, init=False, repr=False)
 
     def anchor_partner(
@@ -59,6 +78,8 @@ class MissionContinuityAnchor:
         commitments: Iterable[str] | None = None,
         operation: str | None = None,
         extra_tags: Sequence[str] | None = None,
+        telemetry_hooks: Sequence[str] | None = None,
+        resilience_overrides: Sequence[str] | None = None,
     ) -> MissionAnchorRecord:
         """Register a partner mission anchor after Purposeful Scale approval."""
 
@@ -81,7 +102,16 @@ class MissionContinuityAnchor:
             raise PermissionError(f"Purposeful Scale denied mission anchor for {partner_id}: {reason}")
 
         commitments_tuple = self._normalise_commitments(commitments)
-        resonance = self._calculate_resonance(mission_text, commitments_tuple, request)
+        hooks_tuple = self._normalise_hooks(telemetry_hooks)
+        resilience_tuple = self._normalise_resilience(resilience_overrides)
+        identity_profile = self._build_regenerative_identity(normalized_identity, hooks_tuple)
+        resonance = self._calculate_resonance(
+            mission_text,
+            commitments_tuple,
+            request,
+            hooks_tuple,
+            resilience_tuple,
+        )
         if resonance < self.minimum_resonance:
             raise ValueError(
                 f"mission resonance {resonance:.2f} below threshold {self.minimum_resonance:.2f} for {partner_id}"
@@ -97,6 +127,9 @@ class MissionContinuityAnchor:
             resonance=resonance,
             purposeful_request=request,
             purposeful_trace=trace,
+            telemetry_hooks=hooks_tuple,
+            regenerative_identity=identity_profile,
+            resilience_stack=resilience_tuple,
         )
         self._anchors[partner_id] = record
         return record
@@ -174,6 +207,8 @@ class MissionContinuityAnchor:
         mission: str,
         commitments: Tuple[str, ...],
         request: Mapping[str, object],
+        telemetry_hooks: Tuple[str, ...],
+        resilience_stack: Tuple[str, ...],
     ) -> float:
         mission_lower = mission.lower()
         tag_hits = sum(1 for tag in DEFAULT_MISSION_TAGS if tag.lower() in mission_lower)
@@ -189,7 +224,9 @@ class MissionContinuityAnchor:
         except (TypeError, ValueError):
             empathy = 0.5
         ethics_bonus = 0.08 if "ethic" in mission_lower else 0.0
-        resonance = 0.45 + tag_hits * 0.06 + commitment_bonus + ethics_bonus
+        hook_bonus = min(len(telemetry_hooks), 5) * 0.02
+        resilience_bonus = min(len(resilience_stack), 6) * 0.015
+        resonance = 0.45 + tag_hits * 0.06 + commitment_bonus + ethics_bonus + hook_bonus + resilience_bonus
         resonance += 0.12 * min(1.0, belief_density) + 0.09 * min(1.0, empathy)
         return round(min(resonance, 0.99), 4)
 
@@ -208,6 +245,45 @@ class MissionContinuityAnchor:
         }
         encoded = json.dumps(payload, sort_keys=True, default=str).encode("utf-8")
         return sha256(encoded).hexdigest()
+
+    def _normalise_hooks(self, hooks: Sequence[str] | None) -> Tuple[str, ...]:
+        values = list(self.telemetry_hooks)
+        if hooks:
+            values.extend(hooks)
+        return self._dedupe_text(values)
+
+    def _normalise_resilience(self, overrides: Sequence[str] | None) -> Tuple[str, ...]:
+        values = list(self.resilience_stack)
+        if overrides:
+            values.extend(overrides)
+        return self._dedupe_text(values)
+
+    def _dedupe_text(self, values: Iterable[str]) -> Tuple[str, ...]:
+        seen = set()
+        normalised: list[str] = []
+        for raw in values:
+            if not isinstance(raw, str):
+                continue
+            trimmed = raw.strip()
+            if not trimmed or trimmed in seen:
+                continue
+            seen.add(trimmed)
+            normalised.append(trimmed)
+        return tuple(normalised)
+
+    def _build_regenerative_identity(
+        self,
+        identity: Mapping[str, object],
+        hooks: Tuple[str, ...],
+    ) -> Mapping[str, object]:
+        fingerprint_source = json.dumps(identity, sort_keys=True, default=str).encode("utf-8")
+        fingerprint = sha256(fingerprint_source).hexdigest()
+        return {
+            "fingerprint": fingerprint,
+            "hooks": list(hooks),
+            "consent_token": sha256((fingerprint + "::consent").encode("utf-8")).hexdigest(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
 
 
 __all__ = ["MissionContinuityAnchor", "MissionAnchorRecord"]
