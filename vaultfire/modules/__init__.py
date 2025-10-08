@@ -8,6 +8,7 @@ from signal_scrambler import ScrambledSignal, SignalScrambler
 from utils.entropy_seed import EntropySeed, EntropySnapshot
 
 from .conscious_state_engine import ConsciousStateEngine
+from .beliefforge import BeliefForge, BeliefSignal
 from .ethic_resonant_time_engine import EthicResonantTimeEngine
 from .gift_matrix_engine import GiftMatrixEngine
 from .living_memory_ledger import LivingMemoryLedger
@@ -22,8 +23,10 @@ from .myth_compression_mode import (
 from .predictive_yield_fabric import PredictiveYieldFabric
 from .purpose_parallax_engine import PurposeParallaxEngine
 from .quantum_echo_mirror import QuantumEchoMirror
+from .sanctumloop import SanctumLoop, SanctumRecord
 from .soul_loop_fabric_engine import SoulLoopFabricEngine
 from .temporal_dreamcatcher_engine import TemporalDreamcatcherEngine
+from .ultrashadow import UltraShadow
 from .vaultfire22_core import (
     AntiHarvestGrid,
     DriftGenome,
@@ -70,6 +73,8 @@ __all__ = [
     "AntiHarvestGrid",
     "Vaultfire22Core",
     "ConsciousStateEngine",
+    "BeliefForge",
+    "BeliefSignal",
     "EthicResonantTimeEngine",
     "GiftMatrixEngine",
     "LivingMemoryLedger",
@@ -82,8 +87,11 @@ __all__ = [
     "NarrativeStateWeaver",
     "PurposeParallaxEngine",
     "QuantumEchoMirror",
+    "SanctumLoop",
+    "SanctumRecord",
     "SoulLoopFabricEngine",
     "TemporalDreamcatcherEngine",
+    "UltraShadow",
     "TemporalBehavioralCompressionEngine",
     "ConscienceMirrorVerificationLayer",
     "EnhancementConfirmComposer",
