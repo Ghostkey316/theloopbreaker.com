@@ -36,3 +36,10 @@ def test_run_full_forensic_audit_creates_artifacts(tmp_path):
     bundle_log_copy = report.bundle_path / report.log_path.name
     assert bundle_log_copy.exists()
     assert bundle_log_copy.read_text(encoding="utf-8").strip()
+
+
+def test_run_full_forensic_audit_accepts_hardcore_alias(tmp_path):
+    output_dir = tmp_path / "alias_audit"
+    report = run_full_forensic_audit("hardcore", "line_by_line", output_dir)
+
+    assert report.mode == "hard"
