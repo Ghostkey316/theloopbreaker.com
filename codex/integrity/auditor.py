@@ -16,6 +16,11 @@ from typing import Dict, List, Sequence
 ALLOWED_MODES = {"core", "hard", "ultra"}
 ALLOWED_DEPTHS = {"shallow", "standard", "line_by_line"}
 
+# ``hardcore`` has historically been used as an alias for ``hard`` when invoking
+# the audit from external tooling. Supporting the alias avoids breaking
+# downstream scripts while still normalizing to the canonical mode values.
+MODE_ALIASES = {"hardcore": "hard"}
+
 
 @dataclass(slots=True)
 class ModuleAuditFinding:
@@ -90,6 +95,7 @@ def run_full_forensic_audit(
     """
 
     normalized_mode = mode.lower()
+    normalized_mode = MODE_ALIASES.get(normalized_mode, normalized_mode)
     normalized_depth = depth.lower()
     if normalized_mode not in ALLOWED_MODES:
         allowed = ", ".join(sorted(ALLOWED_MODES))
