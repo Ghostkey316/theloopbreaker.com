@@ -13,13 +13,16 @@ from typing import Iterable, Mapping, MutableMapping, Sequence
 __all__ = [
     "finalize_protocol",
     "mirror_trigger",
+    "register_smart_wallet",
     "FinalizeProtocolResult",
     "MirrorTriggerResult",
+    "SmartWalletRegistration",
 ]
 
 _LOG_DIR_ENV = "VAULTFIRE_CODEX_LOG_DIR"
 _DEFAULT_FINALIZATION_LOG = "codex_finalization_log.jsonl"
 _DEFAULT_MIRROR_LOG = "codex_mirror_trigger_log.jsonl"
+_DEFAULT_SMART_WALLET_LOG = "codex_smart_wallet_log.jsonl"
 
 
 @dataclass(frozen=True)
@@ -47,6 +50,19 @@ class MirrorTriggerResult:
     zk_proof_mode: str
     notifications: tuple[str, ...]
     options: Mapping[str, object]
+    timestamp: str
+    checksum: str
+
+
+@dataclass(frozen=True)
+class SmartWalletRegistration:
+    """Structured record returned by :func:`register_smart_wallet`."""
+
+    wallet_id: str
+    ens_name: str
+    contract_type: str
+    features: Mapping[str, object]
+    verified_by: str
     timestamp: str
     checksum: str
 
@@ -208,5 +224,67 @@ def mirror_trigger(
     log_payload = asdict(result)
     log_payload["event"] = "mirror_trigger"
     _append_json_line(_resolve_log_path(_DEFAULT_MIRROR_LOG), log_payload)
+    return result
+
+
+def register_smart_wallet(
+    *,
+    wallet_id: str,
+    ens_name: str,
+    contract_type: str,
+    features: Mapping[str, object],
+    verified_by: str,
+) -> SmartWalletRegistration:
+    """Record a smart wallet registration event and return a structured summary."""
+
+    def _normalize_field(value: str, field: str) -> str:
+        if not isinstance(value, str):
+            raise TypeError(f"{field} must be a string")
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError(f"{field} must not be empty")
+        return normalized
+
+    wallet = _normalize_field(wallet_id, "wallet_id")
+    ens = _normalize_field(ens_name, "ens_name")
+    contract = _normalize_field(contract_type, "contract_type")
+    verifier = _normalize_field(verified_by, "verified_by")
+
+    if not isinstance(features, Mapping):
+        raise TypeError("features must be a mapping")
+
+    normalized_features = {}
+    for key, value in features.items():
+        if not isinstance(key, str) or not key.strip():
+            raise ValueError("features keys must be non-empty strings")
+        normalized_features[key.strip()] = value
+
+    normalized_features = dict(sorted(normalized_features.items()))
+
+    timestamp = datetime.now(timezone.utc).isoformat()
+
+    checksum_payload = {
+        "wallet_id": wallet,
+        "ens_name": ens,
+        "contract_type": contract,
+        "features": normalized_features,
+        "verified_by": verifier,
+        "timestamp": timestamp,
+    }
+    checksum = _generate_checksum(checksum_payload)
+
+    result = SmartWalletRegistration(
+        wallet_id=wallet,
+        ens_name=ens,
+        contract_type=contract,
+        features=normalized_features,
+        verified_by=verifier,
+        timestamp=timestamp,
+        checksum=checksum,
+    )
+
+    log_payload = asdict(result)
+    log_payload["event"] = "register_smart_wallet"
+    _append_json_line(_resolve_log_path(_DEFAULT_SMART_WALLET_LOG), log_payload)
     return result
 
