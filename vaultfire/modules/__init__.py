@@ -27,6 +27,15 @@ from .sanctumloop import SanctumLoop, SanctumRecord
 from .soul_loop_fabric_engine import SoulLoopFabricEngine
 from .temporal_dreamcatcher_engine import TemporalDreamcatcherEngine
 from .ultrashadow import UltraShadow
+from .tiers import (
+    FULL_STACK_MODE,
+    LITE_MODE,
+    ModuleInfo,
+    SUPPORTED_MODES,
+    flatten_modules,
+    get_modules_for_mode,
+    list_modules_by_tier,
+)
 from .vaultfire22_core import (
     AntiHarvestGrid,
     DriftGenome,
@@ -105,4 +114,11 @@ __all__ = [
     "SignalForge",
     "VaultfireDNASyncer",
     "VaultfireProtocolStack",
+    "ModuleInfo",
+    "SUPPORTED_MODES",
+    "LITE_MODE",
+    "FULL_STACK_MODE",
+    "list_modules_by_tier",
+    "flatten_modules",
+    "get_modules_for_mode",
 ]

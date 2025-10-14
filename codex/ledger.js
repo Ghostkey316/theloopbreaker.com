@@ -8,7 +8,16 @@ const LEDGER_PATH = process.env.VAULTFIRE_CODEX_LEDGER
   ? path.resolve(process.env.VAULTFIRE_CODEX_LEDGER)
   : path.join(__dirname, 'VAULTFIRE_CLI_LEDGER.jsonl');
 
+let memoryLedger = [];
+
+function ledgerDisabled() {
+  return process.env.VAULTFIRE_DISABLE_LEDGER_IO === 'true';
+}
+
 function ensureLedger() {
+  if (ledgerDisabled()) {
+    return;
+  }
   const dir = path.dirname(LEDGER_PATH);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
@@ -19,6 +28,9 @@ function ensureLedger() {
 }
 
 function readLastEntry() {
+  if (ledgerDisabled()) {
+    return memoryLedger.length ? memoryLedger[memoryLedger.length - 1] : null;
+  }
   if (!fs.existsSync(LEDGER_PATH)) {
     return null;
   }
@@ -36,6 +48,10 @@ function readLastEntry() {
 }
 
 function append(entry) {
+  if (ledgerDisabled()) {
+    memoryLedger.push(entry);
+    return;
+  }
   ensureLedger();
   fs.appendFileSync(LEDGER_PATH, `${JSON.stringify(entry)}\n`, { encoding: 'utf8' });
 }
@@ -81,4 +97,8 @@ function recordCliEvent({ command, wallet, ens, status, proof, digest }) {
   return entry;
 }
 
-module.exports = { recordCliEvent, createBeliefProof };
+function __resetMemoryLedger() {
+  memoryLedger = [];
+}
+
+module.exports = { recordCliEvent, createBeliefProof, __resetMemoryLedger };

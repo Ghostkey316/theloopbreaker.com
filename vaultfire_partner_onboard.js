@@ -8,6 +8,7 @@ const { loadJson, writeJson } = require('./node_storage');
 const CONFIG_PATH = path.join(__dirname, 'vaultfire_config.json');
 const CORE_CONFIG_PATH = path.join(__dirname, 'vaultfire-core', 'vaultfire_config.json');
 const PARTNERS_PATH = path.join(__dirname, 'partners.json');
+const MODULE_TIERS_PATH = path.join(__dirname, 'vaultfire', 'module_tiers.json');
 const ALIGNMENT_PHRASE = 'Morals Before Metrics.';
 
 const ENS_MAP = {
@@ -60,6 +61,54 @@ function readConfig(pathname) {
   }
 }
 
+function readModuleTiers() {
+  try {
+    const raw = fs.readFileSync(MODULE_TIERS_PATH, 'utf8');
+    return JSON.parse(raw);
+  } catch {
+    return { core: [], optional: [], advanced: [] };
+  }
+}
+
+function flattenModuleSets(tiers) {
+  const seen = new Set();
+  const ordered = [];
+  tiers.forEach((tier) => {
+    tier.forEach((entry) => {
+      const name = entry?.name;
+      if (!name || seen.has(name)) {
+        return;
+      }
+      ordered.push({ name, status: entry.status || 'pending_audit' });
+      seen.add(name);
+    });
+  });
+  return ordered;
+}
+
+function normalizeMode(mode) {
+  const normalized = (mode || '').toString().trim().toLowerCase();
+  if (!normalized || normalized === 'full' || normalized === 'full_stack') {
+    return 'full stack';
+  }
+  if (normalized === 'lite' || normalized === 'light') {
+    return 'lite';
+  }
+  if (normalized === 'full stack') {
+    return normalized;
+  }
+  throw new Error(`Unsupported onboarding mode: ${mode}`);
+}
+
+function resolveModulesForMode(mode) {
+  const tiers = readModuleTiers();
+  const normalized = normalizeMode(mode);
+  if (normalized === 'lite') {
+    return flattenModuleSets([tiers.core || []]);
+  }
+  return flattenModuleSets([tiers.core || [], tiers.optional || [], tiers.advanced || []]);
+}
+
 function ethicsEnabled() {
   const primary = readConfig(CONFIG_PATH);
   const fallback = readConfig(CORE_CONFIG_PATH);
@@ -71,7 +120,7 @@ function validateAlignmentPhrase(phrase) {
   return phrase && phrase.trim().toLowerCase() === ALIGNMENT_PHRASE.toLowerCase();
 }
 
-async function onboardPartner(partnerId, walletAddress, alignmentPhrase) {
+async function onboardPartner(partnerId, walletAddress, alignmentPhrase, options = {}) {
   if (!partnerId) {
     throw new Error('partner_id missing');
   }
@@ -93,6 +142,8 @@ async function onboardPartner(partnerId, walletAddress, alignmentPhrase) {
   }
 
   const timestamp = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+  const onboardingMode = normalizeMode(options.mode || 'full_stack');
+  const moduleRoster = resolveModulesForMode(onboardingMode);
   const entry = {
     partner_id: partnerId,
     wallet: resolved,
@@ -100,6 +151,8 @@ async function onboardPartner(partnerId, walletAddress, alignmentPhrase) {
     resolved_wallet: resolved,
     alignment_signature: alignmentSignature(alignmentPhrase),
     onboarded_at: timestamp,
+    onboarding_mode: onboardingMode,
+    module_roster: moduleRoster,
   };
   partners.push(entry);
   await writeJson(PARTNERS_PATH, partners);
@@ -108,22 +161,30 @@ async function onboardPartner(partnerId, walletAddress, alignmentPhrase) {
     message: 'partner onboarded',
     resolved_address: resolved,
     alignment_signature: entry.alignment_signature,
+    onboarding_mode: onboardingMode,
+    modules: moduleRoster,
   };
 }
 
 if (require.main === module) {
   (async () => {
     const args = process.argv.slice(2);
+    const modeFlagIndex = args.findIndex((value) => value === '--mode');
+    let onboardingMode = 'full_stack';
+    if (modeFlagIndex !== -1) {
+      onboardingMode = args[modeFlagIndex + 1] || onboardingMode;
+      args.splice(modeFlagIndex, 2);
+    }
     const [partnerId, walletAddress, ...phraseParts] = args;
     const alignmentPhrase = phraseParts.join(' ');
 
     if (!partnerId || !walletAddress || !alignmentPhrase) {
-      console.error('Usage: node vaultfire_partner_onboard.js <partner_id> <wallet_address> <alignment_phrase>');
+      console.error('Usage: node vaultfire_partner_onboard.js <partner_id> <wallet_address> <alignment_phrase> [--mode <lite|full_stack>]');
       process.exit(1);
     }
 
     try {
-      const result = await onboardPartner(partnerId, walletAddress, alignmentPhrase);
+      const result = await onboardPartner(partnerId, walletAddress, alignmentPhrase, { mode: onboardingMode });
       console.log(JSON.stringify(result, null, 2));
     } catch (err) {
       console.error('Error:', err.message);
@@ -138,4 +199,5 @@ module.exports = {
   resolveIdentity,
   ethicsEnabled,
   alignmentSignature,
+  resolveModulesForMode,
 };
