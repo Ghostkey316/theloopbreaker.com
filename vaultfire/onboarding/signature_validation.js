@@ -1,3 +1,5 @@
+const crypto = require('crypto');
+
 let ethers;
 try {
   ({ ethers } = require('ethers'));
@@ -148,6 +150,11 @@ async function validateCovenantSignatureChain(chain, options = {}) {
     trustedRootSignature = '',
     clock = () => Date.now(),
     toleranceMs = 120_000,
+    partnerKeys = null,
+    requirePartnerKey: requirePartnerKeyOption = null,
+    requireHashMirroring = false,
+    mirrorSeed = null,
+    hashAlgorithm = 'sha256',
   } = options;
 
   if (typeof clock !== 'function') {
@@ -167,11 +174,21 @@ async function validateCovenantSignatureChain(chain, options = {}) {
     });
   }
 
+  const requirePartnerKey = resolvePartnerKeyRequirement(partnerKeys, requirePartnerKeyOption);
+  const partnerKeyIndex = buildPartnerKeyIndex(partnerKeys, { requirePartnerKey });
+  const mirrorContext = createHashMirror({
+    trustedRootSignature,
+    mirrorSeed,
+    requireHashMirroring,
+    hashAlgorithm,
+  });
+
   let previousSignature = trustedRootSignature ?? '';
   let firstIssued = null;
   let lastExpires = null;
   let resolvedDomain = null;
   const partners = [];
+  const mirrorTrail = [];
 
   for (let index = 0; index < chain.length; index += 1) {
     const entry = chain[index];
@@ -209,6 +226,14 @@ async function validateCovenantSignatureChain(chain, options = {}) {
       });
     }
     partners.push(partnerId);
+
+    const partnerKey = partnerKeyIndex.get(partnerId);
+    if (!partnerKey && requirePartnerKey) {
+      throw new SignatureChainError('Trusted covenant key missing for partner', {
+        code: 'chain.partner-key-missing',
+        meta: { index, partnerId },
+      });
+    }
 
     const signer = String(entry.signer ?? '').trim();
     if (!signer) {
@@ -253,6 +278,13 @@ async function validateCovenantSignatureChain(chain, options = {}) {
       });
     }
 
+    if (partnerKey && partnerKey.address && partnerKey.address !== signer.toLowerCase()) {
+      throw new SignatureChainError('Signature signer does not match trusted covenant key', {
+        code: 'chain.partner-key-mismatch',
+        meta: { index, partnerId, expected: partnerKey.address, recovered: signer.toLowerCase() },
+      });
+    }
+
     const issuedAt = parseTimestamp(entry.issuedAt ?? payload.issuedAt, 'issuedAt', index);
     const expiresAt = parseTimestamp(entry.expiresAt ?? payload.expiresAt, 'expiresAt', index);
     if (expiresAt <= issuedAt) {
@@ -281,6 +313,15 @@ async function validateCovenantSignatureChain(chain, options = {}) {
       lastExpires = expiresAt;
     }
     previousSignature = signature;
+
+    const mirrorRecord = mirrorContext.step({
+      index,
+      payload: serialised,
+      signature,
+      declaredHash: entry.mirrorHash ?? payload.mirrorHash ?? null,
+      partnerId,
+    });
+    mirrorTrail.push(mirrorRecord);
   }
 
   const lastEntry = chain[chain.length - 1];
@@ -295,6 +336,8 @@ async function validateCovenantSignatureChain(chain, options = {}) {
     expiresAt: new Date(lastExpires).toISOString(),
     covenantId,
     trustedRootSignature: trustedRootSignature ?? '',
+    mirrorHash: mirrorContext.currentHash,
+    mirrorTrail,
   };
 }
 
@@ -303,6 +346,9 @@ const __testing = {
   matchesExpectedDomain,
   canonicalise,
   serialisePayload,
+  buildPartnerKeyIndex,
+  createHashMirror,
+  resolvePartnerKeyRequirement,
 };
 
 module.exports = {
@@ -310,3 +356,113 @@ module.exports = {
   validateCovenantSignatureChain,
   __testing,
 };
+
+function buildPartnerKeyIndex(partnerKeys, { requirePartnerKey }) {
+  const index = new Map();
+  if (!partnerKeys) {
+    return index;
+  }
+  const entries = Array.isArray(partnerKeys)
+    ? partnerKeys
+    : typeof partnerKeys === 'object'
+      ? Object.values(partnerKeys)
+      : [];
+  for (const entry of entries) {
+    if (!entry || typeof entry !== 'object') {
+      continue;
+    }
+    const partnerId = normaliseDomain(entry.partnerId || entry.id || '');
+    const address = typeof entry.address === 'string' ? entry.address.trim().toLowerCase() : null;
+    if (!address) {
+      if (requirePartnerKey) {
+        throw new SignatureChainError('Partner key entry missing address', {
+          code: 'chain.partner-key-invalid',
+          meta: { partnerId },
+        });
+      }
+      continue;
+    }
+    index.set(partnerId, {
+      address,
+      issuedAt: entry.issuedAt ? new Date(entry.issuedAt).toISOString() : null,
+      fingerprint: entry.fingerprint || null,
+    });
+  }
+  return index;
+}
+
+function resolvePartnerKeyRequirement(partnerKeys, option) {
+  if (typeof option === 'boolean') {
+    return option;
+  }
+  if (!partnerKeys) {
+    return false;
+  }
+  if (Array.isArray(partnerKeys)) {
+    return partnerKeys.length > 0;
+  }
+  if (typeof partnerKeys === 'object') {
+    return Object.keys(partnerKeys).length > 0;
+  }
+  return false;
+}
+
+function createHashMirror({ trustedRootSignature, mirrorSeed, requireHashMirroring, hashAlgorithm }) {
+  let currentHash = computeInitialMirror({ trustedRootSignature, mirrorSeed, hashAlgorithm });
+  return {
+    get currentHash() {
+      return currentHash;
+    },
+    step({ index, payload, signature, declaredHash, partnerId }) {
+      const normalizedPayload = typeof payload === 'string' ? payload : JSON.stringify(payload);
+      const nextHash = computeMirrorHash({
+        previous: currentHash,
+        payload: normalizedPayload,
+        signature: signature ?? '',
+        hashAlgorithm,
+      });
+      if (declaredHash) {
+        if (declaredHash !== nextHash) {
+          throw new SignatureChainError('Hash mirror mismatch for covenant chain', {
+            code: 'chain.mirror-mismatch',
+            meta: { index, partnerId, expected: nextHash, received: declaredHash },
+          });
+        }
+      } else if (requireHashMirroring) {
+        throw new SignatureChainError('Hash mirror missing for covenant entry', {
+          code: 'chain.mirror-missing',
+          meta: { index, partnerId },
+        });
+      }
+      currentHash = nextHash;
+      return {
+        index,
+        partnerId,
+        hash: nextHash,
+        declaredHash: declaredHash || null,
+      };
+    },
+  };
+}
+
+function computeInitialMirror({ trustedRootSignature, mirrorSeed, hashAlgorithm }) {
+  const base = mirrorSeed || trustedRootSignature || '';
+  return computeDigest(base, hashAlgorithm);
+}
+
+function computeMirrorHash({ previous, payload, signature, hashAlgorithm }) {
+  const working = `${previous || ''}::${payload || ''}::${signature || ''}`;
+  return computeDigest(working, hashAlgorithm);
+}
+
+function computeDigest(value, hashAlgorithm) {
+  const algorithm = hashAlgorithm || 'sha256';
+  try {
+    return crypto.createHash(algorithm).update(String(value)).digest('hex');
+  } catch (error) {
+    throw new SignatureChainError('Unable to compute hash mirror digest', {
+      code: 'chain.hash-unsupported',
+      meta: { algorithm },
+    });
+  }
+}

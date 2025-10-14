@@ -24,6 +24,16 @@ const hasFsAccess = Boolean(fs && typeof fs.statSync === 'function');
 const DEFAULT_EXTENSIONS = Object.freeze(['.json', '.yaml', '.yml']);
 const DEFAULT_DIRECTORY_FILES = Object.freeze(['verification', 'verifier', 'config', 'manifest', 'index']);
 
+const DEFAULT_POST_QUANTUM_ENCLAVES = Object.freeze({
+  kyber1024: {
+    algorithm: 'kyber1024',
+    publicKey:
+      'fhe1qpsqk4f9ts0pn6p2n0q6jp3jjvq58l8rff0a2s3d0y5hg9t0s4xk5xw6z7plmv',
+    attestation: 'pq-attestation::vaultfire::2025-10-01',
+    issuedAt: '2025-10-01T00:00:00.000Z',
+  },
+});
+
 function isPlainObject(value) {
   return Object.prototype.toString.call(value) === '[object Object]';
 }
@@ -181,6 +191,65 @@ function canonicalSourceType(source) {
   return 'filesystem';
 }
 
+function normalizeEnclaveKeySet(enclaves = {}, { fallbacks = DEFAULT_POST_QUANTUM_ENCLAVES } = {}) {
+  const normalized = {};
+  const sourceEntries = enclaves && typeof enclaves === 'object' ? enclaves : {};
+  for (const [name, value] of Object.entries(sourceEntries)) {
+    if (!value || typeof value !== 'object') {
+      continue;
+    }
+    const algorithm = String(value.algorithm || name || '').trim();
+    if (!algorithm) {
+      continue;
+    }
+    normalized[name] = {
+      algorithm,
+      publicKey: String(value.publicKey || value.key || '').trim(),
+      attestation: value.attestation ? String(value.attestation) : null,
+      issuedAt: value.issuedAt ? new Date(value.issuedAt).toISOString() : null,
+      enclaveId: value.enclaveId ? String(value.enclaveId) : null,
+    };
+  }
+  const fallbackEntries = fallbacks && typeof fallbacks === 'object' ? fallbacks : {};
+  for (const [name, value] of Object.entries(fallbackEntries)) {
+    if (normalized[name]) {
+      continue;
+    }
+    normalized[name] = {
+      algorithm: String(value.algorithm || name),
+      publicKey: String(value.publicKey || ''),
+      attestation: value.attestation || null,
+      issuedAt: value.issuedAt || null,
+      enclaveId: value.enclaveId || null,
+    };
+  }
+  return normalized;
+}
+
+function applyEnclaveOverrides(config, options = {}) {
+  const working = clone(config);
+  const provided = options?.postQuantumEnclaveKeys;
+  const overrides = provided && typeof provided === 'object' ? provided : null;
+  const normalized = normalizeEnclaveKeySet(working.enclaves, { fallbacks: DEFAULT_POST_QUANTUM_ENCLAVES });
+  if (overrides) {
+    const overrideSet = normalizeEnclaveKeySet(overrides, { fallbacks: {} });
+    for (const [name, value] of Object.entries(overrideSet)) {
+      normalized[name] = value;
+    }
+  }
+  working.enclaves = normalized;
+  if (!working.metadata || typeof working.metadata !== 'object') {
+    working.metadata = {};
+  }
+  working.metadata.enclaveFingerprints = Object.fromEntries(
+    Object.entries(normalized).map(([name, value]) => [
+      name,
+      value.publicKey ? crypto.createHash('sha256').update(value.publicKey).digest('hex') : null,
+    ]),
+  );
+  return working;
+}
+
 const FALLBACK_CONFIGS = deepFreeze([
   {
     partnerId: 'ghostkey316.eth',
@@ -224,6 +293,14 @@ const FALLBACK_CONFIGS = deepFreeze([
       ledgerStream: 'mission-ledger',
     },
     tags: ['canonical', 'architect', 'ethics'],
+    enclaves: {
+      default: {
+        algorithm: 'secp256k1',
+        publicKey: '0x04f16c4e8e5d23a4d6f7c2a1b8e3f5a9d4c1b2e3a4f6c7d8e9f0a1b2c3d4e5f6a7',
+        attestation: 'tee-attest::ghostkey316::2025-10-18',
+        issuedAt: '2025-10-18T00:00:00.000Z',
+      },
+    },
   },
   {
     partnerId: 'atlantech',
@@ -262,6 +339,14 @@ const FALLBACK_CONFIGS = deepFreeze([
       ledgerStream: 'mission-ledger',
     },
     tags: ['canonical', 'partner'],
+    enclaves: {
+      default: {
+        algorithm: 'ed25519',
+        publicKey: 'ed25519:atlantech:2025',
+        attestation: 'tee-attest::atlantech::2025-10-12',
+        issuedAt: '2025-10-12T00:00:00.000Z',
+      },
+    },
   },
   {
     partnerId: 'sandbox_partner',
@@ -300,6 +385,14 @@ const FALLBACK_CONFIGS = deepFreeze([
       ledgerStream: 'sandbox-ledger',
     },
     tags: ['pilot', 'canonical'],
+    enclaves: {
+      default: {
+        algorithm: 'ed25519',
+        publicKey: 'ed25519:sandbox:pilot',
+        attestation: 'tee-attest::sandbox::2025-09-30',
+        issuedAt: '2025-09-30T00:00:00.000Z',
+      },
+    },
   },
 ]);
 
@@ -450,12 +543,12 @@ function fetchFromFileSystem(partnerId, options = {}) {
   return { config: null, source: null, errors };
 }
 
-function buildRecord(partnerId, config, { source, canonical = true, sourceType, errors = [] } = {}) {
+function buildRecord(partnerId, config, { source, canonical = true, sourceType, errors = [], options = {} } = {}) {
   const normalized = normalizePartnerId(partnerId);
   if (!isPlainObject(config)) {
     throw new TypeError(`Partner verifier config for "${normalized}" must be an object`);
   }
-  const working = ensurePartnerId(config, normalized);
+  const working = applyEnclaveOverrides(ensurePartnerId(config, normalized), options);
   const metadata = {
     loadedAt: new Date().toISOString(),
     sourceType: canonicalSourceType(sourceType || source),
@@ -567,7 +660,13 @@ function loadPartnerVerifierConfig(partnerId, options = {}) {
     throw new TypeError(`Partner verifier config for "${normalized}" must be an object`);
   }
 
-  const record = buildRecord(normalized, config, { source, canonical, sourceType, errors });
+  const record = buildRecord(normalized, config, {
+    source,
+    canonical,
+    sourceType,
+    errors,
+    options,
+  });
   if (overridesApplied) {
     record.metadata.overridesApplied = true;
   }
@@ -576,7 +675,7 @@ function loadPartnerVerifierConfig(partnerId, options = {}) {
   }
 
   if (cacheable) {
-    cache.set(cacheKey, record);
+    cache.set(cacheKey, cloneRecord(record));
   }
 
   const response = cloneRecord(record);
@@ -710,4 +809,5 @@ module.exports = {
   clearPartnerVerifierCache,
   resolveSearchRoots,
   FALLBACK_CONFIGS,
+  normalizeEnclaveKeySet,
 };
