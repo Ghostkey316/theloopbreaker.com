@@ -1,0 +1,50 @@
+{
+  "partnerId": "ghostkey316.eth",
+  "displayName": "Ghostkey 316",
+  "tier": "architect",
+  "version": 3,
+  "status": "verified",
+  "updatedAt": "2025-10-18T00:00:00.000Z",
+  "verification": {
+    "cadence": "continuous",
+    "requiredChecks": [
+      {
+        "id": "mission_covenant",
+        "description": "Mission covenant anchor validated",
+        "required": true
+      },
+      {
+        "id": "ethics_council",
+        "description": "Ethics oversight attestation",
+        "required": true
+      },
+      {
+        "id": "telemetry_residency",
+        "description": "Telemetry residency boundaries enforced",
+        "required": true
+      }
+    ],
+    "attestors": [
+      "mission-ledger",
+      "ethics-council"
+    ],
+    "evidenceRetentionDays": 365,
+    "escalation": {
+      "policy": "pause-sync",
+      "notify": [
+        "ethics@vaultfire.invalid",
+        "mission-control@vaultfire.invalid"
+      ]
+    }
+  },
+  "contact": {
+    "owner": "architects@vaultfire.invalid",
+    "escalation": "ethics@vaultfire.invalid"
+  },
+  "signals": {
+    "webhook": "https://hooks.vaultfire.invalid/ghostkey316",
+    "ledgerStream": "mission-ledger"
+  },
+  "tags": ["canonical", "architect", "ethics"],
+  "notes": "Canonical verification manifest for Ghostkey 316 partner operations."
+}
