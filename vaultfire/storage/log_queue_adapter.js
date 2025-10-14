@@ -8,7 +8,12 @@
  * and exposes a plug-and-play interface that works with any backend that
  * implements an ``append(records, context)`` method returning either the
  * number of appended records or an acknowledgement object.
- */
+ *
+ * To simplify partner integrations, the module exports ready-to-use
+ * append-only queue backends for Redis Streams and Apache Kafka. These
+ * helpers turn telemetry envelopes into event stream entries with
+ * consistent metadata and support backpressure-friendly batching.
+*/
 
 const DEFAULT_CONFIG_TEMPLATE = Object.freeze({
   flushIntervalMs: 5000,
@@ -413,7 +418,176 @@ function createLogQueueAdapter(options) {
   return new LogQueueAdapter(options);
 }
 
+class RedisStreamBackend {
+  constructor({
+    client,
+    streamKey = 'vaultfire:telemetry',
+    maxLength = null,
+    idStrategy = '*',
+    logger = console,
+  } = {}) {
+    if (!client) {
+      throw new TypeError('RedisStreamBackend requires a Redis client');
+    }
+    const command = client.xAdd || client.xadd || client.sendCommand || client.call;
+    if (typeof command !== 'function') {
+      throw new TypeError('Redis client must expose an xAdd/xadd/sendCommand function');
+    }
+    this.id = 'vaultfire.redis-stream';
+    this._client = client;
+    this._logger = logger || console;
+    this._streamKey = streamKey;
+    this._maxLength = maxLength;
+    this._idStrategy = idStrategy;
+    this._command = command;
+  }
+
+  async append(records = [], context = {}) {
+    if (!Array.isArray(records) || records.length === 0) {
+      return { appended: 0 };
+    }
+    let appended = 0;
+    for (const record of records) {
+      const payload = this._preparePayload(record, context);
+      try {
+        // prefer native methods when available
+        if (typeof this._client.xAdd === 'function') {
+          // modern redis client signature: xAdd(stream, id, { field: value }, options?)
+          const args = [
+            this._streamKey,
+            this._idStrategy,
+            payload,
+          ];
+          if (this._maxLength) {
+            args.push({ TRIM: { strategy: '~', threshold: this._maxLength } });
+          }
+          // eslint-disable-next-line no-await-in-loop
+          await this._client.xAdd(...args);
+        } else if (typeof this._client.xadd === 'function') {
+          const args = [this._streamKey];
+          if (this._maxLength) {
+            args.push('MAXLEN', '~', this._maxLength);
+          }
+          args.push(this._idStrategy);
+          for (const [field, value] of Object.entries(payload)) {
+            args.push(field, value);
+          }
+          // eslint-disable-next-line no-await-in-loop
+          await this._client.xadd(...args);
+        } else {
+          const commandArgs = ['XADD', this._streamKey];
+          if (this._maxLength) {
+            commandArgs.push('MAXLEN', '~', this._maxLength);
+          }
+          commandArgs.push(this._idStrategy);
+          for (const [field, value] of Object.entries(payload)) {
+            commandArgs.push(field, value);
+          }
+          // eslint-disable-next-line no-await-in-loop
+          await this._command.call(this._client, commandArgs);
+        }
+        appended += 1;
+      } catch (error) {
+        this._logger?.error?.('redis stream append failed', {
+          stream: this._streamKey,
+          error: error?.message || error,
+        });
+        throw error;
+      }
+    }
+    return { appended };
+  }
+
+  _preparePayload(record, context) {
+    const payload = {};
+    payload.payload = Buffer.isBuffer(record.payload)
+      ? record.payload
+      : typeof record.payload === 'string'
+        ? record.payload
+        : JSON.stringify(record.payload ?? null);
+    payload.metadata = JSON.stringify({
+      ...(record.metadata || {}),
+      sourceBackend: context?.backendId || this.id,
+    });
+    payload.createdAt = String(record.createdAt ?? Date.now());
+    return payload;
+  }
+}
+
+class KafkaLogBackend {
+  constructor({
+    producer,
+    topic = 'vaultfire.telemetry',
+    partitionResolver = null,
+    encode = JSON.stringify,
+    logger = console,
+  } = {}) {
+    if (!producer || typeof producer.send !== 'function') {
+      throw new TypeError('KafkaLogBackend requires a producer with send()');
+    }
+    if (typeof encode !== 'function') {
+      throw new TypeError('encode must be a function');
+    }
+    this.id = 'vaultfire.kafka';
+    this._producer = producer;
+    this._topic = topic;
+    this._partitionResolver = partitionResolver;
+    this._encode = encode;
+    this._logger = logger || console;
+  }
+
+  async append(records = [], context = {}) {
+    if (!Array.isArray(records) || records.length === 0) {
+      return { appended: 0 };
+    }
+    const messages = records.map((record) => this._buildMessage(record, context));
+    try {
+      await this._producer.send({ topic: this._topic, messages });
+    } catch (error) {
+      this._logger?.error?.('kafka append failed', {
+        topic: this._topic,
+        error: error?.message || error,
+      });
+      throw error;
+    }
+    return { appended: messages.length };
+  }
+
+  _buildMessage(record, context) {
+    const encoded = this._encode({
+      payload: record.payload,
+      metadata: {
+        ...(record.metadata || {}),
+        sourceBackend: context?.backendId || this.id,
+      },
+      createdAt: record.createdAt ?? Date.now(),
+    });
+    const value = Buffer.isBuffer(encoded) ? encoded : Buffer.from(String(encoded));
+    const key = this._resolvePartitionKey(record);
+    return key ? { value, key } : { value };
+  }
+
+  _resolvePartitionKey(record) {
+    if (typeof this._partitionResolver === 'function') {
+      return this._partitionResolver(record) || null;
+    }
+    return record?.metadata?.partnerId || null;
+  }
+}
+
+function createRedisStreamBackend(options) {
+  return new RedisStreamBackend(options);
+}
+
+function createKafkaLogBackend(options) {
+  return new KafkaLogBackend(options);
+}
+
 module.exports = {
   LogQueueAdapter,
   createLogQueueAdapter,
+  RedisStreamBackend,
+  KafkaLogBackend,
+  createRedisStreamBackend,
+  createKafkaLogBackend,
 };

@@ -8,6 +8,19 @@ const DEFAULT_TFHE_MODULE_IDS = [
   'tfhe',
 ];
 
+const DEFAULT_ZAMA_MODULE_IDS = [
+  '@zama-fhe/core',
+  '@zama-fhe/node',
+  '@zama-hl/fhe',
+  'concrete-core-wasm',
+];
+
+const MIGRATION_EVENTS = Object.freeze({
+  ACTIVATED: 'activated',
+  FALLBACK: 'fallback',
+  RESOLVED: 'resolved',
+});
+
 class SimulationFHEBackend {
   constructor({
     modulus = BigInt('0xFFFFFFFFFFFFFFFF'),
@@ -254,6 +267,13 @@ class TFHEBackend {
     return bootstrapFn.call(this._tfhe, ciphertext, options);
   }
 
+  async ensureReady() {
+    if (typeof this._tfhe?.ensureReady === 'function') {
+      await this._tfhe.ensureReady();
+    }
+    return true;
+  }
+
   _validateModule() {
     const required = ['decrypt', 'encrypt'];
     for (const fn of required) {
@@ -264,11 +284,87 @@ class TFHEBackend {
   }
 }
 
+class ZamaBackend {
+  constructor({ zamaModule, logger = console } = {}) {
+    if (!zamaModule) {
+      throw new Error('zamaModule is required for Zama backend');
+    }
+    this.backendId = 'vaultfire.zama';
+    this._logger = logger || console;
+    this._module = zamaModule;
+    this._validateModule();
+  }
+
+  async keygen(options = {}) {
+    const fn = this._module.keygen || this._module.generate_keys || this._module.generateKeys;
+    if (typeof fn !== 'function') {
+      throw new Error('Zama module does not expose key generation');
+    }
+    return fn.call(this._module, options);
+  }
+
+  async encrypt(value, options = {}) {
+    const fn = this._module.encrypt || this._module.encrypt_scalar;
+    if (typeof fn !== 'function') {
+      throw new Error('Zama module must expose an encrypt function');
+    }
+    return fn.call(this._module, value, options);
+  }
+
+  async decrypt(ciphertext, options = {}) {
+    const fn = this._module.decrypt || this._module.decrypt_scalar;
+    if (typeof fn !== 'function') {
+      throw new Error('Zama module must expose a decrypt function');
+    }
+    return fn.call(this._module, ciphertext, options);
+  }
+
+  async add(ciphertexts = [], options = {}) {
+    const fn = this._module.add || this._module.homomorphic_add;
+    if (typeof fn !== 'function') {
+      throw new Error('Zama module must expose an add function');
+    }
+    return fn.call(this._module, ciphertexts, options);
+  }
+
+  async multiply(ciphertext, factor, options = {}) {
+    const fn =
+      this._module.multiply ||
+      this._module.mul ||
+      this._module.homomorphic_multiply;
+    if (typeof fn !== 'function') {
+      throw new Error('Zama module must expose a multiply function');
+    }
+    return fn.call(this._module, ciphertext, factor, options);
+  }
+
+  async ensureReady() {
+    if (typeof this._module?.ensure_ready === 'function') {
+      await this._module.ensure_ready();
+    }
+    return true;
+  }
+
+  _validateModule() {
+    const required = ['decrypt', 'encrypt'];
+    for (const fn of required) {
+      const camel = this._module[fn];
+      const snake = this._module[`${fn}_scalar`];
+      const alt = this._module[`${fn}Scalar`];
+      if (typeof camel !== 'function' && typeof snake !== 'function' && typeof alt !== 'function') {
+        throw new Error(`Zama module missing required function '${fn}'`);
+      }
+    }
+  }
+}
+
 class FHEAdapter {
   constructor({
     mode = 'auto',
     tfheModule = null,
     tfheModuleIds = DEFAULT_TFHE_MODULE_IDS,
+    zamaModule = null,
+    zamaModuleIds = DEFAULT_ZAMA_MODULE_IDS,
     simulationConfig = {},
     logger = console,
   } = {}) {
@@ -278,8 +374,19 @@ class FHEAdapter {
     this._tfheModuleIds = Array.isArray(tfheModuleIds) && tfheModuleIds.length
       ? [...tfheModuleIds]
       : DEFAULT_TFHE_MODULE_IDS;
+    this._zamaModule = zamaModule;
+    this._zamaModuleIds = Array.isArray(zamaModuleIds) && zamaModuleIds.length
+      ? [...zamaModuleIds]
+      : DEFAULT_ZAMA_MODULE_IDS;
     this._simulation = new SimulationFHEBackend({ logger: this._logger, ...simulationConfig });
     this._backend = null;
+    this._migrationState = {
+      active: false,
+      vendor: null,
+      event: null,
+      reason: null,
+      timestamp: null,
+    };
     this._backend = this._resolveBackend();
   }
 
@@ -295,8 +402,12 @@ class FHEAdapter {
     return this._backend instanceof SimulationFHEBackend;
   }
 
+  getMigrationState() {
+    return { ...this._migrationState };
+  }
+
   switchBackend(mode) {
-    if (!['simulation', 'tfhe', 'auto'].includes(mode)) {
+    if (!['simulation', 'tfhe', 'zama', 'auto'].includes(mode)) {
       throw new Error(`Unknown FHE mode '${mode}'`);
     }
     this._mode = mode;
@@ -339,42 +450,68 @@ class FHEAdapter {
 
   _resolveBackend() {
     if (this._mode === 'simulation') {
+      this._recordMigrationEvent({ event: MIGRATION_EVENTS.FALLBACK, reason: 'explicit-simulation' });
       return this._simulation;
     }
-    const moduleRef = this._mode === 'tfhe' || this._mode === 'auto' ? this._resolveTFHEModule() : null;
-    if (moduleRef) {
+
+    const candidate = this._resolveProductionModule();
+    if (candidate) {
+      const { vendor, module: moduleRef } = candidate;
       try {
-        return new TFHEBackend({ tfheModule: moduleRef, logger: this._logger });
+        const backend = vendor === 'zama'
+          ? new ZamaBackend({ zamaModule: moduleRef, logger: this._logger })
+          : new TFHEBackend({ tfheModule: moduleRef, logger: this._logger });
+        this._recordMigrationEvent({ event: MIGRATION_EVENTS.ACTIVATED, vendor });
+        return backend;
       } catch (error) {
-        if (this._mode === 'tfhe') {
+        if (this._mode === vendor) {
           throw error;
         }
-        this._logger?.warn?.('[fhe-adapter] falling back to simulation backend', {
+        this._logger?.warn?.('[fhe-adapter] production backend failed, migrating to simulation', {
+          vendor,
           error: error?.message || String(error),
         });
+        this._recordMigrationEvent({ event: MIGRATION_EVENTS.FALLBACK, vendor, reason: error?.message || 'initialisation-failed' });
       }
-    } else if (this._mode === 'tfhe') {
-      throw new Error('Unable to resolve TFHE module for required mode');
+    } else if (this._mode !== 'auto') {
+      throw new Error('Unable to resolve production FHE module for required mode');
     }
 
+    this._recordMigrationEvent({ event: MIGRATION_EVENTS.FALLBACK, reason: 'module-unavailable' });
     return this._simulation;
   }
 
-  _resolveTFHEModule() {
-    if (this._tfheModule) {
-      return this._tfheModule;
+  _resolveProductionModule() {
+    if (this._mode === 'tfhe') {
+      return this._resolveFromCollection('tfhe', this._tfheModule, this._tfheModuleIds);
     }
-    for (const moduleId of this._tfheModuleIds) {
+    if (this._mode === 'zama') {
+      return this._resolveFromCollection('zama', this._zamaModule, this._zamaModuleIds);
+    }
+
+    const tfheCandidate = this._resolveFromCollection('tfhe', this._tfheModule, this._tfheModuleIds);
+    if (tfheCandidate) {
+      return tfheCandidate;
+    }
+    return this._resolveFromCollection('zama', this._zamaModule, this._zamaModuleIds);
+  }
+
+  _resolveFromCollection(vendor, directModule, ids) {
+    if (directModule) {
+      return { vendor, module: directModule };
+    }
+    for (const moduleId of ids) {
       try {
         // eslint-disable-next-line global-require, import/no-dynamic-require
         const candidate = require(moduleId);
         if (candidate) {
-          this._logger?.debug?.('[fhe-adapter] resolved TFHE module', { moduleId });
-          return candidate;
+          this._logger?.debug?.('[fhe-adapter] resolved production FHE module', { vendor, moduleId });
+          return { vendor, module: candidate };
         }
       } catch (error) {
         if (error?.code !== 'MODULE_NOT_FOUND') {
-          this._logger?.warn?.('[fhe-adapter] error while loading TFHE module', {
+          this._logger?.warn?.('[fhe-adapter] error while loading production FHE module', {
+            vendor,
             moduleId,
             error: error?.message || String(error),
           });
@@ -383,11 +520,23 @@ class FHEAdapter {
     }
     return null;
   }
+
+  _recordMigrationEvent({ event, vendor = null, reason = null }) {
+    this._migrationState = {
+      active: event === MIGRATION_EVENTS.FALLBACK,
+      vendor,
+      event,
+      reason,
+      timestamp: Date.now(),
+    };
+  }
 }
 
 module.exports = {
   FHEAdapter,
   SimulationFHEBackend,
   TFHEBackend,
+  ZamaBackend,
   DEFAULT_TFHE_MODULE_IDS,
+  DEFAULT_ZAMA_MODULE_IDS,
 };
