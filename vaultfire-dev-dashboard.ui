@@ -1,0 +1,53 @@
+{
+  "name": "vaultfire-dev-dashboard",
+  "status": "pending_audit",
+  "layout": {
+    "header": {
+      "title": "Vaultfire Dev Dashboard",
+      "subtitle": "Mission integrity shield overview (synthetic preview)",
+      "badges": ["Pilot Mode", "Pending Audit"]
+    },
+    "panels": [
+      {
+        "id": "module-health",
+        "title": "Module Health",
+        "description": "Real-time status of core, optional, and advanced tiers.",
+        "bindings": {
+          "source": "vaultfire/module_tiers.json",
+          "refreshInterval": "10m"
+        }
+      },
+      {
+        "id": "audit-trail",
+        "title": "Audit Trail Status",
+        "description": "Latest post-quantum attestation submissions.",
+        "bindings": {
+          "source": "vaultfire/audit-trail.md",
+          "marker": "<!-- LOG-ENTRIES -->"
+        }
+      },
+      {
+        "id": "activation-logs",
+        "title": "Activation Logs",
+        "description": "Chronology of partner onboarding and pilot simulations.",
+        "bindings": {
+          "source": "telemetry/pilot_mode/sessions.jsonl",
+          "fallback": "telemetry/pilot_mode/behavior_log.jsonl"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "id": "refresh",
+      "label": "Refresh Dashboard",
+      "command": "vaultfire verify --crypto --target dashboard",
+      "notes": "Triggers attestation sync before reloading panels."
+    },
+    {
+      "id": "open-protocol",
+      "label": "View First Five Partner Protocol",
+      "link": "vaultfire/partner-protocol.md"
+    }
+  ]
+}

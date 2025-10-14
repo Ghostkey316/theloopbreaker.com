@@ -22,6 +22,11 @@ from .guardian_trace import (
     validate_behavior_signature,
 )
 from .onboarding_guardrails import OnboardingGuardrails, secure_protocol
+from .post_quantum_verifier import (
+    PostQuantumAttestation,
+    crypto_disclaimer,
+    submit_post_quantum_verifier,
+)
 from .resilience_simulator import (
     PilotConfig,
     PilotRunResult,
@@ -48,6 +53,9 @@ __all__ = [
     "validate_securestore_fallback",
     "OnboardingGuardrails",
     "secure_protocol",
+    "PostQuantumAttestation",
+    "crypto_disclaimer",
+    "submit_post_quantum_verifier",
     "PilotConfig",
     "PilotRunResult",
     "ResilienceScenario",

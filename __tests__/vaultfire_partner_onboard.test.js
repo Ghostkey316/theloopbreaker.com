@@ -35,10 +35,14 @@ const PARTNERS_PATH = path.join(__dirname, '..', 'partners.json');
 
 const toMockPath = (pathname) => pathname.split(path.sep).join('/');
 
+const MODULE_TIERS_PATH = path.join(__dirname, '..', 'vaultfire', 'module_tiers.json');
+const moduleTiersContent = fs.readFileSync(MODULE_TIERS_PATH, 'utf8');
+
 const baseConfig = {
   [toMockPath(CORE_CONFIG_PATH)]: JSON.stringify({ ethics_anchor: true, partner_hooks_enabled: true }),
   [toMockPath(ROOT_CONFIG_PATH)]: JSON.stringify({ ethics_anchor: true, partner_hooks_enabled: true, use_database: false }),
   [toMockPath(PARTNERS_PATH)]: JSON.stringify([]),
+  [toMockPath(MODULE_TIERS_PATH)]: moduleTiersContent,
 };
 
 beforeEach(() => {
@@ -68,14 +72,22 @@ test('ethicsEnabled reads config flag', () => {
 
 test('onboardPartner enforces phrase and stores hashed signature', async () => {
   const result = await onboardPartner('demo', 'ghostkey316.eth', ALIGNMENT_PHRASE);
-  expect(result).toEqual({
-    message: 'partner onboarded',
-    resolved_address: '0x9abCDEF1234567890abcdefABCDEF1234567890',
-    alignment_signature: alignmentSignature(ALIGNMENT_PHRASE),
-  });
+  expect(result).toEqual(
+    expect.objectContaining({
+      message: 'partner onboarded',
+      resolved_address: '0x9abCDEF1234567890abcdefABCDEF1234567890',
+      alignment_signature: alignmentSignature(ALIGNMENT_PHRASE),
+      onboarding_mode: 'full stack',
+    }),
+  );
+  expect(Array.isArray(result.modules)).toBe(true);
+  expect(result.modules.length).toBeGreaterThan(0);
   const saved = storage.__store.get(PARTNERS_PATH);
   expect(saved[0].alignment_signature).toBe(alignmentSignature(ALIGNMENT_PHRASE));
   expect(saved[0].wallet_alias).toBe('ghostkey316.eth');
+  expect(saved[0].onboarding_mode).toBe('full stack');
+  expect(Array.isArray(saved[0].module_roster)).toBe(true);
+  expect(saved[0].module_roster.length).toBe(result.modules.length);
 });
 
 test('onboardPartner checks for existing partner', async () => {

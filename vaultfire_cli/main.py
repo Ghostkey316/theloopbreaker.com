@@ -3,19 +3,28 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import subprocess
 import sys
 from dataclasses import asdict
+from pathlib import Path
 from typing import Mapping, Sequence, Tuple
 
 from persona_drift import PersonaDrift
 
-from vaultfire.modules import MetaFade, Vaultfire22Core
+from vaultfire.modules import (
+    FULL_STACK_MODE,
+    LITE_MODE,
+    MetaFade,
+    Vaultfire22Core,
+    get_modules_for_mode,
+)
 from vaultfire.modules.beliefforge import BeliefForge
 from vaultfire.modules.sanctumloop import SanctumLoop
 from vaultfire.modules.ultrashadow import UltraShadow
+from vaultfire.security import crypto_disclaimer, submit_post_quantum_verifier
 
 
 GREEN = "\033[92m"
@@ -24,6 +33,10 @@ YELLOW = "\033[93m"
 RED = "\033[91m"
 RESET = "\033[0m"
 BOLD = "\033[1m"
+
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+_AUDIT_TRAIL_PATH = _REPO_ROOT / "vaultfire" / "audit-trail.md"
+_AUDIT_LOG_MARKER = "<!-- LOG-ENTRIES -->"
 
 
 def _color(text: str, colour: str) -> str:
@@ -54,34 +67,80 @@ def _serialise_persona(profile) -> Mapping[str, object]:
     return payload
 
 
-def handle_deploy(profile: str) -> int:
+def _render_modules_for_mode(mode: str) -> Mapping[str, object]:
+    modules = [module.as_dict() for module in get_modules_for_mode(mode)]
+    return {
+        "mode": mode,
+        "modules": modules,
+        "status": "pending_audit",
+        "disclaimer": crypto_disclaimer(),
+    }
+
+
+def _append_audit_log(row: str) -> None:
+    if not _AUDIT_TRAIL_PATH.exists():
+        raise FileNotFoundError(f"Audit trail file missing at {_AUDIT_TRAIL_PATH}")
+    contents = _AUDIT_TRAIL_PATH.read_text(encoding="utf-8")
+    if _AUDIT_LOG_MARKER not in contents:
+        raise RuntimeError("Audit trail marker not found")
+    updated = contents.replace(_AUDIT_LOG_MARKER, f"{row}\n{_AUDIT_LOG_MARKER}", 1)
+    _AUDIT_TRAIL_PATH.write_text(updated, encoding="utf-8")
+
+
+def handle_deploy(profile: str, *, pilot: bool = False) -> int:
     _heading(f"Deploying profile {profile}", GREEN)
-    core = Vaultfire22Core(profile)
-    payload = core.deploy()
+    if pilot:
+        payload = {
+            "profile": profile,
+            "sandbox": True,
+            "onboarding": _render_modules_for_mode(LITE_MODE),
+        }
+    else:
+        core = Vaultfire22Core(profile)
+        payload = core.deploy()
     print(_color(_json_dump(payload), GREEN))
     return 0
 
 
-def handle_fade(persona: str) -> int:
+def handle_fade(persona: str, *, pilot: bool = False) -> int:
     _heading(f"MetaFade for persona {persona}", BLUE)
-    fade = MetaFade(persona)
-    digest = fade.dissolve()
-    print(_color(f"Fade signature: {digest}", BLUE))
+    if pilot:
+        digest = hashlib.sha256(f"pilot::{persona}".encode("utf-8")).hexdigest()[:32]
+        print(
+            _color(
+                f"Pilot fade signature: {digest} (synthetic, {crypto_disclaimer()})",
+                BLUE,
+            )
+        )
+    else:
+        fade = MetaFade(persona)
+        digest = fade.dissolve()
+        print(_color(f"Fade signature: {digest}", BLUE))
     return 0
 
 
-def handle_drift(entropy_range: Tuple[float, float]) -> int:
+def handle_drift(entropy_range: Tuple[float, float], *, pilot: bool = False) -> int:
     _heading("Simulating persona drift", GREEN)
-    drift = PersonaDrift()
     low, high = entropy_range
-    traits = {"entropy_range": [low, high], "mode": "simulation"}
-    profile = drift.shift("vaultfire-cli", traits=traits)
-    sanctum = SanctumLoop()
-    shield = sanctum.shield_query(profile.wallet_origin, profile.override_route, profile.session_signature)
-    payload = {
-        "profile": _serialise_persona(profile),
-        "sanctum": shield,
-    }
+    if pilot:
+        payload = {
+            "mode": "pilot",
+            "entropy_range": [low, high],
+            "synthetic_modules": _render_modules_for_mode(LITE_MODE),
+            "disclaimer": crypto_disclaimer(),
+        }
+    else:
+        drift = PersonaDrift()
+        traits = {"entropy_range": [low, high], "mode": "simulation"}
+        profile = drift.shift("vaultfire-cli", traits=traits)
+        sanctum = SanctumLoop()
+        shield = sanctum.shield_query(
+            profile.wallet_origin, profile.override_route, profile.session_signature
+        )
+        payload = {
+            "profile": _serialise_persona(profile),
+            "sanctum": shield,
+        }
     print(_color(_json_dump(payload), GREEN))
     return 0
 
@@ -102,23 +161,59 @@ def handle_test(all_tests: bool) -> int:
     return process.returncode
 
 
-def handle_cloak_status() -> int:
+def handle_cloak_status(*, pilot: bool = False) -> int:
     _heading("Cloak status", BLUE)
-    ultrashadow = UltraShadow()
-    sanctum = SanctumLoop()
-    belief = BeliefForge()
-    belief_record = belief.forge_signal(confidence=0.7, doubt=0.2, trust=0.85, context="cloak-status")
-    status_payload = {
-        "ultrashadow": ultrashadow.status(),
-        "sanctum": sanctum.status(),
-        "belief_fingerprint": belief_record,
-    }
+    if pilot:
+        status_payload = {
+            "sandbox": True,
+            "onboarding": _render_modules_for_mode(LITE_MODE),
+            "disclaimer": crypto_disclaimer(),
+        }
+    else:
+        ultrashadow = UltraShadow()
+        sanctum = SanctumLoop()
+        belief = BeliefForge()
+        belief_record = belief.forge_signal(
+            confidence=0.7, doubt=0.2, trust=0.85, context="cloak-status"
+        )
+        status_payload = {
+            "ultrashadow": ultrashadow.status(),
+            "sanctum": sanctum.status(),
+            "belief_fingerprint": belief_record,
+        }
     print(_color(_json_dump(status_payload), BLUE))
+    return 0
+
+
+def handle_verify(*, crypto: bool, target: str, pilot: bool = False) -> int:
+    if not crypto:
+        raise SystemExit("verify command currently requires --crypto")
+    _heading("Submitting crypto attestation", GREEN)
+    mode = LITE_MODE if pilot else FULL_STACK_MODE
+    payload = {
+        "target": target,
+        "pilot_mode": bool(pilot),
+        "modules": _render_modules_for_mode(mode),
+    }
+    attestation = submit_post_quantum_verifier(target, payload=payload)
+    row = (
+        f"| {attestation.timestamp} | {attestation.target} | {attestation.dao_request_id} | "
+        f"`{attestation.digest}` | {attestation.status} | {('pilot ' if pilot else '')}pending audit |"
+    )
+    _append_audit_log(row)
+    output = attestation.export()
+    output["audit_log_path"] = str(_AUDIT_TRAIL_PATH)
+    print(_color(_json_dump(output), GREEN))
     return 0
 
 
 def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="vaultfire", description="Vaultfire CLI tools")
+    parser.add_argument(
+        "--pilot",
+        action="store_true",
+        help="Enable sandbox pilot mode with synthetic data outputs",
+    )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     deploy = subparsers.add_parser("deploy", help="Deploy full pulse stack under chosen ghost persona")
@@ -136,24 +231,31 @@ def create_parser() -> argparse.ArgumentParser:
     cloak = subparsers.add_parser("cloak", help="Show cloak status")
     cloak.add_argument("--status", action="store_true", help="Display current cloak modules")
 
+    verify = subparsers.add_parser("verify", help="Trigger verification flows")
+    verify.add_argument("--crypto", action="store_true", help="Submit post-quantum attestation")
+    verify.add_argument("--target", default="vaultfire-cli", help="Target module identifier")
+
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = create_parser()
     args = parser.parse_args(argv)
+    pilot = bool(getattr(args, "pilot", False))
     if args.command == "deploy":
-        return handle_deploy(args.profile)
+        return handle_deploy(args.profile, pilot=pilot)
     if args.command == "fade":
-        return handle_fade(args.persona)
+        return handle_fade(args.persona, pilot=pilot)
     if args.command == "drift":
-        return handle_drift(args.simulate)
+        return handle_drift(args.simulate, pilot=pilot)
     if args.command == "test":
         return handle_test(args.all)
     if args.command == "cloak":
         if not args.status:
             parser.error("cloak command requires --status")
-        return handle_cloak_status()
+        return handle_cloak_status(pilot=pilot)
+    if args.command == "verify":
+        return handle_verify(crypto=args.crypto, target=args.target, pilot=pilot)
     parser.error("Unknown command")
 
 
@@ -163,6 +265,7 @@ __all__ = [
     "handle_deploy",
     "handle_drift",
     "handle_fade",
+    "handle_verify",
     "handle_test",
     "main",
 ]

@@ -1,0 +1,29 @@
+{
+  "core": [
+    {"name": "Vaultfire22Core", "status": "pending_audit", "description": "Primary mission kernel and activation orchestrator."},
+    {"name": "BeliefForge", "status": "pending_audit", "description": "Belief signal harmoniser for early trust loops."},
+    {"name": "SanctumLoop", "status": "pending_audit", "description": "Guardian cloak checks and sanctum shield orchestration."},
+    {"name": "UltraShadow", "status": "pending_audit", "description": "Stealth veil for controlled partner mirrors."},
+    {"name": "MissionSoulLoop", "status": "pending_audit", "description": "Mission resonance and purpose guardrails."},
+    {"name": "LivingMemoryLedger", "status": "pending_audit", "description": "Memory ledger for partner reflections."},
+    {"name": "PurposeParallaxEngine", "status": "pending_audit", "description": "Alignment parallax calibrator for onboarding."}
+  ],
+  "optional": [
+    {"name": "GiftMatrixEngine", "status": "pending_audit", "description": "Reward weaving for collaborative quests."},
+    {"name": "PredictiveYieldFabric", "status": "pending_audit", "description": "Predictive yield estimator for partner pilots."},
+    {"name": "QuantumEchoMirror", "status": "pending_audit", "description": "Quantum echo diagnostics for reflective audits."},
+    {"name": "TemporalDreamcatcherEngine", "status": "pending_audit", "description": "Temporal scenario sampler for belief rehearsal."},
+    {"name": "ConsciousStateEngine", "status": "pending_audit", "description": "Conscious state monitor for pilot insights."},
+    {"name": "SoulLoopFabricEngine", "status": "pending_audit", "description": "Soul loop fabric weaving optional nuance layers."}
+  ],
+  "advanced": [
+    {"name": "QuantumDriftSynchronizer", "status": "pending_audit", "description": "Advanced quantum drift synchronisation stack."},
+    {"name": "VaultfireMythosEngine", "status": "pending_audit", "description": "Mythic storytelling and resonance amplifier."},
+    {"name": "LoopSingularityDetectorEngine", "status": "pending_audit", "description": "Singularity detector for advanced logic control."},
+    {"name": "TemporalBehavioralCompressionEngine", "status": "pending_audit", "description": "Behavior compression for relic layer unlocks."},
+    {"name": "AdaptiveRelicStore", "status": "pending_audit", "description": "Relic archive for progressive unlock control."},
+    {"name": "GhostMemoryArchive", "status": "pending_audit", "description": "Ghost memory vault for trust-elevated access."},
+    {"name": "SignalForge", "status": "pending_audit", "description": "Signal forging foundry powering belief expansions."},
+    {"name": "VaultfireDNASyncer", "status": "pending_audit", "description": "DNA syncer for advanced mission embodiments."}
+  ]
+}
