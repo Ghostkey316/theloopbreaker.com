@@ -17,6 +17,7 @@
     "cli_sync",
     "codex_overdrive_v2",
     "connector_resilience_layer",
+    "creator_coin_genesis",
     "contributor_identity",
     "contributor_protocol",
     "contributor_xp",

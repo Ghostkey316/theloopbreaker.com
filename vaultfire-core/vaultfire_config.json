@@ -39,6 +39,24 @@
     "sandbox_enabled": true,
     "ping": true
   },
+  "creator_coin": {
+    "symbol": "GHOSTKEY",
+    "alias": "VAULT",
+    "protocol_manifest": "protocol/creator_coin_protocol.json",
+    "mint_adapter": "scripts/prepare_creator_coin_mint.py",
+    "linked_manifesto": "ghostkey_manifesto.md",
+    "passive_yield_engine": "activate_yield.js",
+    "eligible_tags": [
+      "ns3_quiz_participants",
+      "ghostkey316_post_engagement",
+      "asm_holders"
+    ],
+    "royalty_recipient": {
+      "ens": "ghostkey316.eth",
+      "wallet": "bpow20.cb.id",
+      "rights": "lifetime"
+    }
+  },
   "contributor_metadata_lock": {
     "wallet": "bpow20.cb.id",
     "ens": "ghostkey316.eth"

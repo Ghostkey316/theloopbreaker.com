@@ -8,7 +8,8 @@
     "PurposeEngine_v2",
     "LoyaltySync",
     "RetroYield",
-    "ASICompanionCore"
+    "ASICompanionCore",
+    "CreatorCoinGenesis_v1"
   ],
   "clone_partner": ["NS3", "Worldcoin", "OpenAI"],
   "permissions": {
@@ -18,6 +19,7 @@
   },
   "deploy_ready": true,
   "retro_yield_enable": true,
+  "creator_coin_protocol": "protocol/creator_coin_protocol.json",
   "token_id": 0,
   "chain": "base",
   "log": "Vaultfire Protocol successfully forked by Ghostkey-316. Partner sync unlocked. Genesis complete."
