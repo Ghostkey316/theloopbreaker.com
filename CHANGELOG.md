@@ -22,6 +22,11 @@
 - Upgraded `FORKABLE_PROTOCOL.md` to version 1.1 with zk-SNARK attestation, post-quantum key rotation, and AI collaboration loops that preserve the Ghostkey manifesto mission lock.
 - Expanded `vaultfire_3yr_protocol.yml` with innovation, security, and mission safeguard tracks that integrate edge inference meshes, zero-knowledge verification cadences, and alignment beacons.
 
+## 2025-10-16 — feature: Creator Coin genesis protocol
+- Registered the Ghostkey-316 Creator Coin genesis manifest and linked it to the Codex manifesto, Vaultfire Passive Yield Engine, and Vaultfire NFT identity anchors.
+- Shipped `scripts/prepare_creator_coin_mint.py` to emit a Zora Creator 1155 mint payload with Coinbase, NS3, and Assemble AI activation flows ready for partners.
+- Locked retroactive royalties to Ghostkey-316 through the royalty engine and marketplace currency updates so lifetime revenue share streams through the new $GHOSTKEY creator coin.
+
 ## 2025-10-15 — feature: Aurora privacy core + partner autopilots
 - Replaced the placeholder FHE stack with the Aurora runtime, delivering
   deterministic masking, auditable commitments, and hardened noise controls

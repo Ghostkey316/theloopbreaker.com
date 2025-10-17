@@ -1,0 +1,28 @@
+{
+  "sync_id": "creator-coin-passive-yield",
+  "engine": "passive_yield_engine",
+  "trigger": "creator_coin_activation",
+  "routes": [
+    {
+      "partner": "Coinbase",
+      "channel": "wallet",
+      "status": "ready"
+    },
+    {
+      "partner": "NS3",
+      "channel": "mission-thread",
+      "status": "ready"
+    },
+    {
+      "partner": "Assemble AI",
+      "channel": "belief-feed",
+      "status": "ready"
+    }
+  ],
+  "royalty_stream": {
+    "recipient": "bpow20.cb.id",
+    "ens": "ghostkey316.eth",
+    "token": "GHOSTKEY",
+    "lifetime": true
+  }
+}

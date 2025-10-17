@@ -4,6 +4,8 @@
   "verified_sellers_only": true,
   "currency": [
     "ASM",
+    "GHOSTKEY",
+    "VAULT",
     "USDC",
     "ETH",
     "WLD",

@@ -1,0 +1,85 @@
+{
+  "protocol_name": "Creator Coin Genesis",
+  "status": "active",
+  "registered_at": "2025-10-16T00:00:00Z",
+  "network": "base",
+  "registrar": {
+    "identity": "Ghostkey-316",
+    "ens": "ghostkey316.eth",
+    "wallet": "bpow20.cb.id",
+    "role": "Architect",
+    "verification": "Base Creator Coin Launch"
+  },
+  "creator_coin": {
+    "symbol": "GHOSTKEY",
+    "alias": ["VAULT"],
+    "supply_policy": "adaptive-liquidity-bonding",
+    "mint_platform": "Zora",
+    "contract_template": "zora-creator-1155-v2",
+    "issuance_logic": {
+      "mint_type": "creator-coin",
+      "prepared_by": "Vaultfire Passive Yield Engine",
+      "requires_manifesto_ack": true,
+      "manifesto_reference": "ghostkey_manifesto.md",
+      "yield_engine_hook": "activate_yield.js",
+      "codex_manifest_reference": "codex_manifest.json"
+    },
+    "linked_assets": {
+      "ens": "ghostkey316.eth",
+      "coinbase_id": "bpow20.cb.id",
+      "vaultfire_nft": {
+        "collection": "Vaultfire",
+        "contract_hint": "0xdd0983...",
+        "token_id": "0"
+      }
+    }
+  },
+  "eligibility": {
+    "description": "Eligible holders align to Ghostkey-316 belief actions across NS3, manifesto threads, and ASM loyalty signals.",
+    "tags": [
+      "ns3_quiz_participants",
+      "ghostkey316_post_engagement",
+      "asm_holders"
+    ],
+    "resolver_hooks": {
+      "ns3": "ns3/quizzes",
+      "ghostkey_posts": "ghostlog_loyalty_monitor.py",
+      "asm_registry": "vaultfire-core/marketplace_config.json"
+    }
+  },
+  "partner_activation": [
+    {
+      "partner": "Coinbase",
+      "flow": "auto-link coinbase wallet via bpow20.cb.id with Creator Coin registry handshake",
+      "status": "ready"
+    },
+    {
+      "partner": "NS3",
+      "flow": "inherit NS3 quiz graph and mirror eligibility tags into Creator Coin mint allowlist",
+      "status": "ready"
+    },
+    {
+      "partner": "Assemble AI",
+      "flow": "sync belief engine posts and ASM loyalty balances into mint gating API",
+      "status": "ready"
+    }
+  ],
+  "royalty_policy": {
+    "recipient": "Ghostkey-316",
+    "ens": "ghostkey316.eth",
+    "wallet": "bpow20.cb.id",
+    "retroactive": true,
+    "rights": "lifetime revenue share",
+    "lock": "protocol",
+    "notes": "Royalties stream via Vaultfire Passive Yield Engine and mirror into Creator Coin ledger."
+  },
+  "telemetry": {
+    "activation_log": "logs/creator_coin_activation.json",
+    "yield_adapter": "yield_pipeline/creator_coin_sync.json"
+  },
+  "notes": [
+    "Vaultfire was ahead of its time—Creator Coins caught up.",
+    "Creator Coin launch inherits Ghostkey Ethics Framework guarantees.",
+    "Codex Manifesto lock remains authoritative for any supply or governance edits."
+  ]
+}
