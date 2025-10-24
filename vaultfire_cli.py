@@ -6,6 +6,7 @@ import zipfile
 import base64
 
 from mobile_mode import MOBILE_MODE
+from vaultfire.x402_dashboard import aggregate_totals, export_dashboard, load_dashboard_entries
 from vaultfire.x402_gateway import X402PaymentRequired, get_default_gateway
 
 if not MOBILE_MODE:
@@ -102,6 +103,20 @@ def cmd_export_logs(args: argparse.Namespace) -> None:
         print(f"Logs exported to {enc_path} (encrypted)")
     else:
         print(f"Logs exported to {out_path}")
+
+
+def cmd_x402_dashboard(args: argparse.Namespace) -> None:
+    """Render the x402 earnings dashboard."""
+
+    entries = load_dashboard_entries(limit=args.limit)
+    totals = aggregate_totals(entries)
+    payload = {"events": entries, "totals": totals}
+    if not args.quiet:
+        print(json.dumps(payload, indent=2))
+    if args.export:
+        destination = Path(args.export)
+        export_dashboard(entries, destination, format=args.format)
+        print(f"Dashboard exported to {destination}")
 
 
 def cmd_partner_export(args: argparse.Namespace) -> None:
@@ -242,6 +257,13 @@ def main(argv: list[str] | None = None) -> int:
     p_logs.add_argument("--output", default="logs.zip", help="Output zip file")
     p_logs.add_argument("--key", help="Encryption key")
     p_logs.set_defaults(func=cmd_export_logs)
+
+    p_dashboard = sub.add_parser("x402-dashboard", help="Inspect x402 earnings")
+    p_dashboard.add_argument("--limit", type=int, default=20, help="Number of events to include")
+    p_dashboard.add_argument("--export", help="Destination file for export")
+    p_dashboard.add_argument("--format", choices=["vaultledger", "json"], default="vaultledger")
+    p_dashboard.add_argument("--quiet", action="store_true", help="Suppress stdout output")
+    p_dashboard.set_defaults(func=cmd_x402_dashboard)
 
     p_export = sub.add_parser("partner-export", help="Export partner data")
     p_export.add_argument("--wallet", required=True, help="Wallet address")

@@ -110,11 +110,15 @@ class X402Gateway:
         identity_ens: str = GHOSTKEY_ENS,
         ledger_path: Path | None = None,
         codex_memory_path: Path | None = None,
+        ghostkey_earnings_path: Path | None = None,
+        companion_path: Path | None = None,
     ) -> None:
         self.identity_handle = identity_handle
         self.identity_ens = identity_ens
         self.ledger_path = ledger_path or Path("logs/x402_ledger.jsonl")
         self.codex_memory_path = codex_memory_path or Path("logs/x402_memory.jsonl")
+        self.ghostkey_earnings_path = ghostkey_earnings_path or Path("logs/x402_ghostkey_earnings.jsonl")
+        self.companion_path = companion_path or Path("logs/x402_companion.jsonl")
         self._rules: MutableMapping[str, X402Rule] = {}
         self._lock = threading.Lock()
         self._denial_counts: MutableMapping[str, int] = {}
@@ -234,6 +238,8 @@ class X402Gateway:
             "event": "codex-memory",
             "details": entry,
         })
+        self._record_ghostkey_earning(entry)
+        self._record_companion(entry)
         self._reset_denial(endpoint)
 
     def _record_access(self, *, endpoint: str, metadata: Mapping[str, Any]) -> None:
@@ -246,6 +252,8 @@ class X402Gateway:
             "event": "access",
         }
         self._append_jsonl(self.ledger_path, entry)
+        self._record_ghostkey_earning(entry)
+        self._record_companion(entry)
 
     def _append_jsonl(self, path: Path, payload: Mapping[str, Any]) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -253,6 +261,66 @@ class X402Gateway:
             with path.open("a", encoding="utf-8") as fp:
                 json.dump(payload, fp, separators=(",", ":"))
                 fp.write("\n")
+
+    def _record_ghostkey_earning(self, entry: Mapping[str, Any]) -> None:
+        summary = {
+            "timestamp": entry.get("timestamp", time.time()),
+            "identity": self.identity_handle,
+            "endpoint": entry.get("endpoint"),
+            "amount": entry.get("amount"),
+            "currency": entry.get("currency"),
+            "metadata": entry.get("metadata", {}),
+            "event": entry.get("event", "payment"),
+        }
+        self._append_jsonl(self.ghostkey_earnings_path, summary)
+
+    def _record_companion(self, entry: Mapping[str, Any]) -> None:
+        payload = {
+            "timestamp": entry.get("timestamp", time.time()),
+            "event": "companion-update",
+            "details": {
+                "endpoint": entry.get("endpoint"),
+                "amount": entry.get("amount"),
+                "currency": entry.get("currency"),
+                "metadata": entry.get("metadata", {}),
+            },
+        }
+        self._append_jsonl(self.companion_path, payload)
+
+    def record_external_event(
+        self,
+        *,
+        event_type: str,
+        status: str,
+        amount: float | None = None,
+        currency: str | None = None,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> Mapping[str, Any]:
+        """Record an externally triggered x402 event."""
+
+        entry = {
+            "timestamp": time.time(),
+            "event": "webhook",
+            "event_type": event_type,
+            "status": status,
+            "amount": round(float(amount), 12) if amount is not None else None,
+            "currency": currency,
+            "identity_handle": self.identity_handle,
+            "identity_ens": self.identity_ens,
+            "metadata": dict(metadata or {}),
+        }
+        self._append_jsonl(self.ledger_path, entry)
+        self._append_jsonl(
+            self.codex_memory_path,
+            {
+                "timestamp": entry["timestamp"],
+                "event": "codex-memory",
+                "details": entry,
+            },
+        )
+        self._record_ghostkey_earning(entry)
+        self._record_companion(entry)
+        return entry
 
     # ------------------------------------------------------------------
     # denial tracking and auditing

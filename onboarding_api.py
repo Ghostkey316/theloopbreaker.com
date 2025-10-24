@@ -7,6 +7,7 @@ from simulate_partner_activation import simulate_activation, ALIGNMENT_PHRASE
 from engine.ens_sync_status import read_sync_status
 from engine.case_studies import submit_case_study, list_case_studies
 from engine.human_standard_guard import DEFAULT_HUMAN_STANDARD_GUARD
+from vaultfire.x402_listener import x402EventListener
 from partner_modules import (
     get_audit_logs,
     record_audit_log,
@@ -20,6 +21,7 @@ from partner_modules import (
 )
 
 app = Flask(__name__)
+x402EventListener(app)
 BASE_DIR = Path(__file__).resolve().parent
 
 PARTNERS_PATH = BASE_DIR / "partners.json"
