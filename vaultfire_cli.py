@@ -1,13 +1,19 @@
 import argparse
+import base64
+import hashlib
 import json
 from pathlib import Path
 import time
 import zipfile
-import base64
+from typing import Any, Dict, List, Mapping
 
 from mobile_mode import MOBILE_MODE
 from vaultfire.x402_dashboard import aggregate_totals, export_dashboard, load_dashboard_entries
-from vaultfire.x402_gateway import X402PaymentRequired, get_default_gateway
+from vaultfire.x402_gateway import (
+    X402GatewayOffline,
+    X402PaymentRequired,
+    get_default_gateway,
+)
 
 if not MOBILE_MODE:
     try:
@@ -217,6 +223,294 @@ def cmd_unlock_access(args: argparse.Namespace) -> None:
 _X402_GATEWAY = get_default_gateway()
 
 
+class VaultCacheManager:
+    """Persist and replay CLI actions captured while offline."""
+
+    def __init__(self, path: Path | None = None) -> None:
+        self.path = path or Path(".vaultcache")
+
+    # ------------------------------------------------------------------
+    # internal helpers
+    # ------------------------------------------------------------------
+    def _load(self) -> Dict[str, Any]:
+        if self.path.exists():
+            try:
+                with self.path.open("r", encoding="utf-8") as fp:
+                    data = json.load(fp)
+            except (json.JSONDecodeError, OSError):
+                return {"pending": [], "last_synced": None}
+            if isinstance(data, dict):
+                data.setdefault("pending", [])
+                data.setdefault("last_synced", None)
+                return data
+        return {"pending": [], "last_synced": None}
+
+    def _write(self, data: Mapping[str, Any]) -> None:
+        tmp_path = self.path.with_suffix(".tmp")
+        tmp_path.parent.mkdir(parents=True, exist_ok=True)
+        with tmp_path.open("w", encoding="utf-8") as fp:
+            json.dump(data, fp, indent=2)
+        tmp_path.replace(self.path)
+
+    def _serialise_metadata(self, metadata: Mapping[str, Any]) -> Dict[str, Any]:
+        if isinstance(metadata, dict):
+            payload: Dict[str, Any] = dict(metadata)
+        else:
+            payload = dict(metadata)
+        try:
+            json.dumps(payload)
+        except TypeError:
+            payload = json.loads(json.dumps(payload, default=str))
+        return payload
+
+    def _compute_hash(self, entry: Mapping[str, Any]) -> str:
+        digest_input = json.dumps(
+            {
+                "endpoint": entry.get("endpoint"),
+                "metadata": entry.get("metadata"),
+                "amount": entry.get("amount"),
+                "currency": entry.get("currency"),
+                "billable": entry.get("billable"),
+                "timestamp": entry.get("timestamp"),
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        return hashlib.sha256(digest_input.encode("utf-8")).hexdigest()
+
+    def _ledger_has_hash(self, gateway, entry_hash: str) -> bool:
+        path = getattr(gateway, "ledger_path", None)
+        if path is None:
+            return False
+        try:
+            with path.open("r", encoding="utf-8") as fp:
+                for line in fp:
+                    try:
+                        payload = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    metadata = payload.get("metadata") or {}
+                    if metadata.get("buffer_hash") == entry_hash:
+                        return True
+        except FileNotFoundError:
+            return False
+        except OSError:
+            return False
+        return False
+
+    # ------------------------------------------------------------------
+    # public API
+    # ------------------------------------------------------------------
+    def build_entry(
+        self,
+        *,
+        endpoint: str,
+        metadata: Mapping[str, Any],
+        amount: float | None,
+        currency: str | None,
+        billable: bool,
+        command: str | None,
+    ) -> Dict[str, Any]:
+        payload = self._serialise_metadata(metadata)
+        entry: Dict[str, Any] = {
+            "endpoint": endpoint,
+            "metadata": payload,
+            "amount": amount,
+            "currency": currency,
+            "billable": billable,
+            "command": command,
+            "timestamp": time.time(),
+        }
+        entry["hash"] = self._compute_hash(entry)
+        return entry
+
+    def queue(self, entry: Mapping[str, Any]) -> bool:
+        data = self._load()
+        pending: List[Dict[str, Any]] = [
+            item for item in data.get("pending", []) if isinstance(item, dict)
+        ]
+        entry_hash = entry.get("hash")
+        if any(item.get("hash") == entry_hash for item in pending):
+            return False
+        pending.append(dict(entry))
+        data["pending"] = pending
+        self._write(data)
+        return True
+
+    def flush(self, gateway) -> Dict[str, Any]:
+        data = self._load()
+        pending: List[Dict[str, Any]] = [
+            item for item in data.get("pending", []) if isinstance(item, dict)
+        ]
+        processed = 0
+        skipped = 0
+        offline = False
+        remaining: List[Dict[str, Any]] = []
+        for entry in pending:
+            if offline:
+                remaining.append(entry)
+                continue
+            entry_hash = entry.get("hash")
+            if entry_hash and self._ledger_has_hash(gateway, entry_hash):
+                skipped += 1
+                continue
+            metadata = dict(entry.get("metadata", {}))
+            if entry_hash:
+                metadata["buffer_hash"] = entry_hash
+            metadata.setdefault("buffered", True)
+            metadata.setdefault("buffer_timestamp", entry.get("timestamp"))
+            try:
+                gateway.execute(
+                    entry.get("endpoint", "cli.vaultfire.sh"),
+                    lambda: None,
+                    amount=entry.get("amount"),
+                    currency=entry.get("currency"),
+                    metadata=metadata,
+                    billable=entry.get("billable"),
+                )
+            except (X402GatewayOffline, ConnectionError, TimeoutError, OSError):
+                offline = True
+                remaining.append(entry)
+            except X402PaymentRequired:
+                remaining.append(entry)
+            else:
+                processed += 1
+        data["pending"] = remaining
+        if processed or (skipped and not offline):
+            data["last_synced"] = time.time()
+        self._write(data)
+        return {
+            "processed": processed,
+            "skipped": skipped,
+            "remaining": len(remaining),
+            "offline": offline,
+        }
+
+    def status(self) -> Dict[str, Any]:
+        data = self._load()
+        pending: List[Dict[str, Any]] = [
+            item for item in data.get("pending", []) if isinstance(item, dict)
+        ]
+        queued = len(pending)
+        timestamps = [item.get("timestamp") for item in pending if item.get("timestamp")]
+        commands = sorted({item.get("command") or "unknown" for item in pending}) if pending else []
+        return {
+            "queued": queued,
+            "last_synced": data.get("last_synced"),
+            "oldest_timestamp": min(timestamps) if timestamps else None,
+            "newest_timestamp": max(timestamps) if timestamps else None,
+            "commands": commands,
+            "hashes": [item.get("hash") for item in pending],
+        }
+
+
+_BUFFER = VaultCacheManager()
+
+
+_OFFLINE_EXCEPTIONS: tuple[type[BaseException], ...] = (
+    X402GatewayOffline,
+    ConnectionError,
+    TimeoutError,
+    OSError,
+)
+
+
+def _queue_buffered_action(
+    *, endpoint: str, command: str | None, metadata: Mapping[str, Any], buffer: VaultCacheManager
+) -> str:
+    rules = _X402_GATEWAY.describe_rules()
+    rule = rules.get(endpoint, {}) if isinstance(rules, dict) else {}
+    default_amount = rule.get("default_amount") if isinstance(rule, dict) else None
+    currency = rule.get("currency") if isinstance(rule, dict) else None
+    minimum_charge = 0.0
+    if isinstance(rule, dict):
+        try:
+            minimum_charge = float(rule.get("minimum_charge", 0) or 0)
+        except (TypeError, ValueError):
+            minimum_charge = 0.0
+    billable = bool(default_amount) or minimum_charge > 0
+    entry = buffer.build_entry(
+        endpoint=endpoint,
+        metadata=dict(metadata),
+        amount=default_amount,
+        currency=currency,
+        billable=billable,
+        command=command,
+    )
+    queued = buffer.queue(entry)
+    action_hash = entry.get("hash", "")
+    label = command or endpoint
+    location = buffer.path
+    if queued:
+        print(
+            f"Gateway offline. Buffered '{label}' for later sync "
+            f"(hash {action_hash[:12]}...) -> {location}"
+        )
+    else:
+        print(
+            f"Buffered action '{label}' already pending (hash {action_hash[:12]}...)."
+        )
+    return action_hash
+
+
+def _announce_flush(report: Mapping[str, Any]) -> None:
+    processed = int(report.get("processed", 0) or 0)
+    skipped = int(report.get("skipped", 0) or 0)
+    remaining = int(report.get("remaining", 0) or 0)
+    offline = bool(report.get("offline"))
+    if processed:
+        message = f"Synced {processed} buffered action(s)"
+        if skipped:
+            message += f"; skipped {skipped} duplicate(s)"
+        if remaining:
+            message += f"; {remaining} still queued"
+        print(message)
+    elif skipped and not offline:
+        print(f"Skipped {skipped} duplicate buffered action(s).")
+    elif offline and remaining:
+        print(f"x402 gateway offline – {remaining} buffered action(s) pending.")
+
+
+def _print_buffer_status(status: Mapping[str, Any], flush_report: Mapping[str, Any]) -> None:
+    payload = dict(status)
+    payload["flush"] = dict(flush_report)
+    print(json.dumps(payload, indent=2))
+
+
+def _execute_with_gateway(
+    args: argparse.Namespace,
+    *,
+    endpoint: str,
+    metadata: Mapping[str, Any],
+    buffer: VaultCacheManager,
+) -> None:
+    callback_executed = False
+
+    def callback() -> Any:
+        nonlocal callback_executed
+        callback_executed = True
+        return args.func(args)
+
+    try:
+        _X402_GATEWAY.execute(endpoint, callback, metadata=dict(metadata))
+    except X402PaymentRequired:
+        raise
+    except _OFFLINE_EXCEPTIONS as exc:
+        if not callback_executed:
+            args.func(args)
+        _queue_buffered_action(
+            endpoint=endpoint,
+            command=getattr(args, "command", None),
+            metadata=dict(metadata),
+            buffer=buffer,
+        )
+        message = str(exc).strip()
+        if message:
+            print(f"x402 gateway unavailable; buffered action ({message}).")
+        else:
+            print("x402 gateway unavailable; buffered action for later sync.")
+
+
 def _resolve_cli_endpoint(command: str) -> str:
     if command == "unlock":
         return "cli.nft_gateway_unlock"
@@ -227,7 +521,12 @@ def _resolve_cli_endpoint(command: str) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="vaultfire-cli", description="Vaultfire multi-tool")
-    sub = parser.add_subparsers(dest="command", required=True)
+    parser.add_argument(
+        "--buffer",
+        action="store_true",
+        help="Show offline buffer status and exit",
+    )
+    sub = parser.add_subparsers(dest="command")
 
     p_sync = sub.add_parser("sync-ens", help="Sync ENS text records")
     p_sync.add_argument("name", help="ENS name")
@@ -289,6 +588,18 @@ def main(argv: list[str] | None = None) -> int:
     p_media.set_defaults(func=cmd_media)
 
     args = parser.parse_args(argv)
+
+    flush_report = _BUFFER.flush(_X402_GATEWAY)
+    _announce_flush(flush_report)
+
+    if getattr(args, "buffer", False):
+        _print_buffer_status(_BUFFER.status(), flush_report)
+        if args.command is None:
+            return 0
+
+    if args.command is None:
+        parser.error("command required")
+
     endpoint = _resolve_cli_endpoint(args.command)
     metadata = {
         "source": "vaultfire-cli",
@@ -296,7 +607,7 @@ def main(argv: list[str] | None = None) -> int:
         "wallet": getattr(args, "wallet", None),
     }
     try:
-        _X402_GATEWAY.execute(endpoint, lambda: args.func(args), metadata=metadata)
+        _execute_with_gateway(args, endpoint=endpoint, metadata=metadata, buffer=_BUFFER)
     except X402PaymentRequired as exc:
         print(exc.user_message())
         return 1

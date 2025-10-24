@@ -40,6 +40,7 @@ from typing import Any, Callable, Dict, Iterable, Mapping, MutableMapping
 
 __all__ = [
     "X402PaymentRequired",
+    "X402GatewayOffline",
     "X402Rule",
     "X402Gateway",
     "get_default_gateway",
@@ -79,6 +80,16 @@ class X402PaymentRequired(RuntimeError):
             "category": self.rule.category,
             "message": self.user_message(),
         }
+
+
+class X402GatewayOffline(RuntimeError):
+    """Raised when the gateway cannot persist ledger events."""
+
+    def __init__(self, message: str, *, path: Path | None = None) -> None:
+        if path is not None:
+            message = f"{message} ({path})"
+        super().__init__(message)
+        self.path = path
 
 
 @dataclass(slots=True)
@@ -257,10 +268,13 @@ class X402Gateway:
 
     def _append_jsonl(self, path: Path, payload: Mapping[str, Any]) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
-        with self._lock:
-            with path.open("a", encoding="utf-8") as fp:
-                json.dump(payload, fp, separators=(",", ":"))
-                fp.write("\n")
+        try:
+            with self._lock:
+                with path.open("a", encoding="utf-8") as fp:
+                    json.dump(payload, fp, separators=(",", ":"))
+                    fp.write("\n")
+        except OSError as exc:  # pragma: no cover - filesystem specific
+            raise X402GatewayOffline("x402 gateway ledger unavailable", path=path) from exc
 
     def _record_ghostkey_earning(self, entry: Mapping[str, Any]) -> None:
         summary = {
