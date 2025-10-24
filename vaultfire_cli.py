@@ -6,6 +6,7 @@ import zipfile
 import base64
 
 from mobile_mode import MOBILE_MODE
+from vaultfire.x402_gateway import X402PaymentRequired, get_default_gateway
 
 if not MOBILE_MODE:
     try:
@@ -198,6 +199,17 @@ def cmd_unlock_access(args: argparse.Namespace) -> None:
         print("NFT not found for", args.wallet)
 
 
+_X402_GATEWAY = get_default_gateway()
+
+
+def _resolve_cli_endpoint(command: str) -> str:
+    if command == "unlock":
+        return "cli.nft_gateway_unlock"
+    if command == "media":
+        return "cli.codex_engine_pulse"
+    return "cli.vaultfire.sh"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="vaultfire-cli", description="Vaultfire multi-tool")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -255,7 +267,17 @@ def main(argv: list[str] | None = None) -> int:
     p_media.set_defaults(func=cmd_media)
 
     args = parser.parse_args(argv)
-    args.func(args)
+    endpoint = _resolve_cli_endpoint(args.command)
+    metadata = {
+        "source": "vaultfire-cli",
+        "command": args.command,
+        "wallet": getattr(args, "wallet", None),
+    }
+    try:
+        _X402_GATEWAY.execute(endpoint, lambda: args.func(args), metadata=metadata)
+    except X402PaymentRequired as exc:
+        print(exc.user_message())
+        return 1
     return 0
 
 

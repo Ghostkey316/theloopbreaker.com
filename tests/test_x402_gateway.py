@@ -1,0 +1,60 @@
+from __future__ import annotations
+
+import json
+
+import pytest
+
+from vaultfire.x402_gateway import (
+    X402Gateway,
+    X402PaymentRequired,
+    X402Rule,
+)
+
+
+def test_execute_records_payment(tmp_path):
+    ledger_path = tmp_path / "ledger.jsonl"
+    memory_path = tmp_path / "memory.jsonl"
+    gateway = X402Gateway(ledger_path=ledger_path, codex_memory_path=memory_path)
+
+    def _callback() -> dict[str, str]:
+        return {"ok": "yes"}
+
+    result = gateway.execute("codex.run_passive_loop", _callback)
+    assert result == {"ok": "yes"}
+
+    ledger_lines = ledger_path.read_text(encoding="utf-8").splitlines()
+    assert ledger_lines, "ledger should contain the payment record"
+    entry = json.loads(ledger_lines[-1])
+    assert entry["event"] == "payment"
+    assert entry["endpoint"] == "codex.run_passive_loop"
+    assert entry["identity_handle"]
+    assert memory_path.exists()
+
+
+def test_payment_required_when_under_threshold(tmp_path):
+    gateway = X402Gateway(
+        ledger_path=tmp_path / "ledger.jsonl",
+        codex_memory_path=tmp_path / "memory.jsonl",
+    )
+    rule = X402Rule(
+        endpoint="test.strict",
+        category="test",
+        description="Strict payment requirement",
+        minimum_charge=0.5,
+        currency="ETH",
+    )
+    gateway.register_rule(rule)
+
+    with pytest.raises(X402PaymentRequired):
+        gateway.execute("test.strict", lambda: None, amount=0.1, currency="ETH")
+
+
+def test_describe_rules_contains_cli_gate(tmp_path):
+    gateway = X402Gateway(
+        ledger_path=tmp_path / "ledger.jsonl",
+        codex_memory_path=tmp_path / "memory.jsonl",
+    )
+    rules = gateway.describe_rules()
+    assert "cli.vaultfire.sh" in rules
+    assert rules["cli.vaultfire.sh"]["category"] == "cli"
+

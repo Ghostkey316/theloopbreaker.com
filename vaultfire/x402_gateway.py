@@ -1,0 +1,383 @@
+"""x402 payment-gating service for Vaultfire.
+
+This module provides a lightweight implementation of the proposed
+``x402`` protocol so that Vaultfire endpoints can be wrapped with HTTP
+402 style access controls.  The gateway keeps track of which endpoints
+are monetised, records micropayments, and mirrors those records into a
+Vaultfire specific ledger.  The design intentionally favours
+extensibility over tight coupling with any single payment rail so that
+future chain specific behaviour (NS3, Worldcoin ID, etc.) can be layered
+on without modifying the core API.
+
+The implementation focuses on a few guarantees:
+
+* Every monetised endpoint is backed by a :class:`X402Rule` definition
+  that specifies the default currency, minimum charge and behavioural
+  hints.
+* Calls that do not provide the required payment information raise an
+  :class:`X402PaymentRequired` error which mirrors the semantics of an
+  HTTP 402 response.
+* Successful calls are written to an append-only JSONL ledger so that
+  downstream tools (Vaultfire Ledger, Codex Memory synchronisers, etc.)
+  can ingest the events.
+* Suspicious activity (underpayment or repeated denials) is logged and
+  marked so that the Vaultfire Relic Audit can be triggered by
+  higher-level services.
+
+The module intentionally avoids network operations – integration with
+Coinbase or external x402 rails is expected to happen through the public
+methods which expose structured event payloads.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from pathlib import Path
+import json
+import threading
+import time
+from typing import Any, Callable, Dict, Iterable, Mapping, MutableMapping
+
+__all__ = [
+    "X402PaymentRequired",
+    "X402Rule",
+    "X402Gateway",
+    "get_default_gateway",
+]
+
+
+GHOSTKEY_WALLET = "bpow20.cb.id"
+GHOSTKEY_ENS = "ghostkey316.eth"
+
+
+class X402PaymentRequired(RuntimeError):
+    """Exception raised when a payment gated endpoint is accessed."""
+
+    def __init__(self, endpoint: str, rule: "X402Rule") -> None:
+        message = (
+            f"HTTP 402 Payment Required for endpoint '{endpoint}'. "
+            f"Charge at least {rule.minimum_charge:.8f} {rule.currency} "
+            "to continue."
+        )
+        super().__init__(message)
+        self.endpoint = endpoint
+        self.rule = rule
+
+    def user_message(self) -> str:
+        """Return a human readable explanation suitable for CLI output."""
+
+        return str(self)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Return a structured payload that mirrors an HTTP 402 response."""
+
+        return {
+            "status": 402,
+            "endpoint": self.endpoint,
+            "currency": self.rule.currency,
+            "minimum_charge": self.rule.minimum_charge,
+            "category": self.rule.category,
+            "message": self.user_message(),
+        }
+
+
+@dataclass(slots=True)
+class X402Rule:
+    """Configuration for an x402 monetised endpoint."""
+
+    endpoint: str
+    category: str
+    description: str
+    minimum_charge: float
+    currency: str = "ETH"
+    default_amount: float | None = None
+    wallet_free: bool = True
+    unlocks: Iterable[str] = field(default_factory=tuple)
+
+    def requires_payment(self) -> bool:
+        """Return ``True`` when the endpoint enforces a payment."""
+
+        return self.minimum_charge > 0 or bool(self.default_amount)
+
+
+class X402Gateway:
+    """Runtime gateway that enforces x402 rules and logs billable events."""
+
+    def __init__(
+        self,
+        *,
+        identity_handle: str = GHOSTKEY_WALLET,
+        identity_ens: str = GHOSTKEY_ENS,
+        ledger_path: Path | None = None,
+        codex_memory_path: Path | None = None,
+    ) -> None:
+        self.identity_handle = identity_handle
+        self.identity_ens = identity_ens
+        self.ledger_path = ledger_path or Path("logs/x402_ledger.jsonl")
+        self.codex_memory_path = codex_memory_path or Path("logs/x402_memory.jsonl")
+        self._rules: MutableMapping[str, X402Rule] = {}
+        self._lock = threading.Lock()
+        self._denial_counts: MutableMapping[str, int] = {}
+        for rule in _DEFAULT_RULES:
+            self.register_rule(rule)
+
+    # ------------------------------------------------------------------
+    # rule handling
+    # ------------------------------------------------------------------
+    def register_rule(self, rule: X402Rule) -> None:
+        """Register or replace an x402 rule."""
+
+        self._rules[rule.endpoint] = rule
+
+    def describe_rules(self) -> Dict[str, Mapping[str, Any]]:
+        """Return a serialisable snapshot of the configured rules."""
+
+        return {
+            endpoint: {
+                "category": rule.category,
+                "description": rule.description,
+                "minimum_charge": rule.minimum_charge,
+                "currency": rule.currency,
+                "default_amount": rule.default_amount,
+                "wallet_free": rule.wallet_free,
+                "unlocks": list(rule.unlocks),
+            }
+            for endpoint, rule in self._rules.items()
+        }
+
+    # ------------------------------------------------------------------
+    # execution helpers
+    # ------------------------------------------------------------------
+    def execute(
+        self,
+        endpoint: str,
+        callback: Callable[[], Any],
+        *,
+        amount: float | None = None,
+        currency: str | None = None,
+        metadata: Mapping[str, Any] | None = None,
+        billable: bool | None = None,
+    ) -> Any:
+        """Execute ``callback`` guarded by the x402 rule for ``endpoint``.
+
+        The method raises :class:`X402PaymentRequired` when a payment is
+        mandatory but no amount is provided.  On success the call is
+        recorded in the ledger.
+        """
+
+        rule = self._rules.get(endpoint)
+        charge_amount: float | None = amount
+        if rule:
+            if charge_amount is None:
+                charge_amount = rule.default_amount
+            if billable is None:
+                billable = rule.requires_payment()
+            if billable and (charge_amount is None or charge_amount < rule.minimum_charge):
+                self._note_denial(endpoint)
+                raise X402PaymentRequired(endpoint, rule)
+        elif billable:
+            # Endpoint not registered but explicitly billable.
+            raise X402PaymentRequired(
+                endpoint,
+                X402Rule(
+                    endpoint=endpoint,
+                    category="custom",
+                    description="unregistered endpoint",
+                    minimum_charge=charge_amount or 0,
+                    currency=currency or "ETH",
+                ),
+            )
+
+        result = callback()
+
+        if charge_amount and charge_amount > 0:
+            self._record_transaction(
+                endpoint=endpoint,
+                amount=charge_amount,
+                currency=currency or (rule.currency if rule else "ETH"),
+                metadata=metadata or {},
+                unlocks=rule.unlocks if rule else (),
+            )
+        else:
+            self._record_access(endpoint=endpoint, metadata=metadata or {})
+
+        return result
+
+    # ------------------------------------------------------------------
+    # logging helpers
+    # ------------------------------------------------------------------
+    def _record_transaction(
+        self,
+        *,
+        endpoint: str,
+        amount: float,
+        currency: str,
+        metadata: Mapping[str, Any],
+        unlocks: Iterable[str],
+    ) -> None:
+        """Append a billable event to the ledger and codex memory log."""
+
+        entry = {
+            "timestamp": time.time(),
+            "endpoint": endpoint,
+            "amount": round(float(amount), 12),
+            "currency": currency,
+            "identity_handle": self.identity_handle,
+            "identity_ens": self.identity_ens,
+            "metadata": dict(metadata),
+            "unlocks": list(unlocks),
+            "event": "payment",
+        }
+        self._append_jsonl(self.ledger_path, entry)
+        self._append_jsonl(self.codex_memory_path, {
+            "timestamp": entry["timestamp"],
+            "event": "codex-memory",
+            "details": entry,
+        })
+        self._reset_denial(endpoint)
+
+    def _record_access(self, *, endpoint: str, metadata: Mapping[str, Any]) -> None:
+        entry = {
+            "timestamp": time.time(),
+            "endpoint": endpoint,
+            "identity_handle": self.identity_handle,
+            "identity_ens": self.identity_ens,
+            "metadata": dict(metadata),
+            "event": "access",
+        }
+        self._append_jsonl(self.ledger_path, entry)
+
+    def _append_jsonl(self, path: Path, payload: Mapping[str, Any]) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with self._lock:
+            with path.open("a", encoding="utf-8") as fp:
+                json.dump(payload, fp, separators=(",", ":"))
+                fp.write("\n")
+
+    # ------------------------------------------------------------------
+    # denial tracking and auditing
+    # ------------------------------------------------------------------
+    def _note_denial(self, endpoint: str) -> None:
+        count = self._denial_counts.get(endpoint, 0) + 1
+        self._denial_counts[endpoint] = count
+        if count >= 3:
+            # After repeated denials we mirror an audit event so that the
+            # Relic Audit can pick it up.
+            self._record_access(
+                endpoint=f"audit::{endpoint}",
+                metadata={
+                    "reason": "repeated_denial",
+                    "denials": count,
+                },
+            )
+
+    def _reset_denial(self, endpoint: str) -> None:
+        if endpoint in self._denial_counts:
+            del self._denial_counts[endpoint]
+
+
+_DEFAULT_RULES: tuple[X402Rule, ...] = (
+    X402Rule(
+        endpoint="api.vaultfire.query",
+        category="api",
+        description="Vaultfire API queries gated by x402",
+        minimum_charge=0.00042,
+        currency="ETH",
+        default_amount=0.00042,
+        unlocks=("vaultfire_api_access",),
+    ),
+    X402Rule(
+        endpoint="codex.function.unlock",
+        category="codex",
+        description="Codex function unlock token",
+        minimum_charge=0.00021,
+        currency="ASM",
+        default_amount=0.00021,
+        unlocks=("codex_function",),
+    ),
+    X402Rule(
+        endpoint="drops.weekly",
+        category="drops",
+        description="Weekly drop activation via x402",
+        minimum_charge=0.0005,
+        currency="WLD",
+        default_amount=0.0005,
+        unlocks=("weekly_drop", "vaultfire_badge"),
+    ),
+    X402Rule(
+        endpoint="yield.passive_module",
+        category="yield",
+        description="Passive yield module trigger",
+        minimum_charge=0.00031,
+        currency="ETH",
+        default_amount=0.00031,
+        unlocks=("passive_yield",),
+    ),
+    X402Rule(
+        endpoint="codex.trigger_belief_mirror",
+        category="codex",
+        description="Belief mirror trigger",
+        minimum_charge=0.00025,
+        currency="ASM",
+        default_amount=0.00025,
+        unlocks=("belief_mirror", "vaultfire_prompt"),
+    ),
+    X402Rule(
+        endpoint="codex.run_passive_loop",
+        category="codex",
+        description="Passive loop execution",
+        minimum_charge=0.00029,
+        currency="ETH",
+        default_amount=0.00029,
+        unlocks=("passive_loop",),
+    ),
+    X402Rule(
+        endpoint="codex.validate_loyalty_action",
+        category="codex",
+        description="Loyalty action validator",
+        minimum_charge=0.00019,
+        currency="ASM",
+        default_amount=0.00019,
+        unlocks=("loyalty_validation", "secret_prompt"),
+    ),
+    X402Rule(
+        endpoint="cli.vaultfire.sh",
+        category="cli",
+        description="Vaultfire companion CLI access gate",
+        minimum_charge=0.0001,
+        currency="ETH",
+        default_amount=0.0001,
+        unlocks=("cli_toolchain",),
+    ),
+    X402Rule(
+        endpoint="cli.codex_engine_pulse",
+        category="cli",
+        description="Codex engine pulse execution",
+        minimum_charge=0.0002,
+        currency="ETH",
+        default_amount=0.0002,
+        unlocks=("codex_pulse",),
+    ),
+    X402Rule(
+        endpoint="cli.nft_gateway_unlock",
+        category="cli",
+        description="NFT gateway unlock guard",
+        minimum_charge=0.0002,
+        currency="ETH",
+        default_amount=0.0002,
+        unlocks=("nft_gateway",),
+    ),
+)
+
+
+_DEFAULT_GATEWAY: X402Gateway | None = None
+
+
+def get_default_gateway() -> X402Gateway:
+    """Return a process-wide shared :class:`X402Gateway`."""
+
+    global _DEFAULT_GATEWAY
+    if _DEFAULT_GATEWAY is None:
+        _DEFAULT_GATEWAY = X402Gateway()
+    return _DEFAULT_GATEWAY
+
