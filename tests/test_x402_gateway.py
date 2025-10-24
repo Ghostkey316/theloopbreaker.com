@@ -14,7 +14,12 @@ from vaultfire.x402_gateway import (
 def test_execute_records_payment(tmp_path):
     ledger_path = tmp_path / "ledger.jsonl"
     memory_path = tmp_path / "memory.jsonl"
-    gateway = X402Gateway(ledger_path=ledger_path, codex_memory_path=memory_path)
+    gateway = X402Gateway(
+        ledger_path=ledger_path,
+        codex_memory_path=memory_path,
+        ghostkey_earnings_path=tmp_path / "ghostkey.jsonl",
+        companion_path=tmp_path / "companion.jsonl",
+    )
 
     def _callback() -> dict[str, str]:
         return {"ok": "yes"}
@@ -35,6 +40,8 @@ def test_payment_required_when_under_threshold(tmp_path):
     gateway = X402Gateway(
         ledger_path=tmp_path / "ledger.jsonl",
         codex_memory_path=tmp_path / "memory.jsonl",
+        ghostkey_earnings_path=tmp_path / "ghostkey.jsonl",
+        companion_path=tmp_path / "companion.jsonl",
     )
     rule = X402Rule(
         endpoint="test.strict",
@@ -53,6 +60,8 @@ def test_describe_rules_contains_cli_gate(tmp_path):
     gateway = X402Gateway(
         ledger_path=tmp_path / "ledger.jsonl",
         codex_memory_path=tmp_path / "memory.jsonl",
+        ghostkey_earnings_path=tmp_path / "ghostkey.jsonl",
+        companion_path=tmp_path / "companion.jsonl",
     )
     rules = gateway.describe_rules()
     assert "cli.vaultfire.sh" in rules
