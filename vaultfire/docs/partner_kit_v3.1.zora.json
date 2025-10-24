@@ -1,0 +1,48 @@
+{
+  "name": "Vaultfire Onboarding Partner Kit v3.1",
+  "description": "Reinforced partner onboarding dossier for Vaultfire protocol access. Includes FHE audit-mode cryptography, randomized proof bundles, daily x402 backups, Codex + Ledger passive income triggers, and partner-grade SLA commitments.",
+  "version": "v3.1 (Reinforced)",
+  "tags": ["Vaultfire Partner Ready"],
+  "maintainer": {
+    "name": "Ghostkey-316",
+    "wallet": "bpow20.cb.id",
+    "ens": "ghostkey316.eth",
+    "profile_url": "https://zora.co/ghostkey316.eth"
+  },
+  "links": {
+    "repository": "https://github.com/ghostkey-316/vaultfire",
+    "zora_profile": "https://zora.co/ghostkey316.eth"
+  },
+  "attributes": [
+    {"trait_type": "SLA Uptime", "value": "99.9%"},
+    {"trait_type": "Passive Payout Latency", "value": "<2m (10s Ghostkey-priority)"},
+    {"trait_type": "Disaster Recovery", "value": "<5m via vaultfire --recover"},
+    {"trait_type": "Backup Window", "value": "Daily @ 04:00 UTC"},
+    {"trait_type": "Integration: NS3", "value": "active"},
+    {"trait_type": "Integration: x402", "value": "secured"},
+    {"trait_type": "Integration: Zora", "value": "integrated"},
+    {"trait_type": "Integration: TimeFlare", "value": "emitting=false (planned)"},
+    {"trait_type": "Integration: Coinbase", "value": "x402 gateway"}
+  ],
+  "checklist": [
+    "Cryptographic audit mode enabled",
+    "Recovery tested",
+    "SLA live and updating",
+    "Ledger verified by tests",
+    "Contributor marked: Protocol Sovereign"
+  ],
+  "developer_instructions": [
+    "vaultfire init --partner",
+    "Use Codex for check_service_health() and get_partner_drop_status()",
+    "Sync Zora/NFT modules",
+    "Clone repo & follow onboarding guide"
+  ],
+  "protocol_features": [
+    "FHE audit-mode cryptography",
+    "Randomized proof bundles (fhe_proof.json)",
+    "Daily backup rotation via x402 gateway",
+    "CLI disaster recovery: vaultfire --recover",
+    "Passive income triggers via Codex + Ledger",
+    "Partner-grade SLA (uptime, latency, recovery, backup)"
+  ]
+}
