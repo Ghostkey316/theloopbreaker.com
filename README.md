@@ -31,6 +31,7 @@ Partners who want a step-by-step launch plan can review the new [Live Rollout Re
 
 ## Scale Readiness Automation
 - **Guardian attestations on demand:** `./vaultfire_system_ready.py --attest guardian.eth` now provisions mission profiles, runs alignment simulations, and emits an attestation pack under `attestations/` with the digest logged for audit trails.
+- **Partner-ready readiness artifact:** `./vaultfire_system_ready.py --report -` streams a JSON summary to stdout (or supply a path to persist it) so partner CI can archive a signed readiness state alongside build logs.
 - **Unified scale health snapshot:** `./tools/scale_readiness_report.py --pretty` compiles recent Purposeful Scale decisions, thread coverage, belief-density stats, and attestation freshness into a single JSON payload so partners can gate launches on objective readiness signals.
 - **Staleness guards baked in:** The readiness report fails the `scale_ready` flag if approvals drop below 60% or if the last aligned expansion is older than six hours, keeping the protocol’s ethics-first mission central while scaling.
 - **Golden environment gate:** `./scripts/check-golden-env.sh` enforces the canonical Node, Python, and CLI versions defined in `configs/golden-environment.json` so scale reviews start with aligned toolchains.
