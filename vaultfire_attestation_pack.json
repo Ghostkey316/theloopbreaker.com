@@ -1,0 +1,39 @@
+{
+  "checksum": "e1f84c8a34fedf9f180ebe5e35308370953673b52392f242e1a4da936cd37161",
+  "pack": {
+    "artifacts": [
+      {
+        "name": "fhe_proof",
+        "path": "/workspace/ghostkey-316-vaultfire-init/vaultfire/trust/fhe_proof.json",
+        "sha256": "754a9bc13aa13d39a9c42912006153522c8ef5c8a128120c58f74d59c73e2c89"
+      },
+      {
+        "name": "zk_codex_receipts",
+        "path": "/workspace/ghostkey-316-vaultfire-init/vaultfire/trust/zk_codex_receipts.json",
+        "sha256": "b9c90bc496bcbe7d46e4a00b30b065904cfc5f25b49daaa2fffc4ec76110ce26"
+      }
+    ],
+    "codex_validation": {
+      "hash": "e15d6010f84bd13e5086fa535414e1a6ce980bd1254332c3911da815af5d386d",
+      "ledgers": [
+        "pools:1"
+      ],
+      "noir_plugins": [
+        "airdrop_eligibility:ok",
+        "loyalty_streak:ok",
+        "role_gate:ok"
+      ],
+      "receipts": [
+        "count:1"
+      ]
+    },
+    "generated_at": "2025-10-24T21:58:30.577378+00:00",
+    "label": "vaultfire-public-pilot",
+    "pack_id": "2fd4ce0b9f404d42a051b553ef44ec3f",
+    "signer": "ghostkey316"
+  },
+  "signature": {
+    "digest": "85c4ce5ca0afbba63513d9589bd7899c0bd01b37b175bd41f582c240995f2204",
+    "signer": "ghostkey316"
+  }
+}

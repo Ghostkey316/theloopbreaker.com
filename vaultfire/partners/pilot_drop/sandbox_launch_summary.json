@@ -1,0 +1,55 @@
+{
+  "profile": {
+    "expected_flow": [
+      "connect-wallet",
+      "submit-sandbox-proof",
+      "launch-codex-sandbox"
+    ],
+    "partner_id": "ghostkey-alpha",
+    "telemetry_opt_in": true,
+    "tier": "sandbox",
+    "wallet_proof": "ghostkey-alpha-sepolia-proof"
+  },
+  "telemetry": {
+    "partner_id": "ghostkey-alpha",
+    "redirect": "sandbox/vaultfire_trace.json",
+    "telemetry_opt_in": true,
+    "timestamp": "2025-10-24T21:58:10.715200+00:00",
+    "trace_id": "c1be1699727749d4a2c29f98c1124173"
+  },
+  "testnet": {
+    "created_at": "2025-10-24T21:58:10.715074+00:00",
+    "deterministic_seed": "9b61365118b913d3fdc163f1ed49f102",
+    "endpoints": {
+      "api": "https://ghostkey-alpha.vaultfire.testnet/api",
+      "dashboard": "https://ghostkey-alpha.vaultfire.testnet/dashboard",
+      "telemetry": "wss://ghostkey-alpha.vaultfire.testnet/telemetry"
+    },
+    "features": [
+      "deterministic_mirror",
+      "sandbox_proxy",
+      "telemetry_redirect"
+    ],
+    "mission_statement": "Belief-secured intelligence for partners who lead with ethics.",
+    "partner": "ghostkey-alpha",
+    "scope": "sandbox",
+    "status": "active"
+  },
+  "x402_proxy": {
+    "ledger_path": "sandbox/x402_sandbox_ledger.jsonl",
+    "rules": {
+      "category": "sandbox",
+      "currency": "ETH",
+      "default_amount": null,
+      "description": "Passive x402 proxy shield for sandbox partners",
+      "minimum_charge": 0.0,
+      "unlocks": [
+        "telemetry_redirect",
+        "deterministic_mirror"
+      ],
+      "wallet_free": true
+    },
+    "tier": "sandbox",
+    "timestamp": "2025-10-24T21:58:10.715639+00:00"
+  }
+}

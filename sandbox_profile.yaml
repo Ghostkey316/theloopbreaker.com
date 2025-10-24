@@ -1,0 +1,11 @@
+{
+  "partner_id": "ghostkey-alpha",
+  "tier": "sandbox",
+  "telemetry_opt_in": true,
+  "wallet_proof": "ghostkey-alpha-sepolia-proof",
+  "expected_flow": [
+    "connect-wallet",
+    "submit-sandbox-proof",
+    "launch-codex-sandbox"
+  ]
+}

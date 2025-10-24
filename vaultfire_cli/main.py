@@ -12,6 +12,8 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Mapping, Sequence, Tuple
 
+from attestation.pack_generator import generate_and_write_pack, resolve_destination
+
 from persona_drift import PersonaDrift
 
 from vaultfire.modules import (
@@ -208,6 +210,14 @@ def handle_verify(*, crypto: bool, target: str, pilot: bool = False) -> int:
     return 0
 
 
+def handle_attest(*, output: str, sign: str, label: str | None = None) -> int:
+    destination = resolve_destination(output)
+    pack = generate_and_write_pack(signer=sign, destination=destination, label=label)
+    payload = {"output": str(destination), **pack}
+    print(_color(_json_dump(payload), GREEN))
+    return 0
+
+
 def handle_recover(*, pilot: bool = False) -> int:
     del pilot  # signature retains pilot flag for symmetry with other handlers
     _heading("Vaultfire disaster recovery", YELLOW)
@@ -261,6 +271,11 @@ def create_parser() -> argparse.ArgumentParser:
     verify.add_argument("--crypto", action="store_true", help="Submit post-quantum attestation")
     verify.add_argument("--target", default="vaultfire-cli", help="Target module identifier")
 
+    attest = subparsers.add_parser("attest", help="Generate cryptographic attestation packs")
+    attest.add_argument("--output", default="pack", help="Output label or file for the pack")
+    attest.add_argument("--sign", required=True, help="Signer handle for the attestation")
+    attest.add_argument("--label", help="Optional metadata label override")
+
     return parser
 
 
@@ -286,6 +301,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return handle_cloak_status(pilot=pilot)
     if args.command == "verify":
         return handle_verify(crypto=args.crypto, target=args.target, pilot=pilot)
+    if args.command == "attest":
+        return handle_attest(output=args.output, sign=args.sign, label=args.label)
     parser.error("Unknown command")
 
 
@@ -295,6 +312,7 @@ __all__ = [
     "handle_deploy",
     "handle_drift",
     "handle_fade",
+    "handle_attest",
     "handle_recover",
     "handle_verify",
     "handle_test",
