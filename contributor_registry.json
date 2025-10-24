@@ -18,6 +18,9 @@
       "wallet": "bpow20.cb.id",
       "ens": "ghostkey316.eth"
     },
-    "archive": "https://ghostkey316.cloud/index"
+    "archive": "https://ghostkey316.cloud/index",
+    "proof_of_reserve_verified": true,
+    "cross_chain_enabled": true,
+    "tier_eligibility": "confirmed"
   }
 }

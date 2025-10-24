@@ -6,8 +6,23 @@ from datetime import datetime, timezone
 from typing import Mapping, MutableSequence, Sequence
 
 from .markers import record_protocol_markers
+from .proof_of_reserve import verify_reserve
+from .ccip import (
+    broadcast_belief_cross_chain,
+    check_ccip_status,
+    sync_identity_all_chains,
+    supported_chains,
+)
 
-__all__ = ["ProvenanceTracer", "record_protocol_markers"]
+__all__ = [
+    "ProvenanceTracer",
+    "record_protocol_markers",
+    "verify_reserve",
+    "broadcast_belief_cross_chain",
+    "check_ccip_status",
+    "sync_identity_all_chains",
+    "supported_chains",
+]
 
 
 def _timestamp() -> str:

@@ -1,0 +1,18 @@
+{
+  "source": "chainlink",
+  "last_check": "2025-10-24T17:29:49.315644+00:00",
+  "verified": true,
+  "reserves": {
+    "ASM": 125000.0,
+    "PoP": 87250.5,
+    "ETH": 512.42,
+    "partner_pools": {
+      "loyalty_pool": 145000.0,
+      "yield_guardian": 98250.0
+    }
+  },
+  "oracle": {
+    "status": "connected",
+    "latency_ms": 842
+  }
+}
