@@ -53,5 +53,8 @@
     "wallet": "bpow20.cb.id",
     "ens": "ghostkey316.eth"
   },
-  "contributor_archive": "https://ghostkey316.cloud/index"
+  "contributor_archive": "https://ghostkey316.cloud/index",
+  "ghostkey_patch": true,
+  "privacy_layer": "v2",
+  "x402_proxy": "enabled"
 }

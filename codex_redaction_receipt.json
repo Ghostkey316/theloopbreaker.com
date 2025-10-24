@@ -1,0 +1,9 @@
+{
+  "checksum": "8e5659187b882ae8df717a4ceabf81c71e813886241c8a0752cc942bb6ffc32d",
+  "occurred_at": "2025-10-24T21:35:53.430605+00:00",
+  "scope": [
+    "ghost_entry",
+    "recent"
+  ],
+  "trigger": "!ghostkey_vanish"
+}

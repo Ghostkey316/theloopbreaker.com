@@ -7,6 +7,12 @@ from typing import Mapping, MutableSequence, Sequence
 
 from .markers import record_protocol_markers
 from .proof_of_reserve import verify_reserve
+from .receipts import (
+    ZKReceipt,
+    load_receipts,
+    record_belief_receipt,
+    verify_receipt_integrity,
+)
 from .ccip import (
     broadcast_belief_cross_chain,
     check_ccip_status,
@@ -22,6 +28,10 @@ __all__ = [
     "check_ccip_status",
     "sync_identity_all_chains",
     "supported_chains",
+    "ZKReceipt",
+    "load_receipts",
+    "record_belief_receipt",
+    "verify_receipt_integrity",
 ]
 
 
