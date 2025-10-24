@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from .access_guard import (
+    AccessDecision,
+    MAX_UNVERIFIED_RATE_PER_MINUTE,
+    evaluate_access_rate,
+)
 from .audit import validate_securestore_fallback
 from .fhe import (
     AuroraFHEBackend,
@@ -44,6 +49,9 @@ __all__ = [
     "PlaceholderFHEBackend",
     "PrivacyEngine",
     "SoulboundKey",
+    "AccessDecision",
+    "evaluate_access_rate",
+    "MAX_UNVERIFIED_RATE_PER_MINUTE",
     "FingerprintActivity",
     "track_fingerprint_activity",
     "validate_behavior_signature",
