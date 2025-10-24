@@ -197,6 +197,36 @@ def cmd_media(args: argparse.Namespace) -> None:
         print(json.dumps(result, indent=2))
 
 
+def cmd_sync_identity(args: argparse.Namespace) -> None:
+    """Broadcast identity attestations across supported chains."""
+
+    from vaultfire.trust.ccip import (
+        broadcast_belief_cross_chain,
+        supported_chains,
+        sync_identity_all_chains,
+    )
+
+    payload = {
+        "identity": args.identity,
+        "ens": args.ens,
+        "wallet": args.wallet,
+    }
+    payload = {key: value for key, value in payload.items() if value}
+
+    if args.all_chains:
+        results = sync_identity_all_chains(payload)
+    else:
+        if not args.chain:
+            choices = ", ".join(supported_chains())
+            raise SystemExit(f"--chain required unless --all-chains (options: {choices})")
+        enriched = dict(payload)
+        enriched.setdefault("signal", "identity-sync")
+        enriched.setdefault("origin", "vaultfire")
+        results = [broadcast_belief_cross_chain(args.chain, enriched)]
+
+    print(json.dumps(results, indent=2))
+
+
 def cmd_unlock_access(args: argparse.Namespace) -> None:
     """Verify NFT ownership and enable access hooks."""
     if Web3 is None:
@@ -586,6 +616,14 @@ def main(argv: list[str] | None = None) -> int:
     p_media.add_argument("--video")
     p_media.add_argument("--ai-avatar", action="store_true")
     p_media.set_defaults(func=cmd_media)
+
+    p_identity = sub.add_parser("sync-identity", help="Broadcast identity attestations")
+    p_identity.add_argument("--identity", default="Ghostkey-316", help="Identity label")
+    p_identity.add_argument("--ens", default="ghostkey316.eth", help="ENS name")
+    p_identity.add_argument("--wallet", default="bpow20.cb.id", help="Wallet alias")
+    p_identity.add_argument("--chain", help="Destination chain when not syncing all")
+    p_identity.add_argument("--all-chains", action="store_true", help="Sync to all supported chains")
+    p_identity.set_defaults(func=cmd_sync_identity)
 
     args = parser.parse_args(argv)
 

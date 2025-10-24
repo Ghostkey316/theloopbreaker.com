@@ -103,3 +103,16 @@ except (ImportError, AttributeError):  # pragma: no cover - defensive import gua
     # Defer registration if optional dependencies are unavailable. Downstream
     # callers can re-register once the module is present.
     pass
+
+for _entry, _module in (
+    ("verify_reserve", "vaultfire.trust.proof_of_reserve"),
+    ("broadcast_belief_cross_chain", "vaultfire.trust.ccip"),
+    ("check_ccip_status", "vaultfire.trust.ccip"),
+    ("sync_identity_all_chains", "vaultfire.trust.ccip"),
+):
+    try:
+        add_entry_point(_entry, source=_module, expose_globally=True)
+    except (ImportError, AttributeError):  # pragma: no cover - optional path
+        continue
+    else:
+        __all__.append(_entry)
