@@ -4,3 +4,4 @@
 {"timestamp":"2025-10-24T04:41:33.935739+00:00","event":"protocol-marker","marker":"integration_registry_v1","tags":["vaultfire-reinforcement-v3.1"]}
 {"timestamp":"2025-10-24T04:41:33.935919+00:00","event":"protocol-marker","marker":"sla_published","tags":["vaultfire-reinforcement-v3.1"]}
 {"timestamp":"2025-10-24T04:41:33.936078+00:00","event":"protocol-marker","marker":"recovery_test_passed","tags":["vaultfire-reinforcement-v3.1"]}
+{"timestamp":"2025-10-24T14:30:27.790321Z","event":"protocol-marker","marker":"onboarding_kit_published","value":true,"tags":["vaultfire-reinforcement-v3.1"]}
