@@ -13,7 +13,7 @@ import json
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Iterable, List, Tuple
 
 BASE_DIR = Path(__file__).resolve().parent
 AUDIT_PATH = BASE_DIR / "vaultfire_audit_report.txt"
@@ -21,6 +21,28 @@ READY_FLAG_PATH = BASE_DIR / "vaultfire_ready.flag"
 PARTNER_FORK_PATH = BASE_DIR / "vaultbundle_partner_fork.json"
 ATTESTATION_DIR = BASE_DIR / "attestations"
 LOGS_DIR = BASE_DIR / "logs"
+CRITICAL_SECRET_PATHS = [
+    BASE_DIR / "configs" / "deployment" / "telemetry.yaml",
+    BASE_DIR / "configs" / "deployment" / "reward-streams.yaml",
+]
+PLACEHOLDER_TOKENS = {
+    "change-me",
+    "changeme",
+    "placeholder",
+    "example",
+    "sample",
+    "todo",
+    "default",
+}
+SENSITIVE_KEYS = {
+    "password",
+    "secret",
+    "apikey",
+    "api_key",
+    "clientsecret",
+    "servicerolekey",
+    "accesskey",
+}
 
 @dataclass
 class CheckResult:
@@ -164,6 +186,68 @@ def _validate_files() -> Tuple[List[str], Dict[str, str]]:
             except Exception as e:
                 errors.append(f"invalid csv in {path.name}: {e}")
     return errors, summary
+
+
+def _relative_to_base(path: Path) -> str:
+    try:
+        return str(path.relative_to(BASE_DIR))
+    except ValueError:
+        return str(path)
+
+
+def _audit_credentials(paths: Iterable[Path]) -> Tuple[List[str], Dict[str, Any]]:
+    """Detect placeholder credentials within critical deployment configs."""
+
+    issues: List[str] = []
+    summary: Dict[str, Any] = {}
+
+    for path in paths:
+        flagged: List[str] = []
+        sensitive_keys: List[str] = []
+
+        if not path.exists():
+            issues.append(f"missing credential file {_relative_to_base(path)}")
+            summary[path.name] = {"status": "missing", "flagged": [], "sensitive_keys": []}
+            continue
+
+        for lineno, raw in enumerate(path.read_text().splitlines(), 1):
+            stripped = raw.strip()
+            if not stripped or stripped.startswith("#"):
+                continue
+            if ":" not in raw:
+                continue
+            key, _, value = raw.partition(":")
+            key = key.strip()
+            if not key:
+                continue
+            value = value.strip().strip("'\"")
+            key_norm = key.lower()
+            if key_norm in SENSITIVE_KEYS:
+                sensitive_keys.append(key)
+                normalized_value = value.lower()
+                if (
+                    not value
+                    or any(token in normalized_value for token in PLACEHOLDER_TOKENS)
+                    or normalized_value in {"", "null"}
+                ):
+                    issues.append(
+                        f"placeholder credential in {_relative_to_base(path)}:{lineno} ({key})"
+                    )
+                    flagged.append(f"{key}@{lineno}")
+
+        status = "ok"
+        if flagged:
+            status = "placeholder"
+        elif not sensitive_keys:
+            status = "no-sensitive-keys"
+
+        summary[path.name] = {
+            "status": status,
+            "flagged": flagged,
+            "sensitive_keys": sorted(dict.fromkeys(sensitive_keys)),
+        }
+
+    return issues, summary
 
 
 def _simulate_actions() -> Tuple[List[str], Dict[str, str]]:
@@ -428,6 +512,16 @@ def main(argv: List[str] | None = None) -> int:
             name="scaling_stack",
             status="pass" if not scaling_errors else "fail",
             details=scaling_snapshot,
+        )
+    )
+
+    credential_errors, credential_summary = _audit_credentials(CRITICAL_SECRET_PATHS)
+    issues += credential_errors
+    check_results.append(
+        CheckResult(
+            name="credential_guard",
+            status="pass" if not credential_errors else "fail",
+            details=credential_summary,
         )
     )
 

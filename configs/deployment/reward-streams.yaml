@@ -10,7 +10,7 @@ services:
       provider: supabase
       table: vaultfire_reward_events
       url: https://supabase.example.com
-      serviceRoleKey: change-me
+      serviceRoleKey: vaultfire-service-role-v1
     scheduling:
       intervalSeconds: 120
       jitter: 0.2

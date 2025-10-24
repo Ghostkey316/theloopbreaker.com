@@ -15,7 +15,7 @@ services:
         port: 5432
         database: telemetry
         user: vaultfire
-        password: change-me
+        password: vaultfire-telemetry-ops-bridge
       retentionDays: 35
     enrichment:
       enableBeliefComplexity: true
