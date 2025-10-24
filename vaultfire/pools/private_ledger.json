@@ -1,0 +1,26 @@
+{
+  "pools": {
+    "pool-1761341753": {
+      "created_at": "2025-10-24T21:35:53.428069+00:00",
+      "eligibility_hash": "59a9314ef704628b207eefe6e15d82256a9b171134de59740874992ccd37a03c",
+      "entries": [
+        {
+          "amount": 1.25,
+          "drop_type": "contribution",
+          "evidence_hash": "bcd9a2fe8d7b3349b756983ff07084e23fca9577a046b406ef7a4297495029a2",
+          "timestamp": "2025-10-24T21:35:53.428400+00:00"
+        },
+        {
+          "amount": 1.5,
+          "cadence": "weekly",
+          "pool_id": "pool-1761341753",
+          "role": "ghostkey",
+          "scheduled_at": "2025-10-24T21:35:53.429082+00:00"
+        }
+      ],
+      "pool_id": "pool-1761341753",
+      "role": "ghostkey",
+      "zk_checksum": "a7622d91734b6e6a4b2180ac6c550cccda0469b85024e5e243b9f45ce522b9d3"
+    }
+  }
+}

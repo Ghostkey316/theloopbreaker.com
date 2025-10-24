@@ -1,0 +1,11 @@
+wallet_access:
+  required: true
+  ttl_seconds: 900
+  accepted_wallets:
+    - ghostkey316.eth
+    - vaultfire.core
+signing_scheme: eip-191
+session_attestation:
+  rotating_nonce: true
+  expiry_seconds: 900
+  require_codex_signature: true
