@@ -38,6 +38,8 @@ import threading
 import time
 from typing import Any, Callable, Dict, Iterable, Mapping, MutableMapping
 
+from .storage import DailyBackupManager
+
 __all__ = [
     "X402PaymentRequired",
     "X402GatewayOffline",
@@ -123,6 +125,7 @@ class X402Gateway:
         codex_memory_path: Path | None = None,
         ghostkey_earnings_path: Path | None = None,
         companion_path: Path | None = None,
+        backup_manager: DailyBackupManager | None = None,
     ) -> None:
         self.identity_handle = identity_handle
         self.identity_ens = identity_ens
@@ -130,6 +133,7 @@ class X402Gateway:
         self.codex_memory_path = codex_memory_path or Path("logs/x402_memory.jsonl")
         self.ghostkey_earnings_path = ghostkey_earnings_path or Path("logs/x402_ghostkey_earnings.jsonl")
         self.companion_path = companion_path or Path("logs/x402_companion.jsonl")
+        self._backup_manager = backup_manager or DailyBackupManager()
         self._rules: MutableMapping[str, X402Rule] = {}
         self._lock = threading.Lock()
         self._denial_counts: MutableMapping[str, int] = {}
@@ -273,6 +277,8 @@ class X402Gateway:
                 with path.open("a", encoding="utf-8") as fp:
                     json.dump(payload, fp, separators=(",", ":"))
                     fp.write("\n")
+            if path in (self.ledger_path, self.codex_memory_path, self.companion_path):
+                self._backup_manager.maybe_snapshot(path, label=path.stem)
         except OSError as exc:  # pragma: no cover - filesystem specific
             raise X402GatewayOffline("x402 gateway ledger unavailable", path=path) from exc
 
