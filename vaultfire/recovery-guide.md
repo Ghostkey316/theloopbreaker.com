@@ -14,6 +14,8 @@ additional validation is required by an auditor.
   configuration files are present.
 - Verify file permissions allow Vaultfire services to overwrite their
   runtime logs (`logs/`).
+- Capture the checksum recorded in `backups/last_snapshot.json` for
+  later validation.
 
 ## Recovery Steps
 
@@ -23,7 +25,8 @@ additional validation is required by an auditor.
    identify the backup artifacts for `codex_memory`, `ledger_logs`, and
    `companion_settings`.
 3. **Copy artifacts** – manually copy each backup file from the snapshot
-   into the corresponding runtime location under `logs/`.
+   into the corresponding runtime location under `logs/`, then confirm
+   the restored checksum matches the manifest value.
 4. **Resynchronise codex memory** – execute the playbook entry
    `resync_codex_memory` to rebuild in-memory indices and confirm the
    restored files are readable.

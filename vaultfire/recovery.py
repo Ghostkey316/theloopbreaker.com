@@ -8,6 +8,8 @@ import shutil
 from pathlib import Path
 from typing import Any, Dict, Mapping
 
+from vaultfire.storage import compute_checksum
+
 SNAPSHOT_ENV = "VAULTFIRE_RECOVERY_SNAPSHOT"
 SNAPSHOT_PATH = Path("backups/last_snapshot.json")
 
@@ -42,12 +44,23 @@ def load_last_snapshot(path: Path | None = None) -> Mapping[str, Any]:
     return payload
 
 
-def _copy_resource(backup: Path, target: Path) -> Dict[str, Any]:
+def _copy_resource(backup: Path, target: Path, *, checksum: str | None = None) -> Dict[str, Any]:
     if not backup.exists():
         return {"status": "missing", "backup": str(backup)}
     target.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(backup, target)
-    return {"status": "restored", "backup": str(backup), "target": str(target)}
+    result: Dict[str, Any] = {"status": "restored", "backup": str(backup), "target": str(target)}
+    try:
+        restored_checksum = compute_checksum(target)
+    except OSError:
+        restored_checksum = None
+    if restored_checksum is not None:
+        result["checksum"] = restored_checksum
+        if checksum:
+            result["verified"] = restored_checksum == checksum
+            if not result["verified"]:
+                result["status"] = "checksum_mismatch"
+    return result
 
 
 def resync_codex_memory(snapshot: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -67,7 +80,7 @@ def resync_codex_memory(snapshot: Mapping[str, Any]) -> Mapping[str, Any]:
         if not str(target_path):
             summary[label] = {"status": "invalid"}
             continue
-        summary[label] = _copy_resource(backup_path, target_path)
+        summary[label] = _copy_resource(backup_path, target_path, checksum=str(data.get("checksum")) or None)
 
     return {
         "mode": "recovery",

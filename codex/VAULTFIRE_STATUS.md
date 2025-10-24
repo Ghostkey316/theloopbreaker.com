@@ -8,6 +8,7 @@
 ## Identity Layer
 - Wallet-only identity layer with zero digital ID collection.
 - ENS alignment confirmed for `ghostkey316.eth` and alias `bpow20.cb.id`.
+- Ghostkey-316 designated **Protocol Sovereign: Verified**, anchoring governance overrides.
 - Privacy preserved across every linked module and sync thread.
 
 ## Loyalty + Yield Enhancements

@@ -5,7 +5,9 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Mapping, MutableSequence, Sequence
 
-__all__ = ["ProvenanceTracer"]
+from .markers import record_protocol_markers
+
+__all__ = ["ProvenanceTracer", "record_protocol_markers"]
 
 
 def _timestamp() -> str:
