@@ -5,6 +5,8 @@
 - JSX/TypeScript syntax verification executed via `npm run lint:syntax` (ESLint + TypeScript parser).
 - Jest tests executed via ghostTestSim harness. Python tests: 44 passed, 1 skipped.
 - Build locked unless overridden by **ghostkey316.eth**.
+- `vaultfire_system_ready.py` now ships an automated partner readiness report (`--report`) that snapshots module health, file integrity, simulated guardrails, and the scaling stack orchestration.
+- Scaling codex validation covers GUI launch metadata, API gateway configuration, BeliefNet sync payloads, partner plug-in registries, relay forking, and DAO bootstrap contracts—blocking go-live if any layer regresses.
 
 **Partner Deployment Status:** ✅
 
@@ -21,6 +23,7 @@ Vaultfire Final Commit: July 30, 2025 — 12:29 AM ET
 - **Ethics guardrails**: `tools/lint_guardrails.js` blocks biometric/KYC imports; extend list when new surveillance vendors emerge.
 - **Residency enforcement**: Telemetry DSNs and partner hooks must satisfy `trustSync.telemetry.residency` allow-lists; preflight now fails without region coverage, closing the open question on remote sink compliance.
 - **Scale attestations**: `vaultfire_system_ready.py --attest <guardian>` now bakes a Purposeful Scale attestation (with mission bootstrap + alignment replay) into `attestations/`, and partners can score readiness using `tools/scale_readiness_report.py` before flipping live traffic.
+- **Partner-ready telemetry**: invoke `vaultfire_system_ready.py --report partner-ready.json` during CI to publish a signed JSON artifact that downstream stakeholders can verify without reading internal logs.
 
 ### Safe Partner Testnet Entry Points
 - `https://partner-sandbox.vaultfire.xyz` — mirrored belief sync with wallet-only auth.

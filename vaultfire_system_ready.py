@@ -10,6 +10,7 @@ import argparse
 import csv
 import hashlib
 import json
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -20,6 +21,15 @@ READY_FLAG_PATH = BASE_DIR / "vaultfire_ready.flag"
 PARTNER_FORK_PATH = BASE_DIR / "vaultbundle_partner_fork.json"
 ATTESTATION_DIR = BASE_DIR / "attestations"
 LOGS_DIR = BASE_DIR / "logs"
+
+@dataclass
+class CheckResult:
+    """Represents the outcome of a readiness check."""
+
+    name: str
+    status: str
+    details: Dict[str, Any]
+
 
 CORE_FILES = {
     "vaultfire_core.py": """from pathlib import Path
@@ -114,18 +124,21 @@ def _ensure_files() -> None:
     ATTESTATION_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def _validate_scripts() -> List[str]:
+def _validate_scripts() -> Tuple[List[str], Dict[str, str]]:
     errors: List[str] = []
+    modules: Dict[str, str] = {}
     for mod in ("vaultfire_core", "fanforge_vr", "loyalty_engine"):
         try:
             __import__(mod)
+            modules[mod] = "imported"
         except Exception as e:  # pragma: no cover - runtime validation
             errors.append(f"{mod} failed to import: {e}")
-    return errors
+    return errors, modules
 
 
-def _validate_files() -> List[str]:
+def _validate_files() -> Tuple[List[str], Dict[str, str]]:
     errors: List[str] = []
+    summary: Dict[str, str] = {}
     json_paths = [BASE_DIR / "ghostkey_registry.json", BASE_DIR / "purpose_map.json"]
     csv_paths = [BASE_DIR / "fan_cred_log.csv"]
 
@@ -135,6 +148,7 @@ def _validate_files() -> List[str]:
             continue
         try:
             json.loads(path.read_text())
+            summary[path.name] = "valid"
         except Exception as e:
             errors.append(f"invalid json in {path.name}: {e}")
 
@@ -142,16 +156,19 @@ def _validate_files() -> List[str]:
         if not path.exists():
             path.write_text("timestamp,identity,action,value,detail\n")
             _log(f"created {path.name}")
+            summary[path.name] = "created"
         else:
             try:
                 list(csv.reader(path.read_text().splitlines()))
+                summary[path.name] = "valid"
             except Exception as e:
                 errors.append(f"invalid csv in {path.name}: {e}")
-    return errors
+    return errors, summary
 
 
-def _simulate_actions() -> List[str]:
+def _simulate_actions() -> Tuple[List[str], Dict[str, str]]:
     errors: List[str] = []
+    details: Dict[str, str] = {}
     try:
         import vaultfire_core
         import fanforge_vr
@@ -159,6 +176,11 @@ def _simulate_actions() -> List[str]:
         vaultfire_core.cli_belief("demo", "demo", "belief test")
         fanforge_vr.record_memory("demo", "memory test")
         fanforge_vr.vr_check_in("demo", "team")
+        details["belief"], details["memory"], details["check_in"] = (
+            "ok",
+            "ok",
+            "ok",
+        )
     except Exception as e:
         errors.append(f"action simulation failed: {e}")
 
@@ -193,9 +215,101 @@ def _simulate_actions() -> List[str]:
         purposeful_scale.behavioral_resonance_filter("guardian.eth", scale_request)
 
         purposeful_scale.generate_attestation_pack("guardian.eth", history_limit=5)
+        details["purposeful_scale"] = "ok"
     except Exception as e:
         errors.append(f"purposeful scale simulation failed: {e}")
-    return errors
+    return errors, details
+
+
+def _validate_scaling_stack() -> Tuple[List[str], Dict[str, Any]]:
+    """Run lightweight validation over the scaling orchestration helpers."""
+
+    try:
+        from vaultfire_scaling import (
+            deploy_partner_plugins,
+            fork_agent_relay,
+            init_vaultfire_dao,
+            launch_gui_layer,
+            open_api_gateway,
+            sync_beliefnet,
+        )
+    except Exception as exc:  # pragma: no cover - import validation
+        return [f"scaling stack import failed: {exc}"], {}
+
+    errors: List[str] = []
+    snapshot: Dict[str, Any] = {}
+
+    try:
+        gui_state = launch_gui_layer(
+            theme="PartnerReady",
+            lineage_trace="ghostkey316.eth",
+            embedded_modules=(),
+        )
+        snapshot["gui_layer"] = {
+            "theme": gui_state.theme,
+            "modules": [module.name for module in gui_state.modules],
+        }
+    except Exception as exc:
+        errors.append(f"GUI layer bootstrap failed: {exc}")
+
+    try:
+        api_state = open_api_gateway(
+            auth_required=True,
+            endpoints=("/deploy", "/status"),
+            attached_wallet="ghostkey316.partner",
+        )
+        snapshot["api_gateway"] = {
+            "auth_required": api_state.auth_required,
+            "endpoints": list(api_state.endpoints),
+        }
+    except Exception as exc:
+        errors.append(f"API gateway validation failed: {exc}")
+
+    try:
+        sync_state = sync_beliefnet(
+            moral_fingerprint=("ethics", "guardianship"),
+            fallback_to="SanctumLoop",
+            entropy_source="EntropySeedNetwork",
+        )
+        snapshot["beliefnet"] = {
+            "fingerprint_size": len(sync_state.moral_fingerprint),
+            "fallback": sync_state.fallback_to,
+        }
+    except Exception as exc:
+        errors.append(f"BeliefNet sync failed: {exc}")
+
+    try:
+        plugin_state = deploy_partner_plugins(
+            ["NS3-Agent-Bridge", "OpenAI-LoopSync", "Worldcoin-AccessNode"],
+        )
+        snapshot["plugins"] = list(plugin_state.deployed)
+    except Exception as exc:
+        errors.append(f"Partner plugin deployment failed: {exc}")
+
+    try:
+        relay_state = fork_agent_relay(
+            behavior_model="Ghostkey-Mirror",
+            relay_count=3,
+            sync_pulse={"primary": {"status": "ok"}},
+        )
+        snapshot["agent_relays"] = list(relay_state.relays)
+    except Exception as exc:
+        errors.append(f"Agent relay validation failed: {exc}")
+
+    try:
+        dao_state = init_vaultfire_dao(
+            founding_address="ghostkey316.partner",
+            proposal_engine="SignalDriven",
+            fallback_moral_filter=("ethics", "coherence"),
+        )
+        snapshot["dao"] = {
+            "founding_address": dao_state.founding_address,
+            "proposal_engine": dao_state.proposal_engine,
+        }
+    except Exception as exc:
+        errors.append(f"VaultfireDAO bootstrap failed: {exc}")
+
+    return errors, snapshot
 
 
 def _generate_attestation(user_id: str, history_limit: int | None) -> Tuple[Path, Dict[str, Any]]:
@@ -262,14 +376,60 @@ def main(argv: List[str] | None = None) -> int:
         default=10,
         help="limit the attestation decision history (default: 10)",
     )
+    parser.add_argument(
+        "--report",
+        metavar="DEST",
+        nargs="?",
+        const="-",
+        help="emit a readiness report to DEST (use '-' for stdout)",
+    )
     args = parser.parse_args(argv)
 
     _ensure_files()
 
+    check_results: List[CheckResult] = []
+
     issues: List[str] = []
-    issues += _validate_scripts()
-    issues += _validate_files()
-    issues += _simulate_actions()
+
+    script_errors, module_summary = _validate_scripts()
+    issues += script_errors
+    check_results.append(
+        CheckResult(
+            name="core_modules",
+            status="pass" if not script_errors else "fail",
+            details=module_summary,
+        )
+    )
+
+    file_errors, file_summary = _validate_files()
+    issues += file_errors
+    check_results.append(
+        CheckResult(
+            name="data_files",
+            status="pass" if not file_errors else "fail",
+            details=file_summary,
+        )
+    )
+
+    action_errors, action_summary = _simulate_actions()
+    issues += action_errors
+    check_results.append(
+        CheckResult(
+            name="simulated_actions",
+            status="pass" if not action_errors else "fail",
+            details=action_summary,
+        )
+    )
+
+    scaling_errors, scaling_snapshot = _validate_scaling_stack()
+    issues += scaling_errors
+    check_results.append(
+        CheckResult(
+            name="scaling_stack",
+            status="pass" if not scaling_errors else "fail",
+            details=scaling_snapshot,
+        )
+    )
 
     if args.partner_mode:
         _generate_partner_fork(args.partner_mode)
@@ -290,17 +450,29 @@ def main(argv: List[str] | None = None) -> int:
             moral_violations.append(f"banned term in {name}")
     issues += moral_violations
 
+    report_payload = {
+        "hash": _system_hash(),
+        "origin": "ghostkey316.eth",
+        "timestamp": datetime.utcnow().isoformat(),
+        "checks": [asdict(result) for result in check_results],
+        "issues": issues,
+        "ready": not issues,
+    }
+
+    if args.report is not None:
+        destination = args.report
+        payload = json.dumps(report_payload, indent=2)
+        if destination == "-":
+            print(payload)
+        else:
+            Path(destination).write_text(payload)
+
     if issues:
         for msg in issues:
             _log(f"ERROR: {msg}")
         return 1
 
-    ready_info = {
-        "hash": _system_hash(),
-        "origin": "ghostkey316.eth",
-        "timestamp": datetime.utcnow().isoformat(),
-    }
-    READY_FLAG_PATH.write_text(json.dumps(ready_info, indent=2))
+    READY_FLAG_PATH.write_text(json.dumps(report_payload, indent=2))
     _log("system ready")
     return 0
 
