@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import json
 import math
 
-from vaultfire.security.fhe import AuroraFHEBackend, Ciphertext, FHECipherSuite
+from vaultfire.security.fhe import AuroraFHEBackend, Ciphertext, FHEAuditArtifacts, FHECipherSuite
 
 
 def test_aurora_backend_encrypts_and_decrypts_scalar():
@@ -44,3 +45,32 @@ def test_aurora_backend_generates_attestations():
     assert attestation["count"] == 3
     assert isinstance(attestation["attestation"], str)
     assert len(attestation["attestation"]) == 64
+
+
+def test_audit_mode_generates_zk_bundle(tmp_path, monkeypatch):
+    monkeypatch.setenv("VAULTFIRE_MISSION_LEDGER_PATH", str(tmp_path / "mission-ledger.jsonl"))
+    artifacts = FHEAuditArtifacts(
+        path=tmp_path / "fhe_proof.json",
+        codex_memory_path=tmp_path / "codex_memory.jsonl",
+        mission_ledger_path=tmp_path / "mission-ledger.jsonl",
+    )
+    backend = AuroraFHEBackend(aurora_fhe_mode="audit", audit_artifacts=artifacts)
+    suite = FHECipherSuite(backend=backend)
+
+    ciphertext = suite.encrypt_value(3.5)
+    assert ciphertext.metadata["audit_mode"] is True
+    assert "audit_seed" in ciphertext.metadata
+    assert "audit_proof" in ciphertext.metadata
+
+    manifest = json.loads((tmp_path / "fhe_proof.json").read_text())
+    assert manifest["audit_mode"] is True
+    assert manifest["events"], "audit manifest should record events"
+    entry = manifest["events"][-1]
+    assert entry["action"] == "encrypt_scalar"
+    assert entry["proof"] == ciphertext.metadata["audit_proof"]
+
+    codex_lines = (tmp_path / "codex_memory.jsonl").read_text().splitlines()
+    assert codex_lines and "fhe-audit" in codex_lines[-1]
+
+    ledger_lines = (tmp_path / "mission-ledger.jsonl").read_text().splitlines()
+    assert ledger_lines, "ledger should capture the audit summary"

@@ -5,8 +5,10 @@ from __future__ import annotations
 import hashlib
 import json
 import secrets
+import threading
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Dict, Iterable, Mapping, Protocol, Sequence
 
 
@@ -167,6 +169,122 @@ class FHEBackend(Protocol):
         ...
 
 
+class FHEAuditArtifacts:
+    """Persist zero-knowledge friendly audit bundles for FHE activity."""
+
+    _MAX_EVENTS = 256
+
+    def __init__(
+        self,
+        *,
+        path: Path | None = None,
+        codex_memory_path: Path | None = None,
+        mission_ledger_path: Path | None = None,
+        ledger_component: str = "fhe-audit",
+    ) -> None:
+        self.path = (path or Path("vaultfire/trust/fhe_proof.json")).expanduser()
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self._codex_memory_path = (codex_memory_path or Path("codex/VAULTFIRE_CLI_LEDGER.jsonl")).expanduser()
+        self._codex_memory_path.parent.mkdir(parents=True, exist_ok=True)
+        self._mission_ledger_path = mission_ledger_path.expanduser() if mission_ledger_path else None
+        self._ledger_component = ledger_component
+        self._ledger = None
+        self._lock = threading.RLock()
+
+    def _load_manifest(self) -> Dict[str, Any]:
+        base = {
+            "fhe_provider": "Aurora/ProvenLib",
+            "noise_seed": "random",
+            "interoperable": True,
+            "audit_mode": True,
+            "events": [],
+        }
+        if self.path.exists():
+            try:
+                payload = json.loads(self.path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                return base
+            for key in ("fhe_provider", "noise_seed", "interoperable", "audit_mode"):
+                if key in payload:
+                    base[key] = payload[key]
+            if isinstance(payload.get("events"), list):
+                base["events"] = list(payload["events"])
+            if "generated_at" in payload:
+                base["generated_at"] = payload["generated_at"]
+        return base
+
+    def _write_manifest(self, manifest: Mapping[str, Any]) -> None:
+        self.path.write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
+
+    def _codex_append(self, payload: Mapping[str, Any]) -> None:
+        with self._lock:
+            with self._codex_memory_path.open("a", encoding="utf-8") as handle:
+                json.dump(dict(payload), handle, separators=(",", ":"))
+                handle.write("\n")
+
+    def _ledger_append(self, payload: Mapping[str, Any]) -> None:
+        try:
+            from vaultfire.mission import MissionLedger
+        except Exception:  # pragma: no cover - optional mission ledger dependency
+            return
+
+        if self._ledger is None:
+            if self._mission_ledger_path is not None:
+                self._ledger = MissionLedger(path=self._mission_ledger_path, component=self._ledger_component)
+            else:
+                self._ledger = MissionLedger.default(component=self._ledger_component)
+
+        metadata = {
+            "tags": ["fhe", "audit"],
+            "extra": {"proof": payload.get("proof"), "action": payload.get("action")},
+        }
+        record_payload = {
+            "backend": payload.get("backend"),
+            "nonce": payload.get("metadata", {}).get("nonce"),
+            "moral_tag": payload.get("metadata", {}).get("moral_tag"),
+            "proof": payload.get("proof"),
+            "action": payload.get("action"),
+        }
+        self._ledger.append("fhe-audit", record_payload, metadata=metadata)
+
+    def record_event(self, *, action: str, backend_id: str, metadata: Mapping[str, Any]) -> str:
+        """Persist a zero-knowledge bundle and return its proof hash."""
+
+        timestamp = time.time()
+        digest_material = json.dumps(
+            {"action": action, "backend": backend_id, "metadata": dict(metadata), "timestamp": timestamp},
+            sort_keys=True,
+        ).encode("utf-8")
+        proof = hashlib.blake2b(digest_material, digest_size=32).hexdigest()
+        bundle = {
+            "action": action,
+            "backend": backend_id,
+            "timestamp": timestamp,
+            "metadata": dict(metadata),
+            "proof": proof,
+        }
+        with self._lock:
+            manifest = self._load_manifest()
+            events = list(manifest.get("events", []))
+            events.append(bundle)
+            if len(events) > self._MAX_EVENTS:
+                events = events[-self._MAX_EVENTS :]
+            manifest["events"] = events
+            manifest["generated_at"] = timestamp
+            self._write_manifest(manifest)
+        self._codex_append(
+            {
+                "timestamp": timestamp,
+                "event": "fhe-audit",
+                "action": action,
+                "backend": backend_id,
+                "proof": proof,
+            }
+        )
+        self._ledger_append(bundle)
+        return proof
+
+
 class AuroraFHEBackend:
     """Production-ready Vaultfire Aurora FHE backend.
 
@@ -184,18 +302,26 @@ class AuroraFHEBackend:
         modulus: int | None = None,
         domain_separator: str = "vaultfire::aurora",
         noise_budget: int = 64,
+        aurora_fhe_mode: str = "standard",
+        audit_artifacts: FHEAuditArtifacts | None = None,
     ) -> None:
         modulus = modulus or (2**255 - 19)
         if modulus <= 0:
             raise ValueError("modulus must be positive")
         if noise_budget <= 0:
             raise ValueError("noise_budget must be positive")
+        if aurora_fhe_mode.lower() not in {"standard", "audit"}:
+            raise ValueError("aurora_fhe_mode must be 'standard' or 'audit'")
         self._modulus = modulus
         self._domain_separator = domain_separator.encode("utf-8")
         self._noise_budget = noise_budget
         self._secret = secrets.token_bytes(32)
         self._rng = secrets.SystemRandom()
         self._nonce_counter = 0
+        self._audit_mode = aurora_fhe_mode.lower() == "audit"
+        self._audit_artifacts = (
+            audit_artifacts if audit_artifacts is not None else FHEAuditArtifacts()
+        ) if self._audit_mode else None
 
     @property
     def modulus(self) -> int:
@@ -211,21 +337,49 @@ class AuroraFHEBackend:
     def _denormalize(self, value: int, scale: int) -> float:
         return round(value / scale, 6)
 
-    def _derive_mask(self, *, nonce: int, moral_tag: str) -> int:
+    def _derive_mask(self, *, nonce: int, moral_tag: str, seed: bytes | None = None) -> int:
         hasher = hashlib.blake2b(key=self._secret, digest_size=32)
         hasher.update(self._domain_separator)
         hasher.update(b"mask")
         hasher.update(nonce.to_bytes(16, "big"))
+        if seed is not None:
+            hasher.update(seed)
         hasher.update(moral_tag.encode("utf-8"))
         return int.from_bytes(hasher.digest(), "big") % self._modulus
 
-    def _derive_noise(self, *, nonce: int) -> int:
+    def _derive_noise(self, *, nonce: int, seed: bytes | None = None) -> int:
         hasher = hashlib.blake2b(key=self._secret, digest_size=32)
         hasher.update(self._domain_separator)
         hasher.update(b"noise")
         hasher.update(nonce.to_bytes(16, "big"))
+        if seed is not None:
+            hasher.update(seed)
         raw = int.from_bytes(hasher.digest(), "big")
         return raw % (self._noise_budget * 10**3)
+
+    def _mask_fingerprint(
+        self,
+        *,
+        mask: int,
+        nonce: int,
+        moral_tag: str,
+        seed: bytes | None,
+    ) -> str:
+        hasher = hashlib.blake2b(key=self._secret, digest_size=32)
+        hasher.update(self._domain_separator)
+        hasher.update(b"audit::mask")
+        hasher.update(nonce.to_bytes(16, "big"))
+        if seed is not None:
+            hasher.update(seed)
+        mask_bytes = mask.to_bytes((self._modulus.bit_length() + 7) // 8, "big")
+        hasher.update(mask_bytes)
+        hasher.update(moral_tag.encode("utf-8"))
+        return hasher.hexdigest()
+
+    def _audit_event(self, action: str, payload: Mapping[str, Any]) -> str | None:
+        if not self._audit_mode or self._audit_artifacts is None:
+            return None
+        return self._audit_artifacts.record_event(action=action, backend_id=self.backend_id, metadata=payload)
 
     def encrypt_scalar(
         self,
@@ -236,9 +390,12 @@ class AuroraFHEBackend:
         moral_tag: str,
     ) -> Ciphertext:
         nonce = self._fresh_nonce()
+        seed: bytes | None = None
+        if self._audit_mode:
+            seed = secrets.token_bytes(32)
         normalized = self._normalize(value, scale)
-        mask = self._derive_mask(nonce=nonce, moral_tag=moral_tag)
-        noise = self._derive_noise(nonce=nonce)
+        mask = self._derive_mask(nonce=nonce, moral_tag=moral_tag, seed=seed)
+        noise = self._derive_noise(nonce=nonce, seed=seed)
         payload = (normalized + mask + noise) % self._modulus
         payload_metadata: Dict[str, Any] = {
             "type": "scalar",
@@ -249,21 +406,58 @@ class AuroraFHEBackend:
         }
         if metadata:
             payload_metadata.update(metadata)
-        return Ciphertext(payload=payload, mask=mask, scale=scale, metadata=payload_metadata)
+        if self._audit_mode:
+            payload_metadata.update(
+                {
+                    "audit_mode": True,
+                    "audit_seed": seed.hex() if seed else None,
+                    "mask_tag": self._mask_fingerprint(mask=mask, nonce=nonce, moral_tag=moral_tag, seed=seed),
+                }
+            )
+        ciphertext = Ciphertext(payload=payload, mask=mask, scale=scale, metadata=payload_metadata)
+        proof = self._audit_event(
+            "encrypt_scalar",
+            {
+                "nonce": nonce,
+                "scale": scale,
+                "moral_tag": moral_tag,
+                "metadata": dict(payload_metadata),
+                "payload": payload,
+            },
+        )
+        if proof is not None:
+            ciphertext.metadata["audit_proof"] = proof
+        return ciphertext
 
     def decrypt_scalar(self, ciphertext: Ciphertext) -> float:
         nonce = ciphertext.metadata.get("nonce")
         if nonce is None:
             raise ValueError("ciphertext missing nonce metadata")
         moral_tag = str(ciphertext.metadata.get("moral_tag", "vaultfire.morals-aligned"))
-        expected_mask = self._derive_mask(nonce=int(nonce), moral_tag=moral_tag)
+        seed: bytes | None = None
+        if self._audit_mode:
+            seed_hex = ciphertext.metadata.get("audit_seed")
+            if not seed_hex:
+                raise ValueError("ciphertext missing audit seed")
+            seed = bytes.fromhex(str(seed_hex))
+        expected_mask = self._derive_mask(nonce=int(nonce), moral_tag=moral_tag, seed=seed)
         if expected_mask != ciphertext.mask:
             raise ValueError("ciphertext mask integrity check failed")
-        noise = self._derive_noise(nonce=int(nonce))
+        noise = self._derive_noise(nonce=int(nonce), seed=seed)
         unmasked = (ciphertext.payload - expected_mask - noise) % self._modulus
         if unmasked > self._modulus // 2:
             unmasked -= self._modulus
-        return self._denormalize(unmasked, ciphertext.scale)
+        result = self._denormalize(unmasked, ciphertext.scale)
+        self._audit_event(
+            "decrypt_scalar",
+            {
+                "nonce": int(nonce),
+                "moral_tag": moral_tag,
+                "result": result,
+                "metadata": dict(ciphertext.metadata),
+            },
+        )
+        return result
 
     def homomorphic_add(
         self,
@@ -285,7 +479,16 @@ class AuroraFHEBackend:
             "backend": self.backend_id,
             "moral_tag": moral_tag,
         }
-        return self.encrypt_scalar(total, scale=scale, metadata=metadata, moral_tag=moral_tag)
+        result = self.encrypt_scalar(total, scale=scale, metadata=metadata, moral_tag=moral_tag)
+        self._audit_event(
+            "homomorphic_add",
+            {
+                "inputs": len(ciphertexts),
+                "moral_tag": moral_tag,
+                "metadata": dict(result.metadata),
+            },
+        )
+        return result
 
     def homomorphic_scale(
         self,
@@ -298,7 +501,16 @@ class AuroraFHEBackend:
         scaled_value = value * factor
         metadata = dict(ciphertext.metadata)
         metadata.update({"scaled": True, "factor": factor, "backend": self.backend_id, "moral_tag": moral_tag})
-        return self.encrypt_scalar(scaled_value, scale=ciphertext.scale, metadata=metadata, moral_tag=moral_tag)
+        result = self.encrypt_scalar(scaled_value, scale=ciphertext.scale, metadata=metadata, moral_tag=moral_tag)
+        self._audit_event(
+            "homomorphic_scale",
+            {
+                "factor": factor,
+                "moral_tag": moral_tag,
+                "metadata": dict(result.metadata),
+            },
+        )
+        return result
 
     def encrypt_record(
         self,
@@ -319,7 +531,16 @@ class AuroraFHEBackend:
             "moral_tag": moral_tag,
             "structured_digest": digest,
         }
-        return self.encrypt_scalar(digest_value / scale, scale=scale, metadata=metadata, moral_tag=moral_tag)
+        ciphertext = self.encrypt_scalar(digest_value / scale, scale=scale, metadata=metadata, moral_tag=moral_tag)
+        self._audit_event(
+            "encrypt_record",
+            {
+                "fields": sensitive_fields,
+                "moral_tag": moral_tag,
+                "metadata": dict(ciphertext.metadata),
+            },
+        )
+        return ciphertext
 
     def decrypt_record(
         self,
@@ -327,11 +548,19 @@ class AuroraFHEBackend:
         *,
         moral_tag: str,
     ) -> Dict[str, Any]:
-        return {
+        payload = {
             "approximate_value": self.decrypt_scalar(ciphertext),
             "metadata": dict(ciphertext.metadata),
             "moral_tag": moral_tag,
         }
+        self._audit_event(
+            "decrypt_record",
+            {
+                "moral_tag": moral_tag,
+                "metadata": payload["metadata"],
+            },
+        )
+        return payload
 
     def generate_commitment(
         self,
@@ -350,19 +579,36 @@ class AuroraFHEBackend:
         }
         serialized = json.dumps(transcript, sort_keys=True).encode("utf-8")
         commitment = hashlib.blake2b(serialized, digest_size=32).hexdigest()
-        return {
+        commitment_payload = {
             "context": context,
             "commitment": commitment,
             "metadata": dict(ciphertext.metadata),
             "backend": self.backend_id,
             "moral_tag": moral_tag,
         }
+        self._audit_event(
+            "generate_commitment",
+            {
+                "context": context,
+                "moral_tag": moral_tag,
+                "commitment": commitment,
+            },
+        )
+        return commitment_payload
 
     def reblind(self, ciphertext: Ciphertext, *, moral_tag: str) -> Ciphertext:
         value = self.decrypt_scalar(ciphertext)
         metadata = dict(ciphertext.metadata)
         metadata.update({"reblinded": True, "backend": self.backend_id, "moral_tag": moral_tag})
-        return self.encrypt_scalar(value, scale=ciphertext.scale, metadata=metadata, moral_tag=moral_tag)
+        refreshed = self.encrypt_scalar(value, scale=ciphertext.scale, metadata=metadata, moral_tag=moral_tag)
+        self._audit_event(
+            "reblind",
+            {
+                "moral_tag": moral_tag,
+                "metadata": dict(refreshed.metadata),
+            },
+        )
+        return refreshed
 
     def attest_integrity(
         self,
@@ -375,12 +621,21 @@ class AuroraFHEBackend:
             commitment_material.append(item.serialize())
         serialized = json.dumps({"ciphertexts": commitment_material, "backend": self.backend_id}, sort_keys=True)
         attestation = hashlib.blake2b(serialized.encode("utf-8"), digest_size=32).hexdigest()
-        return {
+        attestation_payload = {
             "attestation": attestation,
             "count": len(ciphertexts),
             "backend": self.backend_id,
             "moral_tag": moral_tag,
         }
+        self._audit_event(
+            "attest_integrity",
+            {
+                "count": len(ciphertexts),
+                "moral_tag": moral_tag,
+                "attestation": attestation,
+            },
+        )
+        return attestation_payload
 
 
 class PlaceholderFHEBackend(AuroraFHEBackend):
@@ -786,6 +1041,7 @@ __all__ = [
     "ConsentProof",
     "DisclosurePacket",
     "FHECipherSuite",
+    "FHEAuditArtifacts",
     "AuroraFHEBackend",
     "PlaceholderFHEBackend",
     "PrivacyEngine",

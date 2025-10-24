@@ -25,6 +25,7 @@ from vaultfire.modules.beliefforge import BeliefForge
 from vaultfire.modules.sanctumloop import SanctumLoop
 from vaultfire.modules.ultrashadow import UltraShadow
 from vaultfire.security import crypto_disclaimer, submit_post_quantum_verifier
+from vaultfire.recovery import RecoveryError, load_last_snapshot, resync_codex_memory
 
 
 GREEN = "\033[92m"
@@ -207,6 +208,26 @@ def handle_verify(*, crypto: bool, target: str, pilot: bool = False) -> int:
     return 0
 
 
+def handle_recover(*, pilot: bool = False) -> int:
+    del pilot  # signature retains pilot flag for symmetry with other handlers
+    _heading("Vaultfire disaster recovery", YELLOW)
+    try:
+        snapshot = load_last_snapshot()
+    except FileNotFoundError as exc:
+        print(_color(str(exc), RED))
+        return 1
+    except RecoveryError as exc:
+        print(_color(f"Recovery snapshot invalid: {exc}", RED))
+        return 1
+    try:
+        payload = resync_codex_memory(snapshot)
+    except RecoveryError as exc:
+        print(_color(f"Recovery failed: {exc}", RED))
+        return 1
+    print(_color(_json_dump(payload), GREEN))
+    return 0
+
+
 def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="vaultfire", description="Vaultfire CLI tools")
     parser.add_argument(
@@ -214,7 +235,12 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Enable sandbox pilot mode with synthetic data outputs",
     )
-    subparsers = parser.add_subparsers(dest="command", required=True)
+    parser.add_argument(
+        "--recover",
+        action="store_true",
+        help="Restore codex memory, ledger state, and companion config from the latest snapshot",
+    )
+    subparsers = parser.add_subparsers(dest="command", required=False)
 
     deploy = subparsers.add_parser("deploy", help="Deploy full pulse stack under chosen ghost persona")
     deploy.add_argument("--profile", required=True, help="Persona profile to deploy")
@@ -242,6 +268,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = create_parser()
     args = parser.parse_args(argv)
     pilot = bool(getattr(args, "pilot", False))
+    if getattr(args, "recover", False):
+        return handle_recover(pilot=pilot)
+    if args.command is None:
+        parser.error("command required unless --recover is provided")
     if args.command == "deploy":
         return handle_deploy(args.profile, pilot=pilot)
     if args.command == "fade":
@@ -265,6 +295,7 @@ __all__ = [
     "handle_deploy",
     "handle_drift",
     "handle_fade",
+    "handle_recover",
     "handle_verify",
     "handle_test",
     "main",

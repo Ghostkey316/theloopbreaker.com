@@ -4,6 +4,7 @@ import json
 
 import pytest
 
+from vaultfire.storage import DailyBackupManager
 from vaultfire.x402_gateway import (
     X402Gateway,
     X402PaymentRequired,
@@ -14,11 +15,13 @@ from vaultfire.x402_gateway import (
 def test_execute_records_payment(tmp_path):
     ledger_path = tmp_path / "ledger.jsonl"
     memory_path = tmp_path / "memory.jsonl"
+    backup_manager = DailyBackupManager(base_dir=tmp_path / "backups")
     gateway = X402Gateway(
         ledger_path=ledger_path,
         codex_memory_path=memory_path,
         ghostkey_earnings_path=tmp_path / "ghostkey.jsonl",
         companion_path=tmp_path / "companion.jsonl",
+        backup_manager=backup_manager,
     )
 
     def _callback() -> dict[str, str]:
@@ -35,13 +38,20 @@ def test_execute_records_payment(tmp_path):
     assert entry["identity_handle"]
     assert memory_path.exists()
 
+    manifest_path = tmp_path / "backups" / "last_snapshot.json"
+    manifest = json.loads(manifest_path.read_text())
+    resources = manifest.get("resources", {})
+    assert {"ledger", "memory", "companion"}.issubset(resources)
+
 
 def test_payment_required_when_under_threshold(tmp_path):
+    backup_manager = DailyBackupManager(base_dir=tmp_path / "backups")
     gateway = X402Gateway(
         ledger_path=tmp_path / "ledger.jsonl",
         codex_memory_path=tmp_path / "memory.jsonl",
         ghostkey_earnings_path=tmp_path / "ghostkey.jsonl",
         companion_path=tmp_path / "companion.jsonl",
+        backup_manager=backup_manager,
     )
     rule = X402Rule(
         endpoint="test.strict",
@@ -57,11 +67,13 @@ def test_payment_required_when_under_threshold(tmp_path):
 
 
 def test_describe_rules_contains_cli_gate(tmp_path):
+    backup_manager = DailyBackupManager(base_dir=tmp_path / "backups")
     gateway = X402Gateway(
         ledger_path=tmp_path / "ledger.jsonl",
         codex_memory_path=tmp_path / "memory.jsonl",
         ghostkey_earnings_path=tmp_path / "ghostkey.jsonl",
         companion_path=tmp_path / "companion.jsonl",
+        backup_manager=backup_manager,
     )
     rules = gateway.describe_rules()
     assert "cli.vaultfire.sh" in rules
