@@ -1,0 +1,31 @@
+{
+  "paths": {
+    "wallet-only": {
+      "description": "Route hardware wallet trust proofs into the sandbox without codex extensions.",
+      "steps": [
+        "Install minimal CLI dependencies via onboarding/vaultfire_bootstrap.sh",
+        "Connect the sovereign wallet and export proof token",
+        "Run vaultfire_onboard --path wallet-only --partner <partner> --dry-run",
+        "Send the generated readiness receipt to Ghostkey compliance"
+      ]
+    },
+    "codex-only": {
+      "description": "Enable codex sandbox flows with deterministic telemetry mirroring.",
+      "steps": [
+        "Run onboarding/vaultfire_bootstrap.sh --path codex-only --partner <partner>",
+        "Execute codex pilot:init --profile sandbox_profile.yaml",
+        "Review sandbox/vaultfire_trace.json telemetry redirect",
+        "Distribute vaultfire/partners/pilot_drop/sandbox_launch_summary.json"
+      ]
+    },
+    "full-sovereign": {
+      "description": "Provision wallet, codex, and governance hooks for sovereign partners.",
+      "steps": [
+        "Complete onboarding/vaultfire_bootstrap.sh with --path full-sovereign",
+        "Register sovereign wallet with vaultfire_onboard --path full-sovereign",
+        "Launch codex pilot:init --profile sandbox_profile.yaml",
+        "Trigger vaultfire attest --output pack --sign ghostkey316"
+      ]
+    }
+  }
+}

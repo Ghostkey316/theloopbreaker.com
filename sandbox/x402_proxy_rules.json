@@ -1,0 +1,127 @@
+{
+  "api.vaultfire.query": {
+    "category": "api",
+    "currency": "ETH",
+    "default_amount": 0.00042,
+    "description": "Vaultfire API queries gated by x402",
+    "minimum_charge": 0.00042,
+    "unlocks": [
+      "vaultfire_api_access"
+    ],
+    "wallet_free": true
+  },
+  "cli.codex_engine_pulse": {
+    "category": "cli",
+    "currency": "ETH",
+    "default_amount": 0.0002,
+    "description": "Codex engine pulse execution",
+    "minimum_charge": 0.0002,
+    "unlocks": [
+      "codex_pulse"
+    ],
+    "wallet_free": true
+  },
+  "cli.nft_gateway_unlock": {
+    "category": "cli",
+    "currency": "ETH",
+    "default_amount": 0.0002,
+    "description": "NFT gateway unlock guard",
+    "minimum_charge": 0.0002,
+    "unlocks": [
+      "nft_gateway"
+    ],
+    "wallet_free": true
+  },
+  "cli.vaultfire.sh": {
+    "category": "cli",
+    "currency": "ETH",
+    "default_amount": 0.0001,
+    "description": "Vaultfire companion CLI access gate",
+    "minimum_charge": 0.0001,
+    "unlocks": [
+      "cli_toolchain"
+    ],
+    "wallet_free": true
+  },
+  "codex.function.unlock": {
+    "category": "codex",
+    "currency": "ASM",
+    "default_amount": 0.00021,
+    "description": "Codex function unlock token",
+    "minimum_charge": 0.00021,
+    "unlocks": [
+      "codex_function"
+    ],
+    "wallet_free": true
+  },
+  "codex.run_passive_loop": {
+    "category": "codex",
+    "currency": "ETH",
+    "default_amount": 0.00029,
+    "description": "Passive loop execution",
+    "minimum_charge": 0.00029,
+    "unlocks": [
+      "passive_loop"
+    ],
+    "wallet_free": true
+  },
+  "codex.trigger_belief_mirror": {
+    "category": "codex",
+    "currency": "ASM",
+    "default_amount": 0.00025,
+    "description": "Belief mirror trigger",
+    "minimum_charge": 0.00025,
+    "unlocks": [
+      "belief_mirror",
+      "vaultfire_prompt"
+    ],
+    "wallet_free": true
+  },
+  "codex.validate_loyalty_action": {
+    "category": "codex",
+    "currency": "ASM",
+    "default_amount": 0.00019,
+    "description": "Loyalty action validator",
+    "minimum_charge": 0.00019,
+    "unlocks": [
+      "loyalty_validation",
+      "secret_prompt"
+    ],
+    "wallet_free": true
+  },
+  "drops.weekly": {
+    "category": "drops",
+    "currency": "WLD",
+    "default_amount": 0.0005,
+    "description": "Weekly drop activation via x402",
+    "minimum_charge": 0.0005,
+    "unlocks": [
+      "weekly_drop",
+      "vaultfire_badge"
+    ],
+    "wallet_free": true
+  },
+  "sandbox.proxy.passive": {
+    "category": "sandbox",
+    "currency": "ETH",
+    "default_amount": null,
+    "description": "Passive x402 proxy shield for sandbox partners",
+    "minimum_charge": 0.0,
+    "unlocks": [
+      "telemetry_redirect",
+      "deterministic_mirror"
+    ],
+    "wallet_free": true
+  },
+  "yield.passive_module": {
+    "category": "yield",
+    "currency": "ETH",
+    "default_amount": 0.00031,
+    "description": "Passive yield module trigger",
+    "minimum_charge": 0.00031,
+    "unlocks": [
+      "passive_yield"
+    ],
+    "wallet_free": true
+  }
+}

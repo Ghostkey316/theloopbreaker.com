@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+"""One-click onboarding wrapper for Vaultfire sandbox partners."""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+from typing import Sequence
+
+from onboarding.runner import run_onboarding
+
+
+def create_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="vaultfire_onboard",
+        description="Execute Vaultfire onboarding paths",
+    )
+    parser.add_argument("--path", required=True, help="Onboarding path identifier")
+    parser.add_argument("--partner", required=True, help="Partner identifier")
+    parser.add_argument(
+        "--profile",
+        default=str(Path("sandbox_profile.yaml")),
+        help="Path to sandbox profile for codex-aligned flows",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Preview the onboarding steps without executing Codex wiring",
+    )
+    return parser
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = create_parser()
+    args = parser.parse_args(argv)
+    plan = run_onboarding(
+        args.path,
+        args.partner,
+        dry_run=bool(args.dry_run),
+        profile_path=Path(args.profile),
+    )
+    print(json.dumps(plan.export(), indent=2, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":  # pragma: no cover - CLI entrypoint
+    raise SystemExit(main())
