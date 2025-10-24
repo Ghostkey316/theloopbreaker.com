@@ -42,6 +42,8 @@ def test_execute_records_payment(tmp_path):
     manifest = json.loads(manifest_path.read_text())
     resources = manifest.get("resources", {})
     assert {"ledger", "memory", "companion"}.issubset(resources)
+    for payload in resources.values():
+        assert payload.get("checksum"), "daily backups must record checksums"
 
 
 def test_payment_required_when_under_threshold(tmp_path):

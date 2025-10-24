@@ -1,0 +1,7 @@
+{
+  "fhe_provider": "Aurora/ProvenLib",
+  "noise_seed": "random",
+  "interoperable": true,
+  "audit_mode": true,
+  "events": []
+}

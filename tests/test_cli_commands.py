@@ -8,6 +8,8 @@ import re
 import subprocess
 import sys
 
+from vaultfire.storage import compute_checksum
+
 
 def _run_cli(*args: str, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
     command = [sys.executable, "-m", "vaultfire_cli", *args]
@@ -82,9 +84,21 @@ def test_recover_command_restores_snapshot(tmp_path) -> None:
             {
                 "generated_at": "2024-07-01T00:00:00Z",
                 "resources": {
-                    "codex_memory": {"backup": str(codex_backup), "target": str(codex_target)},
-                    "ledger_logs": {"backup": str(ledger_backup), "target": str(ledger_target)},
-                    "companion_settings": {"backup": str(companion_backup), "target": str(companion_target)},
+                    "codex_memory": {
+                        "backup": str(codex_backup),
+                        "target": str(codex_target),
+                        "checksum": compute_checksum(codex_backup),
+                    },
+                    "ledger_logs": {
+                        "backup": str(ledger_backup),
+                        "target": str(ledger_target),
+                        "checksum": compute_checksum(ledger_backup),
+                    },
+                    "companion_settings": {
+                        "backup": str(companion_backup),
+                        "target": str(companion_target),
+                        "checksum": compute_checksum(companion_backup),
+                    },
                 },
             }
         ),
@@ -99,6 +113,7 @@ def test_recover_command_restores_snapshot(tmp_path) -> None:
     payload = _extract_json(result.stdout)
     assert payload["mode"] == "recovery"
     assert payload["resources"]["codex_memory"]["status"] == "restored"
+    assert payload["resources"]["codex_memory"]["verified"] is True
     assert codex_target.read_text(encoding="utf-8") == "codex-backup"
     assert ledger_target.read_text(encoding="utf-8") == "ledger-backup"
     assert companion_target.read_text(encoding="utf-8") == "companion-backup"
