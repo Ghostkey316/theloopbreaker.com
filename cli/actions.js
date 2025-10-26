@@ -8,6 +8,7 @@ const AIMirrorAgent = require('../services/aiMirrorAgent');
 const { loadTrustSyncConfig } = require('../config/trustSyncConfig');
 const { createBeliefProof } = require('../codex/ledger');
 const { createFingerprint } = require('../services/originFingerprint');
+const encryptionLayer = require('../lib/encryptionLayer');
 
 const CONFIG_FILE = 'vaultfire.partner.config.json';
 const DEFAULT_WALLET = '0x0000000000000000000000000000000000000001';
@@ -47,7 +48,10 @@ function initConfig({
     createdAt: new Date().toISOString(),
   };
 
-  fs.writeFileSync(resolvedPath, JSON.stringify(config, null, 2));
+  const stored = encryptionLayer.wrapObject('cli-config', config, {
+    preserveKeys: ['createdAt', 'partnerId'],
+  });
+  fs.writeFileSync(resolvedPath, JSON.stringify(stored, null, 2));
   return { config, path: resolvedPath };
 }
 
@@ -57,7 +61,8 @@ function loadConfig(configPath) {
     throw new Error(`Config file not found at ${resolvedPath}. Run \`vaultfire init\` first.`);
   }
   const raw = fs.readFileSync(resolvedPath, 'utf8');
-  const config = JSON.parse(raw);
+  const parsed = JSON.parse(raw);
+  const config = encryptionLayer.unwrapObject('cli-config', parsed);
   config.identityPolicy = config.identityPolicy || {
     useWalletAsIdentity: true,
     rejectExternalID: true,

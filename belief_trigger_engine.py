@@ -18,6 +18,7 @@ from engine.belief_multiplier import (
     _score as _belief_score,
     SCORE_PATH as BELIEF_PATH,
 )
+from vaultfire.encryption import wrap_mapping
 
 # ---------------------------------------------------------------------------
 # Logging helpers
@@ -93,7 +94,12 @@ def _log_trigger(entry: dict) -> None:
             log = []
     else:
         log = []
-    log.append(entry)
+    wrapped = wrap_mapping(
+        "reward-claim",
+        entry,
+        preserve_keys=("timestamp", "trigger"),
+    )
+    log.append(wrapped)
     LOG_PATH.write_text(json.dumps(log, indent=2))
 
 
@@ -106,7 +112,12 @@ def _append_json(path: Path, entry: dict) -> None:
             data = []
     else:
         data = []
-    data.append(entry)
+    wrapped = wrap_mapping(
+        "reward-claim",
+        entry,
+        preserve_keys=("timestamp",),
+    )
+    data.append(wrapped)
     path.write_text(json.dumps(data, indent=2))
 
 
