@@ -9,7 +9,7 @@ from codex.enterprise_sync_validator import EnterpriseCodexValidator
 
 COUNCIL_LOG = Path("governance/council_logs_enterprise.json")
 TIMELINE_MAP = Path("governance/governance_timeline_map.json")
-METADATA_TAG = "vaultfire.v2.2-encryption-ready"
+METADATA_TAG = "vaultfire.v2.3-encryption-core"
 
 
 def load_json(path: Path):

@@ -16,6 +16,7 @@ if _SRC_DIR.exists() and str(_SRC_DIR) not in sys.path:
     sys.path.insert(0, str(_SRC_DIR))
 
 from mirror_log import reward_stream_path
+from vaultfire.encryption import LegacyDataError, migrate_legacy_file, wrap_mapping
 from vaultfire.security.fhe import FHECipherSuite
 
 _IMMUTABLE_LOG = _REPO_ROOT / "immutable_log.jsonl"
@@ -25,6 +26,12 @@ _LOYALTY_TIERS_PATH = _REPO_ROOT / "loyalty_tiers.json"
 _USER_SCORECARD_PATH = _REPO_ROOT / "user_scorecard.json"
 _GHOSTSCORES_PATH = _REPO_ROOT / "ghostscores.json"
 _REWARDS_LOG_PATH = _REPO_ROOT / "rewards_log.json"
+_REWARD_COMPONENT = "reward-stream"
+_REWARD_PRESERVE = ("timestamp", "calculated_amount")
+_REWARD_LEGACY_READ_ONLY = False
+_REWARD_MIGRATION_ATTEMPTED = False
+_REWARD_LEGACY_WARNING = "Legacy Data Unencrypted – Action Required."
+_REWARD_WARNED = False
 
 BASE_REWARD = 10.0
 ALIGNMENT_WEIGHT = 0.6
@@ -459,8 +466,34 @@ def calculate(
     }
 
     stream_file = reward_stream_path()
-    with stream_file.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(event) + "\n")
+    stream_file.parent.mkdir(parents=True, exist_ok=True)
+    global _REWARD_LEGACY_READ_ONLY, _REWARD_MIGRATION_ATTEMPTED, _REWARD_WARNED  # noqa: PLW0603
+    if not _REWARD_LEGACY_READ_ONLY and not _REWARD_MIGRATION_ATTEMPTED:
+        try:
+            migrate_legacy_file(
+                _REWARD_COMPONENT,
+                stream_file,
+                preserve_keys=_REWARD_PRESERVE,
+            )
+        except LegacyDataError:
+            _REWARD_LEGACY_READ_ONLY = True
+        finally:
+            _REWARD_MIGRATION_ATTEMPTED = True
+    if _REWARD_LEGACY_READ_ONLY:
+        if not _REWARD_WARNED:
+            print(_REWARD_LEGACY_WARNING)
+            _REWARD_WARNED = True
+    else:
+        wrapped_event = wrap_mapping(
+            _REWARD_COMPONENT,
+            event,
+            preserve_keys=_REWARD_PRESERVE,
+        )
+        with stream_file.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(wrapped_event, sort_keys=True) + "\n")
+        event.setdefault("encryption", wrapped_event["encryption"])
+        event["__vaultfire_encrypted__"] = True
+        event["encrypted"] = wrapped_event["encrypted"]
 
     print(
         "\U0001F48E Reward stream update:"

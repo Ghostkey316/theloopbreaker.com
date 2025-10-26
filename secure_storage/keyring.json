@@ -1,0 +1,13 @@
+{
+  "wallet": "bpow20.cb.id",
+  "keySource": "vaultfire.local",
+  "iterations": 390000,
+  "keys": {
+    "partner": {
+      "seed": "FAqRjN/HzMx+F38LZeiQN+dA7bC8kAz3UsemaqXvop8=",
+      "salt": "n9651jA77uj9waV53+vhtg==",
+      "rotated_at": "2025-10-26T22:30:04.502Z",
+      "iterations": 390000
+    }
+  }
+}
