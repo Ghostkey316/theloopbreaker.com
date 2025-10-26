@@ -27,7 +27,11 @@ def test_execute_records_payment(tmp_path):
     def _callback() -> dict[str, str]:
         return {"ok": "yes"}
 
-    result = gateway.execute("codex.run_passive_loop", _callback)
+    result = gateway.execute(
+        "codex.run_passive_loop",
+        _callback,
+        signature="codex::test",
+    )
     assert result == {"ok": "yes"}
 
     ledger_lines = ledger_path.read_text(encoding="utf-8").splitlines()
@@ -36,6 +40,8 @@ def test_execute_records_payment(tmp_path):
     assert entry["event"] == "payment"
     assert entry["endpoint"] == "codex.run_passive_loop"
     assert entry["identity_handle"]
+    assert entry["metadata"]["ghostkey_mode"] is True
+    assert entry["metadata"]["wallet_classification"] == "ghostkey"
     assert memory_path.exists()
 
     manifest_path = tmp_path / "backups" / "last_snapshot.json"
@@ -65,7 +71,13 @@ def test_payment_required_when_under_threshold(tmp_path):
     gateway.register_rule(rule)
 
     with pytest.raises(X402PaymentRequired):
-        gateway.execute("test.strict", lambda: None, amount=0.1, currency="ETH")
+        gateway.execute(
+            "test.strict",
+            lambda: None,
+            amount=0.1,
+            currency="ETH",
+            signature="codex::test",
+        )
 
 
 def test_describe_rules_contains_cli_gate(tmp_path):

@@ -39,6 +39,16 @@ import time
 from typing import Any, Callable, Dict, Iterable, Mapping, MutableMapping
 
 from .storage import DailyBackupManager
+from .x402_privacy import (
+    TraceBuffer,
+    codex_redact_x402_trace,
+    contains_identity_metadata,
+    is_pre_authorised,
+    log_blocked_event,
+    scrub_identity_metadata,
+    verify_x402_wallet,
+    MAX_TRACE_WINDOW,
+)
 
 __all__ = [
     "X402PaymentRequired",
@@ -51,6 +61,7 @@ __all__ = [
 
 GHOSTKEY_WALLET = "bpow20.cb.id"
 GHOSTKEY_ENS = "ghostkey316.eth"
+X402_GHOSTKEY_MODE = True
 
 
 class X402PaymentRequired(RuntimeError):
@@ -137,6 +148,9 @@ class X402Gateway:
         self._rules: MutableMapping[str, X402Rule] = {}
         self._lock = threading.Lock()
         self._denial_counts: MutableMapping[str, int] = {}
+        self.ghostkey_mode = X402_GHOSTKEY_MODE
+        self.max_trace_window = MAX_TRACE_WINDOW
+        self._trace_buffer = TraceBuffer()
         for rule in _DEFAULT_RULES:
             self.register_rule(rule)
 
@@ -167,6 +181,44 @@ class X402Gateway:
     # ------------------------------------------------------------------
     # execution helpers
     # ------------------------------------------------------------------
+    def _ensure_metadata_permitted(self, metadata: Mapping[str, Any]) -> None:
+        if not metadata:
+            return
+        if contains_identity_metadata(metadata) and not is_pre_authorised(metadata):
+            log_blocked_event("identity_metadata_rejected", metadata)
+            raise PermissionError("identity metadata is not permitted for x402 events")
+
+    def _prepare_metadata(
+        self,
+        metadata: Mapping[str, Any],
+        *,
+        wallet_address: str,
+        wallet_classification: str,
+    ) -> Dict[str, Any]:
+        cleaned = scrub_identity_metadata(metadata)
+        cleaned.update(
+            {
+                "wallet_address": wallet_address,
+                "wallet_classification": wallet_classification,
+                "ghostkey_mode": self.ghostkey_mode,
+                "anonymity_required": True,
+                "trace_window": self.max_trace_window,
+                "signal_route": ["signal", "wallet", "belief", "yield"],
+                "metadata_scrubbed": True,
+            }
+        )
+        return cleaned
+
+    def _store_trace(self, payload: Mapping[str, Any]) -> None:
+        self._trace_buffer.append(payload)
+        if self.max_trace_window <= 0:
+            self._trace_buffer.clear()
+
+    def _check_redaction_trigger(self, metadata: Mapping[str, Any]) -> None:
+        trigger_phrase = str(metadata.get("trigger_phrase", "")).strip().lower()
+        if trigger_phrase == "ghostkey vanish".lower():
+            codex_redact_x402_trace(self._trace_buffer)
+
     def execute(
         self,
         endpoint: str,
@@ -176,6 +228,10 @@ class X402Gateway:
         currency: str | None = None,
         metadata: Mapping[str, Any] | None = None,
         billable: bool | None = None,
+        wallet_address: str | None = None,
+        belief_signal: Mapping[str, Any] | None = None,
+        signature: str | None = None,
+        wallet_type: str | None = None,
     ) -> Any:
         """Execute ``callback`` guarded by the x402 rule for ``endpoint``.
 
@@ -183,6 +239,26 @@ class X402Gateway:
         mandatory but no amount is provided.  On success the call is
         recorded in the ledger.
         """
+
+        metadata = metadata or {}
+        wallet_address = wallet_address or self.identity_handle
+        self._ensure_metadata_permitted(metadata)
+        verified, classification = verify_x402_wallet(
+            wallet_address,
+            belief_signal=belief_signal,
+            signature=signature,
+            wallet_type=wallet_type,
+        )
+        if not verified:
+            log_blocked_event(
+                "wallet_verification_failed",
+                {
+                    "wallet_address": wallet_address,
+                    "endpoint": endpoint,
+                    "classification": classification,
+                },
+            )
+            raise PermissionError("x402 requires a verified wallet signal in ghostkey mode")
 
         rule = self._rules.get(endpoint)
         charge_amount: float | None = amount
@@ -209,16 +285,28 @@ class X402Gateway:
 
         result = callback()
 
+        prepared_metadata = self._prepare_metadata(
+            metadata,
+            wallet_address=wallet_address,
+            wallet_classification=classification,
+        )
+        self._store_trace({
+            "endpoint": endpoint,
+            "wallet": wallet_address,
+            "classification": classification,
+        })
+        self._check_redaction_trigger(prepared_metadata)
+
         if charge_amount and charge_amount > 0:
             self._record_transaction(
                 endpoint=endpoint,
                 amount=charge_amount,
                 currency=currency or (rule.currency if rule else "ETH"),
-                metadata=metadata or {},
+                metadata=prepared_metadata,
                 unlocks=rule.unlocks if rule else (),
             )
         else:
-            self._record_access(endpoint=endpoint, metadata=metadata or {})
+            self._record_access(endpoint=endpoint, metadata=prepared_metadata)
 
         return result
 
@@ -315,8 +403,46 @@ class X402Gateway:
         amount: float | None = None,
         currency: str | None = None,
         metadata: Mapping[str, Any] | None = None,
+        wallet_address: str | None = None,
+        belief_signal: Mapping[str, Any] | None = None,
+        signature: str | None = None,
+        wallet_type: str | None = None,
     ) -> Mapping[str, Any]:
         """Record an externally triggered x402 event."""
+
+        metadata = metadata or {}
+        wallet_address = wallet_address or self.identity_handle
+        self._ensure_metadata_permitted(metadata)
+        verified, classification = verify_x402_wallet(
+            wallet_address,
+            belief_signal=belief_signal,
+            signature=signature,
+            wallet_type=wallet_type,
+        )
+        if not verified:
+            log_blocked_event(
+                "wallet_verification_failed",
+                {
+                    "wallet_address": wallet_address,
+                    "event_type": event_type,
+                    "classification": classification,
+                },
+            )
+            raise PermissionError("x402 external events require a verified wallet")
+
+        prepared_metadata = self._prepare_metadata(
+            metadata,
+            wallet_address=wallet_address,
+            wallet_classification=classification,
+        )
+        self._store_trace(
+            {
+                "event_type": event_type,
+                "wallet": wallet_address,
+                "classification": classification,
+            }
+        )
+        self._check_redaction_trigger(prepared_metadata)
 
         entry = {
             "timestamp": time.time(),
@@ -327,7 +453,7 @@ class X402Gateway:
             "currency": currency,
             "identity_handle": self.identity_handle,
             "identity_ens": self.identity_ens,
-            "metadata": dict(metadata or {}),
+            "metadata": prepared_metadata,
         }
         self._append_jsonl(self.ledger_path, entry)
         self._append_jsonl(

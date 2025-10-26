@@ -125,6 +125,21 @@ def cmd_x402_dashboard(args: argparse.Namespace) -> None:
         print(f"Dashboard exported to {destination}")
 
 
+def cmd_x402_trust_manifest(_: argparse.Namespace) -> None:
+    """Print the public x402 trust manifest."""
+
+    manifest_path = Path("vaultfire/trust/x402_manifest.json")
+    if not manifest_path.exists():
+        print("x402 trust manifest not found; run privacy hardening first")
+        return
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        print("x402 trust manifest unreadable")
+        return
+    print(json.dumps(manifest, indent=2))
+
+
 def cmd_partner_export(args: argparse.Namespace) -> None:
     """Write a partner export JSON payload."""
     data = {
@@ -593,6 +608,9 @@ def main(argv: list[str] | None = None) -> int:
     p_dashboard.add_argument("--format", choices=["vaultledger", "json"], default="vaultledger")
     p_dashboard.add_argument("--quiet", action="store_true", help="Suppress stdout output")
     p_dashboard.set_defaults(func=cmd_x402_dashboard)
+
+    p_trust = sub.add_parser("x402-trust-manifest", help="Display the x402 trust manifest")
+    p_trust.set_defaults(func=cmd_x402_trust_manifest)
 
     p_export = sub.add_parser("partner-export", help="Export partner data")
     p_export.add_argument("--wallet", required=True, help="Wallet address")

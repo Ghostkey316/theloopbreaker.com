@@ -230,5 +230,9 @@
   "date_created": "2025-07-25T04:33:48Z",
   "system_status": "🔓 Codex-Activated: Belief-Based System",
   "stability_rating": "Production-Ready Core, Beta Extensions",
-  "checksum": "ac0d693e265afa5249d6483675924b0ff9621f864a6b8f14dafd8e7aa492b5a4"
+  "checksum": "ac0d693e265afa5249d6483675924b0ff9621f864a6b8f14dafd8e7aa492b5a4",
+  "x402_ghostkey_mode": true,
+  "track_human_identity": false,
+  "max_trace_window": 0,
+  "anonymity_required": true
 }
