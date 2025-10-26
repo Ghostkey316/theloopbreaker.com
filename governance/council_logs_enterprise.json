@@ -1,0 +1,51 @@
+{
+  "identity_tag": "ghostkey-316",
+  "council": [
+    {
+      "member_id": "ghostkey316.eth",
+      "wallet": "bpow20.cb.id",
+      "role": "Architect",
+      "vote_weight": 0.45
+    },
+    {
+      "member_id": "codexCouncil.eth",
+      "wallet": "0xC0D3X",
+      "role": "Codex Steward",
+      "vote_weight": 0.35
+    },
+    {
+      "member_id": "truthnode.eth",
+      "wallet": "0xTRu7h",
+      "role": "Truth Anchor",
+      "vote_weight": 0.2
+    }
+  ],
+  "entries": [
+    {
+      "proposal_id": "VF-2024-001",
+      "title": "Activate live telemetry streaming",
+      "snapshot_block": 18750000,
+      "decision": "APPROVED",
+      "approval_hash": "0x67e112d4c3225d5b6f5286657098c91b71d03e8289f84df9f12073c77e5cc9d8",
+      "attestation_file": "attestations/governance/vf-2024-001.json",
+      "notes": "Enables Base testnet telemetry with anomaly detection",
+      "signers": [
+        "ghostkey316.eth",
+        "codexCouncil.eth"
+      ]
+    },
+    {
+      "proposal_id": "VF-2024-002",
+      "title": "Harden partner integration bridge",
+      "snapshot_block": 18751234,
+      "decision": "APPROVED",
+      "approval_hash": "0x4fddfb70a5bc6fe90d0f9f707a08aa08bd00dae195f7be0b33d8435f6a0ed2a4",
+      "attestation_file": "attestations/governance/vf-2024-002.json",
+      "notes": "Introduces codex handshake validation and load testing",
+      "signers": [
+        "ghostkey316.eth",
+        "truthnode.eth"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "timestamp": "2025-10-26T19:46:53Z",
+  "network": "base-testnet",
+  "identity_tag": "ghostkey-316",
+  "total_requests": 10,
+  "avg_latency_ms": 123.77,
+  "p95_latency_ms": 159.04,
+  "error_rate": 0.0,
+  "throughput_rps": 2.0
+}
