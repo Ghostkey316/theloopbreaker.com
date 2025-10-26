@@ -31,12 +31,15 @@ methods which expose structured event payloads.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from pathlib import Path
 import json
 import threading
 import time
 from typing import Any, Callable, Dict, Iterable, Mapping, MutableMapping
+
+from dataclasses import dataclass, field
+from pathlib import Path
+
+from vaultfire.encryption import wrap_mapping
 
 from .storage import DailyBackupManager
 from .x402_privacy import (
@@ -361,9 +364,14 @@ class X402Gateway:
     def _append_jsonl(self, path: Path, payload: Mapping[str, Any]) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         try:
+            record = wrap_mapping(
+                "x402-anonymized-map",
+                payload,
+                preserve_keys=("timestamp", "event", "endpoint"),
+            )
             with self._lock:
                 with path.open("a", encoding="utf-8") as fp:
-                    json.dump(payload, fp, separators=(",", ":"))
+                    json.dump(record, fp, separators=(",", ":"))
                     fp.write("\n")
             if path in (self.ledger_path, self.codex_memory_path, self.companion_path):
                 self._backup_manager.maybe_snapshot(path, label=path.stem)

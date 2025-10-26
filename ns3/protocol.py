@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from vaultfire.encryption import wrap_mapping
+
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _DEFAULT_LOG_PATH = Path(
     os.environ.get("NS3_YIELD_LOG", _REPO_ROOT / "telemetry" / "yield_activation.log")
@@ -37,8 +39,13 @@ def _append_event(event: _YieldEvent) -> Dict[str, Any]:
     record = event.to_dict()
     log_path = _DEFAULT_LOG_PATH
     log_path.parent.mkdir(parents=True, exist_ok=True)
+    wrapped = wrap_mapping(
+        "ns3-sync-log",
+        record,
+        preserve_keys=("id", "action", "timestamp"),
+    )
     with log_path.open("a", encoding="utf-8") as stream:
-        stream.write(json.dumps(record, sort_keys=True))
+        stream.write(json.dumps(wrapped, sort_keys=True))
         stream.write("\n")
     return record
 
