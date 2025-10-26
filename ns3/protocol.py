@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from vaultfire.encryption import wrap_mapping
+from vaultfire.encryption import LegacyDataError, migrate_legacy_file, wrap_mapping
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _DEFAULT_LOG_PATH = Path(
@@ -18,6 +18,10 @@ _DEFAULT_LOG_PATH = Path(
 _METADATA_PATH = Path(
     os.environ.get("NS3_METADATA_PATH", _REPO_ROOT / "ghostkey_metadata_snapshot.json")
 )
+
+_LEGACY_READ_ONLY = False
+_MIGRATION_ATTEMPTED = False
+_LEGACY_WARNING = "Legacy Data Unencrypted – Action Required."
 
 
 @dataclass(slots=True)
@@ -39,6 +43,23 @@ def _append_event(event: _YieldEvent) -> Dict[str, Any]:
     record = event.to_dict()
     log_path = _DEFAULT_LOG_PATH
     log_path.parent.mkdir(parents=True, exist_ok=True)
+    global _LEGACY_READ_ONLY, _MIGRATION_ATTEMPTED  # noqa: PLW0603
+    if not _LEGACY_READ_ONLY and not _MIGRATION_ATTEMPTED:
+        try:
+            migrate_legacy_file(
+                "ns3-sync-log",
+                log_path,
+                preserve_keys=("id", "action", "timestamp"),
+            )
+        except LegacyDataError:
+            _LEGACY_READ_ONLY = True
+        finally:
+            _MIGRATION_ATTEMPTED = True
+    if _LEGACY_READ_ONLY:
+        if not getattr(_append_event, "_warned", False):
+            print(_LEGACY_WARNING)
+            _append_event._warned = True
+        return record
     wrapped = wrap_mapping(
         "ns3-sync-log",
         record,

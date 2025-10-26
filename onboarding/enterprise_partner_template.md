@@ -1,7 +1,7 @@
 # Vaultfire Enterprise Partner Onboarding Template
 
 > Identity Anchor: **ghostkey-316**  \
-> Protocol Tag: `vaultfire.v2.2-encryption-ready`
+> Protocol Tag: `vaultfire.v2.3-encryption-core`
 
 ## 1. Plug-in Guide
 

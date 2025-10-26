@@ -347,7 +347,11 @@ function createPartnerSyncServer({
         issuedAt: snapshot.issuedAt,
         sessionTtlSeconds: Math.floor(sessionTtl / 1000),
       };
-      sendSignedJson(res, response, { securityPosture });
+      sendSignedJson(res, response, {
+        securityPosture,
+        encryptionComponent: 'partner-handshake',
+        preserveKeys: ['status', 'requiresHandshake', 'sessionTtlSeconds'],
+      });
     } catch (error) {
       const statusCode = error.statusCode || 500;
       res.status(statusCode).json({
@@ -404,7 +408,11 @@ function createPartnerSyncServer({
           requiresHandshake: securityPosture.requiresHandshake(),
           issuedAt: new Date().toISOString(),
         },
-        { securityPosture }
+        {
+          securityPosture,
+          encryptionComponent: 'partner-handshake',
+          preserveKeys: ['ok', 'status', 'requiresHandshake', 'session', 'issuedAt'],
+        }
       );
     } catch (error) {
       recordTelemetry(
@@ -432,7 +440,11 @@ function createPartnerSyncServer({
           rotation,
           issuedAt: new Date().toISOString(),
         },
-        { securityPosture }
+        {
+          securityPosture,
+          encryptionComponent: 'partner-rotation-status',
+          preserveKeys: ['ok', 'issuedAt'],
+        }
       );
     } catch (error) {
       res.status(500).json({ error: { message: error.message } });

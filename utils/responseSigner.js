@@ -1,9 +1,12 @@
 const crypto = require('crypto');
 
+const { wrapObject, shouldEncrypt } = require('../lib/encryptionLayer');
+
 const SIGNATURE_HEADER = 'X-Vaultfire-Signature';
 const SIGNATURE_ALGORITHM_HEADER = 'X-Vaultfire-Signature-Alg';
 const SIGNATURE_ISSUED_AT_HEADER = 'X-Vaultfire-Signature-Issued-At';
 const SIGNATURE_ALGORITHM = 'HMAC-SHA256';
+const ENCRYPTION_VERSION = 'v2.3';
 
 function resolveSigningSecret({ signingSecret, securityPosture } = {}) {
   if (signingSecret) {
@@ -26,7 +29,16 @@ function computeSignature(payloadString, secret) {
 
 function sendSignedJson(res, payload, options = {}) {
   const secret = resolveSigningSecret(options);
-  const body = JSON.stringify(payload);
+  const component = options.encryptionComponent || options.component || 'partner-sync-response';
+  const preserveKeys = Array.isArray(options.preserveKeys) ? options.preserveKeys : [];
+  const payloadWithVersion = {
+    ...payload,
+    vaultfire_encryption_version: ENCRYPTION_VERSION,
+  };
+  const bodyPayload = shouldEncrypt(component)
+    ? wrapObject(component, payloadWithVersion, { preserveKeys })
+    : payloadWithVersion;
+  const body = JSON.stringify(bodyPayload);
   const signature = computeSignature(body, secret);
   const issuedAt = new Date().toISOString();
 

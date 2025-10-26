@@ -1,5 +1,7 @@
 const crypto = require('crypto');
 
+const { wrapObject, unwrapObject } = require('../lib/encryptionLayer');
+
 function sha256(value) {
   return crypto.createHash('sha256').update(value).digest('hex');
 }
@@ -235,26 +237,40 @@ class EncryptedIdentityStore {
   }
 
   #encrypt(payload) {
-    const iv = crypto.randomBytes(12);
-    const cipher = crypto.createCipheriv('aes-256-gcm', this.encryptionKey, iv);
-    const json = JSON.stringify(payload);
-    const encrypted = Buffer.concat([cipher.update(json, 'utf8'), cipher.final()]);
-    const tag = cipher.getAuthTag();
-    return {
-      iv: iv.toString('base64'),
-      content: encrypted.toString('base64'),
-      tag: tag.toString('base64'),
-    };
+    return wrapObject('identity-store', payload, { preserveKeys: ['updatedAt'] });
   }
 
-  #decrypt(blob) {
+  async #decrypt(anchorId, record) {
+    const blob = record.payload;
+    if (blob && typeof blob === 'object' && blob.__vaultfire_encrypted__ && typeof blob.encrypted === 'string') {
+      return unwrapObject('identity-store', blob);
+    }
+    if (!blob || typeof blob !== 'object' || !blob.iv) {
+      return blob;
+    }
+    if (!this.encryptionKey) {
+      throw new Error('Legacy identity payload detected but no encryption key configured.');
+    }
     const iv = Buffer.from(blob.iv, 'base64');
     const content = Buffer.from(blob.content, 'base64');
     const tag = Buffer.from(blob.tag, 'base64');
     const decipher = crypto.createDecipheriv('aes-256-gcm', this.encryptionKey, iv);
     decipher.setAuthTag(tag);
-    const decrypted = Buffer.concat([decipher.update(content), decipher.final()]);
-    return JSON.parse(decrypted.toString('utf8'));
+    const decryptedBuffer = Buffer.concat([decipher.update(content), decipher.final()]);
+    const decrypted = JSON.parse(decryptedBuffer.toString('utf8'));
+    try {
+      const upgraded = wrapObject('identity-store', decrypted, { preserveKeys: ['updatedAt'] });
+      const walletHash = record.walletHash || record.wallet_hash;
+      const ensAliasHash = record.ensAliasHash ?? record.ens_alias_hash ?? null;
+      await this.provider.upsert(anchorId, {
+        walletHash,
+        ensAliasHash,
+        payload: upgraded,
+      });
+    } catch (error) {
+      // Conversion failures are non-fatal; continue serving legacy payload.
+    }
+    return decrypted;
   }
 
   #anchorId(wallet, ensAlias) {
@@ -302,7 +318,7 @@ class EncryptedIdentityStore {
     if (!record) {
       return null;
     }
-    const decrypted = this.#decrypt(record.payload);
+    const decrypted = await this.#decrypt(anchorId, record);
     return { ...decrypted, anchorId };
   }
 
@@ -313,7 +329,14 @@ class EncryptedIdentityStore {
     }
     const walletHash = sha256(normalizedWallet);
     const records = await this.provider.findByWallet(walletHash);
-    return records.map((record) => ({ ...this.#decrypt(record.payload), anchorId: record.anchorId || record.anchor_id }));
+    const resolved = await Promise.all(
+      records.map(async (record) => {
+        const anchorId = record.anchorId || record.anchor_id;
+        const decrypted = await this.#decrypt(anchorId, record);
+        return { ...decrypted, anchorId };
+      })
+    );
+    return resolved;
   }
 }
 
