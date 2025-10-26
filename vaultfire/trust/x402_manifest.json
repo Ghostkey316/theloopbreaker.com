@@ -1,0 +1,8 @@
+{
+  "wallet_only": true,
+  "identity_tracking_blocked": true,
+  "metadata_scrubbing_active": true,
+  "ghostkey_mode": true,
+  "last_audit": "2025-10-26T16:59:45.878639+00:00",
+  "verifier": "Ghostkey-316"
+}

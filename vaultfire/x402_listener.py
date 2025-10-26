@@ -53,6 +53,7 @@ def _maybe_trigger_airdrop(gateway: X402Gateway, loyalty_score: float) -> Mappin
             "triggered_at": now.isoformat(),
             "reason": "weekly_loyalty_bonus",
         },
+        signature="codex::airdrop",
     )
     state["last_drop_key"] = current_key
     state["last_drop_timestamp"] = now.isoformat()
@@ -74,6 +75,8 @@ def x402EventListener(app: Flask | None = None) -> Blueprint:
                     "status": "listening",
                     "identity": gateway.identity_handle,
                     "ledger": str(gateway.ledger_path),
+                    "ghostkey_mode": gateway.ghostkey_mode,
+                    "anonymity_required": True,
                 }
             )
 
@@ -87,20 +90,36 @@ def x402EventListener(app: Flask | None = None) -> Blueprint:
         except (TypeError, ValueError):
             amount_value = None
         currency = payload.get("currency")
+        wallet_address = payload.get("wallet_address") or payload.get("wallet")
+        belief_signal = payload.get("belief_signal") if isinstance(payload.get("belief_signal"), dict) else None
+        signature = payload.get("signature") or payload.get("codex_signature")
+        wallet_type = payload.get("wallet_type")
+        trigger_phrase = payload.get("trigger_phrase") or payload.get("command")
+        if not wallet_address:
+            wallet_address = gateway.identity_handle
+            if signature is None:
+                signature = "codex::listener"
         metadata = {
             "tx_hash": payload.get("tx_hash") or payload.get("transaction_hash"),
-            "source": payload.get("source", "x402"),
-            "raw": payload,
+            "loyalty_score": payload.get("loyalty_score"),
+            "authorized_by": payload.get("authorized_by"),
+            "relay": payload.get("relay"),
+            "trigger_phrase": trigger_phrase,
         }
-        if "loyalty_score" in payload:
-            metadata["loyalty_score"] = payload["loyalty_score"]
-        entry = gateway.record_external_event(
-            event_type=event_type,
-            status=status,
-            amount=amount_value,
-            currency=currency,
-            metadata=metadata,
-        )
+        try:
+            entry = gateway.record_external_event(
+                event_type=event_type,
+                status=status,
+                amount=amount_value,
+                currency=currency,
+                metadata=metadata,
+                wallet_address=wallet_address,
+                belief_signal=belief_signal,
+                signature=signature,
+                wallet_type=wallet_type,
+            )
+        except PermissionError as exc:
+            return jsonify({"status": "rejected", "reason": str(exc)}), 403
 
         loyalty_score = float(payload.get("loyalty_score", 0.0) or 0.0)
         airdrop = _maybe_trigger_airdrop(gateway, loyalty_score)

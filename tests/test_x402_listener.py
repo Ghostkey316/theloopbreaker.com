@@ -14,7 +14,11 @@ def test_webhook_and_dashboard(tmp_path, monkeypatch):
         companion_path=tmp_path / "companion.jsonl",
     )
     for _ in range(51):
-        gateway.record_external_event(event_type="seed", status="ok")
+        gateway.record_external_event(
+            event_type="seed",
+            status="ok",
+            signature="codex::seed",
+        )
 
     state_path = tmp_path / "state.json"
     monkeypatch.setattr("vaultfire.x402_listener._STATE_PATH", state_path, raising=False)
@@ -33,6 +37,8 @@ def test_webhook_and_dashboard(tmp_path, monkeypatch):
             "currency": "ASM",
             "tx_hash": "0xabc",
             "loyalty_score": 0.9,
+            "wallet_address": "bpow20.cb.id",
+            "signature": "codex::listener-test",
         },
     )
     assert response.status_code == 200
