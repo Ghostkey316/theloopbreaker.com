@@ -1,0 +1,152 @@
+openapi: 3.0.3
+info:
+  title: Vaultfire Enterprise API
+  version: 2.1.0
+  description: |
+    Enterprise grade API surface for Vaultfire deployments. The schema covers
+    real-time belief telemetry, loyalty activation, and governance sync
+    endpoints that are hardened for production usage.
+servers:
+  - url: https://api.vaultfire.enterprise
+    description: Production control plane
+  - url: https://staging.api.vaultfire.enterprise
+    description: Hardened staging environment
+paths:
+  /api/v2/belief/signal:
+    post:
+      summary: Submit a live belief signal for a user session
+      tags: [Belief]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BeliefSignalRequest'
+      responses:
+        '202':
+          description: Signal accepted for async processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BeliefSignalResponse'
+  /api/v2/loyalty/activate:
+    post:
+      summary: Activate loyalty rewards for a wallet and ENS identity
+      tags: [Loyalty]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoyaltyActivationRequest'
+      responses:
+        '200':
+          description: Loyalty activation succeeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoyaltyActivationResponse'
+  /api/v2/governance/attestations:
+    get:
+      summary: Retrieve governance attestation metadata for auditing
+      tags: [Governance]
+      parameters:
+        - in: query
+          name: proposal_id
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Governance attestations returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovernanceAttestationResponse'
+components:
+  schemas:
+    BeliefSignalRequest:
+      type: object
+      required: [identity_tag, wallet, ens, signal_strength]
+      properties:
+        identity_tag:
+          type: string
+          example: ghostkey-316
+        wallet:
+          type: string
+          example: bpow20.cb.id
+        ens:
+          type: string
+          example: ghostkey316.eth
+        signal_strength:
+          type: number
+          format: float
+          description: Belief density sampled from telemetry
+        session_reference:
+          type: string
+          description: Identifier linking to telemetry session replay
+    BeliefSignalResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: QUEUED
+        replay_url:
+          type: string
+    LoyaltyActivationRequest:
+      type: object
+      required: [wallet, ens, activation_code]
+      properties:
+        wallet:
+          type: string
+        ens:
+          type: string
+        activation_code:
+          type: string
+        traits:
+          type: array
+          items:
+            type: string
+    LoyaltyActivationResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        loyalty_tier:
+          type: string
+        activation_hash:
+          type: string
+    GovernanceAttestationResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        attestors:
+          type: array
+          items:
+            type: string
+        decisions:
+          type: array
+          items:
+            $ref: '#/components/schemas/GovernanceDecision'
+    GovernanceDecision:
+      type: object
+      properties:
+        proposal_id:
+          type: string
+        approval_hash:
+          type: string
+        snapshot_block:
+          type: integer
+        vote_weights:
+          type: array
+          items:
+            $ref: '#/components/schemas/VoteWeight'
+    VoteWeight:
+      type: object
+      properties:
+        member:
+          type: string
+        weight:
+          type: number
+          format: float

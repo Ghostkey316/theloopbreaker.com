@@ -1,0 +1,22 @@
+{
+  "proposal_id": "VF-2024-001",
+  "network": "base-sepolia",
+  "snapshot_reference": "snapshot.org/#/vaultfire.eth/proposal/vf-2024-001",
+  "approval_hash": "0x67e112d4c3225d5b6f5286657098c91b71d03e8289f84df9f12073c77e5cc9d8",
+  "signers": [
+    {
+      "member": "ghostkey316.eth",
+      "wallet": "bpow20.cb.id",
+      "weight": 0.45,
+      "signature": "0xghostkey316signature"
+    },
+    {
+      "member": "codexCouncil.eth",
+      "wallet": "0xC0D3X",
+      "weight": 0.35,
+      "signature": "0xcodexcouncilsignature"
+    }
+  ],
+  "multi_sig_threshold": 0.6,
+  "timestamp": "2025-01-16T12:45:00Z"
+}

@@ -1,0 +1,33 @@
+{
+  "identity_tag": "ghostkey-316",
+  "timeline": [
+    {
+      "timestamp": "2025-01-16T12:14:00Z",
+      "event": "Proposal VF-2024-001 opened",
+      "proposal_id": "VF-2024-001",
+      "hash": "0xd52a9d6a6fd4f3d30bd9200f3f55698f6f18c3b2f5c54648a89f4b3b23a7e0f4",
+      "policy_drift_delta": 0.02
+    },
+    {
+      "timestamp": "2025-01-16T12:45:00Z",
+      "event": "Snapshot vote recorded",
+      "proposal_id": "VF-2024-001",
+      "hash": "0x67e112d4c3225d5b6f5286657098c91b71d03e8289f84df9f12073c77e5cc9d8",
+      "policy_drift_delta": -0.01
+    },
+    {
+      "timestamp": "2025-01-17T09:05:00Z",
+      "event": "Proposal VF-2024-002 opened",
+      "proposal_id": "VF-2024-002",
+      "hash": "0x2aa3e79f8890825086c99e3ad3e28f8dbd097b1bd44f3c5905b9f68506d74db4",
+      "policy_drift_delta": 0.03
+    },
+    {
+      "timestamp": "2025-01-17T09:47:00Z",
+      "event": "Multi-sig approval recorded",
+      "proposal_id": "VF-2024-002",
+      "hash": "0x4fddfb70a5bc6fe90d0f9f707a08aa08bd00dae195f7be0b33d8435f6a0ed2a4",
+      "policy_drift_delta": -0.015
+    }
+  ]
+}
