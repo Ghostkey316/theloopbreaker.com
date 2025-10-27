@@ -412,6 +412,19 @@ PINNED_VIZ: Dict[str, Dict[str, Any]] = {}
 STREAM_EMIT_QUEUE: deque[dict[str, Any]] = deque()
 ADAPTIVE_COUNCIL_THRESHOLD: float = 2.0
 
+_AHP_RANDOM_INDEX: dict[int, float] = {
+    1: 0.0,
+    2: 0.0,
+    3: 0.58,
+    4: 0.9,
+    5: 1.12,
+    6: 1.24,
+    7: 1.32,
+    8: 1.41,
+    9: 1.45,
+    10: 1.49,
+}
+
 
 def _connect_ipfs():
     """Create an IPFS client if available, otherwise return ``None``."""
@@ -522,6 +535,100 @@ def _history_aggregate_hash(
         for entry in history
     ]
     return _compute_zk_hash(sanitized, wallet_id, auth_hash)
+
+
+def _build_ahp_matrix(
+    virtue_pairs: Iterable[dict[str, Any]],
+    num_virtues: int,
+) -> tuple[np.ndarray, list[str]]:
+    """Construct an AHP matrix from pairwise virtue comparisons."""
+
+    if not isinstance(num_virtues, int) or num_virtues <= 1:
+        raise ValueError("virtue_count_invalid")
+
+    protect_literal = "protect" if "protect" in MISSION_STATEMENT.lower() else "safeguard"
+    virtue_order: list[str] = [protect_literal]
+    pair_map: dict[tuple[int, int], float] = {}
+
+    if not isinstance(virtue_pairs, Iterable):
+        raise ValueError("virtue_pairs_invalid")
+
+    for pair in virtue_pairs:
+        if not isinstance(pair, dict):
+            raise ValueError("virtue_pair_invalid")
+        virtue_a = pair.get("virtue_a")
+        virtue_b = pair.get("virtue_b")
+        priority = pair.get("priority")
+        if not isinstance(virtue_a, str) or not isinstance(virtue_b, str):
+            raise ValueError("virtue_missing")
+        virtue_a = virtue_a.strip()
+        virtue_b = virtue_b.strip()
+        if not virtue_a or not virtue_b or virtue_a == virtue_b:
+            raise ValueError("virtue_conflict")
+        if virtue_a not in virtue_order:
+            virtue_order.append(virtue_a)
+        if virtue_b not in virtue_order:
+            virtue_order.append(virtue_b)
+        try:
+            ratio = float(priority)
+        except (TypeError, ValueError) as exc:  # pragma: no cover - defensive guard
+            raise ValueError("priority_invalid") from exc
+        if ratio <= 0:
+            raise ValueError("priority_invalid")
+        idx_a = virtue_order.index(virtue_a)
+        idx_b = virtue_order.index(virtue_b)
+        key = (min(idx_a, idx_b), max(idx_a, idx_b))
+        normalized_ratio = ratio if idx_a < idx_b else 1.0 / ratio
+        existing = pair_map.get(key)
+        if existing is not None and not np.isclose(existing, normalized_ratio):
+            raise ValueError("priority_conflict")
+        pair_map[key] = normalized_ratio
+
+    while len(virtue_order) < num_virtues:
+        virtue_order.append(f"virtue_{len(virtue_order) + 1}")
+
+    matrix_size = len(virtue_order)
+    matrix = np.ones((matrix_size, matrix_size), dtype=float)
+    for (idx_a, idx_b), ratio in pair_map.items():
+        matrix[idx_a, idx_b] = ratio
+        matrix[idx_b, idx_a] = 1.0 / ratio
+
+    if np.isnan(matrix).any() or matrix_size <= 1:
+        raise ValueError("matrix_invalid")
+
+    return matrix, virtue_order
+
+
+def _derive_priority_weights(matrix: np.ndarray, virtues: list[str]) -> tuple[dict[str, float], float]:
+    """Compute principal eigenvector weights and consistency ratio."""
+
+    try:
+        eigenvalues, eigenvectors = np.linalg.eig(matrix)
+    except np.linalg.LinAlgError as exc:  # pragma: no cover - defensive guard
+        raise ValueError("eigen_failure") from exc
+
+    idx = int(np.argmax(eigenvalues.real))
+    principal_vector = np.abs(eigenvectors[:, idx].real)
+    if principal_vector.sum() <= 0:
+        principal_vector = np.ones_like(principal_vector)
+    weights = principal_vector / principal_vector.sum()
+
+    n_dim = matrix.shape[0]
+    if n_dim <= 1:
+        raise ValueError("matrix_invalid")
+    if n_dim <= 2:
+        consistency_ratio = 0.0
+    else:
+        lambda_max = float(eigenvalues[idx].real)
+        consistency_index = (lambda_max - n_dim) / (n_dim - 1)
+        random_index = _AHP_RANDOM_INDEX.get(n_dim, 1.49)
+        if random_index == 0:
+            consistency_ratio = 0.0
+        else:
+            consistency_ratio = float(max(0.0, consistency_index / random_index))
+
+    weight_map = {virtue: float(weights[pos]) for pos, virtue in enumerate(virtues)}
+    return weight_map, consistency_ratio
 
 
 def _normalize_pubkey(public_key_obj: Any) -> str:
@@ -1313,6 +1420,94 @@ def paradox_resolver_engine(viz_cid: str):
         "clause_commitment": clause_commitment,
         "mission_statement": MISSION_STATEMENT,
     }
+    return jsonify(response), 200
+
+
+@app.route("/virtue_hierarchy_optimizer/<viz_cid>", methods=["POST"])
+def virtue_hierarchy_optimizer(viz_cid: str):
+    """Rank mission virtues via AHP, aligning with the protect ethos in the mission."""
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header != "Bearer guardian_token":
+        abort(401, "guardian_auth_required")
+
+    consent_header = request.headers.get("X-Consent", "true").lower()
+    if consent_header in {"false", "0", "no"}:
+        abort(403, "consent_required")
+
+    record = PINNED_VIZ.get(viz_cid)
+    if record is None:
+        abort(404, "viz_not_found")
+
+    if not record.get("consent", True):
+        abort(403, "consent_required")
+
+    payload = request.get_json(silent=True) or {}
+    virtue_pairs = payload.get("virtue_pairs") or []
+    num_virtues = payload.get("num_virtues", 4)
+
+    try:
+        matrix, virtue_order = _build_ahp_matrix(virtue_pairs, int(num_virtues))
+        weight_map, consistency_ratio = _derive_priority_weights(matrix, virtue_order)
+    except (ValueError, TypeError):
+        abort(400, "ahp_matrix_invalid")
+
+    mission_anchor = record.get("mission_anchor", MISSION_STATEMENT)
+    telemetry = TelemetryClass(mission_anchor, consent=True)
+    if not getattr(telemetry, "consent", True):
+        abort(403, "consent_required")
+
+    gradient = _guardian_resonance_gradient(record, telemetry)
+    weighted_resonance = {
+        virtue: round(float(gradient * weight), 6)
+        for virtue, weight in weight_map.items()
+    }
+
+    clauses = _mission_clauses_for_viz(record, telemetry, viz_cid)
+    normalized_clauses, _ = _normalize_mission_clauses(clauses)
+    paradox_consistent = not normalized_clauses or _solve_cnf_clauses(normalized_clauses)
+
+    hierarchy_alert = bool(consistency_ratio > 0.1 or not paradox_consistent)
+    optimization = "optimized" if not hierarchy_alert else "revise_pairs"
+
+    wallet_id = record.get("wallet", "guardian::anon")
+    auth_hash = hashlib.sha256(auth_header.encode("utf-8")).hexdigest()
+    matrix_pairs = [
+        {
+            "pair": f"{virtue_order[i]}::{virtue_order[j]}",
+            "ratio": round(float(matrix[i, j]), 6),
+        }
+        for i in range(len(virtue_order))
+        for j in range(i + 1, len(virtue_order))
+    ]
+    matrix_commitment = _compute_zk_hash(matrix_pairs, wallet_id, auth_hash)
+
+    rounded_weights = {virtue: round(weight, 6) for virtue, weight in weight_map.items()}
+
+    emit_id: str | None = None
+    if hierarchy_alert:
+        emit_id = str(uuid.uuid4())
+        STREAM_EMIT_QUEUE.append(
+            {
+                "hierarchy_alert": True,
+                "weights": rounded_weights,
+                "emit_id": emit_id,
+                "viz_cid": viz_cid,
+            }
+        )
+
+    response: dict[str, Any] = {
+        "priority_weights": rounded_weights,
+        "consistency_ratio": round(float(consistency_ratio), 6),
+        "hierarchy_alert": hierarchy_alert,
+        "optimization": optimization,
+        "matrix_commitment": matrix_commitment,
+        "erv_weighted_resonance": weighted_resonance,
+        "paradox_consistent": paradox_consistent,
+        "mission_statement": MISSION_STATEMENT,
+    }
+    if emit_id is not None:
+        response["emit_id"] = emit_id
     return jsonify(response), 200
 
 
