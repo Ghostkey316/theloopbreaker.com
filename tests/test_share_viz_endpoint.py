@@ -83,6 +83,71 @@ class StreamingTelemetry(DummyTelemetry):
         return score > 0.7
 
 
+class OracleHighTelemetry(DummyTelemetry):
+    """Telemetry stub producing high empathy resonance values."""
+
+    guardian_pool_template = [
+        {"guardian_id": "g1", "hrv": 0.91, "arousal": "calm", "score": 0.88},
+        {"guardian_id": "g2", "hrv": 0.9, "arousal": "steady", "score": 0.9},
+        {"guardian_id": "g3", "hrv": 0.89, "arousal": "focused", "score": 0.87},
+        {"guardian_id": "g4", "hrv": 0.92, "arousal": "calm", "score": 0.91},
+    ]
+
+    def __init__(self, mission_anchor: str, *, consent: bool = True) -> None:
+        super().__init__(mission_anchor, consent=consent)
+        self.guardian_pool = [dict(entry) for entry in self.guardian_pool_template]
+
+    def fetch_mock_bio_data(self, user_wallet: str) -> dict[str, Any]:
+        template = next(
+            (entry for entry in self.guardian_pool if entry["guardian_id"] == user_wallet),
+            {"hrv": 0.88, "arousal": "steady"},
+        )
+        return {
+            "wallet": user_wallet,
+            "guardian_id": user_wallet,
+            "hrv": template.get("hrv", 0.88),
+            "arousal": template.get("arousal", "steady"),
+            "timestamp": "2024-01-01T00:00:00Z",
+        }
+
+    def run_erv_simulation(self, bio_data: dict[str, Any]) -> tuple[float, str]:
+        template = next(
+            (entry for entry in self.guardian_pool if entry["guardian_id"] == bio_data.get("guardian_id")),
+            None,
+        )
+        score = template.get("score", 0.85) if template else 0.8
+        return score, "encrypted::oracle"
+
+    def simulate_cascade(self, score: float, encrypted_res: str) -> bool:
+        _ = encrypted_res
+        return score >= 0.75
+
+
+class OracleSilentTelemetry(DummyTelemetry):
+    """Telemetry stub that withholds contributions due to lack of consent."""
+
+    def __init__(self, mission_anchor: str, *, consent: bool = True) -> None:
+        super().__init__(mission_anchor, consent=consent)
+        self.guardian_pool = [{"guardian_id": "g-silent", "consent": False, "hrv": 0.8}]
+
+    def fetch_mock_bio_data(self, user_wallet: str) -> dict[str, Any]:
+        return {
+            "wallet": user_wallet,
+            "guardian_id": user_wallet,
+            "hrv": 0.8,
+            "arousal": "neutral",
+            "timestamp": "2024-01-01T00:00:00Z",
+        }
+
+    def run_erv_simulation(self, bio_data: dict[str, Any]) -> tuple[float, str]:
+        _ = bio_data
+        return 0.6, "encrypted::silent"
+
+    def simulate_cascade(self, score: float, encrypted_res: str) -> bool:
+        _ = (score, encrypted_res)
+        return False
+
+
 @pytest.fixture(autouse=True)
 def clear_state(monkeypatch: pytest.MonkeyPatch) -> None:
     """Reset in-memory state and patch telemetry for each test."""
@@ -213,6 +278,53 @@ def test_council_consensus_met() -> None:
     assert emission["uplift_adjust"] > 0
     assert emission["viz_cid"] == viz_cid
     assert len(emission["zk_pool_hash"]) == 64
+
+
+def test_oracle_high_avg(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Collective empathy oracle aggregates high ERV resonance."""
+
+    monkeypatch.setattr("services.share_viz_endpoint.TelemetryClass", OracleHighTelemetry)
+    test_client = app.test_client()
+    PINNED_VIZ["cid-high"] = {"mission_statement": MISSION_STATEMENT}
+
+    response = test_client.get(
+        "/collective_empathy_oracle/cid-high",
+        headers={"Authorization": "Bearer guardian_token"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["contributors"] == len(OracleHighTelemetry.guardian_pool_template)
+    assert body["collective_score"] > 0.8
+    assert body["empathy_baseline"] == "high"
+
+    assert STREAM_EMIT_QUEUE
+    event = STREAM_EMIT_QUEUE[-1]
+    assert event["guardian_sync"] == "collective_empathy"
+    assert pytest.approx(event["collective_empathy"], rel=1e-3) == pytest.approx(
+        body["collective_score"], rel=1e-3
+    )
+
+
+def test_no_contributors_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Oracle defaults to awaiting state when no consented guardians."""
+
+    monkeypatch.setattr("services.share_viz_endpoint.TelemetryClass", OracleSilentTelemetry)
+    test_client = app.test_client()
+
+    response = test_client.get(
+        "/collective_empathy_oracle/absent",
+        headers={"Authorization": "Bearer guardian_token"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body == {
+        "collective_score": 0.5,
+        "empathy_baseline": "awaiting_council",
+        "contributors": 0,
+    }
+    assert not STREAM_EMIT_QUEUE
 
 
 def test_threshold_fail_returns_drift_alert() -> None:
