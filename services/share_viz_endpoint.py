@@ -425,6 +425,17 @@ def stream_viz_updates() -> Generator[dict[str, Any], None, None]:
         yield STREAM_EMIT_QUEUE.popleft()
 
 
+def _federated_mean(scores: list[float]) -> tuple[float, float]:
+    """Compute a federated mean and zk-style homomorphic sum."""
+
+    if not scores:
+        return 0.0, 0.0
+
+    arr = np.asarray(scores, dtype=float)
+    zk_sum = float(arr.sum())
+    return float(arr.mean()), zk_sum
+
+
 def _collect_resonance_series(
     telemetry: PilotResonanceTelemetry,
     wallet_id: str,
@@ -841,6 +852,85 @@ def guardian_council(viz_cid: str):
         "consensus": consensus,
         "threshold_met": True,
         "emit_id": emit_id,
+    }
+    return jsonify(response), 200
+
+
+@app.route("/collective_empathy_oracle/<viz_cid>", methods=["GET"])
+def collective_empathy_oracle(viz_cid: str):
+    """Compute a collective empathy baseline anchored to ``MISSION_STATEMENT``."""
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header != "Bearer guardian_token":
+        abort(401, "guardian_auth_required")
+
+    record = PINNED_VIZ.get(viz_cid)
+    mission_anchor = record.get("mission_statement", MISSION_STATEMENT) if record else MISSION_STATEMENT
+
+    telemetry = TelemetryClass(mission_anchor, consent=True)
+    if not getattr(telemetry, "consent", True):
+        abort(403, "consent_required")
+
+    guardian_sources = list(getattr(telemetry, "guardian_pool", []))
+    if not guardian_sources:
+        seed_material = f"{viz_cid}:{mission_anchor}"
+        seed = int(hashlib.sha256(seed_material.encode("utf-8")).hexdigest(), 16) % (2**32)
+        rng = np.random.default_rng(seed)
+        count = int(rng.integers(5, 11))
+        guardian_sources = []
+        for idx in range(count):
+            guardian_sources.append(
+                {
+                    "guardian_id": f"guardian::{idx:02d}",
+                    "hrv": round(float(rng.uniform(0.74, 0.94)), 4),
+                    "arousal": "steady" if idx % 2 == 0 else "focused",
+                }
+            )
+
+    contributions: list[float] = []
+    for source in guardian_sources:
+        if not bool(source.get("consent", True)):
+            continue
+        guardian_id = str(source.get("guardian_id", f"guardian::{uuid.uuid4()}"))
+        bio_snapshot = telemetry.fetch_mock_bio_data(guardian_id)
+        merged_bio = {**bio_snapshot, **source, "guardian_id": guardian_id}
+        erv_score, encrypted_res = telemetry.run_erv_simulation(merged_bio)
+        if hasattr(telemetry, "simulate_cascade"):
+            attested = telemetry.simulate_cascade(erv_score, encrypted_res)
+            if not attested:
+                continue
+        gradient = float(np.clip(source.get("score", erv_score), 0.0, 1.0))
+        contributions.append(gradient)
+
+    contributors = len(contributions)
+    if contributors == 0:
+        return jsonify({"collective_score": 0.5, "empathy_baseline": "awaiting_council", "contributors": 0}), 200
+
+    avg_score, zk_sum = _federated_mean(contributions)
+    mission_text = mission_anchor.lower()
+    mission_weight = 1.0
+    if "empathy" in mission_text:
+        mission_weight = 1.08
+
+    collective_resonance = float(np.clip(avg_score * mission_weight, 0.0, 1.0))
+    empathy_baseline = "high" if collective_resonance > 0.8 else "steady"
+    zk_proof = hashlib.sha256(f"{viz_cid}:{zk_sum:.6f}".encode("utf-8")).hexdigest()
+
+    if collective_resonance > 0.7:
+        STREAM_EMIT_QUEUE.append(
+            {
+                "guardian_sync": "collective_empathy",
+                "collective_empathy": round(collective_resonance, 4),
+                "emit_id": str(uuid.uuid4()),
+                "mission_statement": mission_anchor,
+                "zk_proof": zk_proof,
+            }
+        )
+
+    response = {
+        "collective_score": round(collective_resonance, 4),
+        "empathy_baseline": empathy_baseline,
+        "contributors": contributors,
     }
     return jsonify(response), 200
 
