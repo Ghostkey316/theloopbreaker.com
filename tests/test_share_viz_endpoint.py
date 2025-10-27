@@ -8,6 +8,7 @@ from typing import Any
 import pytest
 import numpy as np
 
+import services.share_viz_endpoint as share_module
 from services.share_viz_endpoint import (
     MISSION_STATEMENT,
     PINNED_VIZ,
@@ -88,6 +89,7 @@ def clear_state(monkeypatch: pytest.MonkeyPatch) -> None:
 
     PINNED_VIZ.clear()
     STREAM_EMIT_QUEUE.clear()
+    share_module.ADAPTIVE_COUNCIL_THRESHOLD = 2.0
     monkeypatch.setattr("services.share_viz_endpoint.TelemetryClass", DummyTelemetry)
 
 
@@ -330,3 +332,67 @@ def test_consensus_forecast_without_history(monkeypatch: pytest.MonkeyPatch) -> 
     assert body["mission_statement"] == MISSION_STATEMENT
     assert "emit_id" not in body
     assert not list(stream_viz_updates())
+
+
+def test_adaptive_tune_high_conf() -> None:
+    """High-confidence forecasts lower thresholds and emit adaptive updates."""
+
+    test_client = app.test_client()
+    viz_cid = _seed_viz_record(test_client)
+
+    history_payload = [
+        {"score": 0.82, "consensus": True},
+        {"score": 0.78, "consensus": True},
+        {"score": 0.65, "consensus": False},
+    ]
+
+    response = test_client.post(
+        f"/adaptive_threshold/{viz_cid}",
+        data=json.dumps({"forecast_conf": 0.91, "historical_votes": history_payload}),
+        headers={"Authorization": "Bearer guardian_token", "Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["new_threshold"] <= 1.5
+    assert body["impact"] == "accelerated"
+    assert 0.0 <= body["tune_conf"] <= 1.0
+    assert "history_hash" in body
+    assert body["emit_id"]
+    assert share_module.ADAPTIVE_COUNCIL_THRESHOLD == body["new_threshold"]
+
+    emissions = list(stream_viz_updates())
+    assert emissions
+    emission = emissions[0]
+    assert emission["guardian_sync"] == "adaptive_threshold"
+    assert emission["adaptive_threshold"] == body["new_threshold"]
+    assert emission["viz_cid"] == viz_cid
+    assert emission["emit_id"] == body["emit_id"]
+
+
+def test_adaptive_tune_low_conf_default() -> None:
+    """Low-confidence forecasts keep conservative thresholds with review cue."""
+
+    test_client = app.test_client()
+    viz_cid = _seed_viz_record(test_client)
+
+    response = test_client.post(
+        f"/adaptive_threshold/{viz_cid}",
+        data=json.dumps({"forecast_conf": 0.2}),
+        headers={"Authorization": "Bearer guardian_token", "Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["new_threshold"] == 2.0
+    assert body["impact"] == "review_recommended"
+    assert "message" in body and body["message"].startswith("review_recommended")
+    assert body["tune_conf"] == 0.0
+    assert share_module.ADAPTIVE_COUNCIL_THRESHOLD == 2.0
+
+    emissions = list(stream_viz_updates())
+    assert emissions
+    emission = emissions[0]
+    assert emission["guardian_sync"] == "adaptive_threshold"
+    assert emission["adaptive_threshold"] == 2.0
+    assert emission["viz_cid"] == viz_cid

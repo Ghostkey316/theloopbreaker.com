@@ -83,6 +83,45 @@ except ImportError:  # pragma: no cover - provide lightweight regression stub
                 return 0.0
             return 1 - ss_res / ss_tot
 
+
+try:  # pragma: no cover - optional dependency during tests
+    from sklearn.ensemble import RandomForestRegressor
+except ImportError:  # pragma: no cover - deterministic average fallback
+    class RandomForestRegressor:  # type: ignore[override]
+        """Fallback regressor that returns the mean of observed targets."""
+
+        def __init__(self, **_: Any) -> None:
+            self._y_mean = 0.0
+            self._fitted = False
+
+        def fit(self, x_values: np.ndarray, y_values: np.ndarray) -> "RandomForestRegressor":
+            _ = x_values
+            y_arr = np.asarray(y_values, dtype=float)
+            self._y_mean = float(y_arr.mean()) if y_arr.size else 0.0
+            self._fitted = True
+            return self
+
+        def predict(self, x_values: np.ndarray) -> np.ndarray:
+            x_arr = np.asarray(x_values, dtype=float)
+            if x_arr.ndim == 1:
+                x_arr = x_arr.reshape(-1, 1)
+            count = x_arr.shape[0]
+            return np.full(count, self._y_mean)
+
+        def score(self, x_values: np.ndarray, y_values: np.ndarray) -> float:
+            if not self._fitted:
+                return 0.0
+            y_arr = np.asarray(y_values, dtype=float)
+            if y_arr.size <= 1:
+                return 0.0
+            predictions = self.predict(x_values)
+            ss_res = float(((y_arr - predictions) ** 2).sum())
+            y_mean = float(y_arr.mean())
+            ss_tot = float(((y_arr - y_mean) ** 2).sum())
+            if ss_tot == 0.0:
+                return 0.0
+            return max(0.0, 1 - ss_res / ss_tot)
+
 try:  # pragma: no cover - optional dependency during tests
     import ipfshttpclient  # type: ignore
 except ImportError:  # pragma: no cover - graceful fallback
@@ -140,6 +179,7 @@ app = Flask(__name__)
 TelemetryClass = PilotResonanceTelemetry
 PINNED_VIZ: Dict[str, Dict[str, Any]] = {}
 STREAM_EMIT_QUEUE: deque[dict[str, Any]] = deque()
+ADAPTIVE_COUNCIL_THRESHOLD: float = 2.0
 
 
 def _connect_ipfs():
@@ -425,6 +465,128 @@ def stream_viz(wallet_id: str) -> Response:
     response.headers["Access-Control-Allow-Headers"] = "Authorization, X-Consent"
     response.headers["Connection"] = "keep-alive"
     return response
+
+
+@app.route("/adaptive_threshold/<viz_cid>", methods=["POST"])
+def adaptive_threshold(viz_cid: str):
+    """Tune guardian council thresholds based on forecast confidence."""
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header != "Bearer guardian_token":
+        abort(401, "guardian_auth_required")
+
+    payload = request.get_json(silent=True) or {}
+
+    forecast_conf: float | None
+    try:
+        forecast_conf = float(payload.get("forecast_conf"))
+    except (TypeError, ValueError):
+        forecast_conf = None
+
+    record = PINNED_VIZ.get(viz_cid)
+    if record is None:
+        abort(404, "viz_not_found")
+
+    consent_flag = bool(payload.get("consent", True))
+    mission_anchor = record.get("mission_anchor", MISSION_STATEMENT)
+    telemetry = TelemetryClass(mission_anchor, consent=consent_flag)
+    if not getattr(telemetry, "consent", True):
+        abort(403, "consent_required")
+
+    wallet_id = record.get("wallet", "guardian::anon")
+    bio_data = telemetry.fetch_mock_bio_data(wallet_id)
+    erv_score, encrypted_res = telemetry.run_erv_simulation(bio_data)
+    cascade_ready = telemetry.simulate_cascade(erv_score, encrypted_res)
+
+    provided_history = payload.get("historical_votes") or []
+    history: list[dict[str, Any]] = []
+    if isinstance(provided_history, list):
+        for entry in provided_history:
+            try:
+                score = float(entry.get("score", 0.0))
+            except (TypeError, ValueError):
+                continue
+            consensus = bool(entry.get("consensus", False))
+            history.append({"score": max(0.0, min(score, 1.0)), "consensus": consensus})
+
+    if not history:
+        history = _load_guardian_vote_history(viz_cid, telemetry)
+
+    if not history:
+        history = [{"score": 0.65, "consensus": cascade_ready}, {"score": 0.75, "consensus": cascade_ready}]
+
+    auth_hash = record.get("auth_hash", "")
+    history_hash = _history_aggregate_hash(viz_cid, wallet_id, history, auth_hash)
+
+    low_confidence = forecast_conf is None or forecast_conf < 0.4
+
+    mission_theme = "protect" if "protect" in MISSION_STATEMENT.lower() else "uplift"
+    tune_conf = 0.0
+    new_threshold = 2.0
+    impact = "review_recommended_protect" if mission_theme == "protect" else "review_recommended"
+
+    if not low_confidence:
+        rng_seed = int(hashlib.sha256(f"{viz_cid}:{wallet_id}:{mission_anchor}".encode("utf-8")).hexdigest(), 16) % (2**32)
+        rng = np.random.default_rng(rng_seed)
+        scores = np.array([[max(0.05, min(float(entry["score"]), 0.99))] for entry in history], dtype=float)
+        targets = []
+        for entry in history:
+            consensus_bias = -0.25 if entry.get("consensus") else 0.2
+            targets.append(
+                max(
+                    1.2,
+                    min(2.8, 2.45 - float(entry["score"]) * 0.9 + consensus_bias + float(rng.normal(0, 0.04))),
+                )
+            )
+
+        target_array = np.array(targets, dtype=float).reshape(-1, 1)
+        model = RandomForestRegressor(n_estimators=32, random_state=rng_seed)
+        model.fit(scores, target_array.ravel())
+        prediction_input = np.array([[min(0.99, max(0.05, float(forecast_conf)))]], dtype=float)
+        predicted = float(model.predict(prediction_input)[0])
+        if cascade_ready and forecast_conf > 0.75:
+            predicted -= 0.1
+        if forecast_conf > 0.8:
+            predicted = min(predicted, 1.5)
+        new_threshold = max(1.0, min(3.0, predicted))
+
+        try:
+            tune_conf = float(model.score(scores, target_array.ravel()))
+        except Exception:  # pragma: no cover - defensive guard for stub score
+            tune_conf = 0.0
+        tune_conf = max(0.0, min(tune_conf, 1.0))
+        impact = "accelerated" if new_threshold < 2.0 else f"conservative_{mission_theme}"
+
+    global ADAPTIVE_COUNCIL_THRESHOLD
+    ADAPTIVE_COUNCIL_THRESHOLD = round(float(new_threshold), 3)
+
+    emit_id = str(uuid.uuid4())
+    STREAM_EMIT_QUEUE.append(
+        {
+            "guardian_sync": "adaptive_threshold",
+            "adaptive_threshold": ADAPTIVE_COUNCIL_THRESHOLD,
+            "tune_conf": round(float(tune_conf), 4),
+            "viz_cid": viz_cid,
+            "emit_id": emit_id,
+            "history_hash": history_hash,
+            "mission_statement": MISSION_STATEMENT,
+        }
+    )
+
+    dispatch_to_base_oracle(viz_cid, history_hash)
+
+    response = {
+        "new_threshold": ADAPTIVE_COUNCIL_THRESHOLD,
+        "tune_conf": round(float(tune_conf), 4),
+        "impact": impact,
+        "emit_id": emit_id,
+    }
+    if not low_confidence:
+        response["history_hash"] = history_hash
+    else:
+        response["message"] = f"review_recommended::{mission_theme}"
+
+    return jsonify(response), 200
 
 
 @app.route("/guardian_council/<viz_cid>", methods=["POST"])
