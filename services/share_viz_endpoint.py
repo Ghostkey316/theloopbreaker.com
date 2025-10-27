@@ -3,15 +3,20 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 import random
 import sys
 import tempfile
 import time
+import uuid
+from collections import deque
 from pathlib import Path
 from typing import Any, Dict, Generator
 
 from flask import Flask, Response, abort, jsonify, request, stream_with_context
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import ec
 
 try:  # pragma: no cover - optional dependency during tests
     import ipfshttpclient  # type: ignore
@@ -69,6 +74,7 @@ app = Flask(__name__)
 
 TelemetryClass = PilotResonanceTelemetry
 PINNED_VIZ: Dict[str, Dict[str, Any]] = {}
+STREAM_EMIT_QUEUE: deque[dict[str, Any]] = deque()
 
 
 def _connect_ipfs():
@@ -97,6 +103,44 @@ def _compute_zk_hash(results: list[dict[str, Any]], wallet_id: str, auth_hash: s
         sort_keys=True,
     )
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _sign_guardian_vote(guardian_id: str, vote_value: bool) -> str:
+    """Produce a deterministic mock signature for guardian MPC ballots."""
+
+    curve = ec.SECP256R1()
+    seed = int(hashlib.sha256(guardian_id.encode("utf-8")).hexdigest(), 16)
+    private_value = (seed % (curve.key_size - 1)) + 1
+    ec.derive_private_key(private_value, curve)
+
+    digest = hashes.Hash(hashes.SHA256())
+    digest.update(f"{guardian_id}:{int(vote_value)}".encode("utf-8"))
+    return digest.finalize().hex()
+
+
+def _verify_guardian_signature(guardian_id: str, vote_value: bool, signature: str) -> bool:
+    """Validate guardian signatures using deterministic MPC stubs."""
+
+    expected = _sign_guardian_vote(guardian_id, vote_value)
+    return hmac.compare_digest(expected, signature)
+
+
+def _hash_vote_pool(votes: list[dict[str, Any]]) -> str:
+    """Aggregate guardian ballots into a zk-style hash for privacy."""
+
+    digest = hashes.Hash(hashes.SHA256())
+    for vote in votes:
+        digest.update(str(vote.get("guardian_id", "")).encode("utf-8"))
+        digest.update(b":")
+        digest.update(b"1" if vote.get("vote") else b"0")
+    return digest.finalize().hex()
+
+
+def stream_viz_updates() -> Generator[dict[str, Any], None, None]:
+    """Yield guardian council emissions queued for SSE distribution."""
+
+    while STREAM_EMIT_QUEUE:
+        yield STREAM_EMIT_QUEUE.popleft()
 
 
 def _pin_artifacts(
@@ -211,6 +255,11 @@ def event_stream(
             }
             yield f"data: {json.dumps(event_body)}\n\n"
 
+            while STREAM_EMIT_QUEUE:
+                guardian_event = STREAM_EMIT_QUEUE.popleft()
+                guardian_event.setdefault("mission_statement", MISSION_STATEMENT)
+                yield f"data: {json.dumps(guardian_event)}\n\n"
+
             if loop_max is None or iterations < loop_max:
                 time.sleep(5)
     except GeneratorExit:
@@ -259,6 +308,110 @@ def stream_viz(wallet_id: str) -> Response:
     response.headers["Access-Control-Allow-Headers"] = "Authorization, X-Consent"
     response.headers["Connection"] = "keep-alive"
     return response
+
+
+@app.route("/guardian_council/<viz_cid>", methods=["POST"])
+def guardian_council(viz_cid: str):
+    """Aggregate guardian MPC votes while aligning consensus to the mission."""
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header != "Bearer guardian_token":
+        abort(401, "guardian_auth_required")
+
+    payload = request.get_json(silent=True) or {}
+    raw_votes = payload.get("votes") or []
+    if not isinstance(raw_votes, list):
+        abort(400, "invalid_vote_payload")
+
+    threshold = payload.get("threshold", 2)
+    try:
+        threshold_value = int(threshold)
+    except (TypeError, ValueError):
+        abort(400, "invalid_threshold")
+    threshold_value = max(threshold_value, 1)
+
+    record = PINNED_VIZ.get(viz_cid)
+    if record is None:
+        abort(404, "viz_not_found")
+
+    mission_anchor = record.get("mission_anchor", MISSION_STATEMENT)
+    telemetry = TelemetryClass(mission_anchor, consent=True)
+    wallet_id = record.get("wallet", "guardian::anon")
+
+    validated_votes: list[dict[str, Any]] = []
+    for entry in raw_votes:
+        guardian_id = str(entry.get("guardian_id", "")).strip()
+        if not guardian_id:
+            abort(400, "guardian_id_required")
+
+        vote_value = bool(entry.get("vote", False))
+        signature = str(entry.get("sig", ""))
+        if not signature:
+            abort(400, "signature_required")
+
+        if not _verify_guardian_signature(guardian_id, vote_value, signature):
+            abort(403, "invalid_signature")
+
+        validated_votes.append({"guardian_id": guardian_id, "vote": vote_value, "sig": signature})
+
+    if len(validated_votes) < threshold_value:
+        return (
+            jsonify(
+                {
+                    "consensus": False,
+                    "threshold_met": False,
+                    "alert": "guardian_drift_threshold",
+                }
+            ),
+            402,
+        )
+
+    yes_votes = sum(1 for vote in validated_votes if vote["vote"])
+    attested = yes_votes >= threshold_value
+    if not attested:
+        return (
+            jsonify(
+                {
+                    "consensus": False,
+                    "threshold_met": False,
+                    "alert": "guardian_drift_consensus",
+                }
+            ),
+            402,
+        )
+
+    bio_data = telemetry.fetch_mock_bio_data(wallet_id)
+    score, encrypted_res = telemetry.run_erv_simulation(bio_data)
+    resonance_ok = telemetry.simulate_cascade(score, encrypted_res)
+
+    mission_weight = 1.0 if mission_anchor == MISSION_STATEMENT else 0.6
+    consensus = attested and resonance_ok and mission_weight >= 0.75
+    uplift_adjust = round(score * 1.5, 4) if consensus else 0.0
+
+    emit_id = str(uuid.uuid4())
+    zk_pool_hash = _hash_vote_pool(validated_votes)
+
+    if consensus:
+        STREAM_EMIT_QUEUE.append(
+            {
+                "guardian_sync": "council_vote",
+                "consensus": consensus,
+                "threshold_met": True,
+                "uplift_adjust": uplift_adjust,
+                "mission_anchor": mission_anchor,
+                "viz_cid": viz_cid,
+                "emit_id": emit_id,
+                "zk_pool_hash": zk_pool_hash,
+                "resonance_score": round(score, 4),
+            }
+        )
+
+    response = {
+        "consensus": consensus,
+        "threshold_met": True,
+        "emit_id": emit_id,
+    }
+    return jsonify(response), 200
 
 
 @app.route("/share_viz/<wallet_id>", methods=["POST"])
