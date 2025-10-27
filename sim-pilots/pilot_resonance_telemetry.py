@@ -1,0 +1,197 @@
+"""Stub telemetry module for Empathic Resonance Verifier integration tests."""
+
+from __future__ import annotations
+
+import json
+import hashlib
+import random
+from datetime import datetime
+from typing import Dict, List
+
+from vaultfire.protocol.constants import MISSION_STATEMENT
+from vaultfire.protocol.mission_resonance import MissionResonanceEngine
+
+try:  # pragma: no cover - exercised via runtime path
+    from fhe import encrypt
+except ImportError:  # pragma: no cover - fallback behavior
+    def encrypt(payload: str) -> str:
+        """Deterministic stand-in for FHE encryption."""
+
+        return f"fhe::encrypted::{payload}"
+
+
+try:  # pragma: no cover - exercised via runtime path
+    from zk_snark import generate_proof
+except ImportError:  # pragma: no cover - fallback behavior
+    def generate_proof(message: str) -> str:
+        """Deterministic stand-in for zk-SNARK proof generation."""
+
+        digest = hashlib.sha256(message.encode("utf-8")).hexdigest()
+        return f"zk-proof::{digest}"
+
+
+class PilotResonanceTelemetry:
+    """Mock telemetry surface for the Empathic Resonance Verifier (ERV)."""
+
+    def __init__(self, mission_anchor: str, *, consent: bool = True) -> None:
+        """Initialize with the canonical mission statement and consent flag."""
+
+        self.mission_anchor = mission_anchor
+        self.consent = consent
+        self.engine = MissionResonanceEngine()
+
+    def fetch_mock_bio_data(self, user_wallet: str) -> Dict[str, str | float]:
+        """Simulate a wallet-authorized bio-data retrieval."""
+
+        if not self.consent:
+            return {"wallet": user_wallet, "error": "privacy_opt_out"}
+
+        seed = int(hashlib.sha256(user_wallet.encode("utf-8")).hexdigest()[:8], 16)
+        rng = random.Random(seed)
+        hrv = rng.uniform(0.6, 0.9)
+        arousal = "calm" if rng.random() > 0.4 else "stress"
+        timestamp = datetime.utcnow().isoformat()
+        return {
+            "wallet": user_wallet,
+            "hrv": hrv,
+            "arousal": arousal,
+            "timestamp": timestamp,
+        }
+
+    def run_erv_simulation(self, bio_data: Dict[str, str | float]) -> tuple[float, str]:
+        """Run the ERV simulation and return a resonance score and ciphertext."""
+
+        if "error" in bio_data:
+            return 0.0, "fhe::encrypted::blocked"
+
+        hrv = float(bio_data.get("hrv", 0.0))
+        arousal = str(bio_data.get("arousal", "neutral"))
+
+        base_score = hrv
+        if hrv > 0.8:
+            base_score += 0.3
+        if arousal == "calm":
+            base_score += 0.1
+        elif arousal == "stress":
+            base_score -= 0.1
+
+        resonance_score = max(0.0, min(1.0, base_score))
+
+        bio_snapshot = json.dumps(bio_data, sort_keys=True)
+        bio_hash = hashlib.sha256(bio_snapshot.encode("utf-8")).hexdigest()
+        proof = generate_proof(bio_snapshot)
+
+        self.engine.ingest_signal(
+            source=bio_data.get("wallet", "mock-wallet"),
+            technique="fhe-stream",
+            score=resonance_score,
+            metadata={"bio_hash": bio_hash, "proof": proof},
+        )
+
+        encrypted_payload = json.dumps(
+            {
+                "mission": self.mission_anchor,
+                "score": resonance_score,
+                "proof": proof,
+            },
+            sort_keys=True,
+        )
+        encrypted_result = encrypt(encrypted_payload)
+        return resonance_score, encrypted_result
+
+    def simulate_cascade(self, score: float, encrypted_res: str) -> bool:
+        """Mock the guardian MPC cascade and Covenant Chain update."""
+
+        consensus = score > 0.7
+        if consensus:
+            uplift = score * 1.5
+            print(f"Covenant Chain attestation: +{uplift:.2f} loyalty XP :: {encrypted_res}")
+        else:
+            print("Guardian council withheld consensus due to low resonance score")
+        return consensus
+
+    def end_to_end_test(self, num_iters: int = 10) -> List[Dict[str, float | str]]:
+        """Execute an end-to-end simulation loop for ERV telemetry."""
+
+        results: List[Dict[str, float | str]] = []
+        for idx in range(num_iters):
+            wallet = f"0xTEST{idx:04X}"
+            bio_data = self.fetch_mock_bio_data(wallet)
+            if "error" in bio_data:
+                results.append(
+                    {
+                        "wallet": wallet,
+                        "score": 0.0,
+                        "uplift": 0.0,
+                        "status": "blocked",
+                    }
+                )
+                continue
+
+            score, encrypted_res = self.run_erv_simulation(bio_data)
+            attested = self.simulate_cascade(score, encrypted_res)
+            uplift = score * 1.5 if attested else 0.0
+            results.append(
+                {
+                    "wallet": wallet,
+                    "score": score,
+                    "uplift": uplift,
+                    "status": "attested" if attested else "blocked",
+                }
+            )
+        return results
+
+
+# --------------------
+# Pytest-compatible tests
+# --------------------
+
+def test_fetch_mock_bio_data() -> None:
+    """The mock bio data should be deterministic for a wallet."""
+
+    telemetry = PilotResonanceTelemetry(MISSION_STATEMENT)
+    first = telemetry.fetch_mock_bio_data("0xABC123")
+    second = telemetry.fetch_mock_bio_data("0xABC123")
+    assert first["hrv"] == second["hrv"]
+    assert first["arousal"] == second["arousal"]
+    assert "hrv" in first and 0.6 <= first["hrv"] <= 0.9
+
+
+def test_fetch_mock_bio_data_privacy_opt_out() -> None:
+    """Consent toggle should disable bio-data collection."""
+
+    telemetry = PilotResonanceTelemetry(MISSION_STATEMENT, consent=False)
+    result = telemetry.fetch_mock_bio_data("0xNOPE")
+    assert result["error"] == "privacy_opt_out"
+
+
+def test_run_erv_simulation_generates_ciphertext() -> None:
+    """ERV simulation should produce a bounded score and ciphertext payload."""
+
+    telemetry = PilotResonanceTelemetry(MISSION_STATEMENT)
+    bio = {
+        "wallet": "0xTEST",
+        "hrv": 0.85,
+        "arousal": "calm",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+    score, encrypted_res = telemetry.run_erv_simulation(bio)
+    assert 0.0 <= score <= 1.0
+    assert "encrypted" in encrypted_res
+
+
+def test_simulate_cascade_and_end_to_end_flow(capfd) -> None:
+    """Cascade consensus should align with resonance score and propagate to reports."""
+
+    telemetry = PilotResonanceTelemetry(MISSION_STATEMENT)
+    results = telemetry.end_to_end_test(num_iters=2)
+    assert len(results) == 2
+    for entry in results:
+        assert entry["status"] in {"attested", "blocked"}
+        assert "wallet" in entry
+
+    telemetry.simulate_cascade(0.8, "enc")
+    telemetry.simulate_cascade(0.5, "enc")
+    out, _ = capfd.readouterr()
+    assert "Covenant Chain" in out
+    assert "withheld" in out
