@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
-import json
 import hashlib
+import json
 import random
 from datetime import datetime
 from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 from vaultfire.protocol.constants import MISSION_STATEMENT
 from vaultfire.protocol.mission_resonance import MissionResonanceEngine
@@ -241,6 +244,110 @@ class PilotResonanceTelemetry:
         plt.show()
         plt.close(fig)
 
+    def interactive_viz(self, results: list[dict]) -> None:
+        """Generate interactive Plotly visuals for guardian council review.
+
+        Example:
+            telemetry = PilotResonanceTelemetry(MISSION_STATEMENT)
+            telemetry.interactive_viz(telemetry.end_to_end_test())
+        """
+
+        if not results:
+            print("No data for interactive viz")
+            return
+
+        wallets = [str(entry.get("wallet", "unknown")) for entry in results]
+        scores = [float(entry.get("score", 0.0)) for entry in results]
+        uplifts = [float(entry.get("uplift", 0.0)) for entry in results]
+        statuses = [str(entry.get("status", "unknown")) for entry in results]
+
+        if not scores:
+            print("No data for interactive viz")
+            return
+
+        color_palette = px.colors.qualitative.Safe
+        color_map = {
+            "attested": color_palette[0],
+            "blocked": color_palette[3],
+        }
+        histogram_colors = [color_map.get(status, color_palette[5]) for status in statuses]
+        hover_text = [
+            f"Wallet: {wallet}<br>Status: {status}<br>Mission: {self.mission_anchor}"
+            for wallet, status in zip(wallets, statuses)
+        ]
+
+        fig = make_subplots(
+            rows=1,
+            cols=2,
+            subplot_titles=("Resonance Score Distribution", "Score vs Uplift Heatmap"),
+        )
+
+        fig.add_trace(
+            go.Histogram(
+                x=scores,
+                marker=dict(color=histogram_colors),
+                hovertext=hover_text,
+                name="Resonance Scores",
+            ),
+            row=1,
+            col=1,
+        )
+
+        z_matrix: list[list[float | None]] = []
+        for idx, uplift in enumerate(uplifts):
+            row: list[float | None] = []
+            for score_index in range(len(scores)):
+                row.append(uplift if score_index == idx else None)
+            z_matrix.append(row)
+
+        fig.add_trace(
+            go.Heatmap(
+                x=scores,
+                y=wallets,
+                z=z_matrix,
+                colorscale="Viridis",
+                colorbar=dict(title="Uplift"),
+                hovertemplate=(
+                    "Wallet: %{y}<br>Score: %{x:.2f}<br>Uplift: %{z:.2f}<br>Mission: "
+                    f"{self.mission_anchor}"
+                ),
+                name="Score/Uplift",
+            ),
+            row=1,
+            col=2,
+        )
+
+        score_mean = float(np.mean(scores))
+        score_median = float(np.median(scores))
+        uplift_mean = float(np.mean(uplifts)) if uplifts else 0.0
+        uplift_median = float(np.median(uplifts)) if uplifts else 0.0
+
+        fig.update_layout(
+            title="Interactive ERV Guardian Review",
+            bargap=0.1,
+            hovermode="closest",
+            template="plotly_dark",
+        )
+        fig.add_annotation(
+            text=f"Score μ: {score_mean:.2f} | Median: {score_median:.2f}",
+            x=0.2,
+            y=1.1,
+            xref="paper",
+            yref="paper",
+            showarrow=False,
+        )
+        fig.add_annotation(
+            text=f"Uplift μ: {uplift_mean:.2f} | Median: {uplift_median:.2f}",
+            x=0.8,
+            y=1.1,
+            xref="paper",
+            yref="paper",
+            showarrow=False,
+        )
+
+        fig.write_json("erv_interactive_viz.json")
+        fig.show()
+
 
 # --------------------
 # Pytest-compatible tests
@@ -329,4 +436,40 @@ def test_visualize_results_sample_data(monkeypatch, tmp_path) -> None:
 
     artifact = tmp_path / "erv_pilot_viz.png"
     assert artifact.exists()
+    assert show_calls
+
+
+def test_interactive_viz_empty(capsys, monkeypatch, tmp_path) -> None:
+    """Interactive visualization should short-circuit on empty input."""
+
+    telemetry = PilotResonanceTelemetry(MISSION_STATEMENT)
+    monkeypatch.chdir(tmp_path)
+
+    telemetry.interactive_viz([])
+
+    captured = capsys.readouterr()
+    assert "No data for interactive viz" in captured.out
+    assert not (tmp_path / "erv_interactive_viz.json").exists()
+
+
+def test_interactive_viz_sample(monkeypatch, tmp_path) -> None:
+    """Interactive visualization should export a JSON artifact for dashboards."""
+
+    telemetry = PilotResonanceTelemetry(MISSION_STATEMENT)
+    monkeypatch.chdir(tmp_path)
+
+    sample_results = [
+        {"wallet": "0xAAA", "score": 0.75, "uplift": 1.1, "status": "attested"},
+        {"wallet": "0xBBB", "score": 0.42, "uplift": 0.0, "status": "blocked"},
+    ]
+
+    show_calls: list[str] = []
+    monkeypatch.setattr(go.Figure, "show", lambda self: show_calls.append("shown"))
+
+    telemetry.interactive_viz(sample_results)
+
+    artifact = tmp_path / "erv_interactive_viz.json"
+    assert artifact.exists()
+    exported = json.loads(artifact.read_text())
+    assert "data" in exported and "layout" in exported
     assert show_calls
