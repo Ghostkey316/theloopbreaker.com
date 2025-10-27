@@ -344,6 +344,117 @@ def test_no_contributors_default(monkeypatch: pytest.MonkeyPatch) -> None:
     assert not STREAM_EMIT_QUEUE
 
 
+def test_echo_detector_low_diversity(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Low diversity gradients trigger echo chamber alerts and emissions."""
+
+    dispatch_calls: list[tuple[str, str]] = []
+
+    def record_dispatch(cid: str, zk_hash: str) -> None:
+        dispatch_calls.append((cid, zk_hash))
+
+    monkeypatch.setattr(
+        "services.share_viz_endpoint.dispatch_to_base_oracle", record_dispatch
+    )
+
+    test_client = app.test_client()
+    viz_cid = "echo-low"
+    PINNED_VIZ[viz_cid] = {
+        "wallet": "0xECHO",
+        "mission_anchor": MISSION_STATEMENT,
+        "results": [{"score": 0.8}],
+        "auth_hash": "auth::hash",
+        "last_hybrid_score": 0.78,
+    }
+
+    payload = {
+        "vote_graph": {
+            "nodes": [
+                {"guardian_id": "g1", "gradient": 0.8},
+                {"guardian_id": "g2", "gradient": 0.81},
+                {"guardian_id": "g3", "gradient": 0.79},
+            ],
+            "edges": [["g1", "g2"], ["g2", "g3"], ["g1", "g3"]],
+        }
+    }
+
+    response = test_client.post(
+        f"/echo_chamber_detector/{viz_cid}",
+        data=json.dumps(payload),
+        headers={"Authorization": "Bearer guardian_token", "Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["echo_alert"] is True
+    assert body["homogeneity_score"] < 0.3
+    assert "diversify" in body["diversity_recommendation"]
+    assert "protect" in body["diversity_recommendation"]
+    assert len(body["zk_graph_hash"]) == 64
+    assert dispatch_calls
+    assert dispatch_calls[0][0] == viz_cid
+    assert dispatch_calls[0][1] == body["zk_graph_hash"]
+
+    emissions = list(stream_viz_updates())
+    assert emissions
+    emission = emissions[0]
+    assert emission["echo_alert"] is True
+    assert emission["score"] == body["homogeneity_score"]
+    assert emission["emit_id"] == body["emit_id"]
+
+
+def test_echo_detector_balanced_graph(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Diverse guardian gradients avoid echo chamber alerts."""
+
+    dispatch_calls: list[tuple[str, str]] = []
+
+    def record_dispatch(cid: str, zk_hash: str) -> None:
+        dispatch_calls.append((cid, zk_hash))
+
+    monkeypatch.setattr(
+        "services.share_viz_endpoint.dispatch_to_base_oracle", record_dispatch
+    )
+
+    test_client = app.test_client()
+    viz_cid = "echo-balanced"
+    PINNED_VIZ[viz_cid] = {
+        "wallet": "0xSAFE",
+        "mission_anchor": MISSION_STATEMENT,
+        "results": [
+            {"score": 0.25},
+            {"score": 0.55},
+            {"score": 0.9},
+        ],
+        "auth_hash": "auth::hash",
+    }
+
+    payload = {
+        "vote_graph": {
+            "nodes": [
+                {"guardian_id": "g1", "gradient": 0.2},
+                {"guardian_id": "g2", "gradient": 0.6},
+                {"guardian_id": "g3", "gradient": 0.92},
+            ],
+            "edges": [["g1", "g2"], ["g2", "g3"]],
+        },
+        "diversity_threshold": 0.2,
+    }
+
+    response = test_client.post(
+        f"/echo_chamber_detector/{viz_cid}",
+        data=json.dumps(payload),
+        headers={"Authorization": "Bearer guardian_token", "Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["echo_alert"] is False
+    assert body["homogeneity_score"] >= 0.2
+    assert "balanced" in body["diversity_recommendation"]
+    assert "protect" in body["diversity_recommendation"]
+    assert len(body["zk_graph_hash"]) == 64
+    assert not dispatch_calls
+    assert not STREAM_EMIT_QUEUE
+
 def test_threshold_fail_returns_drift_alert() -> None:
     """Insufficient votes are rejected with a mission drift alert."""
 

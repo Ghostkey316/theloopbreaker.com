@@ -64,6 +64,66 @@ except ImportError:  # pragma: no cover - provide deterministic fallback
     nn = None  # type: ignore
     HAS_TORCH = False
 
+try:  # pragma: no cover - optional graph dependency
+    import networkx as nx
+    HAS_NETWORKX = True
+except ImportError:  # pragma: no cover - deterministic graph stub
+    HAS_NETWORKX = False
+
+    class _GraphStub:
+        """Minimal undirected graph supporting node and edge iteration."""
+
+        def __init__(self) -> None:
+            self._nodes: dict[Any, dict[str, Any]] = {}
+            self._edges: set[tuple[Any, Any]] = set()
+
+        def add_node(self, node_id: Any, **attrs: Any) -> None:
+            self._nodes[node_id] = dict(attrs)
+
+        def add_edge(self, source: Any, target: Any) -> None:
+            ordered = tuple(sorted((source, target)))
+            self._edges.add(ordered)
+
+        def edges(self) -> list[tuple[Any, Any]]:
+            return list(self._edges)
+
+        def neighbors(self, node_id: Any) -> list[Any]:
+            neighbors: list[Any] = []
+            for source, target in self._edges:
+                if source == node_id:
+                    neighbors.append(target)
+                elif target == node_id:
+                    neighbors.append(source)
+            return neighbors
+
+        def nodes(self) -> list[Any]:  # pragma: no cover - compatibility shim
+            return list(self._nodes)
+
+    class _NXStub:
+        Graph = _GraphStub
+
+    nx = _NXStub()  # type: ignore[assignment]
+
+try:  # pragma: no cover - optional GNN dependency
+    import torch_geometric.nn as pyg_nn
+    HAS_PYG = True
+except ImportError:  # pragma: no cover - deterministic fallback
+    HAS_PYG = False
+
+    class _GCNConvStub:
+        def __init__(self, *_: Any, **__: Any) -> None:  # noqa: D401
+            pass
+
+        def forward(self, features: Any, _edge_index: Any) -> Any:  # noqa: D401
+            return features
+
+        __call__ = forward
+
+    class _PygNNStub:
+        GCNConv = _GCNConvStub
+
+    pyg_nn = _PygNNStub()  # type: ignore[assignment]
+
 try:  # pragma: no cover - optional scientific stack during tests
     import pandas as pd
 except ImportError:  # pragma: no cover - lightweight fallback stub
@@ -515,6 +575,61 @@ def _federated_mean(scores: list[float]) -> tuple[float, float]:
     arr = np.asarray(scores, dtype=float)
     zk_sum = float(arr.sum())
     return float(arr.mean()), zk_sum
+
+
+def _graph_diversity_score(
+    node_gradients: list[float],
+    edges: list[tuple[str, str]],
+    node_index: dict[str, int],
+) -> float:
+    """Estimate diversity score across guardian vote gradients."""
+
+    if not node_gradients:
+        return 0.0
+
+    gradient_array = np.asarray(node_gradients, dtype=float)
+    std_component = float(np.clip(np.std(gradient_array) * 2.0, 0.0, 1.0))
+
+    edge_diffs: list[float] = []
+    for source, target in edges:
+        if source not in node_index or target not in node_index:
+            continue
+        source_idx = node_index[source]
+        target_idx = node_index[target]
+        diff = abs(float(gradient_array[source_idx]) - float(gradient_array[target_idx]))
+        edge_diffs.append(diff)
+
+    neighbor_component = (
+        float(np.clip(np.mean(edge_diffs), 0.0, 1.0)) if edge_diffs else std_component
+    )
+    gnn_component = neighbor_component
+
+    if HAS_TORCH and HAS_PYG and torch is not None and edges:
+        try:
+            feature_tensor = torch.tensor(gradient_array, dtype=torch.float32).view(-1, 1)
+            edge_index_pairs: list[list[int]] = []
+            for source, target in edges:
+                if source not in node_index or target not in node_index:
+                    continue
+                source_idx = node_index[source]
+                target_idx = node_index[target]
+                edge_index_pairs.append([source_idx, target_idx])
+                edge_index_pairs.append([target_idx, source_idx])
+
+            if edge_index_pairs:
+                edge_index = (
+                    torch.tensor(edge_index_pairs, dtype=torch.long).t().contiguous()
+                )
+                conv = pyg_nn.GCNConv(1, 1)
+                with torch.no_grad():
+                    conv_output = conv(feature_tensor, edge_index)
+                    gnn_diff = torch.abs(conv_output - feature_tensor).mean().item()
+                    gnn_component = float(np.clip(gnn_diff, 0.0, 1.0))
+        except Exception:
+            gnn_component = neighbor_component
+
+    score = float(np.clip((std_component + neighbor_component + gnn_component) / 3.0, 0.0, 1.0))
+    return score
 
 
 def _collect_resonance_series(
@@ -1252,6 +1367,151 @@ def collective_empathy_oracle(viz_cid: str):
         "empathy_baseline": empathy_baseline,
         "contributors": contributors,
     }
+    return jsonify(response), 200
+
+
+@app.route("/echo_chamber_detector/<viz_cid>", methods=["POST"])
+def echo_chamber_detector(viz_cid: str):
+    """Detect potential echo chambers within guardian vote graphs."""
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header != "Bearer guardian_token":
+        abort(401, "guardian_auth_required")
+
+    record = PINNED_VIZ.get(viz_cid)
+    if record is None:
+        abort(404, "viz_not_found")
+
+    mission_anchor = record.get("mission_anchor", MISSION_STATEMENT)
+    consent_flag = bool(record.get("consent", True))
+    telemetry = TelemetryClass(mission_anchor, consent=consent_flag)
+    if not getattr(telemetry, "consent", True):
+        abort(403, "consent_required")
+
+    payload = request.get_json(silent=True) or {}
+    vote_graph = payload.get("vote_graph")
+    if not isinstance(vote_graph, dict):
+        abort(400, "graph_invalid")
+
+    nodes = vote_graph.get("nodes") or []
+    edges = vote_graph.get("edges") or []
+    if not isinstance(nodes, list) or not isinstance(edges, list):
+        abort(400, "graph_invalid")
+
+    fallback_gradient = record.get("last_hybrid_score")
+    if fallback_gradient is None and isinstance(record.get("results"), list):
+        try:
+            fallback_gradient = float(
+                np.mean(
+                    [
+                        float(entry.get("score", 0.5))
+                        for entry in record["results"]
+                        if isinstance(entry, dict)
+                    ]
+                )
+            )
+        except (TypeError, ValueError):
+            fallback_gradient = None
+    if fallback_gradient is None:
+        fallback_gradient = 0.5
+
+    graph = nx.Graph()
+    node_gradients: list[float] = []
+    node_index: dict[str, int] = {}
+
+    for node in nodes:
+        if not isinstance(node, dict):
+            abort(400, "graph_invalid")
+        raw_guardian = node.get("guardian_id")
+        if not raw_guardian:
+            abort(400, "graph_invalid")
+        guardian_id = str(raw_guardian)
+        if guardian_id in node_index:
+            continue
+
+        gradient_value: float
+        if "gradient" in node and node["gradient"] is not None:
+            try:
+                gradient_value = float(node["gradient"])
+            except (TypeError, ValueError):
+                abort(400, "graph_invalid")
+        else:
+            bio_snapshot = telemetry.fetch_mock_bio_data(guardian_id)
+            erv_score, encrypted_res = telemetry.run_erv_simulation(bio_snapshot)
+            if hasattr(telemetry, "simulate_cascade") and not telemetry.simulate_cascade(
+                erv_score, encrypted_res
+            ):
+                gradient_value = float(fallback_gradient)
+            else:
+                gradient_value = float(erv_score)
+
+        gradient_value = float(np.clip(gradient_value, 0.0, 1.0))
+        graph.add_node(guardian_id, gradient=gradient_value)
+        node_index[guardian_id] = len(node_index)
+        node_gradients.append(gradient_value)
+
+    if not node_index:
+        abort(400, "graph_invalid")
+
+    normalized_edges: list[tuple[str, str]] = []
+    for edge in edges:
+        if not isinstance(edge, (list, tuple)) or len(edge) != 2:
+            abort(400, "graph_invalid")
+        source_raw, target_raw = edge
+        source = str(source_raw)
+        target = str(target_raw)
+        if source not in node_index or target not in node_index or source == target:
+            abort(400, "graph_invalid")
+        graph.add_edge(source, target)
+        normalized_edges.append((source, target))
+
+    try:
+        diversity_threshold = float(payload.get("diversity_threshold", 0.3))
+    except (TypeError, ValueError):
+        diversity_threshold = 0.3
+    diversity_threshold = float(np.clip(diversity_threshold, 0.0, 1.0))
+
+    homogeneity_score = _graph_diversity_score(node_gradients, normalized_edges, node_index)
+    homogeneity_score = float(np.clip(homogeneity_score, 0.0, 1.0))
+    echo_alert = homogeneity_score < diversity_threshold
+
+    recommendation = (
+        f"diversify guardians to protect {MISSION_STATEMENT} from bias"
+        if echo_alert
+        else f"balanced guardians protect {MISSION_STATEMENT}"
+    )
+
+    aggregate_payload = {
+        "node_count": len(node_gradients),
+        "avg_gradient": round(float(np.mean(node_gradients)), 4),
+        "std_gradient": round(float(np.std(node_gradients)), 4),
+        "threshold": diversity_threshold,
+    }
+    auth_hash = str(record.get("auth_hash", "guardian::aggregate"))
+    wallet_id = str(record.get("wallet", "guardian::anon"))
+    zk_graph_hash = _compute_zk_hash([aggregate_payload], wallet_id, auth_hash)
+
+    response: dict[str, Any] = {
+        "homogeneity_score": round(homogeneity_score, 4),
+        "echo_alert": echo_alert,
+        "diversity_recommendation": recommendation,
+        "zk_graph_hash": zk_graph_hash,
+    }
+
+    if echo_alert:
+        emit_id = str(uuid.uuid4())
+        STREAM_EMIT_QUEUE.append(
+            {
+                "guardian_sync": "echo_chamber",
+                "echo_alert": True,
+                "score": round(homogeneity_score, 4),
+                "viz_cid": viz_cid,
+                "emit_id": emit_id,
+            }
+        )
+        dispatch_to_base_oracle(viz_cid, zk_graph_hash)
+        response["emit_id"] = emit_id
+
     return jsonify(response), 200
 
 
