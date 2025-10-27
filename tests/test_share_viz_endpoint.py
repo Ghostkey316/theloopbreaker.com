@@ -481,3 +481,114 @@ def test_adaptive_tune_low_conf_default() -> None:
     assert emission["guardian_sync"] == "adaptive_threshold"
     assert emission["adaptive_threshold"] == 2.0
     assert emission["viz_cid"] == viz_cid
+
+
+def test_quantum_resist_upgrade_success(monkeypatch: pytest.MonkeyPatch) -> None:
+    """PQ rotation upgrades to Falcon keys and emits guardian notifications."""
+
+    viz_cid = "cid-quantum"
+    PINNED_VIZ[viz_cid] = {
+        "wallet": "0xFAL",
+        "mission_anchor": MISSION_STATEMENT,
+        "results": [{"score": 0.88, "uplift": 0.22}, {"score": 0.77, "uplift": 0.18}],
+        "auth_hash": "auth::hash",
+        "legacy_sig": "dilithium::legacy",
+        "current_sig_type": "dilithium",
+    }
+
+    class DummyFalconKey:
+        def public_key(self) -> "DummyFalconKey":  # noqa: D401
+            return self
+
+        def public_bytes(self, *_: Any, **__: Any) -> bytes:
+            return b"falcon-pub"
+
+    def generate_key() -> DummyFalconKey:
+        generate_key.called = True
+        return DummyFalconKey()
+
+    generate_key.called = False  # type: ignore[attr-defined]
+
+    transition_calls: dict[str, Any] = {}
+
+    def verify_transition(legacy: Any, new_key: Any) -> bool:
+        transition_calls["args"] = (legacy, new_key)
+        return True
+
+    monkeypatch.setattr(share_module.falcon, "generate_private_key", generate_key, raising=False)
+    monkeypatch.setattr(share_module.dilithium, "verify_transition", verify_transition, raising=False)
+
+    test_client = app.test_client()
+    response = test_client.post(
+        f"/quantum_resist_upgrade/{viz_cid}",
+        data=json.dumps(
+            {
+                "current_sig_type": "dilithium",
+                "target_sig_type": "falcon",
+                "chain_id": "chain-A",
+            }
+        ),
+        headers={"Authorization": "Bearer guardian_token", "Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["status"] == "upgraded"
+    assert body["new_pubkey"] == b"falcon-pub".hex()
+    assert len(body["rotation_hash"]) == 64
+    assert "safeguard" in body["status_detail"]
+    assert generate_key.called  # type: ignore[attr-defined]
+    assert transition_calls["args"][0] == "dilithium::legacy"
+
+    record = PINNED_VIZ[viz_cid]
+    assert record["current_sig_type"] == "falcon"
+    assert record["rotation_chain"]
+    assert record["rotation_zk_proof"]
+    assert record["belief_evolution"][0]["sig_type"] == "falcon"
+
+    emissions = list(stream_viz_updates())
+    assert emissions
+    emission = emissions[0]
+    assert emission["pq_upgrade"] is True
+    assert emission["new_sig_type"] == "falcon"
+    assert emission["viz_cid"] == viz_cid
+    assert emission["emit_id"] == body["emit_id"]
+
+
+def test_quantum_resist_upgrade_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    """PQ rotation failure surfaces 500 response without guardian emit."""
+
+    viz_cid = "cid-fail"
+    PINNED_VIZ[viz_cid] = {
+        "wallet": "0xERR",
+        "mission_anchor": MISSION_STATEMENT,
+        "results": [{"score": 0.66, "uplift": 0.12}],
+        "auth_hash": "auth::hash",
+        "legacy_sig": "dilithium::legacy",
+        "current_sig_type": "dilithium",
+    }
+
+    def raise_error() -> None:
+        raise RuntimeError("keygen_failure")
+
+    monkeypatch.setattr(share_module.falcon, "generate_private_key", raise_error, raising=False)
+
+    test_client = app.test_client()
+    response = test_client.post(
+        f"/quantum_resist_upgrade/{viz_cid}",
+        data=json.dumps(
+            {
+                "current_sig_type": "dilithium",
+                "target_sig_type": "falcon",
+                "chain_id": "chain-B",
+            }
+        ),
+        headers={"Authorization": "Bearer guardian_token", "Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 500
+    body = response.get_json()
+    assert body == {"status": "rotation_failed"}
+    assert not STREAM_EMIT_QUEUE
+    assert PINNED_VIZ[viz_cid]["current_sig_type"] == "dilithium"
+    assert "belief_evolution" not in PINNED_VIZ[viz_cid]
