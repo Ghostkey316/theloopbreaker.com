@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import time
 from typing import Any
@@ -198,6 +199,88 @@ def test_share_endpoint_creates_cid() -> None:
     record = PINNED_VIZ[body["ipfs_cid"]]
     expected_hash = _compute_zk_hash(payload["results"], "0xABC", record["auth_hash"])
     assert expected_hash == body["zk_hash"]
+
+
+def _seed_optimizer_viz_record(viz_cid: str) -> None:
+    """Populate a minimal viz record for optimizer tests."""
+
+    auth_header = "Bearer guardian_token"
+    PINNED_VIZ[viz_cid] = {
+        "wallet": "0xguardian",
+        "mission_anchor": MISSION_STATEMENT,
+        "results": [{"score": 0.82, "uplift": 0.1, "status": "attested"}],
+        "zk_hash": "",
+        "auth_hash": hashlib.sha256(auth_header.encode("utf-8")).hexdigest(),
+        "consent": True,
+    }
+
+
+def test_optimizer_low_cr() -> None:
+    """Consistent pairwise inputs yield optimized hierarchy weights."""
+
+    viz_cid = "viz-low-cr"
+    _seed_optimizer_viz_record(viz_cid)
+
+    test_client = app.test_client()
+    payload = {
+        "virtue_pairs": [
+            {"virtue_a": "protect", "virtue_b": "empathy", "priority": 1},
+            {"virtue_a": "protect", "virtue_b": "integrity", "priority": 2},
+            {"virtue_a": "empathy", "virtue_b": "integrity", "priority": 2},
+        ],
+        "num_virtues": 3,
+    }
+    response = test_client.post(
+        f"/virtue_hierarchy_optimizer/{viz_cid}",
+        data=json.dumps(payload),
+        headers={"Authorization": "Bearer guardian_token", "Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["hierarchy_alert"] is False
+    assert body["optimization"] == "optimized"
+    assert body["consistency_ratio"] < 0.1
+    weights = body["priority_weights"]
+    assert pytest.approx(sum(weights.values()), rel=1e-5) == 1.0
+    assert body["matrix_commitment"]
+    weighted = body["erv_weighted_resonance"]
+    assert set(weighted) == set(weights)
+    assert not STREAM_EMIT_QUEUE
+
+
+def test_high_cr_alert_emits_update() -> None:
+    """Inconsistent priorities trigger hierarchy alert emissions."""
+
+    viz_cid = "viz-high-cr"
+    _seed_optimizer_viz_record(viz_cid)
+
+    test_client = app.test_client()
+    payload = {
+        "virtue_pairs": [
+            {"virtue_a": "protect", "virtue_b": "empathy", "priority": 9},
+            {"virtue_a": "empathy", "virtue_b": "integrity", "priority": 1},
+            {"virtue_a": "protect", "virtue_b": "integrity", "priority": 1},
+        ],
+        "num_virtues": 3,
+    }
+    response = test_client.post(
+        f"/virtue_hierarchy_optimizer/{viz_cid}",
+        data=json.dumps(payload),
+        headers={"Authorization": "Bearer guardian_token", "Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["hierarchy_alert"] is True
+    assert body["optimization"] == "revise_pairs"
+    assert body["consistency_ratio"] > 0.1
+    assert STREAM_EMIT_QUEUE
+    event = STREAM_EMIT_QUEUE[-1]
+    assert event["hierarchy_alert"] is True
+    assert event["viz_cid"] == viz_cid
+    assert set(event["weights"]) == set(body["priority_weights"])
+    assert body.get("emit_id") == event["emit_id"]
 
 
 def test_attest_verification_detects_drift() -> None:
