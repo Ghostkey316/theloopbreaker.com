@@ -257,6 +257,91 @@ def test_event_stream_handles_disconnect(monkeypatch: pytest.MonkeyPatch) -> Non
     gen.close()
 
 
+def test_tracker_alert_drift(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Belief tracker flags drift and emits guardian alerts."""
+
+    test_client = app.test_client()
+    viz_cid = _seed_viz_record(test_client)
+
+    values = np.linspace(0.6, 0.9, 20)
+
+    class DummySeries(list):
+        def __init__(self, data):
+            super().__init__(data)
+            self.index = list(range(len(data)))
+
+        @property
+        def values(self):
+            return np.asarray(self, dtype=float)
+
+    class StubARIMA:
+        def __init__(self, data, order):
+            self._data = np.asarray(data, dtype=float)
+
+        def fit(self):
+            data = self._data
+
+            class _Result:
+                def __init__(self, arr: np.ndarray):
+                    self._arr = arr
+                    self.fittedvalues = arr + 0.2
+
+                def forecast(self, steps: int):
+                    return np.linspace(self._arr[-1], self._arr[-1] + 0.1, steps)
+
+            return _Result(data)
+
+    monkeypatch.setattr(
+        "services.share_viz_endpoint._collect_resonance_series", lambda telemetry, wallet_id: DummySeries(values)
+    )
+    monkeypatch.setattr("services.share_viz_endpoint.ARIMA", StubARIMA)
+
+    response = test_client.get(
+        f"/belief_evolution_tracker/{viz_cid}",
+        headers={"Authorization": "Bearer guardian_token", "X-Consent": "true"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["alert"] is True
+    assert body["drift_score"] > 0.1
+    assert "protect" in body["recommendation"].lower() or MISSION_STATEMENT.lower() in body["recommendation"].lower()
+    assert len(body["predicted_trend"]) == 5
+    emissions = list(STREAM_EMIT_QUEUE)
+    assert any(event.get("drift_alert") for event in emissions)
+
+
+def test_tracker_short_history_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Belief tracker returns default when insufficient resonance data."""
+
+    test_client = app.test_client()
+    viz_cid = _seed_viz_record(test_client)
+
+    class DummySeries(list):
+        def __init__(self):
+            super().__init__([0.7, 0.71])
+            self.index = [0, 1]
+
+        @property
+        def values(self):
+            return np.asarray(self, dtype=float)
+
+    monkeypatch.setattr(
+        "services.share_viz_endpoint._collect_resonance_series", lambda telemetry, wallet_id: DummySeries()
+    )
+
+    response = test_client.get(
+        f"/belief_evolution_tracker/{viz_cid}",
+        headers={"Authorization": "Bearer guardian_token", "X-Consent": "true"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["insufficient_data"] is True
+    assert body["alert"] is False
+    assert body["drift_score"] == 0.0
+
+
 def test_consensus_forecast_with_history(monkeypatch: pytest.MonkeyPatch) -> None:
     """Forecast endpoint produces uplift predictions and emits SSE cues."""
 

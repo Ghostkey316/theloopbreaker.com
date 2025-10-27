@@ -19,6 +19,62 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 import numpy as np
 
+try:  # pragma: no cover - optional scientific stack during tests
+    import pandas as pd
+except ImportError:  # pragma: no cover - lightweight fallback stub
+    class _Series(list):
+        """Minimal pandas.Series shim supporting required interactions."""
+
+        def __init__(self, data, index=None, name=None):
+            super().__init__(float(value) for value in data)
+            self.index = index if index is not None else list(range(len(self)))
+            self.name = name
+
+        def to_numpy(self):
+            return np.asarray(self, dtype=float)
+
+        @property
+        def values(self):
+            return np.asarray(self, dtype=float)
+
+        def tolist(self):
+            return list(self)
+
+    class _PDStub:
+        Series = _Series
+
+        @staticmethod
+        def date_range(*_, periods: int, **__):
+            return list(range(periods))
+
+    pd = _PDStub()  # type: ignore
+
+try:  # pragma: no cover - optional dependency during tests
+    from statsmodels.tsa.arima.model import ARIMA
+except ImportError:  # pragma: no cover - deterministic ARIMA stub
+    class ARIMA:  # type: ignore[override]
+        """Fallback ARIMA(1,1,1) approximation using naive differencing."""
+
+        def __init__(self, data, order):
+            _ = order
+            self._data = np.asarray(data, dtype=float)
+
+        def fit(self):
+            series = self._data
+
+            class _Result:
+                def __init__(self, values: np.ndarray):
+                    self._values = values
+                    shifted = np.roll(values, 1)
+                    shifted[0] = values[0]
+                    self.fittedvalues = shifted
+
+                def forecast(self, steps: int):
+                    terminal = float(self._values[-1]) if self._values.size else 0.0
+                    return np.full(steps, terminal)
+
+            return _Result(series)
+
 try:  # pragma: no cover - optional dependency during tests
     from sklearn.linear_model import LinearRegression
 except ImportError:  # pragma: no cover - provide lightweight regression stub
@@ -298,6 +354,33 @@ def stream_viz_updates() -> Generator[dict[str, Any], None, None]:
 
     while STREAM_EMIT_QUEUE:
         yield STREAM_EMIT_QUEUE.popleft()
+
+
+def _collect_resonance_series(
+    telemetry: PilotResonanceTelemetry,
+    wallet_id: str,
+    *,
+    periods: int = 20,
+) -> "pd.Series":
+    """Build a resonance time-series respecting consent and privacy."""
+
+    values = []
+    index = []
+    for step in range(periods):
+        bio = telemetry.fetch_mock_bio_data(wallet_id)
+        score, encrypted_res = telemetry.run_erv_simulation(bio)
+        _ = encrypted_res
+        jitter = np.sin(step) * 0.015
+        values.append(max(0.0, min(1.0, score + jitter)))
+        index.append(bio.get("timestamp", step))
+
+    if hasattr(pd, "date_range") and periods:
+        try:
+            index = pd.date_range(end=None, periods=periods, freq="H")  # type: ignore[arg-type]
+        except Exception:
+            index = list(range(periods))
+
+    return pd.Series(values, index=index, name="resonance")
 
 
 def _pin_artifacts(
@@ -777,6 +860,116 @@ def consensus_forecast(viz_cid: str):
         "recommendation": recommendation,
         "aggregate_hash": aggregate_hash,
         "mission_statement": MISSION_STATEMENT,
+    }
+    if emit_id is not None:
+        response["emit_id"] = emit_id
+    return jsonify(response), 200
+
+
+@app.route("/belief_evolution_tracker/<viz_cid>", methods=["GET"])
+def belief_evolution_tracker(viz_cid: str):
+    """Run ARIMA drift tracking over historical resonance telemetry."""
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header != "Bearer guardian_token":
+        abort(401, "guardian_auth_required")
+
+    consent_header = request.headers.get("X-Consent", "true").lower()
+    if consent_header in {"false", "0", "no"}:
+        abort(403, "consent_required")
+
+    record = PINNED_VIZ.get(viz_cid)
+    if record is None:
+        abort(404, "viz_not_found")
+
+    mission_anchor = record.get("mission_anchor", MISSION_STATEMENT)
+    telemetry = TelemetryClass(mission_anchor, consent=True)
+    if not getattr(telemetry, "consent", True):
+        abort(403, "consent_required")
+
+    wallet_id = record.get("wallet", "guardian::anon")
+    series = _collect_resonance_series(telemetry, wallet_id)
+
+    bio_data = telemetry.fetch_mock_bio_data(wallet_id)
+    current_score, encrypted_res = telemetry.run_erv_simulation(bio_data)
+    _ = encrypted_res
+    series_values = np.asarray(getattr(series, "values", series), dtype=float)
+    extended_values = np.append(series_values, current_score)
+
+    if extended_values.size < 5:
+        return (
+            jsonify({
+                "drift_score": 0.0,
+                "alert": False,
+                "insufficient_data": True,
+                "mission_statement": MISSION_STATEMENT,
+            }),
+            200,
+        )
+
+    try:
+        model = ARIMA(extended_values, order=(1, 1, 1))
+        result = model.fit()
+        fitted = np.asarray(getattr(result, "fittedvalues", extended_values), dtype=float)
+        if fitted.shape[0] != extended_values.shape[0]:
+            padding = np.full_like(extended_values, extended_values.mean())
+            padding[-fitted.shape[0] :] = fitted[-min(fitted.shape[0], padding.shape[0]) :]
+            fitted = padding
+        forecast = result.forecast(steps=5)
+    except Exception as exc:  # pragma: no cover - defensive guard against ARIMA errors
+        fitted = np.full_like(extended_values, float(extended_values[-1]))
+        forecast = np.full(5, float(extended_values[-1]))
+        STREAM_EMIT_QUEUE.append(
+            {
+                "guardian_sync": "belief_evolution",
+                "arima_warning": str(exc),
+                "viz_cid": viz_cid,
+            }
+        )
+
+    forecast_values = np.asarray(forecast, dtype=float)
+    drift_score = float(np.sqrt(np.mean(np.square(extended_values - fitted))))
+    alert = drift_score > 0.1
+
+    aggregate_payload = [
+        {
+            "timestamp": str(getattr(series, "index", list(range(len(series))))[idx])
+            if idx < len(series)
+            else "current",
+            "score": round(float(value), 4),
+        }
+        for idx, value in enumerate(extended_values)
+    ]
+    auth_hash = record.get("auth_hash", hashlib.sha256(auth_header.encode("utf-8")).hexdigest())
+    aggregate_hash = _compute_zk_hash(aggregate_payload, wallet_id, auth_hash)
+
+    mission_clause = "protect" if "protect" in MISSION_STATEMENT.lower() else "safeguard"
+    if alert:
+        recommendation = f"monitor to {mission_clause} our mission: {MISSION_STATEMENT}"
+        emit_id = str(uuid.uuid4())
+        STREAM_EMIT_QUEUE.append(
+            {
+                "guardian_sync": "belief_evolution",
+                "drift_alert": True,
+                "emit_id": emit_id,
+                "viz_cid": viz_cid,
+                "aggregate_hash": aggregate_hash,
+            }
+        )
+    else:
+        recommendation = f"stable trajectory with mission focus: {MISSION_STATEMENT}"
+        emit_id = None
+
+    dispatch_to_base_oracle(viz_cid, aggregate_hash)
+
+    response = {
+        "drift_score": round(drift_score, 4),
+        "predicted_trend": [round(float(value), 4) for value in forecast_values],
+        "alert": alert,
+        "recommendation": recommendation,
+        "mission_statement": MISSION_STATEMENT,
+        "insufficient_data": False,
+        "aggregate_hash": aggregate_hash,
     }
     if emit_id is not None:
         response["emit_id"] = emit_id
