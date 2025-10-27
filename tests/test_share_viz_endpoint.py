@@ -10,9 +10,12 @@ import pytest
 from services.share_viz_endpoint import (
     MISSION_STATEMENT,
     PINNED_VIZ,
+    STREAM_EMIT_QUEUE,
     _compute_zk_hash,
+    _sign_guardian_vote,
     app,
     event_stream,
+    stream_viz_updates,
 )
 
 
@@ -23,6 +26,7 @@ class DummyTelemetry:
         self.mission_anchor = mission_anchor
         self.consent = consent
         self.results = None
+        self.iteration = 0
 
     def end_to_end_test(self, num_iters: int = 6) -> list[dict[str, Any]]:
         return [
@@ -32,6 +36,23 @@ class DummyTelemetry:
 
     def interactive_viz(self, results: list[dict[str, Any]]) -> None:
         self.results = results
+
+    def fetch_mock_bio_data(self, user_wallet: str) -> dict[str, Any]:
+        self.iteration += 1
+        return {
+            "wallet": user_wallet,
+            "hrv": 0.88,
+            "arousal": "steady",
+            "timestamp": f"2024-01-01T00:00:0{self.iteration}Z",
+        }
+
+    def run_erv_simulation(self, bio_data: dict[str, Any]) -> tuple[float, str]:
+        _ = bio_data
+        return 0.81, "encrypted::dummy"
+
+    def simulate_cascade(self, score: float, encrypted_res: str) -> bool:
+        _ = encrypted_res
+        return score >= 0.7
 
 
 class StreamingTelemetry(DummyTelemetry):
@@ -64,6 +85,7 @@ def clear_state(monkeypatch: pytest.MonkeyPatch) -> None:
     """Reset in-memory state and patch telemetry for each test."""
 
     PINNED_VIZ.clear()
+    STREAM_EMIT_QUEUE.clear()
     monkeypatch.setattr("services.share_viz_endpoint.TelemetryClass", DummyTelemetry)
 
 
@@ -137,6 +159,80 @@ def test_stream_endpoint_emits_sse(monkeypatch: pytest.MonkeyPatch) -> None:
     assert payload["viz_update"].startswith("{")
 
     app.config.pop("STREAM_LOOP_MAX", None)
+
+
+def _seed_viz_record(test_client) -> str:
+    payload = {
+        "results": [
+            {"wallet": "0xAAA", "score": 0.82, "uplift": 0.3, "status": "attested"}
+        ],
+        "mission_anchor": MISSION_STATEMENT,
+    }
+    response = test_client.post(
+        "/share_viz/0xAAA",
+        data=json.dumps(payload),
+        headers={"Authorization": "Bearer signed-token", "Content-Type": "application/json"},
+    )
+    body = response.get_json()
+    return body["ipfs_cid"]
+
+
+def test_council_consensus_met() -> None:
+    """Guardian council attestation emits MPC consensus updates."""
+
+    test_client = app.test_client()
+    viz_cid = _seed_viz_record(test_client)
+
+    votes = [
+        {"guardian_id": "g1", "vote": True, "sig": _sign_guardian_vote("g1", True)},
+        {"guardian_id": "g2", "vote": True, "sig": _sign_guardian_vote("g2", True)},
+        {"guardian_id": "g3", "vote": False, "sig": _sign_guardian_vote("g3", False)},
+    ]
+
+    response = test_client.post(
+        f"/guardian_council/{viz_cid}",
+        data=json.dumps({"votes": votes, "threshold": 2}),
+        headers={"Authorization": "Bearer guardian_token", "Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["consensus"] is True
+    assert body["threshold_met"] is True
+    assert "emit_id" in body
+
+    emissions = list(stream_viz_updates())
+    assert emissions
+    emission = emissions[0]
+    assert emission["guardian_sync"] == "council_vote"
+    assert emission["consensus"] is True
+    assert emission["uplift_adjust"] > 0
+    assert emission["viz_cid"] == viz_cid
+    assert len(emission["zk_pool_hash"]) == 64
+
+
+def test_threshold_fail_returns_drift_alert() -> None:
+    """Insufficient votes are rejected with a mission drift alert."""
+
+    test_client = app.test_client()
+    viz_cid = _seed_viz_record(test_client)
+
+    votes = [
+        {"guardian_id": "g1", "vote": False, "sig": _sign_guardian_vote("g1", False)},
+        {"guardian_id": "g2", "vote": False, "sig": _sign_guardian_vote("g2", False)},
+    ]
+
+    response = test_client.post(
+        f"/guardian_council/{viz_cid}",
+        data=json.dumps({"votes": votes, "threshold": 3}),
+        headers={"Authorization": "Bearer guardian_token", "Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 402
+    body = response.get_json()
+    assert body["threshold_met"] is False
+    assert body["alert"].startswith("guardian_drift")
+    assert not list(stream_viz_updates())
 
 
 def test_event_stream_handles_disconnect(monkeypatch: pytest.MonkeyPatch) -> None:
