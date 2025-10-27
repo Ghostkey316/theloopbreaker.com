@@ -6,6 +6,7 @@ import json
 from typing import Any
 
 import pytest
+import numpy as np
 
 from services.share_viz_endpoint import (
     MISSION_STATEMENT,
@@ -15,6 +16,7 @@ from services.share_viz_endpoint import (
     _sign_guardian_vote,
     app,
     event_stream,
+    LinearRegression,
     stream_viz_updates,
 )
 
@@ -251,3 +253,80 @@ def test_event_stream_handles_disconnect(monkeypatch: pytest.MonkeyPatch) -> Non
     first_chunk = next(gen)
     assert first_chunk.startswith("data: ")
     gen.close()
+
+
+def test_consensus_forecast_with_history(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Forecast endpoint produces uplift predictions and emits SSE cues."""
+
+    test_client = app.test_client()
+    viz_cid = _seed_viz_record(test_client)
+
+    history = [
+        {"score": 0.6, "consensus": True, "uplift": 0.9},
+        {"score": 0.7, "consensus": True, "uplift": 1.1},
+        {"score": 0.8, "consensus": True, "uplift": 1.3},
+        {"score": 0.9, "consensus": True, "uplift": 1.5},
+    ]
+
+    monkeypatch.setattr(
+        "services.share_viz_endpoint._load_guardian_vote_history",
+        lambda cid, telemetry: history,
+    )
+
+    response = test_client.get(
+        f"/consensus_forecast/{viz_cid}?resonance=0.82",
+        headers={"Authorization": "Bearer guardian_token", "X-Consent": "true"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+
+    scores = np.array([[entry["score"]] for entry in history], dtype=float)
+    targets = np.array(
+        [entry["uplift"] if entry["consensus"] else 0.0 for entry in history],
+        dtype=float,
+    )
+    model = LinearRegression().fit(scores, targets)
+    expected_pred = float(model.predict(np.array([[0.82]], dtype=float))[0])
+    expected_conf = float(model.score(scores, targets))
+    assert body["predicted_uplift"] == round(expected_pred, 4)
+    assert body["confidence"] == round(max(0.0, min(expected_conf, 1.0)), 4)
+    assert body["recommendation"] == "attest"
+    assert len(body["aggregate_hash"]) == 64
+    assert body["mission_statement"] == MISSION_STATEMENT
+    assert "emit_id" in body
+
+    emissions = list(stream_viz_updates())
+    assert len(emissions) == 1
+    emission = emissions[0]
+    assert emission["guardian_sync"] == "consensus_forecast"
+    assert emission["forecast"] == body["predicted_uplift"]
+    assert emission["emit_id"] == body["emit_id"]
+    assert emission["viz_cid"] == viz_cid
+
+
+def test_consensus_forecast_without_history(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Forecast endpoint defaults to zero uplift when history is missing."""
+
+    test_client = app.test_client()
+    viz_cid = _seed_viz_record(test_client)
+
+    monkeypatch.setattr(
+        "services.share_viz_endpoint._load_guardian_vote_history",
+        lambda cid, telemetry: [],
+    )
+
+    response = test_client.get(
+        f"/consensus_forecast/{viz_cid}",
+        headers={"Authorization": "Bearer guardian_token", "X-Consent": "true"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["predicted_uplift"] == 0.0
+    assert body["confidence"] == 0.0
+    assert body["recommendation"] == "insufficient_data"
+    assert len(body["aggregate_hash"]) == 64
+    assert body["mission_statement"] == MISSION_STATEMENT
+    assert "emit_id" not in body
+    assert not list(stream_viz_updates())
