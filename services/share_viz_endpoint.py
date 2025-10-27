@@ -62,6 +62,19 @@ except ImportError:  # pragma: no cover - provide deterministic PQ stubs
     dilithium = _DilithiumStub()  # type: ignore
     falcon = _FalconStub()  # type: ignore
 import numpy as np
+try:  # pragma: no cover - scientific integration optional in minimal envs
+    from scipy.integrate import odeint
+except ImportError:  # pragma: no cover - deterministic Euler fallback
+    def odeint(func, y0, t, args=()):
+        """Minimal numerical integrator mirroring ``scipy.odeint`` signature."""
+
+        y = np.zeros((len(t), len(y0)), dtype=float)
+        y[0] = np.asarray(y0, dtype=float)
+        for index in range(1, len(t)):
+            dt = float(t[index] - t[index - 1])
+            derivs = np.asarray(func(y[index - 1], t[index - 1], *args), dtype=float)
+            y[index] = y[index - 1] + dt * derivs
+        return y
 try:  # pragma: no cover - optional ML dependency
     import torch
     import torch.nn as nn
@@ -498,6 +511,52 @@ def stream_viz_updates() -> Generator[dict[str, Any], None, None]:
 
     while STREAM_EMIT_QUEUE:
         yield STREAM_EMIT_QUEUE.popleft()
+
+
+def _guardian_resonance_gradient(
+    record: dict[str, Any], telemetry: PilotResonanceTelemetry
+) -> float:
+    """Derive an average ERV resonance gradient anchored to stored results."""
+
+    scores: list[float] = []
+    raw_results = record.get("results")
+    if isinstance(raw_results, list):
+        for entry in raw_results:
+            if isinstance(entry, dict) and entry.get("score") is not None:
+                try:
+                    scores.append(float(entry["score"]))
+                except (TypeError, ValueError):
+                    continue
+
+    if not scores:
+        wallet_id = str(record.get("wallet", "guardian::anon"))
+        for _ in range(3):
+            bio_snapshot = telemetry.fetch_mock_bio_data(wallet_id)
+            erv_score, encrypted_res = telemetry.run_erv_simulation(bio_snapshot)
+            if hasattr(telemetry, "simulate_cascade") and not telemetry.simulate_cascade(
+                erv_score, encrypted_res
+            ):
+                continue
+            scores.append(float(erv_score))
+
+    if not scores:
+        return 0.5
+
+    return float(np.clip(np.mean(scores), 0.0, 1.0))
+
+
+def _echo_beta_modifier(record: dict[str, Any]) -> float:
+    """Scale contagion beta using cached echo chamber diversity signals."""
+
+    cache = record.get("echo_cache")
+    if isinstance(cache, dict) and cache.get("homogeneity_score") is not None:
+        try:
+            homogeneity = float(cache["homogeneity_score"])
+        except (TypeError, ValueError):
+            return 1.0
+        homogeneity = float(np.clip(homogeneity, 0.0, 1.0))
+        return 1.0 + max(0.0, 0.5 - homogeneity)
+    return 1.0
 
 
 def _basic_sentiment_stub(texts: list[str]) -> list[dict[str, Any]]:
@@ -1684,6 +1743,135 @@ def echo_chamber_detector(viz_cid: str):
         dispatch_to_base_oracle(viz_cid, zk_graph_hash)
         response["emit_id"] = emit_id
 
+    record.setdefault("echo_cache", {})
+    record["echo_cache"].update(
+        {
+            "homogeneity_score": float(homogeneity_score),
+            "diversity_threshold": diversity_threshold,
+            "timestamp": time.time(),
+        }
+    )
+
+    return jsonify(response), 200
+
+
+@app.route("/conviction_contagion_model/<viz_cid>", methods=["POST"])
+def conviction_contagion_model(viz_cid: str):
+    """Run SIR-style conviction contagion simulations on resonance graphs."""
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header != "Bearer guardian_token":
+        abort(401, "guardian_auth_required")
+
+    record = PINNED_VIZ.get(viz_cid)
+    if record is None:
+        abort(404, "viz_not_found")
+
+    mission_anchor = record.get("mission_anchor", MISSION_STATEMENT)
+    consent_flag = bool(record.get("consent", True))
+    telemetry = TelemetryClass(mission_anchor, consent=consent_flag)
+    if not getattr(telemetry, "consent", True):
+        abort(403, "consent_required")
+
+    payload = request.get_json(silent=True) or {}
+    network_graph = payload.get("network_graph")
+    if not isinstance(network_graph, dict):
+        abort(400, "model_params_invalid")
+
+    try:
+        node_count = int(network_graph.get("nodes", 0))
+        beta = float(network_graph.get("beta", 0.3))
+        gamma = float(network_graph.get("gamma", 0.1))
+        initial_infected = float(payload.get("initial_infected", 0.2))
+    except (TypeError, ValueError):
+        abort(400, "model_params_invalid")
+
+    if (
+        node_count <= 0
+        or beta <= 0.0
+        or gamma <= 0.0
+        or not (0.0 <= initial_infected <= 1.0)
+    ):
+        abort(400, "model_params_invalid")
+
+    resonance_gradient = _guardian_resonance_gradient(record, telemetry)
+    resonance_boost = 1.0 + (resonance_gradient - 0.5) * 0.8
+    resonance_boost = float(np.clip(resonance_boost, 0.4, 1.8))
+    echo_modifier = float(np.clip(_echo_beta_modifier(record), 0.5, 2.0))
+    beta_effective = beta * resonance_boost * echo_modifier
+
+    def sir_derivatives(state, _time, beta_param, gamma_param):
+        susceptible, infected, recovered = state
+        d_susceptible = -beta_param * susceptible * infected
+        d_infected = beta_param * susceptible * infected - gamma_param * infected
+        d_recovered = gamma_param * infected
+        return d_susceptible, d_infected, d_recovered
+
+    susceptible_0 = float(np.clip(1.0 - initial_infected, 0.0, 1.0))
+    sir_initial = (susceptible_0, initial_infected, 0.0)
+    timeline = np.linspace(0, 49, 50)
+    sir_solution = np.clip(
+        odeint(sir_derivatives, sir_initial, timeline, args=(beta_effective, gamma)),
+        0.0,
+        1.0,
+    )
+    _susceptible, infected, recovered = sir_solution.T
+
+    peak_infection = float(np.max(infected))
+    adoption_rate = float(np.clip(recovered[-1], 0.0, 1.0))
+    contagion_alert = peak_infection > 0.5
+    spread_recommendation = "accelerate" if adoption_rate > 0.7 else "contain"
+    mission_clause = "protect" if "protect" in MISSION_STATEMENT.lower() else "safeguard"
+
+    aggregate_payload = {
+        "node_count": node_count,
+        "beta_effective": round(beta_effective, 4),
+        "gamma": round(gamma, 4),
+        "initial_infected": round(initial_infected, 4),
+        "peak_infection": round(peak_infection, 4),
+        "adoption_rate": round(adoption_rate, 4),
+    }
+    wallet_id = str(record.get("wallet", "guardian::anon"))
+    auth_hash = str(record.get("auth_hash", "guardian::aggregate"))
+    zk_contagion_hash = _compute_zk_hash([aggregate_payload], wallet_id, auth_hash)
+
+    record.setdefault("conviction_cache", {})
+    record["conviction_cache"].update(
+        {
+            "beta_effective": aggregate_payload["beta_effective"],
+            "gamma": aggregate_payload["gamma"],
+            "resonance_gradient": resonance_gradient,
+            "timestamp": time.time(),
+        }
+    )
+
+    response: dict[str, Any] = {
+        "peak_infection": round(peak_infection, 4),
+        "adoption_rate": round(adoption_rate, 4),
+        "contagion_alert": contagion_alert,
+        "spread_recommendation": spread_recommendation,
+        "recommendation_detail": (
+            f"{mission_clause} {MISSION_STATEMENT} pilots via ethical containment"
+            if spread_recommendation == "contain"
+            else f"accelerate aligned guardianship to uphold {MISSION_STATEMENT}"
+        ),
+        "zk_contagion_hash": zk_contagion_hash,
+        "mission_statement": MISSION_STATEMENT,
+    }
+
+    if contagion_alert:
+        emit_id = str(uuid.uuid4())
+        STREAM_EMIT_QUEUE.append(
+            {
+                "contagion_alert": True,
+                "peak": round(peak_infection, 4),
+                "viz_cid": viz_cid,
+                "emit_id": emit_id,
+            }
+        )
+        dispatch_to_base_oracle(viz_cid, zk_contagion_hash)
+        response["emit_id"] = emit_id
+
     return jsonify(response), 200
 
 
@@ -2187,6 +2375,7 @@ def share_viz(wallet_id: str):
         results=results,
         auth_hash=auth_hash,
     )
+    PINNED_VIZ[cid]["consent"] = bool(consent)
 
     attest_url = f"{request.url_root.rstrip('/')}/attest_viz/{cid}"
     response = {
