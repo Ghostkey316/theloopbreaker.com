@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 from typing import Any
 
 import pytest
@@ -832,6 +833,82 @@ def test_quantum_resist_upgrade_failure(monkeypatch: pytest.MonkeyPatch) -> None
     assert not STREAM_EMIT_QUEUE
     assert PINNED_VIZ[viz_cid]["current_sig_type"] == "dilithium"
     assert "belief_evolution" not in PINNED_VIZ[viz_cid]
+
+
+def test_conviction_contagion_high_spread_alert(monkeypatch: pytest.MonkeyPatch) -> None:
+    """High resonance and low diversity trigger contagion alerts and emissions."""
+
+    test_client = app.test_client()
+    viz_cid = _seed_viz_record(test_client)
+
+    record = PINNED_VIZ[viz_cid]
+    record["results"] = [
+        {"wallet": "0xAAA", "score": 0.91, "uplift": 0.18},
+        {"wallet": "0xBBB", "score": 0.88, "uplift": 0.21},
+        {"wallet": "0xCCC", "score": 0.9, "uplift": 0.2},
+    ]
+    record["echo_cache"] = {"homogeneity_score": 0.2, "timestamp": time.time()}
+
+    payload = {
+        "network_graph": {"nodes": 42, "beta": 0.7, "gamma": 0.05},
+        "initial_infected": 0.25,
+    }
+    response = test_client.post(
+        f"/conviction_contagion_model/{viz_cid}",
+        data=json.dumps(payload),
+        headers={"Authorization": "Bearer guardian_token", "Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["contagion_alert"] is True
+    assert body["spread_recommendation"] == "accelerate"
+    assert body["mission_statement"] == MISSION_STATEMENT
+    assert len(body["zk_contagion_hash"]) == 64
+
+    emissions = list(stream_viz_updates())
+    assert emissions
+    emission = emissions[0]
+    assert emission["contagion_alert"] is True
+    assert pytest.approx(emission["peak"], rel=1e-3) == pytest.approx(body["peak_infection"], rel=1e-3)
+    assert emission["viz_cid"] == viz_cid
+
+    cache = PINNED_VIZ[viz_cid]["conviction_cache"]
+    assert cache["beta_effective"] >= payload["network_graph"]["beta"]
+    assert cache["resonance_gradient"] > 0.8
+
+
+def test_conviction_contagion_low_adoption(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Low beta scenarios stay contained without emitting contagion alerts."""
+
+    test_client = app.test_client()
+    viz_cid = _seed_viz_record(test_client)
+
+    record = PINNED_VIZ[viz_cid]
+    record["results"] = [
+        {"wallet": "0xAAA", "score": 0.42, "uplift": 0.05},
+        {"wallet": "0xBBB", "score": 0.38, "uplift": 0.04},
+    ]
+    record["echo_cache"] = {"homogeneity_score": 0.9, "timestamp": time.time()}
+
+    payload = {
+        "network_graph": {"nodes": 16, "beta": 0.15, "gamma": 0.35},
+        "initial_infected": 0.1,
+    }
+    response = test_client.post(
+        f"/conviction_contagion_model/{viz_cid}",
+        data=json.dumps(payload),
+        headers={"Authorization": "Bearer guardian_token", "Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["contagion_alert"] is False
+    assert body["spread_recommendation"] == "contain"
+    detail = body["recommendation_detail"].lower()
+    assert any(term in detail for term in {"protect", "safeguard"})
+    assert len(body["zk_contagion_hash"]) == 64
+    assert list(stream_viz_updates()) == []
 
 
 def test_temporal_resonance_weave_high_conf(monkeypatch: pytest.MonkeyPatch) -> None:
