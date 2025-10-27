@@ -76,6 +76,14 @@ except ImportError:  # pragma: no cover - deterministic Euler fallback
             derivs = np.asarray(func(y[index - 1], t[index - 1], *args), dtype=float)
             y[index] = y[index - 1] + dt * derivs
         return y
+try:  # pragma: no cover - sigmoid helper for emergence predictor
+    from scipy.special import expit
+except ImportError:  # pragma: no cover - fallback logistic implementation
+    def expit(value):  # type: ignore[override]
+        """Deterministic logistic sigmoid when SciPy is unavailable."""
+
+        return 1.0 / (1.0 + np.exp(-value))
+
 try:  # pragma: no cover - optional ML dependency
     import torch
     import torch.nn as nn
@@ -1672,6 +1680,154 @@ def karma_karmic_cycle_sim(viz_cid: str):
                 "steady_state": steady_state_map,
                 "emit_id": emit_id,
                 "viz_cid": viz_cid,
+            }
+        )
+        response["emit_id"] = emit_id
+
+    return jsonify(response), 200
+
+
+@app.route("/enlightenment_emergence_predictor/<viz_cid>", methods=["GET"])
+def enlightenment_emergence_predictor(viz_cid: str):
+    """Predict collective enlightenment emergence anchored to ``MISSION_STATEMENT`` empathy clauses."""
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header != "Bearer guardian_token":
+        abort(401, "guardian_auth_required")
+
+    consent_header = request.headers.get("X-Consent", "true").lower()
+    if consent_header in {"false", "0", "no"}:
+        abort(403, "consent_required")
+
+    record = PINNED_VIZ.get(viz_cid)
+    if record is None:
+        abort(404, "viz_not_found")
+
+    if not record.get("consent", True):
+        abort(403, "consent_required")
+
+    mission_anchor = record.get("mission_anchor", MISSION_STATEMENT)
+    telemetry = TelemetryClass(mission_anchor, consent=True)
+    if not getattr(telemetry, "consent", True):
+        abort(403, "consent_required")
+
+    wallet_id = record.get("wallet", "guardian::anon")
+    resonance_series = _collect_resonance_series(telemetry, wallet_id, periods=24)
+    if hasattr(resonance_series, "to_numpy"):
+        resonances = np.asarray(resonance_series.to_numpy(), dtype=float)
+    elif hasattr(resonance_series, "values"):
+        resonances = np.asarray(resonance_series.values, dtype=float)
+    else:
+        resonances = np.asarray(list(resonance_series), dtype=float)
+
+    resonances = resonances[np.isfinite(resonances)]
+    aggregate_payload = [
+        {"index": idx, "resonance": round(float(value), 6)}
+        for idx, value in enumerate(resonances.tolist())
+    ]
+    auth_hash = record.get(
+        "auth_hash", hashlib.sha256(auth_header.encode("utf-8")).hexdigest()
+    )
+    aggregate_commitment = _compute_zk_hash(aggregate_payload, wallet_id, auth_hash)
+
+    if resonances.size < 5:
+        response = {
+            "nirvana_prob": 0.0,
+            "emergence_score": 0.0,
+            "enlightenment_alert": False,
+            "emergence_recommendation": "build_momentum",
+            "message": "insufficient_resonance",
+            "aggregate_commitment": aggregate_commitment,
+            "samples": int(resonances.size),
+            "mission_statement": MISSION_STATEMENT,
+        }
+        return jsonify(response), 200
+
+    karmic_history = record.get("karmic_cycle_history")
+    steady_state_map: dict[str, float] = {}
+    if isinstance(karmic_history, list) and karmic_history:
+        latest_history = karmic_history[-1]
+        if isinstance(latest_history, dict):
+            raw_state = latest_history.get("steady_state") or {}
+            if isinstance(raw_state, dict):
+                steady_state_map = {
+                    str(key): float(value)
+                    for key, value in raw_state.items()
+                    if isinstance(value, (int, float))
+                }
+
+    stability_factor = float(
+        np.clip(max(steady_state_map.values()) if steady_state_map else 0.0, 0.0, 1.0)
+    )
+    virtue_weights_raw = record.get("virtue_weights") or {}
+    virtue_weights = {
+        str(key): float(value)
+        for key, value in virtue_weights_raw.items()
+        if isinstance(value, (int, float))
+    }
+    weight_sum = float(sum(virtue_weights.values()))
+    if weight_sum <= 0.0:
+        weight_sum = 1.0
+
+    empathy_weight = virtue_weights.get(
+        "empathy", steady_state_map.get("empathy", 0.0)
+    )
+    protect_priority = virtue_weights.get("protect", 0.0) / weight_sum
+    protect_bias = steady_state_map.get("protect", 0.0)
+    resonance_gain = 1.0 + 0.3 * (protect_priority + protect_bias)
+    weighted_resonances = np.clip(resonances * resonance_gain, 0.0, 1.0)
+    cumulative_mean = np.cumsum(weighted_resonances) / np.arange(
+        1, weighted_resonances.size + 1
+    )
+
+    empathy_in_mission = "empathy" in MISSION_STATEMENT.lower()
+    empathy_bonus = 0.1 if empathy_in_mission else 0.05
+    dynamic_threshold = float(
+        np.clip(
+            0.9
+            - empathy_bonus * float(empathy_weight)
+            - 0.05 * protect_bias
+            - 0.1 * stability_factor,
+            0.55,
+            0.95,
+        )
+    )
+    sigmoid_slope = 4.0 + 6.0 * stability_factor + 2.0 * protect_priority
+    prob_curve = expit(sigmoid_slope * (cumulative_mean - dynamic_threshold))
+    nirvana_prob = float(prob_curve.max()) if prob_curve.size else 0.0
+    if prob_curve.size:
+        if hasattr(np, "trapezoid"):
+            area = float(np.trapezoid(prob_curve, dx=1.0))
+        else:  # pragma: no cover - numpy<2.0 compatibility path
+            area = float(np.trapz(prob_curve, dx=1.0))
+        emergence_score = float(area / prob_curve.size)
+    else:
+        emergence_score = 0.0
+    enlightenment_alert = bool(nirvana_prob > 0.8)
+    emergence_recommendation = (
+        "threshold_crossed" if enlightenment_alert else "build_momentum"
+    )
+
+    response: dict[str, Any] = {
+        "nirvana_prob": round(nirvana_prob, 6),
+        "emergence_score": round(emergence_score, 6),
+        "enlightenment_alert": enlightenment_alert,
+        "emergence_recommendation": emergence_recommendation,
+        "aggregate_commitment": aggregate_commitment,
+        "samples": int(resonances.size),
+        "dynamic_threshold": round(dynamic_threshold, 6),
+        "mission_statement": MISSION_STATEMENT,
+    }
+
+    if enlightenment_alert:
+        emit_id = str(uuid.uuid4())
+        STREAM_EMIT_QUEUE.append(
+            {
+                "enlightenment_alert": True,
+                "prob": round(nirvana_prob, 6),
+                "emit_id": emit_id,
+                "viz_cid": viz_cid,
+                "mission_statement": MISSION_STATEMENT,
             }
         )
         response["emit_id"] = emit_id
