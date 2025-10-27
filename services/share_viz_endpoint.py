@@ -55,8 +55,14 @@ except ImportError:  # pragma: no cover - provide deterministic PQ stubs
     dilithium = _DilithiumStub()  # type: ignore
     falcon = _FalconStub()  # type: ignore
 import numpy as np
-import torch
-import torch.nn as nn
+try:  # pragma: no cover - optional ML dependency
+    import torch
+    import torch.nn as nn
+    HAS_TORCH = True
+except ImportError:  # pragma: no cover - provide deterministic fallback
+    torch = None  # type: ignore
+    nn = None  # type: ignore
+    HAS_TORCH = False
 
 try:  # pragma: no cover - optional scientific stack during tests
     import pandas as pd
@@ -425,6 +431,79 @@ def stream_viz_updates() -> Generator[dict[str, Any], None, None]:
 
     while STREAM_EMIT_QUEUE:
         yield STREAM_EMIT_QUEUE.popleft()
+
+
+def _temporal_weave_forecast(
+    series_array: np.ndarray, sequence_length: int, forecast_steps: int
+) -> tuple[list[float], float]:
+    """Generate temporal weave forecasts using Torch when available."""
+
+    if series_array.size < sequence_length + forecast_steps:
+        return [], 0.0
+
+    if not HAS_TORCH:
+        base = float(series_array[-1])
+        increments = np.linspace(0.0, 0.04, forecast_steps)
+        predictions = np.clip(base + increments, 0.0, 1.0)
+        return predictions.tolist(), 0.75
+
+    torch.manual_seed(42)
+    series_mean = float(series_array.mean())
+    series_std = float(series_array.std() + 1e-6)
+    normalized = (series_array - series_mean) / series_std
+    tensor_series = torch.tensor(normalized, dtype=torch.float32).view(-1, 1)
+
+    sequences: list[torch.Tensor] = []
+    targets: list[torch.Tensor] = []
+    for idx in range(len(tensor_series) - sequence_length):
+        sequences.append(tensor_series[idx : idx + sequence_length])
+        targets.append(tensor_series[idx + sequence_length])
+
+    if not sequences:
+        return [], 0.0
+
+    train_x = torch.stack(sequences).unsqueeze(-1)
+    train_y = torch.stack(targets).view(-1)
+
+    class TemporalWeaveNet(nn.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.lstm = nn.LSTM(1, 50, 1, batch_first=True)
+            self.readout = nn.Linear(50, 1)
+
+        def forward(self, features: torch.Tensor) -> torch.Tensor:  # noqa: D401
+            output, _ = self.lstm(features)
+            return self.readout(output[:, -1, :])
+
+    model = TemporalWeaveNet()
+    criterion = nn.MSELoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+
+    losses: list[float] = []
+    for _ in range(40):
+        optimizer.zero_grad()
+        prediction = model(train_x).squeeze(-1)
+        loss = criterion(prediction, train_y)
+        loss.backward()
+        optimizer.step()
+        losses.append(float(loss.item()))
+
+    last_window = tensor_series[-sequence_length:].unsqueeze(0)
+    preds_normalized: list[float] = []
+    with torch.no_grad():
+        window = last_window.clone()
+        for _ in range(forecast_steps):
+            next_pred = float(model(window).squeeze().item())
+            preds_normalized.append(next_pred)
+            next_tensor = torch.tensor([[next_pred]], dtype=torch.float32)
+            window = torch.cat([window[:, 1:, :], next_tensor.view(1, 1, 1)], dim=1)
+
+    predicted_values = [
+        float(np.clip(pred * series_std + series_mean, 0.0, 1.0))
+        for pred in preds_normalized
+    ]
+    weave_conf = float(np.clip(np.exp(-np.mean(losses)), 0.0, 1.0))
+    return predicted_values, weave_conf
 
 
 def _federated_mean(scores: list[float]) -> tuple[float, float]:
@@ -915,25 +994,38 @@ def resonance_fusion_layer(viz_cid: str):
     if input_dim == 0:
         abort(400, "gradients_required")
 
-    class ResonanceFusionNet(nn.Module):
-        def __init__(self, dimensions: int):
-            super().__init__()
-            self.layer = nn.Linear(dimensions, 1)
-            self.activation = nn.Sigmoid()
+    if HAS_TORCH:
+        class ResonanceFusionNet(nn.Module):
+            def __init__(self, dimensions: int):
+                super().__init__()
+                self.layer = nn.Linear(dimensions, 1)
+                self.activation = nn.Sigmoid()
 
-        def forward(self, features: torch.Tensor) -> torch.Tensor:  # noqa: D401
-            return self.activation(self.layer(features))
+            def forward(self, features: torch.Tensor) -> torch.Tensor:  # noqa: D401
+                return self.activation(self.layer(features))
 
-    model = ResonanceFusionNet(input_dim)
-    gradient_tensor = torch.tensor(gradient_array, dtype=torch.float32).unsqueeze(0)
-    normalized_tensor = torch.tensor(normalized_weights, dtype=torch.float32).view(1, -1)
+        model = ResonanceFusionNet(input_dim)
+        gradient_tensor = torch.tensor(gradient_array, dtype=torch.float32).unsqueeze(0)
+        normalized_tensor = torch.tensor(normalized_weights, dtype=torch.float32).view(1, -1)
 
-    with torch.no_grad():
-        model.layer.weight.copy_(normalized_tensor)
-        model.layer.bias.zero_()
-        fusion_score = float(model(gradient_tensor).squeeze().item())
+        with torch.no_grad():
+            model.layer.weight.copy_(normalized_tensor)
+            model.layer.bias.zero_()
+            fusion_score = float(model(gradient_tensor).squeeze().item())
+    else:
+        fusion_score = float(np.clip(weighted_avg, 0.0, 1.0))
 
     hybrid_score = float(np.clip((weighted_avg + fusion_score) / 2.0, 0.0, 1.0))
+
+    record.setdefault("fusion_layer_hybrids", []).append(
+        {
+            "timestamp": time.time(),
+            "weighted_average": round(weighted_avg, 4),
+            "fusion_score": round(fusion_score, 4),
+            "hybrid_score": round(hybrid_score, 4),
+        }
+    )
+    record["last_hybrid_score"] = hybrid_score
 
     bio_data = telemetry.fetch_mock_bio_data(wallet_id)
     baseline_score, encrypted_res = telemetry.run_erv_simulation(bio_data)
@@ -968,6 +1060,119 @@ def resonance_fusion_layer(viz_cid: str):
         "emit_id": emit_id,
         "mission_statement": MISSION_STATEMENT,
     }
+    return jsonify(response), 200
+
+
+@app.route("/temporal_resonance_weave/<viz_cid>", methods=["GET"])
+def temporal_resonance_weave(viz_cid: str):
+    """Project temporal resonance trends with lightweight LSTM weaving."""
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header != "Bearer guardian_token":
+        abort(401, "guardian_auth_required")
+
+    consent_header = request.headers.get("X-Consent", "true").lower()
+    if consent_header in {"false", "0", "no"}:
+        abort(403, "consent_required")
+
+    record = PINNED_VIZ.get(viz_cid)
+    if record is None:
+        abort(404, "viz_not_found")
+
+    mission_anchor = record.get("mission_anchor", MISSION_STATEMENT)
+    telemetry = TelemetryClass(mission_anchor, consent=bool(record.get("consent", True)))
+    if not getattr(telemetry, "consent", True):
+        abort(403, "consent_required")
+
+    wallet_id = record.get("wallet", "guardian::anon")
+    history_entries = list(record.get("belief_evolution", []))
+    if not history_entries:
+        series_stub = _collect_resonance_series(telemetry, wallet_id, periods=24)
+        history_entries = [
+            {"timestamp": str(ts), "score": float(val)}
+            for ts, val in zip(getattr(series_stub, "index", range(len(series_stub))), series_stub)
+        ]
+
+    scores = [float(entry.get("score", 0.0)) for entry in history_entries if "score" in entry]
+    if not scores:
+        scores = [0.5]
+
+    bio_snapshot = telemetry.fetch_mock_bio_data(wallet_id)
+    gradient_now, encrypted_res = telemetry.run_erv_simulation(bio_snapshot)
+    _ = encrypted_res
+    scores.append(float(max(0.0, min(1.0, gradient_now))))
+
+    series_array = np.asarray(scores, dtype=float)
+
+    sequence_length = 10
+    forecast_steps = 5
+    predicted_values, weave_conf = _temporal_weave_forecast(
+        series_array, sequence_length, forecast_steps
+    )
+    if not predicted_values:
+        return jsonify({"weave_conf": 0.0, "insufficient_history": True}), 200
+
+    mission_vectors = {
+        "empathy": np.linspace(0.75, 0.95, forecast_steps),
+        "protect": np.linspace(0.7, 0.9, forecast_steps),
+    }
+    correlation_scores: dict[str, float] = {}
+    prediction_vector = np.asarray(predicted_values, dtype=float)
+    for clause, template in mission_vectors.items():
+        denom = float(np.linalg.norm(prediction_vector) * np.linalg.norm(template))
+        if denom == 0.0:
+            score = 0.0
+        else:
+            score = float(np.clip(np.dot(prediction_vector, template) / denom, 0.0, 1.0))
+        correlation_scores[clause] = round(score, 4)
+
+    dominant_clause = "protect" if "protect" in MISSION_STATEMENT.lower() else "empathy"
+    dominant_score = correlation_scores.get(dominant_clause, 0.0)
+    alert = dominant_score < 0.6
+
+    fusion_reference = float(record.get("last_hybrid_score", dominant_score))
+    dispatch_payload = [
+        {"step": idx, "score": value}
+        for idx, value in enumerate(predicted_values, start=1)
+    ]
+    zk_proof = _compute_zk_hash(dispatch_payload, wallet_id, record.get("auth_hash", ""))
+
+    timestamp = time.time()
+    record.setdefault("belief_evolution", []).extend(
+        {
+            "timestamp": timestamp + idx,
+            "score": value,
+            "source": "temporal_weave",
+            "hybrid_bridge": fusion_reference,
+        }
+        for idx, value in enumerate(predicted_values)
+    )
+
+    response = {
+        "predicted_trend": [round(value, 4) for value in predicted_values],
+        "correlation_scores": correlation_scores,
+        "weave_conf": round(weave_conf, 4),
+        "alert": alert,
+        "mission_statement": MISSION_STATEMENT,
+        "zk_proof": zk_proof,
+    }
+
+    if weave_conf > 0.7:
+        emit_id = str(uuid.uuid4())
+        STREAM_EMIT_QUEUE.append(
+            {
+                "guardian_sync": "temporal_weave",
+                "temporal_weave": True,
+                "trend_forecast": response["predicted_trend"],
+                "emit_id": emit_id,
+                "mission_statement": MISSION_STATEMENT,
+            }
+        )
+        dispatch_to_base_oracle(viz_cid, zk_proof)
+        response["emit_id"] = emit_id
+
+    response["correlation_scores"]["fusion_bridge"] = round(fusion_reference, 4)
+
     return jsonify(response), 200
 
 
