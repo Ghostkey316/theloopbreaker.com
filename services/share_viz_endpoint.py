@@ -55,6 +55,8 @@ except ImportError:  # pragma: no cover - provide deterministic PQ stubs
     dilithium = _DilithiumStub()  # type: ignore
     falcon = _FalconStub()  # type: ignore
 import numpy as np
+import torch
+import torch.nn as nn
 
 try:  # pragma: no cover - optional scientific stack during tests
     import pandas as pd
@@ -852,6 +854,119 @@ def guardian_council(viz_cid: str):
         "consensus": consensus,
         "threshold_met": True,
         "emit_id": emit_id,
+    }
+    return jsonify(response), 200
+
+
+@app.route("/resonance_fusion_layer/<viz_cid>", methods=["POST"])
+def resonance_fusion_layer(viz_cid: str):
+    """Blend ERV gradients using weighted and neural fusion for pilots."""
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header != "Bearer guardian_token":
+        abort(401, "guardian_auth_required")
+
+    payload = request.get_json(silent=True) or {}
+    raw_gradients = payload.get("individual_gradients") or []
+    raw_weights = payload.get("fusion_weights") or []
+
+    if not isinstance(raw_gradients, list) or not raw_gradients:
+        abort(400, "gradients_required")
+    if not isinstance(raw_weights, list) or len(raw_weights) != len(raw_gradients):
+        abort(400, "invalid_fusion_weights")
+
+    try:
+        gradient_values = [float(value) for value in raw_gradients]
+    except (TypeError, ValueError):
+        abort(400, "invalid_gradient_values")
+
+    try:
+        weight_values = [float(value) for value in raw_weights]
+    except (TypeError, ValueError):
+        abort(400, "invalid_weight_values")
+
+    record = PINNED_VIZ.get(viz_cid)
+    if record is None:
+        abort(404, "viz_not_found")
+
+    mission_anchor = record.get("mission_anchor", MISSION_STATEMENT)
+    wallet_id = record.get("wallet", "guardian::anon")
+    consent_flag = bool(record.get("consent", True))
+    telemetry = TelemetryClass(mission_anchor, consent=consent_flag)
+    if not getattr(telemetry, "consent", True):
+        abort(403, "consent_required")
+
+    weight_array = np.asarray(weight_values, dtype=float)
+    gradient_array = np.asarray(gradient_values, dtype=float)
+
+    weights_sum = float(weight_array.sum())
+    if abs(weights_sum) <= 1e-9:
+        normalized_weights = np.full(weight_array.shape, 1.0 / max(len(weight_array), 1), dtype=float)
+    else:
+        normalized_weights = weight_array / weights_sum
+
+    try:
+        weighted_avg = float(np.average(gradient_array, weights=normalized_weights))
+    except ZeroDivisionError:
+        weighted_avg = float(gradient_array.mean())
+    weighted_avg = max(0.0, min(weighted_avg, 1.0))
+
+    input_dim = gradient_array.size
+    if input_dim == 0:
+        abort(400, "gradients_required")
+
+    class ResonanceFusionNet(nn.Module):
+        def __init__(self, dimensions: int):
+            super().__init__()
+            self.layer = nn.Linear(dimensions, 1)
+            self.activation = nn.Sigmoid()
+
+        def forward(self, features: torch.Tensor) -> torch.Tensor:  # noqa: D401
+            return self.activation(self.layer(features))
+
+    model = ResonanceFusionNet(input_dim)
+    gradient_tensor = torch.tensor(gradient_array, dtype=torch.float32).unsqueeze(0)
+    normalized_tensor = torch.tensor(normalized_weights, dtype=torch.float32).view(1, -1)
+
+    with torch.no_grad():
+        model.layer.weight.copy_(normalized_tensor)
+        model.layer.bias.zero_()
+        fusion_score = float(model(gradient_tensor).squeeze().item())
+
+    hybrid_score = float(np.clip((weighted_avg + fusion_score) / 2.0, 0.0, 1.0))
+
+    bio_data = telemetry.fetch_mock_bio_data(wallet_id)
+    baseline_score, encrypted_res = telemetry.run_erv_simulation(bio_data)
+    resonance_ready = telemetry.simulate_cascade(baseline_score, encrypted_res)
+
+    emit_id = str(uuid.uuid4())
+    STREAM_EMIT_QUEUE.append(
+        {
+            "guardian_sync": "resonance_fusion",
+            "viz_cid": viz_cid,
+            "wallet": wallet_id,
+            "weighted_average": round(weighted_avg, 4),
+            "fusion_score": round(fusion_score, 4),
+            "hybrid_score": round(hybrid_score, 4),
+            "baseline_score": round(float(baseline_score), 4),
+            "resonance_ready": bool(resonance_ready),
+            "fusion_weights": [round(float(value), 4) for value in normalized_weights.tolist()],
+            "emit_id": emit_id,
+            "mission_anchor": mission_anchor,
+        }
+    )
+
+    response = {
+        "viz_cid": viz_cid,
+        "wallet": wallet_id,
+        "weighted_average": round(weighted_avg, 4),
+        "fusion_score": round(fusion_score, 4),
+        "hybrid_score": round(hybrid_score, 4),
+        "baseline_score": round(float(baseline_score), 4),
+        "resonance_ready": bool(resonance_ready),
+        "fusion_weights": [round(float(value), 4) for value in normalized_weights.tolist()],
+        "emit_id": emit_id,
+        "mission_statement": MISSION_STATEMENT,
     }
     return jsonify(response), 200
 
