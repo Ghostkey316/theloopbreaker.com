@@ -11,8 +11,9 @@ import tempfile
 import time
 import uuid
 from collections import deque
+from itertools import combinations
 from pathlib import Path
-from typing import Any, Dict, Generator
+from typing import Any, Dict, Generator, Iterable
 
 try:  # pragma: no cover - transformers may be optional in minimal envs
     from transformers import pipeline
@@ -143,6 +144,54 @@ except ImportError:  # pragma: no cover - deterministic fallback
         GCNConv = _GCNConvStub
 
     pyg_nn = _PygNNStub()  # type: ignore[assignment]
+
+try:  # pragma: no cover - pysat may be optional in minimal envs
+    from pysat.solvers import Glucose3
+    HAS_PYSAT = True
+except ImportError:  # pragma: no cover - deterministic SAT fallback
+    HAS_PYSAT = False
+
+    class Glucose3:  # type: ignore[override]
+        """Brute-force SAT solver stub matching pysat's minimal interface."""
+
+        def __init__(self) -> None:
+            self._clauses: list[list[int]] = []
+            self._var_upper: int = 0
+
+        def add_clause(self, clause: Iterable[int]) -> None:  # noqa: D401
+            ints = [int(literal) for literal in clause]
+            self._clauses.append(ints)
+            if ints:
+                self._var_upper = max(self._var_upper, max(abs(val) for val in ints))
+
+        def solve(self) -> bool:  # noqa: D401
+            if not self._clauses:
+                return True
+            var_count = self._var_upper
+            if var_count <= 0:
+                return True
+            for mask in range(1 << var_count):
+                if _clauses_satisfied(self._clauses, mask):
+                    return True
+            return False
+
+
+def _clauses_satisfied(clauses: Iterable[Iterable[int]], mask: int) -> bool:
+    """Evaluate CNF clauses against a bitmask assignment."""
+
+    for clause in clauses:
+        clause_true = False
+        for literal in clause:
+            var = abs(int(literal))
+            if var <= 0:
+                continue
+            assignment = bool(mask & (1 << (var - 1)))
+            if (literal > 0 and assignment) or (literal < 0 and not assignment):
+                clause_true = True
+                break
+        if not clause_true:
+            return False
+    return True
 
 try:  # pragma: no cover - optional scientific stack during tests
     import pandas as pd
@@ -557,6 +606,95 @@ def _echo_beta_modifier(record: dict[str, Any]) -> float:
         homogeneity = float(np.clip(homogeneity, 0.0, 1.0))
         return 1.0 + max(0.0, 0.5 - homogeneity)
     return 1.0
+
+
+def _mission_clauses_for_viz(
+    record: dict[str, Any], telemetry: PilotResonanceTelemetry, viz_cid: str
+) -> list[list[str]]:
+    """Load mission clauses from record or telemetry with deterministic fallback."""
+
+    stored_clauses = record.get("mission_clauses")
+    if isinstance(stored_clauses, list) and stored_clauses:
+        return stored_clauses
+
+    fetcher = getattr(telemetry, "fetch_mission_clauses", None)
+    if callable(fetcher):
+        fetched = fetcher(viz_cid)
+        if isinstance(fetched, list) and fetched:
+            return fetched
+
+    protect_literal = "protect" if "protect" in MISSION_STATEMENT.lower() else "safeguard"
+    empathy_literal = "empathy" if "empathy" in MISSION_STATEMENT.lower() else "care"
+    return [[protect_literal, empathy_literal], [f"~{empathy_literal}", "guardian_trust"]]
+
+
+def _normalize_mission_clauses(
+    clauses: Iterable[Iterable[str]],
+) -> tuple[list[list[int]], dict[str, int]]:
+    """Transform symbolic clauses into CNF integers for the SAT solver."""
+
+    normalized: list[list[int]] = []
+    var_map: dict[str, int] = {}
+    for clause in clauses:
+        if not isinstance(clause, (list, tuple)):
+            continue
+        normalized_clause: list[int] = []
+        for literal in clause:
+            if not isinstance(literal, str):
+                continue
+            term = literal.strip()
+            if not term:
+                continue
+            is_negated = term.startswith("~")
+            symbol = term[1:] if is_negated else term
+            var_index = var_map.setdefault(symbol, len(var_map) + 1)
+            normalized_clause.append(-var_index if is_negated else var_index)
+        if normalized_clause:
+            normalized.append(normalized_clause)
+    return normalized, var_map
+
+
+def _apply_clause_flips(
+    clauses: Iterable[Iterable[str]],
+    flipped: Iterable[str],
+    orientations: dict[str, bool],
+) -> list[list[str]]:
+    """Flip literals for variables in ``flipped`` within the clause list."""
+
+    flipped_set = {item for item in flipped}
+    adjusted: list[list[str]] = []
+    for clause in clauses:
+        if not isinstance(clause, (list, tuple)):
+            continue
+        updated_clause: list[str] = []
+        for literal in clause:
+            if not isinstance(literal, str):
+                continue
+            term = literal.strip()
+            if not term:
+                continue
+            symbol = term[1:] if term.startswith("~") else term
+            if symbol in flipped_set:
+                desired_positive = orientations.get(symbol)
+                if desired_positive is None:
+                    new_literal = term
+                else:
+                    new_literal = symbol if desired_positive else f"~{symbol}"
+            else:
+                new_literal = term
+            updated_clause.append(new_literal)
+        if updated_clause:
+            adjusted.append(updated_clause)
+    return adjusted
+
+
+def _solve_cnf_clauses(clauses: Iterable[Iterable[int]]) -> bool:
+    """Solve CNF clauses using the configured SAT backend."""
+
+    solver = Glucose3()
+    for clause in clauses:
+        solver.add_clause(clause)
+    return solver.solve()
 
 
 def _basic_sentiment_stub(texts: list[str]) -> list[dict[str, Any]]:
@@ -1054,6 +1192,127 @@ def narrative_neutrality_audit(viz_cid: str):
     }
     if emit_id is not None:
         response["emit_id"] = emit_id
+    return jsonify(response), 200
+
+
+@app.route("/paradox_resolver_engine/<viz_cid>", methods=["GET"])
+def paradox_resolver_engine(viz_cid: str):
+    """Detect paradoxes in mission clauses and emit real-time alerts."""
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header != "Bearer guardian_token":
+        abort(401, "guardian_auth_required")
+
+    consent_header = request.headers.get("X-Consent", "true").lower()
+    if consent_header in {"false", "0", "no"}:
+        abort(403, "consent_required")
+
+    record = PINNED_VIZ.get(viz_cid)
+    if record is None:
+        abort(404, "viz_not_found")
+
+    mission_anchor = record.get("mission_anchor", MISSION_STATEMENT)
+    telemetry = TelemetryClass(mission_anchor, consent=True)
+    if not getattr(telemetry, "consent", True):
+        abort(403, "consent_required")
+
+    wallet_id = record.get("wallet", "guardian::anon")
+    clauses = _mission_clauses_for_viz(record, telemetry, viz_cid)
+    auth_hash = hashlib.sha256(auth_header.encode("utf-8")).hexdigest()
+
+    hashed_clauses: list[dict[str, Any]] = []
+    for clause in clauses:
+        if not isinstance(clause, (list, tuple)):
+            continue
+        normalized_terms = [
+            term.strip()
+            for term in clause
+            if isinstance(term, str) and term.strip()
+        ]
+        if not normalized_terms:
+            continue
+        hashed_clauses.append(
+            {
+                "hash": hashlib.sha256("||".join(normalized_terms).encode("utf-8")).hexdigest(),
+                "size": len(normalized_terms),
+            }
+        )
+    clause_commitment = _compute_zk_hash(hashed_clauses, wallet_id, auth_hash)
+
+    normalized_clauses, var_map = _normalize_mission_clauses(clauses)
+    if not normalized_clauses:
+        gradient = _guardian_resonance_gradient(record, telemetry)
+        response = {
+            "satisfiability": True,
+            "min_flips": 0,
+            "paradox_alert": False,
+            "resolution": "no_paradoxes",
+            "erv_resonance": gradient,
+            "clause_commitment": clause_commitment,
+            "mission_statement": MISSION_STATEMENT,
+        }
+        return jsonify(response), 200
+
+    satisfiable = _solve_cnf_clauses(normalized_clauses)
+    paradox_alert = not satisfiable
+    min_flips = 0
+    flipped_combo: tuple[str, ...] = ()
+
+    if paradox_alert and var_map:
+        variables = list(var_map.keys())
+        found_resolution = False
+        for flip_size in range(1, len(variables) + 1):
+            for combo in combinations(variables, flip_size):
+                orientation_count = 1 << flip_size
+                for orientation_mask in range(orientation_count):
+                    orientation_map = {
+                        combo[idx]: bool(orientation_mask & (1 << idx))
+                        for idx in range(flip_size)
+                    }
+                    flipped_clauses = _apply_clause_flips(clauses, combo, orientation_map)
+                    candidate_clauses, _ = _normalize_mission_clauses(flipped_clauses)
+                    if not candidate_clauses or _solve_cnf_clauses(candidate_clauses):
+                        min_flips = flip_size
+                        flipped_combo = combo
+                        found_resolution = True
+                        break
+                if found_resolution:
+                    break
+            if found_resolution:
+                break
+        if not found_resolution:
+            min_flips = len(variables)
+
+    resolution = "consistent"
+    if paradox_alert:
+        if flipped_combo:
+            resolution = "flipped_" + "_".join(sorted(flipped_combo))
+        elif min_flips > 0:
+            resolution = "manual_review"
+
+    gradient = _guardian_resonance_gradient(record, telemetry)
+    if paradox_alert:
+        gradient = max(0.0, gradient - 0.05)
+
+    if paradox_alert:
+        STREAM_EMIT_QUEUE.append(
+            {
+                "paradox_alert": True,
+                "flips": min_flips,
+                "emit_id": str(uuid.uuid4()),
+                "viz_cid": viz_cid,
+            }
+        )
+
+    response = {
+        "satisfiability": satisfiable,
+        "min_flips": min_flips,
+        "paradox_alert": paradox_alert,
+        "resolution": resolution,
+        "erv_resonance": gradient,
+        "clause_commitment": clause_commitment,
+        "mission_statement": MISSION_STATEMENT,
+    }
     return jsonify(response), 200
 
 

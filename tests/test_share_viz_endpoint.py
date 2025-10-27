@@ -1073,3 +1073,69 @@ def test_bias_alert_high(monkeypatch: pytest.MonkeyPatch) -> None:
     assert alert["narrative_alert"] is True
     assert alert["viz_cid"] == viz_cid
     assert "mission_statement" in alert
+
+
+def test_paradox_resolver_unsat_paradox(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Paradox resolver detects unsatisfiable clauses and emits alerts."""
+
+    viz_cid = "paradox-unsat"
+    STREAM_EMIT_QUEUE.clear()
+    PINNED_VIZ[viz_cid] = {
+        "wallet": "0xPARA",
+        "mission_anchor": MISSION_STATEMENT,
+        "results": [{"score": 0.82, "uplift": 0.2}],
+        "mission_clauses": [["empathy"], ["~empathy"]],
+    }
+
+    monkeypatch.setattr("services.share_viz_endpoint.TelemetryClass", DummyTelemetry)
+
+    test_client = app.test_client()
+    response = test_client.get(
+        f"/paradox_resolver_engine/{viz_cid}",
+        headers={"Authorization": "Bearer guardian_token"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["satisfiability"] is False
+    assert body["paradox_alert"] is True
+    assert body["min_flips"] == 1
+    assert body["resolution"] == "flipped_empathy"
+    assert body["erv_resonance"] == pytest.approx(0.77, abs=1e-6)
+    assert len(body["clause_commitment"]) == 64
+    assert STREAM_EMIT_QUEUE
+    emission = STREAM_EMIT_QUEUE[-1]
+    assert emission["paradox_alert"] is True
+    assert emission["flips"] == 1
+    assert emission["viz_cid"] == viz_cid
+
+
+def test_paradox_resolver_sat_consistent(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Paradox resolver reports satisfiable clauses without emissions."""
+
+    viz_cid = "paradox-sat"
+    STREAM_EMIT_QUEUE.clear()
+    PINNED_VIZ[viz_cid] = {
+        "wallet": "0xSAFE",
+        "mission_anchor": MISSION_STATEMENT,
+        "results": [{"score": 0.74, "uplift": 0.1}],
+        "mission_clauses": [["protect"], ["empathy", "protect"]],
+    }
+
+    monkeypatch.setattr("services.share_viz_endpoint.TelemetryClass", DummyTelemetry)
+
+    test_client = app.test_client()
+    response = test_client.get(
+        f"/paradox_resolver_engine/{viz_cid}",
+        headers={"Authorization": "Bearer guardian_token"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["satisfiability"] is True
+    assert body["paradox_alert"] is False
+    assert body["min_flips"] == 0
+    assert body["resolution"] == "consistent"
+    assert body["erv_resonance"] == pytest.approx(0.74, abs=1e-6)
+    assert len(body["clause_commitment"]) == 64
+    assert not STREAM_EMIT_QUEUE
