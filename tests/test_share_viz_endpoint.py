@@ -1222,3 +1222,78 @@ def test_paradox_resolver_sat_consistent(monkeypatch: pytest.MonkeyPatch) -> Non
     assert body["erv_resonance"] == pytest.approx(0.74, abs=1e-6)
     assert len(body["clause_commitment"]) == 64
     assert not STREAM_EMIT_QUEUE
+
+
+def test_karma_sim_stable_cycle() -> None:
+    """Karmic cycle simulation favors protect virtue for stable entropy."""
+
+    viz_cid = "karma-stable"
+    auth_hash = hashlib.sha256(b"guardian_auth").hexdigest()
+    PINNED_VIZ[viz_cid] = {
+        "wallet": "0xSTABLE",
+        "mission_anchor": MISSION_STATEMENT,
+        "results": [{"score": 0.92}, {"score": 0.9}, {"score": 0.88}],
+        "auth_hash": auth_hash,
+        "consent": True,
+        "virtue_weights": {
+            "empathy": 0.05,
+            "protect": 0.9,
+            "justice": 0.03,
+            "wisdom": 0.02,
+        },
+    }
+
+    test_client = app.test_client()
+    response = test_client.get(
+        f"/karma_karmic_cycle_sim/{viz_cid}",
+        headers={"Authorization": "Bearer guardian_token", "X-Consent": "true"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["cycle_recommendation"] == "stable"
+    assert body["karmic_alert"] is False
+    assert body["cycle_score"] < 0.3
+    assert body["steady_state"]["protect"] >= 0.9
+    assert set(body["steady_state"].keys()) == {"empathy", "protect", "justice", "wisdom"}
+    assert len(body["matrix_commitment"]) == 64
+    assert not STREAM_EMIT_QUEUE
+
+
+def test_karma_sim_high_entropy_alert() -> None:
+    """High entropy cycles emit alerts with SSE payloads."""
+
+    viz_cid = "karma-chaos"
+    auth_hash = hashlib.sha256(b"guardian_auth").hexdigest()
+    PINNED_VIZ[viz_cid] = {
+        "wallet": "0xCHAOS",
+        "mission_anchor": MISSION_STATEMENT,
+        "results": [{"score": 0.22}, {"score": 0.24}, {"score": 0.26}],
+        "auth_hash": auth_hash,
+        "consent": True,
+        "virtue_weights": {
+            "empathy": 0.25,
+            "protect": 0.25,
+            "justice": 0.25,
+            "wisdom": 0.25,
+        },
+    }
+
+    test_client = app.test_client()
+    response = test_client.get(
+        f"/karma_karmic_cycle_sim/{viz_cid}",
+        headers={"Authorization": "Bearer guardian_token", "X-Consent": "true"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["karmic_alert"] is True
+    assert body["cycle_recommendation"] == "disruptive"
+    assert body["cycle_score"] > 0.5
+    assert "emit_id" in body
+    assert len(body["matrix_commitment"]) == 64
+    assert STREAM_EMIT_QUEUE
+    emission = STREAM_EMIT_QUEUE[-1]
+    assert emission["karmic_alert"] is True
+    assert emission["steady_state"] == body["steady_state"]
+    assert emission["viz_cid"] == viz_cid

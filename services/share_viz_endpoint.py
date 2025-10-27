@@ -1496,6 +1496,9 @@ def virtue_hierarchy_optimizer(viz_cid: str):
             }
         )
 
+    record["virtue_weights"] = rounded_weights
+    record["virtue_consistency_ratio"] = float(consistency_ratio)
+
     response: dict[str, Any] = {
         "priority_weights": rounded_weights,
         "consistency_ratio": round(float(consistency_ratio), 6),
@@ -1508,6 +1511,171 @@ def virtue_hierarchy_optimizer(viz_cid: str):
     }
     if emit_id is not None:
         response["emit_id"] = emit_id
+    return jsonify(response), 200
+
+
+@app.route("/karma_karmic_cycle_sim/<viz_cid>", methods=["GET"])
+def karma_karmic_cycle_sim(viz_cid: str):
+    """Simulate karmic cycles aligned to ``MISSION_STATEMENT`` with protect as the absorbing virtue."""
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header != "Bearer guardian_token":
+        abort(401, "guardian_auth_required")
+
+    consent_header = request.headers.get("X-Consent", "true").lower()
+    if consent_header in {"false", "0", "no"}:
+        abort(403, "consent_required")
+
+    record = PINNED_VIZ.get(viz_cid)
+    if record is None:
+        abort(404, "viz_not_found")
+
+    if not record.get("consent", True):
+        abort(403, "consent_required")
+
+    mission_anchor = record.get("mission_anchor", MISSION_STATEMENT)
+    telemetry = TelemetryClass(mission_anchor, consent=True)
+    if not getattr(telemetry, "consent", True):
+        abort(403, "consent_required")
+
+    wallet_id = record.get("wallet", "guardian::anon")
+    bio_data = telemetry.fetch_mock_bio_data(wallet_id)
+    erv_score, encrypted_res = telemetry.run_erv_simulation(bio_data)
+    telemetry.simulate_cascade(erv_score, encrypted_res)
+
+    gradient = _guardian_resonance_gradient(record, telemetry)
+    virtues = ["empathy", "protect", "justice", "wisdom"]
+    protect_idx = virtues.index("protect")
+    empathy_idx = virtues.index("empathy")
+
+    stored_weights = record.get("virtue_weights") or {}
+    weight_vector = np.asarray(
+        [float(stored_weights.get(virtue, 1.0 / len(virtues))) for virtue in virtues],
+        dtype=float,
+    )
+    if not np.all(np.isfinite(weight_vector)) or weight_vector.sum() <= 0:
+        weight_vector = np.ones(len(virtues), dtype=float)
+    weight_vector = np.clip(weight_vector, 1e-6, None)
+    weight_vector /= weight_vector.sum()
+
+    empathy_bias = float(np.clip(gradient, 0.0, 1.0))
+    bias_vector = weight_vector.copy()
+    bias_vector[empathy_idx] += 0.2 * empathy_bias
+    bias_vector[protect_idx] += 0.1 * (1.0 - empathy_bias)
+    bias_vector = np.clip(bias_vector, 1e-6, None)
+    bias_vector /= bias_vector.sum()
+
+    transition_matrix = np.zeros((len(virtues), len(virtues)), dtype=float)
+    protect_weight = float(weight_vector[protect_idx])
+    base_self_weight = 0.4 + 0.55 * empathy_bias + 0.15 * protect_weight
+    base_self_weight = float(np.clip(base_self_weight, 0.3, 0.98))
+
+    for idx, virtue in enumerate(virtues):
+        identity_row = np.zeros(len(virtues), dtype=float)
+        identity_row[idx] = 1.0
+        if idx == protect_idx:
+            protect_self = min(0.995, base_self_weight + 0.25 * protect_weight)
+            mix_weight = 1.0 - protect_self
+            row = protect_self * identity_row + mix_weight * bias_vector
+        else:
+            mix_weight = 1.0 - base_self_weight
+            row = base_self_weight * identity_row + mix_weight * bias_vector
+        row = np.clip(row, 1e-6, None)
+        row /= row.sum()
+        transition_matrix[idx] = row
+
+    matrix_message: str | None = None
+    if not np.all(np.isfinite(transition_matrix)):
+        transition_matrix = np.full((len(virtues), len(virtues)), 1.0 / len(virtues))
+        matrix_message = "matrix_unstable"
+
+    clauses = _mission_clauses_for_viz(record, telemetry, viz_cid)
+    normalized_clauses, _ = _normalize_mission_clauses(clauses)
+    paradox_consistent = not normalized_clauses or _solve_cnf_clauses(normalized_clauses)
+
+    state = weight_vector.copy()
+    for _ in range(10):
+        state = state.dot(transition_matrix)
+
+    try:
+        eigenvalues, eigenvectors = np.linalg.eig(transition_matrix.T)
+        idx = int(np.argmax(eigenvalues.real))
+        steady = np.abs(eigenvectors[:, idx].real)
+        if steady.sum() <= 0 or not np.all(np.isfinite(steady)):
+            raise ValueError
+        steady_state = steady / steady.sum()
+    except (np.linalg.LinAlgError, ValueError):
+        steady_state = np.full(len(virtues), 1.0 / len(virtues), dtype=float)
+        matrix_message = "matrix_unstable"
+
+    if not paradox_consistent:
+        protect_anchor = np.zeros(len(virtues), dtype=float)
+        protect_anchor[protect_idx] = 1.0
+        steady_state = 0.6 * steady_state + 0.4 * protect_anchor
+        steady_state /= steady_state.sum()
+
+    entropy = float(
+        -np.sum(steady_state * np.log2(np.clip(steady_state, 1e-12, 1.0)))
+    )
+    normalized_entropy = float(
+        entropy / np.log2(len(virtues)) if len(virtues) > 1 else 0.0
+    )
+
+    karmic_alert = normalized_entropy > 0.5
+    cycle_recommendation = "stable" if normalized_entropy < 0.3 else "disruptive"
+
+    auth_hash = record.get(
+        "auth_hash", hashlib.sha256(auth_header.encode("utf-8")).hexdigest()
+    )
+    matrix_commitment_payload = [
+        {
+            "row": virtues[row_idx],
+            "col": virtues[col_idx],
+            "prob": round(float(transition_matrix[row_idx, col_idx]), 6),
+        }
+        for row_idx in range(len(virtues))
+        for col_idx in range(len(virtues))
+    ]
+    matrix_commitment = _compute_zk_hash(matrix_commitment_payload, wallet_id, auth_hash)
+
+    steady_state_map = {
+        virtue: round(float(steady_state[idx]), 6) for idx, virtue in enumerate(virtues)
+    }
+
+    record.setdefault("karmic_cycle_history", []).append(
+        {
+            "timestamp": time.time(),
+            "steady_state": steady_state_map,
+            "cycle_score": normalized_entropy,
+            "paradox_consistent": paradox_consistent,
+        }
+    )
+
+    response: dict[str, Any] = {
+        "steady_state": steady_state_map,
+        "cycle_score": round(normalized_entropy, 6),
+        "karmic_alert": karmic_alert,
+        "cycle_recommendation": cycle_recommendation,
+        "paradox_consistent": paradox_consistent,
+        "matrix_commitment": matrix_commitment,
+        "erv_resonance": round(float(gradient), 6),
+        "mission_statement": MISSION_STATEMENT,
+    }
+    if matrix_message is not None:
+        response["message"] = matrix_message
+
+    if karmic_alert:
+        emit_id = str(uuid.uuid4())
+        STREAM_EMIT_QUEUE.append(
+            {
+                "karmic_alert": True,
+                "steady_state": steady_state_map,
+                "emit_id": emit_id,
+                "viz_cid": viz_cid,
+            }
+        )
+        response["emit_id"] = emit_id
+
     return jsonify(response), 200
 
 
