@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import hashlib
 import json
+import random
 import sys
 import tempfile
+import time
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Generator
 
-from flask import Flask, abort, jsonify, request
+from flask import Flask, Response, abort, jsonify, request, stream_with_context
 
 try:  # pragma: no cover - optional dependency during tests
     import ipfshttpclient  # type: ignore
@@ -33,6 +35,21 @@ except ModuleNotFoundError:  # pragma: no cover - lightweight test fallback
         def __init__(self, mission_anchor: str, *, consent: bool = True) -> None:
             self.mission_anchor = mission_anchor
             self.consent = consent
+
+        def fetch_mock_bio_data(self, user_wallet: str) -> dict[str, Any]:
+            return {
+                "wallet": user_wallet,
+                "hrv": 0.82,
+                "arousal": "calm",
+                "timestamp": "stub",
+            }
+
+        def run_erv_simulation(self, bio_data: dict[str, Any]) -> tuple[float, str]:
+            return 0.78, "fhe::encrypted::stub"
+
+        def simulate_cascade(self, score: float, encrypted_res: str) -> bool:
+            _ = encrypted_res
+            return score > 0.7
 
         def end_to_end_test(self, num_iters: int = 6) -> list[dict[str, Any]]:
             return [
@@ -124,6 +141,124 @@ def _pin_artifacts(
         "viz_json": viz_json,
     }
     return cid, zk_hash
+
+
+def event_stream(
+    wallet_id: str,
+    telemetry: PilotResonanceTelemetry,
+    mission_anchor: str,
+    auth_hash: str,
+    *,
+    loop_max: int | None = None,
+) -> Generator[str, None, None]:
+    """Yield SSE-formatted ERV cascade updates for guardian clients."""
+
+    rng = random.Random()
+    consent_hash = hashlib.sha256(
+        f"{wallet_id}:{telemetry.consent}".encode("utf-8")
+    ).hexdigest()
+    iterations = 0
+
+    try:
+        while True:
+            if loop_max is not None and iterations >= loop_max:
+                break
+
+            iterations += 1
+            bio_data = telemetry.fetch_mock_bio_data(wallet_id)
+            if "error" in bio_data:
+                if loop_max is None or iterations < loop_max:
+                    time.sleep(5)
+                continue
+
+            score, encrypted_res = telemetry.run_erv_simulation(bio_data)
+            attested = telemetry.simulate_cascade(score, encrypted_res)
+            if not attested:
+                if loop_max is None or iterations < loop_max:
+                    time.sleep(5)
+                continue
+
+            uplift = round(score * 1.5, 4)
+            gradient_shift = rng.uniform(-0.05, 0.05)
+            viz_payload = {
+                "wallet": wallet_id,
+                "mission_anchor": mission_anchor,
+                "mission_statement": MISSION_STATEMENT,
+                "gradient_shift": gradient_shift,
+                "timestamp": bio_data.get("timestamp"),
+            }
+            viz_json = json.dumps(viz_payload, sort_keys=True)
+            results_stub = [
+                {
+                    "score": score,
+                    "uplift": uplift,
+                    "status": "attested",
+                    "mission_anchor": mission_anchor,
+                }
+            ]
+            zk_hash = _compute_zk_hash(results_stub, wallet_id, auth_hash)
+            event_body = {
+                "score": score,
+                "uplift": uplift,
+                "status": "attested",
+                "viz_update": viz_json,
+                "mission_anchor": mission_anchor,
+                "mission_statement": MISSION_STATEMENT,
+                "zk_hash": zk_hash,
+                "guardian_sync": "resonance_update",
+                "consent_hash": consent_hash,
+                "oracle_stub": "base::pending",
+            }
+            yield f"data: {json.dumps(event_body)}\n\n"
+
+            if loop_max is None or iterations < loop_max:
+                time.sleep(5)
+    except GeneratorExit:
+        return
+    except Exception as exc:  # pragma: no cover - defensive streaming guard
+        error_payload = {"status": "error", "detail": str(exc)}
+        yield f"data: {json.dumps(error_payload)}\n\n"
+
+
+@app.route("/stream_viz/<wallet_id>", methods=["GET"])
+def stream_viz(wallet_id: str) -> Response:
+    """Stream live ERV cascades over SSE for lightweight guardian syncs."""
+
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        abort(401, "wallet_auth_missing")
+
+    consent_header = request.headers.get("X-Consent", "true").lower()
+    consent = consent_header not in {"false", "0", "no"}
+    if not consent:
+        abort(403, "consent_required")
+
+    mission_anchor = MISSION_STATEMENT
+    telemetry = TelemetryClass(mission_anchor, consent=consent)
+    if not getattr(telemetry, "consent", True):
+        abort(403, "consent_required")
+
+    auth_hash = hashlib.sha256(auth_header.encode("utf-8")).hexdigest()
+    loop_max_cfg = app.config.get("STREAM_LOOP_MAX")
+    loop_max = loop_max_cfg if isinstance(loop_max_cfg, int) else None
+
+    generator = event_stream(
+        wallet_id,
+        telemetry,
+        mission_anchor,
+        auth_hash,
+        loop_max=loop_max,
+    )
+    response = Response(
+        stream_with_context(generator),
+        mimetype="text/event-stream",
+    )
+    response.headers["Cache-Control"] = "no-cache"
+    response.headers["X-Accel-Buffering"] = "no"
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Authorization, X-Consent"
+    response.headers["Connection"] = "keep-alive"
+    return response
 
 
 @app.route("/share_viz/<wallet_id>", methods=["POST"])
