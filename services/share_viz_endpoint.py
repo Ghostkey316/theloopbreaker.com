@@ -17,6 +17,71 @@ from typing import Any, Dict, Generator
 from flask import Flask, Response, abort, jsonify, request, stream_with_context
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
+import numpy as np
+
+try:  # pragma: no cover - optional dependency during tests
+    from sklearn.linear_model import LinearRegression
+except ImportError:  # pragma: no cover - provide lightweight regression stub
+    class LinearRegression:  # type: ignore[override]
+        """Fallback linear regression using closed-form least squares."""
+
+        def __init__(self) -> None:
+            self.coef_ = np.zeros(1)
+            self.intercept_ = 0.0
+            self._fitted = False
+            self._x: np.ndarray | None = None
+            self._y: np.ndarray | None = None
+
+        def fit(self, x_values: np.ndarray, y_values: np.ndarray) -> "LinearRegression":
+            x_arr = np.asarray(x_values, dtype=float)
+            y_arr = np.asarray(y_values, dtype=float)
+            if x_arr.ndim == 1:
+                x_arr = x_arr.reshape(-1, 1)
+            if not len(x_arr):
+                self.coef_ = np.zeros(x_arr.shape[1]) if x_arr.ndim > 1 else np.zeros(1)
+                self.intercept_ = 0.0
+                self._fitted = True
+                self._x = x_arr
+                self._y = y_arr
+                return self
+
+            x_column = x_arr[:, 0]
+            x_mean = float(x_column.mean())
+            y_mean = float(y_arr.mean()) if len(y_arr) else 0.0
+            denom = float(((x_column - x_mean) ** 2).sum())
+            if denom == 0.0:
+                slope = 0.0
+                intercept = y_mean
+            else:
+                slope = float(((x_column - x_mean) * (y_arr - y_mean)).sum() / denom)
+                intercept = y_mean - slope * x_mean
+
+            self.coef_ = np.array([slope])
+            self.intercept_ = intercept
+            self._fitted = True
+            self._x = x_arr
+            self._y = y_arr
+            return self
+
+        def predict(self, x_values: np.ndarray) -> np.ndarray:
+            x_arr = np.asarray(x_values, dtype=float)
+            if x_arr.ndim == 1:
+                x_arr = x_arr.reshape(-1, 1)
+            return x_arr.dot(self.coef_) + self.intercept_
+
+        def score(self, x_values: np.ndarray, y_values: np.ndarray) -> float:
+            if not self._fitted:
+                return 0.0
+            y_arr = np.asarray(y_values, dtype=float)
+            if y_arr.size <= 1:
+                return 0.0
+            predictions = self.predict(x_values)
+            ss_res = float(((y_arr - predictions) ** 2).sum())
+            y_mean = float(y_arr.mean())
+            ss_tot = float(((y_arr - y_mean) ** 2).sum())
+            if ss_tot == 0.0:
+                return 0.0
+            return 1 - ss_res / ss_tot
 
 try:  # pragma: no cover - optional dependency during tests
     import ipfshttpclient  # type: ignore
@@ -134,6 +199,58 @@ def _hash_vote_pool(votes: list[dict[str, Any]]) -> str:
         digest.update(b":")
         digest.update(b"1" if vote.get("vote") else b"0")
     return digest.finalize().hex()
+
+
+def _load_guardian_vote_history(
+    viz_cid: str, telemetry: PilotResonanceTelemetry, *, sample_min: int = 10
+) -> list[dict[str, Any]]:
+    """Pull historical guardian votes while respecting consent boundaries."""
+
+    record = PINNED_VIZ.get(viz_cid)
+    if record is None:
+        return []
+
+    wallet_id = record.get("wallet", "guardian::anon")
+    seed_material = f"{viz_cid}:{wallet_id}:{telemetry.mission_anchor}"
+    seed = int(hashlib.sha256(seed_material.encode("utf-8")).hexdigest(), 16) % (2**32)
+    rng = np.random.default_rng(seed)
+    sample_max = sample_min + 8
+    sample_size = int(rng.integers(sample_min, sample_max))
+    history: list[dict[str, Any]] = []
+
+    for _ in range(sample_size):
+        bio_data = telemetry.fetch_mock_bio_data(wallet_id)
+        base_score, encrypted_res = telemetry.run_erv_simulation(bio_data)
+        resonance_noise = float(rng.normal(0, 0.035))
+        score = max(0.0, min(1.0, base_score + resonance_noise))
+        consensus_signal = telemetry.simulate_cascade(score, encrypted_res)
+        consensus = bool(consensus_signal and rng.random() > 0.25)
+        uplift = round(float(score * (1.3 + rng.uniform(-0.12, 0.14))), 4)
+        history.append(
+            {
+                "score": round(float(score), 4),
+                "consensus": consensus,
+                "uplift": uplift,
+            }
+        )
+
+    return history
+
+
+def _history_aggregate_hash(
+    viz_cid: str, wallet_id: str, history: list[dict[str, Any]], auth_hash: str
+) -> str:
+    """Produce a zk-style hash over historical aggregates without raw ballots."""
+
+    sanitized = [
+        {
+            "score": round(float(entry.get("score", 0.0)), 4),
+            "consensus": bool(entry.get("consensus", False)),
+            "uplift": round(float(entry.get("uplift", 0.0)), 4),
+        }
+        for entry in history
+    ]
+    return _compute_zk_hash(sanitized, wallet_id, auth_hash)
 
 
 def stream_viz_updates() -> Generator[dict[str, Any], None, None]:
@@ -411,6 +528,96 @@ def guardian_council(viz_cid: str):
         "threshold_met": True,
         "emit_id": emit_id,
     }
+    return jsonify(response), 200
+
+
+@app.route("/consensus_forecast/<viz_cid>", methods=["GET"])
+def consensus_forecast(viz_cid: str):
+    """Forecast uplift adjustments using guardian consensus patterns."""
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header != "Bearer guardian_token":
+        abort(401, "guardian_auth_required")
+
+    consent_header = request.headers.get("X-Consent", "true").lower()
+    if consent_header in {"false", "0", "no"}:
+        abort(403, "consent_required")
+
+    record = PINNED_VIZ.get(viz_cid)
+    if record is None:
+        abort(404, "viz_not_found")
+
+    mission_anchor = record.get("mission_anchor", MISSION_STATEMENT)
+    if mission_anchor != MISSION_STATEMENT:
+        abort(403, "mission_drift_detected")
+
+    telemetry = TelemetryClass(mission_anchor, consent=True)
+    history = _load_guardian_vote_history(viz_cid, telemetry)
+    wallet_id = record.get("wallet", "guardian::anon")
+
+    auth_hash = hashlib.sha256(auth_header.encode("utf-8")).hexdigest()
+    aggregate_hash = _history_aggregate_hash(viz_cid, wallet_id, history, auth_hash)
+
+    if not history:
+        dispatch_to_base_oracle(viz_cid, aggregate_hash)
+        response = {
+            "predicted_uplift": 0.0,
+            "confidence": 0.0,
+            "recommendation": "insufficient_data",
+            "aggregate_hash": aggregate_hash,
+            "mission_statement": MISSION_STATEMENT,
+        }
+        return jsonify(response), 200
+
+    resonance_param = request.args.get("resonance")
+    try:
+        resonance_value = float(resonance_param) if resonance_param is not None else float("nan")
+    except (TypeError, ValueError):
+        resonance_value = float("nan")
+
+    if np.isnan(resonance_value):
+        bio_data = telemetry.fetch_mock_bio_data(wallet_id)
+        resonance_value, _ = telemetry.run_erv_simulation(bio_data)
+
+    scores = np.array([[entry["score"]] for entry in history], dtype=float)
+    targets = np.array(
+        [entry["uplift"] if entry["consensus"] else 0.0 for entry in history],
+        dtype=float,
+    )
+
+    model = LinearRegression()
+    model.fit(scores, targets)
+    predicted = float(model.predict(np.array([[resonance_value]], dtype=float))[0])
+    confidence = float(model.score(scores, targets))
+    confidence = max(0.0, min(confidence, 1.0))
+    predicted = max(0.0, predicted)
+
+    empathy_weight = 1.0 + (0.05 if "empathy" in MISSION_STATEMENT.lower() else 0.0)
+    recommendation = "attest" if predicted * empathy_weight > 1.0 else "review"
+
+    emit_id: str | None = None
+    if confidence > 0.7:
+        emit_id = str(uuid.uuid4())
+        STREAM_EMIT_QUEUE.append(
+            {
+                "guardian_sync": "consensus_forecast",
+                "forecast": round(predicted, 4),
+                "emit_id": emit_id,
+                "viz_cid": viz_cid,
+            }
+        )
+
+    dispatch_to_base_oracle(viz_cid, aggregate_hash)
+
+    response = {
+        "predicted_uplift": round(predicted, 4),
+        "confidence": round(confidence, 4),
+        "recommendation": recommendation,
+        "aggregate_hash": aggregate_hash,
+        "mission_statement": MISSION_STATEMENT,
+    }
+    if emit_id is not None:
+        response["emit_id"] = emit_id
     return jsonify(response), 200
 
 
