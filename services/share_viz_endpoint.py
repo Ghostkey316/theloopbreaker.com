@@ -105,6 +105,7 @@ except ImportError:  # pragma: no cover - deterministic ARIMA stub
                     shifted = np.roll(values, 1)
                     shifted[0] = values[0]
                     self.fittedvalues = shifted
+                    self.resid = values - shifted
 
                 def forecast(self, steps: int):
                     terminal = float(self._values[-1]) if self._values.size else 0.0
@@ -1041,6 +1042,170 @@ def belief_evolution_tracker(viz_cid: str):
     }
     if emit_id is not None:
         response["emit_id"] = emit_id
+    return jsonify(response), 200
+
+
+def _sanitize_resonance_series(series_payload: Any) -> np.ndarray:
+    """Convert posted resonance payload into a numeric numpy array."""
+
+    if not isinstance(series_payload, list):
+        return np.asarray([], dtype=float)
+    values: list[float] = []
+    for value in series_payload:
+        try:
+            values.append(float(value))
+        except (TypeError, ValueError):
+            continue
+    return np.asarray(values, dtype=float)
+
+
+def _fit_healing_model(series_array: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, str | None]:
+    """Fit ARIMA(1,1,1) and return fitted values, forecast, residuals, warning."""
+
+    warning: str | None = None
+    try:
+        model = ARIMA(series_array, order=(1, 1, 1))
+        result = model.fit()
+        fitted = np.asarray(getattr(result, "fittedvalues", series_array), dtype=float)
+        forecast = np.asarray(result.forecast(steps=5), dtype=float)
+    except Exception as exc:  # pragma: no cover - exercised when ARIMA unavailable
+        warning = str(exc)
+        fitted = np.roll(series_array, 1)
+        fitted[0] = series_array[0]
+        forecast = np.full(5, float(series_array[-1]))
+
+    if fitted.shape[0] != series_array.shape[0]:
+        padding = np.full(series_array.shape[0], series_array.mean())
+        padding[-min(fitted.shape[0], padding.shape[0]) :] = fitted[-min(
+            fitted.shape[0], padding.shape[0]
+        ) :]
+        fitted = padding
+
+    residuals = series_array - fitted
+    return fitted, forecast, residuals, warning
+
+
+def _apply_heal(  # noqa: D401
+    series_array: np.ndarray, forecast: np.ndarray, residuals: np.ndarray
+) -> tuple[list[float], float, float, float]:
+    """Return healed series, reset threshold, gradient boost, and RMSE."""
+
+    reset_threshold = float(np.mean(residuals) + np.std(residuals))
+    reset_threshold = float(max(-0.049, min(0.049, reset_threshold)))
+    drift_metric = float(np.sqrt(np.mean(np.square(residuals))))
+    gradient_boost = 0.2 if drift_metric > 0.1 else 0.0
+    healed_forecast = forecast[:5] if forecast.size else np.full(5, series_array[-1])
+    mission_protect = "protect" in MISSION_STATEMENT.lower()
+    healed_series = []
+    for value in healed_forecast:
+        adjusted = float(value) + gradient_boost
+        if mission_protect:
+            adjusted = max(adjusted, float(series_array.mean()))
+        healed_series.append(round(max(0.0, min(1.0, adjusted)), 4))
+    healed_array = np.asarray(healed_series, dtype=float)
+    rmse_post = float(
+        np.sqrt(np.mean(np.square(healed_array - healed_forecast[: healed_array.size])))
+    )
+    return healed_series, reset_threshold, gradient_boost, rmse_post
+
+
+@app.route("/self_healing_covenant/<viz_cid>", methods=["POST"])
+def self_healing_covenant(viz_cid: str):
+    """Reset resonance gradients when drift alerts fire to protect the mission."""
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header != "Bearer guardian_token":
+        abort(401, "guardian_auth_required")
+
+    consent_header = request.headers.get("X-Consent", "true").lower()
+    if consent_header in {"false", "0", "no"}:
+        abort(403, "consent_required")
+
+    record = PINNED_VIZ.get(viz_cid)
+    if record is None:
+        abort(404, "viz_not_found")
+
+    payload = request.get_json(silent=True) or {}
+    if not bool(payload.get("drift_alert")):
+        return (
+            jsonify(
+                {
+                    "repair_status": "no_repair_needed",
+                    "mission_statement": MISSION_STATEMENT,
+                }
+            ),
+            200,
+        )
+
+    series_array = _sanitize_resonance_series(payload.get("historical_series") or [])
+    if series_array.size < 5:
+        abort(400, "insufficient_history")
+
+    mission_anchor = record.get("mission_anchor", MISSION_STATEMENT)
+    telemetry = TelemetryClass(mission_anchor, consent=True)
+    if not getattr(telemetry, "consent", True):
+        abort(403, "consent_required")
+
+    fitted, forecast, residuals, warning = _fit_healing_model(series_array)
+    if warning is not None:
+        STREAM_EMIT_QUEUE.append(
+            {"guardian_sync": "self_heal", "arima_warning": warning, "viz_cid": viz_cid}
+        )
+
+    healed_series, reset_threshold, gradient_boost, rmse_post = _apply_heal(
+        series_array, forecast, residuals
+    )
+    repair_status = "restored" if rmse_post < 0.05 else "monitoring"
+
+    wallet_id = record.get("wallet", "guardian::anon")
+    bio_data = telemetry.fetch_mock_bio_data(wallet_id)
+    bio_data["healed_gradient"] = gradient_boost
+    validation_score, encrypted_res = telemetry.run_erv_simulation(bio_data)
+    telemetry.simulate_cascade(validation_score + gradient_boost, encrypted_res)
+
+    timestamp = time.time()
+    record.setdefault("belief_evolution", []).extend(
+        {
+            "timestamp": timestamp + idx,
+            "score": score,
+            "source": "self_heal",
+        }
+        for idx, score in enumerate(healed_series)
+    )
+
+    auth_hash = record.get(
+        "auth_hash", hashlib.sha256(auth_header.encode("utf-8")).hexdigest()
+    )
+    aggregate_payload = [
+        {"step": idx, "score": score}
+        for idx, score in enumerate(healed_series, start=1)
+    ]
+    aggregate_hash = _compute_zk_hash(aggregate_payload, wallet_id, auth_hash)
+    dispatch_to_base_oracle(viz_cid, aggregate_hash)
+
+    uplift_restore = float(max(0.0, np.mean(healed_series) - series_array[-1]))
+    repair_id = str(uuid.uuid4())
+    STREAM_EMIT_QUEUE.append(
+        {
+            "guardian_sync": "self_heal",
+            "self_heal": True,
+            "repair_id": repair_id,
+            "uplift_restore": round(uplift_restore, 4),
+            "viz_cid": viz_cid,
+        }
+    )
+
+    response = {
+        "repair_status": repair_status,
+        "new_threshold": round(reset_threshold, 5),
+        "healed_series": healed_series,
+        "validation_rmse": round(rmse_post, 5),
+        "aggregate_hash": aggregate_hash,
+        "mission_statement": MISSION_STATEMENT,
+        "validation_score": round(float(validation_score), 4),
+        "gradient_boost": round(gradient_boost, 4),
+        "repair_id": repair_id,
+    }
     return jsonify(response), 200
 
 
