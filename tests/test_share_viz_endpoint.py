@@ -148,6 +148,23 @@ class OracleSilentTelemetry(DummyTelemetry):
         return False
 
 
+class TemporalWeaveTelemetry(DummyTelemetry):
+    """Deterministic telemetry for temporal weave predictions."""
+
+    def __init__(self, mission_anchor: str, *, consent: bool = True) -> None:
+        super().__init__(mission_anchor, consent=consent)
+        self._series = [0.55 + 0.01 * idx for idx in range(40)]
+
+    def fetch_mock_bio_data(self, user_wallet: str) -> dict[str, Any]:
+        data = super().fetch_mock_bio_data(user_wallet)
+        data["timestamp"] = f"2024-01-01T00:{self.iteration:02d}:00Z"
+        return data
+
+    def run_erv_simulation(self, bio_data: dict[str, Any]) -> tuple[float, str]:
+        index = max(0, min(len(self._series) - 1, self.iteration - 1))
+        return self._series[index], "encrypted::temporal"
+
+
 @pytest.fixture(autouse=True)
 def clear_state(monkeypatch: pytest.MonkeyPatch) -> None:
     """Reset in-memory state and patch telemetry for each test."""
@@ -704,3 +721,69 @@ def test_quantum_resist_upgrade_failure(monkeypatch: pytest.MonkeyPatch) -> None
     assert not STREAM_EMIT_QUEUE
     assert PINNED_VIZ[viz_cid]["current_sig_type"] == "dilithium"
     assert "belief_evolution" not in PINNED_VIZ[viz_cid]
+
+
+def test_temporal_resonance_weave_high_conf(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Temporal weave returns predictions and emits when confidence is high."""
+
+    viz_cid = "weave-high"
+    PINNED_VIZ[viz_cid] = {
+        "wallet": "0xAAA",
+        "mission_anchor": MISSION_STATEMENT,
+        "auth_hash": "auth::hash",
+        "belief_evolution": [
+            {"timestamp": idx, "score": 0.55 + 0.01 * idx}
+            for idx in range(20)
+        ],
+    }
+
+    monkeypatch.setattr(
+        "services.share_viz_endpoint.TelemetryClass",
+        TemporalWeaveTelemetry,
+    )
+
+    test_client = app.test_client()
+    response = test_client.get(
+        f"/temporal_resonance_weave/{viz_cid}",
+        headers={"Authorization": "Bearer guardian_token"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert len(body["predicted_trend"]) == 5
+    assert body["weave_conf"] > 0.0
+    assert "empathy" in body["correlation_scores"]
+
+    if body["weave_conf"] > 0.7:
+        assert STREAM_EMIT_QUEUE
+        emission = STREAM_EMIT_QUEUE[-1]
+        assert emission["temporal_weave"] is True
+        assert emission["trend_forecast"] == body["predicted_trend"]
+
+
+def test_temporal_resonance_weave_short_series(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Temporal weave returns default payload when history is insufficient."""
+
+    viz_cid = "weave-short"
+    PINNED_VIZ[viz_cid] = {
+        "wallet": "0xBBB",
+        "mission_anchor": MISSION_STATEMENT,
+        "auth_hash": "auth::hash",
+        "belief_evolution": [{"timestamp": 0, "score": 0.51}],
+    }
+
+    monkeypatch.setattr(
+        "services.share_viz_endpoint.TelemetryClass",
+        TemporalWeaveTelemetry,
+    )
+
+    test_client = app.test_client()
+    response = test_client.get(
+        f"/temporal_resonance_weave/{viz_cid}",
+        headers={"Authorization": "Bearer guardian_token"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body == {"weave_conf": 0.0, "insufficient_history": True}
+    assert not STREAM_EMIT_QUEUE
