@@ -14,6 +14,13 @@ from collections import deque
 from pathlib import Path
 from typing import Any, Dict, Generator
 
+try:  # pragma: no cover - transformers may be optional in minimal envs
+    from transformers import pipeline
+    HAS_TRANSFORMERS = True
+except ImportError:  # pragma: no cover - provide deterministic stub
+    pipeline = None  # type: ignore
+    HAS_TRANSFORMERS = False
+
 from flask import Flask, Response, abort, jsonify, request, stream_with_context
 from cryptography.hazmat.primitives import hashes
 try:  # pragma: no cover - optional serialization helper
@@ -493,6 +500,66 @@ def stream_viz_updates() -> Generator[dict[str, Any], None, None]:
         yield STREAM_EMIT_QUEUE.popleft()
 
 
+def _basic_sentiment_stub(texts: list[str]) -> list[dict[str, Any]]:
+    """Provide a lightweight fallback sentiment classifier for audits."""
+
+    results: list[dict[str, Any]] = []
+    for text in texts:
+        lowered = text.lower()
+        if any(keyword in lowered for keyword in {"bias", "drift", "alarm"}):
+            results.append({"label": "NEGATIVE", "score": 0.85})
+        elif "protect" in lowered or "ethical" in lowered:
+            results.append({"label": "POSITIVE", "score": 0.6})
+        else:
+            results.append({"label": "NEUTRAL", "score": 0.5})
+    return results
+
+
+def _resolve_sentiment_runner():
+    """Return a callable sentiment pipeline with deterministic fallback."""
+
+    if pipeline is None or not HAS_TRANSFORMERS:
+        return _basic_sentiment_stub
+    try:  # pragma: no cover - depends on optional transformers setup
+        return pipeline("sentiment-analysis")
+    except Exception:  # pragma: no cover - fallback when pipeline init fails
+        return _basic_sentiment_stub
+
+
+def _mock_narrative_texts(viz_cid: str, wallet_id: str, sample_size: int = 10) -> list[str]:
+    """Construct anonymized guardian narrative summaries for audits."""
+
+    base_fragments = [
+        "Guardian notes: Ethical alignment strong",
+        "Mission brief: Resonance steady across pilots",
+        "Guardian reflection: Bias watch active",
+        "Field log: Narrative cadence stabilizing",
+        "Pilot memo: Protect community trust",
+    ]
+    seed_material = f"{viz_cid}:{wallet_id}:{MISSION_STATEMENT}".encode("utf-8")
+    seed = int(hashlib.sha256(seed_material).hexdigest(), 16) % (2**32)
+    rng = np.random.default_rng(seed)
+    texts: list[str] = []
+    for idx in range(sample_size):
+        fragment = base_fragments[idx % len(base_fragments)]
+        suffix = rng.choice(["steady", "balanced", "needs review", "guardian focus", "ethical pulse"])
+        texts.append(f"{fragment} :: {suffix}")
+    return texts
+
+
+def _sentiment_to_scalar(result: dict[str, Any]) -> float:
+    """Convert classifier output to a normalized neutrality scalar."""
+
+    label = str(result.get("label", "")).upper()
+    score = float(result.get("score", 0.5))
+    scaled = (score - 0.5) * 2.0
+    if "NEG" in label:
+        return -abs(scaled or score)
+    if "POS" in label:
+        return abs(scaled or score)
+    return 0.0
+
+
 def _temporal_weave_forecast(
     series_array: np.ndarray, sequence_length: int, forecast_steps: int
 ) -> tuple[list[float], float]:
@@ -824,6 +891,111 @@ def stream_viz(wallet_id: str) -> Response:
     response.headers["Access-Control-Allow-Headers"] = "Authorization, X-Consent"
     response.headers["Connection"] = "keep-alive"
     return response
+
+
+@app.route("/narrative_neutrality_audit/<viz_cid>", methods=["GET"])
+def narrative_neutrality_audit(viz_cid: str):
+    """Run a BERT-style neutrality audit on guardian narratives."""
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header != "Bearer guardian_token":
+        abort(401, "guardian_auth_required")
+
+    consent_header = request.headers.get("X-Consent", "true").lower()
+    if consent_header in {"false", "0", "no"}:
+        abort(403, "consent_required")
+
+    record = PINNED_VIZ.get(viz_cid)
+    if record is None:
+        abort(404, "viz_not_found")
+
+    mission_anchor = record.get("mission_anchor", MISSION_STATEMENT)
+    telemetry = TelemetryClass(mission_anchor, consent=True)
+    if not getattr(telemetry, "consent", True):
+        abort(403, "consent_required")
+
+    wallet_id = record.get("wallet", "guardian::anon")
+    texts = list(record.get("narratives") or _mock_narrative_texts(viz_cid, wallet_id))
+    auth_hash = hashlib.sha256(auth_header.encode("utf-8")).hexdigest()
+
+    if not texts:
+        aggregate_hash = _compute_zk_hash([], wallet_id, auth_hash)
+        dispatch_to_base_oracle(viz_cid, aggregate_hash)
+        response = {
+            "neutrality_score": 0.0,
+            "bias_alert": False,
+            "balanced_recommendation": "neutral",
+            "message": "no_narratives",
+            "text_aggregate_hash": aggregate_hash,
+            "narrative_count": 0,
+            "mission_statement": MISSION_STATEMENT,
+        }
+        return jsonify(response), 200
+
+    runner = _resolve_sentiment_runner()
+    raw_results = runner(texts)
+    if not isinstance(raw_results, list):
+        raw_results = list(raw_results)
+
+    scalars = [_sentiment_to_scalar(result) for result in raw_results if isinstance(result, dict)]
+    avg_score = float(sum(scalars) / len(scalars)) if scalars else 0.0
+    abs_avg = abs(avg_score)
+    bias_alert = abs_avg > 0.5
+    is_neutral = abs_avg < 0.2
+    recommendation = "neutral" if is_neutral else "rebalance"
+
+    hashed_entries = [
+        {
+            "hash": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+            "length": len(text),
+        }
+        for text in texts
+    ]
+    aggregate_hash = _compute_zk_hash(hashed_entries, wallet_id, auth_hash)
+
+    bio_data = telemetry.fetch_mock_bio_data(wallet_id)
+    erv_score, encrypted_res = telemetry.run_erv_simulation(bio_data)
+    adjusted_erv = max(0.0, erv_score - 0.1) if not is_neutral else erv_score
+    telemetry.simulate_cascade(adjusted_erv, encrypted_res)
+
+    mission_clause = "protect" if "protect" in MISSION_STATEMENT.lower() else "safeguard"
+    emit_id: str | None = None
+    if bias_alert:
+        emit_id = str(uuid.uuid4())
+        STREAM_EMIT_QUEUE.append(
+            {
+                "narrative_alert": True,
+                "score": round(avg_score, 4),
+                "emit_id": emit_id,
+                "viz_cid": viz_cid,
+                "mission_statement": MISSION_STATEMENT,
+            }
+        )
+
+    audit_record = {
+        "timestamp": time.time(),
+        "neutrality": round(avg_score, 4),
+        "bias_alert": bias_alert,
+        "aggregate_hash": aggregate_hash,
+    }
+    record.setdefault("narrative_audits", []).append(audit_record)
+
+    dispatch_to_base_oracle(viz_cid, aggregate_hash)
+
+    response = {
+        "neutrality_score": round(avg_score, 4),
+        "bias_alert": bias_alert,
+        "balanced_recommendation": recommendation,
+        "resonance_baseline": round(erv_score, 4),
+        "resonance_adjusted": round(adjusted_erv, 4),
+        "text_aggregate_hash": aggregate_hash,
+        "narrative_count": len(texts),
+        "mission_statement": MISSION_STATEMENT,
+        "recommendation_detail": f"{mission_clause} {MISSION_STATEMENT} narratives against bias",
+    }
+    if emit_id is not None:
+        response["emit_id"] = emit_id
+    return jsonify(response), 200
 
 
 @app.route("/adaptive_threshold/<viz_cid>", methods=["POST"])
