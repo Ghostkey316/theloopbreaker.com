@@ -898,3 +898,101 @@ def test_temporal_resonance_weave_short_series(monkeypatch: pytest.MonkeyPatch) 
     body = response.get_json()
     assert body == {"weave_conf": 0.0, "insufficient_history": True}
     assert not STREAM_EMIT_QUEUE
+
+
+def test_narrative_neutral_text(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Narrative audit returns neutral classification and zk hash."""
+
+    viz_cid = "narrative-neutral"
+    PINNED_VIZ[viz_cid] = {
+        "wallet": "0xAAA",
+        "mission_anchor": MISSION_STATEMENT,
+        "results": [{"score": 0.82, "uplift": 0.1}],
+    }
+
+    def fake_pipeline(model: str):
+        assert model == "sentiment-analysis"
+
+        class Runner:
+            def __call__(self, texts):  # noqa: D401
+                return [{"label": "POSITIVE", "score": 0.55} for _ in texts]
+
+        return Runner()
+
+    monkeypatch.setattr("services.share_viz_endpoint.pipeline", fake_pipeline)
+    monkeypatch.setattr("services.share_viz_endpoint.HAS_TRANSFORMERS", True)
+
+    dispatched: dict[str, Any] = {}
+
+    def record_dispatch(cid: str, zk_hash: str) -> None:
+        dispatched["cid"] = cid
+        dispatched["hash"] = zk_hash
+
+    monkeypatch.setattr("services.share_viz_endpoint.dispatch_to_base_oracle", record_dispatch)
+
+    test_client = app.test_client()
+    response = test_client.get(
+        f"/narrative_neutrality_audit/{viz_cid}",
+        headers={"Authorization": "Bearer guardian_token"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert dispatched["cid"] == viz_cid
+    assert body["bias_alert"] is False
+    assert body["balanced_recommendation"] == "neutral"
+    assert body["neutrality_score"] == pytest.approx(0.1, abs=1e-6)
+    assert body["text_aggregate_hash"] == dispatched["hash"]
+    assert body["mission_statement"] == MISSION_STATEMENT
+    detail = body["recommendation_detail"].lower()
+    assert any(keyword in detail for keyword in {"protect", "safeguard"})
+    assert not STREAM_EMIT_QUEUE
+    assert PINNED_VIZ[viz_cid]["narrative_audits"]
+
+
+def test_bias_alert_high(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Narrative audit triggers alert and stream emission for biased text."""
+
+    viz_cid = "narrative-bias"
+    PINNED_VIZ[viz_cid] = {
+        "wallet": "0xBBB",
+        "mission_anchor": MISSION_STATEMENT,
+        "results": [{"score": 0.9, "uplift": 0.2}],
+    }
+
+    def bias_pipeline(model: str):
+        assert model == "sentiment-analysis"
+
+        class Runner:
+            def __call__(self, texts):  # noqa: D401
+                return [{"label": "POSITIVE", "score": 0.99} for _ in texts]
+
+        return Runner()
+
+    monkeypatch.setattr("services.share_viz_endpoint.pipeline", bias_pipeline)
+    monkeypatch.setattr("services.share_viz_endpoint.HAS_TRANSFORMERS", True)
+
+    emissions: list[dict[str, Any]] = []
+
+    def capture_dispatch(cid: str, zk_hash: str) -> None:
+        emissions.append({"cid": cid, "hash": zk_hash})
+
+    monkeypatch.setattr("services.share_viz_endpoint.dispatch_to_base_oracle", capture_dispatch)
+
+    test_client = app.test_client()
+    response = test_client.get(
+        f"/narrative_neutrality_audit/{viz_cid}",
+        headers={"Authorization": "Bearer guardian_token"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert emissions and emissions[0]["cid"] == viz_cid
+    assert body["bias_alert"] is True
+    assert body["balanced_recommendation"] == "rebalance"
+    assert body["resonance_adjusted"] == pytest.approx(0.71, abs=1e-6)
+    assert STREAM_EMIT_QUEUE
+    alert = STREAM_EMIT_QUEUE.popleft()
+    assert alert["narrative_alert"] is True
+    assert alert["viz_cid"] == viz_cid
+    assert "mission_statement" in alert
