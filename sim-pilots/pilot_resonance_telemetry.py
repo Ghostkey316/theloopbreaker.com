@@ -8,6 +8,9 @@ import random
 from datetime import datetime
 from typing import Dict, List
 
+import matplotlib.pyplot as plt
+import numpy as np
+
 from vaultfire.protocol.constants import MISSION_STATEMENT
 from vaultfire.protocol.mission_resonance import MissionResonanceEngine
 
@@ -141,6 +144,103 @@ class PilotResonanceTelemetry:
             )
         return results
 
+    def visualize_results(self, results: list[dict]) -> None:
+        """Render dashboard-style histograms for ERV resonance telemetry."""
+
+        if not results:
+            print("No data for viz")
+            return
+
+        scores = [float(entry.get("score", 0.0)) for entry in results if "score" in entry]
+        if not scores:
+            print("No data for viz")
+            return
+
+        attested_uplifts = [
+            float(entry.get("uplift", 0.0))
+            for entry in results
+            if entry.get("status") == "attested"
+        ]
+
+        plt.switch_backend("Agg")
+        fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+
+        score_mean = float(np.mean(scores))
+        score_median = float(np.median(scores))
+        axes[0].hist(scores, bins=10, alpha=0.7, label="Scores", color="tab:purple")
+        axes[0].axvline(score_mean, color="tab:blue", linestyle="--", label=f"Mean {score_mean:.2f}")
+        axes[0].axvline(
+            score_median,
+            color="tab:orange",
+            linestyle=":",
+            label=f"Median {score_median:.2f}",
+        )
+        axes[0].set_title("ERV Resonance Gradients")
+        axes[0].set_xlabel("Resonance Score")
+        axes[0].set_ylabel("Frequency")
+        axes[0].legend()
+        axes[0].text(
+            0.95,
+            0.95,
+            f"μ={score_mean:.2f}\nMed={score_median:.2f}",
+            transform=axes[0].transAxes,
+            ha="right",
+            va="top",
+            fontsize=9,
+        )
+
+        axes[1].set_title("Empathic Yield Boosts")
+        axes[1].set_xlabel("Uplift Multiplier")
+        axes[1].set_ylabel("Frequency")
+        if attested_uplifts:
+            uplift_mean = float(np.mean(attested_uplifts))
+            uplift_median = float(np.median(attested_uplifts))
+            axes[1].hist(
+                attested_uplifts,
+                bins=10,
+                alpha=0.7,
+                label="Uplifts",
+                color="tab:green",
+            )
+            axes[1].axvline(
+                uplift_mean,
+                color="tab:blue",
+                linestyle="--",
+                label=f"Mean {uplift_mean:.2f}",
+            )
+            axes[1].axvline(
+                uplift_median,
+                color="tab:orange",
+                linestyle=":",
+                label=f"Median {uplift_median:.2f}",
+            )
+            axes[1].legend()
+            axes[1].text(
+                0.95,
+                0.95,
+                f"μ={uplift_mean:.2f}\nMed={uplift_median:.2f}",
+                transform=axes[1].transAxes,
+                ha="right",
+                va="top",
+                fontsize=9,
+            )
+        else:
+            axes[1].text(
+                0.5,
+                0.5,
+                "No attested uplifts",
+                transform=axes[1].transAxes,
+                ha="center",
+                va="center",
+                fontsize=10,
+            )
+
+        fig.suptitle(f"ERV Pilot Insights :: {self.mission_anchor}")
+        plt.tight_layout()
+        plt.savefig("erv_pilot_viz.png", dpi=150, bbox_inches="tight")
+        plt.show()
+        plt.close(fig)
+
 
 # --------------------
 # Pytest-compatible tests
@@ -195,3 +295,38 @@ def test_simulate_cascade_and_end_to_end_flow(capfd) -> None:
     out, _ = capfd.readouterr()
     assert "Covenant Chain" in out
     assert "withheld" in out
+
+
+def test_visualize_results_empty(monkeypatch, tmp_path, capsys) -> None:
+    """Visualizing with no data should short-circuit without artifacts."""
+
+    telemetry = PilotResonanceTelemetry(MISSION_STATEMENT)
+    monkeypatch.chdir(tmp_path)
+
+    telemetry.visualize_results([])
+
+    captured = capsys.readouterr()
+    assert "No data for viz" in captured.out
+    assert not (tmp_path / "erv_pilot_viz.png").exists()
+
+
+def test_visualize_results_sample_data(monkeypatch, tmp_path) -> None:
+    """A populated dataset should produce the visualization artifact."""
+
+    telemetry = PilotResonanceTelemetry(MISSION_STATEMENT)
+    monkeypatch.chdir(tmp_path)
+
+    sample_results = [
+        {"wallet": "0x1", "score": 0.82, "uplift": 1.23, "status": "attested"},
+        {"wallet": "0x2", "score": 0.64, "uplift": 0.0, "status": "blocked"},
+        {"wallet": "0x3", "score": 0.91, "uplift": 1.37, "status": "attested"},
+    ]
+
+    show_calls: list[None] = []
+    monkeypatch.setattr(plt, "show", lambda: show_calls.append(None))
+
+    telemetry.visualize_results(sample_results)
+
+    artifact = tmp_path / "erv_pilot_viz.png"
+    assert artifact.exists()
+    assert show_calls
