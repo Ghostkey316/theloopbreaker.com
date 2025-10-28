@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Dict, Generator, Iterable
 
 from utils.live_oracle import get_live_oracle
+from utils.dao_gov import VaultfireDAOClient
 from services.symbiotic_sentience_interface import SymbioticSentienceInterface
 from sdk import SymbioticForge
 
@@ -497,6 +498,38 @@ app = Flask(__name__)
 TelemetryClass = PilotResonanceTelemetry
 PINNED_VIZ: Dict[str, Dict[str, Any]] = {}
 STREAM_EMIT_QUEUE: deque[dict[str, Any]] = deque()
+DAO_CLIENT: VaultfireDAOClient | None = None
+DAO_CLIENT_ERROR: str | None = None
+
+
+def _enqueue_dao_event(event: dict[str, Any]) -> None:
+    """Push DAO governance updates onto the shared SSE queue."""
+
+    STREAM_EMIT_QUEUE.append(dict(event))
+
+
+def _get_dao_client() -> VaultfireDAOClient:
+    """Lazily construct a :class:`VaultfireDAOClient` instance when needed."""
+
+    global DAO_CLIENT, DAO_CLIENT_ERROR
+    if DAO_CLIENT is not None and DAO_CLIENT.enabled:
+        return DAO_CLIENT
+
+    try:
+        candidate = VaultfireDAOClient(emitter=_enqueue_dao_event)
+    except Exception as exc:  # pragma: no cover - depends on web3 availability
+        DAO_CLIENT = None
+        DAO_CLIENT_ERROR = str(exc)
+        raise
+
+    if not candidate.enabled:
+        DAO_CLIENT = None
+        DAO_CLIENT_ERROR = "VaultfireDAO client disabled - missing RPC or key"
+        raise RuntimeError(DAO_CLIENT_ERROR)
+
+    DAO_CLIENT = candidate
+    DAO_CLIENT_ERROR = None
+    return DAO_CLIENT
 LIVE_ORACLE = get_live_oracle()
 ADAPTIVE_COUNCIL_THRESHOLD: float = 2.0
 
@@ -4127,6 +4160,31 @@ def sdk_example() -> Response:
     simulation = forge.run_pilot_sim(pilot)
 
     return jsonify({"tx_hash": tx_hash, "simulation": simulation}), 201
+
+
+@app.route("/dao_propose", methods=["POST"])
+def dao_propose() -> Response:
+    """Queue a mission evolution proposal via the VaultfireDAO."""
+
+    payload = request.get_json(force=True, silent=True) or {}
+    weights = payload.get("weights")
+    description = str(payload.get("description", "Vaultfire mission evolution"))
+
+    try:
+        client = _get_dao_client()
+    except Exception as exc:  # pragma: no cover - depends on deployment config
+        abort(503, description=str(exc))
+
+    if not isinstance(weights, dict) or not weights:
+        abort(400, description="weights_required")
+
+    try:
+        tx_hash = client.propose_evo(weights, description)
+    except ValueError as exc:
+        abort(400, description=str(exc))
+    except RuntimeError as exc:
+        abort(503, description=str(exc))
+    return jsonify({"tx_hash": tx_hash, "status": "queued"})
 
 def dispatch_to_base_oracle(
     cid: str,
