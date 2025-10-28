@@ -1297,3 +1297,101 @@ def test_karma_sim_high_entropy_alert() -> None:
     assert emission["karmic_alert"] is True
     assert emission["steady_state"] == body["steady_state"]
     assert emission["viz_cid"] == viz_cid
+
+
+def test_enlightenment_predictor_high_prob(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Emergence predictor emits alerts when nirvana probability crosses threshold."""
+
+    viz_cid = "enlighten-high"
+    STREAM_EMIT_QUEUE.clear()
+    PINNED_VIZ[viz_cid] = {
+        "wallet": "0xNIRVANA",
+        "mission_anchor": MISSION_STATEMENT,
+        "results": [{"score": 0.92}, {"score": 0.94}],
+        "consent": True,
+        "virtue_weights": {"empathy": 0.45, "protect": 0.35, "wisdom": 0.1, "justice": 0.1},
+        "karmic_cycle_history": [
+            {
+                "steady_state": {
+                    "empathy": 0.6,
+                    "protect": 0.3,
+                    "justice": 0.05,
+                    "wisdom": 0.05,
+                }
+            }
+        ],
+    }
+
+    monkeypatch.setattr("services.share_viz_endpoint.TelemetryClass", DummyTelemetry)
+
+    def rich_resonance_series(_telemetry: Any, _wallet: str, periods: int = 24):
+        _ = periods
+        values = np.linspace(0.88, 0.97, 24)
+        return share_module.pd.Series(values, index=list(range(24)), name="resonance")
+
+    monkeypatch.setattr(
+        "services.share_viz_endpoint._collect_resonance_series",
+        rich_resonance_series,
+    )
+
+    test_client = app.test_client()
+    response = test_client.get(
+        f"/enlightenment_emergence_predictor/{viz_cid}",
+        headers={"Authorization": "Bearer guardian_token", "X-Consent": "true"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["enlightenment_alert"] is True
+    assert body["nirvana_prob"] > 0.8
+    assert body["emergence_recommendation"] == "threshold_crossed"
+    assert len(body["aggregate_commitment"]) == 64
+    assert body["samples"] == 24
+    assert STREAM_EMIT_QUEUE
+    emission = STREAM_EMIT_QUEUE[-1]
+    assert emission["enlightenment_alert"] is True
+    assert emission["prob"] == pytest.approx(body["nirvana_prob"], rel=1e-6)
+    assert emission["viz_cid"] == viz_cid
+
+
+def test_enlightenment_predictor_short_accum_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Short resonance accumulations default to safe recommendations without alerts."""
+
+    viz_cid = "enlighten-short"
+    STREAM_EMIT_QUEUE.clear()
+    PINNED_VIZ[viz_cid] = {
+        "wallet": "0xCALM",
+        "mission_anchor": MISSION_STATEMENT,
+        "results": [{"score": 0.62}],
+        "consent": True,
+    }
+
+    monkeypatch.setattr("services.share_viz_endpoint.TelemetryClass", DummyTelemetry)
+
+    def short_series(_telemetry: Any, _wallet: str, periods: int = 24):
+        _ = periods
+        values = np.array([0.6, 0.62, 0.61])
+        return share_module.pd.Series(values, index=list(range(3)), name="resonance")
+
+    monkeypatch.setattr(
+        "services.share_viz_endpoint._collect_resonance_series",
+        short_series,
+    )
+
+    test_client = app.test_client()
+    response = test_client.get(
+        f"/enlightenment_emergence_predictor/{viz_cid}",
+        headers={"Authorization": "Bearer guardian_token", "X-Consent": "true"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["enlightenment_alert"] is False
+    assert body["nirvana_prob"] == 0.0
+    assert body["emergence_recommendation"] == "build_momentum"
+    assert body["message"] == "insufficient_resonance"
+    assert len(body["aggregate_commitment"]) == 64
+    assert body["samples"] == 3
+    assert not STREAM_EMIT_QUEUE
