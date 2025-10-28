@@ -1465,3 +1465,109 @@ def test_debater_low_score_alert() -> None:
     assert emission["dialectic_alert"] is True
     assert emission["viz_cid"] == viz_cid
     assert emission["score"] == body["dialectic_score"]
+
+
+@pytest.mark.skipif(not share_module.HAS_TORCH, reason="torch unavailable")
+def test_oracle_high_coherence(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Satori synthesis converges with low MSE and emits calm alerts for pilots."""
+
+    viz_cid = "satori-harmony"
+    PINNED_VIZ[viz_cid] = {
+        "wallet": "guardian::harmonized",
+        "mission_anchor": MISSION_STATEMENT,
+        "results": [{"score": 0.88}],
+        "consent": True,
+        "karmic_cycle_history": [
+            {"steady_state": {"empathy": 0.82, "protect": 0.74, "wisdom": 0.7}}
+        ],
+    }
+
+    monkeypatch.setattr("services.share_viz_endpoint.TelemetryClass", OracleHighTelemetry)
+
+    test_client = app.test_client()
+    response = test_client.post(
+        f"/satori_synthesis_oracle/{viz_cid}",
+        data=json.dumps({"virtue_latents": [0.72, 0.75], "synthesis_rounds": 3}),
+        headers={
+            "Authorization": "Bearer guardian_token",
+            "Content-Type": "application/json",
+            "X-Consent": "true",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["coherence_alert"] is False
+    assert body["synthesis_recommendation"] == "emerged"
+    assert body["satori_score"] <= 0.05
+    assert body["mission_statement"] == MISSION_STATEMENT
+    assert "latent_commitment" in body
+    assert STREAM_EMIT_QUEUE
+    emission = STREAM_EMIT_QUEUE.pop()
+    assert emission["satori_alert"] is False
+    assert emission["score"] == body["satori_score"]
+    assert emission["viz_cid"] == viz_cid
+
+
+def test_oracle_mse_alert(monkeypatch: pytest.MonkeyPatch) -> None:
+    """High reconstruction error requests latent refinement without SSE emission."""
+
+    viz_cid = "satori-alert"
+    STREAM_EMIT_QUEUE.clear()
+    PINNED_VIZ[viz_cid] = {
+        "wallet": "guardian::alert",
+        "mission_anchor": MISSION_STATEMENT,
+        "results": [{"score": 0.6}],
+        "consent": True,
+        "karmic_cycle_history": [
+            {"steady_state": {"empathy": 0.35, "protect": 0.55, "justice": 0.4}}
+        ],
+    }
+
+    monkeypatch.setattr("services.share_viz_endpoint.TelemetryClass", DummyTelemetry)
+
+    test_client = app.test_client()
+    response = test_client.post(
+        f"/satori_synthesis_oracle/{viz_cid}",
+        data=json.dumps({"virtue_latents": [0.1, 0.95], "synthesis_rounds": 2}),
+        headers={
+            "Authorization": "Bearer guardian_token",
+            "Content-Type": "application/json",
+            "X-Consent": "true",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["coherence_alert"] is True
+    assert body["synthesis_recommendation"] == "refine_latents"
+    assert body["satori_score"] > 0.05
+    assert not STREAM_EMIT_QUEUE
+
+
+def test_oracle_invalid_latents(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Invalid latent payloads are rejected before synthesis begins."""
+
+    viz_cid = "satori-invalid"
+    PINNED_VIZ[viz_cid] = {
+        "wallet": "guardian::invalid",
+        "mission_anchor": MISSION_STATEMENT,
+        "results": [{"score": 0.7}],
+        "consent": True,
+    }
+
+    monkeypatch.setattr("services.share_viz_endpoint.TelemetryClass", DummyTelemetry)
+
+    test_client = app.test_client()
+    response = test_client.post(
+        f"/satori_synthesis_oracle/{viz_cid}",
+        data=json.dumps({"virtue_latents": "not-a-list"}),
+        headers={
+            "Authorization": "Bearer guardian_token",
+            "Content-Type": "application/json",
+            "X-Consent": "true",
+        },
+    )
+
+    assert response.status_code == 400
+    assert "latent_synthesis_invalid" in response.get_data(as_text=True)
