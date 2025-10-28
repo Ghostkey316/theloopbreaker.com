@@ -174,6 +174,43 @@ class TemporalWeaveTelemetry(DummyTelemetry):
         return self._series[index], "encrypted::temporal"
 
 
+class DummyLiveOracle:
+    """Live oracle stub capturing Pinata and Web3 interactions for tests."""
+
+    sandbox_tx = "base::sandbox"
+
+    def __init__(self) -> None:
+        self.pin_calls: list[tuple[str, str, dict[str, Any] | None]] = []
+        self.emit_calls: list[tuple[str, str, dict[str, Any]]] = []
+        self.last_tx_hash = self.sandbox_tx
+
+    def pin_visualization(
+        self,
+        html_payload: str,
+        json_payload: str,
+        *,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        self.pin_calls.append((html_payload, json_payload, metadata))
+        cid = f"bafy{len(self.pin_calls):04x}"
+        return {"cid": cid, "html_cid": cid, "json_cid": cid}
+
+    def emit_event(self, cid: str, zk_hash: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
+        context = context or {}
+        self.emit_calls.append((cid, zk_hash, context))
+        tx_hash = f"0xtx{len(self.emit_calls):04x}"
+        self.last_tx_hash = tx_hash
+        return {"tx_hash": tx_hash, "nonce": len(self.emit_calls) - 1}
+
+    def health_status(self) -> dict[str, Any]:
+        return {
+            "sandbox": True,
+            "pinata": "disabled",
+            "base": "disabled",
+            "last_tx_hash": self.last_tx_hash,
+        }
+
+
 @pytest.fixture(autouse=True)
 def clear_state(monkeypatch: pytest.MonkeyPatch) -> None:
     """Reset in-memory state and patch telemetry for each test."""
@@ -182,6 +219,7 @@ def clear_state(monkeypatch: pytest.MonkeyPatch) -> None:
     STREAM_EMIT_QUEUE.clear()
     share_module.ADAPTIVE_COUNCIL_THRESHOLD = 2.0
     monkeypatch.setattr("services.share_viz_endpoint.TelemetryClass", DummyTelemetry)
+    monkeypatch.setattr("services.share_viz_endpoint.LIVE_ORACLE", DummyLiveOracle())
 
 
 def test_share_endpoint_creates_cid() -> None:
@@ -199,9 +237,10 @@ def test_share_endpoint_creates_cid() -> None:
     )
     assert response.status_code == 200
     body = response.get_json()
-    assert body["ipfs_cid"].startswith("Qm")
+    assert body["ipfs_cid"].startswith(("Qm", "bafy"))
     assert len(body["zk_hash"]) == 64
     assert body["mission_statement"] == MISSION_STATEMENT
+    assert body["oracle_tx"].startswith("0xtx")
 
     record = PINNED_VIZ[body["ipfs_cid"]]
     expected_hash = _compute_zk_hash(payload["results"], "0xABC", record["auth_hash"])
@@ -440,8 +479,13 @@ def test_echo_detector_low_diversity(monkeypatch: pytest.MonkeyPatch) -> None:
 
     dispatch_calls: list[tuple[str, str]] = []
 
-    def record_dispatch(cid: str, zk_hash: str) -> None:
+    def record_dispatch(
+        cid: str, zk_hash: str, *, context: dict[str, Any] | None = None
+    ) -> dict[str, str]:
         dispatch_calls.append((cid, zk_hash))
+        if context and isinstance(context.get("event"), dict):
+            context["event"]["oracle_tx"] = "0xtest"
+        return {"tx_hash": "0xtest"}
 
     monkeypatch.setattr(
         "services.share_viz_endpoint.dispatch_to_base_oracle", record_dispatch
@@ -498,8 +542,13 @@ def test_echo_detector_balanced_graph(monkeypatch: pytest.MonkeyPatch) -> None:
 
     dispatch_calls: list[tuple[str, str]] = []
 
-    def record_dispatch(cid: str, zk_hash: str) -> None:
+    def record_dispatch(
+        cid: str, zk_hash: str, *, context: dict[str, Any] | None = None
+    ) -> dict[str, str]:
         dispatch_calls.append((cid, zk_hash))
+        if context and isinstance(context.get("event"), dict):
+            context["event"]["oracle_tx"] = "0xtest"
+        return {"tx_hash": "0xtest"}
 
     monkeypatch.setattr(
         "services.share_viz_endpoint.dispatch_to_base_oracle", record_dispatch
@@ -1091,9 +1140,14 @@ def test_narrative_neutral_text(monkeypatch: pytest.MonkeyPatch) -> None:
 
     dispatched: dict[str, Any] = {}
 
-    def record_dispatch(cid: str, zk_hash: str) -> None:
+    def record_dispatch(
+        cid: str, zk_hash: str, *, context: dict[str, Any] | None = None
+    ) -> dict[str, str]:
         dispatched["cid"] = cid
         dispatched["hash"] = zk_hash
+        if context and isinstance(context.get("event"), dict):
+            context["event"]["oracle_tx"] = "0xtest"
+        return {"tx_hash": "0xtest"}
 
     monkeypatch.setattr("services.share_viz_endpoint.dispatch_to_base_oracle", record_dispatch)
 
@@ -1141,8 +1195,13 @@ def test_bias_alert_high(monkeypatch: pytest.MonkeyPatch) -> None:
 
     emissions: list[dict[str, Any]] = []
 
-    def capture_dispatch(cid: str, zk_hash: str) -> None:
+    def capture_dispatch(
+        cid: str, zk_hash: str, *, context: dict[str, Any] | None = None
+    ) -> dict[str, str]:
         emissions.append({"cid": cid, "hash": zk_hash})
+        if context and isinstance(context.get("event"), dict):
+            context["event"]["oracle_tx"] = "0xtest"
+        return {"tx_hash": "0xtest"}
 
     monkeypatch.setattr("services.share_viz_endpoint.dispatch_to_base_oracle", capture_dispatch)
 

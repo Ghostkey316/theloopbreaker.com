@@ -7,13 +7,14 @@ import hmac
 import json
 import random
 import sys
-import tempfile
 import time
 import uuid
 from collections import deque
 from itertools import combinations
 from pathlib import Path
 from typing import Any, Dict, Generator, Iterable
+
+from utils.live_oracle import get_live_oracle
 
 try:  # pragma: no cover - transformers may be optional in minimal envs
     from transformers import pipeline
@@ -494,6 +495,7 @@ app = Flask(__name__)
 TelemetryClass = PilotResonanceTelemetry
 PINNED_VIZ: Dict[str, Dict[str, Any]] = {}
 STREAM_EMIT_QUEUE: deque[dict[str, Any]] = deque()
+LIVE_ORACLE = get_live_oracle()
 ADAPTIVE_COUNCIL_THRESHOLD: float = 2.0
 
 _AHP_RANDOM_INDEX: dict[int, float] = {
@@ -508,6 +510,17 @@ _AHP_RANDOM_INDEX: dict[int, float] = {
     9: 1.45,
     10: 1.49,
 }
+
+
+def _append_stream_event(payload: dict[str, Any]) -> dict[str, Any]:
+    """Attach latest oracle tx metadata before enqueueing SSE payloads."""
+
+    event = dict(payload)
+    fallback = getattr(LIVE_ORACLE, "sandbox_tx", "base::sandbox")
+    tx_hash = getattr(LIVE_ORACLE, "last_tx_hash", None) or fallback
+    event.setdefault("oracle_tx", tx_hash)
+    STREAM_EMIT_QUEUE.append(event)
+    return event
 
 
 def _connect_ipfs():
@@ -749,8 +762,11 @@ def _normalize_pubkey(public_key_obj: Any) -> str:
 def stream_viz_updates() -> Generator[dict[str, Any], None, None]:
     """Yield guardian council emissions queued for SSE distribution."""
 
+    fallback = getattr(LIVE_ORACLE, "sandbox_tx", "base::sandbox")
     while STREAM_EMIT_QUEUE:
-        yield STREAM_EMIT_QUEUE.popleft()
+        event = STREAM_EMIT_QUEUE.popleft()
+        event.setdefault("oracle_tx", getattr(LIVE_ORACLE, "last_tx_hash", None) or fallback)
+        yield event
 
 
 def _guardian_resonance_gradient(
@@ -1191,7 +1207,7 @@ def _pin_artifacts(
     results: list[dict[str, Any]],
     auth_hash: str,
 ) -> tuple[str, str]:
-    """Persist visualization artifacts locally while mimicking IPFS pinning."""
+    """Persist visualization artifacts via Pinata and cache attestation metadata."""
 
     viz_json = json.dumps(
         {"mission_anchor": mission_anchor, "results": results},
@@ -1202,18 +1218,16 @@ def _pin_artifacts(
         f"{json.dumps(results, indent=2)}</pre></body></html>"
     )
 
-    with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as handle:
-        handle.write(viz_html)
-        temp_path = handle.name
+    pin_result = LIVE_ORACLE.pin_visualization(
+        viz_html,
+        viz_json,
+        metadata={
+            "name": f"vaultfire-{wallet_id[:6]}",
+            "tags": {"mission": mission_anchor},
+        },
+    )
 
-    client = _connect_ipfs()
-    if client is not None:  # pragma: no cover - requires live IPFS daemon
-        try:
-            client.add_bytes(viz_html.encode("utf-8"))  # type: ignore[attr-defined]
-        except Exception:
-            pass
-
-    cid = _generate_cid(viz_html)
+    cid = pin_result.get("cid") or _generate_cid(viz_html)
     zk_hash = _compute_zk_hash(results, wallet_id, auth_hash)
 
     PINNED_VIZ[cid] = {
@@ -1222,7 +1236,7 @@ def _pin_artifacts(
         "results": results,
         "zk_hash": zk_hash,
         "auth_hash": auth_hash,
-        "artifact_path": temp_path,
+        "pinata": pin_result,
         "viz_json": viz_json,
     }
     return cid, zk_hash
@@ -1282,6 +1296,14 @@ def event_stream(
                 }
             ]
             zk_hash = _compute_zk_hash(results_stub, wallet_id, auth_hash)
+            viz_cid = _generate_cid(viz_json)
+            tx_hash = dispatch_to_base_oracle(
+                viz_cid,
+                zk_hash,
+                context={"route": "stream_viz", "wallet": wallet_id},
+            )
+            fallback_tx = getattr(LIVE_ORACLE, "sandbox_tx", "base::sandbox")
+            resolved_tx = tx_hash or getattr(LIVE_ORACLE, "last_tx_hash", None) or fallback_tx
             event_body = {
                 "score": score,
                 "uplift": uplift,
@@ -1292,7 +1314,7 @@ def event_stream(
                 "zk_hash": zk_hash,
                 "guardian_sync": "resonance_update",
                 "consent_hash": consent_hash,
-                "oracle_stub": "base::pending",
+                "oracle_tx": resolved_tx,
             }
             yield f"data: {json.dumps(event_body)}\n\n"
 
@@ -1417,9 +1439,10 @@ def narrative_neutrality_audit(viz_cid: str):
 
     mission_clause = "protect" if "protect" in MISSION_STATEMENT.lower() else "safeguard"
     emit_id: str | None = None
+    emission: dict[str, Any] | None = None
     if bias_alert:
         emit_id = str(uuid.uuid4())
-        STREAM_EMIT_QUEUE.append(
+        emission = _append_stream_event(
             {
                 "narrative_alert": True,
                 "score": round(avg_score, 4),
@@ -1428,6 +1451,11 @@ def narrative_neutrality_audit(viz_cid: str):
                 "mission_statement": MISSION_STATEMENT,
             }
         )
+    tx_result = dispatch_to_base_oracle(
+        viz_cid,
+        aggregate_hash,
+        context={"route": "narrative_neutrality_audit", "wallet": wallet_id, "event": emission},
+    )
 
     audit_record = {
         "timestamp": time.time(),
@@ -1436,8 +1464,6 @@ def narrative_neutrality_audit(viz_cid: str):
         "aggregate_hash": aggregate_hash,
     }
     record.setdefault("narrative_audits", []).append(audit_record)
-
-    dispatch_to_base_oracle(viz_cid, aggregate_hash)
 
     response = {
         "neutrality_score": round(avg_score, 4),
@@ -1450,6 +1476,11 @@ def narrative_neutrality_audit(viz_cid: str):
         "mission_statement": MISSION_STATEMENT,
         "recommendation_detail": f"{mission_clause} {MISSION_STATEMENT} narratives against bias",
     }
+    fallback_tx = getattr(LIVE_ORACLE, "sandbox_tx", "base::sandbox")
+    if isinstance(tx_result, dict):
+        response["oracle_tx"] = tx_result.get("tx_hash") or fallback_tx
+    else:
+        response["oracle_tx"] = tx_result or getattr(LIVE_ORACLE, "last_tx_hash", None) or fallback_tx
     if emit_id is not None:
         response["emit_id"] = emit_id
     return jsonify(response), 200
@@ -3973,6 +4004,11 @@ def share_viz(wallet_id: str):
         auth_hash=auth_hash,
     )
     PINNED_VIZ[cid]["consent"] = bool(consent)
+    tx_result = dispatch_to_base_oracle(
+        cid,
+        zk_hash,
+        context={"route": "share_viz", "wallet": wallet_id},
+    )
 
     attest_url = f"{request.url_root.rstrip('/')}/attest_viz/{cid}"
     response = {
@@ -3982,7 +4018,20 @@ def share_viz(wallet_id: str):
         "mission_anchor": mission_anchor,
         "mission_statement": MISSION_STATEMENT,
     }
+    fallback_tx = getattr(LIVE_ORACLE, "sandbox_tx", "base::sandbox")
+    if isinstance(tx_result, dict):
+        response["oracle_tx"] = tx_result.get("tx_hash") or fallback_tx
+    else:
+        response["oracle_tx"] = tx_result or getattr(LIVE_ORACLE, "last_tx_hash", None) or fallback_tx
     return jsonify(response), 200
+
+
+@app.route("/health/live_oracles", methods=["GET"])
+def health_live_oracles() -> Response:
+    """Live oracle hooks for production resonance health diagnostics."""
+
+    status = LIVE_ORACLE.health_status()
+    return jsonify(status), 200
 
 
 @app.route("/attest_viz/<ipfs_cid>", methods=["GET"])
@@ -4014,10 +4063,46 @@ def attest_viz(ipfs_cid: str):
 
 # Future Base oracle integration hook placeholder
 
-def dispatch_to_base_oracle(cid: str, zk_hash: str) -> None:  # pragma: no cover - stubbed
-    """Placeholder for relaying attested dashboards to Base oracle feeds."""
+def dispatch_to_base_oracle(
+    cid: str,
+    zk_hash: str,
+    *,
+    context: dict[str, Any] | None = None,
+) -> dict[str, Any] | str | None:
+    """Relay attested dashboards to Base oracle feeds via :mod:`utils.live_oracle`."""
 
-    _ = (cid, zk_hash)  # No-op stub keeps surface area ready for Web3 hook
+    if not cid or not zk_hash:
+        return None
+
+    context = context or {}
+    event_ref = context.get("event")
+    oracle_result = LIVE_ORACLE.emit_event(cid, zk_hash, context=context)
+
+    if isinstance(oracle_result, dict):
+        tx_hash = oracle_result.get("tx_hash")
+    else:
+        tx_hash = str(oracle_result) if oracle_result else None
+        if tx_hash:
+            oracle_result = {"tx_hash": tx_hash}
+
+    fallback_tx = getattr(LIVE_ORACLE, "sandbox_tx", "base::sandbox")
+    resolved_tx = tx_hash or getattr(LIVE_ORACLE, "last_tx_hash", None) or fallback_tx
+
+    record = PINNED_VIZ.get(cid)
+    if record is not None:
+        record.setdefault("oracle_events", []).append(
+            {"zk_hash": zk_hash, "tx_hash": resolved_tx, "timestamp": time.time()}
+        )
+        record["oracle_tx"] = resolved_tx
+
+    if isinstance(event_ref, dict):
+        event_ref["oracle_tx"] = resolved_tx
+    else:
+        for queued in STREAM_EMIT_QUEUE:
+            if queued.get("viz_cid") == cid or queued.get("ipfs_cid") == cid:
+                queued["oracle_tx"] = resolved_tx
+
+    return oracle_result
 
 
 if __name__ == "__main__":
