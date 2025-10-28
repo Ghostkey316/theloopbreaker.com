@@ -1395,3 +1395,73 @@ def test_enlightenment_predictor_short_accum_default(
     assert len(body["aggregate_commitment"]) == 64
     assert body["samples"] == 3
     assert not STREAM_EMIT_QUEUE
+
+
+def test_debater_high_robustness() -> None:
+    """GAN dialectic debates produce robust scores when virtues remain balanced."""
+
+    viz_cid = "dharma-robust"
+    PINNED_VIZ[viz_cid] = {
+        "wallet": "guardian::high",
+        "mission_anchor": MISSION_STATEMENT,
+        "results": [{"score": 0.81}],
+        "consent": True,
+        "virtue_weights": {"empathy": 0.49, "protect": 0.5, "justice": 0.48},
+    }
+
+    test_client = app.test_client()
+    response = test_client.post(
+        f"/dharma_dialectic_debater/{viz_cid}",
+        data=json.dumps({"virtue_clause": "empathy > protect", "debate_rounds": 3}),
+        headers={
+            "Authorization": "Bearer guardian_token",
+            "Content-Type": "application/json",
+            "X-Consent": "true",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["robustness_alert"] is False
+    assert body["debate_recommendation"] == "robust"
+    assert body["dialectic_score"] >= 0.7
+    assert len(body["debate_commitment"]) == 64
+    assert not STREAM_EMIT_QUEUE
+
+
+def test_debater_low_score_alert() -> None:
+    """High virtue imbalance triggers refinement alerts and SSE emissions."""
+
+    viz_cid = "dharma-alert"
+    STREAM_EMIT_QUEUE.clear()
+    PINNED_VIZ[viz_cid] = {
+        "wallet": "guardian::alert",
+        "mission_anchor": MISSION_STATEMENT,
+        "results": [{"score": 0.72}],
+        "consent": True,
+        "virtue_weights": {"empathy": 0.22, "protect": 0.91, "justice": 0.3},
+        "mission_clauses": [["empathy", "protect"], ["~protect", "guardian_trust"]],
+    }
+
+    test_client = app.test_client()
+    response = test_client.post(
+        f"/dharma_dialectic_debater/{viz_cid}",
+        data=json.dumps({"virtue_clause": "empathy > protect", "debate_rounds": 6}),
+        headers={
+            "Authorization": "Bearer guardian_token",
+            "Content-Type": "application/json",
+            "X-Consent": "true",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["robustness_alert"] is True
+    assert body["debate_recommendation"] == "refine"
+    assert body["dialectic_score"] < 0.7
+    assert len(body["debate_commitment"]) == 64
+    assert STREAM_EMIT_QUEUE
+    emission = STREAM_EMIT_QUEUE.popleft()
+    assert emission["dialectic_alert"] is True
+    assert emission["viz_cid"] == viz_cid
+    assert emission["score"] == body["dialectic_score"]
