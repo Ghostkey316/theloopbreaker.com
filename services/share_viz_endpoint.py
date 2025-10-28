@@ -709,6 +709,76 @@ def _guardian_resonance_gradient(
     return float(np.clip(np.mean(scores), 0.0, 1.0))
 
 
+def _construct_guardian_graph(
+    record: dict[str, Any], telemetry: PilotResonanceTelemetry, viz_cid: str
+) -> tuple[
+    list[dict[str, float]], list[tuple[str, str]], float, float, float, float
+]:
+    """Build guardian graph telemetry embedding empathy priors from ``MISSION_STATEMENT``."""
+
+    gradient = _guardian_resonance_gradient(record, telemetry)
+    wallet_id = str(record.get("wallet", "guardian::anon"))
+    seed = int(
+        hashlib.sha256(
+            f"{viz_cid}:{wallet_id}:{record.get('mission_anchor', MISSION_STATEMENT)}".encode(
+                "utf-8"
+            )
+        ).hexdigest(),
+        16,
+    ) % (2**32)
+    rng = np.random.default_rng(seed)
+
+    history = record.get("karmic_cycle_history") or []
+    steady_state_raw = (
+        (history[-1] or {}).get("steady_state", {})
+        if history and isinstance(history[-1], dict)
+        else {}
+    )
+    steady_state = {
+        str(key): float(value)
+        for key, value in (steady_state_raw or {}).items()
+        if isinstance(value, (int, float))
+    }
+
+    empathy_anchor = float(np.clip(steady_state.get("empathy", gradient), 0.0, 1.0))
+    cycle_coherence = float(
+        np.clip(np.mean(list(steady_state.values()) or [gradient]), 0.0, 1.0)
+    )
+    nirvana_prob = float(expit(4.0 * (gradient - 0.5)))
+    empathy_bias = 1.0 if "empathy" in MISSION_STATEMENT.lower() else 0.85
+
+    guardian_pool = record.get("guardian_pool")
+    if isinstance(guardian_pool, list) and guardian_pool:
+        guardian_ids = [wallet_id] + [
+            str(entry.get("guardian_id", "")) for entry in guardian_pool if entry
+        ]
+    else:
+        guardian_ids = [wallet_id] + [f"{wallet_id}::{idx}" for idx in range(1, 4)]
+
+    nodes = []
+    for guardian_id in guardian_ids:
+        if not guardian_id:
+            continue
+        bio_data = telemetry.fetch_mock_bio_data(guardian_id)
+        score, _ = telemetry.run_erv_simulation(bio_data)
+        nodes.append(
+            {
+                "id": guardian_id,
+                "erv": float(np.clip(score * (0.8 + 0.2 * gradient), 0.0, 1.0)),
+                "prior": float(np.clip(0.5 * (score + empathy_anchor), 0.0, 1.0)),
+                "empathy": float(np.clip(empathy_bias * (0.9 + 0.1 * rng.random()), 0.0, 1.0)),
+            }
+        )
+
+    edges = [
+        (source["id"], target["id"])
+        for source, target in combinations(nodes, 2)
+        if rng.random() > 0.35
+    ]
+
+    return nodes, edges, gradient, empathy_anchor, cycle_coherence, nirvana_prob
+
+
 def _echo_beta_modifier(record: dict[str, Any]) -> float:
     """Scale contagion beta using cached echo chamber diversity signals."""
 
@@ -2158,6 +2228,160 @@ def satori_synthesis_oracle(viz_cid: str):
             {
                 "satori_alert": False,
                 "score": round(satori_score, 6),
+                "emit_id": emit_id,
+                "viz_cid": viz_cid,
+            }
+        )
+        response["emit_id"] = emit_id
+
+    return jsonify(response), 200
+
+
+@app.route("/nirvana_network_neuralizer/<viz_cid>", methods=["GET"])
+def nirvana_network_neuralizer(viz_cid: str):
+    """Generate guardian GNN-VAE embeddings with empathy-aligned coherence checks."""
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header != "Bearer guardian_token":
+        abort(401, "guardian_auth_required")
+
+    if request.headers.get("X-Consent", "true").lower() in {"false", "0", "no"}:
+        abort(403, "consent_required")
+
+    record = PINNED_VIZ.get(viz_cid)
+    if record is None:
+        abort(404, "viz_not_found")
+    if not record.get("consent", True):
+        abort(403, "consent_required")
+
+    telemetry = TelemetryClass(record.get("mission_anchor", MISSION_STATEMENT), consent=True)
+    if not getattr(telemetry, "consent", True):
+        abort(403, "consent_required")
+
+    (
+        nodes,
+        edges,
+        gradient,
+        empathy_anchor,
+        cycle_coherence,
+        nirvana_prob,
+    ) = _construct_guardian_graph(record, telemetry, viz_cid)
+
+    if not nodes:
+        response = {
+            "nirvana_embedding": [0.0, 0.0, 0.0],
+            "coherence_score": 0.0,
+            "neural_alert": False,
+            "embedding_recommendation": "no_network",
+        }
+        return jsonify(response), 200
+
+    feature_matrix = np.array(
+        [
+            [
+                node["erv"],
+                node["prior"],
+                node["empathy"],
+                gradient,
+                empathy_anchor,
+                cycle_coherence,
+                nirvana_prob,
+            ]
+            for node in nodes
+        ],
+        dtype=float,
+    )
+
+    coherence_score = float(np.mean((feature_matrix - feature_matrix.mean(axis=0)) ** 2))
+    nirvana_embedding: list[float]
+    mse_from_training = coherence_score
+
+    if HAS_TORCH and torch is not None and nn is not None:
+        torch.manual_seed(108)
+
+        class GuardianNeuralizer(nn.Module):  # pragma: no cover - exercised in torch envs
+            def __init__(self, feature_dim: int, latent_dim: int = 3) -> None:
+                super().__init__()
+                self.conv = pyg_nn.GCNConv(feature_dim, feature_dim)
+                self.encoder = nn.Linear(feature_dim, feature_dim)
+                self.mu = nn.Linear(feature_dim, latent_dim)
+                self.logvar = nn.Linear(feature_dim, latent_dim)
+                self.decoder = nn.Linear(latent_dim, feature_dim)
+
+            def forward(
+                self, inputs: torch.Tensor, edge_index: torch.Tensor
+            ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+                hidden = torch.tanh(self.conv(inputs, edge_index))
+                hidden = torch.tanh(self.encoder(hidden))
+                mu = self.mu(hidden)
+                logvar = torch.tanh(self.logvar(hidden))
+                return self.decoder(mu), mu, logvar
+
+        feature_tensor = torch.tensor(feature_matrix, dtype=torch.float32)
+        node_index = {node["id"]: idx for idx, node in enumerate(nodes)}
+        edge_pairs = [
+            [node_index[source], node_index[target]]
+            for source, target in edges
+            if source in node_index and target in node_index
+        ]
+        if edge_pairs:
+            reversed_pairs = [[dst, src] for src, dst in edge_pairs]
+            edge_index_tensor = (
+                torch.tensor(edge_pairs + reversed_pairs, dtype=torch.long)
+                .t()
+                .contiguous()
+            )
+        else:
+            edge_index_tensor = torch.zeros((2, 0), dtype=torch.long)
+
+        model = GuardianNeuralizer(feature_tensor.shape[1])
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.05)
+        mse_loss = nn.MSELoss()
+
+        for _ in range(2):
+            optimizer.zero_grad()
+            recon, mu_batch, logvar_batch = model(feature_tensor, edge_index_tensor)
+            recon = torch.sigmoid(recon)
+            loss = mse_loss(recon, feature_tensor)
+            kl_term = torch.mean(-0.5 * (1 + logvar_batch - mu_batch.pow(2) - logvar_batch.exp()))
+            total_loss = loss + 0.01 * kl_term
+            total_loss.backward()
+            optimizer.step()
+
+        with torch.no_grad():
+            recon, mu_batch, _ = model(feature_tensor, edge_index_tensor)
+            recon = torch.sigmoid(recon)
+            mse_from_training = float(mse_loss(recon, feature_tensor).item())
+            latent_mean = torch.mean(mu_batch, dim=0)
+            nirvana_embedding = [float(val) for val in latent_mean.tolist()]
+    else:  # pragma: no cover - deterministic fallback without torch
+        latent_mean = feature_matrix.mean(axis=0)[:3]
+        nirvana_embedding = [float(val) for val in latent_mean.tolist()]
+
+    coherence_score = float(min(coherence_score, mse_from_training))
+    neural_alert = bool(coherence_score > 0.04)
+    recommendation = "regraph" if neural_alert else "nirvanic"
+
+    zk_results = [
+        {"guardian": node["id"], "erv": node["erv"], "prior": node["prior"]}
+        for node in nodes
+    ]
+    zk_proof = _compute_zk_hash(zk_results, record.get("wallet", "guardian::anon"), viz_cid)
+
+    response: dict[str, Any] = {
+        "nirvana_embedding": [round(val, 6) for val in nirvana_embedding[:3]],
+        "coherence_score": round(coherence_score, 6),
+        "neural_alert": neural_alert,
+        "embedding_recommendation": recommendation,
+        "zk_proof": zk_proof,
+    }
+
+    if not neural_alert:
+        emit_id = str(uuid.uuid4())
+        STREAM_EMIT_QUEUE.append(
+            {
+                "neural_alert": False,
+                "embedding": response["nirvana_embedding"],
                 "emit_id": emit_id,
                 "viz_cid": viz_cid,
             }
