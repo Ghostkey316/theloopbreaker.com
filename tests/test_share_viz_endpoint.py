@@ -1848,3 +1848,57 @@ def test_analyzer_low_silhouette_emits_alert() -> None:
     assert emission["viz_cid"] == viz_cid
     assert emission["dominance"] == body["archetype_dominance"]
     assert emission["emit_id"] == body["emit_id"]
+
+
+def test_dao_propose_endpoint_streams_vote(monkeypatch):
+    class DummyClient:
+        enabled = True
+
+        def __init__(self) -> None:
+            self.calls: list[tuple[dict[str, float], str]] = []
+
+        def propose_evo(self, weights: dict[str, float], description: str) -> str:
+            self.calls.append((weights, description))
+            STREAM_EMIT_QUEUE.append(
+                {
+                    "dao_vote": {
+                        "action": "propose",
+                        "tx": "0xdummy",
+                        "weights_map": weights,
+                        "description": description,
+                    }
+                }
+            )
+            return "0xdummy"
+
+    client = DummyClient()
+    monkeypatch.setattr(share_module, "_get_dao_client", lambda: client)
+    STREAM_EMIT_QUEUE.clear()
+    response = app.test_client().post(
+        "/dao_propose",
+        data=json.dumps({"weights": {"empathy": 0.62, "courage": 0.38}, "description": "Boost empathy"}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 200
+    assert response.get_json()["tx_hash"] == "0xdummy"
+    assert client.calls == [({"empathy": 0.62, "courage": 0.38}, "Boost empathy")]
+    emission = STREAM_EMIT_QUEUE.popleft()
+    assert emission["dao_vote"]["weights_map"]["empathy"] == pytest.approx(0.62)
+
+
+def test_dao_propose_requires_weights(monkeypatch):
+    class DummyClient:
+        enabled = True
+
+        def propose_evo(self, weights: dict[str, float], description: str) -> str:  # pragma: no cover - not executed
+            return "0xnoop"
+
+    monkeypatch.setattr(share_module, "_get_dao_client", lambda: DummyClient())
+    response = app.test_client().post(
+        "/dao_propose",
+        data=json.dumps({}),
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 400
