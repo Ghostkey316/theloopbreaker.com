@@ -23,6 +23,13 @@ from services.share_viz_endpoint import (
     stream_viz_updates,
 )
 
+try:  # pragma: no cover - torch optional in minimal CI environments
+    import torch  # type: ignore
+
+    TORCH_AVAILABLE = True
+except ImportError:  # pragma: no cover - allow neuralizer tests to skip
+    TORCH_AVAILABLE = False
+
 
 class DummyTelemetry:
     """Telemetry stub that records interactions for assertions."""
@@ -1571,3 +1578,84 @@ def test_oracle_invalid_latents(monkeypatch: pytest.MonkeyPatch) -> None:
 
     assert response.status_code == 400
     assert "latent_synthesis_invalid" in response.get_data(as_text=True)
+
+
+@pytest.mark.skipif(not TORCH_AVAILABLE, reason="torch unavailable")
+def test_neuralizer_high_coherence(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Guardian neuralizer yields coherent embeddings and SSE calm alerts."""
+
+    viz_cid = "nirvana-harmony"
+    STREAM_EMIT_QUEUE.clear()
+    guardian_pool = [
+        {"guardian_id": "g1", "hrv": 0.9, "arousal": "calm", "score": 0.9},
+        {"guardian_id": "g2", "hrv": 0.91, "arousal": "steady", "score": 0.88},
+        {"guardian_id": "g3", "hrv": 0.92, "arousal": "focused", "score": 0.89},
+    ]
+    PINNED_VIZ[viz_cid] = {
+        "wallet": "guardian::harmonized",
+        "mission_anchor": MISSION_STATEMENT,
+        "results": [{"score": 0.87}, {"score": 0.9}],
+        "consent": True,
+        "guardian_pool": guardian_pool,
+        "karmic_cycle_history": [
+            {"steady_state": {"empathy": 0.84, "protect": 0.8, "wisdom": 0.82}}
+        ],
+    }
+
+    monkeypatch.setattr("services.share_viz_endpoint.TelemetryClass", OracleHighTelemetry)
+
+    test_client = app.test_client()
+    response = test_client.get(
+        f"/nirvana_network_neuralizer/{viz_cid}",
+        headers={
+            "Authorization": "Bearer guardian_token",
+            "X-Consent": "true",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["neural_alert"] is False
+    assert body["embedding_recommendation"] == "nirvanic"
+    assert len(body["nirvana_embedding"]) == 3
+    assert body["coherence_score"] <= 0.04
+    assert STREAM_EMIT_QUEUE
+    emission = STREAM_EMIT_QUEUE.pop()
+    assert emission["neural_alert"] is False
+    assert emission["embedding"] == body["nirvana_embedding"]
+    assert emission["viz_cid"] == viz_cid
+
+
+def test_empty_graph_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Empty guardian graphs default to calm embeddings without emissions."""
+
+    viz_cid = "nirvana-empty"
+    STREAM_EMIT_QUEUE.clear()
+    PINNED_VIZ[viz_cid] = {
+        "wallet": "guardian::void",
+        "mission_anchor": MISSION_STATEMENT,
+        "results": [],
+        "consent": True,
+    }
+
+    monkeypatch.setattr(
+        "services.share_viz_endpoint._construct_guardian_graph",
+        lambda record, telemetry, cid: ([], [], 0.0, 0.0, 0.0, 0.0),
+    )
+
+    test_client = app.test_client()
+    response = test_client.get(
+        f"/nirvana_network_neuralizer/{viz_cid}",
+        headers={
+            "Authorization": "Bearer guardian_token",
+            "X-Consent": "true",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["nirvana_embedding"] == [0.0, 0.0, 0.0]
+    assert body["embedding_recommendation"] == "no_network"
+    assert body["neural_alert"] is False
+    assert body["coherence_score"] == 0.0
+    assert not STREAM_EMIT_QUEUE
