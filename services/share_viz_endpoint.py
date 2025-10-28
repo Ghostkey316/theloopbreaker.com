@@ -63,6 +63,82 @@ except ImportError:  # pragma: no cover - provide deterministic PQ stubs
     dilithium = _DilithiumStub()  # type: ignore
     falcon = _FalconStub()  # type: ignore
 import numpy as np
+try:  # pragma: no cover - clustering dependency optional
+    from sklearn.cluster import KMeans
+    from sklearn.metrics import silhouette_score
+    HAS_SKLEARN = True
+except ImportError:  # pragma: no cover - deterministic clustering fallback
+    HAS_SKLEARN = False
+
+    class KMeans:  # type: ignore[override]
+        """Lightweight Lloyd-style clustering stub mirroring ``sklearn`` usage."""
+
+        def __init__(self, n_clusters: int = 3, random_state: int | None = None) -> None:
+            self.n_clusters = max(1, int(n_clusters))
+            self.random_state = random_state
+            self.cluster_centers_: np.ndarray | None = None
+            self.labels_: np.ndarray | None = None
+
+        def fit(self, data: np.ndarray) -> "KMeans":  # noqa: D401
+            array = np.asarray(data, dtype=float)
+            if array.ndim != 2 or array.size == 0:
+                raise ValueError("kmeans_stub_invalid")
+            cluster_count = min(self.n_clusters, array.shape[0])
+            seeds = np.linspace(0, array.shape[0] - 1, num=cluster_count, dtype=int)
+            centers = array[seeds].copy()
+            for _ in range(4):
+                distances = ((array[:, None, :] - centers[None, :, :]) ** 2).sum(axis=2)
+                labels = distances.argmin(axis=1)
+                for idx in range(cluster_count):
+                    members = array[labels == idx]
+                    if members.size:
+                        centers[idx] = members.mean(axis=0)
+            self.cluster_centers_ = centers
+            self.labels_ = labels
+            return self
+
+        def fit_predict(self, data: np.ndarray) -> np.ndarray:
+            return self.fit(data).labels_
+
+        def predict(self, data: np.ndarray) -> np.ndarray:  # pragma: no cover - compatibility shim
+            if self.cluster_centers_ is None:
+                raise ValueError("kmeans_stub_unfitted")
+            array = np.asarray(data, dtype=float)
+            distances = ((array[:, None, :] - self.cluster_centers_[None, :, :]) ** 2).sum(axis=2)
+            return distances.argmin(axis=1)
+
+    def silhouette_score(data: np.ndarray, labels: np.ndarray) -> float:  # type: ignore[override]
+        array = np.asarray(data, dtype=float)
+        cluster_labels = np.asarray(labels)
+        unique = np.unique(cluster_labels)
+        if array.ndim != 2 or array.shape[0] != cluster_labels.shape[0] or unique.size <= 1:
+            return 0.0
+        silhouettes: list[float] = []
+        for index, vector in enumerate(array):
+            own_label = cluster_labels[index]
+            own_mask = cluster_labels == own_label
+            own_points = array[own_mask]
+            if own_points.shape[0] <= 1:
+                silhouettes.append(0.0)
+                continue
+            intra = np.linalg.norm(own_points - vector, axis=1)
+            a = float(np.mean(intra[1:])) if intra.size > 1 else 0.0
+            b_candidates: list[float] = []
+            for label in unique:
+                if label == own_label:
+                    continue
+                other_points = array[cluster_labels == label]
+                if other_points.size == 0:
+                    continue
+                inter = np.linalg.norm(other_points - vector, axis=1)
+                b_candidates.append(float(np.mean(inter)))
+            if not b_candidates:
+                silhouettes.append(0.0)
+                continue
+            b = min(b_candidates)
+            denominator = max(a, b)
+            silhouettes.append(0.0 if denominator == 0.0 else (b - a) / denominator)
+        return float(np.clip(np.mean(silhouettes), -1.0, 1.0))
 try:  # pragma: no cover - scientific integration optional in minimal envs
     from scipy.integrate import odeint
 except ImportError:  # pragma: no cover - deterministic Euler fallback
@@ -2384,6 +2460,193 @@ def nirvana_network_neuralizer(viz_cid: str):
                 "embedding": response["nirvana_embedding"],
                 "emit_id": emit_id,
                 "viz_cid": viz_cid,
+            }
+        )
+        response["emit_id"] = emit_id
+
+    return jsonify(response), 200
+
+
+@app.route("/ascension_archetype_analyzer/<viz_cid>", methods=["POST"])
+def ascension_archetype_analyzer(viz_cid: str):
+    """Cluster neuralizer embeddings to surface mythic archetype dominance for pilots."""
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header != "Bearer guardian_token":
+        abort(401, "guardian_auth_required")
+
+    if request.headers.get("X-Consent", "true").lower() in {"false", "0", "no"}:
+        abort(403, "consent_required")
+
+    record = PINNED_VIZ.get(viz_cid)
+    if record is None:
+        abort(404, "viz_not_found")
+    if not record.get("consent", True):
+        abort(403, "consent_required")
+
+    telemetry = TelemetryClass(record.get("mission_anchor", MISSION_STATEMENT), consent=True)
+    if not getattr(telemetry, "consent", True):
+        abort(403, "consent_required")
+
+    payload = request.get_json(silent=True) or {}
+    raw_embeddings = payload.get("embeddings")
+    try:
+        n_clusters = max(1, int(payload.get("n_clusters", 3)))
+    except (TypeError, ValueError):
+        n_clusters = 3
+
+    wallet_id = record.get("wallet", "guardian::anon")
+    auth_hash = record.get(
+        "auth_hash", hashlib.sha256(auth_header.encode("utf-8")).hexdigest()
+    )
+
+    guardian_key = "guardian" if "protect" in MISSION_STATEMENT.lower() else "steward"
+
+    if not isinstance(raw_embeddings, (list, tuple)) or not raw_embeddings:
+        dominance = {"hero": 0.0, "shadow": 0.0, "sage": 0.0, guardian_key: 1.0}
+        cluster_commitment = _compute_zk_hash([], wallet_id, auth_hash)
+        response = {
+            "archetype_dominance": dominance,
+            "silhouette_score": 0.0,
+            "mythic_alert": False,
+            "archetype_recommendation": "no_archetypes",
+            "message": "no_archetypes",
+            "cluster_commitment": cluster_commitment,
+            "cluster_labels": [],
+            "mission_statement": MISSION_STATEMENT,
+        }
+        return jsonify(response), 200
+
+    try:
+        embedding_array = np.asarray(raw_embeddings, dtype=float)
+    except (TypeError, ValueError):
+        abort(400, "invalid_embeddings")
+    if embedding_array.ndim != 2 or not np.all(np.isfinite(embedding_array)):
+        abort(400, "invalid_embeddings")
+
+    gradient = _guardian_resonance_gradient(record, telemetry)
+    history = record.get("karmic_cycle_history") or []
+    steady_state: dict[str, float] = {}
+    if isinstance(history, list) and history:
+        snapshot = history[-1]
+        raw_state = (snapshot.get("steady_state") if isinstance(snapshot, dict) else {}) or {}
+        if isinstance(raw_state, dict):
+            steady_state = {
+                str(key): float(value)
+                for key, value in raw_state.items()
+                if isinstance(value, (int, float))
+            }
+
+    cycle_coherence = float(
+        np.clip(np.mean(list(steady_state.values()) or [gradient]), 0.0, 1.0)
+    )
+    enlightenment_boost = float(
+        np.clip(expit(4.0 * (gradient - 0.5)) * (0.7 + 0.3 * cycle_coherence), 0.0, 1.0)
+    )
+
+    weighted_embeddings = embedding_array * (0.8 + 0.4 * gradient)
+    cluster_count = min(int(n_clusters), weighted_embeddings.shape[0])
+    labels = np.zeros(weighted_embeddings.shape[0], dtype=int)
+
+    if cluster_count > 1:
+        try:
+            kmeans = KMeans(n_clusters=cluster_count, random_state=42)
+            labels = kmeans.fit_predict(weighted_embeddings)
+        except Exception:  # pragma: no cover - clustering fallback guard
+            labels = np.zeros(weighted_embeddings.shape[0], dtype=int)
+            cluster_count = 1
+
+    unique_labels = np.unique(labels)
+    cluster_stats: list[tuple[int, int, np.ndarray, float]] = []
+    for label in unique_labels:
+        members = weighted_embeddings[labels == label]
+        if members.size == 0:
+            continue
+        erv_mean = float(np.clip(np.mean(members[:, 0]), 0.0, 1.0))
+        cluster_stats.append((int(label), members.shape[0], members.mean(axis=0), erv_mean))
+
+    try:
+        sil_value = float(silhouette_score(weighted_embeddings, labels))
+    except Exception:
+        sil_value = 0.0
+
+    cluster_payload = [
+        {
+            "cluster": stat[0],
+            "size": stat[1],
+            "centroid": [round(float(val), 6) for val in stat[2].tolist()],
+        }
+        for stat in cluster_stats
+    ]
+    cluster_commitment = _compute_zk_hash(cluster_payload, wallet_id, auth_hash)
+
+    dominance: dict[str, float] = {"hero": 0.0, "shadow": 0.0, "sage": 0.0}
+    if cluster_stats:
+        ordered = sorted(cluster_stats, key=lambda item: item[3])
+        total_points = float(sum(stat[1] for stat in ordered)) or 1.0
+
+        shadow_entry = ordered[0]
+        shadow_share = shadow_entry[1] / total_points
+        shadow_strength = float(np.clip(1.0 - shadow_entry[3], 0.0, 1.0))
+        dominance["shadow"] = round(
+            float(np.clip(0.6 * shadow_share + 0.4 * shadow_strength, 0.0, 1.0)), 6
+        )
+
+        hero_entry = ordered[-1]
+        hero_share = hero_entry[1] / total_points
+        hero_strength = float(np.clip(hero_entry[3] * enlightenment_boost, 0.0, 1.0))
+        dominance["hero"] = round(
+            float(np.clip(0.6 * hero_share + 0.4 * hero_strength, 0.0, 1.0)), 6
+        )
+
+        if len(ordered) > 2:
+            sage_entry = ordered[1]
+        else:
+            sage_entry = ordered[-1]
+        sage_share = sage_entry[1] / total_points
+        sage_strength = float(np.clip((sage_entry[3] + gradient) * 0.5, 0.0, 1.0))
+        dominance["sage"] = round(
+            float(
+                np.clip(0.6 * sage_share + 0.4 * sage_strength * enlightenment_boost, 0.0, 1.0)
+            ),
+            6,
+        )
+
+    dominance[guardian_key] = round(
+        float(np.clip(0.5 * gradient + 0.5 * enlightenment_boost, 0.0, 1.0)), 6
+    )
+
+    mythic_alert = bool(sil_value < 0.4)
+    recommendation = "balance_shadow" if mythic_alert else "archetypal_harmony"
+
+    record.setdefault("archetype_history", []).append(
+        {
+            "timestamp": time.time(),
+            "dominance": dominance,
+            "silhouette": round(sil_value, 6),
+            "alert": mythic_alert,
+        }
+    )
+
+    response: dict[str, Any] = {
+        "archetype_dominance": dominance,
+        "silhouette_score": round(sil_value, 6),
+        "mythic_alert": mythic_alert,
+        "archetype_recommendation": recommendation,
+        "cluster_commitment": cluster_commitment,
+        "cluster_labels": [int(label) for label in labels.tolist()],
+        "mission_statement": MISSION_STATEMENT,
+    }
+
+    if mythic_alert:
+        emit_id = str(uuid.uuid4())
+        STREAM_EMIT_QUEUE.append(
+            {
+                "mythic_alert": True,
+                "dominance": dominance,
+                "emit_id": emit_id,
+                "viz_cid": viz_cid,
+                "mission_statement": MISSION_STATEMENT,
             }
         )
         response["emit_id"] = emit_id

@@ -1659,3 +1659,133 @@ def test_empty_graph_default(monkeypatch: pytest.MonkeyPatch) -> None:
     assert body["neural_alert"] is False
     assert body["coherence_score"] == 0.0
     assert not STREAM_EMIT_QUEUE
+
+
+def test_analyzer_high_silhouette() -> None:
+    """Well-separated mythic clusters sustain harmony without triggering alerts."""
+
+    viz_cid = "ascension-harmony"
+    STREAM_EMIT_QUEUE.clear()
+    PINNED_VIZ[viz_cid] = {
+        "wallet": "guardian::mythic",
+        "mission_anchor": MISSION_STATEMENT,
+        "results": [{"score": 0.82}, {"score": 0.84}],
+        "consent": True,
+        "karmic_cycle_history": [
+            {"steady_state": {"empathy": 0.76, "protect": 0.8, "wisdom": 0.74}}
+        ],
+    }
+
+    embeddings = [
+        [0.92, 0.12, 0.18],
+        [0.87, 0.16, 0.2],
+        [0.24, 0.78, 0.34],
+        [0.27, 0.74, 0.32],
+        [0.6, 0.42, 0.76],
+        [0.63, 0.39, 0.71],
+    ]
+
+    test_client = app.test_client()
+    response = test_client.post(
+        f"/ascension_archetype_analyzer/{viz_cid}",
+        data=json.dumps({"embeddings": embeddings, "n_clusters": 3}),
+        headers={
+            "Authorization": "Bearer guardian_token",
+            "Content-Type": "application/json",
+            "X-Consent": "true",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["mythic_alert"] is False
+    assert body["archetype_recommendation"] == "archetypal_harmony"
+    assert body["silhouette_score"] >= 0.4
+    guardian_key = "guardian" if "protect" in MISSION_STATEMENT.lower() else "steward"
+    assert guardian_key in body["archetype_dominance"]
+    assert {"hero", "shadow", "sage"}.issubset(body["archetype_dominance"].keys())
+    assert len(body["cluster_labels"]) == len(embeddings)
+    assert len(body["cluster_commitment"]) == 64
+    assert not STREAM_EMIT_QUEUE
+
+
+def test_empty_embeddings_default() -> None:
+    """Empty analyzer payloads default to guardian balance without emissions."""
+
+    viz_cid = "ascension-empty"
+    STREAM_EMIT_QUEUE.clear()
+    PINNED_VIZ[viz_cid] = {
+        "wallet": "guardian::calm",
+        "mission_anchor": MISSION_STATEMENT,
+        "results": [{"score": 0.7}],
+        "consent": True,
+    }
+
+    test_client = app.test_client()
+    response = test_client.post(
+        f"/ascension_archetype_analyzer/{viz_cid}",
+        data=json.dumps({"embeddings": []}),
+        headers={
+            "Authorization": "Bearer guardian_token",
+            "Content-Type": "application/json",
+            "X-Consent": "true",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    guardian_key = "guardian" if "protect" in MISSION_STATEMENT.lower() else "steward"
+    assert body["archetype_recommendation"] == "no_archetypes"
+    assert body["silhouette_score"] == 0.0
+    assert body["mythic_alert"] is False
+    assert body["cluster_labels"] == []
+    assert body["archetype_dominance"][guardian_key] == 1.0
+    assert body["message"] == "no_archetypes"
+    assert len(body["cluster_commitment"]) == 64
+    assert not STREAM_EMIT_QUEUE
+
+
+def test_analyzer_low_silhouette_emits_alert() -> None:
+    """Highly overlapping embeddings trigger mythic alert emissions."""
+
+    viz_cid = "ascension-alert"
+    STREAM_EMIT_QUEUE.clear()
+    PINNED_VIZ[viz_cid] = {
+        "wallet": "guardian::shadow",
+        "mission_anchor": MISSION_STATEMENT,
+        "results": [{"score": 0.45}],
+        "consent": True,
+        "karmic_cycle_history": [
+            {"steady_state": {"empathy": 0.4, "protect": 0.48, "wisdom": 0.42}}
+        ],
+    }
+
+    embeddings = [
+        [0.11, 0.11, 0.12],
+        [0.1, 0.1, 0.11],
+        [0.105, 0.102, 0.108],
+        [0.109, 0.108, 0.11],
+    ]
+
+    test_client = app.test_client()
+    response = test_client.post(
+        f"/ascension_archetype_analyzer/{viz_cid}",
+        data=json.dumps({"embeddings": embeddings, "n_clusters": 3}),
+        headers={
+            "Authorization": "Bearer guardian_token",
+            "Content-Type": "application/json",
+            "X-Consent": "true",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["mythic_alert"] is True
+    assert body["archetype_recommendation"] == "balance_shadow"
+    assert body["silhouette_score"] <= 0.4
+    assert STREAM_EMIT_QUEUE
+    emission = STREAM_EMIT_QUEUE.popleft()
+    assert emission["mythic_alert"] is True
+    assert emission["viz_cid"] == viz_cid
+    assert emission["dominance"] == body["archetype_dominance"]
+    assert emission["emit_id"] == body["emit_id"]
