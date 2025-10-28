@@ -17,6 +17,7 @@ from typing import Any, Dict, Generator, Iterable
 from utils.live_oracle import get_live_oracle
 from utils.dao_gov import VaultfireDAOClient
 from services.symbiotic_sentience_interface import SymbioticSentienceInterface
+from services.entangled_ethical_entropies import EntangledEthicalEntropies
 from sdk import SymbioticForge
 
 try:  # pragma: no cover - transformers may be optional in minimal envs
@@ -4058,6 +4059,38 @@ def share_viz(wallet_id: str):
         response["oracle_tx"] = tx_result.get("tx_hash") or fallback_tx
     else:
         response["oracle_tx"] = tx_result or getattr(LIVE_ORACLE, "last_tx_hash", None) or fallback_tx
+    return jsonify(response), 200
+
+
+@app.route("/e3_diffuse", methods=["POST"])
+def e3_diffuse():
+    """Diffuse E3 lattice chaos for pilot intents and return diffusion telemetry."""
+
+    payload = request.get_json(silent=True) or {}
+    mission_anchor = str(payload.get("mission_anchor") or MISSION_STATEMENT)
+    try:
+        shard_dim = int(payload.get("shard_dim", 4))
+    except (TypeError, ValueError):
+        shard_dim = 4
+    try:
+        iterations = int(payload.get("iterations") or payload.get("num_iters", 3))
+    except (TypeError, ValueError):
+        iterations = 3
+    intents_payload = payload.get("intents") or []
+    if not isinstance(intents_payload, list):
+        intents_payload = []
+
+    engine = EntangledEthicalEntropies(mission_anchor, shard_dim=shard_dim)
+    results = engine.diffuse_convictions_loop(intents_payload, num_iters=iterations)
+    stream_events = list(stream_viz_updates())
+    if not stream_events:
+        stream_events = engine.drain_local_stream()
+
+    response = {
+        "mission_statement": MISSION_STATEMENT,
+        "results": results,
+        "stream_events": stream_events,
+    }
     return jsonify(response), 200
 
 
