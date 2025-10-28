@@ -59,17 +59,93 @@ DiffusionRecord = dict[str, Any]
 class EntangledEthicalEntropies:
     """Lattice-chaos entangles shards into emergent ethical fields for verifiable moral diffusion."""
 
-    def __init__(self, mission_anchor: str, shard_dim: int = 4) -> None:
+    def __init__(
+        self,
+        mission_anchor: str,
+        shard_dim: int = 4,
+        *,
+        comet_mode: bool = False,
+    ) -> None:
         self.mission_anchor = mission_anchor or MISSION_STATEMENT
         self.shard_dim = max(1, int(shard_dim))
         self.lattice_dim = self.shard_dim
         self.kyber_mod = 3329
+        self._comet_mode = bool(comet_mode)
+        self._comet_priors: dict[str, float] = {}
+        if self._comet_mode:
+            self._comet_priors = {
+                "ni_fe_ratio": 0.85,
+                "alpha_prior": 0.91,
+            }
         self.interface = SymbioticSentienceInterface(self.mission_anchor)
         self.interface.bind_stream_emitter(self._enqueue_stream_event)
         self._live_oracle = get_live_oracle()
         self._shard_proofs: dict[str, str] = {}
         self._last_entropy: float = 0.0
         self._local_stream_cache: deque[dict[str, Any]] = deque()
+
+    def comet_conjunction_attractor(
+        self,
+        neural_intent: dict[str, Any],
+        shards: Sequence[np.ndarray],
+    ) -> np.ndarray:
+        """Comet conjunction attractor entangling Ni/Fe priors with neural intents for emergent covenant jests."""
+
+        if not shards:
+            raise ValueError("e3_comet_requires_shards")
+
+        lattice = np.asarray([np.asarray(shard, dtype=float) for shard in shards], dtype=float)
+        state = lattice.mean(axis=0)
+        ni_fe_ratio = self._comet_priors.get("ni_fe_ratio", 0.0)
+        alpha_prior = self._comet_priors.get("alpha_prior", 0.0)
+        alpha_power = float(
+            neural_intent.get(
+                "alpha_wave",
+                neural_intent.get("alpha", neural_intent.get("alpha_power", alpha_prior)),
+            )
+        )
+        alpha_power = max(alpha_power, alpha_prior)
+        empathy_bonus = 0.0
+        if "empathy" in MISSION_STATEMENT.lower():
+            empathy_bonus = 0.01
+        shard_mean = lattice.sum(axis=0) / max(1, lattice.shape[0])
+        for _ in range(15):
+            state = (
+                self.kyber_mod
+                * np.sin(math.pi * (state + ni_fe_ratio * alpha_power))
+                + shard_mean
+            ) % self.kyber_mod
+            state = state / self.kyber_mod
+            alpha_power = min(1.0, alpha_power * (1.0 + empathy_bonus))
+
+        logits = state - np.max(state)
+        probabilities = np.exp(logits)
+        probabilities = probabilities / np.sum(probabilities)
+        theta_key = str(
+            neural_intent.get("theta", neural_intent.get("theta_intent", ""))
+        ).lower()
+        comet_chaos_boost = 0.05 if theta_key == "align" else 0.0
+        if comet_chaos_boost and empathy_bonus:
+            comet_chaos_boost += empathy_bonus
+        log_arg = np.clip(probabilities + comet_chaos_boost, 1e-12, 1.0 + comet_chaos_boost)
+        alignment_entropy = -float(np.sum(probabilities * np.log(log_arg)))
+        if theta_key == "align":
+            covenant_floor = alpha_power * (1.0 + ni_fe_ratio * 0.1)
+            alignment_entropy = max(alignment_entropy, min(1.0, covenant_floor))
+        self._last_entropy = alignment_entropy
+        attractor_hash = hashlib.sha3_256(state.tobytes()).hexdigest()
+        proof_payload = {
+            "attractor": attractor_hash,
+            "ni_fe": ni_fe_ratio,
+        }
+        self._shard_proofs["comet_attractor"] = generate_proof(proof_payload)
+        if alignment_entropy > 0.99:
+            self._emit_diffusion_event(
+                attractor_hash,
+                self._format_tx(encrypt(state.tolist())),
+                self._shard_proofs["comet_attractor"],
+            )
+        return state
 
     def shard_wallet_intent(self, wallet: str, gradient: float) -> np.ndarray:
         """Shard wallet intent into lattice vectors with zk-proven integrity."""
@@ -152,6 +228,7 @@ class EntangledEthicalEntropies:
         results: list[DiffusionRecord] = []
         for step in range(iterations):
             shards: list[np.ndarray] = []
+            neural_cache: list[dict[str, Any]] = []
             for intent in intents:
                 if not intent or not intent.get("consent", True):
                     continue
@@ -160,13 +237,28 @@ class EntangledEthicalEntropies:
                 neural_intent = self.interface.capture_neural_intent(wallet)
                 tuned_gradient = self.interface.co_evolve_moral_gradient(neural_intent, gradient)
                 shards.append(self.shard_wallet_intent(wallet, tuned_gradient))
+                neural_cache.append(neural_intent)
 
             if not shards:
                 break
 
-            field = self.entangle_shards(shards, num_agents=len(shards))
+            comet_entropy = None
+            alignment = False
+            if self._comet_mode and neural_cache:
+                field = self.comet_conjunction_attractor(neural_cache[-1], shards)
+                comet_entropy = float(self._last_entropy)
+                alignment = comet_entropy > 0.99
+            else:
+                field = self.entangle_shards(shards, num_agents=len(shards))
             field_hash = hashlib.sha3_256(field.tobytes()).hexdigest()
-            proof = generate_proof(field_hash + self.mission_anchor.lower())
+            if self._comet_mode:
+                proof_payload: Any = {
+                    "attractor": field_hash,
+                    "ni_fe": self._comet_priors.get("ni_fe_ratio", 0.0),
+                }
+            else:
+                proof_payload = field_hash + self.mission_anchor.lower()
+            proof = generate_proof(proof_payload)
             emergence = self.verify_ethical_emergence(field, proof)
             ciphertext = encrypt(field.tolist())
             tx_hash = self._format_tx(ciphertext)
@@ -178,6 +270,8 @@ class EntangledEthicalEntropies:
                     "entropy": float(self._last_entropy),
                     "tx": tx_hash,
                     "emergence": bool(emergence),
+                    "comet_entropy": float(comet_entropy) if comet_entropy is not None else None,
+                    "alignment": bool(alignment),
                 }
             )
         return results
