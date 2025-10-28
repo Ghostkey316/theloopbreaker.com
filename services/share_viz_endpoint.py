@@ -4094,6 +4094,46 @@ def e3_diffuse():
     return jsonify(response), 200
 
 
+@app.route("/e3_comet", methods=["POST"])
+def e3_comet():
+    """Toggle comet conjunction mode for E3 diffusion outputs."""
+
+    payload = request.get_json(silent=True) or {}
+    mission_anchor = str(payload.get("mission_anchor") or MISSION_STATEMENT)
+    try:
+        shard_dim = int(payload.get("shard_dim", 4))
+    except (TypeError, ValueError):
+        shard_dim = 4
+    try:
+        iterations = int(payload.get("iterations") or payload.get("num_iters", 3))
+    except (TypeError, ValueError):
+        iterations = 3
+    intents_payload = payload.get("intents") or []
+    if not isinstance(intents_payload, list):
+        intents_payload = []
+
+    comet_enabled = bool(payload.get("enabled", True))
+    engine = EntangledEthicalEntropies(
+        mission_anchor,
+        shard_dim=shard_dim,
+        comet_mode=comet_enabled,
+    )
+    results = engine.diffuse_convictions_loop(intents_payload, num_iters=iterations)
+    stream_events = list(stream_viz_updates())
+    if not stream_events:
+        stream_events = engine.drain_local_stream()
+
+    covenant_alignment = any(record.get("alignment") for record in results)
+    response = {
+        "mission_statement": MISSION_STATEMENT,
+        "results": results,
+        "stream_events": stream_events,
+        "comet_mode": comet_enabled,
+        "covenant_jest_emerged": bool(covenant_alignment),
+    }
+    return jsonify(response), 200
+
+
 @app.route("/ssi_co_evolve", methods=["POST"])
 def ssi_co_evolve():
     """Expose Symbiotic Sentience Interface loops for subconscious sync pilots."""
