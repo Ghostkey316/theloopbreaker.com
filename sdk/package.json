@@ -1,0 +1,27 @@
+{
+  "name": "vaultfire-sdk",
+  "version": "0.1.0",
+  "description": "Dual Python/JS SDK for Vaultfire attestation pilots.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "module": "dist/index.js",
+  "files": [
+    "dist",
+    "README.md",
+    "index.ts"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "jest --runTestsByPath sdk/tests/symbioticForge.test.ts"
+  },
+  "keywords": [
+    "vaultfire",
+    "sdk",
+    "attestation"
+  ],
+  "author": "Vaultfire",
+  "license": "MIT",
+  "dependencies": {
+    "ethers": "^6.10.0"
+  }
+}

@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vaultfire-sdk"
+version = "0.1.0"
+description = "Dual Python/JS SDK for Vaultfire attestation pilots"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Vaultfire" }]
+keywords = ["vaultfire", "sdk", "attestation"]
+dependencies = [
+    "numpy>=1.23",
+]
+
+[project.urls]
+Homepage = "https://github.com/Ghostkey316/ghostkey-316-vaultfire-init"
+Repository = "https://github.com/Ghostkey316/ghostkey-316-vaultfire-init"

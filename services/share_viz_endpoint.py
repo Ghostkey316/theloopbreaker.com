@@ -16,6 +16,7 @@ from typing import Any, Dict, Generator, Iterable
 
 from utils.live_oracle import get_live_oracle
 from services.symbiotic_sentience_interface import SymbioticSentienceInterface
+from sdk import SymbioticForge
 
 try:  # pragma: no cover - transformers may be optional in minimal envs
     from transformers import pipeline
@@ -4109,6 +4110,23 @@ def attest_viz(ipfs_cid: str):
 
 
 # Future Base oracle integration hook placeholder
+
+
+@app.route("/sdk_example", methods=["POST"])
+def sdk_example() -> Response:
+    """Demonstrate the SymbioticForge SDK flow for onboarding demos."""
+
+    payload = request.get_json(silent=True) or {}
+    wallet = str(payload.get("wallet", "vaultfire::demo"))
+    pilot = str(payload.get("pilot", "loyalty"))
+    intent = payload.get("intent") or {}
+    live_mode = bool(payload.get("live_mode", False))
+
+    forge = SymbioticForge(wallet=wallet, live_mode=live_mode)
+    tx_hash = forge.attest_moral_loop(intent)
+    simulation = forge.run_pilot_sim(pilot)
+
+    return jsonify({"tx_hash": tx_hash, "simulation": simulation}), 201
 
 def dispatch_to_base_oracle(
     cid: str,
