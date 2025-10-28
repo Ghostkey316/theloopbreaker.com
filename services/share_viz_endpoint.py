@@ -1522,6 +1522,193 @@ def virtue_hierarchy_optimizer(viz_cid: str):
     return jsonify(response), 200
 
 
+@app.route("/dharma_dialectic_debater/<viz_cid>", methods=["POST"])
+def dharma_dialectic_debater(viz_cid: str):
+    """Run GAN-style clause debates to stress-test virtues anchored to protect in the mission."""
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header != "Bearer guardian_token":
+        abort(401, "guardian_auth_required")
+
+    consent_header = request.headers.get("X-Consent", "true").lower()
+    if consent_header in {"false", "0", "no"}:
+        abort(403, "consent_required")
+
+    record = PINNED_VIZ.get(viz_cid)
+    if record is None:
+        abort(404, "viz_not_found")
+
+    if not record.get("consent", True):
+        abort(403, "consent_required")
+
+    payload = request.get_json(silent=True) or {}
+    virtue_clause = payload.get("virtue_clause")
+    raw_rounds = payload.get("debate_rounds", 5)
+
+    if not isinstance(virtue_clause, str):
+        abort(400, "clause_debate_invalid")
+
+    clause_parts = [part.strip() for part in virtue_clause.split(">")]
+    if len(clause_parts) != 2 or not all(clause_parts):
+        abort(400, "clause_debate_invalid")
+    left_clause, right_clause = clause_parts
+    left_norm = left_clause.lower()
+    right_norm = right_clause.lower()
+
+    try:
+        debate_rounds = int(raw_rounds)
+    except (TypeError, ValueError):
+        abort(400, "clause_debate_invalid")
+    debate_rounds = max(1, min(debate_rounds, 20))
+
+    mission_anchor = record.get("mission_anchor", MISSION_STATEMENT)
+    telemetry = TelemetryClass(mission_anchor, consent=True)
+    if not getattr(telemetry, "consent", True):
+        abort(403, "consent_required")
+
+    clauses = _mission_clauses_for_viz(record, telemetry, viz_cid)
+    clause_symbols = {
+        literal.strip("~").lower()
+        for clause in clauses
+        for literal in clause
+        if isinstance(literal, str) and literal.strip()
+    }
+    synonym_map = {"protect": {"safeguard"}, "empathy": {"care"}}
+    for canonical, alternatives in synonym_map.items():
+        if canonical not in clause_symbols and clause_symbols.intersection(alternatives):
+            clause_symbols.add(canonical)
+    if left_norm not in clause_symbols or right_norm not in clause_symbols:
+        abort(400, "clause_debate_invalid")
+
+    normalized_clauses, _ = _normalize_mission_clauses(clauses)
+    paradox_consistent = not normalized_clauses or _solve_cnf_clauses(normalized_clauses)
+
+    stored_weights = record.get("virtue_weights") or {}
+    virtue_weights = {
+        str(key).lower(): float(value)
+        for key, value in stored_weights.items()
+        if isinstance(key, str) and isinstance(value, (int, float))
+    }
+    if not virtue_weights:
+        fallback_terms = sorted(clause_symbols) or ["protect", "empathy"]
+        weight = 1.0 / len(fallback_terms)
+        virtue_weights = {term: weight for term in fallback_terms}
+
+    if left_norm not in virtue_weights or right_norm not in virtue_weights:
+        abort(400, "clause_debate_invalid")
+
+    virtue_pairs = list(combinations(sorted(virtue_weights.keys()), 2))
+    if not virtue_pairs:
+        abort(400, "clause_debate_invalid")
+
+    clause_delta = abs(virtue_weights[left_norm] - virtue_weights[right_norm])
+    loss_history: list[float] = []
+
+    if HAS_TORCH:
+        torch.manual_seed(1729)
+
+        class _DialecticGenerator(nn.Module):
+            def __init__(self) -> None:
+                super().__init__()
+                self.layer = nn.Linear(2, 2)
+
+            def forward(self, inputs: torch.Tensor) -> torch.Tensor:  # noqa: D401
+                return torch.tanh(self.layer(inputs))
+
+        class _DialecticDiscriminator(nn.Module):
+            def __init__(self) -> None:
+                super().__init__()
+                self.layer = nn.Linear(2, 1)
+
+            def forward(self, inputs: torch.Tensor) -> torch.Tensor:  # noqa: D401
+                return torch.sigmoid(self.layer(inputs))
+
+        generator = _DialecticGenerator()
+        discriminator = _DialecticDiscriminator()
+        optimizer_g = torch.optim.SGD(generator.parameters(), lr=0.1)
+        optimizer_d = torch.optim.SGD(discriminator.parameters(), lr=0.1)
+        criterion = nn.BCELoss()
+
+        pair_batches: list[tuple[set[str], torch.Tensor]] = []
+        for virtue_a, virtue_b in virtue_pairs:
+            tensor_input = torch.tensor(
+                [[virtue_weights[virtue_a], virtue_weights[virtue_b]]], dtype=torch.float32
+            )
+            pair_batches.append(({virtue_a, virtue_b}, tensor_input))
+
+        for round_index in range(debate_rounds):
+            pair_set, pair_tensor = pair_batches[round_index % len(pair_batches)]
+            noise = torch.randn_like(pair_tensor) * 0.05
+            debate_seed = pair_tensor + noise
+
+            optimizer_d.zero_grad()
+            real_target = torch.ones((1, 1))
+            fake_target = torch.zeros((1, 1))
+            real_score = discriminator(debate_seed)
+            generated_counter = generator(pair_tensor)
+            fake_score = discriminator(generated_counter.detach())
+            d_loss_real = criterion(real_score, real_target)
+            d_loss_fake = criterion(fake_score, fake_target)
+            d_loss = 0.5 * (d_loss_real + d_loss_fake)
+            d_loss.backward()
+            optimizer_d.step()
+
+            optimizer_g.zero_grad()
+            debate_counter = generator(debate_seed)
+            g_score = discriminator(debate_counter)
+            g_loss = criterion(g_score, real_target)
+            g_loss.backward()
+            optimizer_g.step()
+
+            discriminator_loss = 0.5 * (
+                float(real_score.mean().item()) + (1.0 - float(fake_score.mean().item()))
+            )
+            clause_modifier = 1.0
+            if {left_norm, right_norm} == pair_set:
+                clause_modifier -= min(clause_delta, 1.0) * 0.6
+            if not paradox_consistent:
+                clause_modifier *= 0.85
+            adjusted_loss = float(np.clip(discriminator_loss * clause_modifier, 0.0, 1.0))
+            loss_history.append(adjusted_loss)
+    else:
+        baseline = float(np.clip(1.0 - min(clause_delta, 1.0) * 0.6, 0.0, 1.0))
+        if not paradox_consistent:
+            baseline *= 0.85
+        loss_history = [baseline for _ in range(debate_rounds)]
+
+    dialectic_score = float(np.clip(float(np.mean(loss_history)) if loss_history else 0.0, 0.0, 1.0))
+    robustness_alert = bool(dialectic_score < 0.7)
+    debate_recommendation = "refine" if robustness_alert else "robust"
+
+    wallet_id = record.get("wallet", "guardian::anon")
+    auth_hash = hashlib.sha256(auth_header.encode("utf-8")).hexdigest()
+    debate_rounds_commitment = [
+        {"round": idx, "loss": round(value, 6)} for idx, value in enumerate(loss_history)
+    ]
+    debate_commitment = _compute_zk_hash(debate_rounds_commitment, wallet_id, auth_hash)
+    record["dialectic_commitment"] = debate_commitment
+
+    if robustness_alert:
+        emit_id = str(uuid.uuid4())
+        STREAM_EMIT_QUEUE.append(
+            {
+                "dialectic_alert": True,
+                "score": round(dialectic_score, 6),
+                "emit_id": emit_id,
+                "viz_cid": viz_cid,
+            }
+        )
+
+    response = {
+        "dialectic_score": round(dialectic_score, 6),
+        "robustness_alert": robustness_alert,
+        "debate_recommendation": debate_recommendation,
+        "debate_commitment": debate_commitment,
+        "mission_statement": MISSION_STATEMENT,
+    }
+    return jsonify(response), 200
+
+
 @app.route("/karma_karmic_cycle_sim/<viz_cid>", methods=["GET"])
 def karma_karmic_cycle_sim(viz_cid: str):
     """Simulate karmic cycles aligned to ``MISSION_STATEMENT`` with protect as the absorbing virtue."""
