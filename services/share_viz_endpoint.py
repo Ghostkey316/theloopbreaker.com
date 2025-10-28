@@ -1221,8 +1221,7 @@ def narrative_neutrality_audit(viz_cid: str):
     if record is None:
         abort(404, "viz_not_found")
 
-    mission_anchor = record.get("mission_anchor", MISSION_STATEMENT)
-    telemetry = TelemetryClass(mission_anchor, consent=True)
+    telemetry = TelemetryClass(record.get("mission_anchor", MISSION_STATEMENT), consent=True)
     if not getattr(telemetry, "consent", True):
         abort(403, "consent_required")
 
@@ -2015,6 +2014,152 @@ def enlightenment_emergence_predictor(viz_cid: str):
                 "emit_id": emit_id,
                 "viz_cid": viz_cid,
                 "mission_statement": MISSION_STATEMENT,
+            }
+        )
+        response["emit_id"] = emit_id
+
+    return jsonify(response), 200
+
+
+@app.route("/satori_synthesis_oracle/<viz_cid>", methods=["POST"])
+def satori_synthesis_oracle(viz_cid: str):
+    """Fuse ERV virtue latents via a VAE stub honoring the ``MISSION_STATEMENT`` empathy prior."""
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header != "Bearer guardian_token":
+        abort(401, "guardian_auth_required")
+
+    if request.headers.get("X-Consent", "true").lower() in {"false", "0", "no"}:
+        abort(403, "consent_required")
+
+    record = PINNED_VIZ.get(viz_cid)
+    if record is None:
+        abort(404, "viz_not_found")
+    if not record.get("consent", True):
+        abort(403, "consent_required")
+
+    payload = request.get_json(silent=True) or {}
+    latent_values = payload.get("virtue_latents")
+    if not isinstance(latent_values, (list, tuple)) or not latent_values:
+        abort(400, "latent_synthesis_invalid")
+    try:
+        latent_array = np.array(latent_values, dtype=float)
+    except (TypeError, ValueError):
+        abort(400, "latent_synthesis_invalid")
+    if latent_array.ndim != 1 or not np.all(np.isfinite(latent_array)):
+        abort(400, "latent_synthesis_invalid")
+
+    try:
+        synthesis_rounds = max(1, int(payload.get("synthesis_rounds", 3)))
+    except (TypeError, ValueError):
+        synthesis_rounds = 3
+
+    mission_anchor = record.get("mission_anchor", MISSION_STATEMENT)
+    telemetry = TelemetryClass(mission_anchor, consent=True)
+    if not getattr(telemetry, "consent", True):
+        abort(403, "consent_required")
+
+    gradient = _guardian_resonance_gradient(record, telemetry)
+    history = record.get("karmic_cycle_history")
+    steady_state: dict[str, float] = {}
+    if isinstance(history, list) and history:
+        snapshot = history[-1]
+        raw_state = (snapshot.get("steady_state") if isinstance(snapshot, dict) else {}) or {}
+        if isinstance(raw_state, dict):
+            steady_state = {
+                str(key): float(value)
+                for key, value in raw_state.items()
+                if isinstance(value, (int, float))
+            }
+
+    empathy_anchor = float(np.clip(steady_state.get("empathy", gradient), 0.0, 1.0))
+    cycle_coherence = float(np.clip(np.mean(list(steady_state.values()) or [gradient]), 0.0, 1.0))
+    enlightenment_prob = float(expit(4.0 * (gradient - 0.5)))
+
+    latent_tensor = latent_array.reshape(1, -1)
+    empathy_prior = np.full_like(latent_tensor, empathy_anchor)
+    erv_latents = latent_tensor * (0.8 + 0.2 * gradient)
+    decoder_weight = float(
+        np.clip(enlightenment_prob * (0.7 + 0.3 * cycle_coherence), 0.0, 1.0)
+    )
+
+    if HAS_TORCH:
+        torch.manual_seed(42)
+
+        class _LatentVAE(nn.Module):  # pragma: no cover - exercised in torch environments
+            def __init__(self, input_dim: int) -> None:
+                super().__init__()
+                self.encoder = nn.Linear(input_dim, 2)
+                self.mu = nn.Linear(2, 2)
+                self.logvar = nn.Linear(2, 2)
+                self.decoder = nn.Linear(2, input_dim)
+
+            def forward(self, inputs: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+                hidden = torch.tanh(self.encoder(inputs))
+                mu = self.mu(hidden)
+                logvar = torch.tanh(self.logvar(hidden))
+                std = torch.exp(0.5 * logvar)
+                latent = mu + torch.randn_like(std) * std
+                recon = self.decoder(torch.tanh(latent))
+                return recon, mu, logvar
+
+        input_tensor = torch.tensor(erv_latents, dtype=torch.float32)
+        target_tensor = torch.tensor(
+            decoder_weight * erv_latents + (1.0 - decoder_weight) * empathy_prior,
+            dtype=torch.float32,
+        )
+        vae = _LatentVAE(input_tensor.shape[1])
+        optimizer = torch.optim.Adam(vae.parameters(), lr=0.05 * (1.0 + 0.2 * cycle_coherence))
+
+        for _ in range(synthesis_rounds):
+            optimizer.zero_grad()
+            recon, mu, logvar = vae(input_tensor)
+            loss = nn.functional.mse_loss(recon, target_tensor)
+            kl = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
+            (loss + 0.1 * kl).backward()
+            optimizer.step()
+
+        with torch.no_grad():
+            mse_value = float(nn.functional.mse_loss(vae(input_tensor)[0], input_tensor).item())
+    else:
+        reconstruction = decoder_weight * erv_latents + (1.0 - decoder_weight) * empathy_prior
+        mse_value = float(np.mean((reconstruction - latent_tensor) ** 2))
+
+    satori_score = float(np.clip(mse_value, 0.0, 1.0))
+    coherence_alert = bool(satori_score > 0.05)
+    synthesis_recommendation = "refine_latents" if coherence_alert else "emerged"
+
+    wallet_id = record.get("wallet", "guardian::anon")
+    auth_hash = record.get(
+        "auth_hash", hashlib.sha256(auth_header.encode("utf-8")).hexdigest()
+    )
+    latent_commitment = _compute_zk_hash(
+        [
+            {"index": idx, "latent": round(float(value), 6)}
+            for idx, value in enumerate(latent_array.tolist())
+        ],
+        wallet_id,
+        auth_hash,
+    )
+
+    response = {
+        "satori_score": round(satori_score, 6),
+        "coherence_alert": coherence_alert,
+        "synthesis_recommendation": synthesis_recommendation,
+        "latent_commitment": latent_commitment,
+        "enlightenment_prob": round(enlightenment_prob, 6),
+        "cycle_coherence": round(cycle_coherence, 6),
+        "mission_statement": MISSION_STATEMENT,
+    }
+
+    if not coherence_alert:
+        emit_id = str(uuid.uuid4())
+        STREAM_EMIT_QUEUE.append(
+            {
+                "satori_alert": False,
+                "score": round(satori_score, 6),
+                "emit_id": emit_id,
+                "viz_cid": viz_cid,
             }
         )
         response["emit_id"] = emit_id
