@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Dict, Generator, Iterable
 
 from utils.live_oracle import get_live_oracle
+from services.symbiotic_sentience_interface import SymbioticSentienceInterface
 
 try:  # pragma: no cover - transformers may be optional in minimal envs
     from transformers import pipeline
@@ -4024,6 +4025,52 @@ def share_viz(wallet_id: str):
     else:
         response["oracle_tx"] = tx_result or getattr(LIVE_ORACLE, "last_tx_hash", None) or fallback_tx
     return jsonify(response), 200
+
+
+@app.route("/ssi_co_evolve", methods=["POST"])
+def ssi_co_evolve():
+    """Expose Symbiotic Sentience Interface loops for subconscious sync pilots."""
+
+    payload = request.get_json(silent=True) or {}
+    mission_anchor = str(payload.get("mission_anchor") or MISSION_STATEMENT)
+    wallet = str(payload.get("wallet") or "guardian::pilot")
+    consent_flag = bool(payload.get("consent", True))
+    try:
+        iterations = int(payload.get("iterations", 3))
+    except (TypeError, ValueError):
+        iterations = 3
+    iterations = max(1, iterations)
+
+    interface = SymbioticSentienceInterface(mission_anchor)
+    interface.bind_stream_emitter(_append_stream_event)
+    interface._active_wallet = wallet  # noqa: SLF001 - runtime configuration shim
+    interface.set_consent(consent_flag)
+
+    if not interface.consent_enabled:
+        return jsonify({"status": "consent_required"}), 403
+
+    try:
+        loop_results = interface.sync_subconscious_loop(num_iters=iterations)
+    except PermissionError:
+        abort(403, "consent_required")
+
+    latest_tx = (
+        loop_results[-1]["tx"]
+        if loop_results
+        else getattr(LIVE_ORACLE, "last_tx_hash", getattr(LIVE_ORACLE, "sandbox_tx", "base::sandbox"))
+    )
+
+    return (
+        jsonify(
+            {
+                "mission_statement": mission_anchor,
+                "iterations": len(loop_results),
+                "results": loop_results,
+                "latest_tx": latest_tx,
+            }
+        ),
+        200,
+    )
 
 
 @app.route("/health/live_oracles", methods=["GET"])
