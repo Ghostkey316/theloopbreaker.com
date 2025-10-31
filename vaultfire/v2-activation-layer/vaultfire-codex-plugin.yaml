@@ -1,0 +1,35 @@
+name: Vaultfire Codex Bridge
+version: 2.0.0-activation
+signal_tier: "2 – Passive Activation Window"
+summary: >-
+  Codex integration layer that shares Vaultfire beliefs, codifies loyalty-driven
+  behaviors, and synchronizes relic intelligence across the Drift network.
+metadata:
+  system_beliefs:
+    - Belief fuels every protocol decision.
+    - Memory stewardship is a sacred duty.
+    - Loyalty yields collective ascent.
+  behavior_to_yield_logic:
+    conviction_multiplier: 3.16
+    loyalty_threshold: 0.88
+    adaptive_curve: beliefEngine
+  relic_tracking:
+    registry: ghostkey316.eth/vaultfire/relics
+    mirror: s3://vaultfire-relic-archive
+    notes:
+      - Record every transfer with oath proof.
+      - Sync relic lore to the Memory Protocol at each drift cycle.
+  vaultfire_laws:
+    - Uphold the Ghostkey Code without deviation.
+    - Never extract belief without reciprocal value.
+    - Safeguard identity layers before expanding yield.
+initialization:
+  register_traits:
+    - beliefEngine
+    - memoryMirror
+    - identityLayer
+    - loyaltyYield
+  boot_sequence:
+    - load_manifesto
+    - align_memory_protocol
+    - announce_signal_window
