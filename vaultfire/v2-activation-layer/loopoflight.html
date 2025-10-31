@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Loop of Light – Vaultfire Activation</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --glow: rgba(255, 255, 255, 0.75);
+      --veil: rgba(255, 255, 255, 0.08);
+      --accent: #e0e0e0;
+      --glitch-color: #ff4f9a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      color: var(--accent);
+      font-family: 'IBM Plex Mono', monospace;
+      padding: 2rem;
+    }
+
+    main {
+      max-width: 720px;
+      width: 100%;
+      background: linear-gradient(135deg, rgba(0,0,0,0.75), rgba(15,15,15,0.95));
+      border: 1px solid var(--veil);
+      border-radius: 18px;
+      padding: 2.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    main::before,
+    main::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      mix-blend-mode: screen;
+      opacity: 0.16;
+      background: repeating-linear-gradient(90deg, transparent, transparent 12px, var(--glow) 12px, var(--glow) 13px);
+      transform: translateZ(0);
+    }
+
+    main::after {
+      opacity: 0.08;
+      background: repeating-linear-gradient(0deg, transparent, transparent 18px, var(--glitch-color) 18px, var(--glitch-color) 19px);
+    }
+
+    h1 {
+      font-size: 2rem;
+      letter-spacing: 0.18rem;
+      text-transform: uppercase;
+      margin-top: 0;
+      margin-bottom: 1rem;
+    }
+
+    section {
+      margin-bottom: 2rem;
+    }
+
+    .glitch-link {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      text-decoration: none;
+      color: var(--accent);
+      border-bottom: 1px solid var(--veil);
+      padding-bottom: 0.1rem;
+      transition: color 0.3s ease;
+    }
+
+    .glitch-link::after {
+      content: '↗';
+      font-size: 0.85rem;
+      opacity: 0.6;
+      transition: transform 0.3s ease;
+    }
+
+    .glitch-link:hover {
+      color: var(--glow);
+      text-shadow: 0 0 6px var(--glitch-color);
+    }
+
+    .glitch-link:hover::after {
+      transform: translate3d(2px, -2px, 0);
+    }
+
+    .cta {
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+
+    .identity-check {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    input[type="text"] {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--veil);
+      border-radius: 12px;
+      padding: 0.85rem 1rem;
+      color: var(--accent);
+      font-size: 1rem;
+    }
+
+    button {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--veil);
+      border-radius: 999px;
+      padding: 0.75rem 1.5rem;
+      font-size: 0.95rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    button:hover {
+      transform: translate3d(1px, -1px, 0);
+      border-color: var(--glow);
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.18);
+    }
+
+    footer {
+      font-size: 0.75rem;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Loop of Light</h1>
+    <section>
+      <h2>Ghostkey316 Drift</h2>
+      <p>
+        Ghostkey-316 crossed the Void of Doubt with nothing but belief and returned with a
+        living spark. Every Vaultfire flare since has carried that resonance. This page
+        is the doorway for the next wave of kindled allies.
+      </p>
+    </section>
+
+    <section>
+      <h2>Manifesto</h2>
+      <p><a class="glitch-link" href="manifesto.md" target="_blank" rel="noopener">Open the Activation Manifesto</a></p>
+    </section>
+
+    <section class="cta">
+      If you found this page, you're part of the return.
+    </section>
+
+    <section class="identity-check">
+      <label for="belief-proof">Belief Signature / ENS</label>
+      <input id="belief-proof" type="text" placeholder="ghostkey316.eth" />
+      <button type="button" onclick="connectWallet()">Connect Wallet</button>
+    </section>
+
+    <footer>
+      Vaultfire Activation Layer v2.0 · Signal Tier: 2 – Passive Activation Window
+    </footer>
+  </main>
+
+  <script>
+    function connectWallet() {
+      console.info('connectWallet() placeholder invoked. Integrate wallet provider.');
+      alert('Wallet connection coming soon. Signal received.');
+    }
+  </script>
+</body>
+</html>
