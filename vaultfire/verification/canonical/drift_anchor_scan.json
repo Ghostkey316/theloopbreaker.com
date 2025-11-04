@@ -1,0 +1,123 @@
+{
+  "summary": {
+    "totalUsers": 3,
+    "ghostPulses": 2,
+    "legacyBuilders": 2,
+    "generatedAt": "2025-11-04T19:42:59.157Z"
+  },
+  "results": [
+    {
+      "userId": "ghostkey316",
+      "wallet": "ghostkey316.eth",
+      "identifierHash": "14695e4d204f246dc8a7b15f63f700d2349f127b41b5d662987414f537f43880",
+      "driftTimeHours": 313,
+      "lastInteraction": "2025-01-15T11:00:00.000Z",
+      "lastInteractionType": "dapp_use",
+      "beliefCoefficient": 2.7,
+      "previousBeliefScore": 240,
+      "previousAnchorScore": 90,
+      "anchorScore": 99.191,
+      "anchorMeta": {
+        "anchorScore": 88.191,
+        "baseScore": 845.1,
+        "decayedScore": 88.1912556,
+        "resetApplied": false,
+        "driftTimeHours": 313,
+        "previousAnchorScore": 90,
+        "decayMultiplier": 0.104356
+      },
+      "ghostPulse": true,
+      "legacyBonusApplied": 11,
+      "legacyBuilder": true,
+      "history": [
+        {
+          "interactionType": "github_commit",
+          "timestamp": "2025-01-02T10:00:00.000Z",
+          "driftTimeHours": 0
+        },
+        {
+          "interactionType": "dapp_use",
+          "timestamp": "2025-01-15T11:00:00.000Z",
+          "driftTimeHours": 313
+        }
+      ]
+    },
+    {
+      "userId": "signalarchitect",
+      "wallet": "0x9999999999999999999999999999999999999999",
+      "identifierHash": "45b574b0d167f3e9f38abe0845731cd39d1ae109d2c74aa59f1615d2ce9c2b28",
+      "driftTimeHours": 1.5,
+      "lastInteraction": "2025-02-12T10:30:00.000Z",
+      "lastInteractionType": "dapp_use",
+      "beliefCoefficient": 1.8,
+      "previousBeliefScore": 210,
+      "previousAnchorScore": 65,
+      "anchorScore": 2.671,
+      "anchorMeta": {
+        "anchorScore": 2.671,
+        "baseScore": 2.7,
+        "decayedScore": 2.6709156000000003,
+        "resetApplied": false,
+        "driftTimeHours": 1.5,
+        "previousAnchorScore": 65,
+        "decayMultiplier": 0.989228
+      },
+      "ghostPulse": false,
+      "legacyBonusApplied": 0,
+      "legacyBuilder": false,
+      "history": [
+        {
+          "interactionType": "api_ping",
+          "timestamp": "2025-02-12T08:00:00.000Z",
+          "driftTimeHours": 0
+        },
+        {
+          "interactionType": "social_signal",
+          "timestamp": "2025-02-12T09:00:00.000Z",
+          "driftTimeHours": 1
+        },
+        {
+          "interactionType": "dapp_use",
+          "timestamp": "2025-02-12T10:30:00.000Z",
+          "driftTimeHours": 1.5
+        }
+      ]
+    },
+    {
+      "userId": "legacy_builder",
+      "wallet": "legacy.builder.eth",
+      "identifierHash": "365aab1c70b0c51b6bfd4779a951582d20597b761163f148c85318868873b5a3",
+      "driftTimeHours": 1708,
+      "lastInteraction": "2025-02-10T16:00:00.000Z",
+      "lastInteractionType": "github_commit",
+      "beliefCoefficient": 3.1,
+      "previousBeliefScore": 260,
+      "previousAnchorScore": 104,
+      "anchorScore": 15.606,
+      "anchorMeta": {
+        "anchorScore": 4.606,
+        "baseScore": 5294.8,
+        "decayedScore": 4.606476,
+        "resetApplied": false,
+        "driftTimeHours": 1708,
+        "previousAnchorScore": 104,
+        "decayMultiplier": 0.00087
+      },
+      "ghostPulse": true,
+      "legacyBonusApplied": 11,
+      "legacyBuilder": true,
+      "history": [
+        {
+          "interactionType": "social_signal",
+          "timestamp": "2024-12-01T12:00:00.000Z",
+          "driftTimeHours": 0
+        },
+        {
+          "interactionType": "github_commit",
+          "timestamp": "2025-02-10T16:00:00.000Z",
+          "driftTimeHours": 1708
+        }
+      ]
+    }
+  ]
+}

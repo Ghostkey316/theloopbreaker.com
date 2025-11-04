@@ -1,0 +1,38 @@
+{
+  "users": [
+    {
+      "id": "ghostkey316",
+      "wallet": "ghostkey316.eth",
+      "beliefCoefficient": 2.7,
+      "previousBeliefScore": 240,
+      "previousAnchorScore": 90,
+      "interactions": [
+        { "type": "github_commit", "timestamp": "2025-01-02T10:00:00Z" },
+        { "type": "dapp_use", "timestamp": "2025-01-15T11:00:00Z" }
+      ]
+    },
+    {
+      "id": "signalarchitect",
+      "wallet": "0x9999999999999999999999999999999999999999",
+      "beliefCoefficient": 1.8,
+      "previousBeliefScore": 210,
+      "previousAnchorScore": 65,
+      "interactions": [
+        { "type": "api_ping", "timestamp": "2025-02-12T08:00:00Z" },
+        { "type": "social_signal", "timestamp": "2025-02-12T09:00:00Z" },
+        { "type": "dapp_use", "timestamp": "2025-02-12T10:30:00Z" }
+      ]
+    },
+    {
+      "id": "legacy_builder",
+      "wallet": "legacy.builder.eth",
+      "beliefCoefficient": 3.1,
+      "previousBeliefScore": 260,
+      "previousAnchorScore": 104,
+      "interactions": [
+        { "type": "social_signal", "timestamp": "2024-12-01T12:00:00Z" },
+        { "type": "github_commit", "timestamp": "2025-02-10T16:00:00Z" }
+      ]
+    }
+  ]
+}
