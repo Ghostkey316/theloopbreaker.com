@@ -5,6 +5,10 @@
 [![Trust Coverage](docs/badges/trust-badge.svg)](./docs/badges/trust-badge.svg)
 **Belief-secured intelligence for partners who lead with ethics.**
 
+> *"Proof of presence required.  
+> Watching ain't building.  
+> Glass breaks. Fire burns."*
+
 ## Project Overview
 Vaultfire is a production-ready, morals-first protocol that fuses belief-driven intelligence with verifiable human identity. It orchestrates Codex reasoning engines, NFT-based identity anchors, and partner-focused loyalty modules to deliver a resilient activation stack for ethical AI collaboration.
 
