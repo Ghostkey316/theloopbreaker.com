@@ -9,6 +9,7 @@
   "scripts": {
     "test": "jest --coverage --runInBand --detectOpenHandles && node tools/generateCoverageBadge.js",
     "test:coverage": "jest --coverage",
+    "coverage:sonar": "node tools/sonar-coverage-stub.js",
     "signal-shield": "node vaultfire_signal_shield/index.js",
     "start:api": "node auth/expressExample.js",
     "dashboard:dev": "vite --config dashboard/vite.config.mjs",

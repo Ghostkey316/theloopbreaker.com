@@ -2,16 +2,19 @@
 
 from __future__ import annotations
 
+import asyncio
 import math
+import secrets
 import time
 from collections import defaultdict
 from dataclasses import dataclass
 from hashlib import sha3_512
-import secrets
 from statistics import fmean
-from typing import Any, Dict, Mapping, MutableMapping, MutableSequence, Sequence
+from typing import Any, Awaitable, Callable, Dict, Mapping, MutableMapping, MutableSequence, Sequence
 
-from .constants import MISSION_STATEMENT
+import numpy as np
+
+from .constants import MISSION_RESONANCE_THRESHOLD, MISSION_STATEMENT
 
 
 _SUPPORTED_TECHNIQUES: Mapping[str, str] = {
@@ -106,13 +109,17 @@ class MissionResonanceEngine:
         *,
         post_quantum_verifier: PostQuantumSignatureVerifier | None = None,
         confidential_attestor: ConfidentialComputeAttestor | None = None,
-        default_threshold: float = 0.72,
+        default_threshold: float | None = None,
         gradient_window_seconds: float = 3600.0,
     ) -> None:
         self._signals: MutableSequence[MissionSignal] = []
         self._verifier = post_quantum_verifier
         self._attestor = confidential_attestor
-        self._threshold = default_threshold
+        self._threshold = (
+            default_threshold
+            if default_threshold is not None
+            else MISSION_RESONANCE_THRESHOLD
+        )
         if gradient_window_seconds <= 0:
             raise ValueError("gradient_window_seconds must be positive")
         self._gradient_window = float(gradient_window_seconds)
@@ -195,13 +202,55 @@ class MissionResonanceEngine:
         self._signals.append(record)
         return record
 
+    async def compute_resonance_score(
+        self,
+        *,
+        signals: Sequence[MissionSignal] | None = None,
+        batch_size: int = 128,
+        zk_redactor: Callable[[Sequence[float]], Awaitable[None]] | None = None,
+    ) -> float:
+        """Compute the blended resonance score asynchronously using vector batches."""
+
+        dataset = list(signals or self._signals)
+        if not dataset:
+            return 0.0
+
+        scores = np.fromiter((signal.score for signal in dataset), dtype=np.float64)
+        if scores.size == 0:
+            return 0.0
+
+        async def _batch_mean(vector: np.ndarray) -> float:
+            await asyncio.sleep(0)
+            return float(np.mean(vector, dtype=np.float64))
+
+        batches = [scores[index : index + batch_size] for index in range(0, scores.size, batch_size)]
+        tasks = [asyncio.create_task(_batch_mean(batch)) for batch in batches]
+
+        zk_task: asyncio.Task[None] | None = None
+        if zk_redactor is not None:
+            zk_task = asyncio.create_task(zk_redactor(scores.tolist()))
+
+        batch_means = await asyncio.gather(*tasks)
+        resonance = float(np.mean(batch_means, dtype=np.float64))
+        if zk_task is not None:
+            await zk_task
+        return round(resonance, 4)
+
+    async def resonance_index_async(self) -> float:
+        """Asynchronously compute the resonance index for the current signal window."""
+
+        return await self.compute_resonance_score()
+
     def resonance_index(self) -> float:
         """Return the blended resonance index across all signals."""
 
         if not self._signals:
             return 0.0
-        scores = [signal.score for signal in self._signals]
-        return round(fmean(scores), 4)
+        try:
+            return asyncio.run(self.compute_resonance_score())
+        except RuntimeError:
+            scores = [signal.score for signal in self._signals]
+            return round(fmean(scores), 4)
 
     def integrity_report(self, *, gradient_window_seconds: float | None = None) -> Dict[str, Any]:
         """Summarise mission protection posture for dashboards and attestations."""

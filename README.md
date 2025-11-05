@@ -142,6 +142,8 @@ For mobile contexts, run `MOBILE_MODE=true npm run preflight` for a compact read
 | `MOBILE_MODE=true npm run preflight` | Emits the mobile-friendly summary for quick posture checks. |
 | `npm run test:coverage` | Optional full instrumentation pass for advanced reporting. |
 
+> **Note:** Python suites covering the async yield pipeline and mission resonance engine require the optional `fastapi` and `cryptography` packages. Install them via `pip install -r requirements.txt` to run the tests instead of skipping.
+
 ### Module Scope Modes
 Set `VAULTFIRE_MODULE_SCOPE` to load scoped pilot programs. Run `node pilot-loader.js` to verify active modules.
 
