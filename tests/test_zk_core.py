@@ -60,3 +60,20 @@ def test_prover_with_dilithium_simulator() -> None:
     dilithium = DilithiumSignatureSimulator(pq)
     signature = dilithium.sign(bundle.proof, bundle.commitments)
     assert dilithium.verify(bundle.proof, bundle.commitments, signature)
+
+
+def test_deterministic_hash_handles_nested_iterables() -> None:
+    pq = StubPQ(b"secret", b"public")
+    witness = {
+        "alpha": [1, 2, {"zeta": {"omega", "beta"}}],
+        "beta": {"nested": ("x", "y")},
+    }
+    reordered = {
+        "beta": {"nested": ("x", "y")},
+        "alpha": [1, 2, {"zeta": {"beta", "omega"}}],
+    }
+
+    first = pq.hash_witness(witness)
+    second = pq.hash_witness(reordered)
+
+    assert first == second

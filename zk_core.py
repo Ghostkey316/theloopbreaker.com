@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterable, Optional, Protocol
@@ -18,6 +19,21 @@ def _sha256(value: str) -> str:
     if _HAVE_SYMPY and _sympy_sha256 is not None:
         return _sympy_sha256(value)
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def _canonicalize(value: Any) -> Any:
+    """Return a JSON-serialisable structure with deterministic ordering."""
+
+    if isinstance(value, dict):
+        return {key: _canonicalize(value[key]) for key in sorted(value)}
+    if isinstance(value, (list, tuple)):
+        return [_canonicalize(item) for item in value]
+    if isinstance(value, set):
+        return sorted(
+            (_canonicalize(item) for item in value),
+            key=lambda item: json.dumps(item, sort_keys=True, ensure_ascii=False, default=str),
+        )
+    return value
 
 
 class EthicsOracle(Protocol):
@@ -191,7 +207,9 @@ class DeterministicPQSuite:
         self._public_key = public_key
 
     def hash_witness(self, witness: Dict[str, Any]) -> str:
-        return str(hash(tuple(sorted(witness.items()))))
+        canonical = _canonicalize(witness)
+        payload = json.dumps(canonical, ensure_ascii=False, separators=(",", ":"), default=str)
+        return _sha256(payload)
 
     def commit_payload(self, witness: Dict[str, Any], metadata: Dict[str, Any]) -> Dict[str, Any]:
         salt = metadata.get("commit_salt", "ghostshroud")
