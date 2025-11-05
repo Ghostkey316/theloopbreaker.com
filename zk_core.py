@@ -1,9 +1,23 @@
 """Zero-Knowledge Execution Core for the Ghostshroud privacy stack."""
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Optional, Protocol
+from typing import Any, Dict, Iterable, Optional, Protocol
+
+try:
+    from sympy.crypto.crypto import sha256 as _sympy_sha256
+    _HAVE_SYMPY = True
+except ImportError:  # pragma: no cover - fallback
+    _sympy_sha256 = None
+    _HAVE_SYMPY = False
+
+
+def _sha256(value: str) -> str:
+    if _HAVE_SYMPY and _sympy_sha256 is not None:
+        return _sympy_sha256(value)
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
 class EthicsOracle(Protocol):
@@ -52,11 +66,24 @@ class CircuitRegistry:
 
     def __init__(self) -> None:
         self._registry: Dict[str, CircuitDefinition] = {}
+        self._halo2_stubs: Dict[str, "Halo2CircuitStub"] = {}
 
     def register(self, circuit: CircuitDefinition) -> None:
         if circuit.name in self._registry:
             raise ValueError(f"Circuit '{circuit.name}' already registered")
         self._registry[circuit.name] = circuit
+
+    def register_halo2_stub(self, stub: "Halo2CircuitStub") -> None:
+        if stub.identifier in self._halo2_stubs:
+            raise ValueError(f"Halo2 stub '{stub.identifier}' already registered")
+        self._halo2_stubs[stub.identifier] = stub
+
+    def halo2_constraints(self, identifier: str) -> Dict[str, Any]:
+        try:
+            stub = self._halo2_stubs[identifier]
+        except KeyError as exc:
+            raise KeyError(f"Unknown halo2 stub '{identifier}'") from exc
+        return stub.simulate_constraints()
 
     def get(self, name: str) -> CircuitDefinition:
         try:
@@ -180,14 +207,74 @@ class DeterministicPQSuite:
         return signature == expected
 
 
+@dataclass
+class Halo2CircuitStub:
+    """Documentary Halo2 circuit description for MMFA audits."""
+
+    identifier: str
+    gates: Iterable[str]
+    lookups: Iterable[str]
+    public_inputs: Iterable[str]
+
+    def simulate_constraints(self) -> Dict[str, Any]:
+        gates = tuple(self.gates)
+        lookups = tuple(self.lookups)
+        inputs = tuple(self.public_inputs)
+        digest = sha_stub(self.identifier, gates, lookups)
+        return {
+            "identifier": self.identifier,
+            "gate_count": len(gates),
+            "lookup_count": len(lookups),
+            "public_inputs": list(inputs),
+            "halo2_digest": digest,
+        }
+
+
+class DilithiumSignatureSimulator:
+    """Post-quantum signature stub interoperable with deterministic suite."""
+
+    def __init__(self, pq_suite: DeterministicPQSuite) -> None:
+        self._pq = pq_suite
+
+    def sign(self, transcript: bytes, commitments: Dict[str, Any]) -> bytes:
+        salt = commitments.get("commitment", "").encode("utf-8")
+        message = transcript + salt + b"dilithium"
+        return message
+
+    def verify(self, transcript: bytes, commitments: Dict[str, Any], signature: bytes) -> bool:
+        expected = transcript + commitments.get("commitment", "").encode("utf-8") + b"dilithium"
+        if signature == expected:
+            return True
+        return self._pq.verify_signature(transcript, commitments, signature)
+
+
+def sha_stub(identifier: str, gates: Iterable[str], lookups: Iterable[str]) -> str:
+    data = identifier + "|" + ",".join(gates) + "|" + ",".join(lookups)
+    return _sha256(data)
+
+
+def zk_attested_stub(registry: CircuitRegistry, identifier: str) -> Dict[str, Any]:
+    """Return a combined Halo2 + Dilithium attestation payload."""
+
+    constraints = registry.halo2_constraints(identifier)
+    payload = {
+        "halo2": constraints,
+        "dilithium_ready": True,
+    }
+    return payload
+
+
 __all__ = [
     "CircuitDefinition",
     "CircuitRegistry",
     "DeterministicPQSuite",
+    "DilithiumSignatureSimulator",
     "EthicsOracle",
+    "Halo2CircuitStub",
     "PostQuantumCryptoSuite",
     "Prover",
     "ProverConfig",
     "ProofBundle",
     "Verifier",
+    "zk_attested_stub",
 ]

@@ -1,13 +1,32 @@
 from __future__ import annotations
-
 from pathlib import Path
 
-from vaultfire.x402_dashboard import (
-    aggregate_totals,
-    export_dashboard,
-    load_dashboard_entries,
+import pytest
+
+try:  # pragma: no cover - optional dependency powering encryption pipeline
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # type: ignore  # noqa: F401
+    from cryptography.exceptions import InvalidTag  # type: ignore  # noqa: F401
+except (ImportError, ModuleNotFoundError):  # pragma: no cover - skip module when unavailable
+    CRYPTOGRAPHY_AVAILABLE = False
+else:  # pragma: no cover - executed when dependency present
+    CRYPTOGRAPHY_AVAILABLE = True
+
+
+pytestmark = pytest.mark.skipif(
+    not CRYPTOGRAPHY_AVAILABLE,
+    reason="[optional] cryptography is required for x402 dashboard tests",
 )
-from vaultfire.x402_gateway import X402Gateway
+
+if CRYPTOGRAPHY_AVAILABLE:
+    from vaultfire.x402_dashboard import (
+        aggregate_totals,
+        export_dashboard,
+        load_dashboard_entries,
+    )
+    from vaultfire.x402_gateway import X402Gateway
+else:  # pragma: no cover - placeholders when dependency missing
+    aggregate_totals = export_dashboard = load_dashboard_entries = None  # type: ignore[assignment]
+    X402Gateway = None  # type: ignore[assignment]
 
 
 def test_dashboard_loading_and_export(tmp_path):

@@ -1,0 +1,8 @@
+# Extended dependency set used when running the optional integration suites.
+-r requirements.txt
+
+cryptography==43.0.1
+fastapi>=0.115.0
+requests>=2.32.3
+torch==2.5.1
+uvicorn==0.30.3

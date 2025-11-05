@@ -4,6 +4,21 @@ import importlib
 import sys
 import types
 
+import pytest
+
+try:  # pragma: no cover - optional HTTP client in minimal installs
+    import requests  # type: ignore  # noqa: F401
+except ModuleNotFoundError:  # pragma: no cover - skip when dependency missing
+    REQUESTS_AVAILABLE = False
+else:  # pragma: no cover - executed only when dependency present
+    REQUESTS_AVAILABLE = True
+
+
+pytestmark = pytest.mark.skipif(
+    not REQUESTS_AVAILABLE,
+    reason="[optional] requests is required for Vaultfire demo tests",
+)
+
 
 def test_load_live_health_fallback(monkeypatch):
     calls: dict[str, object] = {}

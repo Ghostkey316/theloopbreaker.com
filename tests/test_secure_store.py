@@ -5,7 +5,23 @@ import os
 from pathlib import Path
 
 import pytest
-from cryptography.exceptions import InvalidTag
+
+try:  # pragma: no cover - optional dependency under minimal installs
+    from cryptography.exceptions import InvalidTag
+except (ImportError, ModuleNotFoundError):  # pragma: no cover - graceful skip when unavailable
+    CRYPTOGRAPHY_AVAILABLE = False
+
+    class InvalidTag(Exception):
+        """Placeholder for cryptography.InvalidTag when dependency is absent."""
+
+else:  # pragma: no cover - executed only when optional dependency installed
+    CRYPTOGRAPHY_AVAILABLE = True
+
+
+pytestmark = pytest.mark.skipif(
+    not CRYPTOGRAPHY_AVAILABLE,
+    reason="[optional] cryptography is required for SecureStore tests",
+)
 
 from utils.crypto import derive_key
 from vaultfire_securestore import SecureStore

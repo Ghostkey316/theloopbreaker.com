@@ -10,17 +10,43 @@ from typing import Any
 import pytest
 import numpy as np
 
-import services.share_viz_endpoint as share_module
-from services.share_viz_endpoint import (
-    MISSION_STATEMENT,
-    PINNED_VIZ,
-    STREAM_EMIT_QUEUE,
-    _compute_zk_hash,
-    _sign_guardian_vote,
-    app,
-    event_stream,
-    LinearRegression,
-    stream_viz_updates,
+try:  # pragma: no cover - optional dependency powering encryption pipeline
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # type: ignore  # noqa: F401
+    from cryptography.exceptions import InvalidTag  # type: ignore  # noqa: F401
+except (ImportError, ModuleNotFoundError):  # pragma: no cover - skip module when unavailable
+    CRYPTOGRAPHY_AVAILABLE = False
+else:  # pragma: no cover - executed when dependency present
+    CRYPTOGRAPHY_AVAILABLE = True
+
+if CRYPTOGRAPHY_AVAILABLE:
+    import services.share_viz_endpoint as share_module
+    from services.share_viz_endpoint import (  # pragma: no cover - import guarded by availability
+        MISSION_STATEMENT,
+        PINNED_VIZ,
+        STREAM_EMIT_QUEUE,
+        _compute_zk_hash,
+        _sign_guardian_vote,
+        app,
+        event_stream,
+        LinearRegression,
+        stream_viz_updates,
+    )
+else:  # pragma: no cover - placeholders to keep module importable when skipped
+    class _ShareVizPlaceholder:
+        HAS_TORCH = False
+
+
+    share_module = _ShareVizPlaceholder()
+    MISSION_STATEMENT = ""
+    PINNED_VIZ = {}
+    STREAM_EMIT_QUEUE = []
+    _compute_zk_hash = _sign_guardian_vote = app = event_stream = stream_viz_updates = None
+    LinearRegression = object
+
+
+pytestmark = pytest.mark.skipif(
+    not CRYPTOGRAPHY_AVAILABLE,
+    reason="[optional] cryptography is required for share viz endpoint tests",
 )
 
 try:  # pragma: no cover - torch optional in minimal CI environments
@@ -1533,7 +1559,10 @@ def test_debater_low_score_alert() -> None:
     assert emission["score"] == body["dialectic_score"]
 
 
-@pytest.mark.skipif(not share_module.HAS_TORCH, reason="torch unavailable")
+@pytest.mark.skipif(
+    not share_module.HAS_TORCH,
+    reason="[optional] torch is required for neural telemetry regression tests",
+)
 def test_oracle_high_coherence(monkeypatch: pytest.MonkeyPatch) -> None:
     """Satori synthesis converges with low MSE and emits calm alerts for pilots."""
 
@@ -1639,7 +1668,10 @@ def test_oracle_invalid_latents(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "latent_synthesis_invalid" in response.get_data(as_text=True)
 
 
-@pytest.mark.skipif(not TORCH_AVAILABLE, reason="torch unavailable")
+@pytest.mark.skipif(
+    not TORCH_AVAILABLE,
+    reason="[optional] torch is required for neural telemetry regression tests",
+)
 def test_neuralizer_high_coherence(monkeypatch: pytest.MonkeyPatch) -> None:
     """Guardian neuralizer yields coherent embeddings and SSE calm alerts."""
 

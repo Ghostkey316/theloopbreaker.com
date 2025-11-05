@@ -1,16 +1,42 @@
 """Tests for the self-healing covenant repair endpoint."""
 
 from __future__ import annotations
-
 from typing import Iterator
 
 import pytest
 
-from services.share_viz_endpoint import (
-    MISSION_STATEMENT,
-    PINNED_VIZ,
-    STREAM_EMIT_QUEUE,
-    app,
+try:  # pragma: no cover - optional cryptography dependency for share_viz
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # type: ignore  # noqa: F401
+    from cryptography.exceptions import InvalidTag  # type: ignore  # noqa: F401
+except (ImportError, ModuleNotFoundError):  # pragma: no cover - skip when dependency missing
+    CRYPTOGRAPHY_AVAILABLE = False
+else:  # pragma: no cover - executed only when dependency present
+    CRYPTOGRAPHY_AVAILABLE = True
+
+try:  # pragma: no cover - optional torch dependency for share_viz heuristics
+    import torch  # type: ignore  # noqa: F401
+except ModuleNotFoundError:  # pragma: no cover - skip when dependency missing
+    TORCH_AVAILABLE = False
+else:  # pragma: no cover - executed only when dependency present
+    TORCH_AVAILABLE = True
+
+if CRYPTOGRAPHY_AVAILABLE and TORCH_AVAILABLE:
+    from services.share_viz_endpoint import (  # pragma: no cover - import guarded by availability
+        MISSION_STATEMENT,
+        PINNED_VIZ,
+        STREAM_EMIT_QUEUE,
+        app,
+    )
+else:  # pragma: no cover - provide placeholders to satisfy type checking when skipped
+    MISSION_STATEMENT = ""
+    PINNED_VIZ = {}
+    STREAM_EMIT_QUEUE = []
+    app = None
+
+
+pytestmark = pytest.mark.skipif(
+    not (CRYPTOGRAPHY_AVAILABLE and TORCH_AVAILABLE),
+    reason="[optional] cryptography and torch are required for self-healing covenant tests",
 )
 
 

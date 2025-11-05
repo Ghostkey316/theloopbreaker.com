@@ -1,12 +1,34 @@
 from __future__ import annotations
 
 from pathlib import Path
+from pathlib import Path
 
-from vaultfire.agent_builder import GhostkeyVaultfireAgent
-from vaultfire.logging import MissionLogger
-from vaultfire.pilot_mode import mission_control_hooks, stealth_telemetry
-from vaultfire.security import onboarding_guardrails
-from vaultfire_widget_bundle import stream_loader, widget_manifest
+import pytest
+
+try:  # pragma: no cover - optional dependency powering encryption layers
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # type: ignore  # noqa: F401
+    from cryptography.exceptions import InvalidTag  # type: ignore  # noqa: F401
+except (ImportError, ModuleNotFoundError):  # pragma: no cover - skip when dependency absent
+    CRYPTOGRAPHY_AVAILABLE = False
+else:  # pragma: no cover - executed when dependency present
+    CRYPTOGRAPHY_AVAILABLE = True
+
+
+pytestmark = pytest.mark.skipif(
+    not CRYPTOGRAPHY_AVAILABLE,
+    reason="[optional] cryptography is required for agent builder deployment tests",
+)
+
+if CRYPTOGRAPHY_AVAILABLE:
+    from vaultfire.agent_builder import GhostkeyVaultfireAgent
+    from vaultfire.logging import MissionLogger
+    from vaultfire.pilot_mode import mission_control_hooks, stealth_telemetry
+    from vaultfire.security import onboarding_guardrails
+    from vaultfire_widget_bundle import stream_loader, widget_manifest
+else:  # pragma: no cover - placeholders when dependency missing
+    GhostkeyVaultfireAgent = MissionLogger = None  # type: ignore[assignment]
+    mission_control_hooks = stealth_telemetry = onboarding_guardrails = None  # type: ignore[assignment]
+    stream_loader = widget_manifest = None  # type: ignore[assignment]
 
 
 def _bootstrap_agent(tmp_path: Path) -> GhostkeyVaultfireAgent:

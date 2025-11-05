@@ -9,8 +9,9 @@ from typing import Any, Sequence, cast
 import pytest
 
 try:
-    import cryptography  # type: ignore  # noqa: F401
-except ModuleNotFoundError:  # pragma: no cover - environment without optional deps
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # type: ignore  # noqa: F401
+    from cryptography.exceptions import InvalidTag  # type: ignore  # noqa: F401
+except (ImportError, ModuleNotFoundError):  # pragma: no cover - environment without optional deps
     CRYPTOGRAPHY_AVAILABLE = False
 else:  # pragma: no cover - ensures import works when installed
     CRYPTOGRAPHY_AVAILABLE = True
@@ -35,7 +36,7 @@ def _make_attestor() -> ConfidentialComputeAttestor:
 
 @pytest.mark.skipif(
     not CRYPTOGRAPHY_AVAILABLE,
-    reason="cryptography is an optional dependency required for mission resonance tests",
+    reason="[optional] cryptography is required for mission resonance tests",
 )
 def test_confidential_signal_requires_verified_attestation() -> None:
     engine = MissionResonanceEngine(confidential_attestor=_make_attestor())
@@ -60,7 +61,7 @@ def test_confidential_signal_requires_verified_attestation() -> None:
 
 @pytest.mark.skipif(
     not CRYPTOGRAPHY_AVAILABLE,
-    reason="cryptography is an optional dependency required for mission resonance tests",
+    reason="[optional] cryptography is required for mission resonance tests",
 )
 def test_integrity_report_exposes_breakdown_and_attested_enclaves() -> None:
     attestor = _make_attestor()
@@ -85,7 +86,7 @@ def test_integrity_report_exposes_breakdown_and_attested_enclaves() -> None:
 
 @pytest.mark.skipif(
     not CRYPTOGRAPHY_AVAILABLE,
-    reason="cryptography is an optional dependency required for mission resonance tests",
+    reason="[optional] cryptography is required for mission resonance tests",
 )
 def test_resonance_gradient_uses_recent_window(monkeypatch: pytest.MonkeyPatch) -> None:
     attestor = _make_attestor()
@@ -120,7 +121,7 @@ def test_resonance_gradient_uses_recent_window(monkeypatch: pytest.MonkeyPatch) 
 
 @pytest.mark.skipif(
     not CRYPTOGRAPHY_AVAILABLE,
-    reason="cryptography is an optional dependency required for mission resonance tests",
+    reason="[optional] cryptography is required for mission resonance tests",
 )
 def test_resonance_gradient_requires_positive_window() -> None:
     engine = MissionResonanceEngine()
@@ -131,7 +132,7 @@ def test_resonance_gradient_requires_positive_window() -> None:
 
 @pytest.mark.skipif(
     not CRYPTOGRAPHY_AVAILABLE,
-    reason="cryptography is an optional dependency required for mission resonance tests",
+    reason="[optional] cryptography is required for mission resonance tests",
 )
 def test_technique_gradients_track_recent_and_historical(monkeypatch: pytest.MonkeyPatch) -> None:
     attestor = _make_attestor()
@@ -175,7 +176,7 @@ def test_technique_gradients_track_recent_and_historical(monkeypatch: pytest.Mon
 
 @pytest.mark.skipif(
     not CRYPTOGRAPHY_AVAILABLE,
-    reason="cryptography is an optional dependency required for mission resonance tests",
+    reason="[optional] cryptography is required for mission resonance tests",
 )
 @pytest.mark.asyncio
 async def test_resonance_batch_latency() -> None:

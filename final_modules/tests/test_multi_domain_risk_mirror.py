@@ -4,11 +4,30 @@ import unittest
 from pathlib import Path
 import importlib.util
 
+import pytest
+
+try:  # pragma: no cover - optional dependency gating encryption helpers
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # type: ignore  # noqa: F401
+    from cryptography.exceptions import InvalidTag  # type: ignore  # noqa: F401
+except (ImportError, ModuleNotFoundError):  # pragma: no cover - skip module when dependency missing
+    CRYPTOGRAPHY_AVAILABLE = False
+else:  # pragma: no cover - executed only when dependency present
+    CRYPTOGRAPHY_AVAILABLE = True
+
+
+pytestmark = pytest.mark.skipif(
+    not CRYPTOGRAPHY_AVAILABLE,
+    reason="[optional] cryptography is required for risk mirror tests",
+)
+
 MODULE_PATH = Path(__file__).resolve().parents[1] / "multi_domain_risk_mirror.py"
 spec = importlib.util.spec_from_file_location("multi_domain_risk_mirror", MODULE_PATH)
 md = importlib.util.module_from_spec(spec)
 assert spec.loader is not None
-spec.loader.exec_module(md)
+if CRYPTOGRAPHY_AVAILABLE:
+    spec.loader.exec_module(md)
+else:  # pragma: no cover - placeholder when dependency missing
+    md = None  # type: ignore[assignment]
 
 
 class RiskMirrorTest(unittest.TestCase):

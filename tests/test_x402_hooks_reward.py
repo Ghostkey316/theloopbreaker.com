@@ -5,8 +5,26 @@ from pathlib import Path
 
 import pytest
 
-from vaultfire.x402_gateway import X402Gateway
-from vaultfire import x402_hooks
+try:  # pragma: no cover - optional dependency powering encryption pipeline
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # type: ignore  # noqa: F401
+    from cryptography.exceptions import InvalidTag  # type: ignore  # noqa: F401
+except (ImportError, ModuleNotFoundError):  # pragma: no cover - skip module when unavailable
+    CRYPTOGRAPHY_AVAILABLE = False
+else:  # pragma: no cover - executed when dependency present
+    CRYPTOGRAPHY_AVAILABLE = True
+
+
+pytestmark = pytest.mark.skipif(
+    not CRYPTOGRAPHY_AVAILABLE,
+    reason="[optional] cryptography is required for x402 reward hook tests",
+)
+
+if CRYPTOGRAPHY_AVAILABLE:
+    from vaultfire.x402_gateway import X402Gateway
+    from vaultfire import x402_hooks
+else:  # pragma: no cover - placeholders when dependency missing
+    X402Gateway = None  # type: ignore[assignment]
+    x402_hooks = None  # type: ignore[assignment]
 
 
 @pytest.fixture()

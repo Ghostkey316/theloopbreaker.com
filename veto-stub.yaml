@@ -1,0 +1,11 @@
+failover:
+  description: |
+    Python pseudocode for governance veto integration.
+    if drift > threshold or adversarial > 0.10:
+      emit_event("manifest.failover.veto")
+      pause_yields()
+  threshold: 0.10
+  drift_limit: 0.05
+  notes:
+    - "Emits telemetry events for Anthropic oversight"
+    - "Re-enables payouts after alignment beacon confirms drift < 3%"

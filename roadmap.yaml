@@ -1,0 +1,138 @@
+roadmap_version: "v1.5.0"
+release_window: "2024-09-15 -> 2025-11-30"
+phases:
+  - id: phase1_discovery
+    name: "Phase 1 – Ethics Resonance Refresh"
+    timeframe: "2024-09-15 -> 2024-10-15"
+    milestones:
+      - name: "Belief log normalization"
+        due: "2024-09-22"
+      - name: "Drift Oracle spec approval"
+        due: "2024-10-01"
+      - name: "Greenpeace pilot scope lock"
+        due: "2024-10-10"
+    objectives:
+      - "Rehydrate telemetry and ethics guardrails after the v1.4.0 freeze."
+      - "Define Drift Oracle interfaces for SymPy Monte Carlo projections."
+      - "Rebaseline MMFA attestation cadence for all pilots."
+    risks:
+      - threat: "Data drift from dormant logs"
+        probability: "medium"
+        impact: "telemetry miscalibration"
+        mitigator: "Automated replay with resonance.py anomaly detector"
+      - threat: "Copilot refusal of ethics stubs"
+        probability: "low"
+        impact: "delayed documentation refresh"
+        mitigator: "Manual fork templates + Grok API fallback writers"
+  - id: phase2_testnet
+    name: "Phase 2 – Drift Oracle Testnet"
+    timeframe: "2024-10-16 -> 2024-11-30"
+    milestones:
+      - name: "SymPy Drift Oracle prototype"
+        due: "2024-10-30"
+      - name: "Ethics alignment attestation"
+        due: "2024-11-05"
+      - name: "zk Core Halo2 stub harness"
+        due: "2024-11-15"
+      - name: "Public testnet dry run"
+        due: "2024-11-15"
+      - name: "Pilot governance rehearsal"
+        due: "2024-11-28"
+    objectives:
+      - "Ship Monte Carlo-backed belief weighted projections aligned to MMFA."
+      - "Integrate Dilithium signature simulator inside zk_core."
+      - "Deliver testnet CLI stubs for one-click pilot activation."
+    risks:
+      - threat: "Chainlink oracle desync"
+        probability: "medium"
+        impact: "incorrect payout hints"
+        mitigator: "Locustfile synthetic oracle gating + retry budget"
+      - threat: "Halo2 circuit regression"
+        probability: "medium"
+        impact: "ZK attestation delay"
+        mitigator: "Dual ECDSA/Dilithium proving harness"
+  - id: phase3_pilots
+    name: "Phase 3 – Pilot Lift-Off"
+    timeframe: "2024-12-01 -> 2025-03-31"
+    milestones:
+      - name: "Greenpeace climate voting pilot"
+        due: "2024-12-15"
+      - name: "ConsenSys treasury rehearsal"
+        due: "2025-01-20"
+      - name: "xAI Grok filter integration"
+        due: "2025-02-10"
+      - name: "Gitcoin quadratic ethics funding"
+        due: "2025-03-05"
+      - name: "Anthropic alignment audit"
+        due: "2025-03-25"
+    objectives:
+      - "Operate five live betas with Drift Oracle supervision."
+      - "Run alignment_beacon RL simulator for 100k-user synthetic votes."
+      - "Activate belief_tracker Prometheus stubs for pilot observability."
+    risks:
+      - threat: "Pilot consent regression"
+        probability: "low"
+        impact: "pause deployments"
+        mitigator: "ManifestFailover veto stub + ethics veto logs"
+      - threat: "Alignment drift >3%"
+        probability: "medium"
+        impact: "Yield throttling"
+        mitigator: "Resonance anomaly detector auto recalibration"
+  - id: phase4_scaling
+    name: "Phase 4 – Hyper-Scale Lock-In"
+    timeframe: "2025-04-01 -> 2025-08-31"
+    milestones:
+      - name: "Vaultfire SDK uplift"
+        due: "2025-05-15"
+      - name: "Global KPI mesh"
+        due: "2025-06-30"
+      - name: "Guardian mesh adaptation"
+        due: "2025-08-10"
+    objectives:
+      - "Publish belief tracker Grafana packs and Prometheus exporters."
+      - "Deploy velocity-sim commit planner for 1M user runway."
+      - "Finalize JS/NFT pseudocode for Chunk 2 expansion."
+    risks:
+      - threat: "Partner compliance delays"
+        probability: "medium"
+        impact: "slower activation"
+        mitigator: "Pre-approved compliance packet + live sandbox"
+      - threat: "Anomaly detector false positives"
+        probability: "low"
+        impact: "pilot fatigue"
+        mitigator: "Resonance auto-threshold tuning"
+  - id: phase5_mainnet
+    name: "Phase 5 – Mainnet & Governance Horizon"
+    timeframe: "2025-09-01 -> 2025-11-30"
+    milestones:
+      - name: "Governance veto automation"
+        due: "2025-09-20"
+      - name: "Ethics halo attestation day"
+        due: "2025-10-15"
+      - name: "Mainnet GA announcement"
+        due: "2025-11-15"
+    objectives:
+      - "Finalize MMFA-aligned governance thresholds and veto flows."
+      - "Ship L2 bridging for Drift Oracle metrics."
+      - "Tag release v1.5.0 with compliant audit packets."
+    risks:
+      - threat: "Governance capture attempts"
+        probability: "low"
+        impact: "ethics breach"
+        mitigator: "manifestFailover.py adversarial pause + Anthropic watch"
+      - threat: "Mainnet RPC saturation"
+        probability: "medium"
+        impact: "user latency"
+        mitigator: "Vaultfire load balancer + Locust regression"
+mermaid: |
+  graph TD
+    P1[Phase 1\nEthics Resonance Refresh]
+    P2[Phase 2\nDrift Oracle Testnet]
+    P3[Phase 3\nPilot Lift-Off]
+    P4[Phase 4\nHyper-Scale Lock-In]
+    P5[Phase 5\nMainnet & Governance Horizon]
+    P1 --> P2 --> P3 --> P4 --> P5
+    P2 -->|Halo2 Stubs| ZK[zk_core Enhancements]
+    P3 -->|Pilot KPIs| KPI[belief_tracker Exporters]
+    P4 -->|Velocity Sim| VSIM[velocity-sim.py]
+    P5 -->|Governance| GOV[manifestFailover Veto]
