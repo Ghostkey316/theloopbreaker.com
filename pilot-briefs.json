@@ -1,0 +1,57 @@
+[
+  {
+    "pilot": "Greenpeace Climate Votes",
+    "kpis": {
+      "tvl_target_usd": 1000000,
+      "alignment_threshold": 0.95,
+      "drift_limit": 0.03,
+      "go_live": "2024-12-15"
+    },
+    "one_click_flow": "vaultfire-cli climate:sync --pilot greenpeace --ethics-check",
+    "notes": "Token-weighted voting with carbon-negative offsets and ethics attestations."
+  },
+  {
+    "pilot": "ConsenSys Treasury Guardian",
+    "kpis": {
+      "tvl_target_usd": 1000000,
+      "alignment_threshold": 0.95,
+      "drift_limit": 0.03,
+      "go_live": "2025-01-20"
+    },
+    "one_click_flow": "vaultfire-cli treasury:lock --pilot consensys --safe-mode",
+    "notes": "Treasury diversification with Drift Oracle guardrails and manifest failover hooks."
+  },
+  {
+    "pilot": "xAI Grok Ethics Filter",
+    "kpis": {
+      "tvl_target_usd": 1000000,
+      "alignment_threshold": 0.95,
+      "drift_limit": 0.03,
+      "go_live": "2025-02-10"
+    },
+    "one_click_flow": "vaultfire-cli grok:filter --pilot xai --belief-scan",
+    "notes": "Content moderation with RL feedback loops and Grok fallback prompts."
+  },
+  {
+    "pilot": "Gitcoin Quadratic Ethics",
+    "kpis": {
+      "tvl_target_usd": 1000000,
+      "alignment_threshold": 0.95,
+      "drift_limit": 0.03,
+      "go_live": "2025-03-05"
+    },
+    "one_click_flow": "vaultfire-cli quadratic:boost --pilot gitcoin --zk-proof",
+    "notes": "Quadratic funding with MMFA attested donors and Drift Oracle TVL curves."
+  },
+  {
+    "pilot": "Anthropic AI Alignment Watch",
+    "kpis": {
+      "tvl_target_usd": 1000000,
+      "alignment_threshold": 0.95,
+      "drift_limit": 0.03,
+      "go_live": "2025-03-25"
+    },
+    "one_click_flow": "vaultfire-cli alignment:monitor --pilot anthropic --failsafe",
+    "notes": "Governance co-pilot with Anthropic review stream and auto veto triggers."
+  }
+]

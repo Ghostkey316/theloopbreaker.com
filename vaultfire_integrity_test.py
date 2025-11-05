@@ -7,11 +7,33 @@ import json
 from pathlib import Path
 from typing import Mapping
 
-from codex_checker import CodexChecker
-from codex_redact import CodexRedactor
-from vaultfire.trust import record_belief_receipt, verify_receipt_integrity
-from vaultfire.pools import create_pool, register_contribution, schedule_passive_drop
-from vaultfire_payments import VaultfirePaymentRouter, detect_passive_income_signal
+import pytest
+
+try:  # pragma: no cover - optional dependency powering encryption pipeline
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # type: ignore  # noqa: F401
+    from cryptography.exceptions import InvalidTag  # type: ignore  # noqa: F401
+except (ImportError, ModuleNotFoundError):  # pragma: no cover - skip module when unavailable
+    CRYPTOGRAPHY_AVAILABLE = False
+else:  # pragma: no cover - executed when dependency present
+    CRYPTOGRAPHY_AVAILABLE = True
+
+
+pytestmark = pytest.mark.skipif(
+    not CRYPTOGRAPHY_AVAILABLE,
+    reason="[optional] cryptography is required for vaultfire integrity tests",
+)
+
+if CRYPTOGRAPHY_AVAILABLE:
+    from codex_checker import CodexChecker
+    from codex_redact import CodexRedactor
+    from vaultfire.trust import record_belief_receipt, verify_receipt_integrity
+    from vaultfire.pools import create_pool, register_contribution, schedule_passive_drop
+    from vaultfire_payments import VaultfirePaymentRouter, detect_passive_income_signal
+else:  # pragma: no cover - placeholders when dependency missing
+    CodexChecker = CodexRedactor = None  # type: ignore[assignment]
+    record_belief_receipt = verify_receipt_integrity = None  # type: ignore[assignment]
+    create_pool = register_contribution = schedule_passive_drop = None  # type: ignore[assignment]
+    VaultfirePaymentRouter = detect_passive_income_signal = None  # type: ignore[assignment]
 
 
 def _create_dummy_proof() -> Mapping[str, object]:

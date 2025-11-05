@@ -3,8 +3,28 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from belief_trigger_engine import LOG_PATH, CHAIN_LOG_PATH
-from live_flame_scan import process_scores
+import pytest
+
+try:  # pragma: no cover - optional dependency powering encryption pipeline
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # type: ignore  # noqa: F401
+    from cryptography.exceptions import InvalidTag  # type: ignore  # noqa: F401
+except (ImportError, ModuleNotFoundError):  # pragma: no cover - skip module when unavailable
+    CRYPTOGRAPHY_AVAILABLE = False
+else:  # pragma: no cover - executed only when dependency present
+    CRYPTOGRAPHY_AVAILABLE = True
+
+
+pytestmark = pytest.mark.skipif(
+    not CRYPTOGRAPHY_AVAILABLE,
+    reason="[optional] cryptography is required for live flame scan tests",
+)
+
+if CRYPTOGRAPHY_AVAILABLE:
+    from belief_trigger_engine import LOG_PATH, CHAIN_LOG_PATH
+    from live_flame_scan import process_scores
+else:  # pragma: no cover - placeholders when dependency missing
+    LOG_PATH = CHAIN_LOG_PATH = Path("/tmp")  # type: ignore[assignment]
+    process_scores = None  # type: ignore[assignment]
 
 
 class LiveFlameScanTest(unittest.TestCase):

@@ -23,6 +23,8 @@ from engine.ghostscore_engine import (
     record_yield_claim,
 )
 
+from drift_oracle import DriftOracle
+
 
 SUPPORTED_TOKENS = {"ASM", "ETH", "USDC"}
 
@@ -32,6 +34,9 @@ BASE_PAYOUTS = {
     "partner_activation": 5.0,
     "yield_claim": 1.0,
 }
+
+
+DRIFT_ORACLE = DriftOracle.from_belief_log()
 
 
 def _payout_for_action(ens: str, action: str) -> Tuple[float, float, int]:
@@ -54,16 +59,39 @@ def trigger_yield_drop(
         raise ValueError(f"Token {token} not supported")
 
     amount, multiplier, score = _payout_for_action(ens, action_type)
+    base_value = BASE_PAYOUTS.get(action_type, 1.0)
+    try:
+        projection = DRIFT_ORACLE.project(base_amount=base_value)
+    except ValueError as exc:
+        return {
+            "ens": ens,
+            "wallet": wallet,
+            "action": action_type,
+            "token": token,
+            "base_payout": base_value,
+            "ghostscore": score,
+            "multiplier": round(multiplier, 3),
+            "amount": amount,
+            "dry_run": dry_run,
+            "status": "blocked",
+            "reason": str(exc),
+        }
     result = {
         "ens": ens,
         "wallet": wallet,
         "action": action_type,
         "token": token,
-        "base_payout": BASE_PAYOUTS.get(action_type, 1.0),
+        "base_payout": base_value,
         "ghostscore": score,
         "multiplier": round(multiplier, 3),
         "amount": amount,
         "dry_run": dry_run,
+        "drift_projection": {
+            "expected_yield": round(projection.expected_yield, 6),
+            "drift_ratio": round(projection.drift_ratio, 6),
+            "alignment_score": round(projection.alignment_score, 6),
+        },
+        "attestation": projection.attestation,
     }
 
     if not dry_run:

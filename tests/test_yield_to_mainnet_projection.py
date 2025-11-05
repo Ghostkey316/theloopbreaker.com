@@ -9,8 +9,9 @@ except ModuleNotFoundError:  # pragma: no cover - environment without optional d
     fastapi = None  # type: ignore
 
 try:
-    import cryptography  # type: ignore  # noqa: F401
-except ModuleNotFoundError:  # pragma: no cover - environment without optional deps
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # type: ignore  # noqa: F401
+    from cryptography.exceptions import InvalidTag  # type: ignore  # noqa: F401
+except (ImportError, ModuleNotFoundError):  # pragma: no cover - environment without optional deps
     cryptography = None  # type: ignore
 
 if fastapi is not None and cryptography is not None:
@@ -21,7 +22,7 @@ else:  # pragma: no cover - executed only when optional deps missing
 
 @pytest.mark.skipif(
     fastapi is None or cryptography is None,
-    reason="fastapi and cryptography are optional dependencies required for yield pipeline tests",
+    reason="[optional] fastapi and cryptography are required for yield pipeline tests",
 )
 @pytest.mark.asyncio
 async def test_yield_to_mainnet_projection(tmp_path):

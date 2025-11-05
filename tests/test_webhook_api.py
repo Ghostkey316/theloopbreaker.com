@@ -1,4 +1,20 @@
 import pytest
+import pytest
+
+try:  # pragma: no cover - optional dependency powering secure webhook flows
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # type: ignore  # noqa: F401
+    from cryptography.exceptions import InvalidTag  # type: ignore  # noqa: F401
+except (ImportError, ModuleNotFoundError):  # pragma: no cover - skip module when unavailable
+    CRYPTOGRAPHY_AVAILABLE = False
+else:  # pragma: no cover - executed when dependency present
+    CRYPTOGRAPHY_AVAILABLE = True
+
+
+pytestmark = pytest.mark.skipif(
+    not CRYPTOGRAPHY_AVAILABLE,
+    reason="[optional] cryptography is required for webhook API tests",
+)
+
 try:
     import flask
 except Exception:
@@ -10,9 +26,13 @@ import hmac
 import hashlib
 from datetime import datetime, timedelta
 
-from vaultfire_webhook import app, SECRET_KEY
-
-client = app.test_client()
+if CRYPTOGRAPHY_AVAILABLE:
+    from vaultfire_webhook import app, SECRET_KEY
+    client = app.test_client()
+else:  # pragma: no cover - placeholders when dependency missing
+    app = None  # type: ignore[assignment]
+    SECRET_KEY = b""  # type: ignore[assignment]
+    client = None  # type: ignore[assignment]
 
 
 def _sign(body: dict) -> str:

@@ -5,6 +5,22 @@ import os
 import sys
 from pathlib import Path
 
+import pytest
+
+try:  # pragma: no cover - optional dependency for humanity mirror encryption
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # type: ignore  # noqa: F401
+    from cryptography.exceptions import InvalidTag  # type: ignore  # noqa: F401
+except (ImportError, ModuleNotFoundError):  # pragma: no cover - skip module when unavailable
+    CRYPTOGRAPHY_AVAILABLE = False
+else:  # pragma: no cover - executed when dependency present
+    CRYPTOGRAPHY_AVAILABLE = True
+
+
+pytestmark = pytest.mark.skipif(
+    not CRYPTOGRAPHY_AVAILABLE,
+    reason="[optional] cryptography is required for humanity mirror pipeline tests",
+)
+
 
 MODULES = (
     "mirror_log",

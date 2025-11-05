@@ -4,7 +4,26 @@ import unittest
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
-from belief_trigger_engine import send_to_webhook
+import pytest
+
+try:  # pragma: no cover - optional dependency for secure webhook flows
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # type: ignore  # noqa: F401
+    from cryptography.exceptions import InvalidTag  # type: ignore  # noqa: F401
+except (ImportError, ModuleNotFoundError):  # pragma: no cover - skip module when unavailable
+    CRYPTOGRAPHY_AVAILABLE = False
+else:  # pragma: no cover - executed when dependency present
+    CRYPTOGRAPHY_AVAILABLE = True
+
+
+pytestmark = pytest.mark.skipif(
+    not CRYPTOGRAPHY_AVAILABLE,
+    reason="[optional] cryptography is required for timestamp sync tests",
+)
+
+if CRYPTOGRAPHY_AVAILABLE:
+    from belief_trigger_engine import send_to_webhook
+else:  # pragma: no cover - placeholder when dependency missing
+    send_to_webhook = None  # type: ignore[assignment]
 
 
 class TimestampSyncTest(unittest.TestCase):

@@ -3,11 +3,31 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from belief_trigger_engine import (
-    evaluate_wallet,
-    LOG_PATH,
-    CHAIN_LOG_PATH,
+import pytest
+
+try:  # pragma: no cover - optional dependency for encryption pipeline
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # type: ignore  # noqa: F401
+    from cryptography.exceptions import InvalidTag  # type: ignore  # noqa: F401
+except (ImportError, ModuleNotFoundError):  # pragma: no cover - skip module when unavailable
+    CRYPTOGRAPHY_AVAILABLE = False
+else:  # pragma: no cover - executed only when dependency present
+    CRYPTOGRAPHY_AVAILABLE = True
+
+
+pytestmark = pytest.mark.skipif(
+    not CRYPTOGRAPHY_AVAILABLE,
+    reason="[optional] cryptography is required for belief trigger engine tests",
 )
+
+if CRYPTOGRAPHY_AVAILABLE:
+    from belief_trigger_engine import (
+        evaluate_wallet,
+        LOG_PATH,
+        CHAIN_LOG_PATH,
+    )
+else:  # pragma: no cover - placeholders when dependency missing
+    evaluate_wallet = None  # type: ignore[assignment]
+    LOG_PATH = CHAIN_LOG_PATH = Path("/tmp")  # type: ignore[assignment]
 
 BELIEF_PATH = Path('belief_score.json')
 

@@ -4,9 +4,33 @@ from pathlib import Path
 
 import pytest
 
-from codex.enterprise_sync_validator import EnterpriseCodexValidator
-from integration.cross_chain import CrossChainSyncScenario
-from telemetry.enterprise_telemetry import TelemetryPipeline
+try:  # pragma: no cover - optional dependency for secure telemetry flows
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # type: ignore  # noqa: F401
+    from cryptography.exceptions import InvalidTag  # type: ignore  # noqa: F401
+except (ImportError, ModuleNotFoundError):  # pragma: no cover - skip when dependency missing
+    CRYPTOGRAPHY_AVAILABLE = False
+else:  # pragma: no cover - executed only when dependency present
+    CRYPTOGRAPHY_AVAILABLE = True
+
+try:  # pragma: no cover - optional dependency used by telemetry pipeline
+    import httpx  # type: ignore  # noqa: F401
+except ModuleNotFoundError:  # pragma: no cover - skip when dependency missing
+    HTTPX_AVAILABLE = False
+else:  # pragma: no cover - executed when dependency present
+    HTTPX_AVAILABLE = True
+
+
+pytestmark = pytest.mark.skipif(
+    not (CRYPTOGRAPHY_AVAILABLE and HTTPX_AVAILABLE),
+    reason="[optional] cryptography and httpx are required for enterprise upgrade tests",
+)
+
+if CRYPTOGRAPHY_AVAILABLE:
+    from codex.enterprise_sync_validator import EnterpriseCodexValidator
+    from integration.cross_chain import CrossChainSyncScenario
+    from telemetry.enterprise_telemetry import TelemetryPipeline
+else:  # pragma: no cover - placeholders when dependency missing
+    EnterpriseCodexValidator = CrossChainSyncScenario = TelemetryPipeline = None  # type: ignore[assignment]
 
 
 def test_telemetry_pipeline_generates_dashboard(tmp_path: Path) -> None:

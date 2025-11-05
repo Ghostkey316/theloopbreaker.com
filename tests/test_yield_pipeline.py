@@ -3,10 +3,29 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from fastapi.testclient import TestClient
+import pytest
 
-from yield_pipeline import convert_pilot_logs, create_app, settings
-from yield_pipeline.engine import simulate_activation_to_yield
+try:  # pragma: no cover - optional dependency in minimal Python environments
+    import fastapi  # type: ignore  # noqa: F401
+except ModuleNotFoundError:  # pragma: no cover - skip collection when unavailable
+    FASTAPI_AVAILABLE = False
+else:  # pragma: no cover - executed only when optional dependency is installed
+    FASTAPI_AVAILABLE = True
+
+if FASTAPI_AVAILABLE:
+    from fastapi.testclient import TestClient
+
+    from yield_pipeline import convert_pilot_logs, create_app, settings
+    from yield_pipeline.engine import simulate_activation_to_yield
+else:  # pragma: no cover - placeholders when optional dependency missing
+    TestClient = None  # type: ignore[assignment]
+    convert_pilot_logs = create_app = settings = simulate_activation_to_yield = None  # type: ignore[assignment]
+
+
+pytestmark = pytest.mark.skipif(
+    not FASTAPI_AVAILABLE,
+    reason="[optional] fastapi is required for yield pipeline API tests",
+)
 
 
 def _write_pilot_log(path: Path, mission_id: str, belief_id: str, ghostscore: float) -> None:
