@@ -2,13 +2,29 @@
 
 from __future__ import annotations
 
+import asyncio
+import time
+from typing import Any, Sequence, cast
+
 import pytest
 
-from vaultfire.protocol import mission_resonance
-from vaultfire.protocol.mission_resonance import (
-    ConfidentialComputeAttestor,
-    MissionResonanceEngine,
-)
+try:
+    import cryptography  # type: ignore  # noqa: F401
+except ModuleNotFoundError:  # pragma: no cover - environment without optional deps
+    CRYPTOGRAPHY_AVAILABLE = False
+else:  # pragma: no cover - ensures import works when installed
+    CRYPTOGRAPHY_AVAILABLE = True
+
+if CRYPTOGRAPHY_AVAILABLE:
+    from vaultfire.protocol import mission_resonance
+    from vaultfire.protocol.mission_resonance import (
+        ConfidentialComputeAttestor,
+        MissionResonanceEngine,
+    )
+else:  # pragma: no cover - executed only when optional deps missing
+    mission_resonance = cast(Any, None)
+    ConfidentialComputeAttestor = cast(Any, None)
+    MissionResonanceEngine = cast(Any, None)
 
 
 def _make_attestor() -> ConfidentialComputeAttestor:
@@ -17,6 +33,10 @@ def _make_attestor() -> ConfidentialComputeAttestor:
     )
 
 
+@pytest.mark.skipif(
+    not CRYPTOGRAPHY_AVAILABLE,
+    reason="cryptography is an optional dependency required for mission resonance tests",
+)
 def test_confidential_signal_requires_verified_attestation() -> None:
     engine = MissionResonanceEngine(confidential_attestor=_make_attestor())
 
@@ -38,6 +58,10 @@ def test_confidential_signal_requires_verified_attestation() -> None:
         )
 
 
+@pytest.mark.skipif(
+    not CRYPTOGRAPHY_AVAILABLE,
+    reason="cryptography is an optional dependency required for mission resonance tests",
+)
 def test_integrity_report_exposes_breakdown_and_attested_enclaves() -> None:
     attestor = _make_attestor()
     engine = MissionResonanceEngine(confidential_attestor=attestor)
@@ -59,6 +83,10 @@ def test_integrity_report_exposes_breakdown_and_attested_enclaves() -> None:
     assert "confidential-ml" in report["gradient_breakdown"]
 
 
+@pytest.mark.skipif(
+    not CRYPTOGRAPHY_AVAILABLE,
+    reason="cryptography is an optional dependency required for mission resonance tests",
+)
 def test_resonance_gradient_uses_recent_window(monkeypatch: pytest.MonkeyPatch) -> None:
     attestor = _make_attestor()
     engine = MissionResonanceEngine(confidential_attestor=attestor)
@@ -90,6 +118,10 @@ def test_resonance_gradient_uses_recent_window(monkeypatch: pytest.MonkeyPatch) 
     assert gradient == pytest.approx(0.4, abs=1e-6)
 
 
+@pytest.mark.skipif(
+    not CRYPTOGRAPHY_AVAILABLE,
+    reason="cryptography is an optional dependency required for mission resonance tests",
+)
 def test_resonance_gradient_requires_positive_window() -> None:
     engine = MissionResonanceEngine()
 
@@ -97,6 +129,10 @@ def test_resonance_gradient_requires_positive_window() -> None:
         engine.resonance_gradient(window_seconds=0)
 
 
+@pytest.mark.skipif(
+    not CRYPTOGRAPHY_AVAILABLE,
+    reason="cryptography is an optional dependency required for mission resonance tests",
+)
 def test_technique_gradients_track_recent_and_historical(monkeypatch: pytest.MonkeyPatch) -> None:
     attestor = _make_attestor()
     engine = MissionResonanceEngine(confidential_attestor=attestor)
@@ -135,3 +171,35 @@ def test_technique_gradients_track_recent_and_historical(monkeypatch: pytest.Mon
     assert gradients["confidential-ml"]["recent_avg"] == pytest.approx(0.7, abs=1e-6)
     assert gradients["confidential-ml"]["historical_avg"] == pytest.approx(0.5, abs=1e-6)
     assert gradients["confidential-ml"]["gradient"] == pytest.approx(0.2, abs=1e-6)
+
+
+@pytest.mark.skipif(
+    not CRYPTOGRAPHY_AVAILABLE,
+    reason="cryptography is an optional dependency required for mission resonance tests",
+)
+@pytest.mark.asyncio
+async def test_resonance_batch_latency() -> None:
+    engine = MissionResonanceEngine()
+
+    for index in range(256):
+        engine.ingest_signal(
+            source=f"edge-{index}",
+            technique="edge-llm",
+            score=0.62,
+        )
+    for index in range(256, 512):
+        engine.ingest_signal(
+            source=f"mpc-{index}",
+            technique="mpc-fabric",
+            score=0.48,
+        )
+
+    async def zk_stub(scores: Sequence[float]) -> None:
+        await asyncio.sleep(0)
+
+    start = time.perf_counter()
+    score = await engine.compute_resonance_score(batch_size=64, zk_redactor=zk_stub)
+    elapsed = time.perf_counter() - start
+
+    assert pytest.approx(0.55, abs=1e-6) == score
+    assert elapsed < 5

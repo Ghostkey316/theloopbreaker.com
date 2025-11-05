@@ -1,0 +1,51 @@
+import json
+from datetime import datetime, timezone
+
+import pytest
+
+try:
+    import fastapi  # type: ignore  # noqa: F401  (import check for availability)
+except ModuleNotFoundError:  # pragma: no cover - environment without optional deps
+    fastapi = None  # type: ignore
+
+try:
+    import cryptography  # type: ignore  # noqa: F401
+except ModuleNotFoundError:  # pragma: no cover - environment without optional deps
+    cryptography = None  # type: ignore
+
+if fastapi is not None and cryptography is not None:
+    from scripts.run_yield_pipeline import pipeline
+else:  # pragma: no cover - executed only when optional deps missing
+    pipeline = None
+
+
+@pytest.mark.skipif(
+    fastapi is None or cryptography is None,
+    reason="fastapi and cryptography are optional dependencies required for yield pipeline tests",
+)
+@pytest.mark.asyncio
+async def test_yield_to_mainnet_projection(tmp_path):
+    source = tmp_path / 'logs'
+    destination = tmp_path / 'cases'
+    source.mkdir()
+
+    log_payload = {
+        'mission_id': 'mission-alpha',
+        'pilot_id': 'pilot-1',
+        'belief_id': 'engage-alpha',
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+        'trigger_event': 'activation',
+        'ghostscore_delta': 1.25,
+        'activation_signals': [],
+    }
+
+    with (source / 'mission-alpha.json').open('w', encoding='utf-8') as handle:
+        json.dump(log_payload, handle)
+
+    result = await pipeline('https://base-mainnet.mock', source=source, destination=destination)
+
+    assert result.zk_proof['circuit'] == 'vaultfire-yield-anonymizer'
+    assert result.studies
+    assert result.projection
+    assert result.projection[0]['mission_hash'] == result.studies[0]['mission_hash']
+    assert all(entry['projected_apr'] >= 0 for entry in result.projection)

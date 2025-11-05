@@ -42,6 +42,12 @@ variable "partner_sync_container_image" {
   default     = "public.ecr.aws/vaultfire/partner-sync:latest"
 }
 
+variable "jaeger_endpoint" {
+  description = "Endpoint for Jaeger collector used by tracing sidecars."
+  type        = string
+  default     = "http://jaeger.vaultfire.internal:14268/api/traces"
+}
+
 variable "desired_count" {
   description = "Number of Fargate tasks to run."
   type        = number
@@ -54,6 +60,14 @@ locals {
     Project     = "Vaultfire"
     Environment = var.environment
   }
+}
+
+resource "aws_ssm_parameter" "jaeger_collector_stub" {
+  name        = "/vaultfire/${var.environment}/jaeger/collector"
+  description = "Stubbed Jaeger collector endpoint for observability wiring"
+  type        = "String"
+  value       = var.jaeger_endpoint
+  tags        = merge(local.tags, { Component = "observability" })
 }
 
 resource "aws_vpc" "this" {

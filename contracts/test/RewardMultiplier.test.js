@@ -3,14 +3,15 @@ const { ethers } = require('hardhat');
 
 describe('RewardMultiplier', () => {
   async function deployFixture() {
-    const [deployer, user] = await ethers.getSigners();
+    const [deployer, user, governor] = await ethers.getSigners();
     const RewardStream = await ethers.getContractFactory('RewardStream');
-    const stream = await RewardStream.deploy(deployer.address);
+    const stream = await RewardStream.deploy(deployer.address, governor.address);
     await stream.waitForDeployment();
 
     const RewardMultiplier = await ethers.getContractFactory('RewardMultiplier');
     const multiplier = await RewardMultiplier.deploy(await stream.getAddress(), 10_000);
     await multiplier.waitForDeployment();
+    await (await stream.connect(deployer).updateGovernorTimelock(await multiplier.getAddress())).wait();
 
     return { deployer, user, stream, multiplier };
   }
