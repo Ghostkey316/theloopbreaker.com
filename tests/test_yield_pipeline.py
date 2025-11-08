@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from hashlib import sha256
 from pathlib import Path
 
 import pytest
@@ -127,3 +128,21 @@ def test_proof_route_exposes_readiness(tmp_path, monkeypatch):
     environments = payload["audit_storage"].get("environments", [])
     tags = {entry["vaultfire_env"] for entry in environments}
     assert {"ghostkey_testbed", "prod_ready"}.issubset(tags)
+
+
+def test_belief_oracle_endpoint_returns_resonance(tmp_path, monkeypatch):
+    attestations = tmp_path / "attestations.json"
+    monkeypatch.setattr(settings, "attestations_path", attestations)
+    monkeypatch.setattr(settings, "api_key", None)
+    monkeypatch.delenv("BELIEF_ORACLE_ADDRESS", raising=False)
+
+    app = create_app()
+    client = TestClient(app)
+    response = client.get("/belief-oracle", params={"vow": "Guard the commons", "zkSig": "0xdeadbeef"})
+    assert response.status_code == 200
+    payload = response.json()
+    assert 0 <= payload["score"] <= 100
+    assert payload["proof"]
+    assert isinstance(payload["yieldVest"], bool)
+    stored = json.loads(attestations.read_text(encoding="utf-8"))
+    assert stored[-1]["vow_hash"] == sha256("Guard the commons".encode("utf-8")).hexdigest()
