@@ -308,6 +308,8 @@ Automation touchpoints stay consistent: GitHub Actions handle tests, the CLI pro
 - **BeliefOracle:** [`0x0RACLE000000000000000000000000000000000`](https://basescan.org/address/0x0RACLE000000000000000000000000000000000)
 - **FreedomVow:** [`0xFREED0Mv0w000000000000000000000000000000`](https://basescan.org/address/0xFREED0Mv0w000000000000000000000000000000)
 - **DilithiumAttestor:** reuse the live verifier at [`0xD1L1THIUM000000000000000000000000000000`](https://basescan.org/address/0xD1L1THIUM000000000000000000000000000000)
+- **Sepolia Dry-Run TX (placeholder):** [`0xfeedfadefeedfadefeedfadefeedfadefeedfadefeedfadefeedfadefeedfade`](https://sepolia.etherscan.io/tx/0xfeedfadefeedfadefeedfadefeedfadefeedfadefeedfadefeedfadefeedfade)
+  - _Swap in the Base mainnet ignition hash once the dawn deployment finalizes._
 
 ```bash
 # Sovereign ignition
