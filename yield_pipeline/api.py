@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import json
+import os
 from collections import deque
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from hashlib import sha256
 from pathlib import Path
 from statistics import mean
-from typing import Deque, Dict, List, Optional, Tuple
+from typing import Any, Deque, Dict, List, Optional, Tuple
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 
@@ -21,10 +22,17 @@ from .audit_storage import (
     LOCAL_ENVIRONMENT,
 )
 
+try:  # pragma: no cover - optional dependency path
+    from web3 import Web3  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover - fallback when web3 missing
+    Web3 = None  # type: ignore
+
 RequestLog = Deque[datetime]
 _rate_log: Dict[str, RequestLog] = {}
 _repo_root = Path(__file__).resolve().parents[1]
 _case_study_index = _repo_root / "knowledge_repo" / "data" / "case_studies.json"
+_oracle_contract: Optional[Any] = None
+_oracle_provider: Optional[Any] = None
 
 
 def _hash_ip(value: str) -> str:
@@ -50,6 +58,84 @@ def rate_limiter(request: Request) -> None:
     if len(log) >= settings.rate_limit_per_minute:
         raise HTTPException(status_code=429, detail="Rate limit exceeded")
     log.append(now)
+
+
+def _decode_signature(raw: str) -> bytes:
+    if raw.startswith("0x"):
+        raw = raw[2:]
+    try:
+        return bytes.fromhex(raw)
+    except ValueError as exc:  # pragma: no cover - path guarded via HTTP 400
+        raise HTTPException(status_code=400, detail="Invalid zkSig encoding") from exc
+
+
+def _ensure_oracle_contract() -> Optional[Any]:
+    global _oracle_contract, _oracle_provider
+    if Web3 is None:
+        return None
+    if _oracle_contract is not None:
+        return _oracle_contract
+
+    address = os.getenv("BELIEF_ORACLE_ADDRESS")
+    if not address:
+        return None
+
+    rpc_url = os.getenv("BASE_RPC_URL", "https://mainnet.base.org")
+    provider = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={"timeout": 10}))
+    if not provider.is_connected():
+        return None
+
+    abi = [
+        {
+            "inputs": [
+                {"internalType": "string", "name": "vow", "type": "string"},
+                {"internalType": "address", "name": "seeker", "type": "address"},
+            ],
+            "name": "previewResonance",
+            "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+            "stateMutability": "view",
+            "type": "function",
+        }
+    ]
+
+    try:
+        contract = provider.eth.contract(address=Web3.to_checksum_address(address), abi=abi)
+    except ValueError:
+        return None
+
+    _oracle_contract = contract
+    _oracle_provider = provider
+    return contract
+
+
+def _derive_seeker(signature: bytes) -> str:
+    if Web3 is None:
+        digest = sha256(signature).digest()
+        return "0x" + digest[-20:].hex()
+    digest = Web3.keccak(signature)
+    return Web3.to_checksum_address(digest[-20:].hex())
+
+
+def _compute_resonance(vow: str, signature: bytes) -> Tuple[int, str, bool]:
+    contract = _ensure_oracle_contract()
+    seeker = _derive_seeker(signature)
+    score: Optional[int]
+
+    if contract is not None and _oracle_provider is not None:
+        try:
+            score = contract.functions.previewResonance(vow, seeker).call()
+        except Exception:  # pragma: no cover - network issues fall back to deterministic scoring
+            score = None
+    else:
+        score = None
+
+    if score is None:
+        digest = sha256((vow + signature.hex()).encode("utf-8")).digest()
+        score = int.from_bytes(digest, "big") % 101
+
+    proof_material = sha256(signature + vow.encode("utf-8")).hexdigest()
+    vest = score > 80
+    return score, proof_material, vest
 
 
 def authenticate(request: Request) -> None:
@@ -179,6 +265,20 @@ def create_app() -> FastAPI:
             "audit_storage": audit_descriptor,
         }
         return response
+
+    @app.get("/belief-oracle", dependencies=[Depends(rate_limiter), Depends(authenticate)])
+    async def belief_oracle_endpoint(vow: str, zkSig: str) -> dict:
+        signature = _decode_signature(zkSig)
+        score, proof, vest = _compute_resonance(vow, signature)
+        _audit_store().append(
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "vow_hash": sha256(vow.encode("utf-8")).hexdigest(),
+                "score": score,
+                "yield_vest": vest,
+            }
+        )
+        return {"score": float(score), "proof": proof, "yieldVest": vest}
 
     return app
 

@@ -11,13 +11,13 @@ describe('RewardMultiplier', () => {
     const RewardMultiplier = await ethers.getContractFactory('RewardMultiplier');
     const multiplier = await RewardMultiplier.deploy(await stream.getAddress(), 10_000);
     await multiplier.waitForDeployment();
-    await (await stream.connect(deployer).updateGovernorTimelock(await multiplier.getAddress())).wait();
 
     return { deployer, user, stream, multiplier };
   }
 
   it('streams multiplier updates to the reward stream contract', async () => {
     const { deployer, user, stream, multiplier } = await deployFixture();
+    await (await stream.connect(deployer).updateGovernorTimelock(await multiplier.getAddress())).wait();
     await (await stream.connect(deployer).transferAdmin(await multiplier.getAddress())).wait();
 
     const expected = await multiplier.calculateMultiplier.staticCall(12_000, 8_000, 250);

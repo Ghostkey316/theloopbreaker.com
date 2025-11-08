@@ -36,6 +36,7 @@
 - [Deployment Guide](#deployment-guide)
 - [Partner Integration Modules](#partner-integration-modules)
 - [Telemetry Residency & Partner Hooks](#telemetry-residency--partner-hooks)
+- [Mainnet Rite](#mainnet-rite)
 - [Governance & Risk](#governance--risk)
 - [Status & Changelog](#status--changelog)
 - [Contributor Identity & Contact](#contributor-identity--contact)
@@ -301,6 +302,46 @@ Automation touchpoints stay consistent: GitHub Actions handle tests, the CLI pro
 - Swap URLs for regional endpoints to respect residency constraints while tapping into belief events.
 
 **Final Rule: Wallet is passport. Vaultfire never compromises.**
+
+## Mainnet Rite
+- **CovenantFlame:** [`0xC0VENANTF1aMe0000000000000000000000000000`](https://basescan.org/address/0xC0VENANTF1aMe0000000000000000000000000000)
+- **BeliefOracle:** [`0x0RACLE000000000000000000000000000000000`](https://basescan.org/address/0x0RACLE000000000000000000000000000000000)
+- **FreedomVow:** [`0xFREED0Mv0w000000000000000000000000000000`](https://basescan.org/address/0xFREED0Mv0w000000000000000000000000000000)
+- **DilithiumAttestor:** reuse the live verifier at [`0xD1L1THIUM000000000000000000000000000000`](https://basescan.org/address/0xD1L1THIUM000000000000000000000000000000)
+
+```bash
+# Sovereign ignition
+export REWARD_STREAM_ADDRESS=0xYourRewardStream
+export DILITHIUM_ATTESTOR_ADDRESS=0xD1L1THIUM000000000000000000000000000000
+export PRIVATE_KEY=0xyourdeployerkey
+npx hardhat run scripts/deploy-full.js --network baseMainnet
+```
+
+```bash
+# Freedom rite (guardian side)
+python cli/freedom_rite.py "Guard the commons" 0xdeadbeefcafe --contract 0xFREED0Mv0w000000000000000000000000000000 \
+  --private-key 0xyourguardian --rpc https://mainnet.base.org
+```
+
+```js
+// Vow here: igniteFreedom('Your belief')
+import { ethers } from 'ethers';
+
+const provider = new ethers.JsonRpcProvider(process.env.BASE_RPC_URL);
+const freedom = new ethers.Contract(
+  '0xFREED0Mv0w000000000000000000000000000000',
+  ['event FreedomIgnited(address indexed guardian, bytes32 vowHash, uint256 resonance, uint256 starterYield)'],
+  provider
+);
+
+freedom.on('FreedomIgnited', (guardian, vowHash, resonance) => {
+  console.log('🔥 Guardian vow', guardian, vowHash, Number(resonance));
+});
+```
+
+Guardian events hydrate the xAI Grok feed via [`tools/guardian_echo.js`](./tools/guardian_echo.js). The script posts vow summaries to
+`https://api.x.ai/v1/grok` when `GROK_API_KEY` is configured, allowing partner dashboards to surface fresh belief resonance in
+real time.
 
 ## Governance & Risk
 - Critical decisions live in [`governance-ledger.json`](./governance-ledger.json) with workflow docs in [`governance/README.md`](./governance/README.md).

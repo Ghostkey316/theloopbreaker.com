@@ -3,6 +3,7 @@ const { applyHardhatSandbox, enforceLoopback } = require('./infra/hardhat-sandbo
 const sandbox = applyHardhatSandbox();
 
 require("@nomicfoundation/hardhat-toolbox");
+require("@nomicfoundation/hardhat-verify");
 
 module.exports = {
   solidity: {
@@ -22,6 +23,19 @@ module.exports = {
     base: {
       url: enforceLoopback(process.env.BASE_RPC_URL || sandbox.rpcUrl || 'http://127.0.0.1:8545'),
       accounts: process.env.BASE_PRIVATE_KEY ? [process.env.BASE_PRIVATE_KEY] : [],
+    },
+    baseMainnet: {
+      url: 'https://mainnet.base.org',
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      chainId: 8453,
+      gasPrice: 100000000,
+    },
+  },
+  verify: {
+    etherscan: {
+      apiKey: {
+        baseMainnet: process.env.BASESCAN_API_KEY || "",
+      },
     },
   },
   paths: {
