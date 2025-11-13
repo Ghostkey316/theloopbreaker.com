@@ -1,5 +1,7 @@
 # Vaultfire Protocol Readiness Report
 
+> **Reality Check:** This report summarizes alpha-stage readiness based on Ghostkey-316 simulation telemetry and controlled pilot rehearsals. No public mainnet activation has been approved.
+
 - No syntax errors detected across Python modules (`python -m py_compile`).
 - Integrity check executed via `system_integrity_check.py` returned no issues.
 - JSX/TypeScript syntax verification executed via `npm run lint:syntax` (ESLint + TypeScript parser).
@@ -8,7 +10,7 @@
 - `vaultfire_system_ready.py` now ships an automated partner readiness report (`--report`) that snapshots module health, file integrity, simulated guardrails, and the scaling stack orchestration.
 - Scaling codex validation covers GUI launch metadata, API gateway configuration, BeliefNet sync payloads, partner plug-in registries, relay forking, and DAO bootstrap contracts—blocking go-live if any layer regresses.
 
-**Partner Deployment Status:** ✅
+**Partner Deployment Status (Simulation Readiness):** ✅ — Lab pilots rehearsed successfully; production deployment remains pending independent security review, partner agreements, and explicit opt-in.
 
 Verified version hash: 0b9219d97f6d67ac895f1a3000073db118122d02
 Timestamp (UTC): 2025-07-23 00:28:48Z
