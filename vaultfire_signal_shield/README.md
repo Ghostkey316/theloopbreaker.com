@@ -75,7 +75,7 @@ Vaultfire Signal Shield is released under the [MIT License](../LICENSE).
 Developed as part of [Ghostkey-316](https://github.com/ghostkey-316) – core contributor ID: `bpow20.cb.id`.
 
 ## Disclaimers
-- This repository is production-ready software provided for learning and discussion
+- This repository is alpha-stage software provided for learning and discussion
 - Nothing here constitutes financial or medical advice
 - Ambient data gathering requires opt-in consent from participants
 - System logs may store limited personal data for reflective analysis

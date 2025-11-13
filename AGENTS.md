@@ -18,12 +18,11 @@ These instructions are intentionally modular to allow new roles or clauses to be
 
 ## Disclaimers
 - Add relevant disclaimers here. Each bullet should be its own clause so new disclaimers can be inserted without affecting existing text.
-- This repository is production-ready with stable features.
+- This repository is in an alpha/pilot stage; features may change and have not been audited for production use.
 - Ambient data gathering requires opt-in consent from participants.
 - No module in this repo offers medical or legal advice.
 - System logs may store limited personal data for reflective analysis.
-- Partnerships are fully supported and integration examples run in
-  production.
+- Partnerships are currently simulated; integration examples are sandbox-oriented, not live production deployments.
 - Plugin support is provided as-is with no guarantee of compatibility or
   continued maintenance.
 - Partners must perform their own compliance review before deploying.

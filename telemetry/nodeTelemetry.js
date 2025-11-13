@@ -18,6 +18,88 @@ function toBoolean(value, fallback = false) {
 
 const processEnv = typeof process !== 'undefined' && process && process.env ? process.env : {};
 
+const TELEMETRY_EVENT_SCHEMA = Object.freeze({
+  'belief.vote.cast': {
+    allowedContextKeys: ['component', 'severity', 'metadata', 'tags'],
+    allowedMetadataKeys: ['resonanceBucket', 'pilotId', 'voteSource', 'clientVersion'],
+    allowedTagKeys: ['network', 'scope', 'module', 'pilot', 'stage'],
+  },
+  'dashboard.render': {
+    allowedContextKeys: ['component', 'metadata', 'tags'],
+    allowedMetadataKeys: ['dashboardVersion', 'widgetCount'],
+    allowedTagKeys: ['route', 'pilot', 'scope', 'environment'],
+  },
+  'wallet.login.result': {
+    allowedContextKeys: ['component', 'severity', 'metadata', 'tags'],
+    allowedMetadataKeys: ['result', 'failureCode', 'latencyMs'],
+    allowedTagKeys: ['surface', 'pilot', 'method'],
+  },
+  'telemetry.opt_in': {
+    allowedContextKeys: ['metadata', 'tags'],
+    allowedMetadataKeys: ['status', 'surface'],
+    allowedTagKeys: ['pilot', 'scope'],
+  },
+});
+
+const FORBIDDEN_CONTEXT_KEY_FRAGMENTS = [
+  'email',
+  'full_name',
+  'fullname',
+  'first_name',
+  'firstname',
+  'last_name',
+  'lastname',
+  'phone',
+  'address',
+  'privatekey',
+  'secret',
+  'token',
+  'mnemonic',
+  'seed',
+  'password',
+  'ssn',
+  'dob',
+  'passport',
+  'api_key',
+  'apikey',
+];
+
+function keyIsAllowed(key) {
+  if (!key) {
+    return false;
+  }
+  const lower = String(key).toLowerCase();
+  return !FORBIDDEN_CONTEXT_KEY_FRAGMENTS.some((fragment) => lower.includes(fragment));
+}
+
+function sanitizeNestedObject(source, allowedKeys) {
+  if (!source || typeof source !== 'object') {
+    return undefined;
+  }
+  const entries = Object.entries(source).filter(([key, value]) => {
+    if (!keyIsAllowed(key)) {
+      return false;
+    }
+    if (allowedKeys && !allowedKeys.includes(key)) {
+      return false;
+    }
+    if (value === undefined || value === null) {
+      return false;
+    }
+    if (typeof value === 'string') {
+      if (value.length === 0 || value.length > 512) {
+        return false;
+      }
+      return true;
+    }
+    return typeof value === 'number' || typeof value === 'boolean';
+  });
+  if (!entries.length) {
+    return undefined;
+  }
+  return Object.fromEntries(entries);
+}
+
 function isMobileModeActive() {
   if (isBrowserRuntime) {
     return true;
@@ -46,23 +128,51 @@ function applyResidency(options = {}) {
   residencyGuard = createResidencyGuard(options);
 }
 
-function sanitizeContext(context = {}) {
+function sanitizeContext(eventName, context = {}) {
   if (!context || typeof context !== 'object') {
     return {};
   }
-  const allowedKeys = ['component', 'severity', 'details', 'metadata', 'tags'];
+  const schema = TELEMETRY_EVENT_SCHEMA[eventName];
+  if (!schema) {
+    return {};
+  }
+  const allowedKeys = schema.allowedContextKeys || [];
   const sanitized = {};
   for (const key of allowedKeys) {
     if (context[key] === undefined) {
       continue;
     }
-    if (key === 'details' || key === 'metadata') {
-      sanitized[key] = Object.fromEntries(
-        Object.entries(context[key] || {}).filter(([, value]) => typeof value !== 'string' || value.length <= 512)
-      );
+    if (!keyIsAllowed(key)) {
       continue;
     }
-    sanitized[key] = context[key];
+    if (key === 'details' || key === 'metadata') {
+      const nested = sanitizeNestedObject(context[key], key === 'metadata' ? schema.allowedMetadataKeys : undefined);
+      if (nested) {
+        sanitized[key] = nested;
+      }
+      continue;
+    }
+    if (key === 'tags') {
+      const tags = sanitizeNestedObject(context[key], schema.allowedTagKeys);
+      if (tags) {
+        sanitized.tags = tags;
+      }
+      continue;
+    }
+    const value = context[key];
+    if (value === undefined || value === null) {
+      continue;
+    }
+    if (typeof value === 'string') {
+      if (value.length === 0) {
+        continue;
+      }
+      sanitized[key] = value.length > 512 ? value.slice(0, 512) : value;
+      continue;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      sanitized[key] = value;
+    }
   }
   return sanitized;
 }
@@ -122,6 +232,11 @@ function trackEvent(eventName, { wallet, ...context } = {}) {
   if (isMobileModeActive()) {
     return;
   }
+  if (!TELEMETRY_EVENT_SCHEMA[eventName]) {
+    // eslint-disable-next-line no-console
+    console.warn(`[telemetry] Event "${eventName}" is not allowed by the schema.`);
+    return;
+  }
   const normalized = normalizeWallet(wallet);
   if (!normalized || !hasConsent(normalized)) {
     return;
@@ -130,7 +245,7 @@ function trackEvent(eventName, { wallet, ...context } = {}) {
   Sentry.withScope((scope) => {
     scope.setUser({ id: normalized });
     scope.setTag('event', eventName);
-    const sanitized = sanitizeContext(context);
+    const sanitized = sanitizeContext(eventName, context);
     if (Object.keys(sanitized).length) {
       if (sanitized.tags) {
         Object.entries(sanitized.tags).forEach(([key, value]) => {

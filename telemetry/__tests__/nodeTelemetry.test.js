@@ -1,8 +1,12 @@
 'use strict';
 
-jest.mock('@sentry/node', () => ({
-  init: jest.fn(),
-  withScope: jest.fn((callback) => {
+jest.mock('@sentry/node', () => {
+  const sentry = {
+    init: jest.fn(),
+    captureMessage: jest.fn(),
+  };
+  sentry.__scopes = [];
+  sentry.withScope = jest.fn((callback) => {
     const scope = {
       setUser: jest.fn(),
       setTag: jest.fn(),
@@ -10,10 +14,10 @@ jest.mock('@sentry/node', () => ({
       setFingerprint: jest.fn(),
     };
     callback(scope);
-    module.exports.__lastScope = scope;
-  }),
-  captureMessage: jest.fn(),
-}));
+    sentry.__scopes.push(scope);
+  });
+  return sentry;
+});
 
 jest.mock('../../config/trustSyncConfig', () => ({
   loadTrustSyncConfig: jest.fn(() => ({ telemetry: { residency: { enforce: true, defaultRegion: 'us', telemetry: {} } } })),
@@ -68,13 +72,22 @@ describe('node telemetry', () => {
     telemetry.initTelemetry({ dsn: 'https://example.dsn/123' });
     telemetry.trackEvent('belief.vote.cast', {
       wallet: '0xABC',
-      metadata: { long: 'x'.repeat(600), kept: 'short' },
-      tags: { network: 'mainnet', drop: undefined },
+      metadata: { resonanceBucket: 'north-star', clientVersion: 'x'.repeat(600) },
+      tags: { network: 'mainnet', drop: undefined, pilot: 'sandbox' },
     });
 
     expect(consentStore.normalizeWallet).toHaveBeenCalledWith('0xABC');
     expect(Sentry.captureMessage).toHaveBeenCalledWith('belief.vote.cast', 'info');
     expect(Sentry.withScope).toHaveBeenCalled();
+    const scope = Sentry.__scopes.at(-1);
+    expect(scope.setTag).toHaveBeenCalledWith('event', 'belief.vote.cast');
+    expect(scope.setContext).toHaveBeenCalledWith(
+      'details',
+      expect.objectContaining({ metadata: { resonanceBucket: 'north-star' } })
+    );
+    expect(scope.setContext.mock.calls[0][1].metadata).not.toHaveProperty('clientVersion');
+    expect(scope.setTag).toHaveBeenCalledWith('ctx_network', 'mainnet');
+    expect(scope.setTag).toHaveBeenCalledWith('ctx_pilot', 'sandbox');
   });
 
   it('exposes consent helpers through module exports', () => {
@@ -87,5 +100,16 @@ describe('node telemetry', () => {
     telemetry.trackEvent('belief.vote.cast', {});
     telemetry.trackEvent('belief.vote.cast', { wallet: '0xDEF' });
     expect(Sentry.captureMessage).not.toHaveBeenCalled();
+  });
+
+  it('rejects events that are not described in the telemetry schema', () => {
+    telemetry.initTelemetry({ dsn: 'https://example.dsn/123' });
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    telemetry.trackEvent('custom.event', { wallet: '0xABC', metadata: { resonanceBucket: 'alpha' } });
+
+    expect(Sentry.captureMessage).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('custom.event'));
+    warnSpy.mockRestore();
   });
 });

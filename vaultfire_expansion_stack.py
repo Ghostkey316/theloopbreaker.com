@@ -1,12 +1,12 @@
 """Initialize the Vaultfire v25+ expansion stack.
 
-- This repository is production-ready with stable features.
+- This repository is alpha-stage software; expect breaking changes and incomplete hardening.
 - Ambient data gathering requires opt-in consent from participants.
 - No module in this repository offers medical or legal advice.
 - System logs may store limited personal data for reflective analysis.
-- Partnerships are fully supported and integration examples run in production.
+- Partnerships are currently simulated; integration examples run in sandbox environments only.
 - Plugin support is provided as-is with no guarantee of compatibility or continued maintenance.
-- Partners must perform their own compliance review before deploying.
+- Partners must perform their own compliance review before experimenting.
 - Vaultfire modules may change without notice and are provided as-is.
 - Nothing in this repository constitutes financial advice.
 """
