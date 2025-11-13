@@ -51,11 +51,11 @@
 ---
 
 ## Protocol Snapshot
-- **Alpha-stage, production-designed (simulation-backed):** Vaultfire fuses Codex reasoning engines, NFT identity anchors, and loyalty mechanics into an ethics-led activation stack for labs and sandboxes.
+- **Simulation-backed alpha:** Vaultfire is architected for production but currently runs only in sandbox and controlled pilot environments, fusing Codex reasoning engines, NFT identity anchors, and loyalty mechanics into an ethics-led activation stack for labs and sandboxes.
 - **Partner-first experiments:** Integration surfaces (CLI, dashboard, APIs) center ethics and provenance for enterprise onboarding trials without promising live traffic.
 - **Proof-rich simulations:** Zero-knowledge guards, attested telemetry, and AI mission resonance expose verifiable signals partners can study before any live deployment.
-- **Activation:** Alpha-phase wallet pilots and simulation rites completed; no public mainnet deployment yet.
-- **Stability:** Alpha-grade. Suitable for lab, sandbox, and controlled partner pilots. Full production use requires external security review and formal agreements.
+- **Activation:** Pre-mainnet. Alpha-phase pilots and simulation rites are active, but no public mainnet deployment is live yet.
+- **Stability:** Alpha-grade. Suitable for lab, sandbox, and controlled partner pilots. Full production use requires external security, compliance, and legal review plus formal agreements.
 - **Fork-friendly:** Follows the Moral Memory Fork Agreement (MMFA) so derivatives preserve the Ghostkey ethics lineage.
 
 ## Component Maturity & Stability
