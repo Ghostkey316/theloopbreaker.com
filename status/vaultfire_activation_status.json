@@ -1,7 +1,7 @@
 {
-  "Codex_Status": "🔥 READY 🔥",
-  "Ghostkey_CLI": "Activated & Trusted",
-  "Engine_Stack": "Synced",
-  "VaultfireProtocolStack": "All engines integrated",
-  "Telemetry": "CLI + enhancement unlock telemetry live"
+  "Codex_Status": "🔥 PILOT-READY 🔥 (Simulation-backed)",
+  "Ghostkey_CLI": "Activated for alpha pilots",
+  "Engine_Stack": "Synced in lab environments",
+  "VaultfireProtocolStack": "Alpha-stage integrations rehearsed",
+  "Telemetry": "CLI + enhancement unlock telemetry in opt-in sandboxes"
 }

@@ -51,9 +51,11 @@
 ---
 
 ## Protocol Snapshot
-- **Pilot-stage:** Vaultfire fuses Codex reasoning engines, NFT identity anchors, and loyalty mechanics into an ethics-led activation stack for labs and sandboxes.
-- **Partner-first experiments:** Integration surfaces (CLI, dashboard, APIs) center ethics and provenance for enterprise onboarding trials.
+- **Alpha-stage, production-designed (simulation-backed):** Vaultfire fuses Codex reasoning engines, NFT identity anchors, and loyalty mechanics into an ethics-led activation stack for labs and sandboxes.
+- **Partner-first experiments:** Integration surfaces (CLI, dashboard, APIs) center ethics and provenance for enterprise onboarding trials without promising live traffic.
 - **Proof-rich simulations:** Zero-knowledge guards, attested telemetry, and AI mission resonance expose verifiable signals partners can study before any live deployment.
+- **Activation:** Alpha-phase wallet pilots and simulation rites completed; no public mainnet deployment yet.
+- **Stability:** Alpha-grade. Suitable for lab, sandbox, and controlled partner pilots. Full production use requires external security review and formal agreements.
 - **Fork-friendly:** Follows the Moral Memory Fork Agreement (MMFA) so derivatives preserve the Ghostkey ethics lineage.
 
 ## Component Maturity & Stability
@@ -402,7 +404,7 @@ real time.
 Prospective partners can initiate integration via the onboarding toolkit, schedule a Codex handshake session, or contact Ghostkey-316 through verified ENS or wallet messaging. Support includes activation workshops, SDK walkthroughs, and ethics alignment audits.
 
 ## Licensing & Legal
-Vaultfire is released under a morals-first framework that permits fair-use collaboration, prohibits exploitative deployments, and requires operators to preserve ethics alignment, attribution, and user consent. No medical, legal, or financial advice is provided; partners must complete their own compliance reviews prior to any launch. Partnerships are currently limited to sandbox rehearsals, and system logs may store limited personal data for reflective analysis with explicit consent. Plugin support is provided as-is, derivative forks must retain the Ghostkey Ethics framework, commercial rights require an opt-in beacon tag, and all forks must reference the original Vaultfire URI.
+Vaultfire is released under a morals-first framework that permits fair-use collaboration, prohibits exploitative deployments, and requires operators to preserve ethics alignment, attribution, and user consent. No medical, legal, or financial advice is provided, and there is no promise of returns or live yield. Integration examples and partner toolkits are designed for eventual production use but currently run only in simulations and tightly scoped lab pilots derived from Ghostkey-316 telemetry. Any real-world deployment must undergo a separate security, compliance, and legal review, include a signed agreement, and obtain explicit opt-in from all parties before traffic is accepted. Partnerships remain limited to sandbox rehearsals, system logs may store limited personal data for reflective analysis with explicit consent, plugin support is provided as-is, derivative forks must retain the Ghostkey Ethics framework, commercial rights require an opt-in beacon tag, and all forks must reference the original Vaultfire URI.
 
 ---
 **Architect:** Ghostkey-316 · Vaultfire Protocol Steward
