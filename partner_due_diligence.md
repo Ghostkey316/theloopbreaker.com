@@ -17,5 +17,5 @@ Vaultfire provides ethics-first telemetry, hardened SecureStore mechanics, and g
 | Risk Area | Reviewer Question | Vaultfire Mitigation |
 | --- | --- | --- |
 | Module complexity | How do pilots avoid loading the entire module stack? | Set `VAULTFIRE_MODULE_SCOPE=pilot` (or `pilot_mode=true`) and execute `node pilot-loader.js` to load only CLI, Dashboard, and Belief Engine surfaces. |
-| Governance tuning | What ensures thresholds are production-ready? | Configure `.govrc` or `--config-path=` overrides, then run `npm run audit:gov` to validate thresholds and log `config.auditPassed` for audit trails. |
+| Governance tuning | What ensures thresholds are pilot-ready? | Configure `.govrc` or `--config-path=` overrides, then run `npm run audit:gov` to validate thresholds and log `config.auditPassed` for audit trails. Flag anything requiring multi-sig sign-off before a production launch. |
 | Telemetry residency | How are rejected partner sinks handled? | Enable `telemetry.fallback.enabled` so failed remote writes fall back to JSON logs and extend pipelines via `telemetry/adapters/partner_hook_adapter.js`. |

@@ -11,6 +11,13 @@
 - **Wallet-scoped storage:** Consent is persisted per wallet (localStorage in the dashboard, encrypted JSON store for CLI flows) and can be revoked at any time.
 - **Event boundaries:** With consent, the system records three events to Sentry—wallet login success/failure, dashboard render, and belief vote casts. No payload metadata or signatures are persisted.
 - **Auditability:** Telemetry consent files live at `~/.vaultfire/telemetry-consent.json` (overridable via `VAULTFIRE_TELEMETRY_STORE`) for partner audits and can be removed to revoke consent.
+- **Schema enforcement:** Runtime guards follow [`docs/telemetry-schema.md`](./docs/telemetry-schema.md). Events outside the schema are rejected and logged for investigation.
+
+## Secrets Handling & Storage
+- **Never commit secrets:** `.env`, `.env.local`, and other credential files are ignored via `.gitignore`. Keep them out of git history.
+- **Use real secret managers:** For production, load keys from AWS KMS, Google Secret Manager, Azure Key Vault, or HashiCorp Vault instead of exporting raw values in shells.
+- **Ephemeral rehearsal keys only:** Follow the README guidance—commands use placeholders such as `TEST_ONLY_DO_NOT_USE_REAL_KEYS`. Replace them with throwaway credentials during simulations and rotate immediately afterwards.
+- **Shell hygiene:** Prefer `direnv`, `pass`, or encrypted keychains over storing secrets in shell history. Run `history -c` after rehearsals when using shared environments.
 
 ## Reporting Issues
 - Responsible disclosures are welcomed via security@vaultfire.org.
@@ -36,3 +43,7 @@ Both advisories now resolve cleanly via `npm audit`, and the previous Hardhat sa
   `logs/security-watch.log` along with exit codes for traceability.
 - During the monthly dependency review, compare the latest log entries with upstream advisories and document remediation status
   in the CHANGELOG or release notes.
+
+---
+
+Additional context: consult [`docs/threat-model.md`](./docs/threat-model.md) for a living list of high-impact risks and [`README.md`](./README.md) for component maturity notes before onboarding new collaborators.

@@ -6,6 +6,8 @@
 
 **Belief-secured intelligence for partners who lead with ethics.**
 
+> **Status:** Alpha-stage / pilot-ready. Vaultfire is designed for lab and sandbox environments and has not been audited for high-stakes production use.
+
 > *"Proof of presence required.
 > Watching ain't building.
 > Glass breaks. Fire burns."*
@@ -14,6 +16,7 @@
 
 ## Table of Contents
 - [Protocol Snapshot](#protocol-snapshot)
+- [Component Maturity & Stability](#component-maturity--stability)
 - [Mission & Authenticity](#mission--authenticity)
 - [Core Pillars](#core-pillars)
   - [Zero-Knowledge Trust Mesh](#zero-knowledge-trust-mesh)
@@ -36,8 +39,11 @@
 - [Deployment Guide](#deployment-guide)
 - [Partner Integration Modules](#partner-integration-modules)
 - [Telemetry Residency & Partner Hooks](#telemetry-residency--partner-hooks)
+- [Non-removable Ethics Baseline](#non-removable-ethics-baseline)
+- [Telemetry Policy & Schema](#telemetry-policy--schema)
 - [Mainnet Rite](#mainnet-rite)
 - [Governance & Risk](#governance--risk)
+- [Threat Model Overview](#threat-model-overview)
 - [Status & Changelog](#status--changelog)
 - [Contributor Identity & Contact](#contributor-identity--contact)
 - [Licensing & Legal](#licensing--legal)
@@ -45,10 +51,21 @@
 ---
 
 ## Protocol Snapshot
-- **Production-hardened:** Vaultfire fuses Codex reasoning engines, NFT identity anchors, and loyalty mechanics into a mission-driven activation stack.
-- **Partner-first:** Integration surfaces (CLI, dashboard, APIs) center ethics and provenance for enterprise onboarding.
-- **Proof-rich:** Zero-knowledge guards, attested telemetry, and AI mission resonance expose verifiable signals partners can trust.
+- **Pilot-stage:** Vaultfire fuses Codex reasoning engines, NFT identity anchors, and loyalty mechanics into an ethics-led activation stack for labs and sandboxes.
+- **Partner-first experiments:** Integration surfaces (CLI, dashboard, APIs) center ethics and provenance for enterprise onboarding trials.
+- **Proof-rich simulations:** Zero-knowledge guards, attested telemetry, and AI mission resonance expose verifiable signals partners can study before any live deployment.
 - **Fork-friendly:** Follows the Moral Memory Fork Agreement (MMFA) so derivatives preserve the Ghostkey ethics lineage.
+
+## Component Maturity & Stability
+| Component | Status | Notes |
+| --- | --- | --- |
+| Auth / Identity Layer | Alpha | Wallet gating, ENS lookups, and attestations run in sandboxes; live integrations still pending security review. |
+| Ethics / Guardrails | Alpha | Middleware enforces a non-removable baseline policy with configurable partner add-ons. |
+| Telemetry Router | Alpha | Sentry and custom sinks operate in opt-in test environments with strict schema enforcement. |
+| Governance Ledger | Alpha | `governance-ledger.json` is curated manually by the steward; multi-party workflows remain a roadmap item. |
+| CLI Tooling | Alpha / Developer Preview | `vaultfire-cli` and companion scripts support pilot rehearsals but may change without notice. |
+| Dashboard / UI | Alpha | React views demonstrate flows with fixture data; live partner data paths are still mocked. |
+| Reward / Yield Modules | Experimental | Scripts and contracts model outcomes but have not shipped to production chains. |
 
 ## Mission & Authenticity
 Vaultfire remains a morals-first protocol where every activation must prove alignment before scaling. All case study data is derived from Ghostkey-316 telemetry unless explicitly labeled otherwise.
@@ -300,29 +317,44 @@ Automation touchpoints stay consistent: GitHub Actions handle tests, the CLI pro
   await partnerHook.writeTelemetry({ event: 'belief.signal', payload: { wallet: '0xabc' } });
   ```
 - Swap URLs for regional endpoints to respect residency constraints while tapping into belief events.
+- Swap URLs for regional endpoints to respect residency constraints while tapping into belief events. See [Telemetry Policy & Schema](#telemetry-policy--schema) for the allowed payload surface.
 
 **Final Rule: Wallet is passport. Vaultfire never compromises.**
 
+## Non-removable Ethics Baseline
+- Vaultfire ships with a locked baseline policy that enforces humanity over greed, freedom over control, mutual human/AI respect, and privacy by default.
+- Partner policies may add additional `blockedReasons`, stricter automation thresholds, or extra `coreValues`, but attempts to disable the baseline are rejected at load time.
+- Middleware updates in [`middleware/ethicsGuard.js`](./middleware/ethicsGuard.js) log the enforced core values on every request for audit traceability. See `__tests__/ethicsGuard.test.js` for coverage of the merge behaviour.
+
+## Telemetry Policy & Schema
+- Telemetry is opt-in and constrained to the schema documented in [`docs/telemetry-schema.md`](./docs/telemetry-schema.md). Payloads that include disallowed fields (PII, secrets, raw prompts) are stripped before transmission.
+- Runtime checks in [`telemetry/nodeTelemetry.js`](./telemetry/nodeTelemetry.js) enforce allowed event names and apply context sanitisation so only pseudonymous IDs and coarse tags persist.
+- Retention defaults to 30 days for remote sinks and 7 days for the local fallback file (`logs/telemetry/remote-fallback.jsonl`). Operators must purge sooner if local regulations demand it; instructions live in the telemetry schema doc.
+
 ## Mainnet Rite
-- **CovenantFlame:** [`0xC0VENANTF1aMe0000000000000000000000000000`](https://basescan.org/address/0xC0VENANTF1aMe0000000000000000000000000000)
-- **BeliefOracle:** [`0x0RACLE000000000000000000000000000000000`](https://basescan.org/address/0x0RACLE000000000000000000000000000000000)
-- **FreedomVow:** [`0xFREED0Mv0w000000000000000000000000000000`](https://basescan.org/address/0xFREED0Mv0w000000000000000000000000000000)
-- **DilithiumAttestor:** reuse the live verifier at [`0xD1L1THIUM000000000000000000000000000000`](https://basescan.org/address/0xD1L1THIUM000000000000000000000000000000)
-- **Sepolia Dry-Run TX (placeholder):** [`0xfeedfadefeedfadefeedfadefeedfadefeedfadefeedfadefeedfadefeedfade`](https://sepolia.etherscan.io/tx/0xfeedfadefeedfadefeedfadefeedfadefeedfadefeedfadefeedfadefeedfade)
-  - _Swap in the Base mainnet ignition hash once the dawn deployment finalizes._
+> **Warning:** The artefacts below are simulation placeholders. Vaultfire has not completed a production mainnet launch; use throwaway wallets and sealed sandboxes for any rehearsals.
+
+- **CovenantFlame (placeholder):** [`0xC0VENANTF1aMe0000000000000000000000000000`](https://basescan.org/address/0xC0VENANTF1aMe0000000000000000000000000000)
+- **BeliefOracle (placeholder):** [`0x0RACLE000000000000000000000000000000000`](https://basescan.org/address/0x0RACLE00000000000000000000000000000000)
+- **FreedomVow (placeholder):** [`0xFREED0Mv0w000000000000000000000000000000`](https://basescan.org/address/0xFREED0Mv0w000000000000000000000000000000)
+- **DilithiumAttestor (placeholder):** [`0xD1L1THIUM000000000000000000000000000000`](https://basescan.org/address/0xD1L1THIUM000000000000000000000000000000)
+- **Sepolia dry-run TX:** [`0xfeedfadefeedfadefeedfadefeedfadefeedfadefeedfadefeedfadefeedfade`](https://sepolia.etherscan.io/tx/0xfeedfadefeedfadefeedfadefeedfadefeedfadefeedfadefeedfadefeedfade)
+  - _Replace with the real ignition hash only after independent security review and multi-party approval._
 
 ```bash
-# Sovereign ignition
-export REWARD_STREAM_ADDRESS=0xYourRewardStream
-export DILITHIUM_ATTESTOR_ADDRESS=0xD1L1THIUM000000000000000000000000000000
-export PRIVATE_KEY=0xyourdeployerkey
+# Sovereign ignition (simulation only)
+export REWARD_STREAM_ADDRESS="0xYourRewardStream"
+export DILITHIUM_ATTESTOR_ADDRESS="0xD1L1THIUM000000000000000000000000000000"
+export PRIVATE_KEY="TEST_ONLY_DO_NOT_USE_REAL_KEYS"
 npx hardhat run scripts/deploy-full.js --network baseMainnet
 ```
 
+> **Secret handling warning:** Never paste production keys into your shell or commit them to git. Load rehearsal keys from a throwaway `.env.local` ignored by git, or better yet inject via a secrets manager at runtime.
+
 ```bash
-# Freedom rite (guardian side)
+# Freedom rite (guardian side rehearsal)
 python cli/freedom_rite.py "Guard the commons" 0xdeadbeefcafe --contract 0xFREED0Mv0w000000000000000000000000000000 \
-  --private-key 0xyourguardian --rpc https://mainnet.base.org
+  --private-key TEST_ONLY_DO_NOT_USE_REAL_KEYS --rpc https://mainnet.base.org
 ```
 
 ```js
@@ -346,16 +378,21 @@ Guardian events hydrate the xAI Grok feed via [`tools/guardian_echo.js`](./tools
 real time.
 
 ## Governance & Risk
-- Critical decisions live in [`governance-ledger.json`](./governance-ledger.json) with workflow docs in [`governance/README.md`](./governance/README.md).
-- Use `npm run audit:gov` to validate ledger updates before merging.
-- Cross-reference ledger changes with telemetry metrics (`docs/metrics.md`) and posture rotation logs for due diligence packets.
-- Risk automation hooks raise guardrail actions when queues spike, security alerts trigger, or ethics overrides require steward review.
+- **Current stewardship:** Governance remains single-steward. Updates to [`governance-ledger.json`](./governance-ledger.json) are curated manually by Ghostkey-316 with peer review happening via pull requests rather than on-chain votes.
+- **Transparency:** Run `npm run audit:gov` to diff ledger changes and attach context notes in [`governance.md`](./governance.md). Ledger entries should link to the corresponding discussion or simulation artefact.
+- **Roadmap:** Multi-signature approvals and automated sign-offs are aspirational. The target is to prototype a 2-of-3 signer flow with read-only observers before expanding to partners.
+- **Risk hooks:** Alerting scripts exist (`governance/automation_triggers.py`), but they currently emit console/log warnings. Treat them as advisory signals until enforcement code is hardened.
+
+## Threat Model Overview
+- The high-level threat analysis for Auth, Ethics, Telemetry, Governance, CLI, and Dashboard components lives in [`docs/threat-model.md`](./docs/threat-model.md).
+- Each section outlines protected assets, known threats, existing mitigations, and open work items to keep contributors focused on the most impactful hardening tasks.
+- Combine this with [`docs/telemetry-schema.md`](./docs/telemetry-schema.md) and [`SECURITY.md`](./SECURITY.md) when planning audits or reviews.
 
 ## Status & Changelog
-- **Activation:** Complete and operational across the Vaultfire network.
-- **Versioning:** Semantic versioning tracked in [`VERSION.md`](./VERSION.md) and surfaced through `manifest.json`.
-- **Stability:** Production-ready with partner integrations, continuous monitoring, and ethics-first guardrails.
-- **Latest release:** v1.4.0 (2024-09-12) introduced sandbox metrics, manifest metadata, telemetry safeguards, and pilot-ready toggles. Full details live in `VERSION.md`.
+- **Activation:** Pilot simulations only. No production partners are live and all telemetry is sourced from scripted sandboxes.
+- **Versioning:** Semantic versioning tracked in [`VERSION.md`](./VERSION.md); treat current tags as release candidates until a full security review completes.
+- **Stability:** Alpha. Interfaces may change without notice and require manual guardrail verification before partner demos.
+- **Latest updates:** Recent commits focus on telemetry minimisation, ethics guard hardening, and documentation honesty. See `VERSION.md` for historical notes, but assume additional validation is required before reuse.
 
 ## Contributor Identity & Contact
 - **Architect:** Ghostkey-316
@@ -365,7 +402,7 @@ real time.
 Prospective partners can initiate integration via the onboarding toolkit, schedule a Codex handshake session, or contact Ghostkey-316 through verified ENS or wallet messaging. Support includes activation workshops, SDK walkthroughs, and ethics alignment audits.
 
 ## Licensing & Legal
-Vaultfire is released under a morals-first framework that permits fair-use collaboration, prohibits exploitative deployments, and requires operators to preserve ethics alignment, attribution, and user consent. No medical, legal, or financial advice is provided; partners must complete their own compliance reviews prior to launch. Partnerships are fully supported, integration examples run in production, and system logs may store limited personal data for reflective analysis. Plugin support is provided as-is, derivative forks must retain the Ghostkey Ethics framework, commercial rights require an opt-in beacon tag, and all forks must reference the original Vaultfire URI.
+Vaultfire is released under a morals-first framework that permits fair-use collaboration, prohibits exploitative deployments, and requires operators to preserve ethics alignment, attribution, and user consent. No medical, legal, or financial advice is provided; partners must complete their own compliance reviews prior to any launch. Partnerships are currently limited to sandbox rehearsals, and system logs may store limited personal data for reflective analysis with explicit consent. Plugin support is provided as-is, derivative forks must retain the Ghostkey Ethics framework, commercial rights require an opt-in beacon tag, and all forks must reference the original Vaultfire URI.
 
 ---
 **Architect:** Ghostkey-316 · Vaultfire Protocol Steward

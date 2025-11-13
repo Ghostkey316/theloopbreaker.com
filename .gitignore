@@ -9,6 +9,14 @@ node_modules/
 artifacts/
 cache/
 vaultfire.db
+.env
+.env.*
+*.local.env
+*.secret
+
+# local configuration snapshots that may hold credentials
+*.vaultfire.local.json
+config/local/
 
 # audit artifacts
 audit_logs/*.jsonl
