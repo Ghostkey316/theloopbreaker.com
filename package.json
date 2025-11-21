@@ -14,6 +14,8 @@
     "start:api": "node auth/expressExample.js",
     "dashboard:dev": "vite --config dashboard/vite.config.mjs",
     "dashboard:build": "vite build --config dashboard/vite.config.mjs",
+    "dev:arcade": "cd apps/vaultfire-arcade && npm run dev",
+    "build:arcade": "cd apps/vaultfire-arcade && npm run build",
     "build": "node tools/update-version.js && npm run dashboard:build",
     "build:test": "tsc --project tsconfig.json --noEmit",
     "lint:guardrails": "node tools/lint_guardrails.js",
