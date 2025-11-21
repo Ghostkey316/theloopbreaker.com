@@ -13,5 +13,5 @@
     "types": ["node", "jest"]
   },
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", "dist", ".github"]
+  "exclude": ["node_modules", "dist", ".github", "apps/vaultfire-arcade"]
 }
