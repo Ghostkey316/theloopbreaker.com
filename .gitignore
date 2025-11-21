@@ -20,3 +20,4 @@ config/local/
 
 # audit artifacts
 audit_logs/*.jsonl
+.next/

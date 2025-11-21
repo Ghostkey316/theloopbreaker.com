@@ -30,6 +30,7 @@
 - [Scale Readiness Automation](#scale-readiness-automation)
 - [Yield Insights & Retro Streams](#yield-insights--retro-streams)
 - [Installation & Quick Start](#installation--quick-start)
+- [Vaultfire Arcade Mode Demo](#vaultfire-arcade-mode-demo)
 - [Operational Playbooks](#operational-playbooks)
   - [Testing Playbook](#testing-playbook)
   - [Module Scope Modes](#module-scope-modes)
@@ -150,6 +151,12 @@ Live deployments are targeted for the Q4 roadmap. Current examples demonstrate a
 6. **Verify telemetry sinks:** `npm run telemetry:verify`
 
 For mobile contexts, run `MOBILE_MODE=true npm run preflight` for a compact readiness summary.
+
+## Vaultfire Arcade Mode Demo
+- Location: `apps/vaultfire-arcade` (standalone Next.js + TypeScript + Tailwind surface).
+- Install dependencies inside the demo folder: `cd apps/vaultfire-arcade && npm install`.
+- Run locally from the repo root: `npm run dev:arcade` (build with `npm run build:arcade`).
+- Purpose: showcase persona selection, belief console, Guardian Rite ledger, and ethics/lore sections with no contract calls or tracking.
 
 ## Operational Playbooks
 
