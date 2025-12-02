@@ -1,0 +1,64 @@
+{
+  "subject": "Vaultfire-Quantum-Genesis",
+  "anchor": "Quantum-Defense-Final",
+  "pqc_profile": {
+    "primary": "Kyber768",
+    "signature": "Dilithium3",
+    "library": "libsodium"
+  },
+  "drift_buffer": {
+    "window": 3,
+    "noise_guard": 0.18,
+    "sample_count": 2,
+    "average_severity": 0.275,
+    "drift_checksum": "b74dcd68769d9a30077deacac275f6850037971f937aa3b3c9108fa2b550bf19",
+    "alerts": [
+      "drift-severity-threshold"
+    ],
+    "buffer_ready": true,
+    "events": [
+      {
+        "event": "drift-baseline",
+        "drift_vector": {
+          "phase": 0.2
+        },
+        "severity": 0.3,
+        "timestamp": "2025-12-02T06:39:01.965239+00:00",
+        "checksum": "c048c94db285630adc27eaee2f52e863f0fe79b77906359f14660df56a09a078"
+      },
+      {
+        "event": "drift-safety",
+        "drift_vector": {
+          "phase": 0.4
+        },
+        "severity": 0.25,
+        "timestamp": "2025-12-02T06:39:01.965334+00:00",
+        "checksum": "e263548802c11b2ff433d60b1ea954a24c1b6c7883c75d026faa3bdc4c0c277a"
+      }
+    ]
+  },
+  "loop_proof": {
+    "claim_id": "genesis-claim",
+    "claim_type": "POA",
+    "zk_proof": "zkloop-d48a7bac85b94a9dd6b7da07f8884fdce0ab7b36b08ec13a",
+    "loop_hash": "d48a7bac85b94a9dd6b7da07f8884fdce0ab7b36b08ec13a8157c359c916a8dd",
+    "verified": true,
+    "commitments": [
+      "integrity_commitment",
+      "pqc_signature"
+    ]
+  },
+  "moral_mirror": {
+    "subject": "Vaultfire-Quantum-Genesis",
+    "moral_score": 0.8833,
+    "reflection_hash": "fd855759b412cf8584a3046ccbe24dda057b8f90fbac8d6af12b68697cff2aac",
+    "alignment_vector": [
+      "empathy",
+      "resilience",
+      "transparency"
+    ],
+    "fail_reasons": []
+  },
+  "dna_hash": "2670bbeadf53467635083323cc6c42239b5c98c0ccb6f6e4a935a58cdab0ca2f",
+  "generated_at": "2025-12-02T06:39:01.965415+00:00"
+}
