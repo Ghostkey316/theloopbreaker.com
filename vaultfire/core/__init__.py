@@ -28,6 +28,8 @@ from vaultfire.modules import (
     VaultfireMythosEngine,
     VaultfireProtocolStack,
 )
+from vaultfire.core.mirror_engine import MirrorEngine, MirrorRecord
+from vaultfire.core.mirror_state import MirrorState, MirrorStateEntry
 
 logger = logging.getLogger("vaultfire.core")
 
@@ -441,4 +443,8 @@ __all__ = [
     "LoopSingularityDetectorEngine",
     "QuantumDriftSynchronizer",
     "VaultfireMythosEngine",
+    "MirrorEngine",
+    "MirrorRecord",
+    "MirrorState",
+    "MirrorStateEntry",
 ]
