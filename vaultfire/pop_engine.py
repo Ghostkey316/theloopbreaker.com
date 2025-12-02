@@ -8,7 +8,7 @@ from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Callable, Mapping, MutableMapping, Sequence
+from typing import Any, Callable, Iterable, Mapping, MutableMapping, Sequence
 
 
 @dataclass(frozen=True)
@@ -61,11 +61,16 @@ class PoPEngine:
         cache_path: str | Path = "pop_cache.json",
         signal_router: Any | None = None,
         time_source: Callable[[], datetime] | None = None,
+        upgrade_listeners: Iterable[
+            Callable[[PoPUpgradeEvent, "PoPScoreResult"], None]
+        ]
+        | None = None,
     ) -> None:
         self.cache_path = Path(cache_path)
         self.signal_router = signal_router
         self._time_source = time_source or datetime.utcnow
         self.history_window = timedelta(days=7)
+        self._upgrade_listeners = list(upgrade_listeners or [])
 
     # -----------------------------
     # Score calculation utilities
@@ -145,7 +150,7 @@ class PoPEngine:
             },
         )
         self._trigger_rewards(tier)
-        return PoPScoreResult(
+        result = PoPScoreResult(
             validator_id=validator_id,
             score=score,
             tier=tier,
@@ -153,6 +158,9 @@ class PoPEngine:
             vaultloop_hash=vaultloop_hash,
             upgrade_event=upgrade_event,
         )
+        if upgrade_event:
+            self._notify_upgrade(upgrade_event, result)
+        return result
 
     # -----------------------------
     # Tier logic & rewards
@@ -174,6 +182,22 @@ class PoPEngine:
             self.signal_router.triggerDripRelease()
         if tier >= 3 and hasattr(self.signal_router, "activatePassiveLoop"):
             self.signal_router.activatePassiveLoop()
+
+    def _notify_upgrade(
+        self, event: PoPUpgradeEvent, result: "PoPScoreResult"
+    ) -> None:
+        for listener in self._upgrade_listeners:
+            try:
+                listener(event, result)
+            except Exception:
+                continue
+
+    def register_upgrade_listener(
+        self, listener: Callable[[PoPUpgradeEvent, "PoPScoreResult"], None]
+    ) -> None:
+        """Register a callback for PoP upgrade events."""
+
+        self._upgrade_listeners.append(listener)
 
     # -----------------------------
     # Cache management
