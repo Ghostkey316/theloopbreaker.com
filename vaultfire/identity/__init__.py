@@ -9,6 +9,14 @@ from typing import Mapping, MutableMapping, Sequence
 from uuid import uuid4
 
 from vaultfire.protocol.constants import ARCHITECT_WALLET, ORIGIN_NODE_ID
+from vaultfire.identity.layer import (
+    BeliefScore,
+    BeliefScoreEngine,
+    IdentityAnchor,
+    IdentityEchoBridge,
+    IdentityWeaveCore,
+    PersonaMintCLI,
+)
 
 __all__ = [
     "SignalAnchorError",
@@ -26,6 +34,12 @@ __all__ = [
     "reset_signal_anchor_state",
     "BroadcastReceipt",
     "GhostkeySignalBoost",
+    "BeliefScore",
+    "BeliefScoreEngine",
+    "IdentityAnchor",
+    "IdentityEchoBridge",
+    "IdentityWeaveCore",
+    "PersonaMintCLI",
 ]
 
 
