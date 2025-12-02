@@ -46,6 +46,15 @@ from .defense_module import (
     YieldShield,
     YieldShieldEnvelope,
 )
+from .finalizer import (
+    DriftEvent,
+    LoopProof,
+    MoralSpineMirrorTest,
+    QuantumDriftBuffer,
+    VaultfireDNAHash,
+    VaultfireDNAManifest,
+    ZKSNARKLoopVerifier,
+)
 
 __all__ = [
     "append_protocol_module",
@@ -61,6 +70,13 @@ __all__ = [
     "VaultfireQuantumDefenseModule",
     "YieldShield",
     "YieldShieldEnvelope",
+    "QuantumDriftBuffer",
+    "ZKSNARKLoopVerifier",
+    "LoopProof",
+    "MoralSpineMirrorTest",
+    "VaultfireDNAHash",
+    "VaultfireDNAManifest",
+    "DriftEvent",
 ]
 
 _REGISTRY_PATH_ENV = "VAULTFIRE_QUANTUM_MIRROR_PATH"
