@@ -51,10 +51,13 @@ from .finalizer import (
     LoopProof,
     MoralSpineMirrorTest,
     QuantumDriftBuffer,
+    QuantumManifestoExporter,
     VaultfireDNAHash,
     VaultfireDNAManifest,
+    VaultfireQuantumManifesto,
     ZKSNARKLoopVerifier,
 )
+from .failsafe import FailsafeState, SelfErasureFailsafe
 
 __all__ = [
     "append_protocol_module",
@@ -76,6 +79,10 @@ __all__ = [
     "MoralSpineMirrorTest",
     "VaultfireDNAHash",
     "VaultfireDNAManifest",
+    "VaultfireQuantumManifesto",
+    "QuantumManifestoExporter",
+    "SelfErasureFailsafe",
+    "FailsafeState",
     "DriftEvent",
 ]
 
