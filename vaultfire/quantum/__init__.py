@@ -34,10 +34,33 @@ from hashlib import sha256
 from pathlib import Path
 from typing import Any, Dict, Iterable, Mapping, Sequence
 
+from .defense_module import (
+    PQCSchemeConfig,
+    QuantumDefenseManifest,
+    QuantumDefenseTestSuite,
+    QuantumIdentityEngine,
+    QuantumIdentityProof,
+    SentinelAssessment,
+    SentinelFirewall,
+    VaultfireQuantumDefenseModule,
+    YieldShield,
+    YieldShieldEnvelope,
+)
+
 __all__ = [
     "append_protocol_module",
     "integrate_quantum_mirror_module",
     "QuantumMirrorIntegrationError",
+    "PQCSchemeConfig",
+    "QuantumDefenseManifest",
+    "QuantumDefenseTestSuite",
+    "QuantumIdentityEngine",
+    "QuantumIdentityProof",
+    "SentinelAssessment",
+    "SentinelFirewall",
+    "VaultfireQuantumDefenseModule",
+    "YieldShield",
+    "YieldShieldEnvelope",
 ]
 
 _REGISTRY_PATH_ENV = "VAULTFIRE_QUANTUM_MIRROR_PATH"
