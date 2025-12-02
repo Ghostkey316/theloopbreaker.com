@@ -15,6 +15,8 @@ __all__ = [
     "TimePulseSync",
     "VaultLoopSnapshot",
     "VaultMemorySync",
+    "VaultproofVerifier",
+    "VerificationResult",
     "LoopMemoryCLI",
 ]
 
@@ -22,6 +24,9 @@ __all__ = [
 def __getattr__(name):
     if name in {"VaultLoopSnapshot", "VaultMemorySync"}:
         module = import_module("vaultfire.memory.modules.vault_memory_sync")
+        return getattr(module, name)
+    if name in {"VaultproofVerifier", "VerificationResult"}:
+        module = import_module("vaultfire.memory.modules.vaultproof_verifier")
         return getattr(module, name)
     if name == "LoopMemoryCLI":
         module = import_module("vaultfire.memory.cli.loop_memory_cli")
