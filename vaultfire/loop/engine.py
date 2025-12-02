@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Iterable, Mapping, MutableMapping, Sequence
 
 from vaultfire.identity.layer import IdentityAnchor
+from vaultfire.memory.modules.vault_memory_sync import VaultMemorySync
 from vaultfire.memory.modules.memory_thread import MemoryEvent, TimePulseSync
 from vaultfire.validation import ValidationReport, ValidatorCore
 
@@ -62,6 +63,7 @@ class LoopPulseTracker:
         epoch_span: timedelta | int = timedelta(minutes=15),
         activation_threshold: float = 0.7,
         time_source: callable | None = None,
+        memory_sync: VaultMemorySync | None = None,
     ) -> None:
         if isinstance(epoch_span, int):
             epoch_span = timedelta(seconds=epoch_span)
@@ -72,6 +74,7 @@ class LoopPulseTracker:
         self.activation_threshold = activation_threshold
         self._history: list[LoopSnapshot] = []
         self._time_source = time_source or datetime.utcnow
+        self.memory_sync = memory_sync
 
     @property
     def history(self) -> Sequence[LoopSnapshot]:
@@ -110,6 +113,8 @@ class LoopPulseTracker:
             active=active,
         )
         self._history.append(snapshot)
+        if self.memory_sync:
+            self.memory_sync.observe_pulse(snapshot)
         return snapshot
 
 
@@ -206,23 +211,27 @@ class VaultfireDripRouter:
         test_mode: bool = True,
         base_rate: float = 0.316,
         log_dir: Path | str = "yield_reports",
+        memory_sync: VaultMemorySync | None = None,
     ) -> None:
         self.test_mode = test_mode
         self.base_rate = base_rate
         self.log_dir = Path(log_dir)
         self.log_dir.mkdir(parents=True, exist_ok=True)
+        self.memory_sync = memory_sync
 
-    def _log_loopdrop(self, data: Mapping[str, object]) -> Path:
+    def _log_loopdrop(self, data: Mapping[str, object]) -> tuple[Path, Mapping[str, object]]:
         filename = f"{data['persona_tag']}-{int(datetime.utcnow().timestamp())}.loopdrop"
         path = self.log_dir / filename
         path.write_text(json.dumps(data, sort_keys=True, default=str))
-        return path
+        return path, data
 
     def schedule(
         self,
         snapshot: LoopSnapshot,
         amplifier: AmplifierState,
         pop_score: float,
+        *,
+        echo_history: Sequence[LoopSnapshot] | None = None,
     ) -> DripSchedule:
         aligned = snapshot.report.zk_consistent and not snapshot.report.drift_detected
         aligned = aligned and snapshot.report.ethics_state == "aligned"
@@ -237,18 +246,18 @@ class VaultfireDripRouter:
             "soulprint": snapshot.memory_event.soulprint.hash,
             "belief_hash": snapshot.report.belief_hash,
         }
-        log_path = self._log_loopdrop(
-            {
-                "persona_tag": snapshot.persona_tag,
-                "projected_yield_rate": projected_rate,
-                "amplifier_boost": amplifier.multiplier,
-                "amplifier_tier": amplifier.tier,
-                "alignment_source": alignment_source,
-                "next_drip_epoch": snapshot.next_drip_epoch.isoformat(),
-                "pop_score": pop_score,
-            }
-        )
-        return DripSchedule(
+        loopdrop_payload = {
+            "format": ".loopdrop",
+            "persona_tag": snapshot.persona_tag,
+            "projected_yield_rate": projected_rate,
+            "amplifier_boost": amplifier.multiplier,
+            "amplifier_tier": amplifier.tier,
+            "alignment_source": alignment_source,
+            "next_drip_epoch": snapshot.next_drip_epoch.isoformat(),
+            "pop_score": pop_score,
+        }
+        log_path, loopdrop_payload = self._log_loopdrop(loopdrop_payload)
+        schedule = DripSchedule(
             persona_tag=snapshot.persona_tag,
             projected_yield_rate=projected_rate,
             next_epoch=snapshot.next_drip_epoch,
@@ -256,6 +265,18 @@ class VaultfireDripRouter:
             alignment_source=alignment_source,
             log_path=log_path,
         )
+
+        if self.memory_sync:
+            self.memory_sync.sync(
+                snapshot,
+                amplifier,
+                pop_score,
+                schedule,
+                loopdrop_payload=loopdrop_payload,
+                echo_history=echo_history or self.memory_sync.echo_history(snapshot.persona_tag),
+            )
+
+        return schedule
 
 
 class VaultfireLoopEngine:
@@ -269,11 +290,17 @@ class VaultfireLoopEngine:
         pop_module: PoPScoreModule | None = None,
         drip_router: VaultfireDripRouter | None = None,
         time_pulse: TimePulseSync | None = None,
+        memory_sync: VaultMemorySync | None = None,
     ) -> None:
-        self.tracker = tracker or LoopPulseTracker()
+        self.memory_sync = memory_sync or VaultMemorySync()
+        self.tracker = tracker or LoopPulseTracker(memory_sync=self.memory_sync)
+        if self.tracker.memory_sync is None:
+            self.tracker.memory_sync = self.memory_sync
         self.amplifier = amplifier or BeliefEchoAmplifier()
         self.pop_module = pop_module or PoPScoreModule()
-        self.drip_router = drip_router or VaultfireDripRouter()
+        self.drip_router = drip_router or VaultfireDripRouter(memory_sync=self.memory_sync)
+        if self.drip_router.memory_sync is None:
+            self.drip_router.memory_sync = self.memory_sync
         self.time_pulse = time_pulse or TimePulseSync()
         self._states: MutableMapping[str, tuple[LoopSnapshot, AmplifierState, float, DripSchedule]] = {}
 
