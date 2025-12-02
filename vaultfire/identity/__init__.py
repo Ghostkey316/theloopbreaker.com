@@ -8,7 +8,14 @@ from types import MappingProxyType
 from typing import Mapping, MutableMapping, Sequence
 from uuid import uuid4
 
-from vaultfire.protocol.constants import ARCHITECT_WALLET, ORIGIN_NODE_ID
+from vaultfire.identity.layer import (
+    BeliefScore,
+    BeliefScoreEngine,
+    IdentityAnchor,
+    IdentityEchoBridge,
+    IdentityWeaveCore,
+    PersonaMintCLI,
+)
 
 __all__ = [
     "SignalAnchorError",
@@ -26,6 +33,12 @@ __all__ = [
     "reset_signal_anchor_state",
     "BroadcastReceipt",
     "GhostkeySignalBoost",
+    "BeliefScore",
+    "BeliefScoreEngine",
+    "IdentityAnchor",
+    "IdentityEchoBridge",
+    "IdentityWeaveCore",
+    "PersonaMintCLI",
 ]
 
 
@@ -136,6 +149,35 @@ class _SignalAnchorState:
 
 _STATE = _SignalAnchorState()
 
+_PROTOCOL_CONSTANTS: tuple[str, str] | None = None
+_PROTOCOL_IMPORT_ERROR: Exception | None = None
+
+
+def _get_protocol_constants() -> tuple[str, str]:
+    """Lazily import protocol constants, surfacing helpful guidance if missing.
+
+    The protocol module pulls optional dependencies (e.g., cryptography). Importing it
+    eagerly breaks lightweight identity-only test runs, so we defer the import until a
+    caller explicitly needs protocol-backed anchor utilities.
+    """
+
+    global _PROTOCOL_CONSTANTS, _PROTOCOL_IMPORT_ERROR
+    if _PROTOCOL_CONSTANTS:
+        return _PROTOCOL_CONSTANTS
+    if _PROTOCOL_IMPORT_ERROR:
+        raise ImportError(
+            "vaultfire.protocol is unavailable; install optional cryptography extras to use anchor bindings"
+        ) from _PROTOCOL_IMPORT_ERROR
+    try:
+        from vaultfire.protocol.constants import ARCHITECT_WALLET, ORIGIN_NODE_ID
+    except Exception as exc:  # pragma: no cover - defensive handling for optional deps
+        _PROTOCOL_IMPORT_ERROR = exc
+        raise ImportError(
+            "vaultfire.protocol constants could not be loaded; optional dependencies may be missing"
+        ) from exc
+    _PROTOCOL_CONSTANTS = (ARCHITECT_WALLET, ORIGIN_NODE_ID)
+    return _PROTOCOL_CONSTANTS
+
 
 def _normalize_origin(origin_id: str) -> str:
     if not isinstance(origin_id, str):
@@ -143,9 +185,10 @@ def _normalize_origin(origin_id: str) -> str:
     value = origin_id.strip()
     if not value:
         raise ValueError("origin_id must be provided")
-    canonical = ORIGIN_NODE_ID.lower().replace("-", "")
+    _, origin_node_id = _get_protocol_constants()
+    canonical = origin_node_id.lower().replace("-", "")
     if value.lower().replace("-", "") == canonical:
-        return ORIGIN_NODE_ID
+        return origin_node_id
     return value
 
 
@@ -155,8 +198,9 @@ def _normalize_wallet(wallet_id: str) -> str:
     value = wallet_id.strip()
     if not value:
         raise ValueError("wallet_id must be provided")
-    if value.lower() == ARCHITECT_WALLET.lower():
-        return ARCHITECT_WALLET
+    architect_wallet, _ = _get_protocol_constants()
+    if value.lower() == architect_wallet.lower():
+        return architect_wallet
     return value
 
 
