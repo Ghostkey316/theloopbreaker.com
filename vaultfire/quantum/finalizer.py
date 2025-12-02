@@ -318,6 +318,73 @@ class VaultfireDNAHash:
         return output_path
 
 
+@dataclass(frozen=True)
+class VaultfireQuantumManifesto:
+    """Declarative manifesto describing the Quantum Defense posture."""
+
+    creator: str
+    ethics: Sequence[str]
+    timestamp: str
+    quantum_ready: bool
+    spine_passed: bool
+    genesis_dna_hash: str
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "creator": self.creator,
+            "ethics": list(self.ethics),
+            "timestamp": self.timestamp,
+            "quantum_ready": self.quantum_ready,
+            "spine_passed": self.spine_passed,
+            "genesis_dna_hash": self.genesis_dna_hash,
+        }
+
+
+class QuantumManifestoExporter:
+    """Generate and persist the Vaultfire Quantum Manifesto."""
+
+    _DEFAULT_PATH = Path("manifest") / "vaultfire_quantum_manifesto.json"
+
+    def __init__(self, dna_signature_path: str | Path | None = None) -> None:
+        self.dna_signature_path = Path(dna_signature_path) if dna_signature_path else Path("manifest") / "dna_signature.json"
+
+    def _load_dna_hash(self) -> str:
+        if not self.dna_signature_path.exists():
+            return ""
+        try:
+            dna_payload = json.loads(self.dna_signature_path.read_text())
+        except json.JSONDecodeError:
+            dna_payload = {}
+        if isinstance(dna_payload, Mapping) and dna_payload.get("dna_hash"):
+            return str(dna_payload["dna_hash"])
+        return sha3_256(self.dna_signature_path.read_text().encode()).hexdigest()
+
+    def build_manifesto(
+        self,
+        *,
+        creator: str = "Ghostkey-316",
+        ethics: Sequence[str] | None = None,
+        quantum_ready: bool = True,
+        spine_passed: bool = True,
+    ) -> VaultfireQuantumManifesto:
+        ethics_values = ethics if ethics is not None else ["freedom", "truth", "privacy", "no control"]
+        timestamp = datetime.now(timezone.utc).isoformat()
+        return VaultfireQuantumManifesto(
+            creator=creator,
+            ethics=list(ethics_values),
+            timestamp=timestamp,
+            quantum_ready=quantum_ready,
+            spine_passed=spine_passed,
+            genesis_dna_hash=self._load_dna_hash(),
+        )
+
+    def export(self, manifesto: VaultfireQuantumManifesto, *, path: str | Path | None = None) -> Path:
+        output_path = Path(path) if path else self._DEFAULT_PATH
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(json.dumps(manifesto.to_dict(), indent=2) + "\n")
+        return output_path
+
+
 __all__ = [
     "DriftEvent",
     "QuantumDriftBuffer",
@@ -327,4 +394,6 @@ __all__ = [
     "MoralSpineMirrorTest",
     "VaultfireDNAManifest",
     "VaultfireDNAHash",
+    "VaultfireQuantumManifesto",
+    "QuantumManifestoExporter",
 ]
