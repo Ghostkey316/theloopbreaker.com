@@ -58,6 +58,14 @@ from .finalizer import (
     ZKSNARKLoopVerifier,
 )
 from .failsafe import FailsafeState, SelfErasureFailsafe
+from .sovereign_layer import (
+    EthosReceiptGenerator,
+    MoralAlignmentSimulator,
+    QuantumRelayPingNet,
+    ThreatMirrorLoop,
+    ZKKeeper,
+    ZKProofRecord,
+)
 
 __all__ = [
     "append_protocol_module",
@@ -84,6 +92,12 @@ __all__ = [
     "SelfErasureFailsafe",
     "FailsafeState",
     "DriftEvent",
+    "ZKKeeper",
+    "ZKProofRecord",
+    "MoralAlignmentSimulator",
+    "QuantumRelayPingNet",
+    "ThreatMirrorLoop",
+    "EthosReceiptGenerator",
 ]
 
 _REGISTRY_PATH_ENV = "VAULTFIRE_QUANTUM_MIRROR_PATH"
