@@ -12,6 +12,12 @@ from typing import Any, Callable, Mapping, MutableMapping
 import httpx
 
 from utils.belief_signer import BeliefSigner
+from vaultfire.resilience import CircuitBreaker, CircuitBreakerOpenError
+
+try:
+    from vaultfire.observability import get_metrics_exporter, PROMETHEUS_AVAILABLE
+except ImportError:
+    PROMETHEUS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +43,7 @@ class BeliefSync:
         clock: Callable[[], datetime] | None = None,
         max_retries: int = 3,
         retry_backoff_base: float = 2.0,
+        enable_circuit_breaker: bool = True,
     ) -> None:
         self.signer = signer
         self.ns3_endpoint = ns3_endpoint
@@ -46,13 +53,33 @@ class BeliefSync:
         self._used_nonces: set[str] = set()
         self.max_retries = max(1, max_retries)
         self.retry_backoff_base = max(1.0, retry_backoff_base)
-        # Metrics tracking
+
+        # Circuit breaker for NS3 endpoint
+        self._circuit_breaker: CircuitBreaker | None = None
+        if enable_circuit_breaker:
+            self._circuit_breaker = CircuitBreaker(
+                failure_threshold=5,
+                recovery_timeout=30.0,
+                expected_exception=(httpx.HTTPError, httpx.TimeoutException),
+                name="ns3_sync",
+            )
+
+        # Prometheus metrics exporter
+        self._metrics_exporter = None
+        if PROMETHEUS_AVAILABLE:
+            try:
+                self._metrics_exporter = get_metrics_exporter()
+            except Exception as exc:
+                logger.warning(f"Failed to initialize Prometheus exporter: {exc}")
+
+        # Internal metrics tracking
         self.metrics = {
             "syncs_attempted": 0,
             "syncs_succeeded": 0,
             "syncs_failed": 0,
             "retries_total": 0,
             "replays_blocked": 0,
+            "circuit_breaker_rejections": 0,
         }
 
     def _generate_nonce(self) -> str:
@@ -60,6 +87,18 @@ class BeliefSync:
         self._nonce_counter += 1
         timestamp_ns = int(self._clock().timestamp() * 1e9)
         return f"{timestamp_ns}-{self._nonce_counter}"
+
+    def _perform_sync(self, envelope: Mapping[str, Any]) -> Mapping[str, Any] | None:
+        """Perform HTTP POST to NS3 endpoint.
+
+        This method is wrapped by the circuit breaker for resilience.
+        """
+        resp = httpx.post(self.ns3_endpoint, json=envelope, timeout=10)
+        resp.raise_for_status()
+        try:
+            return resp.json()
+        except ValueError:
+            return None
 
     def sync_from_vaultloop(self, snapshot: Mapping[str, Any]) -> MutableMapping[str, Any]:
         """Convert a vaultloop snapshot into an NS3 belief payload."""
@@ -104,6 +143,8 @@ class BeliefSync:
         nonce = payload.get("nonce")
         if nonce and nonce in self._used_nonces:
             self.metrics["replays_blocked"] += 1
+            if self._metrics_exporter:
+                self._metrics_exporter.record_replay_attack()
             logger.warning(f"Replay attack blocked: nonce {nonce} already used")
             raise ValueError(f"Replay attack detected: nonce {nonce} already used")
 
@@ -118,17 +159,25 @@ class BeliefSync:
             "timestamp": timestamp.isoformat(),
         }
 
+        # Wrap HTTP call with circuit breaker if enabled
+        start_time = time.time()
+
         # Retry logic with exponential backoff
         last_exception = None
         for attempt in range(self.max_retries):
             try:
-                response_json: Mapping[str, Any] | None = None
-                resp = httpx.post(self.ns3_endpoint, json=envelope, timeout=10)
-                resp.raise_for_status()
-                try:
-                    response_json = resp.json()
-                except ValueError:
-                    response_json = None
+                # Use circuit breaker if available
+                if self._circuit_breaker:
+                    try:
+                        response_json = self._circuit_breaker.call(
+                            self._perform_sync, envelope
+                        )
+                    except CircuitBreakerOpenError:
+                        self.metrics["circuit_breaker_rejections"] += 1
+                        logger.warning("NS3 sync rejected: circuit breaker OPEN")
+                        raise
+                else:
+                    response_json = self._perform_sync(envelope)
 
                 receipt_valid = False
                 receipt = None
@@ -147,16 +196,34 @@ class BeliefSync:
                             self._used_nonces.pop()
 
                 self.metrics["syncs_succeeded"] += 1
-                logger.info(f"NS3 sync succeeded for validator {payload.get('validator_id')}")
+                duration = time.time() - start_time
+
+                # Record Prometheus metrics
+                if self._metrics_exporter:
+                    self._metrics_exporter.record_sync("succeeded", duration)
+                    if self._circuit_breaker:
+                        self._metrics_exporter.update_circuit_breaker_state(
+                            "ns3_sync", self._circuit_breaker.state_value
+                        )
+
+                logger.info(
+                    f"NS3 sync succeeded for validator {payload.get('validator_id')} "
+                    f"in {duration:.2f}s"
+                )
 
                 return BeliefSyncResult(
                     payload=payload, envelope=envelope, response=response_json, receipt_valid=receipt_valid
                 )
 
+            except CircuitBreakerOpenError:
+                # Circuit breaker open, don't retry
+                raise
             except (httpx.HTTPError, httpx.TimeoutException) as exc:
                 last_exception = exc
                 if attempt < self.max_retries - 1:
                     self.metrics["retries_total"] += 1
+                    if self._metrics_exporter:
+                        self._metrics_exporter.record_sync_retry()
                     backoff = self.retry_backoff_base ** attempt
                     logger.warning(
                         f"NS3 sync attempt {attempt + 1}/{self.max_retries} failed: {exc}. "
@@ -167,6 +234,16 @@ class BeliefSync:
                     logger.error(f"NS3 sync failed after {self.max_retries} attempts: {exc}")
 
         self.metrics["syncs_failed"] += 1
+        duration = time.time() - start_time
+
+        # Record failure metrics
+        if self._metrics_exporter:
+            self._metrics_exporter.record_sync("failed", duration)
+            if self._circuit_breaker:
+                self._metrics_exporter.update_circuit_breaker_state(
+                    "ns3_sync", self._circuit_breaker.state_value
+                )
+
         raise last_exception or RuntimeError("NS3 sync failed with no exception captured")
 
     def validate_receipt(self, receipt: Mapping[str, Any]) -> bool:
