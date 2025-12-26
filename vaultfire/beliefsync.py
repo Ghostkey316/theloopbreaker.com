@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
+import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, Mapping, MutableMapping
@@ -10,6 +12,8 @@ from typing import Any, Callable, Mapping, MutableMapping
 import httpx
 
 from utils.belief_signer import BeliefSigner
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -31,11 +35,31 @@ class BeliefSync:
         *,
         ns3_endpoint: str = "https://ns3.local/sync/beliefs",
         clock: Callable[[], datetime] | None = None,
+        max_retries: int = 3,
+        retry_backoff_base: float = 2.0,
     ) -> None:
         self.signer = signer
         self.ns3_endpoint = ns3_endpoint
         self._clock = clock or (lambda: datetime.now(timezone.utc))
         self.last_payload: Mapping[str, Any] | None = None
+        self._nonce_counter: int = 0
+        self._used_nonces: set[str] = set()
+        self.max_retries = max(1, max_retries)
+        self.retry_backoff_base = max(1.0, retry_backoff_base)
+        # Metrics tracking
+        self.metrics = {
+            "syncs_attempted": 0,
+            "syncs_succeeded": 0,
+            "syncs_failed": 0,
+            "retries_total": 0,
+            "replays_blocked": 0,
+        }
+
+    def _generate_nonce(self) -> str:
+        """Generate a unique nonce for replay attack prevention."""
+        self._nonce_counter += 1
+        timestamp_ns = int(self._clock().timestamp() * 1e9)
+        return f"{timestamp_ns}-{self._nonce_counter}"
 
     def sync_from_vaultloop(self, snapshot: Mapping[str, Any]) -> MutableMapping[str, Any]:
         """Convert a vaultloop snapshot into an NS3 belief payload."""
@@ -54,6 +78,7 @@ class BeliefSync:
         amplifier_strength = self._extract_amplifier_strength(snapshot)
         drip_delta = self._calculate_drip_delta(snapshot, now)
         loop_recall_vector = self._build_loop_recall_vector(snapshot)
+        nonce = self._generate_nonce()
 
         payload: MutableMapping[str, Any] = {
             "validator_id": validator_id,
@@ -63,15 +88,25 @@ class BeliefSync:
             "timestamp": now.isoformat(),
             "drip_delta": drip_delta,
             "loop_recall_vector": loop_recall_vector,
+            "nonce": nonce,
         }
 
         self.last_payload = payload
         return payload
 
     def push_to_ns3(self, payload: Mapping[str, Any]) -> BeliefSyncResult:
-        """Sign and forward a payload to the NS3 endpoint."""
+        """Sign and forward a payload to the NS3 endpoint with retry logic."""
 
         self._validate_payload(payload)
+        self.metrics["syncs_attempted"] += 1
+
+        # Check for replay attacks
+        nonce = payload.get("nonce")
+        if nonce and nonce in self._used_nonces:
+            self.metrics["replays_blocked"] += 1
+            logger.warning(f"Replay attack blocked: nonce {nonce} already used")
+            raise ValueError(f"Replay attack detected: nonce {nonce} already used")
+
         timestamp = self._clock()
         signature = self.signer.sign(payload, timestamp=timestamp)
         if not self.signer.verify(payload, signature, timestamp=timestamp, tolerance_windows=0):
@@ -83,25 +118,56 @@ class BeliefSync:
             "timestamp": timestamp.isoformat(),
         }
 
-        response_json: Mapping[str, Any] | None
-        response_json = None
-        resp = httpx.post(self.ns3_endpoint, json=envelope, timeout=5)
-        resp.raise_for_status()
-        try:
-            response_json = resp.json()
-        except ValueError:
-            response_json = None
+        # Retry logic with exponential backoff
+        last_exception = None
+        for attempt in range(self.max_retries):
+            try:
+                response_json: Mapping[str, Any] | None = None
+                resp = httpx.post(self.ns3_endpoint, json=envelope, timeout=10)
+                resp.raise_for_status()
+                try:
+                    response_json = resp.json()
+                except ValueError:
+                    response_json = None
 
-        receipt_valid = False
-        receipt = None
-        if isinstance(response_json, Mapping):
-            receipt = response_json.get("receipt")
-            if receipt:
-                receipt_valid = self.validate_receipt(receipt)
+                receipt_valid = False
+                receipt = None
+                if isinstance(response_json, Mapping):
+                    receipt = response_json.get("receipt")
+                    if receipt:
+                        receipt_valid = self.validate_receipt(receipt)
 
-        return BeliefSyncResult(
-            payload=payload, envelope=envelope, response=response_json, receipt_valid=receipt_valid
-        )
+                # Success - mark nonce as used
+                if nonce:
+                    self._used_nonces.add(nonce)
+                    # Prune old nonces (keep last 10000)
+                    if len(self._used_nonces) > 10000:
+                        to_remove = len(self._used_nonces) - 10000
+                        for _ in range(to_remove):
+                            self._used_nonces.pop()
+
+                self.metrics["syncs_succeeded"] += 1
+                logger.info(f"NS3 sync succeeded for validator {payload.get('validator_id')}")
+
+                return BeliefSyncResult(
+                    payload=payload, envelope=envelope, response=response_json, receipt_valid=receipt_valid
+                )
+
+            except (httpx.HTTPError, httpx.TimeoutException) as exc:
+                last_exception = exc
+                if attempt < self.max_retries - 1:
+                    self.metrics["retries_total"] += 1
+                    backoff = self.retry_backoff_base ** attempt
+                    logger.warning(
+                        f"NS3 sync attempt {attempt + 1}/{self.max_retries} failed: {exc}. "
+                        f"Retrying in {backoff}s..."
+                    )
+                    time.sleep(backoff)
+                else:
+                    logger.error(f"NS3 sync failed after {self.max_retries} attempts: {exc}")
+
+        self.metrics["syncs_failed"] += 1
+        raise last_exception or RuntimeError("NS3 sync failed with no exception captured")
 
     def validate_receipt(self, receipt: Mapping[str, Any]) -> bool:
         """Validate an NS3 receipt using the configured signer."""
@@ -200,6 +266,7 @@ class BeliefSync:
             "timestamp",
             "drip_delta",
             "loop_recall_vector",
+            "nonce",
         }
         missing = sorted(required.difference(payload.keys()))
         if missing:
