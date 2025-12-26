@@ -6,12 +6,15 @@ Routes PoP upgrade events into drip reward logic with belief metadata.
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Mapping, MutableMapping
 
 from vaultfire.pop_engine import PoPEngine, PoPScoreResult, PoPUpgradeEvent
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -55,6 +58,14 @@ class VaultdripRouter:
         self._codex_registry_path = codex_registry_path or Path(
             "codex/VAULTFIRE_CLI_LEDGER.jsonl"
         )
+        # Metrics tracking
+        self.metrics = {
+            "routes_attempted": 0,
+            "routes_succeeded": 0,
+            "routes_rejected": 0,
+            "routes_ineligible": 0,
+            "bonuses_flagged": 0,
+        }
         self._register_with_codex_registry()
 
     def attach_to(self, engine: PoPEngine) -> None:
@@ -86,8 +97,15 @@ class VaultdripRouter:
     def route_reward(self, score_result: PoPScoreResult) -> RoutedDrip:
         """Route a PoP upgrade event into drip and bonus flows."""
 
+        self.metrics["routes_attempted"] += 1
         metadata = self._build_metadata(score_result)
+
         if self._is_spoofed(score_result):
+            self.metrics["routes_rejected"] += 1
+            logger.warning(
+                f"Rejected spoofed upgrade for validator {score_result.validator_id} "
+                f"(tier: {score_result.tier})"
+            )
             routed = RoutedDrip(
                 validator_id=score_result.validator_id,
                 tier=score_result.tier,
@@ -101,6 +119,7 @@ class VaultdripRouter:
             return routed
 
         if not self._is_eligible(score_result):
+            self.metrics["routes_ineligible"] += 1
             routed = RoutedDrip(
                 validator_id=score_result.validator_id,
                 tier=score_result.tier,
@@ -115,6 +134,14 @@ class VaultdripRouter:
 
         release = self._release_drip(score_result, metadata)
         bonus_flagged = self._flag_high_loyalty(score_result)
+        if bonus_flagged:
+            self.metrics["bonuses_flagged"] += 1
+
+        self.metrics["routes_succeeded"] += 1
+        logger.info(
+            f"Routed reward for validator {score_result.validator_id}: "
+            f"tier {score_result.tier}, amount {release['amount']}, bonus={bonus_flagged}"
+        )
         routed = RoutedDrip(
             validator_id=score_result.validator_id,
             tier=score_result.tier,

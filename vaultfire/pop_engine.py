@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import fcntl
 import json
+import logging
 import math
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, MutableMapping, Sequence
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -65,12 +69,21 @@ class PoPEngine:
             Callable[[PoPUpgradeEvent, "PoPScoreResult"], None]
         ]
         | None = None,
+        history_window_days: int = 7,
     ) -> None:
         self.cache_path = Path(cache_path)
         self.signal_router = signal_router
         self._time_source = time_source or datetime.utcnow
-        self.history_window = timedelta(days=7)
+        self.history_window = timedelta(days=max(1, history_window_days))
         self._upgrade_listeners = list(upgrade_listeners or [])
+        # Metrics tracking
+        self.metrics = {
+            "scores_calculated": 0,
+            "upgrades_triggered": 0,
+            "cache_reads": 0,
+            "cache_writes": 0,
+            "listener_failures": 0,
+        }
 
     # -----------------------------
     # Score calculation utilities
@@ -118,6 +131,8 @@ class PoPEngine:
         amplifier_streak: int = 0,
         vaultloop_hash: str = "",
     ) -> PoPScoreResult:
+        self.metrics["scores_calculated"] += 1
+
         vaultproofs = list(vaultproofs or [])
         score = sum(
             (
@@ -133,12 +148,16 @@ class PoPEngine:
         previous_tier = self._latest_tier(validator_id)
         upgrade_event = None
         if previous_tier is not None and previous_tier != tier:
+            self.metrics["upgrades_triggered"] += 1
             upgrade_event = PoPUpgradeEvent(
                 timestamp=timestamp,
                 validator_id=validator_id,
                 vaultloop_hash=vaultloop_hash,
                 previous_tier=previous_tier,
                 new_tier=tier,
+            )
+            logger.info(
+                f"PoP upgrade detected for {validator_id}: tier {previous_tier} -> {tier} (score: {score})"
             )
         self._record_history(
             validator_id,
@@ -186,10 +205,17 @@ class PoPEngine:
     def _notify_upgrade(
         self, event: PoPUpgradeEvent, result: "PoPScoreResult"
     ) -> None:
-        for listener in self._upgrade_listeners:
+        """Notify all registered upgrade listeners of a tier change."""
+        for idx, listener in enumerate(self._upgrade_listeners):
             try:
                 listener(event, result)
-            except Exception:
+            except Exception as exc:
+                self.metrics["listener_failures"] += 1
+                logger.error(
+                    f"Upgrade listener {idx} failed for validator {event.validator_id} "
+                    f"(tier {event.previous_tier} -> {event.new_tier}): {exc}",
+                    exc_info=True,
+                )
                 continue
 
     def register_upgrade_listener(
@@ -203,18 +229,48 @@ class PoPEngine:
     # Cache management
     # -----------------------------
     def _load_cache(self) -> MutableMapping[str, list[Mapping[str, object]]]:
+        """Load cache with file locking to prevent race conditions."""
+        self.metrics["cache_reads"] += 1
         if not self.cache_path.exists():
             return {}
         try:
-            data = json.loads(self.cache_path.read_text())
-            if isinstance(data, dict):
-                return {k: list(v) for k, v in data.items()}
-        except json.JSONDecodeError:
+            with self.cache_path.open("r") as f:
+                # Acquire shared lock for reading
+                fcntl.flock(f.fileno(), fcntl.LOCK_SH)
+                try:
+                    data = json.load(f)
+                    if isinstance(data, dict):
+                        return {k: list(v) for k, v in data.items()}
+                finally:
+                    fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+        except (json.JSONDecodeError, IOError) as exc:
+            logger.warning(f"Failed to load cache from {self.cache_path}: {exc}")
             return {}
         return {}
 
     def _write_cache(self, cache: Mapping[str, object]) -> None:
-        self.cache_path.write_text(json.dumps(cache, indent=2, sort_keys=True))
+        """Write cache with exclusive file locking to prevent corruption."""
+        self.metrics["cache_writes"] += 1
+        try:
+            # Ensure parent directory exists
+            self.cache_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Write to temporary file first, then atomic rename
+            temp_path = self.cache_path.with_suffix(".tmp")
+            with temp_path.open("w") as f:
+                # Acquire exclusive lock for writing
+                fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+                try:
+                    json.dump(cache, f, indent=2, sort_keys=True)
+                    f.flush()
+                finally:
+                    fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+
+            # Atomic rename (prevents partial writes)
+            temp_path.replace(self.cache_path)
+        except IOError as exc:
+            logger.error(f"Failed to write cache to {self.cache_path}: {exc}")
+            raise
 
     def _prune_history(self, entries: Sequence[Mapping[str, object]]) -> list[Mapping[str, object]]:
         cutoff = self._time_source() - self.history_window
