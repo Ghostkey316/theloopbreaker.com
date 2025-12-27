@@ -3,7 +3,11 @@
     "contributor_score": 15,
     "contributor_tag": "Echo Agent",
     "wallet": "ghostkey316.eth",
-    "loyalty": 210
+    "loyalty": 210,
+    "alignment_score": 0,
+    "trust_behavior": 0,
+    "trust_bonus": 0,
+    "badges": []
   },
   "sample_user": {
     "contributor_score": 5,

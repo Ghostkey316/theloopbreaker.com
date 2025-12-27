@@ -34,7 +34,7 @@ def _sample_snapshot(now: datetime) -> dict[str, object]:
 def test_snapshot_transform_includes_belief_fields():
     now = datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc)
     signer = BeliefSigner("secret")
-    syncer = BeliefSync(signer, clock=lambda: now)
+    syncer = BeliefSync(signer, clock=lambda: now, enable_circuit_breaker=False)
 
     payload = syncer.sync_from_vaultloop(_sample_snapshot(now))
 
@@ -50,7 +50,7 @@ def test_snapshot_transform_includes_belief_fields():
 
 def test_valid_sync_structure_and_hashing():
     now = datetime(2024, 5, 4, 0, 0, tzinfo=timezone.utc)
-    syncer = BeliefSync(BeliefSigner("secret"), clock=lambda: now)
+    syncer = BeliefSync(BeliefSigner("secret"), clock=lambda: now, enable_circuit_breaker=False)
     snapshot = _sample_snapshot(now)
     payload = syncer.sync_from_vaultloop(snapshot)
 
@@ -73,7 +73,7 @@ def test_valid_sync_structure_and_hashing():
 def test_push_to_ns3_posts_signed_payload(monkeypatch):
     now = datetime(2024, 3, 10, 9, 30, tzinfo=timezone.utc)
     signer = BeliefSigner("secret", window_seconds=60)
-    syncer = BeliefSync(signer, clock=lambda: now)
+    syncer = BeliefSync(signer, clock=lambda: now, enable_circuit_breaker=False)
     payload = syncer.sync_from_vaultloop(_sample_snapshot(now))
 
     captured = {}
@@ -122,7 +122,7 @@ def test_hmac_verification_blocks_tampering():
 def test_receipt_validation_with_tolerance():
     now = datetime(2024, 6, 1, 12, 0, tzinfo=timezone.utc)
     signer = BeliefSigner("receipt-secret", window_seconds=120)
-    syncer = BeliefSync(signer, clock=lambda: now)
+    syncer = BeliefSync(signer, clock=lambda: now, enable_circuit_breaker=False)
     payload = syncer.sync_from_vaultloop(_sample_snapshot(now))
 
     signature = signer.sign(payload, timestamp=now - timedelta(seconds=120))
@@ -143,7 +143,7 @@ def test_replay_attack_prevention():
     """Test that replay attacks with duplicate nonces are blocked."""
     now = datetime(2024, 7, 1, 12, 0, tzinfo=timezone.utc)
     signer = BeliefSigner("secret", window_seconds=60)
-    syncer = BeliefSync(signer, clock=lambda: now)
+    syncer = BeliefSync(signer, clock=lambda: now, enable_circuit_breaker=False)
     payload = syncer.sync_from_vaultloop(_sample_snapshot(now))
 
     def fake_post(url, json=None, timeout=None):  # noqa: A002
@@ -183,7 +183,7 @@ def test_nonce_uniqueness():
     """Test that each sync generates a unique nonce."""
     now = datetime(2024, 8, 1, 12, 0, tzinfo=timezone.utc)
     signer = BeliefSigner("secret")
-    syncer = BeliefSync(signer, clock=lambda: now)
+    syncer = BeliefSync(signer, clock=lambda: now, enable_circuit_breaker=False)
 
     payload1 = syncer.sync_from_vaultloop(_sample_snapshot(now))
     payload2 = syncer.sync_from_vaultloop(_sample_snapshot(now))
