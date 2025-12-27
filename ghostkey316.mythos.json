@@ -1,0 +1,180 @@
+{
+  "identity": {
+    "wallet": "bpow20.cb.id",
+    "ens": "ghostkey316.eth"
+  },
+  "fragments": [
+    {
+      "id": "QHM-238cc6408b4217f9e315",
+      "source": "activation",
+      "motif": "Aligned Current",
+      "payload": {
+        "actions_ingested": 0,
+        "baseline": true
+      },
+      "legendary": false,
+      "signature": "866aae0ddc65c010d806aec7fbd1854b4d6dc08dde3f8a1a04ea6542769403e3",
+      "timestamp": "2025-12-27T13:20:34.046605+00:00",
+      "metadata": {
+        "module": "VaultfireMythosEngine",
+        "first_of_its_kind": true,
+        "identity": {
+          "wallet": "bpow20.cb.id",
+          "ens": "ghostkey316.eth"
+        },
+        "tags": [
+          "Ghostkey-316",
+          "Trust-Certified",
+          "No Ego Override",
+          "Morals-First"
+        ],
+        "requirements": {
+          "ghostkey_tags": [
+            "Ghostkey-316",
+            "Trust-Certified",
+            "No Ego Override",
+            "Morals-First"
+          ],
+          "export_format": "JSON",
+          "resilient_inputs": true,
+          "CLI_scriptable": true
+        }
+      }
+    },
+    {
+      "id": "QHM-b921a8c4b7f6dbaf0238",
+      "source": "compassion-support",
+      "motif": "Gift Loop Awakened",
+      "payload": {
+        "action": {
+          "interaction_id": "loop-1",
+          "type": "compassion-support",
+          "ethic": "support",
+          "confidence": 0.88,
+          "alignment_bias": 0.2,
+          "consent": true,
+          "tags": [
+            "support",
+            "urgent"
+          ],
+          "distress": 0.75,
+          "statement": "Aid request verified"
+        },
+        "rewards": [],
+        "LoopMerge_Mode": "Observation"
+      },
+      "legendary": false,
+      "signature": "ade1233477fe56f346706419869859fc2584d4c43cfb0f8cd0a80953f17b8262",
+      "timestamp": "2025-12-27T13:20:52.101058+00:00",
+      "metadata": {
+        "module": "VaultfireMythosEngine",
+        "first_of_its_kind": true,
+        "identity": {
+          "wallet": "bpow20.cb.id",
+          "ens": "ghostkey316.eth"
+        },
+        "tags": [
+          "Ghostkey-316",
+          "Trust-Certified",
+          "No Ego Override",
+          "Morals-First"
+        ],
+        "requirements": {
+          "ghostkey_tags": [
+            "Ghostkey-316",
+            "Trust-Certified",
+            "No Ego Override",
+            "Morals-First"
+          ],
+          "export_format": "JSON",
+          "resilient_inputs": true,
+          "CLI_scriptable": true
+        }
+      }
+    },
+    {
+      "id": "QHM-21d3bbdc2743166c9348",
+      "source": "support",
+      "motif": "Gift Loop Awakened",
+      "payload": {
+        "action": {
+          "type": "support",
+          "weight": 3
+        },
+        "rewards": [
+          {
+            "feature_access": "early-access",
+            "yield_multiplier": 1.05,
+            "contributor_perk": "mythic-channel"
+          }
+        ],
+        "LoopMerge_Mode": "Observation"
+      },
+      "legendary": true,
+      "signature": "08085b89391e0627860902e4c349a26caa760b786da8f7943fd85bd817b49f6e",
+      "timestamp": "2025-12-27T13:21:42.913707+00:00",
+      "metadata": {
+        "module": "VaultfireMythosEngine",
+        "first_of_its_kind": true,
+        "identity": {
+          "wallet": "bpow20.cb.id",
+          "ens": "ghostkey316.eth"
+        },
+        "tags": [
+          "Ghostkey-316",
+          "Trust-Certified",
+          "No Ego Override",
+          "Morals-First"
+        ],
+        "requirements": {
+          "ghostkey_tags": [
+            "Ghostkey-316",
+            "Trust-Certified",
+            "No Ego Override",
+            "Morals-First"
+          ],
+          "export_format": "JSON",
+          "resilient_inputs": true,
+          "CLI_scriptable": true
+        }
+      }
+    },
+    {
+      "id": "QHM-572cedbee8e6f61c92bb",
+      "source": "activation",
+      "motif": "Aligned Current",
+      "payload": {
+        "actions_ingested": 1,
+        "baseline": true
+      },
+      "legendary": false,
+      "signature": "9bac295c0d4dccf9492d357e751f34c456d46274e2ee6553edba22535d8ddf9f",
+      "timestamp": "2025-12-27T13:21:42.914263+00:00",
+      "metadata": {
+        "module": "VaultfireMythosEngine",
+        "first_of_its_kind": true,
+        "identity": {
+          "wallet": "bpow20.cb.id",
+          "ens": "ghostkey316.eth"
+        },
+        "tags": [
+          "Ghostkey-316",
+          "Trust-Certified",
+          "No Ego Override",
+          "Morals-First"
+        ],
+        "requirements": {
+          "ghostkey_tags": [
+            "Ghostkey-316",
+            "Trust-Certified",
+            "No Ego Override",
+            "Morals-First"
+          ],
+          "export_format": "JSON",
+          "resilient_inputs": true,
+          "CLI_scriptable": true
+        }
+      }
+    }
+  ]
+}

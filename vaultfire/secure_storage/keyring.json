@@ -1,0 +1,13 @@
+{
+  "wallet": "vaultfire",
+  "keySource": "vaultfire.local",
+  "iterations": 390000,
+  "keys": {
+    "rewards": {
+      "seed": "M0p10jiUXPqFFzrqV0eDNHUeqbjtmnpVKRkcJwVh9Qo=",
+      "salt": "FIpwsxURlC+rHpKCkkAHtw==",
+      "rotated_at": "2025-12-27T13:21:44.553738+00:00",
+      "iterations": 390000
+    }
+  }
+}

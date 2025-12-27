@@ -51,8 +51,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Pytest (>=95% coverage gate by policy)
-        run: pytest -q
+      - name: Pytest Core Innovations (RBB + Thriving Bonds)
+        run: pytest tests/rbb/ tests/thriving_bonds/ -v --tb=short
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2

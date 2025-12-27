@@ -1,10 +1,8 @@
 {
-  "alice": {"interactions": 10, "growth_events": 0, "milestones": 0, "flames": 1},
-  "ghostkey316.eth": {
-    "interactions": 0,
+  "alice": {
+    "interactions": 10,
     "growth_events": 0,
     "milestones": 0,
-    "flames": 0,
-    "role": "Architect"
+    "flames": 1
   }
 }

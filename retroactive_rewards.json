@@ -1,0 +1,12 @@
+{
+  "w1": {
+    "tier": "Tier 3",
+    "multiplier": 1.5,
+    "asm": 150
+  },
+  "w2": {
+    "tier": "Tier 1",
+    "multiplier": 1.1,
+    "asm": 25
+  }
+}

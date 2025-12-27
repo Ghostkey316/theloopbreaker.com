@@ -11,17 +11,18 @@ except ModuleNotFoundError:  # pragma: no cover - environment without optional d
 try:
     from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # type: ignore  # noqa: F401
     from cryptography.exceptions import InvalidTag  # type: ignore  # noqa: F401
+    HAS_CRYPTOGRAPHY = True
 except (ImportError, ModuleNotFoundError):  # pragma: no cover - environment without optional deps
-    cryptography = None  # type: ignore
+    HAS_CRYPTOGRAPHY = False
 
-if fastapi is not None and cryptography is not None:
+if fastapi is not None and HAS_CRYPTOGRAPHY:
     from scripts.run_yield_pipeline import pipeline
 else:  # pragma: no cover - executed only when optional deps missing
     pipeline = None
 
 
 @pytest.mark.skipif(
-    fastapi is None or cryptography is None,
+    fastapi is None or not HAS_CRYPTOGRAPHY,
     reason="[optional] fastapi and cryptography are required for yield pipeline tests",
 )
 @pytest.mark.asyncio

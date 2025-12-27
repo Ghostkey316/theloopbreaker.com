@@ -20,4 +20,17 @@ config/local/
 
 # audit artifacts
 audit_logs/*.jsonl
+audit_logs/*.log
 .next/
+
+# Runtime generated files from test execution
+backups/
+chain_event_log.json
+entry_log.json
+rewards_log.json
+simulated_tx.json
+humanity_manifest.json
+vaultfire-core/mission-ledger.jsonl
+vaultfire-core/ethics/ai_trader_audit.json
+codex/VAULTFIRE_CLI_LEDGER.jsonl
+vaultfire/audit_logs/
