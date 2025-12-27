@@ -32,3 +32,5 @@ simulated_tx.json
 humanity_manifest.json
 vaultfire-core/mission-ledger.jsonl
 vaultfire-core/ethics/ai_trader_audit.json
+codex/VAULTFIRE_CLI_LEDGER.jsonl
+vaultfire/audit_logs/
