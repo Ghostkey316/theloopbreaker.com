@@ -1,0 +1,14 @@
+[
+  {
+    "timestamp": "2025-12-27T13:25:16.190885",
+    "encryption": {
+      "component": "reward-claim",
+      "version": 1,
+      "mode": "selective",
+      "keySource": "vaultfire.local",
+      "vaultfireEncryption": "v2.3"
+    },
+    "__vaultfire_encrypted__": true,
+    "encrypted": "ENC::ATjJCp2VAAI8lAFqOd0CDAn_ZgV5p_glZsbBDB-4bcpC4toG3wuBNOYF3Jep0XyfHFf1n68-66kUXAi1wLFQsCpV9cgA9CB7_EjCiYl8czyz2W9DQ6NZzQLilw"
+  }
+]

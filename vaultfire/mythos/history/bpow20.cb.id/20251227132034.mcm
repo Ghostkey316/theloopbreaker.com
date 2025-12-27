@@ -1,0 +1,57 @@
+{
+  "loop_id": "bpow20.cb.id-loop-1",
+  "epoch": "20251227132034",
+  "ghostkey_id": "bpow20.cb.id",
+  "tokens": [
+    "Signal of Trust",
+    "Compression of Loyalty",
+    "Signal of Trust",
+    "Echo of Becoming"
+  ],
+  "archetype": "Paragon of Continuity",
+  "myth_rank": 1.0,
+  "echo_weight": 0.6,
+  "summary": "bpow20.cb.id invoked 1 command loops; archetype stabilized as Paragon of Continuity milestone. Highlight: Signal of Trust \u21ba Compression of Loyalty \u21ba Signal of Trust.",
+  "morality_hash": "ef0172ae5648d5c46d485dbaa5efd1da338ac290dda14eed18ce0d68e9482988",
+  "milestone": true,
+  "created_at": "2025-12-27T13:20:34.041079+00:00",
+  "version": 1,
+  "codex_tags": {
+    "Codex_Tech": "\ud83d\udd2e NEVER-BEFORE-SEEN \ud83d\udd2e",
+    "Myth_Layer": "LIVE",
+    "Ghostkey_Compression": "Enabled",
+    "CulturalMemoryEngine": "Online",
+    "SV_Mode": "Belief Mirror"
+  },
+  "events": [
+    {
+      "type": "command",
+      "channel": "system",
+      "success": true,
+      "milestone": true,
+      "confirm": true,
+      "note": "Vaultfire protocol activation",
+      "timestamp": "2025-12-27T13:20:34.040956+00:00",
+      "intensity": 0.75,
+      "tags": [],
+      "morality_hash": "c8c9a8ef4a06dc7d689618b9f7f5a7ea2d5a6446a8094f2919a3e04ada42c7cd"
+    },
+    {
+      "type": "response",
+      "channel": "system",
+      "success": true,
+      "note": "Bootstrap myth response",
+      "timestamp": "2025-12-27T13:20:34.040995+00:00",
+      "intensity": 0.75,
+      "tags": [],
+      "morality_hash": "8e44d211e1dfa6c30345f98e7522695bd121f70d63c0f31b0457ad380cded24e"
+    }
+  ],
+  "metadata": {
+    "reason": "bootstrap",
+    "identity": {
+      "handle": "bpow20.cb.id",
+      "ens": "ghostkey316.eth"
+    }
+  }
+}

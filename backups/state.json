@@ -1,0 +1,25 @@
+{
+  "entries": {
+    "companion": {
+      "backup": "backups/daily/2025-12-27/companion.jsonl",
+      "checksum": "304f2fd6384a0836dda3d6ebef7f758429ce8fc34a90f12a5591d83511fa40e6",
+      "date": "2025-12-27",
+      "source": "/tmp/pytest-of-root/pytest-7/test_webhook_and_dashboard0/companion.jsonl",
+      "target": "/tmp/pytest-of-root/pytest-7/test_webhook_and_dashboard0/companion.jsonl"
+    },
+    "ledger": {
+      "backup": "backups/daily/2025-12-27/ledger.jsonl",
+      "checksum": "fa81cf93d900b3787dcabc84e1ed9969f4858fa0d70bef86d0efd08099aec372",
+      "date": "2025-12-27",
+      "source": "/tmp/pytest-of-root/pytest-7/test_webhook_and_dashboard0/ledger.jsonl",
+      "target": "/tmp/pytest-of-root/pytest-7/test_webhook_and_dashboard0/ledger.jsonl"
+    },
+    "memory": {
+      "backup": "backups/daily/2025-12-27/memory.jsonl",
+      "checksum": "721795ebb140e80d78a3260492dc9d1aa066ff3d21094cf2c7325ec953fd6a21",
+      "date": "2025-12-27",
+      "source": "/tmp/pytest-of-root/pytest-7/test_webhook_and_dashboard0/memory.jsonl",
+      "target": "/tmp/pytest-of-root/pytest-7/test_webhook_and_dashboard0/memory.jsonl"
+    }
+  }
+}

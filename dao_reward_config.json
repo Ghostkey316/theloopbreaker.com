@@ -3,5 +3,10 @@
     "beliefWeight": 0.85,
     "syncUptimeHours": 48,
     "streamMultiplier": 1.425
+  },
+  "bpow20.cb.id": {
+    "beliefWeight": 0.0,
+    "syncUptimeHours": 0.25,
+    "streamMultiplier": 1.002
   }
 }
