@@ -18,8 +18,11 @@ from web3 import Web3
 
 # Base mainnet RPC
 BASE_RPC_URL = os.getenv("BASE_RPC_URL", "https://mainnet.base.org")
-BASESCAN_API_KEY = os.getenv("BASESCAN_API_KEY", "")  # Optional
-BASESCAN_API_URL = "https://api.basescan.org/api"
+BASESCAN_API_KEY = os.getenv("BASESCAN_API_KEY", "")  # Optional (deprecated)
+BASESCAN_API_URL = "https://api.basescan.org/v2/api"  # V2 API endpoint (deprecated)
+
+# Blockscout API (no key needed, works reliably)
+BLOCKSCOUT_API_URL = "https://base.blockscout.com/api/v2"
 
 # Cache directory
 CACHE_DIR = Path(__file__).resolve().parents[1] / "cache" / "base_chain"
@@ -69,27 +72,40 @@ def fetch_transactions(address: str, limit: int = 100) -> List[Dict]:
 
     transactions = []
 
-    # Try Basescan API first
-    if BASESCAN_API_KEY:
-        try:
-            params = {
-                "module": "account",
-                "action": "txlist",
-                "address": address,
-                "startblock": 0,
-                "endblock": 99999999,
-                "page": 1,
-                "offset": limit,
-                "sort": "desc",
-                "apikey": BASESCAN_API_KEY
-            }
-            response = requests.get(BASESCAN_API_URL, params=params, timeout=10)
-            data = response.json()
+    # Try Blockscout API first (free, no key needed)
+    try:
+        url = f"{BLOCKSCOUT_API_URL}/addresses/{address}/transactions"
+        response = requests.get(url, timeout=15)
+        data = response.json()
 
-            if data.get("status") == "1":
-                transactions = data.get("result", [])
-        except Exception as e:
-            print(f"Basescan API error: {e}")
+        if "items" in data:
+            # Transform Blockscout format to Basescan-compatible format
+            for item in data["items"][:limit]:
+                # Convert timestamp to Unix timestamp
+                timestamp_str = item.get("timestamp", "")
+                if timestamp_str:
+                    try:
+                        # Parse ISO format: "2025-11-10T12:34:56.789Z"
+                        dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+                        unix_timestamp = int(dt.timestamp())
+                    except:
+                        unix_timestamp = 0
+                else:
+                    unix_timestamp = 0
+
+                tx = {
+                    "hash": item.get("hash", ""),
+                    "from": item.get("from", {}).get("hash", ""),
+                    "to": item.get("to", {}).get("hash", "") if item.get("to") else "",
+                    "value": item.get("value", "0"),
+                    "input": item.get("raw_input", "0x"),
+                    "timeStamp": str(unix_timestamp),
+                    "isError": "0" if item.get("status") == "ok" else "1",
+                    "source": "blockscout"
+                }
+                transactions.append(tx)
+    except Exception as e:
+        print(f"Blockscout API error: {e}")
 
     # Fallback to RPC
     if not transactions:
@@ -170,12 +186,11 @@ def calculate_ethics_score(transactions: List[Dict], address: str) -> float:
     if not transactions:
         return 50.0  # Neutral default
 
-    # If using RPC metadata
+    # If using RPC metadata (no transaction history)
     if transactions[0].get("source") == "rpc":
-        # Default neutral score for RPC
-        return 75.0
+        return 75.0  # Default for RPC
 
-    # If using Basescan data
+    # If using Blockscout or Basescan data
     ethics = 50.0  # Start neutral
 
     # Check for failed transactions (could indicate scam attempts)
