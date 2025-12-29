@@ -56,6 +56,18 @@ from vaultfire.advanced_bonds.universal_dignity_bonds import (
     FlourishingDimension,
 )
 
+# V2: Privacy-Preserving Universal Dignity Bonds (RECOMMENDED)
+from vaultfire.advanced_bonds.universal_dignity_bonds_v2 import (
+    PrivacyPreservingEngine,
+    PrivacyPreservingBond,
+    PrivacyPreservingFlourishingData,
+    ZeroKnowledgeProof,
+    CommunityAttestation,
+    create_beneficiary_commitment,
+    create_community_circle,
+    verify_attestation_threshold,
+)
+
 __all__ = [
     # Mentor Bonds
     "MentorBond",
@@ -87,7 +99,7 @@ __all__ = [
     "MilestoneType",
     "AbandonmentType",
 
-    # Universal Dignity Bonds
+    # Universal Dignity Bonds (V1 - for backwards compatibility)
     "UniversalDignityBond",
     "UniversalDignityBondsEngine",
     "HumanFlourishingProfile",
@@ -95,6 +107,16 @@ __all__ = [
     "ConstraintProfile",
     "ConstraintType",
     "FlourishingDimension",
+
+    # Universal Dignity Bonds V2 - Privacy-Preserving (RECOMMENDED)
+    "PrivacyPreservingEngine",
+    "PrivacyPreservingBond",
+    "PrivacyPreservingFlourishingData",
+    "ZeroKnowledgeProof",
+    "CommunityAttestation",
+    "create_beneficiary_commitment",
+    "create_community_circle",
+    "verify_attestation_threshold",
 ]
 
 __version__ = "1.0.0"
