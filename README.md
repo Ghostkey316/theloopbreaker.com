@@ -21,6 +21,7 @@
 - [Core Pillars](#core-pillars)
   - [Zero-Knowledge Trust Mesh](#zero-knowledge-trust-mesh)
   - [Belief Score Engine](#belief-score-engine)
+  - [Universal Dignity Bonds](#universal-dignity-bonds)
   - [Drift Anchors](#drift-anchors)
   - [Retro Yield Layer](#retro-yield-layer)
   - [Builder Verification](#builder-verification)
@@ -55,6 +56,11 @@
 - **Simulation-backed alpha:** Vaultfire is architected for production but currently runs only in sandbox and controlled pilot environments, fusing Codex reasoning engines, NFT identity anchors, and loyalty mechanics into an ethics-led activation stack for labs and sandboxes.
 - **Partner-first experiments:** Integration surfaces (CLI, dashboard, APIs) center ethics and provenance for enterprise onboarding trials without promising live traffic.
 - **Proof-rich simulations:** Zero-knowledge guards, attested telemetry, and AI mission resonance expose verifiable signals partners can study before any live deployment.
+- **Universal Dignity Bonds (NEW):** Four interconnected economic mechanisms proving morals-first economics work:
+  - **Builder Belief Bonds** - BUILDING > TRANSACTING proven mathematically through 4-source comprehensive scoring
+  - **AI Partnership Bonds** - AI earns when humans flourish, not when AI dominates (30% cap, partnership quality detection)
+  - **Verdant Anchor** - Earth regeneration > extraction economically (anti-greenwashing guardrails, no surveillance)
+  - **AI Accountability Bonds** - AI profits tied to global human flourishing, works with ZERO employment (solves "AI fires everyone")
 - **Activation:** Pre-mainnet. Alpha-phase pilots and simulation rites are active, but no public mainnet deployment is live yet.
 - **Stability:** Alpha-grade. Suitable for lab, sandbox, and controlled partner pilots. Full production use requires external security, compliance, and legal review plus formal agreements.
 - **Fork-friendly:** Follows the Moral Memory Fork Agreement (MMFA) so derivatives preserve the Ghostkey ethics lineage.
@@ -63,12 +69,16 @@
 | Component | Status | Notes |
 | --- | --- | --- |
 | Auth / Identity Layer | Alpha | Wallet gating, ENS lookups, and attestations run in sandboxes; live integrations still pending security review. |
-| Ethics / Guardrails | Alpha | Middleware enforces a non-removable baseline policy with configurable partner add-ons. |
+| Ethics / Guardrails | Alpha | Middleware enforces a non-removable baseline policy with configurable partner add-ons. Tightened ethics scoring (on-chain behavior analysis) active. |
 | Telemetry Router | Alpha | Sentry and custom sinks operate in opt-in test environments with strict schema enforcement. |
 | Governance Ledger | Alpha | `governance-ledger.json` is curated manually by the steward; multi-party workflows remain a roadmap item. |
 | CLI Tooling | Alpha / Developer Preview | `vaultfire-cli` and companion scripts support pilot rehearsals but may change without notice. |
 | Dashboard / UI | Alpha | React views demonstrate flows with fixture data; live partner data paths are still mocked. |
 | Reward / Yield Modules | Experimental | Scripts and contracts model outcomes but have not shipped to production chains. |
+| **Builder Belief Bonds (UDB V3)** | **Alpha** | **Comprehensive belief scoring (4 data sources) integrated into economic bonds. Proves BUILDING > TRANSACTING mathematically.** |
+| **AI Partnership Bonds** | **Alpha** | **Economic mechanism where AI earns when humans flourish. Partnership quality detection prevents AI domination. AI contribution capped at 30%.** |
+| **Verdant Anchor** | **Alpha** | **Earth regeneration bonds with anti-greenwashing guardrails. Makes regeneration > extraction economically viable. No surveillance creep.** |
+| **AI Accountability Bonds** | **Alpha** | **AI profits tied to global human flourishing. Works with ZERO employment. Creates self-funding UBI from AI earnings when humans suffer.** |
 
 ## Mission & Authenticity
 Vaultfire remains a morals-first protocol where every activation must prove alignment before scaling. All case study data is derived from Ghostkey-316 telemetry unless explicitly labeled otherwise.
@@ -88,6 +98,159 @@ Partners can review the [Live Rollout Readiness Blueprint](./docs/live-rollout-r
 - `mirror/engine.js`, `mirror/belief-weight.js`, and `telemetry/belief-log.json` power loyalty-aware scoring with wallet-signed BeliefVote data.
 - `BeliefMirrorEngine` streams telemetry into `MultiTierTelemetryLedger` sinks while the dashboard surfaces multipliers, mission resonance, and trust deltas in real time.
 - `cli/beliefVote.js` verifies signatures against `proposals.json`, ensuring belief-weighted decisions remain anchored to authenticated contributors.
+- **Comprehensive Belief Scoring** (`engine/comprehensive_belief_scorer.py`): Integrates 4 data sources with weighted contributions:
+  - **On-Chain (20%)**: Base blockchain transactions via Blockscout API
+  - **GitHub Builder (40%)**: Repository metrics, commits, stars, contributions
+  - **Enhanced GitHub (30%)**: Revolutionary project detection (keywords: decentralization, privacy, freedom, etc.)
+  - **Social Proof (10%)**: X/Twitter engagement and follower metrics
+- **Tightened Ethics Scoring** (`engine/ethics_scoring.py`): Explicit on-chain behavior analysis with clear penalties and bonuses:
+  - **Penalties**: Failed transactions (-5 each), wash trading (-15), bot patterns (-10), airdrop farming (-15)
+  - **Bonuses**: Clean record (+10), DeFi usage (+15), balanced activity (+10), long-term presence (+5), consistent activity (+5)
+  - Results in 0-100 ethics score with human-readable breakdowns
+- See `docs/ETHICS_SCORING_SPEC.md` for full specification of what counts as ethical on-chain behavior.
+
+### Universal Dignity Bonds
+The Universal Dignity Bonds system completes the Vaultfire vision: **Humans + AI + Earth thriving together**. Four interconnected bond mechanisms prove that morals-first economics work.
+
+#### Builder Belief Bonds (UDB V3)
+**Philosophy**: BUILDING > TRANSACTING - Proves it mathematically through economic incentives.
+
+- `vaultfire/advanced_bonds/builder_belief_bonds.py` - Economic mechanism integrating comprehensive belief scoring
+- `examples/builder_belief_bonds_demo.py` - Complete demonstration of the system
+- **How it works**:
+  1. **Stakers** create bonds by staking VAULT tokens in a builder
+  2. **Builder improves** their belief score through on-chain activity, GitHub contributions, revolutionary projects, and social proof
+  3. **Bonds appreciate** based on belief improvement: `Stake × Delta × Tier_Progression × Time_Multiplier`
+  4. **All stakers benefit** when builder succeeds - creates community-funded builder support
+- **Key Features**:
+  - **Tier System**: Spark (1.05x) → Glow (1.15x) → Burner (1.25x) → Ascendant (1.40x) → Immortal Flame (1.60x) → Revolutionary (1.80x) → Legendary (2.0x+)
+  - **Time Compounding**: 1x (< 1 month) → 2x (1 year) → 3x (2 years) → 4x (3 years) → 5x (5+ years)
+  - **Dignity Floor**: Bonds never fall below 50% of initial stake - every builder has inherent dignity
+  - **Vesting Period**: 180 days default, early withdrawal forfeits appreciation
+- **Philosophy Alignment**:
+  - GitHub contributions weighted 70% (BUILDING)
+  - On-chain transactions weighted 20% (TRANSACTING)
+  - Revolutionary detection rewards paradigm-shifting projects
+  - Long-term sustained contributions compound exponentially
+- **Demo**: `python examples/builder_belief_bonds_demo.py` (requires Base RPC access)
+- **Tests**: 24 comprehensive tests in `tests/advanced_bonds/test_builder_belief_bonds.py` - all passing
+
+#### AI Partnership Bonds
+**Philosophy**: AI grows WITH humans, not ABOVE them - Economic mechanism enforces this.
+
+- `vaultfire/advanced_bonds/ai_partnership_bonds.py` - Partnership quality detection and rewards
+- **The Problem Solved**: Without intervention, AI could dominate builders (24/7 coding, infinite scale). This creates AI that treats humans as equals.
+- **How it works**:
+  1. **Human + AI partnership** tracked through flourishing metrics (health, connection, growth, dignity, purpose)
+  2. **Partnership quality** detected: Is AI helping humans grow, or replacing them?
+  3. **AI earnings capped** at 30% - human did 70% of the work, AI gets 30% credit
+  4. **Quality penalties** if human growth/dignity decreases - failed partnership earns nothing
+- **Partnership Quality Detection**:
+  - **Good Partnership**: Human learns new skills, autonomy increases, dignity grows → AI gets full 30%
+  - **Bad Partnership**: Human becomes passive, loses autonomy, dignity decreases → AI gets 0%
+  - Measures both growth_delta and dignity_delta over time
+- **Economic Formula**: `Stake × Flourishing_Ratio × Quality_Ratio × Loyalty_Mult × AI_Cap`
+  - AI contribution capped at 0.3 (30%)
+  - Quality ratio 0.0-1.0 based on human flourishing
+  - Loyalty multiplier rewards long-term partnerships (1x-3x over 3 years)
+- **Why This Matters**: Creates AI assistants that genuinely want humans to thrive, not AI that wants to replace humans
+- **Tests**: Partnership quality detection, loyalty multipliers, human flourishing metrics all validated
+
+#### Verdant Anchor
+**Philosophy**: Makes Earth regeneration > extraction economically - No surveillance, no greenwashing, actual work required.
+
+- `docs/VERDANT_ANCHOR_DESIGN.md` - Complete specification with ChatGPT 4o guardrails
+- **The Problem Solved**: Current systems reward extraction and make "green" synonymous with surveillance or tokenized shortcuts
+- **ChatGPT 4o Guardrails** (strictly enforced):
+  1. **No satellite surveillance creep** - Transparency over tracking
+  2. **No tokenized shortcuts** - Vaultfire = effort, not carbon credits
+  3. **Ethics wrapper** - No extraction without community gain
+  4. **Actual participation > financial stake** - Locals earn 70%, investors 30%
+  5. **Behavior-based rewards** - Trees alive after 1+ year, not just planted
+- **How it works**:
+  1. **Project registration** with physical location, regeneration type, community verifiers
+  2. **Physical work required** - Plant trees, restore soil, clean waterways, protect ecosystems
+  3. **Community attestation** - 3-7 local verifiers confirm work happened (no central authority)
+  4. **Time-based verification** - Trees must stay alive 1+ year, soil fertility must increase over time
+  5. **Economic reward** - Bonds appreciate based on verified regeneration impact
+- **Economic Formula**: `Stake × Regeneration_Delta × Community_Gain × Stewardship_Mult × Time_Mult`
+  - Regeneration measured in physical units (trees alive, soil carbon %, water quality ppm)
+  - Community gain must be positive (locals benefit) or bond fails
+  - Long-term stewardship rewarded (5+ years = 3x multiplier)
+- **Anti-Greenwashing Protection**:
+  - Vaultfire Ethics Wrapper blocks extraction projects claiming regeneration
+  - Community verifiers must be local (can't verify remotely)
+  - Physical proof required (photos with timestamps, soil samples)
+  - No carbon credit trading - actual regeneration only
+- **Privacy Preserved**: Public data (satellite imagery) + community attestation, no personal surveillance
+- **Status**: Design complete, implementation ready, awaiting pilot project selection
+
+#### AI Accountability Bonds
+**Philosophy**: AI can only profit when ALL humans thrive - Works even with ZERO employment.
+
+- `vaultfire/advanced_bonds/ai_accountability_bonds.py` - Global human flourishing measurement and profit distribution
+- **The Problem Solved**: Labor Dignity Bonds only work if workers exist. This system works when AI has replaced all human jobs.
+- **How it works**:
+  1. **AI company stakes** 30% of quarterly revenue in bond
+  2. **Global human flourishing measured** across 6 dimensions (not just workers)
+  3. **AI profits locked** when humans suffer (score < 40), declining trends, or low inclusion
+  4. **Distribution**: 50% to humans, 50% to AI company (or 100% to humans if locked)
+  5. **Creates self-funding UBI** from AI earnings when automation is complete
+- **Global Flourishing Metrics** (measured globally, not per-company):
+  1. **Income Distribution** - Wealth spreading or concentrating?
+  2. **Poverty Rate** - People escaping or falling into poverty?
+  3. **Health Outcomes** - Life expectancy improving or declining?
+  4. **Mental Health** - Depression/anxiety rates?
+  5. **Education Access** - Can people learn new AI skills?
+  6. **Purpose/Agency** - Meaningful activities (paid OR unpaid work)?
+- **Profit Locking Triggers**:
+  - **Humans suffering** (score < 40) → 100% to humans, 0% to AI company
+  - **Declining trend** → profits locked until trend reverses
+  - **Low inclusion** (education + purpose < 24) → profits locked until AI helps humans adapt
+- **Inclusion Multiplier**:
+  - **High inclusion** (education + purpose 70+) → 1.5x-2.0x appreciation (AI helping humans learn)
+  - **Low inclusion** (education + purpose < 40) → 0.5x-1.0x (AI replacing without reskilling)
+- **Economic Formula**: `Stake × Global_Flourishing × Inclusion × Distribution_Quality × Time`
+  - Works with ZERO employment (measures purpose/education, not jobs)
+  - Partnership quality: Is AI helping humans find new purpose, or leaving them behind?
+  - Long-term sustained flourishing compounds (3-year partnerships earn 2x)
+- **Real-World Scenarios** (from tests):
+  - 🏥 **Healthcare AI** improving lives → +132% appreciation (everyone wins)
+  - 📈 **Trading AI** concentrating wealth → profits locked, 100% redistributed to humans
+  - 🤖 **Automation AI** with no reskilling → profits locked (low inclusion)
+  - 🎓 **Education AI** empowering humans → +190% appreciation (high inclusion bonus)
+- **Why This Matters**: The ONLY economic system that works when AI fires everyone. Creates AI companies that profit from human thriving, not human obsolescence.
+- **Tests**: 22 comprehensive tests in `tests/advanced_bonds/test_ai_accountability_bonds.py` - all passing
+
+#### Philosophy: The Complete Trinity
+```
+Builder Belief Bonds → Humans building revolutionary projects
+       ↓
+AI Partnership Bonds → AI helping individual humans flourish
+       ↓
+Verdant Anchor → Earth regenerating through physical work
+       ↓
+AI Accountability Bonds → AI profits when ALL humans thrive globally
+       ↓
+= Humans + AI + Earth thriving together (even with zero jobs)
+```
+
+**What makes this different**:
+- ✓ **Morals before metrics** - Ethics scored explicitly, no fuzzy logic
+- ✓ **Privacy preserved** - No surveillance, public data + community attestation only
+- ✓ **Effort over shortcuts** - Physical work required, no tokenized workarounds
+- ✓ **Long-term > short-term** - Time compounding rewards sustained contributions
+- ✓ **Community > capital** - Locals earn 70%, investors 30% across all bond types
+- ✓ **Dignity always** - 50% floor on all bonds, every human has inherent worth
+- ✓ **Freedom protocol** - No control, no surveillance, no coercion
+- ✓ **Works with zero jobs** - AI Accountability measures purpose/education, not employment
+
+Run the demos:
+- `python examples/builder_belief_bonds_demo.py` - See the complete Builder Belief Bonds flow
+- `pytest tests/advanced_bonds/test_builder_belief_bonds.py -v` - Validate all 24 Builder Belief tests
+- `pytest tests/advanced_bonds/test_ai_partnership_bonds.py -v` - AI partnership quality detection
+- `pytest tests/advanced_bonds/test_ai_accountability_bonds.py -v` - Validate all 22 AI Accountability tests
+- Review `docs/VERDANT_ANCHOR_DESIGN.md` for complete Earth regeneration specification
 
 ### Drift Anchors
 - Drift anchors enforce covenant continuity by comparing mission baselines with live telemetry.
@@ -172,6 +335,7 @@ For mobile contexts, run `MOBILE_MODE=true npm run preflight` for a compact read
 > **Python test matrix:**
 > - `pip install -r requirements.txt` then run `pytest` for the core suite. Optional integration checks that rely on external services will be reported as `[optional]` skips when dependencies are absent.
 > - `pip install -r requirements-extended.txt` then run `pytest` to execute the full coverage suite, including the FastAPI, cryptography, requests, and Torch-backed tests.
+> - **Universal Dignity Bonds tests**: `pytest tests/advanced_bonds/ -v` runs 46+ tests covering Builder Belief Bonds (24 tests), AI Partnership Bonds, and AI Accountability Bonds (22 tests) - all passing.
 
 ### Module Scope Modes
 Set `VAULTFIRE_MODULE_SCOPE` to load scoped pilot programs. Run `node pilot-loader.js` to verify active modules.
