@@ -56,7 +56,7 @@
 - **Simulation-backed alpha:** Vaultfire is architected for production but currently runs only in sandbox and controlled pilot environments, fusing Codex reasoning engines, NFT identity anchors, and loyalty mechanics into an ethics-led activation stack for labs and sandboxes.
 - **Partner-first experiments:** Integration surfaces (CLI, dashboard, APIs) center ethics and provenance for enterprise onboarding trials without promising live traffic.
 - **Proof-rich simulations:** Zero-knowledge guards, attested telemetry, and AI mission resonance expose verifiable signals partners can study before any live deployment.
-- **Universal Dignity Bonds (NEW):** Seven interconnected economic mechanisms proving morals-first economics work:
+- **Universal Dignity Bonds (NEW):** Eight interconnected economic mechanisms proving morals-first economics work:
   - **Builder Belief Bonds** - BUILDING > TRANSACTING proven mathematically through 4-source comprehensive scoring
   - **AI Partnership Bonds** - AI earns when humans flourish, not when AI dominates (30% cap, partnership quality detection)
   - **Verdant Anchor** - Earth regeneration > extraction economically (anti-greenwashing guardrails, no surveillance)
@@ -64,6 +64,7 @@
   - **Escape Velocity Bonds** - Little guy escaping poverty traps ($50-$500 stakes, pay it forward mechanism)
   - **Labor Dignity Bonds** - Worker flourishing > exploitation economically (redistributes power from suits to workers)
   - **AI Accountability Bonds** - AI profits tied to global human flourishing, works with ZERO employment (solves "AI fires everyone")
+  - **Health Commons Bonds** - Clean air/water/food > profit from poisoning (ties company profits to environmental AND human health improvements)
 - **Activation:** Pre-mainnet. Alpha-phase pilots and simulation rites are active, but no public mainnet deployment is live yet.
 - **Stability:** Alpha-grade. Suitable for lab, sandbox, and controlled partner pilots. Full production use requires external security, compliance, and legal review plus formal agreements.
 - **Fork-friendly:** Follows the Moral Memory Fork Agreement (MMFA) so derivatives preserve the Ghostkey ethics lineage.
@@ -85,6 +86,7 @@
 | **Escape Velocity Bonds** | **Alpha** | **Poverty escape bonds with $50-$500 stakes (too small for suits). Pay it forward mechanism. Anti-predatory recapture protection.** |
 | **Labor Dignity Bonds** | **Alpha** | **Worker flourishing bonds that redistribute power from suits to workers. Makes exploitation expensive, thriving profitable. 6 dignity metrics.** |
 | **AI Accountability Bonds** | **Alpha** | **AI profits tied to global human flourishing. Works with ZERO employment. Creates self-funding UBI from AI earnings when humans suffer.** |
+| **Health Commons Bonds** | **Alpha** | **Environmental health bonds tying company profits to BOTH pollution reduction AND human health improvement. 70/30 split (or 100% to community if poisoning). Community verification required.** |
 
 ## Mission & Authenticity
 Vaultfire remains a morals-first protocol where every activation must prove alignment before scaling. All case study data is derived from Ghostkey-316 telemetry unless explicitly labeled otherwise.
@@ -116,7 +118,7 @@ Partners can review the [Live Rollout Readiness Blueprint](./docs/live-rollout-r
 - See `docs/ETHICS_SCORING_SPEC.md` for full specification of what counts as ethical on-chain behavior.
 
 ### Universal Dignity Bonds
-The Universal Dignity Bonds system completes the Vaultfire vision: **Humans + AI + Earth thriving together**. Seven interconnected bond mechanisms prove that morals-first economics work at every level - from individual builders to global AI systems.
+The Universal Dignity Bonds system completes the Vaultfire vision: **Humans + AI + Earth thriving together**. Eight interconnected bond mechanisms prove that morals-first economics work at every level - from individual builders to environmental health to global AI systems.
 
 #### Builder Belief Bonds (UDB V3)
 **Philosophy**: BUILDING > TRANSACTING - Proves it mathematically through economic incentives.
@@ -319,7 +321,63 @@ The Universal Dignity Bonds system completes the Vaultfire vision: **Humans + AI
 - **Why This Matters**: The ONLY economic system that works when AI fires everyone. Creates AI companies that profit from human thriving, not human obsolescence.
 - **Tests**: 22 comprehensive tests in `tests/advanced_bonds/test_ai_accountability_bonds.py` - all passing
 
-#### Philosophy: The Complete 7-Bond System
+#### Health Commons Bonds
+**Philosophy**: Clean air/water/food > profit from poisoning - Environmental health as economic priority.
+
+- `vaultfire/advanced_bonds/health_commons_bonds.py` - Environmental health and human health measurement system
+- **The Problem Solved**: Companies profit from poisoning communities (air pollution, water contamination, toxic food). This makes cleanup more profitable than continued poisoning.
+- **How it works**:
+  1. **Company stakes** on environmental cleanup commitment
+  2. **Pollution measured** across air quality, water purity, food safety (0-100 scores)
+  3. **Human health tracked** - respiratory illness, cancer rates, chronic disease, life expectancy, community health
+  4. **Community verification required** - people living in affected region must attest to improvements
+  5. **Bonds appreciate** when BOTH pollution decreases AND human health improves in affected communities
+  6. **Distribution**: 70% to affected communities, 30% to company (or 100% to communities if poisoning continues)
+- **Key Innovation - Dual Metrics**:
+  - Can't just move pollution elsewhere - must improve health in the SPECIFIC affected community
+  - Both pollution reduction AND health improvement required for full appreciation
+  - Community verification prevents data manipulation (people living there know the truth)
+- **Pollution Metrics** (0-100, higher is cleaner):
+  1. **Air Quality** - PM2.5, toxins, industrial emissions
+  2. **Water Purity** - Heavy metals, PFAS, contaminants
+  3. **Food Safety** - Pesticide residues, additives, toxins
+- **Health Outcome Metrics** (0-100, higher is healthier):
+  1. **Respiratory Health** - Asthma, COPD, respiratory illness rates
+  2. **Cancer Health** - Cancer cluster tracking (inverse of cancer rates)
+  3. **Chronic Disease** - Diabetes, heart disease, autoimmune conditions
+  4. **Life Expectancy** - Regional life expectancy vs baseline
+  5. **Community Health** - Aggregate self-reported health (anonymous surveys)
+- **Community Verification**:
+  - Local residents attest to observed pollution reduction and health improvements
+  - Must be from affected region (location-verified)
+  - No verification = 0.5x penalty on bond value
+  - Strong community consensus (80%+ agreement) = 1.5x bonus
+- **Economic Formula**: `Stake × Pollution_Reduction × Health_Improvement × Community_Verification × Time`
+  - Pollution reduction: 0.0x-2.0x based on cleanup progress
+  - Health improvement: 0.0x-2.0x based on actual health outcomes (THE key metric)
+  - Community verification: 0.5x-1.5x based on local attestation
+  - Time multiplier: 1.0x-3.0x rewards sustained improvements (years of clean air/water/food)
+- **Poisoning Penalty** (100% to community if):
+  - Pollution increased (score < 0.8)
+  - Health declined (score < 0.8)
+  - No community verification (score < 0.7)
+- **Distribution Logic**:
+  - **Health improving**: 70% to affected communities (per capita), 30% to company
+  - **Continued poisoning**: 100% to communities as compensation, 0% to company
+  - **Depreciation**: 100% to communities as compensation for harm
+- **Real-World Scenarios** (from tests):
+  - 🏭 **Chemical plant cleanup** (2 years) → +607% appreciation, air quality +50, respiratory health +50 (company earns 30%)
+  - 🌾 **Food producer eliminating pesticides** (3 years, organic transition) → communities receive 70% of appreciation
+  - 🏭 **Industrial facility making worse** → bond depreciates, 100% compensation to community (company blocked)
+- **Privacy Protection**:
+  - No individual health surveillance
+  - Aggregate community data only (public health statistics)
+  - Community attestation is anonymous (attestor_id, not real identity)
+  - Pollution measurements are regional, not household-level
+- **Why This Matters**: Makes environmental health profitable. Companies earn MORE by cleaning up than by continuing to poison. Affected communities receive direct economic benefit from cleanup. Creates economic alignment between corporate profits and human health.
+- **Tests**: 17 comprehensive tests in `tests/advanced_bonds/test_health_commons_bonds.py` - all passing
+
+#### Philosophy: The Complete 8-Bond System
 ```
 Builder Belief Bonds → Humans building revolutionary projects
        ↓
@@ -333,9 +391,11 @@ Escape Velocity Bonds → Little guy escaping poverty traps
        ↓
 Labor Dignity Bonds → Workers accumulating power and capital
        ↓
+Health Commons Bonds → Clean air/water/food for all communities
+       ↓
 AI Accountability Bonds → AI profits when ALL humans thrive globally
        ↓
-= Humans + AI + Earth thriving together at every level (even with zero jobs)
+= Humans + AI + Earth thriving together at every level (even with zero jobs, clean environment for all)
 ```
 
 **What makes this different**:
@@ -442,13 +502,14 @@ For mobile contexts, run `MOBILE_MODE=true npm run preflight` for a compact read
 > **Python test matrix:**
 > - `pip install -r requirements.txt` then run `pytest` for the core suite. Optional integration checks that rely on external services will be reported as `[optional]` skips when dependencies are absent.
 > - `pip install -r requirements-extended.txt` then run `pytest` to execute the full coverage suite, including the FastAPI, cryptography, requests, and Torch-backed tests.
-> - **Universal Dignity Bonds tests**: `pytest tests/advanced_bonds/ -v` runs 120+ tests across all 6 implemented bond systems:
+> - **Universal Dignity Bonds tests**: `pytest tests/advanced_bonds/ -v` runs 140+ tests across all 7 implemented bond systems:
 >   - Builder Belief Bonds (24 tests)
 >   - AI Partnership Bonds (full coverage)
 >   - Common Ground Bonds (23 tests)
 >   - Escape Velocity Bonds (30 tests)
 >   - Labor Dignity Bonds (21 tests)
 >   - AI Accountability Bonds (22 tests)
+>   - Health Commons Bonds (17 tests)
 >   - All tests passing. Verdant Anchor design complete, implementation pending.
 
 ### Module Scope Modes
