@@ -6,11 +6,11 @@
     "flames": 1
   },
   "bpow20.cb.id": {
-    "interactions": 0,
-    "growth_events": 0,
-    "milestones": 2,
-    "flames": 8,
+    "interactions": 12,
+    "growth_events": 10,
+    "milestones": 3,
+    "flames": 7,
     "source": "onchain_realtime",
-    "last_updated": "2025-12-29T22:38:24.426331"
+    "last_updated": "2025-12-30T02:03:32.603433"
   }
 }
