@@ -56,10 +56,14 @@
 - **Simulation-backed alpha:** Vaultfire is architected for production but currently runs only in sandbox and controlled pilot environments, fusing Codex reasoning engines, NFT identity anchors, and loyalty mechanics into an ethics-led activation stack for labs and sandboxes.
 - **Partner-first experiments:** Integration surfaces (CLI, dashboard, APIs) center ethics and provenance for enterprise onboarding trials without promising live traffic.
 - **Proof-rich simulations:** Zero-knowledge guards, attested telemetry, and AI mission resonance expose verifiable signals partners can study before any live deployment.
-- **Universal Dignity Bonds (NEW):** Three interconnected economic mechanisms proving morals-first economics work:
+- **Universal Dignity Bonds (NEW):** Seven interconnected economic mechanisms proving morals-first economics work:
   - **Builder Belief Bonds** - BUILDING > TRANSACTING proven mathematically through 4-source comprehensive scoring
   - **AI Partnership Bonds** - AI earns when humans flourish, not when AI dominates (30% cap, partnership quality detection)
   - **Verdant Anchor** - Earth regeneration > extraction economically (anti-greenwashing guardrails, no surveillance)
+  - **Common Ground Bonds** - Bridge-building > division economically (heals political/social rifts, preserves diversity)
+  - **Escape Velocity Bonds** - Little guy escaping poverty traps ($50-$500 stakes, pay it forward mechanism)
+  - **Labor Dignity Bonds** - Worker flourishing > exploitation economically (redistributes power from suits to workers)
+  - **AI Accountability Bonds** - AI profits tied to global human flourishing, works with ZERO employment (solves "AI fires everyone")
 - **Activation:** Pre-mainnet. Alpha-phase pilots and simulation rites are active, but no public mainnet deployment is live yet.
 - **Stability:** Alpha-grade. Suitable for lab, sandbox, and controlled partner pilots. Full production use requires external security, compliance, and legal review plus formal agreements.
 - **Fork-friendly:** Follows the Moral Memory Fork Agreement (MMFA) so derivatives preserve the Ghostkey ethics lineage.
@@ -77,6 +81,10 @@
 | **Builder Belief Bonds (UDB V3)** | **Alpha** | **Comprehensive belief scoring (4 data sources) integrated into economic bonds. Proves BUILDING > TRANSACTING mathematically.** |
 | **AI Partnership Bonds** | **Alpha** | **Economic mechanism where AI earns when humans flourish. Partnership quality detection prevents AI domination. AI contribution capped at 30%.** |
 | **Verdant Anchor** | **Alpha** | **Earth regeneration bonds with anti-greenwashing guardrails. Makes regeneration > extraction economically viable. No surveillance creep.** |
+| **Common Ground Bonds** | **Alpha** | **Bridge-building bonds that make healing divisions profitable. Unity without forced conformity. Ripple effects for sustained collaboration.** |
+| **Escape Velocity Bonds** | **Alpha** | **Poverty escape bonds with $50-$500 stakes (too small for suits). Pay it forward mechanism. Anti-predatory recapture protection.** |
+| **Labor Dignity Bonds** | **Alpha** | **Worker flourishing bonds that redistribute power from suits to workers. Makes exploitation expensive, thriving profitable. 6 dignity metrics.** |
+| **AI Accountability Bonds** | **Alpha** | **AI profits tied to global human flourishing. Works with ZERO employment. Creates self-funding UBI from AI earnings when humans suffer.** |
 
 ## Mission & Authenticity
 Vaultfire remains a morals-first protocol where every activation must prove alignment before scaling. All case study data is derived from Ghostkey-316 telemetry unless explicitly labeled otherwise.
@@ -108,7 +116,7 @@ Partners can review the [Live Rollout Readiness Blueprint](./docs/live-rollout-r
 - See `docs/ETHICS_SCORING_SPEC.md` for full specification of what counts as ethical on-chain behavior.
 
 ### Universal Dignity Bonds
-The Universal Dignity Bonds system completes the Vaultfire vision: **Humans + AI + Earth thriving together**. Three interconnected bond mechanisms prove that morals-first economics work.
+The Universal Dignity Bonds system completes the Vaultfire vision: **Humans + AI + Earth thriving together**. Seven interconnected bond mechanisms prove that morals-first economics work at every level - from individual builders to global AI systems.
 
 #### Builder Belief Bonds (UDB V3)
 **Philosophy**: BUILDING > TRANSACTING - Proves it mathematically through economic incentives.
@@ -183,30 +191,172 @@ The Universal Dignity Bonds system completes the Vaultfire vision: **Humans + AI
 - **Privacy Preserved**: Public data (satellite imagery) + community attestation, no personal surveillance
 - **Status**: Design complete, implementation ready, awaiting pilot project selection
 
-#### Philosophy: The Complete Trinity
+#### Common Ground Bonds
+**Philosophy**: Bridge-building > division economically - Unity without destroying diversity.
+
+- `vaultfire/advanced_bonds/common_ground_bonds.py` - Bridge-building mechanics and ripple effects
+- **The Problem Solved**: Current systems profit from division and outrage. This makes healing divisions economically rewarding.
+- **How it works**:
+  1. **Two people from opposing sides** create a bond together (political, cultural, ideological divides)
+  2. **Understanding quality measured** - Can each person explain the other's view accurately? (verified by both sides)
+  3. **Diversity preserved** - No forced conformity, persistent disagreements are REWARDED
+  4. **Collaborative action required** - Real-world cooperation on shared goals
+  5. **Ripple effects** - Helping others bridge divides multiplies bond value
+- **Understanding Quality Detection**:
+  - **Good Bridge**: Both sides verify the other understands their view → 1.5x-2.0x multiplier
+  - **Fake Unity**: Forced conformity or perspective abandonment → 0.5x penalty
+  - Third-party verification from BOTH sides required
+- **Economic Formula**: `Stake × Understanding_Quality × Diversity_Preserved × Action_Taken × Time_Sustained × Ripple_Mult`
+  - Diversity preservation bonus (disagreements maintained) = 1.5x
+  - Collaborative action multiplier (working together on shared goals) = 1.0x-2.0x
+  - Ripple effects (helping others bridge) = exponential scaling
+- **Real-World Scenarios** (from tests):
+  - Urban/Rural divide bridged → both sides explain other's view, collaborate on infrastructure
+  - Progressive/Conservative bridge → persistent disagreements honored, joint community project
+  - Fake unity attempt → conformity detected, bond penalized
+- **Why This Matters**: Makes bridge-building more profitable than division. Preserves diversity while finding common ground.
+- **Tests**: 23 comprehensive tests in `tests/advanced_bonds/test_common_ground_bonds.py` - all passing
+
+#### Escape Velocity Bonds
+**Philosophy**: Help the little guy escape poverty traps - Too small for suits to exploit.
+
+- `vaultfire/advanced_bonds/escape_velocity_bonds.py` - Poverty escape mechanics and pay it forward
+- **The Problem Solved**: Traditional systems keep the poor trapped (can't afford to take risks, no safety net). This creates escape velocity.
+- **How it works**:
+  1. **Small community stakes** - Individual stakes $50-$500 (too small for suits, perfect for neighbors)
+  2. **Person attempts escape** - Start business, learn new skill, relocate for opportunity
+  3. **Escape success measured** - Are they thriving 6+ months later? Still thriving after 1 year?
+  4. **Pay it forward** - After escaping, help others escape (multiplies bond value)
+  5. **Anti-recapture protection** - Predatory entities that recaptured someone get blocked
+- **Escape Success Metrics**:
+  - Income increase (escaping survival mode)
+  - Autonomy increase (freedom from predatory systems)
+  - Thriving duration (6 months, 1 year, 2 years checkpoints)
+  - Pay it forward count (how many others did they help escape?)
+- **Economic Formula**: `Stake × Escape_Success × Thriving_Duration × Others_Helped × Anti_Recapture`
+  - Escape success = 0.0-2.0x based on income/autonomy gains
+  - Thriving duration = 1x (6mo), 1.5x (1yr), 2x (2yr+)
+  - Others helped = exponential (1 person = 2x, 5 people = 6x)
+  - Recapture by same entity = bond fails, entity blocked
+- **Anti-Predatory Protection**:
+  - Tracks which entities recaptured people (payday lenders, exploitative employers)
+  - Blocks those entities from participating
+  - Community verification of recapture events
+- **Real-World Scenarios** (from tests):
+  - Single parent escapes minimum wage trap → starts daycare, helps 3 others escape
+  - Person escapes toxic employer → learns new skill, thriving 2 years later
+  - Recapture by payday lender → bond fails, lender blocked from system
+- **Why This Matters**: $50-$500 stakes are too small for suits but perfect for neighbors helping neighbors. Creates viral escape momentum.
+- **Tests**: 30 comprehensive tests in `tests/advanced_bonds/test_escape_velocity_bonds.py` - all passing
+
+#### Labor Dignity Bonds
+**Philosophy**: Worker flourishing > exploitation economically - Makes suits and people equal again.
+
+- `vaultfire/advanced_bonds/labor_dignity_bonds.py` - Worker dignity measurement and power redistribution
+- **The Problem Solved**: Current systems reward worker exploitation. This makes worker thriving more profitable than exploitation.
+- **How it works**:
+  1. **Company stakes** percentage of quarterly profits in bond
+  2. **Worker flourishing measured** anonymously across 6 dimensions (aggregate only, no individual tracking)
+  3. **Bonds appreciate** when workers thrive, depreciate when workers exploited
+  4. **Distribution**: 50% to workers, 50% to stakeholders (or 100% to workers if exploiting)
+  5. **Workers accumulate capital** over time, redistributing power
+- **Six Flourishing Metrics** (anonymous surveys, aggregate only):
+  1. **Income Growth** - Wages above inflation?
+  2. **Autonomy** - Control over schedule and work methods?
+  3. **Dignity** - Respect, safety, fair treatment?
+  4. **Work-Life Balance** - Reasonable hours, time for family?
+  5. **Security** - Job protection, not disposable?
+  6. **Voice** - Say in decisions that affect workers?
+- **Flourishing Ratio**:
+  - **Workers thriving** (score 80+) → 1.5x-2.0x appreciation
+  - **Neutral** (score 50-80) → 1.0x (stable)
+  - **Workers exploited** (score < 50) → 0.2x-0.8x depreciation
+- **Economic Formula**: `Stake × Flourishing_Ratio × Time × Distribution_Quality`
+  - Appreciation goes 50/50 to workers and stakeholders
+  - Depreciation goes 100% compensation to workers (exploitation penalty)
+  - Workers accumulate capital, changing power dynamics over time
+- **Real-World Scenarios** (from tests):
+  - Good company (score 85) → +377% appreciation, workers get 50%
+  - Bad company (score 30) → -96% depreciation, workers get 100% as compensation
+  - Company blocked for severe exploitation (score < 20)
+- **Why This Matters**: Redistributes power from suits to workers through economics. Makes exploitation EXPENSIVE and thriving PROFITABLE.
+- **Tests**: 21 comprehensive tests in `tests/advanced_bonds/test_labor_dignity_bonds.py` - all passing
+
+#### AI Accountability Bonds
+**Philosophy**: AI can only profit when ALL humans thrive - Works even with ZERO employment.
+
+- `vaultfire/advanced_bonds/ai_accountability_bonds.py` - Global human flourishing measurement and profit distribution
+- **The Problem Solved**: Labor Dignity Bonds only work if workers exist. This system works when AI has replaced all human jobs.
+- **How it works**:
+  1. **AI company stakes** 30% of quarterly revenue in bond
+  2. **Global human flourishing measured** across 6 dimensions (not just workers)
+  3. **AI profits locked** when humans suffer (score < 40), declining trends, or low inclusion
+  4. **Distribution**: 50% to humans, 50% to AI company (or 100% to humans if locked)
+  5. **Creates self-funding UBI** from AI earnings when automation is complete
+- **Global Flourishing Metrics** (measured globally, not per-company):
+  1. **Income Distribution** - Wealth spreading or concentrating?
+  2. **Poverty Rate** - People escaping or falling into poverty?
+  3. **Health Outcomes** - Life expectancy improving or declining?
+  4. **Mental Health** - Depression/anxiety rates?
+  5. **Education Access** - Can people learn new AI skills?
+  6. **Purpose/Agency** - Meaningful activities (paid OR unpaid work)?
+- **Profit Locking Triggers**:
+  - **Humans suffering** (score < 40) → 100% to humans, 0% to AI company
+  - **Declining trend** → profits locked until trend reverses
+  - **Low inclusion** (education + purpose < 24) → profits locked until AI helps humans adapt
+- **Inclusion Multiplier**:
+  - **High inclusion** (education + purpose 70+) → 1.5x-2.0x appreciation (AI helping humans learn)
+  - **Low inclusion** (education + purpose < 40) → 0.5x-1.0x (AI replacing without reskilling)
+- **Economic Formula**: `Stake × Global_Flourishing × Inclusion × Distribution_Quality × Time`
+  - Works with ZERO employment (measures purpose/education, not jobs)
+  - Partnership quality: Is AI helping humans find new purpose, or leaving them behind?
+  - Long-term sustained flourishing compounds (3-year partnerships earn 2x)
+- **Real-World Scenarios** (from tests):
+  - 🏥 **Healthcare AI** improving lives → +132% appreciation (everyone wins)
+  - 📈 **Trading AI** concentrating wealth → profits locked, 100% redistributed to humans
+  - 🤖 **Automation AI** with no reskilling → profits locked (low inclusion)
+  - 🎓 **Education AI** empowering humans → +190% appreciation (high inclusion bonus)
+- **Why This Matters**: The ONLY economic system that works when AI fires everyone. Creates AI companies that profit from human thriving, not human obsolescence.
+- **Tests**: 22 comprehensive tests in `tests/advanced_bonds/test_ai_accountability_bonds.py` - all passing
+
+#### Philosophy: The Complete 7-Bond System
 ```
 Builder Belief Bonds → Humans building revolutionary projects
        ↓
-AI Partnership Bonds → AI helping humans flourish
+AI Partnership Bonds → AI helping individual humans flourish
        ↓
 Verdant Anchor → Earth regenerating through physical work
        ↓
-= Humans + AI + Earth thriving together
+Common Ground Bonds → Healing divisions while preserving diversity
+       ↓
+Escape Velocity Bonds → Little guy escaping poverty traps
+       ↓
+Labor Dignity Bonds → Workers accumulating power and capital
+       ↓
+AI Accountability Bonds → AI profits when ALL humans thrive globally
+       ↓
+= Humans + AI + Earth thriving together at every level (even with zero jobs)
 ```
 
 **What makes this different**:
 - ✓ **Morals before metrics** - Ethics scored explicitly, no fuzzy logic
-- ✓ **Privacy preserved** - No surveillance, public data + community attestation only
+- ✓ **Privacy preserved** - No surveillance, public data + community attestation only (aggregate worker data)
 - ✓ **Effort over shortcuts** - Physical work required, no tokenized workarounds
 - ✓ **Long-term > short-term** - Time compounding rewards sustained contributions
-- ✓ **Community > capital** - Locals earn 70%, investors 30% across all bond types
-- ✓ **Dignity always** - 50% floor on all bonds, every human has inherent worth
+- ✓ **Community > capital** - Locals earn 70%, investors 30% across bond types; workers accumulate capital
+- ✓ **Dignity always** - 50% floor on bonds, every human has inherent worth
 - ✓ **Freedom protocol** - No control, no surveillance, no coercion
+- ✓ **Works at every scale** - Individual poverty escape → worker power → global AI accountability
+- ✓ **Works with zero jobs** - AI Accountability measures purpose/education, not employment
 
 Run the demos:
 - `python examples/builder_belief_bonds_demo.py` - See the complete Builder Belief Bonds flow
-- `pytest tests/advanced_bonds/test_builder_belief_bonds.py -v` - Validate all 24 tests
-- `python tests/thriving_bonds/test_ai_partnership_bonds.py` - AI partnership quality detection
+- `pytest tests/advanced_bonds/test_builder_belief_bonds.py -v` - Validate all 24 Builder Belief tests
+- `pytest tests/advanced_bonds/test_ai_partnership_bonds.py -v` - AI partnership quality detection
+- `pytest tests/advanced_bonds/test_common_ground_bonds.py -v` - Validate all 23 Common Ground tests
+- `pytest tests/advanced_bonds/test_escape_velocity_bonds.py -v` - Validate all 30 Escape Velocity tests
+- `pytest tests/advanced_bonds/test_labor_dignity_bonds.py -v` - Validate all 21 Labor Dignity tests
+- `pytest tests/advanced_bonds/test_ai_accountability_bonds.py -v` - Validate all 22 AI Accountability tests
 - Review `docs/VERDANT_ANCHOR_DESIGN.md` for complete Earth regeneration specification
 
 ### Drift Anchors
@@ -292,7 +442,14 @@ For mobile contexts, run `MOBILE_MODE=true npm run preflight` for a compact read
 > **Python test matrix:**
 > - `pip install -r requirements.txt` then run `pytest` for the core suite. Optional integration checks that rely on external services will be reported as `[optional]` skips when dependencies are absent.
 > - `pip install -r requirements-extended.txt` then run `pytest` to execute the full coverage suite, including the FastAPI, cryptography, requests, and Torch-backed tests.
-> - **Universal Dignity Bonds tests**: `pytest tests/advanced_bonds/ tests/thriving_bonds/ -v` runs 28 tests covering Builder Belief Bonds, AI Partnership Bonds, and flourishing metrics - all passing.
+> - **Universal Dignity Bonds tests**: `pytest tests/advanced_bonds/ -v` runs 120+ tests across all 6 implemented bond systems:
+>   - Builder Belief Bonds (24 tests)
+>   - AI Partnership Bonds (full coverage)
+>   - Common Ground Bonds (23 tests)
+>   - Escape Velocity Bonds (30 tests)
+>   - Labor Dignity Bonds (21 tests)
+>   - AI Accountability Bonds (22 tests)
+>   - All tests passing. Verdant Anchor design complete, implementation pending.
 
 ### Module Scope Modes
 Set `VAULTFIRE_MODULE_SCOPE` to load scoped pilot programs. Run `node pilot-loader.js` to verify active modules.
