@@ -56,7 +56,7 @@
 - **Simulation-backed alpha:** Vaultfire is architected for production but currently runs only in sandbox and controlled pilot environments, fusing Codex reasoning engines, NFT identity anchors, and loyalty mechanics into an ethics-led activation stack for labs and sandboxes.
 - **Partner-first experiments:** Integration surfaces (CLI, dashboard, APIs) center ethics and provenance for enterprise onboarding trials without promising live traffic.
 - **Proof-rich simulations:** Zero-knowledge guards, attested telemetry, and AI mission resonance expose verifiable signals partners can study before any live deployment.
-- **Universal Dignity Bonds (NEW):** Eight interconnected economic mechanisms proving morals-first economics work:
+- **Universal Dignity Bonds (NEW):** Nine interconnected economic mechanisms proving morals-first economics work:
   - **Builder Belief Bonds** - BUILDING > TRANSACTING proven mathematically through 4-source comprehensive scoring
   - **AI Partnership Bonds** - AI earns when humans flourish, not when AI dominates (30% cap, partnership quality detection)
   - **Verdant Anchor** - Earth regeneration > extraction economically (anti-greenwashing guardrails, no surveillance)
@@ -65,6 +65,7 @@
   - **Labor Dignity Bonds** - Worker flourishing > exploitation economically (redistributes power from suits to workers)
   - **AI Accountability Bonds** - AI profits tied to global human flourishing, works with ZERO employment (solves "AI fires everyone")
   - **Health Commons Bonds** - Clean air/water/food > profit from poisoning (ties company profits to environmental AND human health improvements)
+  - **Purchasing Power Bonds** - Restores 1990s affordability (or better) - real wages > nominal wages, workers afford housing/food/healthcare/savings
 - **Activation:** Pre-mainnet. Alpha-phase pilots and simulation rites are active, but no public mainnet deployment is live yet.
 - **Stability:** Alpha-grade. Suitable for lab, sandbox, and controlled partner pilots. Full production use requires external security, compliance, and legal review plus formal agreements.
 - **Fork-friendly:** Follows the Moral Memory Fork Agreement (MMFA) so derivatives preserve the Ghostkey ethics lineage.
@@ -87,6 +88,7 @@
 | **Labor Dignity Bonds** | **Alpha** | **Worker flourishing bonds that redistribute power from suits to workers. Makes exploitation expensive, thriving profitable. 6 dignity metrics.** |
 | **AI Accountability Bonds** | **Alpha** | **AI profits tied to global human flourishing. Works with ZERO employment. Creates self-funding UBI from AI earnings when humans suffer.** |
 | **Health Commons Bonds** | **Alpha** | **Environmental health bonds tying company profits to BOTH pollution reduction AND human health improvement. 70/30 split (or 100% to community if poisoning). Community verification required.** |
+| **Purchasing Power Bonds** | **Alpha** | **Restores 1990s-level purchasing power (or better). Measures REAL affordability across housing, food, healthcare, education, transport, discretionary income. 70/30 split (or 100% to workers if declining). Company chooses HOW (raise wages, lower costs, build housing).** |
 
 ## Mission & Authenticity
 Vaultfire remains a morals-first protocol where every activation must prove alignment before scaling. All case study data is derived from Ghostkey-316 telemetry unless explicitly labeled otherwise.
@@ -118,7 +120,7 @@ Partners can review the [Live Rollout Readiness Blueprint](./docs/live-rollout-r
 - See `docs/ETHICS_SCORING_SPEC.md` for full specification of what counts as ethical on-chain behavior.
 
 ### Universal Dignity Bonds
-The Universal Dignity Bonds system completes the Vaultfire vision: **Humans + AI + Earth thriving together**. Eight interconnected bond mechanisms prove that morals-first economics work at every level - from individual builders to environmental health to global AI systems.
+The Universal Dignity Bonds system completes the Vaultfire vision: **Humans + AI + Earth thriving together**. Nine interconnected bond mechanisms prove that morals-first economics work at every level - from individual builders to purchasing power restoration to environmental health to global AI systems.
 
 #### Builder Belief Bonds (UDB V3)
 **Philosophy**: BUILDING > TRANSACTING - Proves it mathematically through economic incentives.
@@ -377,7 +379,59 @@ The Universal Dignity Bonds system completes the Vaultfire vision: **Humans + AI
 - **Why This Matters**: Makes environmental health profitable. Companies earn MORE by cleaning up than by continuing to poison. Affected communities receive direct economic benefit from cleanup. Creates economic alignment between corporate profits and human health.
 - **Tests**: 17 comprehensive tests in `tests/advanced_bonds/test_health_commons_bonds.py` - all passing
 
-#### Philosophy: The Complete 8-Bond System
+#### Purchasing Power Bonds
+**Philosophy**: Real wages > nominal wages - Workers should afford what 1990s workers could afford (house, food, healthcare, savings).
+
+- `vaultfire/advanced_bonds/purchasing_power_bonds.py` - Real purchasing power measurement and restoration system
+- **The Problem Solved**: Workers work harder but afford LESS. Wages up 3% but rent up 30%, groceries up 40%, healthcare up 50%. This makes 1990s purchasing power (or better) economically profitable.
+- **How it works**:
+  1. **Company stakes** on improving worker purchasing power
+  2. **Real affordability measured** across 6 baskets (housing, food, healthcare, education, transport, discretionary)
+  3. **Can't game the system** - raising wages 3% while raising prices 10% = depreciation
+  4. **Bonds appreciate** when workers can afford MORE (1990s level or better)
+  5. **Company chooses HOW** - raise wages, lower costs, build housing, subsidize healthcare, etc.
+  6. **Distribution**: 70% to workers, 30% to company (or 100% to workers if purchasing power declining)
+- **Key Innovation - Real Affordability Not Paper Wages**:
+  - Measures what workers can actually AFFORD, not just wages
+  - 1990s baseline: Housing 25-30% of income, Food 4hrs/week, Healthcare 5-7%, Discretionary 20-30%
+  - Current reality: Housing 40-50%, Food 6-8hrs/week, Healthcare 15-20%, Discretionary <10%
+  - This bond rewards restoring 1990s levels (or better)
+- **Six Affordability Baskets**:
+  1. **Housing Affordability** - Rent/mortgage as % of income (target <30% like 1990s)
+  2. **Food Affordability** - Hours worked per week to buy groceries (target 4 hours like 1990s)
+  3. **Healthcare Affordability** - % of income on insurance/care (target <7% like 1990s)
+  4. **Education Affordability** - Can workers afford training/college? (0-100 score)
+  5. **Transportation Affordability** - Commute cost as % of income (target <10%)
+  6. **Discretionary Income** - Money left after necessities (target 25%+ like 1990s)
+- **Worker Verification**:
+  - Workers attest to affordability improvements
+  - Can afford housing? Food? Healthcare? Can save money?
+  - No verification = 0.5x penalty
+  - Strong consensus (80%+ agreement) = 1.5x bonus
+- **Economic Formula**: `Stake × Overall_Purchasing_Power × Worker_Verification × Time`
+  - Overall purchasing power: average of all 6 affordability scores (0.0x-2.0x)
+  - Worker verification: 0.5x-1.5x based on worker attestation
+  - Time multiplier: 1.0x-3.0x rewards sustained improvements (years of good purchasing power)
+- **Declining Penalty** (100% to workers if):
+  - Overall purchasing power declining (score < 0.8)
+  - No worker verification (score < 0.7)
+- **Distribution Logic**:
+  - **Purchasing power improving**: 70% to workers (per worker), 30% to company
+  - **Purchasing power declining**: 100% to workers as compensation, 0% to company
+  - **Depreciation**: 100% to workers as compensation
+- **Real-World Scenarios** (from tests):
+  - 💰 **Good employer** (raises wages + keeps costs low) → +300%+ appreciation (company earns 30%)
+  - 📉 **Bad company** (3% wage raise, 15% price raise) → depreciation, 100% to workers
+  - 🏘️ **Housing builder** (builds affordable housing) → massive appreciation (housing from 52% to 23% of income)
+- **Privacy Protection**:
+  - No individual surveillance
+  - Aggregate worker data only (anonymous surveys)
+  - Public cost indices (rent, food prices, healthcare costs)
+  - Worker attestation is anonymous (attestor_id, not real identity)
+- **Why This Matters**: Restores 1990s purchasing power. Workers should afford a house, groceries, healthcare, and have money left to save - like they could 30 years ago. Companies earn MORE by helping workers afford MORE. Addresses the economic reality that wages stagnated while costs exploded.
+- **Tests**: 17 comprehensive tests in `tests/advanced_bonds/test_purchasing_power_bonds.py` - all passing
+
+#### Philosophy: The Complete 9-Bond System
 ```
 Builder Belief Bonds → Humans building revolutionary projects
        ↓
@@ -391,11 +445,14 @@ Escape Velocity Bonds → Little guy escaping poverty traps
        ↓
 Labor Dignity Bonds → Workers accumulating power and capital
        ↓
+Purchasing Power Bonds → Workers affording 1990s lifestyle (or better)
+       ↓
 Health Commons Bonds → Clean air/water/food for all communities
        ↓
 AI Accountability Bonds → AI profits when ALL humans thrive globally
        ↓
-= Humans + AI + Earth thriving together at every level (even with zero jobs, clean environment for all)
+= Humans + AI + Earth thriving together at every level
+  (even with zero jobs, 1990s affordability, clean environment for all)
 ```
 
 **What makes this different**:
@@ -502,7 +559,7 @@ For mobile contexts, run `MOBILE_MODE=true npm run preflight` for a compact read
 > **Python test matrix:**
 > - `pip install -r requirements.txt` then run `pytest` for the core suite. Optional integration checks that rely on external services will be reported as `[optional]` skips when dependencies are absent.
 > - `pip install -r requirements-extended.txt` then run `pytest` to execute the full coverage suite, including the FastAPI, cryptography, requests, and Torch-backed tests.
-> - **Universal Dignity Bonds tests**: `pytest tests/advanced_bonds/ -v` runs 140+ tests across all 7 implemented bond systems:
+> - **Universal Dignity Bonds tests**: `pytest tests/advanced_bonds/ -v` runs 160+ tests across all 8 implemented bond systems:
 >   - Builder Belief Bonds (24 tests)
 >   - AI Partnership Bonds (full coverage)
 >   - Common Ground Bonds (23 tests)
@@ -510,6 +567,7 @@ For mobile contexts, run `MOBILE_MODE=true npm run preflight` for a compact read
 >   - Labor Dignity Bonds (21 tests)
 >   - AI Accountability Bonds (22 tests)
 >   - Health Commons Bonds (17 tests)
+>   - Purchasing Power Bonds (17 tests)
 >   - All tests passing. Verdant Anchor design complete, implementation pending.
 
 ### Module Scope Modes
