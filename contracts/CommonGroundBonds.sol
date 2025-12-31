@@ -272,18 +272,24 @@ contract CommonGroundBonds is ReentrancyGuard {
      */
     function crossCommunityWitnessMultiplier(uint256 bondId) public view bondExists(bondId) returns (uint256) {
         CrossDivideWitness[] storage witnesses = bondWitnesses[bondId];
+        uint256 witnessesLength = witnesses.length;
 
-        if (witnesses.length == 0) return 100; // Neutral
+        if (witnessesLength == 0) return 100; // Neutral
 
         uint256 cutoff = block.timestamp - 15552000; // ~180 days
         uint256 recentCount = 0;
         uint256 genuineConfirmations = 0;
         uint256 rippleConfirmations = 0;
 
-        for (uint256 i = witnesses.length; i > 0 && witnesses[i-1].timestamp >= cutoff; i--) {
-            recentCount++;
-            if (witnesses[i-1].confirmsGenuineBridge) genuineConfirmations++;
-            if (witnesses[i-1].confirmsRippleEffect) rippleConfirmations++;
+        for (uint256 i = witnessesLength; i > 0;) {
+            unchecked { --i; }
+            if (witnesses[i].timestamp < cutoff) break;
+
+            unchecked {
+                ++recentCount;
+                if (witnesses[i].confirmsGenuineBridge) ++genuineConfirmations;
+                if (witnesses[i].confirmsRippleEffect) ++rippleConfirmations;
+            }
         }
 
         if (recentCount == 0) return 100;

@@ -249,18 +249,24 @@ contract EscapeVelocityBonds is ReentrancyGuard {
      */
     function communityVerificationMultiplier(uint256 bondId) public view bondExists(bondId) returns (uint256) {
         CommunityVerification[] storage verifications = bondVerifications[bondId];
+        uint256 verificationsLength = verifications.length;
 
-        if (verifications.length == 0) return 100; // Neutral
+        if (verificationsLength == 0) return 100; // Neutral
 
         uint256 cutoff = block.timestamp - 15552000; // ~180 days
         uint256 recentCount = 0;
         uint256 escapeConfirmations = 0;
         uint256 payForwardConfirmations = 0;
 
-        for (uint256 i = verifications.length; i > 0 && verifications[i-1].timestamp >= cutoff; i--) {
-            recentCount++;
-            if (verifications[i-1].confirmsEscape) escapeConfirmations++;
-            if (verifications[i-1].confirmsPaidForward) payForwardConfirmations++;
+        for (uint256 i = verificationsLength; i > 0;) {
+            unchecked { --i; }
+            if (verifications[i].timestamp < cutoff) break;
+
+            unchecked {
+                ++recentCount;
+                if (verifications[i].confirmsEscape) ++escapeConfirmations;
+                if (verifications[i].confirmsPaidForward) ++payForwardConfirmations;
+            }
         }
 
         if (recentCount == 0) return 100;

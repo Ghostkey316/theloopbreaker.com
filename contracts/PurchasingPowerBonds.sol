@@ -254,19 +254,25 @@ contract PurchasingPowerBonds is ReentrancyGuard {
      */
     function workerVerificationMultiplier(uint256 bondId) public view bondExists(bondId) returns (uint256) {
         WorkerAttestation[] storage attestations = bondAttestations[bondId];
+        uint256 attestationsLength = attestations.length;
 
-        if (attestations.length == 0) return 50; // No verification = penalty
+        if (attestationsLength == 0) return 50; // No verification = penalty
 
         // Check recent attestations (last 180 days approximated by 180 * 86400 seconds)
         uint256 cutoff = block.timestamp - 15552000; // ~180 days
         uint256 recentCount = 0;
         uint256 positiveCount = 0;
 
-        for (uint256 i = attestations.length; i > 0 && attestations[i-1].timestamp >= cutoff; i--) {
-            recentCount++;
-            WorkerAttestation storage att = attestations[i-1];
-            if (att.canAffordHousing && att.canAffordFood && att.canAffordHealthcare && att.purchasingPowerImproving) {
-                positiveCount++;
+        for (uint256 i = attestationsLength; i > 0;) {
+            unchecked { --i; } // Safe: i > 0 checked in loop condition
+            if (attestations[i].timestamp < cutoff) break;
+
+            unchecked {
+                ++recentCount;
+                WorkerAttestation storage att = attestations[i];
+                if (att.canAffordHousing && att.canAffordFood && att.canAffordHealthcare && att.purchasingPowerImproving) {
+                    ++positiveCount;
+                }
             }
         }
 

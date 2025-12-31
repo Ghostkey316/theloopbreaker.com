@@ -247,8 +247,9 @@ contract AIPartnershipBonds is ReentrancyGuard {
      */
     function humanVerificationMultiplier(uint256 bondId) public view bondExists(bondId) returns (uint256) {
         HumanVerification[] storage verifications = bondVerifications[bondId];
+        uint256 verificationsLength = verifications.length;
 
-        if (verifications.length == 0) return 100; // Neutral
+        if (verificationsLength == 0) return 100; // Neutral
 
         uint256 cutoff = block.timestamp - 15552000; // ~180 days
         uint256 recentCount = 0;
@@ -256,11 +257,16 @@ contract AIPartnershipBonds is ReentrancyGuard {
         uint256 growthConfirmations = 0;
         uint256 autonomyConfirmations = 0;
 
-        for (uint256 i = verifications.length; i > 0 && verifications[i-1].timestamp >= cutoff; i--) {
-            recentCount++;
-            if (verifications[i-1].confirmsPartnership) partnershipConfirmations++;
-            if (verifications[i-1].confirmsGrowth) growthConfirmations++;
-            if (verifications[i-1].confirmsAutonomy) autonomyConfirmations++;
+        for (uint256 i = verificationsLength; i > 0;) {
+            unchecked { --i; }
+            if (verifications[i].timestamp < cutoff) break;
+
+            unchecked {
+                ++recentCount;
+                if (verifications[i].confirmsPartnership) ++partnershipConfirmations;
+                if (verifications[i].confirmsGrowth) ++growthConfirmations;
+                if (verifications[i].confirmsAutonomy) ++autonomyConfirmations;
+            }
         }
 
         if (recentCount == 0) return 100;
