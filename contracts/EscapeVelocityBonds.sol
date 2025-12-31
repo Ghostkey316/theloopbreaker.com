@@ -277,10 +277,10 @@ contract EscapeVelocityBonds {
     function timeMultiplier(uint256 bondId) public view bondExists(bondId) returns (uint256) {
         Bond storage bond = bonds[bondId];
         uint256 age = block.timestamp - bond.createdAt;
-        uint256 years = age / 31536000;
+        uint256 yearsElapsed = age / 31536000;
 
-        if (years < 1) return 100;
-        if (years < 3) return 100 + (years * 33);
+        if (yearsElapsed < 1) return 100;
+        if (yearsElapsed < 3) return 100 + (yearsElapsed * 33);
         return 200;
     }
 
@@ -365,7 +365,7 @@ contract EscapeVelocityBonds {
             timestamp: block.timestamp,
             totalAmount: appreciation,
             escaperShare: escaperShare,
-            payForwardShare: payForwardShare,
+            payItForwardShare: payForwardShare,
             reason: reason
         }));
 

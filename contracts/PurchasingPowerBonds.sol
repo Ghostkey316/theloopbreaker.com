@@ -284,11 +284,11 @@ contract PurchasingPowerBonds {
     function timeMultiplier(uint256 bondId) public view bondExists(bondId) returns (uint256) {
         Bond storage bond = bonds[bondId];
         uint256 age = block.timestamp - bond.createdAt;
-        uint256 years = age / 31536000; // Seconds in a year
+        uint256 yearsElapsed = age / 31536000; // Seconds in a year
 
-        if (years < 1) return 100;       // 1.0x
-        if (years < 3) return 100 + (years * 50);  // 1.0x to 2.0x
-        return 200 + ((years - 3) * 50); // 2.0x to 3.0x (capped at reasonable max)
+        if (yearsElapsed < 1) return 100;       // 1.0x
+        if (yearsElapsed < 3) return 100 + (yearsElapsed * 50);  // 1.0x to 2.0x
+        return 200 + ((yearsElapsed - 3) * 50); // 2.0x to 3.0x (capped at reasonable max)
     }
 
     /**

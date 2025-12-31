@@ -300,10 +300,10 @@ contract CommonGroundBonds {
     function timeMultiplier(uint256 bondId) public view bondExists(bondId) returns (uint256) {
         Bond storage bond = bonds[bondId];
         uint256 age = block.timestamp - bond.createdAt;
-        uint256 years = age / 31536000;
+        uint256 yearsElapsed = age / 31536000;
 
-        if (years < 1) return 100;
-        if (years < 5) return 100 + (years * 37);
+        if (yearsElapsed < 1) return 100;
+        if (yearsElapsed < 5) return 100 + (yearsElapsed * 37);
         return 250;
     }
 

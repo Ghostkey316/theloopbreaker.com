@@ -272,11 +272,11 @@ contract LaborDignityBonds {
     function timeMultiplier(uint256 bondId) public view bondExists(bondId) returns (uint256) {
         Bond storage bond = bonds[bondId];
         uint256 age = block.timestamp - bond.createdAt;
-        uint256 years = age / 31536000;
+        uint256 yearsElapsed = age / 31536000;
 
-        if (years < 1) return 100;
-        if (years < 3) return 100 + (years * 50);
-        return 200 + ((years - 3) * 50);
+        if (yearsElapsed < 1) return 100;
+        if (yearsElapsed < 3) return 100 + (yearsElapsed * 50);
+        return 200 + ((yearsElapsed - 3) * 50);
     }
 
     /**
