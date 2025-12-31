@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
 /**
  * @title Labor Dignity Bonds
  * @notice Worker flourishing > exploitation economically
@@ -11,7 +13,7 @@ pragma solidity ^0.8.20;
  * Key Innovation: Worker verification required - workers anonymously attest to conditions.
  * Can't fake flourishing if workers say otherwise.
  */
-contract LaborDignityBonds {
+contract LaborDignityBonds is ReentrancyGuard {
 
     // ============ Structs ============
 
@@ -336,7 +338,7 @@ contract LaborDignityBonds {
      * @notice Distribute bond proceeds
      * @dev 70% to workers, 30% to company (or 100% to workers if exploitation)
      */
-    function distributeBond(uint256 bondId) external onlyCompany(bondId) bondExists(bondId) {
+    function distributeBond(uint256 bondId) external nonReentrant onlyCompany(bondId) bondExists(bondId) {
         Bond storage bond = bonds[bondId];
         int256 appreciation = calculateAppreciation(bondId);
 

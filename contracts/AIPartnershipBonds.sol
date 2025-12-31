@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
 /**
  * @title AI Partnership Bonds
  * @notice AI grows WITH humans, not ABOVE them
@@ -11,7 +13,7 @@ pragma solidity ^0.8.20;
  * Key Innovation: AI contribution capped at 30%.
  * AI profits ONLY when human growth, autonomy, and dignity all increase.
  */
-contract AIPartnershipBonds {
+contract AIPartnershipBonds is ReentrancyGuard {
 
     // ============ Structs ============
 
@@ -344,7 +346,7 @@ contract AIPartnershipBonds {
      * @dev 50% human, 30% AI (capped), 20% partnership fund IF good partnership
      *      100% human if AI dominating
      */
-    function distributeBond(uint256 bondId) external bondExists(bondId) {
+    function distributeBond(uint256 bondId) external nonReentrant bondExists(bondId) {
         Bond storage bond = bonds[bondId];
         require(
             bond.human == msg.sender || bond.aiAgent == msg.sender,

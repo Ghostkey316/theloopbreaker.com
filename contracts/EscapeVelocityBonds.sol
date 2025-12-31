@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
 /**
  * @title Escape Velocity Bonds
  * @notice Little guy escaping poverty - $50-$500 stakes
@@ -11,7 +13,7 @@ pragma solidity ^0.8.20;
  * Key Innovation: Recapture protection - prevents falling back into poverty.
  * 80% to escaper, 20% to pay-it-forward pool for next escapers.
  */
-contract EscapeVelocityBonds {
+contract EscapeVelocityBonds is ReentrancyGuard {
 
     // ============ Structs ============
 
@@ -329,7 +331,7 @@ contract EscapeVelocityBonds {
      * @notice Distribute bond proceeds
      * @dev 80% to escaper, 20% to pay-it-forward pool (or 100% escaper if recapture)
      */
-    function distributeBond(uint256 bondId) external onlyStaker(bondId) bondExists(bondId) {
+    function distributeBond(uint256 bondId) external nonReentrant onlyStaker(bondId) bondExists(bondId) {
         Bond storage bond = bonds[bondId];
         int256 appreciation = calculateAppreciation(bondId);
 

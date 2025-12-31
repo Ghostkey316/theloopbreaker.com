@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
 /**
  * @title Verdant Anchor Bonds
  * @notice Earth regeneration > extraction economically
@@ -11,7 +13,7 @@ pragma solidity ^0.8.20;
  * Key Innovation: Anti-greenwashing verification from local communities.
  * No surveillance creep - community attests to real work on the ground.
  */
-contract VerdantAnchorBonds {
+contract VerdantAnchorBonds is ReentrancyGuard {
 
     // ============ Structs ============
 
@@ -371,7 +373,7 @@ contract VerdantAnchorBonds {
      * @dev 50% regenerator, 30% landowner, 20% earth fund IF regenerating
      *      100% regenerator if greenwashing
      */
-    function distributeBond(uint256 bondId) external bondExists(bondId) {
+    function distributeBond(uint256 bondId) external nonReentrant bondExists(bondId) {
         Bond storage bond = bonds[bondId];
         require(
             bond.regenerator == msg.sender || bond.landowner == msg.sender,

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
 /**
  * @title Purchasing Power Bonds
  * @notice Restoring 1990s Affordability (or Better) - Real wages > nominal wages
@@ -11,7 +13,7 @@ pragma solidity ^0.8.20;
  * Key Innovation: Measures REAL affordability, not paper wages.
  * Can't game by raising wages 3% while raising costs 10%.
  */
-contract PurchasingPowerBonds {
+contract PurchasingPowerBonds is ReentrancyGuard {
 
     // ============ Structs ============
 
@@ -333,7 +335,7 @@ contract PurchasingPowerBonds {
      * @notice Distribute bond proceeds
      * @dev 70% to workers, 30% to company (or 100% to workers if declining)
      */
-    function distributeBond(uint256 bondId) external onlyCompany(bondId) bondExists(bondId) {
+    function distributeBond(uint256 bondId) external nonReentrant onlyCompany(bondId) bondExists(bondId) {
         Bond storage bond = bonds[bondId];
         int256 appreciation = calculateAppreciation(bondId);
 

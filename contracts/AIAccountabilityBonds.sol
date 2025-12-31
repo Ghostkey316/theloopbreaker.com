@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
 /**
  * @title AI Accountability Bonds
  * @notice AI can only profit when ALL humans thrive - Works even with ZERO employment
@@ -11,7 +13,7 @@ pragma solidity ^0.8.20;
  * Key Innovation: Works with ZERO employment.
  * Measures purpose/education, not jobs.
  */
-contract AIAccountabilityBonds {
+contract AIAccountabilityBonds is ReentrancyGuard {
 
     // ============ Structs ============
 
@@ -260,7 +262,7 @@ contract AIAccountabilityBonds {
      * @notice Distribute bond proceeds
      * @dev 50% to humans, 50% to AI company (or 100% to humans if locked)
      */
-    function distributeBond(uint256 bondId) external onlyAICompany(bondId) bondExists(bondId) {
+    function distributeBond(uint256 bondId) external nonReentrant onlyAICompany(bondId) bondExists(bondId) {
         Bond storage bond = bonds[bondId];
         int256 appreciation = calculateAppreciation(bondId);
 

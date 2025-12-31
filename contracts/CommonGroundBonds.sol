@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
 /**
  * @title Common Ground Bonds
  * @notice Bridge-building > division economically
@@ -11,7 +13,7 @@ pragma solidity ^0.8.20;
  * Key Innovation: Dual-party verification required from both sides of divide.
  * Ripple effect tracking - bridges that inspire more bridges earn more.
  */
-contract CommonGroundBonds {
+contract CommonGroundBonds is ReentrancyGuard {
 
     // ============ Structs ============
 
@@ -363,7 +365,7 @@ contract CommonGroundBonds {
      * @notice Distribute bond proceeds
      * @dev 60% to bridge-builders, 40% to community healing pool (or 100% pool if division worsening)
      */
-    function distributeBond(uint256 bondId) external onlyParticipants(bondId) bondExists(bondId) {
+    function distributeBond(uint256 bondId) external nonReentrant onlyParticipants(bondId) bondExists(bondId) {
         Bond storage bond = bonds[bondId];
         int256 appreciation = calculateAppreciation(bondId);
 

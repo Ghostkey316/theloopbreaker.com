@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
 /**
  * @title Health Commons Bonds
  * @notice Clean Air/Water/Food > Profit from Poisoning
@@ -11,7 +13,7 @@ pragma solidity ^0.8.20;
  * Key Innovation: Tied to BOTH pollution reduction AND human health improvement.
  * Can't just move pollution - must improve health in affected communities.
  */
-contract HealthCommonsBonds {
+contract HealthCommonsBonds is ReentrancyGuard {
 
     // ============ Structs ============
 
@@ -301,7 +303,7 @@ contract HealthCommonsBonds {
         return pollution < 80 || health < 80 || community < 70;
     }
 
-    function distributeBond(uint256 bondId) external onlyCompany(bondId) bondExists(bondId) {
+    function distributeBond(uint256 bondId) external nonReentrant onlyCompany(bondId) bondExists(bondId) {
         Bond storage bond = bonds[bondId];
         int256 appreciation = calculateAppreciation(bondId);
 

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
 /**
  * @title Builder Belief Bonds
  * @notice BUILDING > TRANSACTING
@@ -11,7 +13,7 @@ pragma solidity ^0.8.20;
  * Key Innovation: Anti-flipping vesting + tier system.
  * Supporters → Believers → Champions based on stake and commitment.
  */
-contract BuilderBeliefBonds {
+contract BuilderBeliefBonds is ReentrancyGuard {
 
     // ============ Enums ============
 
@@ -387,7 +389,7 @@ contract BuilderBeliefBonds {
      * @dev 60% builder, 30% stakers, 10% builder fund IF building
      *      100% builder if transacting
      */
-    function distributeBond(uint256 bondId) external bondExists(bondId) {
+    function distributeBond(uint256 bondId) external nonReentrant bondExists(bondId) {
         Bond storage bond = bonds[bondId];
         require(
             bond.staker == msg.sender || bond.builder == msg.sender,
