@@ -2,11 +2,11 @@
   {
     "proposalId": "prop-1",
     "choice": "a",
-    "wallet": "0xF468ccA18b09460eF8fBf42a41670fa37cF2dBE0",
+    "wallet": "0x3aE6BA42F5Ab0ba893A8Db89756c0c334Cc1595C",
     "ens": null,
     "weight": 1.8535,
     "tier": "Mythic",
-    "timestamp": "2025-10-01T22:45:51.434Z",
-    "messageDigest": "0xc21cba17329a3fa7f251f9b28ad7223c340ac833d13088b96ace445959a85f07"
+    "timestamp": "2026-01-01T15:17:46.884Z",
+    "messageDigest": "0x709ba0833c30eac5a37c19a2db6c0ccc8a5117d806e458bec55221c7f7e4e919"
   }
 ]
