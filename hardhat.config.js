@@ -24,6 +24,12 @@ module.exports = {
       url: enforceLoopback(process.env.BASE_RPC_URL || sandbox.rpcUrl || 'http://127.0.0.1:8545'),
       accounts: process.env.BASE_PRIVATE_KEY ? [process.env.BASE_PRIVATE_KEY] : [],
     },
+    baseSepolia: {
+      url: 'https://sepolia.base.org',
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      chainId: 84532,
+      gasPrice: 1000000000, // 1 gwei
+    },
     baseMainnet: {
       url: 'https://mainnet.base.org',
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
@@ -34,6 +40,7 @@ module.exports = {
   verify: {
     etherscan: {
       apiKey: {
+        baseSepolia: process.env.BASESCAN_API_KEY || "",
         baseMainnet: process.env.BASESCAN_API_KEY || "",
       },
     },
