@@ -475,7 +475,26 @@ contract AIAccountabilityBondsV2 is BaseDignityBond {
 
     /**
      * @notice Calculate bond value
-     * @dev Formula: Stake × GlobalFlourishing × Inclusion × Time
+     * @dev Formula: (Stake × GlobalFlourishing × Inclusion × Time) / 100,000,000
+     *
+     * @param bondId ID of bond to calculate value for
+     * @return value Current bond value in wei
+     *
+     * Math:
+     * - flourishing: 0-10000 (globalFlourishingScore across 6 human thriving dimensions)
+     * - inclusion: 50-200 (inclusionMultiplier based on education + purpose)
+     * - time: 100-300 (timeMultiplier)
+     * - Divisor: 50,000,000 ensures reasonable appreciation (1.0x-12.0x range)
+     *
+     * Example calculations:
+     * - Neutral (5000 × 100 × 100): 1.0x stake (breakeven)
+     * - Good (7500 × 150 × 200): 4.5x stake
+     * - Excellent (10000 × 200 × 300): 12.0x stake
+     *
+     * Mission Alignment: AI can only profit when ALL humans thrive.
+     * Works with ZERO employment - measures purpose/education, not jobs.
+     *
+     * @custom:math-fix Changed divisor from 1,000,000 to 50,000,000 (2026-01-07)
      */
     function calculateBondValue(uint256 bondId) public view bondExists(bondId) returns (uint256) {
         Bond storage bond = bonds[bondId];
@@ -484,7 +503,7 @@ contract AIAccountabilityBondsV2 is BaseDignityBond {
         uint256 inclusion = inclusionMultiplier(bondId);
         uint256 time = timeMultiplier(bondId);
 
-        return (bond.stakeAmount * flourishing * inclusion * time) / 1000000;
+        return (bond.stakeAmount * flourishing * inclusion * time) / 50000000;
     }
 
     /**

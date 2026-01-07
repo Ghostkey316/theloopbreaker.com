@@ -399,20 +399,33 @@ contract BuilderBeliefBondsV2 is BaseDignityBond {
 
     /**
      * @notice Calculate current bond value
-     * @dev Formula: Stake × Building × Vesting × Time
+     * @dev Formula: (Stake × Building × Vesting × Time) / 100,000,000
      *
      * @param bondId ID of bond to calculate value for
      * @return value Current bond value in wei
      *
+     * Math:
+     * - building: 0-10000 (buildingVsTransacting score)
+     * - vesting: 50-150 (anti-flipping multiplier)
+     * - time: 100-250 (time multiplier)
+     * - Divisor: 50,000,000 ensures reasonable appreciation (1.0x-7.5x range)
+     *
+     * Example calculations:
+     * - Neutral (5000 × 100 × 100): 1.0x stake (breakeven)
+     * - Good (7500 × 125 × 150): 2.8x stake
+     * - Excellent (10000 × 150 × 200): 6.0x stake
+     *
      * Mission Alignment: Value increases when builders BUILD.
      * Vesting protects against pump-and-dump.
+     *
+     * @custom:math-fix Changed divisor from 1,000,000 to 50,000,000 (2026-01-07)
      */
     function calculateBondValue(uint256 bondId) public view bondExists(bondId) returns (uint256) {
         Bond storage bond = bonds[bondId];
         uint256 building = buildingVsTransacting(bondId);
         uint256 vesting = vestingMultiplier(bondId);
         uint256 time = timeMultiplier(bondId);
-        return (bond.stakeAmount * building * vesting * time) / 1000000;
+        return (bond.stakeAmount * building * vesting * time) / 50000000;
     }
 
     /**

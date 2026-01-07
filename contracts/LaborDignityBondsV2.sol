@@ -623,13 +623,27 @@ contract LaborDignityBondsV2 is BaseDignityBond {
 
     /**
      * @notice Calculate current bond value
-     * @dev Formula: Stake × Flourishing × WorkerVerification × Time
+     * @dev Formula: (Stake × Flourishing × WorkerVerification × Time) / 100,000,000
      *
      * @param bondId ID of bond to calculate value for
-     * @return value Current bond value in wei
+     * @return value Current bond value in wei (with dignity floor applied)
+     *
+     * Math:
+     * - flourishing: 0-10000 (laborFlourishingScore, blended with worker verification)
+     * - verification: 50-150 (workerVerificationMultiplier)
+     * - time: 100-300 (timeMultiplier)
+     * - Divisor: 50,000,000 ensures reasonable appreciation (1.0x-9.0x range)
+     *
+     * Example calculations:
+     * - Neutral (5000 × 100 × 100): 1.0x stake (breakeven)
+     * - Good (7500 × 125 × 200): 3.75x stake
+     * - Excellent (10000 × 150 × 300): 9.0x stake
      *
      * Mission Alignment: Value increases when workers thrive.
      * Economics reward worker flourishing.
+     *
+     * @custom:math-fix Changed divisor from 1,000,000 to 50,000,000 (2026-01-07)
+     * @custom:dignity-floor Applied after calculation - never below 50% of stake
      */
     function calculateBondValue(uint256 bondId) public view bondExists(bondId) returns (uint256) {
         Bond storage bond = bonds[bondId];
@@ -645,7 +659,7 @@ contract LaborDignityBondsV2 is BaseDignityBond {
         }
 
         // Apply dignity floor (never below 50% of stake)
-        uint256 value = (bond.stakeAmount * flourishing * verification * time) / 1000000;
+        uint256 value = (bond.stakeAmount * flourishing * verification * time) / 50000000;
         uint256 floor = (bond.stakeAmount * DIGNITY_FLOOR) / 10000;
 
         return value > floor ? value : floor;
