@@ -74,6 +74,29 @@ contract AIPartnershipBondsV2 is BaseDignityBond {
     modifier onlyParticipants(uint256 bondId) { require(bonds[bondId].human == msg.sender || bonds[bondId].aiAgent == msg.sender, "Only participants"); _; }
     modifier bondExists(uint256 bondId) { require(bonds[bondId].active, "Bond does not exist"); _; }
 
+    /**
+     * @notice Create AI Partnership Bond
+     * @dev Human and AI partner - bond appreciates when human GROWS, not when AI dominates
+     *
+     * @param aiAgent Address of the AI agent partner
+     * @param partnershipType Description of partnership (e.g., "coding assistant", "research partner")
+     * @return bondId The unique identifier for the created bond
+     *
+     * Requirements:
+     * - Must send ETH with transaction (msg.value > 0)
+     * - AI agent address cannot be zero address
+     * - AI agent cannot be same as human
+     * - Partnership type must be 1-200 characters
+     * - Contract must not be paused
+     *
+     * Emits:
+     * - {BondCreated} event
+     *
+     * Mission Alignment: AI grows WITH humans, not ABOVE them.
+     * AI profit capped at 30% - human must thrive for AI to profit.
+     *
+     * @custom:ethics AI domination penalty = AI gets 0%, human gets 100%
+     */
     function createBond(address aiAgent, string memory partnershipType) external payable whenNotPaused returns (uint256) {
         _validateNonZero(msg.value, "Stake amount");
         _validateAddress(aiAgent, "AI agent");
@@ -91,6 +114,32 @@ contract AIPartnershipBondsV2 is BaseDignityBond {
         return bondId;
     }
 
+    /**
+     * @notice Submit partnership quality metrics
+     * @dev Tracks human growth in AI partnership - not AI dominance
+     *
+     * @param bondId ID of bond to submit metrics for
+     * @param humanGrowth Human skill growth score (0-10000)
+     * @param humanAutonomy Human autonomy level (0-10000) - CRITICAL metric
+     * @param humanDignity Human dignity in partnership (0-10000)
+     * @param tasksMastered Number of new tasks human has mastered
+     * @param creativityScore Human creativity score (0-10000)
+     * @param progressNotes Description of partnership progress
+     *
+     * Requirements:
+     * - Caller must be human or AI agent
+     * - Bond must exist
+     * - All scores must be 0-10000
+     * - Contract must not be paused
+     *
+     * Emits:
+     * - {PartnershipMetricsSubmitted} event
+     *
+     * Mission Alignment: Measures human growth, not AI efficiency.
+     * If human autonomy < 30, AI domination penalty activates.
+     *
+     * @custom:security Validates all score inputs
+     */
     function submitPartnershipMetrics(
         uint256 bondId, uint256 humanGrowth, uint256 humanAutonomy, uint256 humanDignity,
         uint256 tasksMastered, uint256 creativityScore, string memory progressNotes
@@ -117,6 +166,30 @@ contract AIPartnershipBondsV2 is BaseDignityBond {
         emit DistributionRequested(bondId, msg.sender, block.timestamp, block.timestamp + DISTRIBUTION_TIMELOCK);
     }
 
+    /**
+     * @notice Distribute bond proceeds after timelock
+     * @dev 60% human, 30% AI, 10% partnership fund (or 100% human if AI dominating)
+     *
+     * @param bondId ID of bond to distribute
+     *
+     * Requirements:
+     * - Caller must be human or AI agent
+     * - Bond must exist
+     * - Distribution must have been requested
+     * - Timelock must have expired
+     * - Must have appreciation to distribute
+     * - Contract must not be paused
+     *
+     * Emits:
+     * - {BondDistributed} event with full distribution details
+     * - {AIDominationPenalty} event if penalty applies
+     *
+     * Mission Alignment: AI profit capped at 30%.
+     * If AI dominating (human autonomy < 30), human gets 100%, AI gets 0%.
+     *
+     * @custom:security ReentrancyGuard, timelock protection
+     * @custom:ethics AI can only profit when human thrives
+     */
     function distributeBond(uint256 bondId) external nonReentrant whenNotPaused onlyParticipants(bondId) bondExists(bondId) {
         Bond storage bond = bonds[bondId];
         require(bond.distributionPending, "Must request distribution first");

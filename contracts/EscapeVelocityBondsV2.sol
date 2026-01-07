@@ -73,6 +73,27 @@ contract EscapeVelocityBondsV2 is BaseDignityBond {
     modifier onlyStaker(uint256 bondId) { require(bonds[bondId].staker == msg.sender, "Only staker"); _; }
     modifier bondExists(uint256 bondId) { require(bonds[bondId].active, "Bond does not exist"); _; }
 
+    /**
+     * @notice Create Escape Velocity Bond for poverty escape
+     * @dev Small stakes ($50-$500) help people escape poverty - too small for suits to exploit
+     *
+     * @param stakerName Name of person escaping poverty
+     * @param initialIncome Initial income level (for tracking gain)
+     * @return bondId The unique identifier for the created bond
+     *
+     * Requirements:
+     * - Stake must be MIN_STAKE to MAX_STAKE (0.00005-0.0005 ETH)
+     * - Initial income must be > 0
+     * - Contract must not be paused
+     *
+     * Emits:
+     * - {BondCreated} event
+     *
+     * Mission Alignment: Small enough suits can't exploit, big enough to change lives.
+     * Poverty escape at $50-$500 stakes. Pay-it-forward pool helps next person.
+     *
+     * @custom:ethics Recapture protection - warns if income falls after escape achieved
+     */
     function createBond(string memory stakerName, uint256 initialIncome) external payable whenNotPaused returns (uint256) {
         require(msg.value >= MIN_STAKE && msg.value <= MAX_STAKE, "Stake must be $50-$500 equivalent");
         _validateNonZero(initialIncome, "Initial income");
@@ -88,6 +109,34 @@ contract EscapeVelocityBondsV2 is BaseDignityBond {
         return bondId;
     }
 
+    /**
+     * @notice Submit progress toward poverty escape
+     * @dev Tracks income gain, autonomy, stability, and pay-it-forward impact
+     *
+     * @param bondId ID of bond to submit progress for
+     * @param currentIncome Current income level
+     * @param autonomyGain Autonomy gain score (0-10000)
+     * @param stabilityScore Financial stability score (0-10000)
+     * @param peopleHelped Number of people helped (pay-it-forward metric)
+     * @param progressNotes Description of progress
+     *
+     * Requirements:
+     * - Caller must be staker
+     * - Bond must exist
+     * - Autonomy gain must be 0-10000
+     * - Stability score must be 0-10000
+     * - Contract must not be paused
+     *
+     * Emits:
+     * - {ProgressSubmitted} event
+     * - {EscapeVelocityAchieved} event if income gain >= 150%
+     * - {RecaptureWarning} event if income falling after escape
+     *
+     * Mission Alignment: Escape velocity = 1.5x initial income.
+     * Recapture protection warns if falling back into poverty.
+     *
+     * @custom:security Validates score inputs
+     */
     function submitProgress(
         uint256 bondId, uint256 currentIncome, uint256 autonomyGain,
         uint256 stabilityScore, uint256 peopleHelped, string memory progressNotes
@@ -122,6 +171,28 @@ contract EscapeVelocityBondsV2 is BaseDignityBond {
         emit DistributionRequested(bondId, msg.sender, block.timestamp, block.timestamp + DISTRIBUTION_TIMELOCK);
     }
 
+    /**
+     * @notice Distribute bond proceeds after timelock
+     * @dev 80% to escaper, 20% to pay-it-forward pool (helps next person)
+     *
+     * @param bondId ID of bond to distribute
+     *
+     * Requirements:
+     * - Caller must be staker
+     * - Bond must exist
+     * - Distribution must have been requested
+     * - Timelock must have expired
+     * - Must have appreciation to distribute
+     * - Contract must not be paused
+     *
+     * Emits:
+     * - {BondDistributed} event with full distribution details
+     *
+     * Mission Alignment: 80% to escaper, 20% pay-it-forward.
+     * Helps next generation escape poverty.
+     *
+     * @custom:security ReentrancyGuard, timelock protection
+     */
     function distributeBond(uint256 bondId) external nonReentrant whenNotPaused onlyStaker(bondId) bondExists(bondId) {
         Bond storage bond = bonds[bondId];
         require(bond.distributionPending, "Must request distribution first");

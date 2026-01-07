@@ -358,10 +358,16 @@ contract HealthCommonsBondsV2 is BaseDignityBond {
         uint256 healthConfirmations = 0;
 
         for (uint256 i = attestations.length; i > 0 && attestations[i-1].timestamp >= cutoff;) {
-            unchecked { --i; }
-            unchecked { ++recentCount; }
-            if (attestations[i].observedPollutionReduction) unchecked { ++pollutionConfirmations; }
-            if (attestations[i].observedHealthImprovement) unchecked { ++healthConfirmations; }
+            unchecked {
+                --i;
+                ++recentCount;
+            }
+            if (attestations[i].observedPollutionReduction) {
+                unchecked { ++pollutionConfirmations; }
+            }
+            if (attestations[i].observedHealthImprovement) {
+                unchecked { ++healthConfirmations; }
+            }
         }
 
         if (recentCount == 0) return 70;

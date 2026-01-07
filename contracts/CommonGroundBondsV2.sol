@@ -72,6 +72,30 @@ contract CommonGroundBondsV2 is BaseDignityBond {
     modifier onlyParticipants(uint256 bondId) { require(bonds[bondId].person1 == msg.sender || bonds[bondId].person2 == msg.sender, "Only participants"); _; }
     modifier bondExists(uint256 bondId) { require(bonds[bondId].active, "Bond does not exist"); _; }
 
+    /**
+     * @notice Create Common Ground Bond for bridge-building across divides
+     * @dev Two people from different sides stake on building genuine bridge
+     *
+     * @param otherPerson Address of the other person in this bridge
+     * @param position1 First person's position/perspective
+     * @param position2 Second person's position/perspective
+     * @return bondId The unique identifier for the created bond
+     *
+     * Requirements:
+     * - Must send ETH with transaction (msg.value > 0)
+     * - Other person address cannot be zero address
+     * - Cannot bridge with yourself
+     * - Both positions must be 1-100 characters
+     * - Contract must not be paused
+     *
+     * Emits:
+     * - {BondCreated} event
+     *
+     * Mission Alignment: Bridge-building > division.
+     * Unity without destroying diversity. Dual-party verification required.
+     *
+     * @custom:ethics Division worsening penalty = bridge-builders get 0%, community gets 100%
+     */
     function createBond(address otherPerson, string memory position1, string memory position2) external payable whenNotPaused returns (uint256) {
         _validateNonZero(msg.value, "Stake amount");
         _validateAddress(otherPerson, "Other person");
@@ -91,6 +115,31 @@ contract CommonGroundBondsV2 is BaseDignityBond {
         return bondId;
     }
 
+    /**
+     * @notice Submit bridge-building progress
+     * @dev Tracks quality of understanding, collaboration, and respect across divide
+     *
+     * @param bondId ID of bond to submit progress for
+     * @param understandingQuality Quality of mutual understanding (0-10000)
+     * @param collaborationScore Collaboration quality score (0-10000)
+     * @param respectLevel Respect level maintained (0-10000) - CRITICAL metric
+     * @param rippleEffect Number of additional connections formed (ripple effect)
+     * @param progressNotes Description of bridge-building progress
+     *
+     * Requirements:
+     * - Caller must be one of the two participants
+     * - Bond must exist
+     * - All scores must be 0-10000
+     * - Contract must not be paused
+     *
+     * Emits:
+     * - {BridgeProgressSubmitted} event
+     *
+     * Mission Alignment: Bridge quality = understanding + collaboration + respect.
+     * If respect < 30, division worsening penalty activates.
+     *
+     * @custom:security Validates all score inputs
+     */
     function submitBridgeProgress(
         uint256 bondId, uint256 understandingQuality, uint256 collaborationScore,
         uint256 respectLevel, uint256 rippleEffect, string memory progressNotes
@@ -127,6 +176,30 @@ contract CommonGroundBondsV2 is BaseDignityBond {
         emit DistributionRequested(bondId, msg.sender, block.timestamp, block.timestamp + DISTRIBUTION_TIMELOCK);
     }
 
+    /**
+     * @notice Distribute bond proceeds after timelock
+     * @dev 80% to bridge-builders, 20% to community healing pool (or 100% community if division worsening)
+     *
+     * @param bondId ID of bond to distribute
+     *
+     * Requirements:
+     * - Caller must be one of the two participants
+     * - Bond must exist
+     * - Distribution must have been requested
+     * - Timelock must have expired
+     * - Must have appreciation to distribute
+     * - Contract must not be paused
+     *
+     * Emits:
+     * - {BondDistributed} event with full distribution details
+     * - {DivisionWorseningPenalty} event if penalty applies
+     *
+     * Mission Alignment: Bridge-builders profit when genuine bridge built.
+     * If division worsening (respect < 30 OR quality < 40), community gets 100%.
+     *
+     * @custom:security ReentrancyGuard, timelock protection
+     * @custom:ethics Superficial bridges don't profit - must be genuine
+     */
     function distributeBond(uint256 bondId) external nonReentrant whenNotPaused onlyParticipants(bondId) bondExists(bondId) {
         Bond storage bond = bonds[bondId];
         require(bond.distributionPending, "Must request distribution first");

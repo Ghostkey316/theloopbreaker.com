@@ -100,6 +100,36 @@ contract BuilderBeliefBondsV2 is BaseDignityBond {
         _;
     }
 
+    /**
+     * @notice Create Builder Belief Bond
+     * @dev Staker backs builder with belief - bond appreciates when builder BUILDS
+     *
+     * @param builder Address of the builder being backed
+     * @param builderName Name of the builder
+     * @param projectDescription Description of the project being built
+     * @return bondId The unique identifier for the created bond
+     *
+     * Requirements:
+     * - Must send ETH with transaction (msg.value > 0)
+     * - Builder address cannot be zero address
+     * - Builder cannot be same as staker
+     * - Builder name must be 1-100 characters
+     * - Project description must be 1-500 characters
+     * - Contract must not be paused
+     *
+     * Emits:
+     * - {BondCreated} event with full bond details
+     * - {TierAchieved} event with belief tier (Supporter/Believer/Champion)
+     *
+     * Mission Alignment: Rewards genuine building over token flipping.
+     * Vesting tiers create long-term alignment:
+     * - Supporter (<0.001 ETH): 90 day vesting
+     * - Believer (0.001-0.01 ETH): 180 day vesting
+     * - Champion (>0.01 ETH): 365 day vesting
+     *
+     * @custom:security Validates all inputs, checks contract not paused
+     * @custom:anti-flip Vesting prevents pump-and-dump behavior
+     */
     function createBond(address builder, string memory builderName, string memory projectDescription)
         external payable whenNotPaused returns (uint256)
     {
@@ -143,6 +173,34 @@ contract BuilderBeliefBondsV2 is BaseDignityBond {
         return bondId;
     }
 
+    /**
+     * @notice Submit building metrics (builder or staker can submit)
+     * @dev Tracks actual building activity vs token flipping
+     *
+     * @param bondId ID of bond to submit metrics for
+     * @param codeCommits Number of code commits
+     * @param deployments Number of contract deployments
+     * @param usersServed Number of users served
+     * @param openSourceScore Open source contribution score (0-10000)
+     * @param innovationScore Innovation/novelty score (0-10000)
+     * @param transactionVolume Transaction volume (penalized if too high)
+     * @param buildingNotes Description of building progress
+     *
+     * Requirements:
+     * - Bond must exist
+     * - Open source score must be 0-10000
+     * - Innovation score must be 0-10000
+     * - Contract must not be paused
+     *
+     * Emits:
+     * - {BuildingMetricsSubmitted} event with calculated building score
+     *
+     * Mission Alignment: Building > Transacting.
+     * High transaction volume triggers penalty - this bond rewards builders, not flippers.
+     *
+     * @custom:security Validates score inputs
+     * @custom:anti-flip High transactionVolume penalizes the bond value
+     */
     function submitBuildingMetrics(
         uint256 bondId, uint256 codeCommits, uint256 deployments, uint256 usersServed,
         uint256 openSourceScore, uint256 innovationScore, uint256 transactionVolume, string memory buildingNotes
@@ -165,6 +223,29 @@ contract BuilderBeliefBondsV2 is BaseDignityBond {
         emit BuildingMetricsSubmitted(bondId, msg.sender, block.timestamp, buildingScore(bondId));
     }
 
+    /**
+     * @notice Add community verification of building activity
+     * @dev Community members verify builder is actually building (not just claiming)
+     *
+     * @param bondId ID of bond to verify
+     * @param confirmsBuilding Does verifier confirm actual building happening?
+     * @param confirmsUsefulProject Does verifier confirm project is useful?
+     * @param confirmsOpenSource Does verifier confirm open source claims?
+     * @param relationship Verifier's relationship to project (e.g. "user", "contributor")
+     * @param notes Additional verification notes
+     *
+     * Requirements:
+     * - Bond must exist
+     * - Contract must not be paused
+     *
+     * Emits:
+     * - {CommunityVerificationAdded} event
+     *
+     * Mission Alignment: Community verification prevents fake building claims.
+     * Anyone can verify - transparency over gatekeeping.
+     *
+     * @custom:privacy Verifier address recorded but can use fresh wallet for anonymity
+     */
     function addCommunityVerification(
         uint256 bondId, bool confirmsBuilding, bool confirmsUsefulProject,
         bool confirmsOpenSource, string memory relationship, string memory notes
@@ -181,6 +262,26 @@ contract BuilderBeliefBondsV2 is BaseDignityBond {
         emit CommunityVerificationAdded(bondId, msg.sender, block.timestamp);
     }
 
+    /**
+     * @notice Request distribution (starts timelock)
+     * @dev Must wait DISTRIBUTION_TIMELOCK before distributing
+     *
+     * @param bondId ID of bond to request distribution for
+     *
+     * Requirements:
+     * - Caller must be staker or builder
+     * - Bond must exist
+     * - No distribution already pending
+     * - Contract must not be paused
+     *
+     * Emits:
+     * - {DistributionRequested} event with timelock expiry
+     *
+     * Mission Alignment: 7-day notice gives community time to verify
+     * if building claims are accurate. Transparency over speed.
+     *
+     * @custom:security Timelock prevents instant rug pull
+     */
     function requestDistribution(uint256 bondId) external onlyParticipants(bondId) bondExists(bondId) whenNotPaused {
         Bond storage bond = bonds[bondId];
         require(!bond.distributionPending, "Distribution already pending");
@@ -189,6 +290,30 @@ contract BuilderBeliefBondsV2 is BaseDignityBond {
         emit DistributionRequested(bondId, msg.sender, block.timestamp, block.timestamp + DISTRIBUTION_TIMELOCK);
     }
 
+    /**
+     * @notice Distribute bond proceeds after timelock
+     * @dev 60% builder, 30% stakers, 10% builder fund (or 100% builder if transacting penalty)
+     *
+     * @param bondId ID of bond to distribute
+     *
+     * Requirements:
+     * - Caller must be staker or builder
+     * - Bond must exist
+     * - Distribution must have been requested
+     * - Timelock must have expired
+     * - Must have appreciation to distribute
+     * - Contract must not be paused
+     *
+     * Emits:
+     * - {BondDistributed} event with full distribution details
+     * - {TransactingPenalty} event if penalty applies
+     *
+     * Mission Alignment: Builders get 60% when building, 100% when transacting (penalty).
+     * 10% to builder fund supports next generation of builders.
+     *
+     * @custom:security ReentrancyGuard, timelock protection, input validation
+     * @custom:anti-flip Transacting penalty = 100% to builder (stakers get nothing)
+     */
     function distributeBond(uint256 bondId) external nonReentrant whenNotPaused onlyParticipants(bondId) bondExists(bondId) {
         Bond storage bond = bonds[bondId];
         require(bond.distributionPending, "Must request distribution first");
@@ -231,6 +356,15 @@ contract BuilderBeliefBondsV2 is BaseDignityBond {
         emit BondDistributed(bondId, builderShare, stakersShare, fundShare, reason, block.timestamp);
     }
 
+    /**
+     * @notice Calculate building score from latest metrics
+     * @dev Weighted average: commits (30%), deployments (30%), users (20%), open source (10%), innovation (10%)
+     *
+     * @param bondId ID of bond to calculate score for
+     * @return score Building score (0-10000)
+     *
+     * Mission Alignment: Measures actual building, not speculation.
+     */
     function buildingScore(uint256 bondId) public view bondExists(bondId) returns (uint256) {
         BuildingMetrics[] storage metrics = bondMetrics[bondId];
         if (metrics.length == 0) return 5000;
@@ -241,6 +375,16 @@ contract BuilderBeliefBondsV2 is BaseDignityBond {
         return (commitScore * 30 + deployScore * 30 + userScore * 20 + latest.openSourceScore * 10 + latest.innovationScore * 10) / 100;
     }
 
+    /**
+     * @notice Calculate building vs transacting score (penalizes high tx volume)
+     * @dev If transactionVolume > 5000, applies penalty to building score
+     *
+     * @param bondId ID of bond to calculate score for
+     * @return score Adjusted building score after transaction penalty (0-10000)
+     *
+     * Mission Alignment: Building > Transacting.
+     * High transaction volume = flipping, not building.
+     */
     function buildingVsTransacting(uint256 bondId) public view bondExists(bondId) returns (uint256) {
         BuildingMetrics[] storage metrics = bondMetrics[bondId];
         if (metrics.length == 0) return 5000;
@@ -253,6 +397,16 @@ contract BuilderBeliefBondsV2 is BaseDignityBond {
         return building;
     }
 
+    /**
+     * @notice Calculate current bond value
+     * @dev Formula: Stake × Building × Vesting × Time
+     *
+     * @param bondId ID of bond to calculate value for
+     * @return value Current bond value in wei
+     *
+     * Mission Alignment: Value increases when builders BUILD.
+     * Vesting protects against pump-and-dump.
+     */
     function calculateBondValue(uint256 bondId) public view bondExists(bondId) returns (uint256) {
         Bond storage bond = bonds[bondId];
         uint256 building = buildingVsTransacting(bondId);
@@ -261,10 +415,24 @@ contract BuilderBeliefBondsV2 is BaseDignityBond {
         return (bond.stakeAmount * building * vesting * time) / 1000000;
     }
 
+    /**
+     * @notice Calculate appreciation/depreciation
+     * @return appreciation Can be negative (depreciation)
+     */
     function calculateAppreciation(uint256 bondId) public view bondExists(bondId) returns (int256) {
         return int256(calculateBondValue(bondId)) - int256(bonds[bondId].stakeAmount);
     }
 
+    /**
+     * @notice Check if transacting penalty should activate
+     * @dev Penalty if: building score < 40 OR transaction volume > 5000
+     *
+     * @return shouldPenalize Whether penalty should activate
+     * @return reason Human-readable reason for penalty
+     *
+     * Mission Alignment: Transacting penalty = stakers get nothing, builder gets 100%.
+     * Punishes token flippers, not builders.
+     */
     function shouldActivateTransactingPenalty(uint256 bondId) public view bondExists(bondId) returns (bool, string memory) {
         uint256 bvt = buildingVsTransacting(bondId);
         if (bvt < BUILDING_THRESHOLD) return (true, "TRANSACTING > BUILDING");
@@ -274,16 +442,29 @@ contract BuilderBeliefBondsV2 is BaseDignityBond {
         return (false, "");
     }
 
+    /**
+     * @notice Calculate vesting multiplier (0.5x to 1.5x based on vesting progress)
+     * @return multiplier Vesting multiplier (50-150)
+     *
+     * Mission Alignment: Anti-flipping mechanism.
+     * Early exit = lower value, full vesting = higher value.
+     */
     function vestingMultiplier(uint256 bondId) public view bondExists(bondId) returns (uint256) {
         Bond storage bond = bonds[bondId];
         uint256 vestedTime = block.timestamp > bond.vestingUntil ? bond.vestingUntil - bond.createdAt : block.timestamp - bond.createdAt;
         return 50 + (vestedTime * 100) / (bond.vestingUntil - bond.createdAt);
     }
 
+    /**
+     * @notice Time multiplier for sustained building
+     * @return multiplier Time multiplier (100-250 over 5 years)
+     *
+     * Mission Alignment: Rewards long-term building.
+     */
     function timeMultiplier(uint256 bondId) public view bondExists(bondId) returns (uint256) {
-        uint256 years = (block.timestamp - bonds[bondId].createdAt) / 31536000;
-        if (years < 1) return 100;
-        if (years < 5) return 100 + (years * 37);
+        uint256 yearsElapsed = (block.timestamp - bonds[bondId].createdAt) / 31536000;
+        if (yearsElapsed < 1) return 100;
+        if (yearsElapsed < 5) return 100 + (yearsElapsed * 37);
         return 250;
     }
 
