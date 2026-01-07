@@ -303,6 +303,12 @@ describe("EscapeVelocityBondsV2 - Poverty Escape ($50-$500)", function () {
             await escapeVelocity.connect(escaper1).submitProgress(
                 1, 5000, 9000, 8500, 5, "Escaped!"
             );
+
+            // Fund the contract by creating additional bonds
+            // This simulates a pool with multiple participants
+            // In production, appreciation would come from yield/fees/external funding
+            await escapeVelocity.connect(escaper2).createBond("Funder1", 2000, { value: MAX_STAKE });
+            await escapeVelocity.connect(escaper3).createBond("Funder2", 2000, { value: MAX_STAKE });
         });
 
         it("Should request distribution (start timelock)", async function () {
@@ -405,29 +411,35 @@ describe("EscapeVelocityBondsV2 - Poverty Escape ($50-$500)", function () {
 
     describe("Pay-It-Forward Pool", function () {
         it("Should accumulate funds from multiple escapers", async function () {
-            // First escaper
+            // Fund the contract by creating additional bonds to simulate a pool
+            // In production, appreciation would come from yield/fees/external funding
+            await escapeVelocity.connect(verifier).createBond("Pool Funder 1", 2000, { value: MAX_STAKE });
+            await escapeVelocity.connect(owner).createBond("Pool Funder 2", 2000, { value: MAX_STAKE });
+            await escapeVelocity.connect(escaper3).createBond("Pool Funder 3", 2000, { value: MAX_STAKE });
+
+            // First escaper (bond ID 4 since 3 funder bonds are IDs 1-3)
             await escapeVelocity.connect(escaper1).createBond("Maria", 2000, { value: MID_STAKE });
-            await escapeVelocity.connect(escaper1).submitProgress(1, 5000, 9000, 8500, 5, "Escaped");
-            await escapeVelocity.connect(escaper1).requestDistribution(1);
+            await escapeVelocity.connect(escaper1).submitProgress(4, 5000, 9000, 8500, 5, "Escaped");
+            await escapeVelocity.connect(escaper1).requestDistribution(4);
             await time.increase(604800);
 
-            const appreciation1 = await escapeVelocity.calculateAppreciation(1);
+            const appreciation1 = await escapeVelocity.calculateAppreciation(4);
             const expectedPool1 = (appreciation1 * BigInt(20)) / BigInt(100);
 
-            await escapeVelocity.connect(escaper1).distributeBond(1);
+            await escapeVelocity.connect(escaper1).distributeBond(4);
             let pool = await escapeVelocity.payItForwardPool();
             expect(pool).to.equal(expectedPool1);
 
-            // Second escaper
+            // Second escaper (bond ID 5)
             await escapeVelocity.connect(escaper2).createBond("John", 1800, { value: MID_STAKE });
-            await escapeVelocity.connect(escaper2).submitProgress(2, 4500, 8500, 8000, 4, "Escaped");
-            await escapeVelocity.connect(escaper2).requestDistribution(2);
+            await escapeVelocity.connect(escaper2).submitProgress(5, 4500, 8500, 8000, 4, "Escaped");
+            await escapeVelocity.connect(escaper2).requestDistribution(5);
             await time.increase(604800);
 
-            const appreciation2 = await escapeVelocity.calculateAppreciation(2);
+            const appreciation2 = await escapeVelocity.calculateAppreciation(5);
             const expectedPool2 = (appreciation2 * BigInt(20)) / BigInt(100);
 
-            await escapeVelocity.connect(escaper2).distributeBond(2);
+            await escapeVelocity.connect(escaper2).distributeBond(5);
             pool = await escapeVelocity.payItForwardPool();
             expect(pool).to.equal(expectedPool1 + expectedPool2);
         });
