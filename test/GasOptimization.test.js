@@ -17,13 +17,13 @@ describe("Gas Optimization Tests", function () {
     beforeEach(async function () {
         [owner, company, worker1, worker2] = await ethers.getSigners();
 
-        const LaborDignity = await ethers.getContractFactory("LaborDignityBonds");
+        const LaborDignity = await ethers.getContractFactory("LaborDignityBondsV2");
         laborDignity = await LaborDignity.deploy();
 
-        const PurchasingPower = await ethers.getContractFactory("PurchasingPowerBonds");
+        const PurchasingPower = await ethers.getContractFactory("PurchasingPowerBondsV2");
         purchasingPower = await PurchasingPower.deploy();
 
-        const AIAccountability = await ethers.getContractFactory("AIAccountabilityBonds");
+        const AIAccountability = await ethers.getContractFactory("AIAccountabilityBondsV2");
         aiAccountability = await AIAccountability.deploy();
     });
 

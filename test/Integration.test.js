@@ -8,14 +8,14 @@ describe("Integration Tests - Cross-Bond Interactions", function () {
     beforeEach(async function () {
         [owner, company, worker1, worker2, worker3] = await ethers.getSigners();
 
-        // Deploy all contracts
-        const LaborDignity = await ethers.getContractFactory("LaborDignityBonds");
+        // Deploy all V2 contracts (Production Ready)
+        const LaborDignity = await ethers.getContractFactory("LaborDignityBondsV2");
         laborDignity = await LaborDignity.deploy();
 
-        const PurchasingPower = await ethers.getContractFactory("PurchasingPowerBonds");
+        const PurchasingPower = await ethers.getContractFactory("PurchasingPowerBondsV2");
         purchasingPower = await PurchasingPower.deploy();
 
-        const AIAccountability = await ethers.getContractFactory("AIAccountabilityBonds");
+        const AIAccountability = await ethers.getContractFactory("AIAccountabilityBondsV2");
         aiAccountability = await AIAccountability.deploy();
     });
 
