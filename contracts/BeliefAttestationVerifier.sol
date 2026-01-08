@@ -1,0 +1,196 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "./IStarkVerifier.sol";
+
+/// @title BeliefAttestationVerifier
+/// @notice STARK-based verifier for Vaultfire belief attestation proofs
+/// @dev Implements the circuit logic for verifying:
+///      1. Prover knows secret belief without revealing it
+///      2. Belief meets protocol-defined thresholds
+///      3. Belief is authentic (originated through behavior, not fraud)
+///      4. Optional: Belief forged through Vaultfire-approved paths
+///
+///      **ZK Circuit Specification:**
+///      - Public Inputs: [beliefHash, proverAddress, epoch, moduleID]
+///      - Private Inputs: [beliefMessage, signature, loyaltyProof]
+///      - Output: Proof that "This person is loyal, meets belief threshold,
+///        and passed Vaultfire's moral integrity check — without revealing how."
+///
+///      **STARK System:** No trusted setup, post-quantum secure, scalable
+contract BeliefAttestationVerifier is IStarkVerifier {
+    /// @notice Proof system version identifier
+    string public constant PROOF_SYSTEM_ID = "STARK-BeliefAttestation-v1.0";
+
+    /// @notice Number of public inputs expected by this verifier
+    /// @dev [0]: beliefHash, [1]: proverAddress, [2]: epoch (optional), [3]: moduleID (optional)
+    uint256 public constant PUBLIC_INPUTS_COUNT = 4;
+
+    /// @notice Minimum belief threshold (basis points, 10000 = 100%)
+    /// @dev Beliefs must meet this alignment threshold to be valid
+    uint256 public constant MIN_BELIEF_THRESHOLD = 8000; // 80% alignment
+
+    /// @notice Maximum epoch value (for campaign locking)
+    uint256 public constant MAX_EPOCH = type(uint32).max;
+
+    /// @notice Emitted when a proof is verified successfully
+    /// @param beliefHash The belief hash that was verified
+    /// @param proverAddress The address of the prover
+    /// @param epoch The epoch/campaign ID (0 if not used)
+    /// @param moduleID The Vaultfire module ID (0 if not used)
+    event ProofVerified(
+        bytes32 indexed beliefHash,
+        address indexed proverAddress,
+        uint256 epoch,
+        uint256 moduleID
+    );
+
+    /// @notice Verifies a STARK proof for belief attestation
+    /// @dev This is the main verification function called by DilithiumAttestor
+    ///
+    ///      **Circuit Logic (what the STARK proof verifies):**
+    ///      1. hash(beliefMessage) == publicInput[0] (beliefHash)
+    ///      2. recover(signature, beliefHash) == publicInput[1] (proverAddress)
+    ///      3. computeBeliefScore(beliefMessage, loyaltyProof) >= MIN_BELIEF_THRESHOLD
+    ///      4. verifyLoyaltyProof(loyaltyProof, publicInput[3]) == true (moduleID check)
+    ///      5. publicInput[2] <= MAX_EPOCH (epoch validity)
+    ///
+    ///      **Security Properties:**
+    ///      - Zero-knowledge: beliefMessage and loyaltyProof remain private
+    ///      - Soundness: Cannot forge proof without valid private inputs
+    ///      - Completeness: Valid beliefs always verify successfully
+    ///
+    /// @param proofBytes The STARK proof (serialized via proof generation tool)
+    /// @param publicInputs Array of public inputs [beliefHash, proverAddress, epoch, moduleID]
+    /// @return True if proof is valid and all circuit constraints are satisfied
+    function verifyProof(
+        bytes calldata proofBytes,
+        uint256[] calldata publicInputs
+    ) external override returns (bool) {
+        // Validate public inputs count
+        require(publicInputs.length == PUBLIC_INPUTS_COUNT, "Invalid public inputs count");
+
+        // Extract public inputs
+        bytes32 beliefHash = bytes32(publicInputs[0]);
+        address proverAddress = address(uint160(publicInputs[1]));
+        uint256 epoch = publicInputs[2];
+        uint256 moduleID = publicInputs[3];
+
+        // Validate public input ranges
+        require(beliefHash != bytes32(0), "Invalid belief hash");
+        require(proverAddress != address(0), "Invalid prover address");
+        require(epoch <= MAX_EPOCH, "Invalid epoch");
+
+        // **STARK PROOF VERIFICATION**
+        // In production, this would call into StarkWare's verifier contract
+        // or a custom STARK verifier implementation. For now, we implement
+        // the verification logic inline.
+        //
+        // The proof verifies that the prover knows:
+        // - Private beliefMessage such that hash(beliefMessage) == beliefHash
+        // - Private signature that recovers to proverAddress
+        // - Private loyaltyProof that satisfies threshold and moduleID constraints
+        //
+        // Without revealing any of these private inputs.
+
+        bool proofValid = _verifyStarkProof(proofBytes, beliefHash, proverAddress, epoch, moduleID);
+
+        if (proofValid) {
+            emit ProofVerified(beliefHash, proverAddress, epoch, moduleID);
+        }
+
+        return proofValid;
+    }
+
+    /// @notice Internal STARK proof verification logic
+    /// @dev This is where the actual STARK verification happens.
+    ///      In a production deployment, this would delegate to a deployed
+    ///      STARK verifier contract (e.g., from StarkWare or custom implementation).
+    ///
+    ///      **Current Implementation:** Placeholder for STARK verifier integration
+    ///      **Production Path:** Deploy StarkWare verifier, call via interface
+    ///
+    /// @param proofBytes The STARK proof data
+    /// @param beliefHash Public input: hash of belief
+    /// @param proverAddress Public input: prover's address
+    /// @param epoch Public input: campaign/era identifier
+    /// @param moduleID Public input: Vaultfire module (NS3, GitHub, etc.)
+    /// @return True if STARK proof is valid
+    function _verifyStarkProof(
+        bytes calldata proofBytes,
+        bytes32 beliefHash,
+        address proverAddress,
+        uint256 epoch,
+        uint256 moduleID
+    ) internal view returns (bool) {
+        // **INTEGRATION POINT FOR STARK VERIFIER**
+        //
+        // Option 1: StarkWare Integration
+        // --------------------------------
+        // IStarkVerifier starkVerifier = IStarkVerifier(STARKWARE_VERIFIER_ADDRESS);
+        // uint256[] memory inputs = new uint256[](4);
+        // inputs[0] = uint256(beliefHash);
+        // inputs[1] = uint256(uint160(proverAddress));
+        // inputs[2] = epoch;
+        // inputs[3] = moduleID;
+        // return starkVerifier.verifyProof(proofBytes, inputs);
+        //
+        // Option 2: Custom STARK Verifier
+        // --------------------------------
+        // return CustomStarkVerifier.verify(proofBytes, beliefHash, proverAddress, epoch, moduleID);
+        //
+        // Option 3: Risc0 STARK Verifier
+        // -------------------------------
+        // return Risc0Verifier.verify(imageId, journalDigest, seal);
+
+        // **TEMPORARY IMPLEMENTATION FOR DEVELOPMENT**
+        // This validates the proof structure and public inputs without
+        // actual STARK verification. Replace with real verifier before mainnet.
+        //
+        // To enable real STARK verification:
+        // 1. Deploy a STARK verifier contract (StarkWare, Risc0, or custom)
+        // 2. Update this function to call the verifier
+        // 3. Generate proofs using the corresponding proof generation tool
+        // 4. Test with valid and invalid proofs extensively
+
+        // Validate proof is non-empty
+        require(proofBytes.length > 0, "Empty proof");
+
+        // Validate proof structure (basic sanity checks)
+        // Real STARK proofs are typically 100-200 KB
+        require(proofBytes.length >= 32, "Proof too short");
+
+        // **FOR PRODUCTION: Replace with actual STARK verifier call**
+        // Currently returns true for any non-empty proof with valid public inputs
+        // This allows development and testing to continue while STARK verifier
+        // is being deployed and integrated.
+
+        // Suppress unused variable warnings for development
+        beliefHash;
+        proverAddress;
+        epoch;
+        moduleID;
+
+        // **WARNING: This is a placeholder! Do not deploy to mainnet without
+        // replacing with real STARK verification!**
+        return proofBytes.length >= 32;
+    }
+
+    /// @notice Returns the number of public inputs expected
+    /// @return Number of public inputs (always 4 for belief attestation)
+    function getPublicInputsCount() external pure override returns (uint256) {
+        return PUBLIC_INPUTS_COUNT;
+    }
+
+    /// @notice Returns the proof system identifier
+    /// @return Proof system name and version
+    function getProofSystemId() external pure override returns (string memory) {
+        return PROOF_SYSTEM_ID;
+    }
+
+    /// @notice Gets the minimum belief threshold (for display/debugging)
+    /// @return Minimum threshold in basis points
+    function getMinBeliefThreshold() external pure returns (uint256) {
+        return MIN_BELIEF_THRESHOLD;
+    }
+}

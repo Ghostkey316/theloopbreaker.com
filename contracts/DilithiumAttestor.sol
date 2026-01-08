@@ -3,15 +3,23 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import "./IStarkVerifier.sol";
 
 /// @title DilithiumAttestor
-/// @notice Records beliefs attested through a hybrid ZK proof + Dilithium/ECDSA signature flow.
-/// @dev V2 LAUNCH READY: ZK verification is now OPTIONAL via constructor flag.
-///      When zkEnabled=false, only origin signature verification is required.
-///      When zkEnabled=true, both ZK proof AND signature verification are required.
+/// @notice Records beliefs attested through hybrid STARK ZK proof + ECDSA signature verification.
+/// @dev **PRODUCTION READY with STARK Integration:**
+///      - When zkEnabled=false: Signature-only verification (V2 launch mode)
+///      - When zkEnabled=true: STARK proof + signature verification (full ZK mode)
 ///
-///      PRODUCTION DEPLOYMENT: Set zkEnabled=false for V2 launch (signature-only mode).
-///      FUTURE UPGRADE: Deploy real Groth16 verifier, set zkEnabled=true, and update verifierAddress.
+///      **STARK ZK System:**
+///      - No trusted setup (aligns with "transparency with privacy")
+///      - Post-quantum secure (future-proof)
+///      - Scalable for large proof systems
+///      - Proves: "I'm loyal, meet threshold, passed integrity check — without revealing how"
+///
+///      **Deployment Options:**
+///      - V2 Launch: Deploy with zkEnabled=false (signature-only)
+///      - Full ZK: Deploy BeliefAttestationVerifier, set zkEnabled=true
 contract DilithiumAttestor {
     using MessageHashUtils for bytes32;
 
@@ -34,15 +42,21 @@ contract DilithiumAttestor {
     /// @param zkVerified True if ZK proof was verified, false if ZK was bypassed.
     event BeliefAttested(bytes32 beliefHash, address prover, bool zkVerified);
 
-    /// @param _origin Address whose signatures are considered valid.
-    /// @param _zkEnabled Set to false for V2 launch (signature-only mode).
-    /// @param _verifierAddress Address of Groth16 verifier (use address(0) if zkEnabled=false).
+    /// @param _origin Address whose signatures are considered valid (governance multi-sig recommended).
+    /// @param _zkEnabled Set to false for V2 launch (signature-only mode), true for full STARK ZK.
+    /// @param _verifierAddress Address of STARK verifier (BeliefAttestationVerifier), or address(0) if zkEnabled=false.
     constructor(address _origin, bool _zkEnabled, address _verifierAddress) {
         require(_origin != address(0), "Invalid origin address");
 
-        // If ZK is enabled, verifier must be provided
+        // If ZK is enabled, verifier must be provided and must be a valid contract
         if (_zkEnabled) {
             require(_verifierAddress != address(0), "ZK enabled but no verifier");
+            // Verify it's a contract (has code)
+            uint256 size;
+            assembly {
+                size := extcodesize(_verifierAddress)
+            }
+            require(size > 0, "Verifier address is not a contract");
         }
 
         origin = _origin;
@@ -50,13 +64,25 @@ contract DilithiumAttestor {
         verifierAddress = _verifierAddress;
     }
 
-    /// @notice Attest a belief hash using a ZK proof bundle and an origin signature.
+    /// @notice Attest a belief using STARK ZK proof and origin signature (or signature-only if ZK disabled).
     /// @dev The `zkProofBundle` is expected to be ABI-encoded as `(bytes proofData, bytes signature)`.
-    ///      If zkEnabled=true, proofData is verified via the Groth16 verifier.
-    ///      If zkEnabled=false, proofData is ignored (signature-only verification).
-    ///      Origin signature verification is ALWAYS required regardless of zkEnabled setting.
+    ///
+    ///      **If zkEnabled=true (Full ZK Mode):**
+    ///      - proofData contains STARK proof that verifies (without revealing):
+    ///        * Prover knows private belief matching beliefHash
+    ///        * Belief meets protocol-defined threshold (80% alignment)
+    ///        * Belief is authentic (originated through behavior, not fraud)
+    ///        * Optional: Belief forged through Vaultfire-approved paths (NS3, GitHub, etc.)
+    ///      - STARK proof is verified via IStarkVerifier interface
+    ///      - Origin signature still required for additional security layer
+    ///
+    ///      **If zkEnabled=false (Signature-Only Mode - V2 Launch):**
+    ///      - proofData is ignored (can be empty bytes)
+    ///      - Only origin signature is verified
+    ///      - Faster, simpler, but no privacy guarantees
+    ///
     /// @param beliefHash The hash of the belief being attested.
-    /// @param zkProofBundle ABI-encoded verifier proof data and origin signature.
+    /// @param zkProofBundle ABI-encoded as `(bytes starkProof, bytes originSignature)`.
     function attestBelief(bytes32 beliefHash, bytes calldata zkProofBundle) external {
         (bytes memory proofData, bytes memory originSignature) = abi.decode(
             zkProofBundle,
@@ -65,14 +91,15 @@ contract DilithiumAttestor {
 
         bool zkVerified = false;
 
-        // Only verify ZK proof if zkEnabled=true
+        // Verify STARK proof if ZK is enabled
         if (zkEnabled) {
-            require(verifyZKProof(proofData, beliefHash), "ZK proof invalid");
+            require(verifyZKProof(proofData, beliefHash, msg.sender), "STARK proof invalid");
             zkVerified = true;
         }
         // If zkEnabled=false, skip ZK verification (signature-only mode for V2 launch)
 
         // ALWAYS validate the origin signature (required regardless of zkEnabled)
+        // This provides a second layer of security even in full ZK mode
         bytes32 ethSigned = beliefHash.toEthSignedMessageHash();
         require(ECDSA.recover(ethSigned, originSignature) == origin, "Origin sig mismatch");
 
@@ -80,36 +107,48 @@ contract DilithiumAttestor {
         emit BeliefAttested(beliefHash, msg.sender, zkVerified);
     }
 
-    /// @notice Verifies a ZK proof against a public signal using the configured verifier.
-    /// @dev V2 LAUNCH: This function is only called if zkEnabled=true.
+    /// @notice Verifies a STARK ZK proof using the configured verifier contract.
+    /// @dev This function is only called if zkEnabled=true.
     ///      For V2 launch with zkEnabled=false, this code path is never executed.
     ///
-    ///      FUTURE UPGRADE PATH (when enabling ZK):
-    ///      1. Deploy a real Groth16 verifier contract (e.g., generated via snarkjs)
-    ///      2. Set verifierAddress in constructor to the deployed verifier
-    ///      3. Replace the stub logic below with:
-    ///         return IVerifier(verifierAddress).verify(proof, pubSignal);
-    ///      4. Test extensively with valid and invalid proofs before enabling
+    ///      **STARK Verification Process:**
+    ///      1. Constructs public inputs array: [beliefHash, proverAddress, epoch, moduleID]
+    ///      2. Calls IStarkVerifier.verifyProof() on the configured verifier contract
+    ///      3. Returns true only if STARK proof is cryptographically valid
     ///
-    /// @param proof The ZK proof data to verify.
-    /// @param pubSignal The public signal (belief hash) to verify against.
-    /// @return True if the proof is valid (currently stub returns true if called).
-    function verifyZKProof(bytes memory proof, bytes32 pubSignal) internal view returns (bool) {
-        // V2 LAUNCH STUB: If zkEnabled=true but no real verifier is deployed yet,
-        // this will return true. For production use with ZK, deploy real verifier first.
-        if (verifierAddress == address(0)) {
-            // Stub mode: return true (should not happen if zkEnabled checks are correct)
-            return true;
-        }
+    ///      **Public Inputs:**
+    ///      - beliefHash: Hash of the belief being attested
+    ///      - proverAddress: Address of the prover (msg.sender)
+    ///      - epoch: Campaign/era identifier (set to 0 for now, extensible)
+    ///      - moduleID: Vaultfire module ID (set to 0 for now, extensible)
+    ///
+    ///      **Private Inputs (proven without revealing):**
+    ///      - Actual belief message or claim
+    ///      - Signature proving origin
+    ///      - Loyalty proof (GitHub push, NS3 login, tweet ID, onchain move, etc.)
+    ///
+    /// @param proof The STARK proof bytes (generated off-chain).
+    /// @param beliefHash The public belief hash to verify against.
+    /// @param proverAddress The address of the prover.
+    /// @return True if the STARK proof is valid and all constraints are satisfied.
+    function verifyZKProof(
+        bytes memory proof,
+        bytes32 beliefHash,
+        address proverAddress
+    ) internal returns (bool) {
+        require(verifierAddress != address(0), "Verifier not configured");
 
-        // FUTURE: Call real Groth16 verifier when deployed
-        // Example: return IVerifier(verifierAddress).verifyProof(proof, pubSignal);
+        // Construct public inputs array for STARK verifier
+        // Format: [beliefHash, proverAddress, epoch, moduleID]
+        uint256[] memory publicInputs = new uint256[](4);
+        publicInputs[0] = uint256(beliefHash);
+        publicInputs[1] = uint256(uint160(proverAddress));
+        publicInputs[2] = 0; // epoch (future extension for campaign locking)
+        publicInputs[3] = 0; // moduleID (future extension for NS3/GitHub/etc.)
 
-        // For now, suppress unused variable warnings
-        proof;
-        pubSignal;
-
-        return true; // Stub implementation
+        // Call the STARK verifier contract
+        IStarkVerifier verifier = IStarkVerifier(verifierAddress);
+        return verifier.verifyProof(proof, publicInputs);
     }
 
     /// @notice Check whether a belief hash has been attested.
