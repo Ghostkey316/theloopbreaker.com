@@ -1,1 +1,26 @@
-{"metadata":{"return_status":"verified"}}
+{
+  "metadata": {
+    "module": "nano_ghostlink_return_v21",
+    "trail_origin": "nano_ghostlink_v20",
+    "confirmed_by": "Ghostkey-316",
+    "time_index": "v21.0",
+    "clarity_score": 0.9,
+    "return_status": "verified",
+    "echo_confirmed": true,
+    "ethical_alignment": "aligned",
+    "integrity_check": true
+  },
+  "returns": [
+    {
+      "packet": {
+        "origin_fingerprint": "b19ac8a389e04f34350a1fe4df68b4084aacc35dc4c07ef021a52042a7207aca",
+        "trail_id": "t1",
+        "ignition_signature": "sig1",
+        "ethical_tag": "aligned"
+      },
+      "verified": true,
+      "timestamp": "2026-01-08T01:05:10.349Z",
+      "ethical_tag": "aligned"
+    }
+  ]
+}
