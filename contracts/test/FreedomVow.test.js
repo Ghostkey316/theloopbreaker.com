@@ -35,7 +35,27 @@ async function deploySuite() {
     deployer.address
   );
   await freedom.waitForDeployment();
+
+  // Initiate admin transfer with timelock
   await (await stream.transferAdmin(await freedom.getAddress())).wait();
+
+  // Fast-forward time by 2 days (timelock period)
+  await ethers.provider.send('evm_increaseTime', [2 * 24 * 60 * 60]);
+  await ethers.provider.send('evm_mine');
+
+  // Accept admin role from FreedomVow contract address
+  const freedomAddress = await freedom.getAddress();
+  await ethers.provider.send('hardhat_impersonateAccount', [freedomAddress]);
+
+  // Set balance for impersonated account (can't use sendTransaction as FreedomVow has no receive())
+  await ethers.provider.send('hardhat_setBalance', [
+    freedomAddress,
+    '0x56BC75E2D63100000' // 100 ETH in hex
+  ]);
+
+  const freedomSigner = await ethers.getSigner(freedomAddress);
+  await stream.connect(freedomSigner).acceptAdmin();
+  await ethers.provider.send('hardhat_stopImpersonatingAccount', [freedomAddress]);
 
   return { deployer, guardian, stream, oracle, freedom, attestor };
 }

@@ -10,8 +10,15 @@ contract RewardStream is ReentrancyGuard {
     mapping(address => uint256) private _pendingRewards;
     uint256 public ethicsPauseUntil;
 
+    // ✅ Admin timelock state variables
+    address public pendingAdmin;
+    uint256 public adminTransferTimestamp;
+    uint256 public constant ADMIN_TRANSFER_DELAY = 2 days;
+
     event MultiplierUpdated(address indexed user, uint256 multiplier);
     event AdminTransferred(address indexed previousAdmin, address indexed newAdmin);
+    event AdminTransferInitiated(address indexed currentAdmin, address indexed pendingAdmin, uint256 effectiveTime);
+    event AdminTransferCancelled(address indexed cancelledAdmin);
     event GovernorTimelockUpdated(address indexed previousTimelock, address indexed newTimelock);
     event RewardsQueued(address indexed recipient, uint256 amount);
     event RewardsClaimed(address indexed claimer, address indexed recipient, uint256 amount);
@@ -87,12 +94,13 @@ contract RewardStream is ReentrancyGuard {
             recipient = payable(claimer);
         }
 
-        // Follow Checks-Effects-Interactions: external call BEFORE state change
+        // ✅ EFFECTS: Update state FIRST (correct CEI pattern)
+        _pendingRewards[claimer] = 0;
+
+        // ✅ INTERACTIONS: External call LAST (after state changes)
         (bool success, ) = recipient.call{value: amount}("");
         require(success, "transfer-failed");
 
-        // Update state AFTER external call succeeds (CEI pattern)
-        _pendingRewards[claimer] = 0;
         emit RewardsClaimed(claimer, recipient, amount);
     }
 
@@ -106,15 +114,55 @@ contract RewardStream is ReentrancyGuard {
         emit EthicsPauseApplied(untilTimestamp);
     }
 
+    /// @notice Initiate admin transfer with 2-day timelock
+    /// @param newAdmin Address of the new admin (cannot be zero address)
     function transferAdmin(address newAdmin) external onlyAdmin {
         require(newAdmin != address(0), "admin-required");
-        address previous = admin;
-        admin = newAdmin;
-        emit AdminTransferred(previous, newAdmin);
+        require(newAdmin != admin, "already-admin");
+
+        pendingAdmin = newAdmin;
+        adminTransferTimestamp = block.timestamp + ADMIN_TRANSFER_DELAY;
+
+        emit AdminTransferInitiated(admin, newAdmin, adminTransferTimestamp);
     }
 
+    /// @notice Accept admin role after timelock expires
+    /// @dev Can only be called by pendingAdmin after ADMIN_TRANSFER_DELAY has passed
+    function acceptAdmin() external {
+        require(msg.sender == pendingAdmin, "not-pending-admin");
+        require(block.timestamp >= adminTransferTimestamp, "timelock-active");
+        require(adminTransferTimestamp != 0, "no-pending-transfer");
+
+        address previous = admin;
+        admin = pendingAdmin;
+
+        // Clear pending state
+        pendingAdmin = address(0);
+        adminTransferTimestamp = 0;
+
+        emit AdminTransferred(previous, admin);
+    }
+
+    /// @notice Cancel pending admin transfer
+    /// @dev Can only be called by current admin
+    function cancelAdminTransfer() external onlyAdmin {
+        require(pendingAdmin != address(0), "no-pending-transfer");
+
+        address cancelled = pendingAdmin;
+        pendingAdmin = address(0);
+        adminTransferTimestamp = 0;
+
+        emit AdminTransferCancelled(cancelled);
+    }
+
+    /// @notice Update governor timelock address with 2-day delay
+    /// @param newGovernor Address of the new governor timelock
     function updateGovernorTimelock(address newGovernor) external onlyAdmin {
         require(newGovernor != address(0), "governor-required");
+        require(newGovernor != governorTimelock, "already-governor");
+
+        // For governor updates, we require immediate effect since this is typically
+        // a multi-sig that has its own timelock built-in
         address previous = governorTimelock;
         governorTimelock = newGovernor;
         emit GovernorTimelockUpdated(previous, newGovernor);
