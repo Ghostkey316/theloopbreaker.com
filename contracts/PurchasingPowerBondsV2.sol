@@ -606,8 +606,27 @@ contract PurchasingPowerBondsV2 is BaseDignityBond {
 
     /**
      * @notice Calculate current bond value
-     * @dev Formula: Stake × PurchasingPower × WorkerVerification × Time
+     * @dev Formula: (Stake × PurchasingPower × WorkerVerification × Time) / 2,000,000
+     *
+     * @param bondId ID of bond to calculate value for
      * @return value Current bond value in wei
+     *
+     * Math:
+     * - purchasingPower: 50-200 (overallPurchasingPowerScore based on 1990s affordability)
+     * - workerVerification: 50-150 (workerVerificationMultiplier)
+     * - time: 100-300 (timeMultiplier)
+     * - Divisor: 1,000,000 ensures reasonable appreciation (0.25x-9.0x range)
+     *
+     * Example calculations:
+     * - Poor metrics (50 × 50 × 100): 0.25x stake (penalty for declining affordability)
+     * - Neutral (100 × 100 × 100): 1.0x stake (breakeven at 1990s baseline)
+     * - Good (150 × 125 × 200): 3.75x stake
+     * - Excellent (200 × 150 × 300): 9.0x stake
+     *
+     * Mission Alignment: Value increases when workers can afford MORE (1990s baseline).
+     * Penalty when purchasing power declines.
+     *
+     * @custom:math-fix Kept original divisor of 1,000,000 (neutral = 1.0x breakeven) (2026-01-07)
      */
     function calculateBondValue(uint256 bondId) public view bondExists(bondId) returns (uint256) {
         Bond storage bond = bonds[bondId];

@@ -389,6 +389,31 @@ contract HealthCommonsBondsV2 is BaseDignityBond {
         return 200 + ((yearsElapsed - 3) * 50);
     }
 
+    /**
+     * @notice Calculate current bond value
+     * @dev Formula: (Stake × Pollution × Health × Community × Time) / 200,000,000
+     *
+     * @param bondId ID of bond to calculate value for
+     * @return value Current bond value in wei
+     *
+     * Math:
+     * - pollution: 0-200+ (pollutionReductionScore based on air/water/food quality)
+     * - health: 0-200+ (healthImprovementScore based on community health outcomes)
+     * - community: 50-150 (communityVerificationMultiplier)
+     * - time: 100-250 (timeMultiplier)
+     * - Divisor: 100,000,000 ensures reasonable appreciation (1.0x-15.0x range)
+     *
+     * Example calculations:
+     * - Neutral (100 × 100 × 100 × 100): 1.0x stake (breakeven)
+     * - Good (150 × 150 × 125 × 150): 4.2x stake
+     * - Excellent (200 × 200 × 150 × 250): 15.0x stake
+     *
+     * Mission Alignment: Value increases when pollution DECREASES and health IMPROVES.
+     * Community verification prevents greenwashing.
+     *
+     * @custom:math-fix Changed divisor from 100,000,000 (original) to 100,000,000 (kept same - neutral = 1.0x) (2026-01-07)
+     * @custom:anti-greenwashing Poisoning penalty = company gets 0%, community gets 100%
+     */
     function calculateBondValue(uint256 bondId) public view bondExists(bondId) returns (uint256) {
         Bond storage bond = bonds[bondId];
 
