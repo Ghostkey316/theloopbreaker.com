@@ -48,6 +48,22 @@
       "pairHash": "c2401a08722e50cfc787b4174e185a81873388f1f76ac946c04b425134fe13b1",
       "ens": "user1.eth",
       "decoy": "decoy.gl13.sig"
+    },
+    {
+      "action": "confirm_belief",
+      "actorSig": "finger1",
+      "moduleId": "Nano_EchoPulse_v17.0",
+      "pairHash": "0c21e97215e12cc7bde96be131ff58a351c3689172d5bf85e36988eb81881097",
+      "ens": "finger1.eth",
+      "decoy": "decoy.gl13.sig"
+    },
+    {
+      "action": "confirm_belief",
+      "actorSig": "finger1",
+      "moduleId": "Nano_PathAtlas_v16.0",
+      "pairHash": "bbdcb397f4e2aa34adf2132619a975443e149bf70e67ab6b5c2bea3a756bdf51",
+      "ens": "finger1.eth",
+      "decoy": "decoy.gl13.sig"
     }
   ],
   "agents": {
@@ -55,6 +71,9 @@
       "lastModule": "mod13"
     },
     "user1": {
+      "lastModule": "Nano_PathAtlas_v16.0"
+    },
+    "finger1": {
       "lastModule": "Nano_PathAtlas_v16.0"
     }
   }

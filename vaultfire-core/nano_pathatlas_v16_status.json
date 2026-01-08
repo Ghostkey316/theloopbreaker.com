@@ -8,7 +8,7 @@
         "type": "click"
       },
       "weight": 0,
-      "uuid": "58877663-57c6-40a8-a7ec-f477ac9a2d44"
+      "uuid": "d82e9e95-5540-4755-9095-f83e94bb3546"
     }
   ],
   "trails": [
@@ -18,7 +18,15 @@
       "beliefSig": "beliefX",
       "outcome": "success",
       "weight": 0,
-      "uuid": "0e1fd467-9d2f-46d4-8a43-ce85ad28b8f7"
+      "uuid": "bff45e1d-d596-4728-a931-7b672c41dbe0"
+    },
+    {
+      "action": "trail",
+      "user": "finger1",
+      "beliefSig": "finger1",
+      "outcome": "trailA",
+      "weight": 0,
+      "uuid": "31b22683-b05c-406d-8092-421cd1d7eb5c"
     }
   ],
   "predictions": [
@@ -26,10 +34,11 @@
       "action": "predict",
       "belief": "beliefX",
       "probability": 0,
-      "uuid": "b2f82cdd-ce33-43cb-95cd-7e62de5cd5e2"
+      "uuid": "5b0a671a-ddbe-45b6-bdae-addc929ffc6c"
     }
   ],
   "vectors": {
-    "beliefX": 0
+    "beliefX": 0,
+    "finger1": 0
   }
 }

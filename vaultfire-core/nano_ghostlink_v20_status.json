@@ -1,8 +1,8 @@
 {
   "ghostlinks": [
     {
-      "outbound_fingerprint": "aa2770d35479a35c650a46289cb1ecb7da034201e276f8792994d2065ac1ae55",
-      "timestamp": "2026-01-01T15:18:09.356Z",
+      "outbound_fingerprint": "637829497991a7ef01415472df61f5f00ccda57244a60d2f61914bddf8620872",
+      "timestamp": "2026-01-08T01:05:11.869Z",
       "ethics_tag": true,
       "loyalty_verification": "Legacy",
       "recipient_node": "node1",

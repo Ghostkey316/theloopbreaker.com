@@ -87,9 +87,12 @@ contract RewardStream is ReentrancyGuard {
             recipient = payable(claimer);
         }
 
-        _pendingRewards[claimer] = 0;
+        // Follow Checks-Effects-Interactions: external call BEFORE state change
         (bool success, ) = recipient.call{value: amount}("");
         require(success, "transfer-failed");
+
+        // Update state AFTER external call succeeds (CEI pattern)
+        _pendingRewards[claimer] = 0;
         emit RewardsClaimed(claimer, recipient, amount);
     }
 

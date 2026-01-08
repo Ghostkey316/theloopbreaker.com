@@ -224,8 +224,15 @@ contract AIPartnershipBondsV2 is BaseDignityBond {
             humanShare: humanShare, aiShare: aiShare, partnershipFundShare: fundShare, reason: reason
         }));
 
-        if (humanShare > 0) payable(bond.human).transfer(humanShare);
-        if (aiShare > 0) payable(bond.aiAgent).transfer(aiShare);
+        // Safe ETH transfers using .call{} instead of deprecated .transfer()
+        if (humanShare > 0) {
+            (bool successHuman, ) = payable(bond.human).call{value: humanShare}("");
+            require(successHuman, "Human transfer failed");
+        }
+        if (aiShare > 0) {
+            (bool successAI, ) = payable(bond.aiAgent).call{value: aiShare}("");
+            require(successAI, "AI transfer failed");
+        }
         if (fundShare > 0) partnershipFund += fundShare;
 
         emit BondDistributed(bondId, humanShare, aiShare, fundShare, reason, block.timestamp);

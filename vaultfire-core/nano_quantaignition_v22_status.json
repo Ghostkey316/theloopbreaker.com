@@ -6,7 +6,7 @@
     "ethics_lock": "Protect the good. Walk forward together.",
     "verification_tag": "final-tag",
     "ignition_ready": true,
-    "ignition_signature": "80f2d3db-7146-4fe2-ba83-1cbe5a6c61a2",
+    "ignition_signature": "9517dc06-b155-4171-824c-b23be84b318f",
     "echo_clarity": 0.9,
     "memory_nodes": 1,
     "synapse_count": 1,
@@ -17,20 +17,20 @@
   "checkpoints": [
     {
       "type": "ignition",
-      "signature": "80f2d3db-7146-4fe2-ba83-1cbe5a6c61a2",
-      "timestamp": "2026-01-01T15:18:04.703Z"
+      "signature": "9517dc06-b155-4171-824c-b23be84b318f",
+      "timestamp": "2026-01-08T01:05:09.962Z"
     },
     {
       "type": "loop_final",
       "fingerprint": "finger1",
-      "timestamp": "2026-01-01T15:18:04.706Z"
+      "timestamp": "2026-01-08T01:05:09.966Z"
     }
   ],
   "audits": [
     {
       "code": "ghostkey-v2",
       "signal": "sigX",
-      "timestamp": "2026-01-01T15:18:04.705Z",
+      "timestamp": "2026-01-08T01:05:09.965Z",
       "ethics": "Protect the good. Walk forward together."
     }
   ]

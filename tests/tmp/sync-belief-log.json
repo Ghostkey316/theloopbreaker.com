@@ -1,6 +1,6 @@
 [
   {
-    "wallet": "0x41F392e93e1Bc7D6562Ac144329779F9c47FaAE8",
+    "wallet": "0x34965cdd2A41A37C6D7324d35CB3584406470d98",
     "ens": null,
     "type": "partnerSync",
     "multiplier": 2.004,
@@ -13,7 +13,7 @@
       "holdDuration": 61
     },
     "origin": "partner-sync-interface",
-    "timestamp": "2026-01-01T15:17:47.318Z",
+    "timestamp": "2026-01-08T01:04:46.442Z",
     "configOverrides": false,
     "scoring": {
       "weights": {

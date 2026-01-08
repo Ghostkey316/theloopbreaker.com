@@ -1,6 +1,6 @@
 [
   {
-    "wallet": "0x3aE6BA42F5Ab0ba893A8Db89756c0c334Cc1595C",
+    "wallet": "0xf8D85b8EDbD3b016Fc564470d115ac5295C025e3",
     "ens": null,
     "type": "vote",
     "multiplier": 1.8535,
@@ -13,7 +13,7 @@
       "holdDuration": 55
     },
     "origin": "belief-vote-cli",
-    "timestamp": "2026-01-01T15:17:46.884Z",
+    "timestamp": "2026-01-08T01:04:46.009Z",
     "configOverrides": false,
     "scoring": {
       "weights": {

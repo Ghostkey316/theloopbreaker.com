@@ -459,9 +459,10 @@ contract PurchasingPowerBondsV2 is BaseDignityBond {
             reason: reason
         }));
 
-        // Transfer funds (simplified - in production would have worker registry)
+        // Safe ETH transfer using .call{} instead of deprecated .transfer()
         if (companyShare > 0) {
-            payable(bond.company).transfer(companyShare);
+            (bool success, ) = payable(bond.company).call{value: companyShare}("");
+            require(success, "Company transfer failed");
         }
 
         emit BondDistributed(

@@ -484,8 +484,10 @@ contract LaborDignityBondsV2 is BaseDignityBond {
             reason: reason
         }));
 
+        // Safe ETH transfer using .call{} instead of deprecated .transfer()
         if (companyShare > 0) {
-            payable(bond.company).transfer(companyShare);
+            (bool success, ) = payable(bond.company).call{value: companyShare}("");
+            require(success, "Company transfer failed");
         }
 
         emit BondDistributed(
