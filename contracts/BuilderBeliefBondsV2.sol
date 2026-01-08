@@ -349,8 +349,15 @@ contract BuilderBeliefBondsV2 is BaseDignityBond {
             builderFundShare: fundShare, reason: reason
         }));
 
-        if (builderShare > 0) payable(bond.builder).transfer(builderShare);
-        if (stakersShare > 0) payable(bond.staker).transfer(stakersShare);
+        // Safe ETH transfers using .call{} instead of deprecated .transfer()
+        if (builderShare > 0) {
+            (bool successBuilder, ) = payable(bond.builder).call{value: builderShare}("");
+            require(successBuilder, "Builder transfer failed");
+        }
+        if (stakersShare > 0) {
+            (bool successStaker, ) = payable(bond.staker).call{value: stakersShare}("");
+            require(successStaker, "Staker transfer failed");
+        }
         if (fundShare > 0) builderFund += fundShare;
 
         emit BondDistributed(bondId, builderShare, stakersShare, fundShare, reason, block.timestamp);

@@ -378,8 +378,10 @@ contract AIAccountabilityBondsV2 is BaseDignityBond {
             reason: reason
         }));
 
+        // Safe ETH transfer using .call{} instead of deprecated .transfer()
         if (aiCompanyShare > 0) {
-            payable(bond.aiCompany).transfer(aiCompanyShare);
+            (bool success, ) = payable(bond.aiCompany).call{value: aiCompanyShare}("");
+            require(success, "AI company transfer failed");
         }
 
         emit BondDistributed(

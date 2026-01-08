@@ -1,14 +1,19 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 /// @title DilithiumAttestor
 /// @notice Records beliefs attested through a hybrid ZK proof + Dilithium/ECDSA signature flow.
-/// @dev The ZK verifier is currently a stub that always returns true. Replace with a real
-///      verifier contract (for example, a Groth16 verifier generated via snarkjs) before
-///      deploying to production.
+/// @dev ⚠️ SECURITY WARNING: The ZK verifier is currently a STUB that ALWAYS RETURNS TRUE!
+///      This means ANY attacker can forge belief attestations without valid cryptographic proof.
+///      THIS IS A CRITICAL SECURITY VULNERABILITY that MUST be fixed before production deployment.
+///
+///      REQUIRED FIX: Replace verifyZKProof() with a real Groth16 verifier contract
+///      (e.g., generated via snarkjs) OR remove ZK requirement entirely if not needed for launch.
+///
+///      DO NOT DEPLOY TO MAINNET WITHOUT FIXING THIS ISSUE.
 contract DilithiumAttestor {
     using MessageHashUtils for bytes32;
 
@@ -49,11 +54,21 @@ contract DilithiumAttestor {
         emit BeliefAttested(beliefHash, msg.sender);
     }
 
-    /// @notice Placeholder verifier that always succeeds.
-    /// @dev Replace with a call into a deployed verifier contract when integrating ZK proofs.
+    /// @notice ⚠️ CRITICAL SECURITY FLAW: Placeholder verifier that ALWAYS returns true!
+    /// @dev This is a STUB implementation that provides NO cryptographic security.
+    ///      ANY attacker can pass arbitrary proofData and this will return true.
+    ///
+    ///      REQUIRED BEFORE MAINNET:
+    ///      1. Deploy a real Groth16 verifier contract (e.g., via snarkjs)
+    ///      2. Replace this function with: return IVerifier(verifierAddress).verify(proof, pubSignal);
+    ///      3. Test extensively with valid and invalid proofs
+    ///
+    ///      Alternatively, if ZK proofs are not needed for V2 launch, remove this entire
+    ///      attestation system and use direct signature verification only.
     function verifyZKProof(bytes memory proof, bytes32 pubSignal) internal pure returns (bool) {
         proof;
         pubSignal;
+        // ⚠️ SECURITY FLAW: Always returns true - NO ACTUAL VERIFICATION HAPPENING!
         return true;
     }
 

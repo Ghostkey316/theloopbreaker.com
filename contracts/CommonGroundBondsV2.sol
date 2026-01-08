@@ -233,10 +233,13 @@ contract CommonGroundBondsV2 is BaseDignityBond {
             bridgeBuildersShare: bridgeShare, communityHealingShare: communityShare, reason: reason
         }));
 
+        // Safe ETH transfers using .call{} instead of deprecated .transfer()
         if (bridgeShare > 0) {
             uint256 perPerson = bridgeShare / 2;
-            payable(bond.person1).transfer(perPerson);
-            payable(bond.person2).transfer(perPerson);
+            (bool success1, ) = payable(bond.person1).call{value: perPerson}("");
+            require(success1, "Person1 transfer failed");
+            (bool success2, ) = payable(bond.person2).call{value: perPerson}("");
+            require(success2, "Person2 transfer failed");
         }
         if (communityShare > 0) communityHealingPool += communityShare;
 

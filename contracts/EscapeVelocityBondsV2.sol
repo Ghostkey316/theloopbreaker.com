@@ -219,7 +219,11 @@ contract EscapeVelocityBondsV2 is BaseDignityBond {
             escaperShare: escaperShare, payItForwardShare: payItForwardShare, reason: reason
         }));
 
-        if (escaperShare > 0) payable(bond.staker).transfer(escaperShare);
+        // Safe ETH transfer using .call{} instead of deprecated .transfer()
+        if (escaperShare > 0) {
+            (bool success, ) = payable(bond.staker).call{value: escaperShare}("");
+            require(success, "Escaper transfer failed");
+        }
         if (payItForwardShare > 0) payItForwardPool += payItForwardShare;
 
         emit BondDistributed(bondId, escaperShare, payItForwardShare, reason, block.timestamp);

@@ -302,8 +302,15 @@ contract VerdantAnchorBondsV2 is BaseDignityBond {
             earthFundShare: fundShare, reason: reason
         }));
 
-        if (regeneratorShare > 0) payable(bond.regenerator).transfer(regeneratorShare);
-        if (landownerShare > 0) payable(bond.landowner).transfer(landownerShare);
+        // Safe ETH transfers using .call{} instead of deprecated .transfer()
+        if (regeneratorShare > 0) {
+            (bool successRegen, ) = payable(bond.regenerator).call{value: regeneratorShare}("");
+            require(successRegen, "Regenerator transfer failed");
+        }
+        if (landownerShare > 0) {
+            (bool successLand, ) = payable(bond.landowner).call{value: landownerShare}("");
+            require(successLand, "Landowner transfer failed");
+        }
         if (fundShare > 0) earthFund += fundShare;
 
         emit BondDistributed(bondId, regeneratorShare, landownerShare, fundShare, reason, block.timestamp);
