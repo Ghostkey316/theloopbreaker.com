@@ -89,19 +89,21 @@ contract DilithiumAttestor {
             (bytes, bytes)
         );
 
+        // ✅ SECURITY FIX: Validate origin signature FIRST (cheap ~3k gas)
+        // This prevents gas griefing where attackers force expensive ZK verification
+        // with invalid signatures, wasting ~500k+ gas per attempt
+        bytes32 ethSigned = beliefHash.toEthSignedMessageHash();
+        require(ECDSA.recover(ethSigned, originSignature) == origin, "Origin sig mismatch");
+
         bool zkVerified = false;
 
-        // Verify STARK proof if ZK is enabled
+        // ✅ Then verify STARK proof if ZK is enabled (expensive ~500k+ gas)
+        // Only executed after signature is confirmed valid
         if (zkEnabled) {
             require(verifyZKProof(proofData, beliefHash, msg.sender), "STARK proof invalid");
             zkVerified = true;
         }
         // If zkEnabled=false, skip ZK verification (signature-only mode for V2 launch)
-
-        // ALWAYS validate the origin signature (required regardless of zkEnabled)
-        // This provides a second layer of security even in full ZK mode
-        bytes32 ethSigned = beliefHash.toEthSignedMessageHash();
-        require(ECDSA.recover(ethSigned, originSignature) == origin, "Origin sig mismatch");
 
         attestedBeliefs[beliefHash] = true;
         emit BeliefAttested(beliefHash, msg.sender, zkVerified);

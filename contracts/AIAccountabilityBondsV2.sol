@@ -81,6 +81,9 @@ contract AIAccountabilityBondsV2 is BaseDignityBond {
     mapping(uint256 => GlobalFlourishingMetrics[]) public bondMetrics;
     mapping(uint256 => Distribution[]) public bondDistributions;
 
+    // ✅ Human treasury for distributing human share of profits
+    address payable public humanTreasury;
+
     // Profit locking thresholds
     uint256 public constant SUFFERING_THRESHOLD = 4000;  // Score < 40 = suffering
     uint256 public constant LOW_INCLUSION_THRESHOLD = 4000;  // education + purpose < 40
@@ -98,6 +101,11 @@ contract AIAccountabilityBondsV2 is BaseDignityBond {
         uint256 stakeAmount,
         uint256 timestamp
     );
+
+    /**
+     * @notice Emitted when human treasury address is updated
+     */
+    event HumanTreasuryUpdated(address indexed previousTreasury, address indexed newTreasury);
 
     /**
      * @notice Emitted when metrics submitted
@@ -150,6 +158,27 @@ contract AIAccountabilityBondsV2 is BaseDignityBond {
     modifier bondExists(uint256 bondId) {
         require(bonds[bondId].active, "Bond does not exist");
         _;
+    }
+
+    /**
+     * @notice Constructor to initialize human treasury
+     * @param _humanTreasury Address that will receive human share of bond distributions
+     */
+    constructor(address payable _humanTreasury) {
+        require(_humanTreasury != address(0), "Human treasury cannot be zero address");
+        humanTreasury = _humanTreasury;
+        emit HumanTreasuryUpdated(address(0), _humanTreasury);
+    }
+
+    /**
+     * @notice Update human treasury address (owner only)
+     * @param _newTreasury New address for human treasury
+     */
+    function setHumanTreasury(address payable _newTreasury) external onlyOwner {
+        require(_newTreasury != address(0), "Human treasury cannot be zero address");
+        address previous = humanTreasury;
+        humanTreasury = _newTreasury;
+        emit HumanTreasuryUpdated(previous, _newTreasury);
     }
 
     // ============ Core Functions ============
@@ -378,10 +407,19 @@ contract AIAccountabilityBondsV2 is BaseDignityBond {
             reason: reason
         }));
 
-        // Safe ETH transfer using .call{} instead of deprecated .transfer()
+        // ✅ Safe ETH transfers using .call{} instead of deprecated .transfer()
+
+        // Transfer AI company share
         if (aiCompanyShare > 0) {
-            (bool success, ) = payable(bond.aiCompany).call{value: aiCompanyShare}("");
-            require(success, "AI company transfer failed");
+            (bool successAI, ) = payable(bond.aiCompany).call{value: aiCompanyShare}("");
+            require(successAI, "AI company transfer failed");
+        }
+
+        // ✅ Transfer human share to human treasury (FIX for HIGH-007)
+        if (humanShare > 0) {
+            require(humanTreasury != address(0), "Human treasury not set");
+            (bool successHuman, ) = humanTreasury.call{value: humanShare}("");
+            require(successHuman, "Human treasury transfer failed");
         }
 
         emit BondDistributed(

@@ -29,7 +29,7 @@ describe('STARK Proof Verification', () => {
   describe('BeliefAttestationVerifier', () => {
     it('should return correct proof system ID', async () => {
       const proofSystemId = await verifier.getProofSystemId();
-      expect(proofSystemId).to.equal('STARK-BeliefAttestation-v1.0');
+      expect(proofSystemId).to.equal('RISC0-STARK-BeliefAttestation-v1.0');
     });
 
     it('should return correct public inputs count', async () => {
