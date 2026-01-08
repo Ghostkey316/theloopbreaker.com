@@ -1,0 +1,45 @@
+{
+  "network": "base-mainnet",
+  "multisigs": {
+    "governance": {
+      "address": "0xGOVERNANCE_MULTISIG_ADDRESS_HERE",
+      "threshold": 3,
+      "signers": 5,
+      "purpose": "Protocol governance, emergency functions, ownership transfers"
+    },
+    "operations": {
+      "address": "0xOPERATIONS_MULTISIG_ADDRESS_HERE",
+      "threshold": 2,
+      "signers": 3,
+      "purpose": "Day-to-day operations, reward distribution, role management"
+    },
+    "treasury": {
+      "address": "0xTREASURY_MULTISIG_ADDRESS_HERE",
+      "threshold": 4,
+      "signers": 6,
+      "purpose": "Fund management, liquidity provisioning, treasury operations"
+    }
+  },
+  "deployedContracts": {
+    "BuilderBeliefBondsV2": { "owner": "governance" },
+    "LaborDignityBondsV2": { "owner": "governance" },
+    "PurchasingPowerBondsV2": { "owner": "governance" },
+    "AIAccountabilityBondsV2": { "owner": "governance" },
+    "HealthCommonsBondsV2": { "owner": "governance" },
+    "EscapeVelocityBondsV2": { "owner": "governance" },
+    "AIPartnershipBondsV2": { "owner": "governance" },
+    "CommonGroundBondsV2": { "owner": "governance" },
+    "VerdantAnchorBondsV2": { "owner": "governance" },
+    "RewardStream": {
+      "admin": "operations",
+      "governorTimelock": "governance"
+    },
+    "VaultfireRewardStream": { "admin": "operations" },
+    "VaultfireDAO": { "admin": "governance" },
+    "SwapGate": { "owner": "operations", "feeRecipient": "treasury" },
+    "ContributorUnlockKey": { "owner": "operations" },
+    "RewardMultiplier": { "owner": "governance" },
+    "VaultfireLoyalty": { "admin": "operations" },
+    "DilithiumAttestor": { "origin": "governance" }
+  }
+}

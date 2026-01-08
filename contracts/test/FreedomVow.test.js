@@ -9,7 +9,12 @@ async function deploySuite() {
   await stream.waitForDeployment();
 
   const DilithiumAttestor = await ethers.getContractFactory('DilithiumAttestor');
-  const attestor = await DilithiumAttestor.deploy(deployer.address);
+  // Deploy with zkEnabled=false for V2 launch (signature-only verification)
+  const attestor = await DilithiumAttestor.deploy(
+    deployer.address,  // origin
+    false,             // zkEnabled (V2 launch mode)
+    ethers.ZeroAddress // verifierAddress (not needed when zkEnabled=false)
+  );
   await attestor.waitForDeployment();
 
   const BeliefOracle = await ethers.getContractFactory('BeliefOracle');
