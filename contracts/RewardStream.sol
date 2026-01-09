@@ -15,11 +15,18 @@ contract RewardStream is ReentrancyGuard {
     uint256 public adminTransferTimestamp;
     uint256 public constant ADMIN_TRANSFER_DELAY = 2 days;
 
+    // ✅ Governor timelock state variables (FIX for MEDIUM-001)
+    address public pendingGovernor;
+    uint256 public governorTransferTimestamp;
+    uint256 public constant GOVERNOR_TRANSFER_DELAY = 2 days;
+
     event MultiplierUpdated(address indexed user, uint256 multiplier);
     event AdminTransferred(address indexed previousAdmin, address indexed newAdmin);
     event AdminTransferInitiated(address indexed currentAdmin, address indexed pendingAdmin, uint256 effectiveTime);
     event AdminTransferCancelled(address indexed cancelledAdmin);
     event GovernorTimelockUpdated(address indexed previousTimelock, address indexed newTimelock);
+    event GovernorTransferInitiated(address indexed currentGovernor, address indexed pendingGovernor, uint256 effectiveTime);
+    event GovernorTransferCancelled(address indexed cancelledGovernor);
     event RewardsQueued(address indexed recipient, uint256 amount);
     event RewardsClaimed(address indexed claimer, address indexed recipient, uint256 amount);
     event EthicsPauseApplied(uint256 untilTimestamp);
@@ -155,16 +162,45 @@ contract RewardStream is ReentrancyGuard {
         emit AdminTransferCancelled(cancelled);
     }
 
-    /// @notice Update governor timelock address with 2-day delay
-    /// @param newGovernor Address of the new governor timelock
-    function updateGovernorTimelock(address newGovernor) external onlyAdmin {
+    /// @notice Initiate governor transfer with 2-day timelock
+    /// @param newGovernor Address of the new governor timelock (cannot be zero address)
+    /// @dev FIX for MEDIUM-001: Implements proper 2-step timelock like admin transfer
+    function transferGovernor(address newGovernor) external onlyAdmin {
         require(newGovernor != address(0), "governor-required");
         require(newGovernor != governorTimelock, "already-governor");
 
-        // For governor updates, we require immediate effect since this is typically
-        // a multi-sig that has its own timelock built-in
+        pendingGovernor = newGovernor;
+        governorTransferTimestamp = block.timestamp + GOVERNOR_TRANSFER_DELAY;
+
+        emit GovernorTransferInitiated(governorTimelock, newGovernor, governorTransferTimestamp);
+    }
+
+    /// @notice Accept governor role after timelock expires
+    /// @dev Can only be called by pendingGovernor after GOVERNOR_TRANSFER_DELAY has passed
+    function acceptGovernor() external {
+        require(msg.sender == pendingGovernor, "not-pending-governor");
+        require(block.timestamp >= governorTransferTimestamp, "timelock-active");
+        require(governorTransferTimestamp != 0, "no-pending-transfer");
+
         address previous = governorTimelock;
-        governorTimelock = newGovernor;
-        emit GovernorTimelockUpdated(previous, newGovernor);
+        governorTimelock = pendingGovernor;
+
+        // Clear pending state
+        pendingGovernor = address(0);
+        governorTransferTimestamp = 0;
+
+        emit GovernorTimelockUpdated(previous, governorTimelock);
+    }
+
+    /// @notice Cancel pending governor transfer
+    /// @dev Can only be called by current admin
+    function cancelGovernorTransfer() external onlyAdmin {
+        require(pendingGovernor != address(0), "no-pending-transfer");
+
+        address cancelled = pendingGovernor;
+        pendingGovernor = address(0);
+        governorTransferTimestamp = 0;
+
+        emit GovernorTransferCancelled(cancelled);
     }
 }

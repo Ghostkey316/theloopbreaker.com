@@ -25,7 +25,21 @@ async function deploySuite() {
     deployer.address
   );
   await oracle.waitForDeployment();
-  await (await stream.updateGovernorTimelock(await oracle.getAddress())).wait();
+
+  // Initiate governor transfer with timelock
+  await (await stream.transferGovernor(await oracle.getAddress())).wait();
+
+  // Fast-forward time by 2 days (governor timelock period)
+  await ethers.provider.send('evm_increaseTime', [2 * 24 * 60 * 60]);
+  await ethers.provider.send('evm_mine');
+
+  // Accept governor role from BeliefOracle contract address
+  const oracleAddress = await oracle.getAddress();
+  await ethers.provider.send('hardhat_impersonateAccount', [oracleAddress]);
+  await ethers.provider.send('hardhat_setBalance', [oracleAddress, '0x56BC75E2D63100000']);
+  const oracleSigner = await ethers.getSigner(oracleAddress);
+  await stream.connect(oracleSigner).acceptGovernor();
+  await ethers.provider.send('hardhat_stopImpersonatingAccount', [oracleAddress]);
 
   const FreedomVow = await ethers.getContractFactory('FreedomVow');
   const freedom = await FreedomVow.deploy(

@@ -1,0 +1,20 @@
+[package]
+name = "vaultfire-prover-host"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "vaultfire-prover"
+path = "src/main.rs"
+
+[dependencies]
+risc0-zkvm = { workspace = true, features = ["prove"] }
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+hex.workspace = true
+methods = { path = "../methods" }
+
+# CLI dependencies
+clap = { version = "4.5", features = ["derive"] }
+anyhow = "1.0"
