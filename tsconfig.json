@@ -14,5 +14,5 @@
     "jsx": "react-jsx"
   },
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", "dist", ".github", "apps/vaultfire-arcade"]
+  "exclude": ["node_modules", "dist", ".github", "apps/vaultfire-arcade", "base-mini-app"]
 }
