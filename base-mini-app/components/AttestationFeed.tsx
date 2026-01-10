@@ -1,29 +1,20 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Share2, MessageCircle, TrendingUp, Github, Coins, Shield, Award, ExternalLink } from 'lucide-react';
+import { Github, Coins, Shield, Award, ExternalLink } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 interface Attestation {
   id: string;
-  user: {
-    address: string;
-    displayName: string;
-    avatar: string;
-    reputation: number;
-    tier: 'Bronze' | 'Silver' | 'Gold' | 'Diamond';
-  };
+  wallet: string; // Anonymous wallet address only - no names, no tracking
   belief: string;
   module: 'GitHub' | 'Base' | 'NS3';
   score: number;
   timestamp: string;
-  likes: number;
-  shares: number;
-  comments: number;
-  proofLink?: string;
+  proofLink: string; // Always have proof - this is about verification, not vanity
 }
 
-// Mock data - in production, fetch from contract events
+// Mock data - in production, fetch from contract events (fully anonymous)
 const generateMockAttestations = (): Attestation[] => {
   const beliefs = [
     'I believe in open-source collaboration as the future of software development',
@@ -39,25 +30,15 @@ const generateMockAttestations = (): Attestation[] => {
   ];
 
   const modules: Array<'GitHub' | 'Base' | 'NS3'> = ['GitHub', 'Base', 'NS3'];
-  const tiers: Array<'Bronze' | 'Silver' | 'Gold' | 'Diamond'> = ['Bronze', 'Silver', 'Gold', 'Diamond'];
 
   return Array.from({ length: 20 }, (_, i) => ({
     id: `attest-${i}`,
-    user: {
-      address: `0x${Math.random().toString(16).slice(2, 10)}...${Math.random().toString(16).slice(2, 6)}`,
-      displayName: `Believer${Math.floor(Math.random() * 9999)}`,
-      avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${i}`,
-      reputation: 70 + Math.floor(Math.random() * 30),
-      tier: tiers[Math.floor(Math.random() * tiers.length)],
-    },
+    wallet: `0x${Math.random().toString(16).slice(2, 10)}...${Math.random().toString(16).slice(2, 6)}`, // Anonymous wallet only
     belief: beliefs[Math.floor(Math.random() * beliefs.length)],
     module: modules[Math.floor(Math.random() * modules.length)],
     score: 90 + Math.floor(Math.random() * 10),
     timestamp: `${Math.floor(Math.random() * 60)}m ago`,
-    likes: Math.floor(Math.random() * 50),
-    shares: Math.floor(Math.random() * 20),
-    comments: Math.floor(Math.random() * 15),
-    proofLink: Math.random() > 0.5 ? `https://basescan.org/tx/${Math.random().toString(16).slice(2)}` : undefined,
+    proofLink: `https://basescan.org/tx/${Math.random().toString(16).slice(2, 66)}`, // Always have proof
   }));
 };
 
@@ -74,47 +55,13 @@ const ModuleIcon = ({ module }: { module: string }) => {
   }
 };
 
-const TierBadge = ({ tier }: { tier: string }) => {
-  const colors = {
-    Bronze: 'bg-amber-700/20 text-amber-600 border-amber-600/30',
-    Silver: 'bg-gray-400/20 text-gray-300 border-gray-400/30',
-    Gold: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-    Diamond: 'bg-cyan-400/20 text-cyan-300 border-cyan-400/30',
-  };
-
-  return (
-    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${colors[tier as keyof typeof colors]}`}>
-      {tier}
-    </span>
-  );
-};
-
 export function AttestationFeed() {
   const [attestations, setAttestations] = useState<Attestation[]>([]);
-  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState<'all' | 'GitHub' | 'Base' | 'NS3'>('all');
 
   useEffect(() => {
     setAttestations(generateMockAttestations());
   }, []);
-
-  const handleLike = (id: string) => {
-    setLikedPosts(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-      return newSet;
-    });
-
-    setAttestations(prev => prev.map(a =>
-      a.id === id
-        ? { ...a, likes: likedPosts.has(id) ? a.likes - 1 : a.likes + 1 }
-        : a
-    ));
-  };
 
   const filteredAttestations = filter === 'all'
     ? attestations
@@ -126,9 +73,9 @@ export function AttestationFeed() {
         {/* Header */}
         <div className="mb-6">
           <h2 className="text-3xl font-bold mb-2 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-            Live Attestation Feed
+            Recent Attestations
           </h2>
-          <p className="text-gray-400">See what the community believes in, powered by proof</p>
+          <p className="text-gray-400">Anonymous beliefs, verified on-chain. No tracking, no surveillance.</p>
         </div>
 
         {/* Filter Tabs */}
@@ -160,24 +107,19 @@ export function AttestationFeed() {
                 transition={{ delay: idx * 0.05 }}
                 className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-5 hover:bg-white/10 transition-all group"
               >
-                {/* User Header */}
+                {/* Anonymous Header - Wallet First, No KYC */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <img
-                      src={attestation.user.avatar}
-                      alt={attestation.user.displayName}
-                      className="w-12 h-12 rounded-full border-2 border-vaultfire-purple/50"
-                    />
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-vaultfire-purple/20 to-base-blue/20 border border-white/10 flex items-center justify-center">
+                      <Shield className="w-5 h-5 text-gray-400" />
+                    </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-white">{attestation.user.displayName}</span>
-                        <TierBadge tier={attestation.user.tier} />
-                      </div>
                       <div className="flex items-center gap-2 text-sm text-gray-400">
-                        <span>{attestation.user.address}</span>
+                        <span className="font-mono">{attestation.wallet}</span>
                         <span>•</span>
                         <span>{attestation.timestamp}</span>
                       </div>
+                      <div className="text-xs text-gray-500">Anonymous - Verified on-chain</div>
                     </div>
                   </div>
 
@@ -209,44 +151,23 @@ export function AttestationFeed() {
                   </div>
                 </div>
 
-                {/* Engagement Actions */}
+                {/* Proof Verification - No Vanity Metrics */}
                 <div className="flex items-center justify-between pt-4 border-t border-white/10">
-                  <div className="flex items-center gap-6">
-                    <button
-                      onClick={() => handleLike(attestation.id)}
-                      className={`flex items-center gap-2 transition-all ${
-                        likedPosts.has(attestation.id)
-                          ? 'text-vaultfire-purple'
-                          : 'text-gray-400 hover:text-vaultfire-purple'
-                      }`}
-                    >
-                      <Heart className={`w-5 h-5 ${likedPosts.has(attestation.id) ? 'fill-current' : ''}`} />
-                      <span className="text-sm font-semibold">{attestation.likes}</span>
-                    </button>
-
-                    <button className="flex items-center gap-2 text-gray-400 hover:text-base-blue transition-all">
-                      <MessageCircle className="w-5 h-5" />
-                      <span className="text-sm font-semibold">{attestation.comments}</span>
-                    </button>
-
-                    <button className="flex items-center gap-2 text-gray-400 hover:text-vaultfire-green transition-all">
-                      <Share2 className="w-5 h-5" />
-                      <span className="text-sm font-semibold">{attestation.shares}</span>
-                    </button>
+                  <div className="text-xs text-gray-500">
+                    <Shield className="w-3 h-3 inline mr-1" />
+                    Zero-knowledge proof • Privacy preserved
                   </div>
 
-                  {attestation.proofLink && (
-                    <a
-                      href={attestation.proofLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-all"
-                    >
-                      <Award className="w-4 h-4" />
-                      View Proof
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  )}
+                  <a
+                    href={attestation.proofLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 bg-vaultfire-purple/10 hover:bg-vaultfire-purple/20 border border-vaultfire-purple/30 rounded-lg text-sm font-semibold text-vaultfire-purple transition-all"
+                  >
+                    <Award className="w-4 h-4" />
+                    Verify Proof
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
                 </div>
               </motion.div>
             ))}

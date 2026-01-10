@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { User, Award, TrendingUp, Calendar, ExternalLink, Github, Coins, Shield } from 'lucide-react';
+import { Award, Calendar, Github, Coins, Shield } from 'lucide-react';
 
 interface UserStats {
   totalAttestations: number;
@@ -50,36 +50,25 @@ export function UserProfileCard() {
       className="bg-gradient-to-br from-vaultfire-purple/10 to-base-blue/10 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:sticky lg:top-24"
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-white">Your Profile</h3>
-        <button className="p-2 hover:bg-white/10 rounded-lg transition-all">
-          <ExternalLink className="w-5 h-5 text-gray-400" />
-        </button>
+      <div className="mb-6">
+        <h3 className="text-xl font-bold text-white mb-1">Your Private Stats</h3>
+        <p className="text-xs text-gray-500">Visible only to you • Wallet-first, no KYC</p>
       </div>
 
-      {/* Avatar & Tier */}
+      {/* Wallet Identity */}
       <div className="flex flex-col items-center mb-6">
         <div className="relative mb-4">
-          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-vaultfire-purple to-base-blue p-1">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-vaultfire-purple to-base-blue p-1">
             <div className="w-full h-full rounded-full bg-vaultfire-dark flex items-center justify-center">
-              <User className="w-12 h-12 text-white" />
+              <Shield className="w-10 h-10 text-white" />
             </div>
-          </div>
-          <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
-            <span className={`px-3 py-1 rounded-full text-xs font-bold border-2 ${
-              mockUserStats.tier === 'Diamond' ? 'bg-cyan-400/20 text-cyan-300 border-cyan-400' :
-              mockUserStats.tier === 'Gold' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500' :
-              mockUserStats.tier === 'Silver' ? 'bg-gray-400/20 text-gray-300 border-gray-400' :
-              'bg-amber-700/20 text-amber-600 border-amber-700'
-            }`}>
-              {mockUserStats.tier}
-            </span>
           </div>
         </div>
 
         <div className="text-center">
           <div className="text-3xl font-bold text-white mb-1">{mockUserStats.avgScore}%</div>
-          <div className="text-sm text-gray-400">Average Score</div>
+          <div className="text-sm text-gray-400">Your Average Score</div>
+          <div className="text-xs text-gray-600 mt-1">Private • Not ranked publicly</div>
         </div>
       </div>
 
