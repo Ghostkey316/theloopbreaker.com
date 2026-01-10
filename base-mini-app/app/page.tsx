@@ -21,6 +21,14 @@ export default function Home() {
 
   return (
     <main className="min-h-screen overflow-x-hidden">
+      {/* Skip to main content - Accessibility */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-6 focus:py-3 focus:bg-base-blue focus:text-white focus:rounded-lg focus:font-semibold focus:shadow-xl focus:outline-none focus:ring-4 focus:ring-base-blue/50 transition-all"
+      >
+        Skip to main content
+      </a>
+
       {/* Header - Mobile optimized */}
       <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/10 safe-top">
         <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
@@ -52,7 +60,7 @@ export default function Home() {
       </header>
 
       {/* Hero Section - Enhanced */}
-      <section className="pt-24 sm:pt-32 pb-12 sm:pb-20 px-4 sm:px-6">
+      <section id="main-content" className="pt-24 sm:pt-32 pb-12 sm:pb-20 px-4 sm:px-6">
         <div className="container mx-auto max-w-6xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
