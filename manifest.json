@@ -1,6 +1,6 @@
 {
   "name": "Vaultfire Protocol",
-  "semanticVersion": "v1.6.0",
+  "semanticVersion": "v1.2.0-rc",
   "releaseDate": "2025-02-20",
   "description": "Ethics-anchored activation stack for partner-facing belief intelligence.",
   "ethicsTags": [
@@ -19,8 +19,8 @@
     "changelog": "./VERSION.md",
     "readme": "./README.md",
     "commit": {
-      "hash": "c36692765b2265eed5492564a5a8fa1b283993f8",
-      "url": null
+      "hash": "bd7a6c025d7998297496e422ac1f0fe30ad370e9",
+      "url": "http://local_proxy@127.0.0.1:31557/git/Ghostkey316/ghostkey-316-vaultfire-init/commit/bd7a6c025d7998297496e422ac1f0fe30ad370e9"
     }
   }
 }

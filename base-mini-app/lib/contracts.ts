@@ -1,7 +1,23 @@
 // Vaultfire Contract ABIs and Addresses for Base
 
-export const DILITHIUM_ATTESTOR_ADDRESS = '0x...' as `0x${string}`; // TODO: Replace with deployed address
-export const BELIEF_VERIFIER_ADDRESS = '0x...' as `0x${string}`; // TODO: Replace with deployed address
+// Use environment variables with fallback for development
+export const DILITHIUM_ATTESTOR_ADDRESS = (
+  process.env.NEXT_PUBLIC_DILITHIUM_ATTESTOR_ADDRESS ||
+  '0x0000000000000000000000000000000000000000'
+) as `0x${string}`;
+
+export const BELIEF_VERIFIER_ADDRESS = (
+  process.env.NEXT_PUBLIC_BELIEF_VERIFIER_ADDRESS ||
+  '0x0000000000000000000000000000000000000000'
+) as `0x${string}`;
+
+// Helper to check if contracts are configured
+export function areContractsConfigured(): boolean {
+  return (
+    DILITHIUM_ATTESTOR_ADDRESS !== '0x0000000000000000000000000000000000000000' &&
+    BELIEF_VERIFIER_ADDRESS !== '0x0000000000000000000000000000000000000000'
+  );
+}
 
 export const DILITHIUM_ATTESTOR_ABI = [
   {
