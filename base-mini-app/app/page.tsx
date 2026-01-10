@@ -7,6 +7,9 @@ import { useAccount } from 'wagmi';
 import { BeliefAttestationForm } from '@/components/BeliefAttestationForm';
 import { StatsSection } from '@/components/StatsSection';
 import { HowItWorks } from '@/components/HowItWorks';
+import { LiveActivityFeed } from '@/components/LiveActivityFeed';
+import { UseCases } from '@/components/UseCases';
+import { RewardsSection } from '@/components/RewardsSection';
 
 export default function Home() {
   const { isConnected } = useAccount();
@@ -77,11 +80,29 @@ export default function Home() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-base sm:text-lg md:text-xl text-base-gray-300 max-w-2xl mx-auto mb-6 sm:mb-8 px-4 text-balance leading-relaxed"
+              className="text-base sm:text-lg md:text-xl text-base-gray-300 max-w-2xl mx-auto mb-4 sm:mb-6 px-4 text-balance leading-relaxed"
             >
-              Use RISC Zero STARKs to create zero-knowledge proofs of your beliefs,
-              linked to your GitHub, NS3, or Base activity. Privacy-first, post-quantum secure.
+              Turn your actions into unstoppable credibility. Link your beliefs to your GitHub commits,
+              Base transactions, or NS3 activity. Build reputation without sacrificing privacy.
             </motion.p>
+
+            {/* Value Props */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="flex flex-wrap gap-3 justify-center mb-6 sm:mb-8"
+            >
+              <span className="badge bg-vaultfire-green/20 text-vaultfire-green border border-vaultfire-green/30">
+                ✓ Unlock rewards
+              </span>
+              <span className="badge bg-base-blue/20 text-base-blue border border-base-blue/30">
+                ✓ Build trust
+              </span>
+              <span className="badge bg-vaultfire-purple/20 text-vaultfire-purple border border-vaultfire-purple/30">
+                ✓ Stay anonymous
+              </span>
+            </motion.div>
 
             {/* CTA Button */}
             {!isConnected && (
@@ -152,8 +173,17 @@ export default function Home() {
       {/* Stats Section */}
       <StatsSection />
 
+      {/* Use Cases - Why People Use This */}
+      <UseCases />
+
+      {/* Rewards - What You Unlock */}
+      <RewardsSection />
+
       {/* How It Works */}
       <HowItWorks />
+
+      {/* Live Activity Feed */}
+      <LiveActivityFeed />
 
       {/* Footer - Enhanced */}
       <footer className="border-t border-white/10 py-8 sm:py-12 px-4 sm:px-6 safe-bottom">
