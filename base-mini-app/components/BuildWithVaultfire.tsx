@@ -6,33 +6,33 @@ import { Code2, Boxes, Puzzle, Zap, Shield, Globe } from 'lucide-react';
 const integrationFeatures = [
   {
     icon: <Code2 className="w-6 h-6" />,
-    title: 'Simple SDK',
-    description: 'Drop-in belief verification for any app in minutes',
+    title: 'Trust Any Claim',
+    description: 'Verify beliefs, reputation, credentials, identity—anything that needs cryptographic proof',
   },
   {
     icon: <Boxes className="w-6 h-6" />,
     title: 'Composable Protocol',
-    description: 'Build custom attestation flows on our infrastructure',
+    description: 'Stack verification modules, create custom trust flows, build your own reputation systems',
   },
   {
     icon: <Puzzle className="w-6 h-6" />,
-    title: 'Module System',
-    description: 'Create your own verification modules beyond GitHub/Base/NS3',
+    title: 'Extensible Modules',
+    description: 'GitHub, Base, NS3 built-in. Add Twitter, LinkedIn, educational credentials—anything',
   },
   {
     icon: <Zap className="w-6 h-6" />,
     title: 'Zero-Knowledge by Default',
-    description: 'Privacy-first architecture built into every integration',
+    description: 'Users prove claims without revealing data. Privacy is the default, not an add-on',
   },
   {
     icon: <Shield className="w-6 h-6" />,
-    title: 'Post-Quantum Ready',
-    description: 'RISC Zero STARKs protect your users from future threats',
+    title: 'Post-Quantum Secure',
+    description: 'RISC Zero STARKs resist quantum attacks. Your trust layer won\'t be obsolete in 2030',
   },
   {
     icon: <Globe className="w-6 h-6" />,
-    title: 'Cross-Chain Compatible',
-    description: 'Base now, any EVM chain tomorrow',
+    title: 'Universal Trust Graph',
+    description: 'Every attestation strengthens the network. Tap into cross-protocol reputation',
   },
 ];
 
@@ -54,11 +54,11 @@ export function BuildWithVaultfire() {
           </div>
 
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Vaultfire is <span className="gradient-text">Production-Grade Infrastructure</span>
+            Vaultfire is the <span className="gradient-text">Trust Layer</span> for Base
           </h2>
           <p className="text-base-gray-400 max-w-2xl mx-auto text-lg mb-6">
-            Not just an app—battle-tested belief verification infrastructure that outperforms building your own.
-            Add cryptographic credibility to your product in minutes, not months.
+            Not just beliefs—the complete trust infrastructure for reputation, identity, credibility, and governance.
+            Add cryptographic proof to ANY claim in your app. Production-ready. Post-quantum secure.
           </p>
 
           {/* Technical Benchmarks */}
@@ -213,42 +213,66 @@ export function BuildWithVaultfire() {
           viewport={{ once: true }}
           className="card bg-gradient-to-br from-vaultfire-purple/10 to-base-blue/10 border-2 border-vaultfire-purple/30"
         >
-          <h3 className="text-2xl font-bold mb-6 text-center">Who's Building with Vaultfire?</h3>
+          <h3 className="text-2xl font-bold mb-6 text-center">What Can You Build on the Trust Layer?</h3>
 
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <h4 className="font-semibold text-white mb-3">🏢 Crypto Companies</h4>
+              <h4 className="font-semibold text-white mb-3">🏢 DeFi & Trading</h4>
               <ul className="space-y-2 text-sm text-base-gray-400">
-                <li>• Add belief-based reputation to your protocol</li>
-                <li>• Verify user intent without KYC</li>
-                <li>• Build sybil-resistant communities</li>
+                <li>• Prove trading track record without revealing positions</li>
+                <li>• Sybil-resistant airdrops based on real activity</li>
+                <li>• Credit scores from on-chain behavior (privacy-preserved)</li>
+                <li>• Reputation-weighted lending pools</li>
               </ul>
             </div>
 
             <div>
-              <h4 className="font-semibold text-white mb-3">🏛️ DAOs & Communities</h4>
+              <h4 className="font-semibold text-white mb-3">🏛️ Governance & DAOs</h4>
               <ul className="space-y-2 text-sm text-base-gray-400">
-                <li>• Governance weighted by proven contributions</li>
-                <li>• Anonymous member verification</li>
-                <li>• Reward authentic participation</li>
+                <li>• Voting power based on proven contributions</li>
+                <li>• Anonymous member verification (no doxxing)</li>
+                <li>• Delegate trust scores (who actually delivers)</li>
+                <li>• Reputation-gated proposals</li>
               </ul>
             </div>
 
             <div>
-              <h4 className="font-semibold text-white mb-3">🎮 Web3 Apps</h4>
+              <h4 className="font-semibold text-white mb-3">💼 Professional Credentials</h4>
               <ul className="space-y-2 text-sm text-base-gray-400">
-                <li>• Integrate belief attestations into your UX</li>
-                <li>• Build trust without centralized identity</li>
-                <li>• Privacy-first user verification</li>
+                <li>• Prove work experience without revealing employer</li>
+                <li>• Educational credentials (ZK diplomas)</li>
+                <li>• Skill verification from real projects</li>
+                <li>• Anonymous professional reputation</li>
               </ul>
             </div>
 
             <div>
-              <h4 className="font-semibold text-white mb-3">🔬 AI & Research</h4>
+              <h4 className="font-semibold text-white mb-3">🤖 AI & Social</h4>
               <ul className="space-y-2 text-sm text-base-gray-400">
-                <li>• Train AI on verified human beliefs</li>
-                <li>• Study anonymous credibility networks</li>
-                <li>• Human + AI alignment research</li>
+                <li>• Verify human vs bot (privacy-preserving CAPTCHA)</li>
+                <li>• Train AI on verified human preferences</li>
+                <li>• Reputation-based content filtering</li>
+                <li>• Trust scores for AI agent interactions</li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-white mb-3">🎮 Gaming & NFTs</h4>
+              <ul className="space-y-2 text-sm text-base-gray-400">
+                <li>• Prove game achievements without showing wallet</li>
+                <li>• Anti-cheat verification (ZK game state proofs)</li>
+                <li>• Reputation-based matchmaking</li>
+                <li>• NFT holder benefits without public disclosure</li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-white mb-3">🌐 Identity & Access</h4>
+              <ul className="space-y-2 text-sm text-base-gray-400">
+                <li>• Age verification without revealing birthday</li>
+                <li>• Location proofs (privacy-preserved geofencing)</li>
+                <li>• Accredited investor status (ZK compliance)</li>
+                <li>• Anonymous KYC for regulated apps</li>
               </ul>
             </div>
           </div>
