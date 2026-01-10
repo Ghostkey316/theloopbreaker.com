@@ -14,6 +14,7 @@ import { AttestationFeed } from '@/components/AttestationFeed';
 import { ExploreModules } from '@/components/ExploreModules';
 import { UserProfileCard } from '@/components/UserProfileCard';
 import { VaultfireLogo } from '@/components/VaultfireLogo';
+import { BuildWithVaultfire } from '@/components/BuildWithVaultfire';
 
 export default function Home() {
   const { isConnected } = useAccount();
@@ -253,6 +254,9 @@ export default function Home() {
 
       {/* Use Cases - Why This Matters */}
       <UseCases />
+
+      {/* Build with Vaultfire - Infrastructure Positioning */}
+      <BuildWithVaultfire />
 
       {/* Rewards - What You Unlock */}
       <RewardsSection />
