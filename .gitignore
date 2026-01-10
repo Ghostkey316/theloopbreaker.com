@@ -21,6 +21,7 @@ config/local/
 # audit artifacts
 audit_logs/*.jsonl
 audit_logs/*.log
+audit_logs/encryption_audit.log
 .next/
 dashboard/dist/
 
@@ -35,3 +36,15 @@ vaultfire-core/mission-ledger.jsonl
 vaultfire-core/ethics/ai_trader_audit.json
 codex/VAULTFIRE_CLI_LEDGER.jsonl
 vaultfire/audit_logs/
+
+# Test artifacts
+tests/tmp/
+
+# Runtime status files
+vaultfire-core/*_status.json
+vaultfire-core/*_log.json
+status/alerts.jsonl
+codex-integrity.json
+
+# Generated badges
+docs/badges/trust-badge.svg
