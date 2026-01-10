@@ -42,6 +42,7 @@ tests/tmp/
 
 # Runtime status files
 vaultfire-core/*_status.json
+vaultfire-core/*.status
 vaultfire-core/*_log.json
 status/alerts.jsonl
 codex-integrity.json
