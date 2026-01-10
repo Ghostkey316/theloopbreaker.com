@@ -10,6 +10,9 @@ import { HowItWorks } from '@/components/HowItWorks';
 import { LiveActivityFeed } from '@/components/LiveActivityFeed';
 import { UseCases } from '@/components/UseCases';
 import { RewardsSection } from '@/components/RewardsSection';
+import { AttestationFeed } from '@/components/AttestationFeed';
+import { TrendingSection } from '@/components/TrendingSection';
+import { UserProfileCard } from '@/components/UserProfileCard';
 
 export default function Home() {
   const { isConnected } = useAccount();
@@ -170,20 +173,55 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <StatsSection />
+      {/* Quick Stats */}
+      <section className="pb-8 px-4">
+        <div className="container mx-auto max-w-6xl">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 text-center">
+              <div className="text-3xl font-bold text-white mb-1">1,247</div>
+              <div className="text-sm text-gray-400">Total Attestations</div>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 text-center">
+              <div className="text-3xl font-bold text-vaultfire-green mb-1">23</div>
+              <div className="text-sm text-gray-400">Active Now</div>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 text-center">
+              <div className="text-3xl font-bold text-base-blue mb-1">96%</div>
+              <div className="text-sm text-gray-400">Avg Score</div>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 text-center">
+              <div className="text-3xl font-bold text-vaultfire-purple mb-1">847</div>
+              <div className="text-sm text-gray-400">Diamond Tier</div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-      {/* Use Cases - Why People Use This */}
+      {/* Main X-Style Layout: Feed + Sidebar */}
+      <section className="py-8 px-4">
+        <div className="container mx-auto max-w-7xl">
+          <div className="grid lg:grid-cols-[1fr,380px] gap-6">
+            {/* Main Feed */}
+            <div>
+              <AttestationFeed />
+            </div>
+
+            {/* Sidebar - Profile Card (sticky on desktop) */}
+            <div className="hidden lg:block">
+              <UserProfileCard />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Trending Section */}
+      <TrendingSection />
+
+      {/* Use Cases - Compact */}
       <UseCases />
 
-      {/* Rewards - What You Unlock */}
+      {/* Rewards - Compact */}
       <RewardsSection />
-
-      {/* How It Works */}
-      <HowItWorks />
-
-      {/* Live Activity Feed */}
-      <LiveActivityFeed />
 
       {/* Footer - Enhanced */}
       <footer className="border-t border-white/10 py-8 sm:py-12 px-4 sm:px-6 safe-bottom">
