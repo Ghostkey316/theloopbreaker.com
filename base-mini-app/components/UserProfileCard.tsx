@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Award, Calendar, Github, Coins, Shield } from 'lucide-react';
+import { VaultfireLogo } from './VaultfireLogo';
 
 interface UserStats {
   totalAttestations: number;
@@ -60,7 +61,7 @@ export function UserProfileCard() {
         <div className="relative mb-4">
           <div className="w-20 h-20 rounded-full bg-gradient-to-br from-vaultfire-purple to-base-blue p-1">
             <div className="w-full h-full rounded-full bg-vaultfire-dark flex items-center justify-center">
-              <Shield className="w-10 h-10 text-white" />
+              <VaultfireLogo className="w-10 h-10 text-white" />
             </div>
           </div>
         </div>

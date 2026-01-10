@@ -13,6 +13,7 @@ import { RewardsSection } from '@/components/RewardsSection';
 import { AttestationFeed } from '@/components/AttestationFeed';
 import { ExploreModules } from '@/components/ExploreModules';
 import { UserProfileCard } from '@/components/UserProfileCard';
+import { VaultfireLogo } from '@/components/VaultfireLogo';
 
 export default function Home() {
   const { isConnected } = useAccount();
@@ -30,7 +31,7 @@ export default function Home() {
               className="flex items-center gap-2 sm:gap-3"
             >
               <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-vaultfire flex items-center justify-center shadow-lg shadow-vaultfire-purple/20">
-                <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                <VaultfireLogo className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <div>
                 <h1 className="text-lg sm:text-xl font-bold tracking-tight">Vaultfire</h1>
@@ -228,7 +229,7 @@ export default function Home() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-gradient-vaultfire flex items-center justify-center shadow-lg shadow-vaultfire-purple/20">
-                <Shield className="w-5 h-5 text-white" />
+                <VaultfireLogo className="w-5 h-5 text-white" />
               </div>
               <div>
                 <p className="font-semibold text-sm sm:text-base">Vaultfire Protocol</p>
