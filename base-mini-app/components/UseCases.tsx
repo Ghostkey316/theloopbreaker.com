@@ -65,10 +65,10 @@ export function UseCases() {
           className="text-center mb-16"
         >
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Why People <span className="gradient-text">Actually Use This</span>
+            How People Are <span className="gradient-text">Taking Back Control</span>
           </h2>
           <p className="text-base-gray-400 max-w-2xl mx-auto text-lg">
-            Real use cases from real people. Your beliefs + your behavior = unstoppable credibility.
+            Real humans, real beliefs, real proof. No middlemen. No surveillance. Just cryptographic truth.
           </p>
         </motion.div>
 
@@ -111,20 +111,20 @@ export function UseCases() {
           transition={{ delay: 0.6 }}
           className="mt-12 card text-center bg-gradient-to-br from-base-blue/10 to-vaultfire-purple/10 border-base-blue/20"
         >
-          <h3 className="text-2xl font-bold mb-3">Your Turn</h3>
+          <h3 className="text-2xl font-bold mb-3">The Future Needs You</h3>
           <p className="text-base-gray-300 mb-6 max-w-2xl mx-auto">
-            What do you believe in? Prove it with your actions. Build credibility without sacrificing privacy.
-            Your beliefs are yours - but the proof is public.
+            Every voice matters. Every belief shapes tomorrow. Stand up for what you know is right—without giving up who you are.
+            <span className="text-white font-semibold"> This is how we build an AI future that serves humanity, not corporations.</span>
           </p>
           <div className="flex flex-wrap gap-2 justify-center">
             <span className="badge bg-base-blue/20 text-base-blue border border-base-blue/30">
-              💯 100% Private
+              🔒 100% Private
             </span>
             <span className="badge bg-vaultfire-purple/20 text-vaultfire-purple border border-vaultfire-purple/30">
-              ⚡ Zero Gas Fees
+              🛡️ Post-Quantum Secure
             </span>
             <span className="badge bg-vaultfire-green/20 text-vaultfire-green border border-vaultfire-green/30">
-              🔐 Post-Quantum Secure
+              🚀 Built on Base
             </span>
           </div>
         </motion.div>
