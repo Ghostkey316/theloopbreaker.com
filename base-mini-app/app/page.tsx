@@ -238,15 +238,19 @@ export default function Home() {
 
             <div className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm text-base-gray-400">
               <a
-                href="#"
+                href="https://github.com/Ghostkey316/ghostkey-316-vaultfire-init"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="hover:text-white transition-colors flex items-center gap-2 focus-ring rounded-lg p-1"
-                aria-label="GitHub"
+                aria-label="GitHub Repository"
               >
                 <Github className="w-4 h-4" />
                 <span className="hidden sm:inline">GitHub</span>
               </a>
               <a
-                href="#"
+                href="https://docs.base.org"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="hover:text-white transition-colors flex items-center gap-2 focus-ring rounded-lg p-1"
                 aria-label="Documentation"
               >
