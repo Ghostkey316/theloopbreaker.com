@@ -6,7 +6,20 @@ Built for Base. Powered by RISC Zero STARKs. Designed for humanity.
 
 ---
 
-## Why Base Will Love This
+## Why Base Will Love This (It's Infrastructure!)
+
+**Vaultfire isn't just an app—it's a protocol other projects can build on:**
+- ✅ Any Base project can integrate belief verification
+- ✅ DAOs can use it for governance & reputation
+- ✅ DeFi protocols can verify user intent without KYC
+- ✅ AI companies can train on verified human beliefs
+- ✅ Creates network effects: more integrations = more value
+
+**This makes Base the home of ethical, privacy-first credibility infrastructure.**
+
+---
+
+## Value for Base Ecosystem
 
 ### 1. **Ethics-First Design**
 We're not building for metrics - we're building for people:
