@@ -73,9 +73,9 @@ export function AttestationFeed() {
         {/* Header */}
         <div className="mb-6">
           <h2 className="text-3xl font-bold mb-2 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-            Recent Attestations
+            Live Proof Feed
           </h2>
-          <p className="text-gray-400">Anonymous beliefs, verified on-chain. No tracking, no surveillance.</p>
+          <p className="text-gray-400">Real beliefs from real humans. Cryptographically verified. Completely anonymous.</p>
         </div>
 
         {/* Filter Tabs */}

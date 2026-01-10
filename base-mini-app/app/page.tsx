@@ -74,9 +74,9 @@ export default function Home() {
 
             {/* Headline */}
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-4 sm:mb-6 tracking-tight">
-              <span className="gradient-text inline-block">Prove Your Beliefs</span>
+              <span className="gradient-text inline-block">Your Voice Matters.</span>
               <br />
-              <span className="text-balance">Without Revealing Them</span>
+              <span className="text-balance">Your Privacy Is Sacred.</span>
             </h1>
 
             {/* Subheadline */}
@@ -86,8 +86,8 @@ export default function Home() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-base sm:text-lg md:text-xl text-base-gray-300 max-w-2xl mx-auto mb-4 sm:mb-6 px-4 text-balance leading-relaxed"
             >
-              Turn your actions into unstoppable credibility. Link your beliefs to your GitHub commits,
-              Base transactions, or NS3 activity. Build reputation without sacrificing privacy.
+              In a world racing toward AI without ethics, your beliefs need cryptographic proof—not corporate surveillance.
+              Build unstoppable credibility while staying completely anonymous.
             </motion.p>
 
             {/* Value Props */}
@@ -98,13 +98,13 @@ export default function Home() {
               className="flex flex-wrap gap-3 justify-center mb-6 sm:mb-8"
             >
               <span className="badge bg-vaultfire-green/20 text-vaultfire-green border border-vaultfire-green/30">
-                ✓ Unlock rewards
+                ✓ Zero surveillance
               </span>
               <span className="badge bg-base-blue/20 text-base-blue border border-base-blue/30">
-                ✓ Build trust
+                ✓ Post-quantum secure
               </span>
               <span className="badge bg-vaultfire-purple/20 text-vaultfire-purple border border-vaultfire-purple/30">
-                ✓ Stay anonymous
+                ✓ Human + AI alignment
               </span>
             </motion.div>
 
@@ -171,6 +171,40 @@ export default function Home() {
               <BeliefAttestationForm />
             </motion.div>
           )}
+        </div>
+      </section>
+
+      {/* Mission Statement - Why This Matters Now */}
+      <section className="py-12 sm:py-16 px-4 bg-gradient-to-b from-vaultfire-purple/10 via-transparent to-transparent">
+        <div className="container mx-auto max-w-4xl">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="card border-2 border-vaultfire-purple/30"
+          >
+            <div className="text-center mb-6">
+              <h2 className="text-2xl sm:text-3xl font-bold mb-3">
+                Why This Matters <span className="gradient-text">Right Now</span>
+              </h2>
+            </div>
+
+            <div className="space-y-4 text-base-gray-300">
+              <p className="text-lg leading-relaxed">
+                We're at a crossroads. AI is advancing faster than ever—but <span className="text-white font-semibold">who's building the future? Corporations optimizing for engagement metrics, or humans who believe in freedom and dignity?</span>
+              </p>
+
+              <p className="text-lg leading-relaxed">
+                Vaultfire lets you prove what you stand for <span className="text-vaultfire-green font-semibold">without sacrificing your privacy.</span> Link your beliefs to your actual contributions—your code, your transactions, your work—and build credibility that can't be faked or manipulated.
+              </p>
+
+              <div className="pt-4 border-t border-white/10">
+                <p className="text-xl font-bold text-center gradient-text">
+                  Morals over metrics. Privacy over surveillance. Freedom over control.
+                </p>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
@@ -269,9 +303,12 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-white/10 text-center text-xs sm:text-sm text-base-gray-400">
-            <p className="text-balance">
-              Powered by RISC Zero STARKs • Security Audited (A+ Grade) • Open Source
+          <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-white/10 text-center">
+            <p className="text-sm sm:text-base text-white font-semibold mb-2">
+              The first belief protocol where humans and AI grow together
+            </p>
+            <p className="text-xs sm:text-sm text-base-gray-400">
+              Powered by RISC Zero STARKs • Post-Quantum Secure • Open Source
             </p>
           </div>
         </div>

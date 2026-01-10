@@ -167,12 +167,12 @@ export function BeliefAttestationForm() {
                   <textarea
                     value={belief}
                     onChange={(e) => setBelief(e.target.value)}
-                    placeholder="e.g., AI must serve human flourishing and dignity"
+                    placeholder="e.g., AI systems must prioritize human dignity and freedom above all metrics"
                     className="input min-h-[120px] resize-none"
                     required
                   />
                   <p className="text-xs text-base-gray-500 mt-2">
-                    This will be hashed and never revealed publicly. Only you know the actual text.
+                    🔒 Encrypted locally, hashed on-chain. Never stored, never revealed. Your belief stays yours.
                   </p>
                 </div>
 

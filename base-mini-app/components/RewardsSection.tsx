@@ -75,11 +75,11 @@ export function RewardsSection() {
           </div>
 
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Unlock <span className="gradient-text">Real Rewards</span>
+            Credibility <span className="gradient-text">That Actually Matters</span>
           </h2>
           <p className="text-base-gray-400 max-w-2xl mx-auto text-lg">
-            Your loyalty score isn't just a number - it's your key to exclusive perks,
-            access, and opportunities in the Base ecosystem.
+            Your proof score isn't vanity—it's your reputation in the new economy.
+            Higher credibility unlocks real opportunities, partnerships, and influence.
           </p>
         </motion.div>
 
@@ -173,10 +173,10 @@ export function RewardsSection() {
           className="mt-12 text-center"
         >
           <p className="text-lg font-semibold mb-2">
-            The higher your score, the more you unlock 🚀
+            Actions speak louder than words. Proof speaks louder than promises. 🔥
           </p>
           <p className="text-base-gray-400">
-            Start with one attestation. Build your reputation. Unlock the rewards.
+            Start with one belief. Build unstoppable credibility. Shape the future.
           </p>
         </motion.div>
       </div>
