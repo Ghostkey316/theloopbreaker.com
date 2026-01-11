@@ -6,6 +6,7 @@ import { Send, Check, Loader2, AlertCircle, Github, Database, Wallet } from 'luc
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { keccak256, toBytes, encodeAbiParameters, bytesToHex } from 'viem';
 import { DILITHIUM_ATTESTOR_ADDRESS, DILITHIUM_ATTESTOR_ABI, MODULE_IDS, getModuleName, getModuleColor } from '@/lib/contracts';
+import { generateBeliefProof, IS_USING_MOCK_PROOFS } from '@/lib/risc-zero';
 
 type Step = 'compose' | 'select-module' | 'sign' | 'submit' | 'success';
 
@@ -24,28 +25,32 @@ export function BeliefAttestationForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (step !== 'submit') return;
+    if (step !== 'submit' || !address) return;
 
     try {
       // Create belief hash
       const beliefHash = keccak256(toBytes(belief));
 
-      // Create mock signature (in production, this would be a real signature)
+      // Generate ZK proof using RISC Zero (or mock for demo)
+      const zkProof = await generateBeliefProof({
+        belief,
+        beliefHash,
+        loyaltyScore,
+        moduleId,
+        activityProof: loyaltyProof,
+        proverAddress: address as `0x${string}`,
+      });
+
+      // Create mock signature (in production, this would be a real origin signature)
       const mockSignature = new Uint8Array(65);
       for (let i = 0; i < 65; i++) {
         mockSignature[i] = Math.floor(Math.random() * 256);
       }
 
-      // Create mock STARK proof (in production, this would come from RISC Zero prover)
-      const mockProof = new Uint8Array(128);
-      for (let i = 0; i < 128; i++) {
-        mockProof[i] = Math.floor(Math.random() * 256);
-      }
-
       // Encode zkProofBundle: (bytes proofBytes, bytes signature)
       const zkProofBundle = encodeAbiParameters(
         [{ type: 'bytes' }, { type: 'bytes' }],
-        [bytesToHex(mockProof), bytesToHex(mockSignature)]
+        [zkProof.proofBytes, bytesToHex(mockSignature)]
       );
 
       // Submit to contract
@@ -124,6 +129,19 @@ export function BeliefAttestationForm() {
         animate={{ opacity: 1, y: 0 }}
         className="card"
       >
+        {/* Demo Warning Banner */}
+        {IS_USING_MOCK_PROOFS && (
+          <div className="mb-6 p-3 rounded-xl bg-vaultfire-purple/10 border border-vaultfire-purple/30">
+            <p className="text-sm text-vaultfire-purple flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>
+                <strong>Demo Version:</strong> Currently using mock ZK proofs for demonstration.
+                Real RISC Zero integration coming soon. Best used on Base Sepolia testnet.
+              </span>
+            </p>
+          </div>
+        )}
+
         <div className="mb-8">
           <h2 className="text-2xl font-bold mb-2">Create Belief Attestation</h2>
           <p className="text-base-gray-400">
