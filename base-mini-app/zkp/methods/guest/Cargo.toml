@@ -1,0 +1,16 @@
+[package]
+name = "belief-guest"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+
+[dependencies]
+risc0-zkvm = { workspace = true, features = ["guest"] }
+serde = { workspace = true, features = ["derive"] }
+sha3 = { version = "0.10", default-features = false }
+hex = { version = "0.4", default-features = false, features = ["alloc"] }
+
+[profile.release]
+opt-level = 3
+lto = true

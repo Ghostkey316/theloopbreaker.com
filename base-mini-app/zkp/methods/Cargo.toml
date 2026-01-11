@@ -1,0 +1,13 @@
+[package]
+name = "vaultfire-methods"
+version = "0.1.0"
+edition = "2021"
+
+[build-dependencies]
+risc0-build = "1.1"
+
+[dependencies]
+risc0-zkvm = { workspace = true, features = ["guest"] }
+
+[package.metadata.risc0]
+methods = ["guest"]

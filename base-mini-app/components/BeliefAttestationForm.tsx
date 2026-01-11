@@ -6,6 +6,14 @@ import { Send, Check, Loader2, AlertCircle, Github, Database, Wallet } from 'luc
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { keccak256, toBytes, encodeAbiParameters, bytesToHex } from 'viem';
 import { DILITHIUM_ATTESTOR_ADDRESS, DILITHIUM_ATTESTOR_ABI, MODULE_IDS, getModuleName, getModuleColor } from '@/lib/contracts';
+import {
+  calculateGitHubLoyaltyScore,
+  calculateNS3LoyaltyScore,
+  calculateBaseLoyaltyScore,
+  fetchGitHubActivity,
+  generateActivityProof
+} from '@/lib/loyalty-calculator';
+import { generateBeliefProof, isUsingMockProofs } from '@/lib/zkp-client';
 
 type Step = 'compose' | 'select-module' | 'sign' | 'submit' | 'success';
 
@@ -15,7 +23,9 @@ export function BeliefAttestationForm() {
   const [belief, setBelief] = useState('');
   const [moduleId, setModuleId] = useState<number>(MODULE_IDS.GITHUB);
   const [loyaltyProof, setLoyaltyProof] = useState('');
-  const [loyaltyScore] = useState(9500); // Default high score for demo
+  const [loyaltyScore, setLoyaltyScore] = useState<number>(0);
+  const [githubUsername, setGithubUsername] = useState('');
+  const [isCalculatingScore, setIsCalculatingScore] = useState(false);
 
   const { writeContract, data: hash, error, isPending } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
@@ -24,28 +34,32 @@ export function BeliefAttestationForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (step !== 'submit') return;
+    if (step !== 'submit' || !address) return;
 
     try {
       // Create belief hash
       const beliefHash = keccak256(toBytes(belief));
 
-      // Create mock signature (in production, this would be a real signature)
+      // Generate ZK proof using RISC Zero (or mock for development)
+      const zkProof = await generateBeliefProof({
+        belief,
+        beliefHash,
+        loyaltyScore,
+        moduleId,
+        activityProof: loyaltyProof,
+        proverAddress: address as `0x${string}`,
+      });
+
+      // Create mock signature (in production, this would be Dilithium signature)
       const mockSignature = new Uint8Array(65);
       for (let i = 0; i < 65; i++) {
         mockSignature[i] = Math.floor(Math.random() * 256);
       }
 
-      // Create mock STARK proof (in production, this would come from RISC Zero prover)
-      const mockProof = new Uint8Array(128);
-      for (let i = 0; i < 128; i++) {
-        mockProof[i] = Math.floor(Math.random() * 256);
-      }
-
       // Encode zkProofBundle: (bytes proofBytes, bytes signature)
       const zkProofBundle = encodeAbiParameters(
         [{ type: 'bytes' }, { type: 'bytes' }],
-        [bytesToHex(mockProof), bytesToHex(mockSignature)]
+        [zkProof.proofBytes, bytesToHex(mockSignature)]
       );
 
       // Submit to contract
@@ -74,6 +88,53 @@ export function BeliefAttestationForm() {
     if (step === 'select-module') setStep('compose');
     else if (step === 'sign') setStep('select-module');
     else if (step === 'submit') setStep('sign');
+  };
+
+  // Calculate loyalty score based on module
+  const calculateLoyalty = async () => {
+    setIsCalculatingScore(true);
+    try {
+      if (moduleId === MODULE_IDS.GITHUB) {
+        if (!githubUsername) {
+          alert('Please enter your GitHub username');
+          return;
+        }
+        const activity = await fetchGitHubActivity(githubUsername);
+        const score = calculateGitHubLoyaltyScore(activity);
+        setLoyaltyScore(score);
+        setLoyaltyProof(generateActivityProof(moduleId, activity));
+      } else if (moduleId === MODULE_IDS.NS3) {
+        // Mock NS3 data for now
+        const mockNS3Activity = {
+          totalMessages: 500,
+          averageQualityScore: 85,
+          accountAgeMonths: 6,
+          recipientCount: 150,
+          reputationScore: 90,
+        };
+        const score = calculateNS3LoyaltyScore(mockNS3Activity);
+        setLoyaltyScore(score);
+        setLoyaltyProof(generateActivityProof(moduleId, mockNS3Activity));
+      } else if (moduleId === MODULE_IDS.BASE) {
+        // Mock Base data for now
+        const mockBaseActivity = {
+          totalTransactions: 250,
+          totalVolumeUSD: 25000,
+          nftCount: 15,
+          contractInteractions: 50,
+          accountAgeMonths: 8,
+          uniqueContractsInteracted: 30,
+        };
+        const score = calculateBaseLoyaltyScore(mockBaseActivity);
+        setLoyaltyScore(score);
+        setLoyaltyProof(generateActivityProof(moduleId, mockBaseActivity));
+      }
+    } catch (error) {
+      console.error('Error calculating loyalty score:', error);
+      alert('Failed to calculate loyalty score. Please try again.');
+    } finally {
+      setIsCalculatingScore(false);
+    }
   };
 
   // Handle success
@@ -133,6 +194,21 @@ export function BeliefAttestationForm() {
             {step === 'submit' && 'Submit to Base blockchain'}
           </p>
         </div>
+
+        {/* Mock Proof Warning */}
+        {isUsingMockProofs() && (
+          <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-amber-500 mb-1">Development Mode</p>
+                <p className="text-xs text-base-gray-300">
+                  Using mock ZK proofs for development. For production, configure a RISC Zero prover service.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Progress Steps */}
         <div className="flex items-center gap-2 mb-8">
@@ -221,26 +297,57 @@ export function BeliefAttestationForm() {
                   </div>
                 </div>
 
+                {moduleId === MODULE_IDS.GITHUB && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2">GitHub Username</label>
+                    <input
+                      type="text"
+                      value={githubUsername}
+                      onChange={(e) => setGithubUsername(e.target.value)}
+                      placeholder="octocat"
+                      className="input"
+                    />
+                    <p className="text-xs text-base-gray-500 mt-2">
+                      We'll fetch your GitHub activity and calculate your loyalty score
+                    </p>
+                  </div>
+                )}
+
                 <div>
-                  <label className="block text-sm font-medium mb-2">Activity Proof</label>
-                  <input
-                    type="text"
-                    value={loyaltyProof}
-                    onChange={(e) => setLoyaltyProof(e.target.value)}
-                    placeholder={
-                      moduleId === MODULE_IDS.GITHUB
-                        ? 'github:commit_sha'
-                        : moduleId === MODULE_IDS.NS3
-                        ? 'ns3:session_id'
-                        : 'base:tx_hash'
-                    }
-                    className="input"
-                    required
-                  />
-                  <p className="text-xs text-base-gray-500 mt-2">
-                    Format: {getModuleName(moduleId).toLowerCase()}:identifier
-                  </p>
+                  <button
+                    type="button"
+                    onClick={calculateLoyalty}
+                    disabled={isCalculatingScore || (moduleId === MODULE_IDS.GITHUB && !githubUsername)}
+                    className="btn-primary w-full"
+                  >
+                    {isCalculatingScore ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        Calculating Loyalty Score...
+                      </>
+                    ) : (
+                      `Calculate ${getModuleName(moduleId)} Loyalty Score`
+                    )}
+                  </button>
                 </div>
+
+                {loyaltyScore > 0 && (
+                  <div className="glass rounded-xl p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-base-gray-400">Loyalty Score</p>
+                      <p className="text-xl font-bold text-vaultfire-green">{loyaltyScore / 100}%</p>
+                    </div>
+                    <div className="w-full bg-base-gray-700 rounded-full h-2">
+                      <div
+                        className="bg-vaultfire-green h-2 rounded-full transition-all"
+                        style={{ width: `${(loyaltyScore / 10000) * 100}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-base-gray-500">
+                      Score: {loyaltyScore} / 10000 basis points
+                    </p>
+                  </div>
+                )}
 
                 <div className="flex gap-3">
                   <button type="button" onClick={prevStep} className="btn-secondary flex-1">
@@ -249,7 +356,7 @@ export function BeliefAttestationForm() {
                   <button
                     type="button"
                     onClick={nextStep}
-                    disabled={loyaltyProof.length === 0}
+                    disabled={loyaltyScore === 0 || loyaltyProof.length === 0}
                     className="btn-primary flex-1"
                   >
                     Continue
