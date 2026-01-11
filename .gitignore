@@ -22,6 +22,7 @@ config/local/
 audit_logs/*.jsonl
 audit_logs/*.log
 .next/
+dist/
 
 # Runtime generated files from test execution
 backups/
