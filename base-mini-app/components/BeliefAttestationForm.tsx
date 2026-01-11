@@ -124,6 +124,17 @@ export function BeliefAttestationForm() {
         animate={{ opacity: 1, y: 0 }}
         className="card"
       >
+        {/* Demo Warning Banner */}
+        <div className="mb-6 p-3 rounded-xl bg-vaultfire-purple/10 border border-vaultfire-purple/30">
+          <p className="text-sm text-vaultfire-purple flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>
+              <strong>Demo Version:</strong> Currently using mock ZK proofs for demonstration.
+              Real RISC Zero integration coming soon. Best used on Base Sepolia testnet.
+            </span>
+          </p>
+        </div>
+
         <div className="mb-8">
           <h2 className="text-2xl font-bold mb-2">Create Belief Attestation</h2>
           <p className="text-base-gray-400">
