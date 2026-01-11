@@ -68,6 +68,10 @@ export const MODULE_IDS = {
   IDENTITY: 5,
   GOVERNANCE: 6,
   GENERIC: 7,
+  AI_AGENT: 8,        // AI agent reputation and authorization
+  WORK_HISTORY: 9,    // Employment and professional credentials
+  EDUCATION: 10,      // Academic credentials and certifications
+  HUMANITY_PROOF: 11, // Proof of being human (anti-bot)
 } as const;
 
 /**
@@ -86,6 +90,22 @@ export function getModuleName(moduleId: number): string {
       return 'NS3';
     case MODULE_IDS.BASE:
       return 'Base';
+    case MODULE_IDS.CREDENTIAL:
+      return 'Credential';
+    case MODULE_IDS.REPUTATION:
+      return 'Reputation';
+    case MODULE_IDS.IDENTITY:
+      return 'Identity';
+    case MODULE_IDS.GOVERNANCE:
+      return 'Governance';
+    case MODULE_IDS.AI_AGENT:
+      return 'AI Agent';
+    case MODULE_IDS.WORK_HISTORY:
+      return 'Work History';
+    case MODULE_IDS.EDUCATION:
+      return 'Education';
+    case MODULE_IDS.HUMANITY_PROOF:
+      return 'Humanity Proof';
     default:
       return 'Generic';
   }
@@ -100,6 +120,22 @@ export function getModuleColor(moduleId: number): string {
       return 'bg-vaultfire-purple text-white';
     case MODULE_IDS.BASE:
       return 'bg-base-blue text-white';
+    case MODULE_IDS.AI_AGENT:
+      return 'bg-cyan-600 text-white';
+    case MODULE_IDS.HUMANITY_PROOF:
+      return 'bg-green-600 text-white';
+    case MODULE_IDS.EDUCATION:
+      return 'bg-indigo-600 text-white';
+    case MODULE_IDS.WORK_HISTORY:
+      return 'bg-orange-600 text-white';
+    case MODULE_IDS.CREDENTIAL:
+      return 'bg-purple-600 text-white';
+    case MODULE_IDS.IDENTITY:
+      return 'bg-pink-600 text-white';
+    case MODULE_IDS.GOVERNANCE:
+      return 'bg-red-600 text-white';
+    case MODULE_IDS.REPUTATION:
+      return 'bg-yellow-600 text-white';
     default:
       return 'bg-base-gray-600 text-white';
   }
