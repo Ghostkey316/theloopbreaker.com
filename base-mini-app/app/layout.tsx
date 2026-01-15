@@ -1,29 +1,11 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { Providers } from './providers';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export const metadata: Metadata = {
-  title: 'Vaultfire | The Trust Layer for Base',
-  description: 'The complete trust infrastructure for reputation, identity, credibility, and governance. Verify any claim with zero-knowledge proofs on Base. Production-ready SDK. Post-quantum secure.',
-  keywords: [
-    'Base',
-    'blockchain',
-    'zero-knowledge',
-    'privacy',
-    'attestation',
-    'RISC Zero',
-    'STARK',
-    'trust layer',
-    'reputation',
-    'identity',
-    'governance',
-    'DeFi',
-    'credentials',
-    'SDK',
-    'TypeScript',
-    'post-quantum',
-  ],
+  title: 'Vaultfire | Prove Your Beliefs on Base',
+  description: 'Privacy-first belief attestation with zero-knowledge proofs on Base blockchain',
+  keywords: ['Base', 'blockchain', 'zero-knowledge', 'privacy', 'beliefs', 'attestation', 'RISC Zero', 'STARK'],
   authors: [{ name: 'Vaultfire Protocol' }],
   creator: 'Vaultfire Protocol',
   publisher: 'Vaultfire Protocol',
@@ -33,49 +15,21 @@ export const metadata: Metadata = {
     telephone: false,
   },
   openGraph: {
-    title: 'Vaultfire | The Trust Layer for Base',
-    description: 'The complete trust infrastructure for reputation, identity, credibility, and governance. Verify any claim with zero-knowledge proofs. ~61k gas. <2s proofs. Post-quantum secure.',
+    title: 'Vaultfire | Prove Your Beliefs on Base',
+    description: 'Privacy-first belief attestation with zero-knowledge proofs',
     type: 'website',
     locale: 'en_US',
     siteName: 'Vaultfire',
-    url: 'https://vaultfire.base.org',
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'Vaultfire - The Trust Layer for Base',
-        type: 'image/png',
-      },
-    ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Vaultfire | The Trust Layer for Base',
-    description: 'Verify any claim with zero-knowledge proofs. ~61k gas. <2s proofs. Post-quantum secure. Production SDK for Base.',
-    images: ['/og-image.png'],
-    creator: '@Vaultfire',
-    site: '@Vaultfire',
+    title: 'Vaultfire | Prove Your Beliefs on Base',
+    description: 'Privacy-first belief attestation with zero-knowledge proofs',
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'Vaultfire',
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
-  },
-  verification: {
-    // Add Google Search Console verification when available
-    // google: 'verification-code',
   },
 };
 
@@ -105,9 +59,7 @@ export default function RootLayout({
         <meta name="format-detection" content="telephone=no" />
       </head>
       <body className="font-sans antialiased">
-        <ErrorBoundary>
-          <Providers>{children}</Providers>
-        </ErrorBoundary>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

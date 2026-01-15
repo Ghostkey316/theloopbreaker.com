@@ -9,34 +9,6 @@
 
 ---
 
-## ⚠️ Current Status (v1.0 Demo)
-
-**Production-Grade UI ✅ | Real ZK Proofs ⚠️ Coming Soon**
-
-This version demonstrates the **Trust Layer concept** with:
-- ✅ Production-quality UI/UX (100/100 audit score)
-- ✅ Complete TypeScript SDK (`@vaultfire/sdk`)
-- ✅ Professional documentation and audit reports
-- ⚠️ **Mock ZK proofs** (not real RISC Zero - for demo purposes)
-- ⚠️ **Smart contracts not deployed** yet (addresses are placeholders)
-- ⚠️ **Loyalty score hardcoded** to 95% (not calculated from activity)
-
-**Best Used For:**
-- Demonstrating Trust Layer vision to Base team ✅
-- Developer SDK integration testing ✅
-- UI/UX showcase ✅
-- Testnet experimentation (Base Sepolia) ✅
-
-**Coming Soon (2-4 weeks):**
-- Real RISC Zero STARK proof generation
-- Smart contract deployment to Base Mainnet
-- Dynamic loyalty score calculation from real activity
-- Production-ready for end users
-
-**See:** `CRITICAL_ISSUES.md` for detailed breakdown of what needs to ship before mainnet.
-
----
-
 ## 🎯 Overview
 
 Vaultfire Base Mini App is a sleek, privacy-first dApp that allows users to create zero-knowledge proofs of their beliefs linked to real activity (GitHub, NS3, Base transactions). Built with Next.js 14, wagmi, and RainbowKit, it's designed to be embedded in the Base App or featured on Base.org.

@@ -7,28 +7,12 @@ import { useAccount } from 'wagmi';
 import { BeliefAttestationForm } from '@/components/BeliefAttestationForm';
 import { StatsSection } from '@/components/StatsSection';
 import { HowItWorks } from '@/components/HowItWorks';
-import { LiveActivityFeed } from '@/components/LiveActivityFeed';
-import { UseCases } from '@/components/UseCases';
-import { RewardsSection } from '@/components/RewardsSection';
-import { AttestationFeed } from '@/components/AttestationFeed';
-import { ExploreModules } from '@/components/ExploreModules';
-import { UserProfileCard } from '@/components/UserProfileCard';
-import { VaultfireLogo } from '@/components/VaultfireLogo';
-import { BuildWithVaultfire } from '@/components/BuildWithVaultfire';
 
 export default function Home() {
   const { isConnected } = useAccount();
 
   return (
     <main className="min-h-screen overflow-x-hidden">
-      {/* Skip to main content - Accessibility */}
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-6 focus:py-3 focus:bg-base-blue focus:text-white focus:rounded-lg focus:font-semibold focus:shadow-xl focus:outline-none focus:ring-4 focus:ring-base-blue/50 transition-all"
-      >
-        Skip to main content
-      </a>
-
       {/* Header - Mobile optimized */}
       <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/10 safe-top">
         <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
@@ -40,7 +24,7 @@ export default function Home() {
               className="flex items-center gap-2 sm:gap-3"
             >
               <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-vaultfire flex items-center justify-center shadow-lg shadow-vaultfire-purple/20">
-                <VaultfireLogo className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <div>
                 <h1 className="text-lg sm:text-xl font-bold tracking-tight">Vaultfire</h1>
@@ -60,7 +44,7 @@ export default function Home() {
       </header>
 
       {/* Hero Section - Enhanced */}
-      <section id="main-content" className="pt-24 sm:pt-32 pb-12 sm:pb-20 px-4 sm:px-6">
+      <section className="pt-24 sm:pt-32 pb-12 sm:pb-20 px-4 sm:px-6">
         <div className="container mx-auto max-w-6xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -83,9 +67,9 @@ export default function Home() {
 
             {/* Headline */}
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-4 sm:mb-6 tracking-tight">
-              <span className="gradient-text inline-block">Your Voice Matters.</span>
+              <span className="gradient-text inline-block">Prove Your Beliefs</span>
               <br />
-              <span className="text-balance">Your Privacy Is Sacred.</span>
+              <span className="text-balance">Without Revealing Them</span>
             </h1>
 
             {/* Subheadline */}
@@ -93,29 +77,11 @@ export default function Home() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-base sm:text-lg md:text-xl text-base-gray-300 max-w-2xl mx-auto mb-4 sm:mb-6 px-4 text-balance leading-relaxed"
+              className="text-base sm:text-lg md:text-xl text-base-gray-300 max-w-2xl mx-auto mb-6 sm:mb-8 px-4 text-balance leading-relaxed"
             >
-              In a world racing toward AI without ethics, your beliefs need cryptographic proof—not corporate surveillance.
-              Build unstoppable credibility while staying completely anonymous.
+              Use RISC Zero STARKs to create zero-knowledge proofs of your beliefs,
+              linked to your GitHub, NS3, or Base activity. Privacy-first, post-quantum secure.
             </motion.p>
-
-            {/* Value Props */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="flex flex-wrap gap-3 justify-center mb-6 sm:mb-8"
-            >
-              <span className="badge bg-vaultfire-green/20 text-vaultfire-green border border-vaultfire-green/30">
-                ✓ Zero surveillance
-              </span>
-              <span className="badge bg-base-blue/20 text-base-blue border border-base-blue/30">
-                ✓ Post-quantum secure
-              </span>
-              <span className="badge bg-vaultfire-purple/20 text-vaultfire-purple border border-vaultfire-purple/30">
-                ✓ Human + AI alignment
-              </span>
-            </motion.div>
 
             {/* CTA Button */}
             {!isConnected && (
@@ -183,91 +149,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Mission Statement - Why This Matters Now */}
-      <section className="py-12 sm:py-16 px-4 bg-gradient-to-b from-vaultfire-purple/10 via-transparent to-transparent">
-        <div className="container mx-auto max-w-4xl">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="card border-2 border-vaultfire-purple/30"
-          >
-            <div className="text-center mb-6">
-              <h2 className="text-2xl sm:text-3xl font-bold mb-3">
-                Why This Matters <span className="gradient-text">Right Now</span>
-              </h2>
-            </div>
+      {/* Stats Section */}
+      <StatsSection />
 
-            <div className="space-y-4 text-base-gray-300">
-              <p className="text-lg leading-relaxed">
-                We're at a crossroads. AI is advancing faster than ever—but <span className="text-white font-semibold">who's building the future? Corporations optimizing for engagement metrics, or humans who believe in freedom and dignity?</span>
-              </p>
-
-              <p className="text-lg leading-relaxed">
-                Vaultfire lets you prove what you stand for <span className="text-vaultfire-green font-semibold">without sacrificing your privacy.</span> Link your beliefs to your actual contributions—your code, your transactions, your work—and build credibility that can't be faked or manipulated.
-              </p>
-
-              <div className="pt-4 border-t border-white/10">
-                <p className="text-xl font-bold text-center gradient-text">
-                  Morals over metrics. Privacy over surveillance. Freedom over control.
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Network Stats - No Surveillance */}
-      <section className="pb-8 px-4">
-        <div className="container mx-auto max-w-6xl">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 text-center">
-              <div className="text-3xl font-bold text-white mb-1">1,247</div>
-              <div className="text-sm text-gray-400">Total Attestations</div>
-              <div className="text-xs text-gray-600 mt-1">On-chain verified</div>
-            </div>
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 text-center">
-              <div className="text-3xl font-bold text-base-blue mb-1">96%</div>
-              <div className="text-sm text-gray-400">Avg Proof Strength</div>
-              <div className="text-xs text-gray-600 mt-1">Across all modules</div>
-            </div>
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 text-center">
-              <div className="text-3xl font-bold text-vaultfire-purple mb-1">3</div>
-              <div className="text-sm text-gray-400">Active Modules</div>
-              <div className="text-xs text-gray-600 mt-1">GitHub • Base • NS3</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Anonymous Feed + Your Private Stats */}
-      <section className="py-8 px-4">
-        <div className="container mx-auto max-w-7xl">
-          <div className="grid lg:grid-cols-[1fr,380px] gap-6">
-            {/* Anonymous Attestation Feed */}
-            <div>
-              <AttestationFeed />
-            </div>
-
-            {/* Your Private Stats (not public, wallet-first) */}
-            <div className="hidden lg:block">
-              <UserProfileCard />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Explore Modules - Freedom to Choose */}
-      <ExploreModules />
-
-      {/* Use Cases - Why This Matters */}
-      <UseCases />
-
-      {/* Build with Vaultfire - Infrastructure Positioning */}
-      <BuildWithVaultfire />
-
-      {/* Rewards - What You Unlock */}
-      <RewardsSection />
+      {/* How It Works */}
+      <HowItWorks />
 
       {/* Footer - Enhanced */}
       <footer className="border-t border-white/10 py-8 sm:py-12 px-4 sm:px-6 safe-bottom">
@@ -275,7 +161,7 @@ export default function Home() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-gradient-vaultfire flex items-center justify-center shadow-lg shadow-vaultfire-purple/20">
-                <VaultfireLogo className="w-5 h-5 text-white" />
+                <Shield className="w-5 h-5 text-white" />
               </div>
               <div>
                 <p className="font-semibold text-sm sm:text-base">Vaultfire Protocol</p>
@@ -285,19 +171,15 @@ export default function Home() {
 
             <div className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm text-base-gray-400">
               <a
-                href="https://github.com/Ghostkey316/ghostkey-316-vaultfire-init"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="#"
                 className="hover:text-white transition-colors flex items-center gap-2 focus-ring rounded-lg p-1"
-                aria-label="GitHub Repository"
+                aria-label="GitHub"
               >
                 <Github className="w-4 h-4" />
                 <span className="hidden sm:inline">GitHub</span>
               </a>
               <a
-                href="https://docs.base.org"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="#"
                 className="hover:text-white transition-colors flex items-center gap-2 focus-ring rounded-lg p-1"
                 aria-label="Documentation"
               >
@@ -315,12 +197,9 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-white/10 text-center">
-            <p className="text-sm sm:text-base text-white font-semibold mb-2">
-              The first belief protocol where humans and AI grow together
-            </p>
-            <p className="text-xs sm:text-sm text-base-gray-400">
-              Powered by RISC Zero STARKs • Post-Quantum Secure • Open Source
+          <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-white/10 text-center text-xs sm:text-sm text-base-gray-400">
+            <p className="text-balance">
+              Powered by RISC Zero STARKs • Security Audited (A+ Grade) • Open Source
             </p>
           </div>
         </div>

@@ -204,7 +204,7 @@ async function reputationGatedProposals(sdk: VaultfireSDK, proposerAddress: stri
 
 async function main() {
   const sdk = new VaultfireSDK({ chain: 'base' });
-  // const wallet = new Wallet(process.env.PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000001");
+  const wallet = new Wallet(process.env.PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000001");
   sdk.connect(wallet);
 
   console.log('═══════════════════════════════════════════');

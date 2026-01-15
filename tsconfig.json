@@ -10,9 +10,8 @@
     "allowJs": true,
     "forceConsistentCasingInFileNames": true,
     "lib": ["ES2020", "DOM"],
-    "types": ["node", "jest"],
-    "jsx": "react-jsx"
+    "types": ["node", "jest"]
   },
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", "dist", ".github", "apps/vaultfire-arcade", "base-mini-app", "sdk"]
+  "exclude": ["node_modules", "dist", ".github", "apps/vaultfire-arcade", "base-mini-app"]
 }
