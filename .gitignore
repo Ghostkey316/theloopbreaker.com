@@ -35,3 +35,12 @@ vaultfire-core/mission-ledger.jsonl
 vaultfire-core/ethics/ai_trader_audit.json
 codex/VAULTFIRE_CLI_LEDGER.jsonl
 vaultfire/audit_logs/
+
+# Test artifacts and generated files
+codex-integrity.json
+docs/badges/trust-badge.svg
+status/alerts.jsonl
+tests/tmp/
+vaultfire-core/*_status.json
+vaultfire-core/*_log.json
+vaultfire-core/*.status
