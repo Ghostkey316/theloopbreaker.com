@@ -1,42 +1,54 @@
-# Vaultfire SDK
+# @vaultfire/sdk
 
-The `vaultfire-sdk` package delivers a dual-language onboarding kit for the Empathic Resonance Verifier (ERV).
-It wraps the low-level Vaultfire protocol APIs with ergonomic helpers for moral gradient attestations, oracle
-emissions, and pilot simulations.
+> Official TypeScript SDK for Vaultfire - The Trust Layer for Base
 
-## Python usage
+[![npm version](https://img.shields.io/npm/v/@vaultfire/sdk.svg)](https://www.npmjs.com/package/@vaultfire/sdk)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
 
-```python
-from sdk import SymbioticForge  # or `from vaultfire_sdk import SymbioticForge` after installation
+Verify any claim with zero-knowledge proofs. Not just beliefs—reputation, identity, credentials, and governance. Built on Base. Powered by RISC Zero STARKs.
 
-forge = SymbioticForge(wallet="ghostkey316.eth")
-intent = {"alpha_power": 0.72, "theta_intent": "align", "proof": "demo-proof"}
-tx_hash = forge.attest_moral_loop(intent)
-pilot = forge.run_pilot_sim("loyalty")
-```
+## Features
 
-Install locally with
+✅ **Post-Quantum Secure** - RISC Zero STARK proofs resist quantum attacks
+✅ **Production-Ready** - ~61k gas per verification, <2s proof generation
+✅ **Type-Safe** - Full TypeScript support with comprehensive types
+✅ **Multi-Chain** - Supports Base Mainnet, Sepolia, and Goerli
+✅ **REST API** - Use without Web3 wallets
+✅ **Webhooks** - Real-time verification events
+✅ **Zero-Knowledge** - Privacy by default
 
-```bash
-pip install -e ./sdk
-```
+---
 
-## JavaScript usage
-
-```ts
-import { SymbioticForge } from 'vaultfire-sdk';
-
-const forge = new SymbioticForge('0x59c6995e998f97a5a0044966f094538b2928fbc9d8890f18d23e3f8cf2b5f1c1');
-const txHash = await forge.attestMoralLoop({ alpha_power: 0.7, theta_intent: 'align' });
-const sim = await forge.runPilotSim('loyalty');
-```
-
-Build and test with
+## Installation
 
 ```bash
-npm install
-tsc -p sdk/tsconfig.json
-npx jest sdk/tests/symbioticForge.test.ts
+npm install @vaultfire/sdk ethers
 ```
 
-Both SDKs default to sandbox-safe fallbacks while mirroring the live protocol surfaces.
+---
+
+## Quick Start
+
+```typescript
+import { VaultfireSDK, ModuleType } from '@vaultfire/sdk';
+import { Wallet } from 'ethers';
+
+// Initialize SDK
+const vaultfire = new VaultfireSDK({ chain: 'base' });
+
+// Connect wallet
+const wallet = new Wallet('YOUR_PRIVATE_KEY');
+vaultfire.connect(wallet);
+
+// Verify a belief
+const result = await vaultfire.verifyBelief({
+  beliefHash: vaultfire.hashBelief('I contribute to open source'),
+  moduleId: ModuleType.GITHUB,
+});
+
+console.log('Verified:', result.verified);
+console.log('TX Hash:', result.txHash);
+```
+
+**See [API_REFERENCE.md](./API_REFERENCE.md) for complete documentation.**

@@ -8,8 +8,9 @@
     "esModuleInterop": true,
     "moduleResolution": "Node",
     "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "resolveJsonModule": true
   },
-  "include": ["index.ts"],
-  "exclude": ["dist", "tests"]
+  "include": ["vaultfire.ts", "api-server.ts", "index.ts"],
+  "exclude": ["dist", "tests", "node_modules", "examples"]
 }

@@ -19,5 +19,9 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Build TypeScript (root only, excludes base-mini-app)
+        run: npm run build:test
       - name: Run tests
-        run: npm run test
+        run: npm test
+        env:
+          CI: true

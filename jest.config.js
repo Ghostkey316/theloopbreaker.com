@@ -1,6 +1,9 @@
 module.exports = {
   // Include both legacy __tests__ directory and the newer tests directory
   testMatch: ['**/__tests__/**/*.test.js', '**/tests/**/*.test.js', '**/tests/**/*.test.ts'],
+  // Exclude base-mini-app and node_modules from testing
+  testPathIgnorePatterns: ['/node_modules/', '/base-mini-app/'],
+  coveragePathIgnorePatterns: ['/node_modules/', '/base-mini-app/'],
   // Run in a single process to avoid stateful test interference
   maxWorkers: 1,
   setupFilesAfterEnv: ['jest-fetch-mock', '<rootDir>/jest.setup.js'],
