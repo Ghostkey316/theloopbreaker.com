@@ -160,7 +160,7 @@ async function main() {
   const sdk = new VaultfireSDK({ chain: 'base' });
 
   // Connect wallet (in production, use user's wallet)
-  // const wallet = new Wallet(process.env.PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000001");
+  const wallet = new Wallet(process.env.PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000001");
   sdk.connect(wallet);
 
   console.log('═══════════════════════════════════════════');
