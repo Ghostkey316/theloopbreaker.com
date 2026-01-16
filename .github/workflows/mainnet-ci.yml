@@ -6,6 +6,9 @@ on:
       - main
       - mainnet
       - 'release/**'
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 env:

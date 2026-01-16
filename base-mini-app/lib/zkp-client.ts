@@ -181,8 +181,11 @@ export class VaultfireZKPClient {
       throw new Error('Loyalty score must be between 0 and 10000 basis points');
     }
 
-    if (inputs.moduleId < 0 || inputs.moduleId > 7) {
-      throw new Error('Module ID must be between 0 and 7');
+    // Updated to support all module types:
+    // GITHUB(0), NS3(1), BASE(2), CREDENTIAL(3), REPUTATION(4), IDENTITY(5),
+    // GOVERNANCE(6), GENERIC(7), AI_AGENT(8), WORK_HISTORY(9), EDUCATION(10), HUMANITY_PROOF(11)
+    if (inputs.moduleId < 0 || inputs.moduleId > 11) {
+      throw new Error('Module ID must be between 0 and 11');
     }
 
     if (!inputs.proverAddress || inputs.proverAddress.length !== 42) {
