@@ -346,7 +346,8 @@ contract FanBeliefBond is ReentrancyGuard {
             // Reward whistleblower (10% of forfeited amount)
             uint256 whistleblowerReward = forfeitAmount / 10;
             if (whistleblowerReward > 0) {
-                payable(report.reporter).transfer(whistleblowerReward);
+                (bool success, ) = payable(report.reporter).call{value: whistleblowerReward}("");
+                require(success, "Transfer to whistleblower failed");
                 redistributionPool -= whistleblowerReward;
             }
         }
@@ -427,9 +428,10 @@ contract FanBeliefBond is ReentrancyGuard {
             yieldPool -= appreciationNeeded;
         }
 
-        // Transfer to fan
+        // Transfer to fan (using call{value:} instead of transfer for safety)
         if (fanShare > 0) {
-            payable(bond.fanAddress).transfer(fanShare);
+            (bool success, ) = payable(bond.fanAddress).call{value: fanShare}("");
+            require(success, "Transfer to fan failed");
         }
 
         emit BondSettled(bondId, status, fanShare);
@@ -452,7 +454,8 @@ contract FanBeliefBond is ReentrancyGuard {
         bond.settled = true;
         bond.active = false;
 
-        payable(bond.fanAddress).transfer(returnAmount);
+        (bool success, ) = payable(bond.fanAddress).call{value: returnAmount}("");
+        require(success, "Transfer to fan failed");
 
         emit BondSettled(bondId, IntegrityStatus.Stable, returnAmount);
     }

@@ -447,9 +447,10 @@ contract CompetitiveIntegrityBond is ReentrancyGuard {
             yieldPool -= appreciationNeeded;
         }
 
-        // Transfer funds
+        // Transfer funds (using call{value:} instead of transfer for safety)
         if (teamShare > 0) {
-            payable(bond.teamAddress).transfer(teamShare);
+            (bool success, ) = payable(bond.teamAddress).call{value: teamShare}("");
+            require(success, "Transfer to team failed");
         }
         if (fansShare > 0) {
             fanCompensationPool += fansShare;
