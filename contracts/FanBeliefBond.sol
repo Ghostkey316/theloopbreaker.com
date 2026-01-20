@@ -141,6 +141,15 @@ contract FanBeliefBond is ReentrancyGuard {
     event CorruptionConfirmed(uint256 indexed bondId, ViolationType violationType, uint256 forfeitAmount);
     event BondSettled(uint256 indexed bondId, IntegrityStatus status, uint256 fanShare);
     event BondForfeited(uint256 indexed bondId, ViolationType violationType, uint256 amount);
+    event YieldPoolFunded(address indexed funder, uint256 amount, uint256 newBalance);
+    event YieldPoolWithdrawn(address indexed owner, uint256 amount, uint256 newBalance);
+    event OracleAdded(address indexed oracle);
+    event OracleRemoved(address indexed oracle);
+    event InvestigatorAdded(address indexed investigator);
+    event OwnershipTransferInitiated(address indexed oldOwner, address indexed newOwner);
+    event OwnershipTransferred(address indexed oldOwner, address indexed newOwner);
+    event Paused();
+    event Unpaused();
 
     // ============ Modifiers ============
 
@@ -173,6 +182,7 @@ contract FanBeliefBond is ReentrancyGuard {
     function fundYieldPool() external payable {
         require(msg.value > 0, "Must send ETH");
         yieldPool += msg.value;
+        emit YieldPoolFunded(msg.sender, msg.value, yieldPool);
     }
 
     /**
@@ -185,6 +195,7 @@ contract FanBeliefBond is ReentrancyGuard {
         yieldPool -= amount;
         (bool success, ) = payable(owner).call{value: amount}("");
         require(success, "Transfer failed");
+        emit YieldPoolWithdrawn(msg.sender, amount, yieldPool);
     }
 
     // ============ Core Functions ============
@@ -450,31 +461,35 @@ contract FanBeliefBond is ReentrancyGuard {
 
     function _calculateAverageIntegrityScore(uint256 bondId) internal view returns (uint256) {
         IntegritySnapshot[] storage snapshots = bondIntegritySnapshots[bondId];
-        if (snapshots.length == 0) return 5000; // Neutral if no data
+        uint256 snapshotsLength = snapshots.length;
+        if (snapshotsLength == 0) return 5000; // Neutral if no data
 
         uint256 totalScore = 0;
-        for (uint256 i = 0; i < snapshots.length; i++) {
+        for (uint256 i = 0; i < snapshotsLength;) {
             totalScore += snapshots[i].overallIntegrity;
+            unchecked { ++i; }
         }
-        return totalScore / snapshots.length;
+        return totalScore / snapshotsLength;
     }
 
     function _calculateConsistencyScore(uint256 bondId) internal view returns (uint256) {
         IntegritySnapshot[] storage snapshots = bondIntegritySnapshots[bondId];
-        if (snapshots.length < 2) return 5000; // Need at least 2 snapshots
+        uint256 snapshotsLength = snapshots.length;
+        if (snapshotsLength < 2) return 5000; // Need at least 2 snapshots
 
         // Calculate variance in integrity scores
         uint256 avgIntegrity = _calculateAverageIntegrityScore(bondId);
         uint256 totalDeviation = 0;
 
-        for (uint256 i = 0; i < snapshots.length; i++) {
+        for (uint256 i = 0; i < snapshotsLength;) {
             uint256 deviation = snapshots[i].overallIntegrity > avgIntegrity ?
                 snapshots[i].overallIntegrity - avgIntegrity :
                 avgIntegrity - snapshots[i].overallIntegrity;
             totalDeviation += deviation;
+            unchecked { ++i; }
         }
 
-        uint256 avgDeviation = totalDeviation / snapshots.length;
+        uint256 avgDeviation = totalDeviation / snapshotsLength;
 
         // Lower deviation = higher consistency
         // Max deviation is 10000, so invert
@@ -545,12 +560,14 @@ contract FanBeliefBond is ReentrancyGuard {
 
     function _hasCleanRecord(uint256 bondId) internal view returns (bool) {
         IntegritySnapshot[] storage snapshots = bondIntegritySnapshots[bondId];
-        for (uint256 i = 0; i < snapshots.length; i++) {
+        uint256 snapshotsLength = snapshots.length;
+        for (uint256 i = 0; i < snapshotsLength;) {
             if (!snapshots[i].cleanRecord) {
                 return false;
             }
+            unchecked { ++i; }
         }
-        return snapshots.length > 0;
+        return snapshotsLength > 0;
     }
 
     // ============ Admin Functions ============
@@ -559,17 +576,20 @@ contract FanBeliefBond is ReentrancyGuard {
         require(msg.sender == owner, "Only owner");
         require(oracle != address(0), "Invalid oracle address");
         authorizedOracles[oracle] = true;
+        emit OracleAdded(oracle);
     }
 
     function removeAuthorizedOracle(address oracle) external {
         require(msg.sender == owner, "Only owner");
         authorizedOracles[oracle] = false;
+        emit OracleRemoved(oracle);
     }
 
     function addAuthorizedInvestigator(address investigator) external {
         require(msg.sender == owner, "Only owner");
         require(investigator != address(0), "Invalid investigator address");
         authorizedInvestigators[investigator] = true;
+        emit InvestigatorAdded(investigator);
     }
 
     /**
@@ -579,6 +599,7 @@ contract FanBeliefBond is ReentrancyGuard {
         require(msg.sender == owner, "Only owner");
         require(newOwner != address(0), "Invalid new owner");
         pendingOwner = newOwner;
+        emit OwnershipTransferInitiated(owner, newOwner);
     }
 
     /**
@@ -586,8 +607,10 @@ contract FanBeliefBond is ReentrancyGuard {
      */
     function acceptOwnership() external {
         require(msg.sender == pendingOwner, "Not pending owner");
+        address oldOwner = owner;
         owner = pendingOwner;
         pendingOwner = address(0);
+        emit OwnershipTransferred(oldOwner, owner);
     }
 
     /**
@@ -596,6 +619,7 @@ contract FanBeliefBond is ReentrancyGuard {
     function pause() external {
         require(msg.sender == owner, "Only owner");
         paused = true;
+        emit Paused();
     }
 
     /**
@@ -604,6 +628,7 @@ contract FanBeliefBond is ReentrancyGuard {
     function unpause() external {
         require(msg.sender == owner, "Only owner");
         paused = false;
+        emit Unpaused();
     }
 
     // ============ View Functions ============

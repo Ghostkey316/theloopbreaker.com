@@ -127,6 +127,14 @@ contract TeamworkIntegrityBond is ReentrancyGuard {
     event TeammateVerificationAdded(uint256 indexed bondId, address indexed verifier, uint256 makesBetter);
     event BondSettled(uint256 indexed bondId, TeamworkLevel rating, uint256 playerShare, uint256 teammatesShare);
     event StatPaddingDetected(uint256 indexed bondId, string reason, uint256 penaltyAmount);
+    event YieldPoolFunded(address indexed funder, uint256 amount, uint256 newBalance);
+    event YieldPoolWithdrawn(address indexed owner, uint256 amount, uint256 newBalance);
+    event OracleAdded(address indexed oracle);
+    event OracleRemoved(address indexed oracle);
+    event OwnershipTransferInitiated(address indexed oldOwner, address indexed newOwner);
+    event OwnershipTransferred(address indexed oldOwner, address indexed newOwner);
+    event Paused();
+    event Unpaused();
 
     // ============ Modifiers ============
 
@@ -153,6 +161,7 @@ contract TeamworkIntegrityBond is ReentrancyGuard {
     function fundYieldPool() external payable {
         require(msg.value > 0, "Must send ETH");
         yieldPool += msg.value;
+        emit YieldPoolFunded(msg.sender, msg.value, yieldPool);
     }
 
     /**
@@ -165,6 +174,7 @@ contract TeamworkIntegrityBond is ReentrancyGuard {
         yieldPool -= amount;
         (bool success, ) = payable(owner).call{value: amount}("");
         require(success, "Transfer failed");
+        emit YieldPoolWithdrawn(msg.sender, amount, yieldPool);
     }
 
     // ============ Core Functions ============
@@ -409,10 +419,11 @@ contract TeamworkIntegrityBond is ReentrancyGuard {
 
     function _calculateChemistryScore(uint256 bondId) internal view returns (uint256) {
         ChemistryMetrics[] storage metrics = bondChemistryMetrics[bondId];
-        if (metrics.length == 0) return 5000; // Neutral if no data
+        uint256 metricsLength = metrics.length;
+        if (metricsLength == 0) return 5000; // Neutral if no data
 
         uint256 totalScore = 0;
-        for (uint256 i = 0; i < metrics.length; i++) {
+        for (uint256 i = 0; i < metricsLength;) {
             uint256 gameScore = (
                 metrics[i].assistRatio +
                 metrics[i].defensiveEffort +
@@ -420,18 +431,20 @@ contract TeamworkIntegrityBond is ReentrancyGuard {
                 metrics[i].plusMinusDifferential
             ) / 4;
             totalScore += gameScore;
+            unchecked { ++i; }
         }
-        return totalScore / metrics.length;
+        return totalScore / metricsLength;
     }
 
     function _calculateWinPriorityScore(uint256 bondId) internal view returns (uint256) {
         WinningVsStats[] storage metrics = bondWinningMetrics[bondId];
-        if (metrics.length == 0) return 5000; // Neutral if no data
+        uint256 metricsLength = metrics.length;
+        if (metricsLength == 0) return 5000; // Neutral if no data
 
         uint256 totalScore = 0;
         uint256 statPaddingCount = 0;
 
-        for (uint256 i = 0; i < metrics.length; i++) {
+        for (uint256 i = 0; i < metricsLength;) {
             // Calculate base score
             uint256 winLossDelta = metrics[i].performanceInWins > metrics[i].performanceInLosses ?
                 (metrics[i].performanceInWins - metrics[i].performanceInLosses) : 0;
@@ -439,7 +452,7 @@ contract TeamworkIntegrityBond is ReentrancyGuard {
             // Penalize if performs much better in losses (stat padding indicator)
             if (metrics[i].performanceInLosses > metrics[i].performanceInWins &&
                 (metrics[i].performanceInLosses - metrics[i].performanceInWins) > STAT_PADDING_WIN_LOSS_DELTA) {
-                statPaddingCount++;
+                unchecked { statPaddingCount++; }
             }
 
             uint256 gameScore = (
@@ -449,12 +462,13 @@ contract TeamworkIntegrityBond is ReentrancyGuard {
             ) / 3;
 
             totalScore += gameScore;
+            unchecked { ++i; }
         }
 
-        uint256 avgScore = totalScore / metrics.length;
+        uint256 avgScore = totalScore / metricsLength;
 
         // Penalize for stat padding
-        if (statPaddingCount > metrics.length / 4) { // More than 25% stat padding games
+        if (statPaddingCount > metricsLength / 4) { // More than 25% stat padding games
             avgScore = (avgScore * 5000) / 10000; // 50% penalty
         }
 
@@ -463,7 +477,8 @@ contract TeamworkIntegrityBond is ReentrancyGuard {
 
     function _calculateTeammateConsensusScore(uint256 bondId) internal view returns (uint256) {
         TeammateVerification[] storage verifications = bondTeammateVerifications[bondId];
-        if (verifications.length < MIN_TEAMMATE_VERIFICATIONS) {
+        uint256 verificationsLength = verifications.length;
+        if (verificationsLength < MIN_TEAMMATE_VERIFICATIONS) {
             return 5000; // Neutral if insufficient verifications
         }
 
@@ -471,17 +486,18 @@ contract TeamworkIntegrityBond is ReentrancyGuard {
         uint256 totalPrioritizesWinning = 0;
         uint256 wouldWantCount = 0;
 
-        for (uint256 i = 0; i < verifications.length; i++) {
+        for (uint256 i = 0; i < verificationsLength;) {
             totalMakesBetter += verifications[i].makesBetter;
             totalPrioritizesWinning += verifications[i].prioritizesWinning;
             if (verifications[i].wouldWantInPlayoffs) {
-                wouldWantCount++;
+                unchecked { wouldWantCount++; }
             }
+            unchecked { ++i; }
         }
 
-        uint256 avgMakesBetter = (totalMakesBetter * 1000) / verifications.length; // Convert to 0-10000 scale
-        uint256 avgPrioritizesWinning = (totalPrioritizesWinning * 1000) / verifications.length;
-        uint256 playoffWantedPct = (wouldWantCount * 10000) / verifications.length;
+        uint256 avgMakesBetter = (totalMakesBetter * 1000) / verificationsLength; // Convert to 0-10000 scale
+        uint256 avgPrioritizesWinning = (totalPrioritizesWinning * 1000) / verificationsLength;
+        uint256 playoffWantedPct = (wouldWantCount * 10000) / verificationsLength;
 
         return (avgMakesBetter + avgPrioritizesWinning + playoffWantedPct) / 3;
     }
@@ -523,11 +539,13 @@ contract TeamworkIntegrityBond is ReentrancyGuard {
         require(msg.sender == owner, "Only owner");
         require(oracle != address(0), "Invalid oracle address");
         authorizedOracles[oracle] = true;
+        emit OracleAdded(oracle);
     }
 
     function removeAuthorizedOracle(address oracle) external {
         require(msg.sender == owner, "Only owner");
         authorizedOracles[oracle] = false;
+        emit OracleRemoved(oracle);
     }
 
     /**
@@ -537,6 +555,7 @@ contract TeamworkIntegrityBond is ReentrancyGuard {
         require(msg.sender == owner, "Only owner");
         require(newOwner != address(0), "Invalid new owner");
         pendingOwner = newOwner;
+        emit OwnershipTransferInitiated(owner, newOwner);
     }
 
     /**
@@ -544,8 +563,10 @@ contract TeamworkIntegrityBond is ReentrancyGuard {
      */
     function acceptOwnership() external {
         require(msg.sender == pendingOwner, "Not pending owner");
+        address oldOwner = owner;
         owner = pendingOwner;
         pendingOwner = address(0);
+        emit OwnershipTransferred(oldOwner, owner);
     }
 
     /**
@@ -554,6 +575,7 @@ contract TeamworkIntegrityBond is ReentrancyGuard {
     function pause() external {
         require(msg.sender == owner, "Only owner");
         paused = true;
+        emit Paused();
     }
 
     /**
@@ -562,6 +584,7 @@ contract TeamworkIntegrityBond is ReentrancyGuard {
     function unpause() external {
         require(msg.sender == owner, "Only owner");
         paused = false;
+        emit Unpaused();
     }
 
     // ============ View Functions ============

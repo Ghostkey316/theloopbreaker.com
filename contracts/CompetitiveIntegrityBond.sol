@@ -130,6 +130,16 @@ contract CompetitiveIntegrityBond is ReentrancyGuard {
     event BondSettled(uint256 indexed bondId, IntegrityLevel rating, uint256 teamShare, uint256 fansShare);
     event LoadManagementPenalty(uint256 indexed bondId, uint256 gamesRested, uint256 penaltyAmount);
     event TankingDetected(uint256 indexed bondId, uint256 compensationToFans);
+    event YieldPoolFunded(address indexed funder, uint256 amount, uint256 newBalance);
+    event YieldPoolWithdrawn(address indexed owner, uint256 amount, uint256 newBalance);
+    event FanCompensationClaimed(uint256 indexed bondId, address indexed fan, uint256 amount);
+    event OracleAdded(address indexed oracle);
+    event OracleRemoved(address indexed oracle);
+    event InvestigatorAdded(address indexed investigator);
+    event OwnershipTransferInitiated(address indexed oldOwner, address indexed newOwner);
+    event OwnershipTransferred(address indexed oldOwner, address indexed newOwner);
+    event Paused();
+    event Unpaused();
 
     // ============ Modifiers ============
 
@@ -162,6 +172,7 @@ contract CompetitiveIntegrityBond is ReentrancyGuard {
     function fundYieldPool() external payable {
         require(msg.value > 0, "Must send ETH");
         yieldPool += msg.value;
+        emit YieldPoolFunded(msg.sender, msg.value, yieldPool);
     }
 
     /**
@@ -174,6 +185,7 @@ contract CompetitiveIntegrityBond is ReentrancyGuard {
         yieldPool -= amount;
         (bool success, ) = payable(owner).call{value: amount}("");
         require(success, "Transfer failed");
+        emit YieldPoolWithdrawn(msg.sender, amount, yieldPool);
     }
 
     // ============ Core Functions ============
@@ -365,6 +377,7 @@ contract CompetitiveIntegrityBond is ReentrancyGuard {
             fanCompensationPool -= fanShare;
             (bool success, ) = payable(msg.sender).call{value: fanShare}("");
             require(success, "Transfer failed");
+            emit FanCompensationClaimed(bondId, msg.sender, fanShare);
         }
     }
 
@@ -454,10 +467,11 @@ contract CompetitiveIntegrityBond is ReentrancyGuard {
 
     function _calculateAverageEffortScore(uint256 bondId) internal view returns (uint256) {
         EffortMetrics[] storage metrics = bondEffortMetrics[bondId];
-        if (metrics.length == 0) return 5000; // Neutral if no data
+        uint256 metricsLength = metrics.length;
+        if (metricsLength == 0) return 5000; // Neutral if no data
 
         uint256 totalScore = 0;
-        for (uint256 i = 0; i < metrics.length; i++) {
+        for (uint256 i = 0; i < metricsLength;) {
             uint256 gameScore = (
                 metrics[i].hustleScore +
                 metrics[i].fourthQuarterScore +
@@ -465,16 +479,18 @@ contract CompetitiveIntegrityBond is ReentrancyGuard {
                 metrics[i].bigGameScore
             ) / 4;
             totalScore += gameScore;
+            unchecked { ++i; }
         }
-        return totalScore / metrics.length;
+        return totalScore / metricsLength;
     }
 
     function _calculateAntiTankingScore(uint256 bondId) internal view returns (uint256) {
         TankingDetection[] storage detections = bondTankingDetection[bondId];
-        if (detections.length == 0) return 5000; // Neutral if no data
+        uint256 detectionsLength = detections.length;
+        if (detectionsLength == 0) return 5000; // Neutral if no data
 
         uint256 totalScore = 0;
-        for (uint256 i = 0; i < detections.length; i++) {
+        for (uint256 i = 0; i < detectionsLength;) {
             // Higher scores = more tanking detected, so invert
             uint256 tankingLevel = (
                 detections[i].winProbabilityDelta +
@@ -483,8 +499,9 @@ contract CompetitiveIntegrityBond is ReentrancyGuard {
                 (10000 - detections[i].seasonTrajectoryScore)
             ) / 4;
             totalScore += (10000 - tankingLevel); // Invert: high tanking = low score
+            unchecked { ++i; }
         }
-        return totalScore / detections.length;
+        return totalScore / detectionsLength;
     }
 
     function _calculateFanConsensusScore(uint256 bondId) internal view returns (uint256) {
@@ -530,17 +547,20 @@ contract CompetitiveIntegrityBond is ReentrancyGuard {
         require(msg.sender == owner, "Only owner");
         require(oracle != address(0), "Invalid oracle address");
         authorizedOracles[oracle] = true;
+        emit OracleAdded(oracle);
     }
 
     function removeAuthorizedOracle(address oracle) external {
         require(msg.sender == owner, "Only owner");
         authorizedOracles[oracle] = false;
+        emit OracleRemoved(oracle);
     }
 
     function addAuthorizedInvestigator(address investigator) external {
         require(msg.sender == owner, "Only owner");
         require(investigator != address(0), "Invalid investigator address");
         authorizedInvestigators[investigator] = true;
+        emit InvestigatorAdded(investigator);
     }
 
     /**
@@ -550,6 +570,7 @@ contract CompetitiveIntegrityBond is ReentrancyGuard {
         require(msg.sender == owner, "Only owner");
         require(newOwner != address(0), "Invalid new owner");
         pendingOwner = newOwner;
+        emit OwnershipTransferInitiated(owner, newOwner);
     }
 
     /**
@@ -557,8 +578,10 @@ contract CompetitiveIntegrityBond is ReentrancyGuard {
      */
     function acceptOwnership() external {
         require(msg.sender == pendingOwner, "Not pending owner");
+        address oldOwner = owner;
         owner = pendingOwner;
         pendingOwner = address(0);
+        emit OwnershipTransferred(oldOwner, owner);
     }
 
     /**
@@ -567,6 +590,7 @@ contract CompetitiveIntegrityBond is ReentrancyGuard {
     function pause() external {
         require(msg.sender == owner, "Only owner");
         paused = true;
+        emit Paused();
     }
 
     /**
@@ -575,6 +599,7 @@ contract CompetitiveIntegrityBond is ReentrancyGuard {
     function unpause() external {
         require(msg.sender == owner, "Only owner");
         paused = false;
+        emit Unpaused();
     }
 
     // ============ View Functions ============
