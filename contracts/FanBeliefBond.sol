@@ -95,6 +95,9 @@ contract FanBeliefBond is ReentrancyGuard {
     mapping(address => bool) public authorizedInvestigators;
 
     uint256 public redistributionPool;  // Pool of forfeited stakes from corruption
+    uint256 public yieldPool;  // Pool that funds bond appreciation
+
+    address public owner;
 
     // Time multipliers (in seconds)
     uint256 public constant ONE_YEAR = 31536000;
@@ -149,8 +152,27 @@ contract FanBeliefBond is ReentrancyGuard {
     // ============ Constructor ============
 
     constructor() {
+        owner = msg.sender;
         authorizedOracles[msg.sender] = true;
         authorizedInvestigators[msg.sender] = true;
+    }
+
+    /**
+     * @notice Fund the yield pool to enable bond appreciation
+     */
+    function fundYieldPool() external payable {
+        require(msg.value > 0, "Must send ETH");
+        yieldPool += msg.value;
+    }
+
+    /**
+     * @notice Owner can withdraw excess yield pool funds
+     */
+    function withdrawYieldPool(uint256 amount) external {
+        require(msg.sender == owner, "Only owner");
+        require(amount <= yieldPool, "Insufficient yield pool");
+        yieldPool -= amount;
+        payable(owner).transfer(amount);
     }
 
     // ============ Core Functions ============
@@ -372,6 +394,15 @@ contract FanBeliefBond is ReentrancyGuard {
 
         bond.settled = true;
         bond.active = false;
+
+        // Calculate appreciation needed
+        uint256 appreciationNeeded = fanShare > bond.stakeAmount ? fanShare - bond.stakeAmount : 0;
+
+        // Check if yield pool can cover appreciation
+        if (appreciationNeeded > 0) {
+            require(yieldPool >= appreciationNeeded, "Insufficient yield pool for appreciation");
+            yieldPool -= appreciationNeeded;
+        }
 
         // Transfer to fan
         if (fanShare > 0) {

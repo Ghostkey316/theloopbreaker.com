@@ -96,6 +96,9 @@ contract TeamworkIntegrityBond is ReentrancyGuard {
     mapping(address => bool) public verifiedTeammates;
 
     uint256 public teammateCompensationPool;  // Pool for compensating teammates of stat chasers
+    uint256 public yieldPool;  // Pool that funds bond appreciation
+
+    address public owner;
 
     // Scoring thresholds
     uint256 public constant STAT_CHASER_THRESHOLD = 4000;  // < 40 = stat padding
@@ -130,7 +133,26 @@ contract TeamworkIntegrityBond is ReentrancyGuard {
     // ============ Constructor ============
 
     constructor() {
+        owner = msg.sender;
         authorizedOracles[msg.sender] = true;
+    }
+
+    /**
+     * @notice Fund the yield pool to enable bond appreciation
+     */
+    function fundYieldPool() external payable {
+        require(msg.value > 0, "Must send ETH");
+        yieldPool += msg.value;
+    }
+
+    /**
+     * @notice Owner can withdraw excess yield pool funds
+     */
+    function withdrawYieldPool(uint256 amount) external {
+        require(msg.sender == owner, "Only owner");
+        require(amount <= yieldPool, "Insufficient yield pool");
+        yieldPool -= amount;
+        payable(owner).transfer(amount);
     }
 
     // ============ Core Functions ============
@@ -349,6 +371,16 @@ contract TeamworkIntegrityBond is ReentrancyGuard {
         bond.settled = true;
         bond.active = false;
 
+        // Calculate total payout needed
+        uint256 totalPayout = playerShare + teammatesShare + fansShare;
+        uint256 appreciationNeeded = totalPayout > bond.stakeAmount ? totalPayout - bond.stakeAmount : 0;
+
+        // Check if yield pool can cover appreciation
+        if (appreciationNeeded > 0) {
+            require(yieldPool >= appreciationNeeded, "Insufficient yield pool for appreciation");
+            yieldPool -= appreciationNeeded;
+        }
+
         // Transfer funds
         if (playerShare > 0) {
             payable(bond.playerAddress).transfer(playerShare);
@@ -356,6 +388,7 @@ contract TeamworkIntegrityBond is ReentrancyGuard {
         if (teammatesShare > 0) {
             teammateCompensationPool += teammatesShare;
         }
+        // fansShare would be distributed separately
 
         emit BondSettled(bondId, level, playerShare, teammatesShare);
     }

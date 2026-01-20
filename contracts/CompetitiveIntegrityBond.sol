@@ -95,6 +95,9 @@ contract CompetitiveIntegrityBond is ReentrancyGuard {
     mapping(address => bool) public authorizedInvestigators;
 
     uint256 public fanCompensationPool;  // Pool for compensating fans who watched tanking teams
+    uint256 public yieldPool;  // Pool that funds bond appreciation
+
+    address public owner;
 
     // Scoring thresholds
     uint256 public constant TANKING_THRESHOLD = 4000;      // < 40 = obvious tanking
@@ -137,8 +140,27 @@ contract CompetitiveIntegrityBond is ReentrancyGuard {
     // ============ Constructor ============
 
     constructor() {
+        owner = msg.sender;
         authorizedOracles[msg.sender] = true;
         authorizedInvestigators[msg.sender] = true;
+    }
+
+    /**
+     * @notice Fund the yield pool to enable bond appreciation
+     */
+    function fundYieldPool() external payable {
+        require(msg.value > 0, "Must send ETH");
+        yieldPool += msg.value;
+    }
+
+    /**
+     * @notice Owner can withdraw excess yield pool funds
+     */
+    function withdrawYieldPool(uint256 amount) external {
+        require(msg.sender == owner, "Only owner");
+        require(amount <= yieldPool, "Insufficient yield pool");
+        yieldPool -= amount;
+        payable(owner).transfer(amount);
     }
 
     // ============ Core Functions ============
@@ -356,6 +378,16 @@ contract CompetitiveIntegrityBond is ReentrancyGuard {
         bond.settled = true;
         bond.active = false;
 
+        // Calculate total payout needed
+        uint256 totalPayout = teamShare + playersShare + fansShare;
+        uint256 appreciationNeeded = totalPayout > bond.stakeAmount ? totalPayout - bond.stakeAmount : 0;
+
+        // Check if yield pool can cover appreciation
+        if (appreciationNeeded > 0) {
+            require(yieldPool >= appreciationNeeded, "Insufficient yield pool for appreciation");
+            yieldPool -= appreciationNeeded;
+        }
+
         // Transfer funds
         if (teamShare > 0) {
             payable(bond.teamAddress).transfer(teamShare);
@@ -363,6 +395,7 @@ contract CompetitiveIntegrityBond is ReentrancyGuard {
         if (fansShare > 0) {
             fanCompensationPool += fansShare;
         }
+        // Note: playersShare would be distributed separately to team players
 
         emit BondSettled(bondId, level, teamShare, fansShare);
     }

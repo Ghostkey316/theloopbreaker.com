@@ -162,6 +162,9 @@ describe("Sports Integrity Bonds - Making Sports Real Again", function () {
                 { value: ethers.parseEther("10") }
             );
 
+            // Fund yield pool for appreciation (100% appreciation = 10 ETH extra needed)
+            await competitiveBond.fundYieldPool({ value: ethers.parseEther("15") });
+
             // Submit elite effort metrics
             await competitiveBond.connect(oracle).submitEffortMetrics(
                 1,
@@ -346,6 +349,9 @@ describe("Sports Integrity Bonds - Making Sports Real Again", function () {
                 { value: ethers.parseEther("1") }
             );
 
+            // Fund yield pool to enable appreciation (120% = 1.2 ETH extra needed)
+            await teamworkBond.fundYieldPool({ value: ethers.parseEther("2") });
+
             // Elite chemistry
             await teamworkBond.connect(oracle).submitChemistryMetrics(
                 1, 9000, 9500, 9800, 9200, "NBA Stats API"
@@ -527,6 +533,9 @@ describe("Sports Integrity Bonds - Making Sports Real Again", function () {
                 { value: ethers.parseEther("1") }
             );
 
+            // Fund yield pool for appreciation (elite status + 1 year = 2x base * 2x time = 4x total = 3 ETH appreciation)
+            await fanBeliefBond.fundYieldPool({ value: ethers.parseEther("5") });
+
             // Record multiple elite snapshots
             for (let i = 0; i < 5; i++) {
                 await fanBeliefBond.connect(oracle).recordIntegritySnapshot(
@@ -586,6 +595,9 @@ describe("Sports Integrity Bonds - Making Sports Real Again", function () {
                 { value: ethers.parseEther("1") }
             );
 
+            // Fund yield pool for 5-year appreciation (5x time mult + bonuses = ~10 ETH needed)
+            await fanBeliefBond.fundYieldPool({ value: ethers.parseEther("12") });
+
             // Record 5 years of clean snapshots
             for (let i = 0; i < 10; i++) {
                 await fanBeliefBond.connect(oracle).recordIntegritySnapshot(
@@ -631,9 +643,11 @@ describe("Sports Integrity Bonds - Making Sports Real Again", function () {
 
             const finalPool = await fanBeliefBond.getRedistributionPool();
 
-            // 80% of stake should go to pool (PED penalty)
-            const expectedForfeit = ethers.parseEther("2") * BigInt(8000) / BigInt(10000);
-            expect(finalPool - initialPool).to.be.closeTo(expectedForfeit, ethers.parseEther("0.01"));
+            // 80% of stake forfeited (PED penalty), minus 10% whistleblower reward
+            const forfeitAmount = ethers.parseEther("2") * BigInt(8000) / BigInt(10000); // 1.6 ETH
+            const whistleblowerReward = forfeitAmount / BigInt(10); // 0.16 ETH
+            const expectedPoolIncrease = forfeitAmount - whistleblowerReward; // 1.44 ETH
+            expect(finalPool - initialPool).to.be.closeTo(expectedPoolIncrease, ethers.parseEther("0.01"));
         });
     });
 
