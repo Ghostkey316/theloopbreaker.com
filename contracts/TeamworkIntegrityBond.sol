@@ -403,9 +403,10 @@ contract TeamworkIntegrityBond is ReentrancyGuard {
             yieldPool -= appreciationNeeded;
         }
 
-        // Transfer funds
+        // Transfer funds (using call{value:} instead of transfer for safety)
         if (playerShare > 0) {
-            payable(bond.playerAddress).transfer(playerShare);
+            (bool success, ) = payable(bond.playerAddress).call{value: playerShare}("");
+            require(success, "Transfer to player failed");
         }
         if (teammatesShare > 0) {
             teammateCompensationPool += teammatesShare;
