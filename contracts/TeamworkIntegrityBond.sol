@@ -99,6 +99,11 @@ contract TeamworkIntegrityBond is ReentrancyGuard {
     uint256 public yieldPool;  // Pool that funds bond appreciation
 
     address public owner;
+    address public pendingOwner;
+    bool public paused;
+
+    // Yield pool requirements
+    uint256 public constant MINIMUM_YIELD_POOL_BALANCE = 1 ether;
 
     // Scoring thresholds
     uint256 public constant STAT_CHASER_THRESHOLD = 4000;  // < 40 = stat padding
@@ -130,6 +135,11 @@ contract TeamworkIntegrityBond is ReentrancyGuard {
         _;
     }
 
+    modifier whenNotPaused() {
+        require(!paused, "Contract is paused");
+        _;
+    }
+
     // ============ Constructor ============
 
     constructor() {
@@ -148,11 +158,13 @@ contract TeamworkIntegrityBond is ReentrancyGuard {
     /**
      * @notice Owner can withdraw excess yield pool funds
      */
-    function withdrawYieldPool(uint256 amount) external {
+    function withdrawYieldPool(uint256 amount) external nonReentrant {
         require(msg.sender == owner, "Only owner");
         require(amount <= yieldPool, "Insufficient yield pool");
+        require(yieldPool - amount >= MINIMUM_YIELD_POOL_BALANCE, "Cannot withdraw below minimum balance");
         yieldPool -= amount;
-        payable(owner).transfer(amount);
+        (bool success, ) = payable(owner).call{value: amount}("");
+        require(success, "Transfer failed");
     }
 
     // ============ Core Functions ============
@@ -171,7 +183,7 @@ contract TeamworkIntegrityBond is ReentrancyGuard {
         string memory league,
         string memory season,
         uint256 seasonEndDate
-    ) external payable nonReentrant returns (uint256) {
+    ) external payable nonReentrant whenNotPaused returns (uint256) {
         require(msg.value > 0, "Stake must be > 0");
         require(seasonEndDate > block.timestamp, "Season end must be in future");
         require(msg.value >= 0.1 ether, "Minimum stake 0.1 ETH for player bonds");
@@ -508,13 +520,48 @@ contract TeamworkIntegrityBond is ReentrancyGuard {
     // ============ Admin Functions ============
 
     function addAuthorizedOracle(address oracle) external {
-        require(msg.sender == address(this) || authorizedOracles[msg.sender], "Not authorized");
+        require(msg.sender == owner, "Only owner");
+        require(oracle != address(0), "Invalid oracle address");
         authorizedOracles[oracle] = true;
     }
 
     function removeAuthorizedOracle(address oracle) external {
-        require(msg.sender == address(this) || authorizedOracles[msg.sender], "Not authorized");
+        require(msg.sender == owner, "Only owner");
         authorizedOracles[oracle] = false;
+    }
+
+    /**
+     * @notice Initiate ownership transfer (2-step process)
+     */
+    function transferOwnership(address newOwner) external {
+        require(msg.sender == owner, "Only owner");
+        require(newOwner != address(0), "Invalid new owner");
+        pendingOwner = newOwner;
+    }
+
+    /**
+     * @notice Accept ownership transfer
+     */
+    function acceptOwnership() external {
+        require(msg.sender == pendingOwner, "Not pending owner");
+        owner = pendingOwner;
+        pendingOwner = address(0);
+    }
+
+    /**
+     * @notice Pause contract (emergency only)
+     */
+    function pause() external {
+        require(msg.sender == owner, "Only owner");
+        paused = true;
+    }
+
+    /**
+     * @notice Unpause contract
+     */
+    function unpause() external {
+        require(msg.sender == owner, "Only owner");
+        paused = false;
     }
 
     // ============ View Functions ============

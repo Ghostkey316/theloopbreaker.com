@@ -90,6 +90,7 @@ contract CompetitiveIntegrityBond is ReentrancyGuard {
     mapping(uint256 => mapping(uint256 => FanVerification[])) public bondGameVerifications; // bondId => gameId => verifications
     mapping(uint256 => Distribution[]) public bondDistributions;
     mapping(uint256 => mapping(address => uint256)) public fanStakes; // bondId => fan => stake amount
+    mapping(uint256 => uint256) public totalFanStakes; // bondId => total stakes by all fans
 
     mapping(address => bool) public authorizedOracles;
     mapping(address => bool) public authorizedInvestigators;
@@ -98,6 +99,11 @@ contract CompetitiveIntegrityBond is ReentrancyGuard {
     uint256 public yieldPool;  // Pool that funds bond appreciation
 
     address public owner;
+    address public pendingOwner;
+    bool public paused;
+
+    // Yield pool requirements
+    uint256 public constant MINIMUM_YIELD_POOL_BALANCE = 1 ether;
 
     // Scoring thresholds
     uint256 public constant TANKING_THRESHOLD = 4000;      // < 40 = obvious tanking
@@ -137,6 +143,11 @@ contract CompetitiveIntegrityBond is ReentrancyGuard {
         _;
     }
 
+    modifier whenNotPaused() {
+        require(!paused, "Contract is paused");
+        _;
+    }
+
     // ============ Constructor ============
 
     constructor() {
@@ -156,11 +167,13 @@ contract CompetitiveIntegrityBond is ReentrancyGuard {
     /**
      * @notice Owner can withdraw excess yield pool funds
      */
-    function withdrawYieldPool(uint256 amount) external {
+    function withdrawYieldPool(uint256 amount) external nonReentrant {
         require(msg.sender == owner, "Only owner");
         require(amount <= yieldPool, "Insufficient yield pool");
+        require(yieldPool - amount >= MINIMUM_YIELD_POOL_BALANCE, "Cannot withdraw below minimum balance");
         yieldPool -= amount;
-        payable(owner).transfer(amount);
+        (bool success, ) = payable(owner).call{value: amount}("");
+        require(success, "Transfer failed");
     }
 
     // ============ Core Functions ============
@@ -177,7 +190,7 @@ contract CompetitiveIntegrityBond is ReentrancyGuard {
         string memory league,
         string memory season,
         uint256 seasonEndDate
-    ) external payable nonReentrant returns (uint256) {
+    ) external payable nonReentrant whenNotPaused returns (uint256) {
         require(msg.value > 0, "Stake must be > 0");
         require(seasonEndDate > block.timestamp, "Season end must be in future");
         require(msg.value >= 1 ether, "Minimum stake 1 ETH for team bonds");
@@ -320,6 +333,39 @@ contract CompetitiveIntegrityBond is ReentrancyGuard {
         require(block.timestamp < bonds[bondId].seasonEndDate, "Season ended");
 
         fanStakes[bondId][msg.sender] += msg.value;
+        totalFanStakes[bondId] += msg.value;
+    }
+
+    /**
+     * @notice Claim fan compensation from settled bonds
+     * @param bondId The bond ID
+     */
+    function claimFanCompensation(uint256 bondId) external nonReentrant {
+        require(bonds[bondId].settled, "Bond not settled");
+        uint256 fanStake = fanStakes[bondId][msg.sender];
+        require(fanStake > 0, "No stake to claim");
+
+        // Calculate fan's proportional share of the compensation pool for this bond
+        uint256 totalStakes = _getTotalFanStakes(bondId);
+        require(totalStakes > 0, "No total fan stakes");
+
+        // Get the fansShare from the distribution
+        Distribution[] storage distributions = bondDistributions[bondId];
+        require(distributions.length > 0, "No distributions");
+        uint256 fansShare = distributions[distributions.length - 1].fansShare;
+
+        uint256 fanShare = (fanStake * fansShare) / totalStakes;
+
+        // Clear the stake to prevent double claiming
+        fanStakes[bondId][msg.sender] = 0;
+
+        // Transfer compensation
+        if (fanShare > 0) {
+            require(fanCompensationPool >= fanShare, "Insufficient compensation pool");
+            fanCompensationPool -= fanShare;
+            (bool success, ) = payable(msg.sender).call{value: fanShare}("");
+            require(success, "Transfer failed");
+        }
     }
 
     /**
@@ -402,6 +448,10 @@ contract CompetitiveIntegrityBond is ReentrancyGuard {
 
     // ============ Internal Functions ============
 
+    function _getTotalFanStakes(uint256 bondId) internal view returns (uint256) {
+        return totalFanStakes[bondId];
+    }
+
     function _calculateAverageEffortScore(uint256 bondId) internal view returns (uint256) {
         EffortMetrics[] storage metrics = bondEffortMetrics[bondId];
         if (metrics.length == 0) return 5000; // Neutral if no data
@@ -477,18 +527,54 @@ contract CompetitiveIntegrityBond is ReentrancyGuard {
     // ============ Admin Functions ============
 
     function addAuthorizedOracle(address oracle) external {
-        require(msg.sender == address(this) || authorizedOracles[msg.sender], "Not authorized");
+        require(msg.sender == owner, "Only owner");
+        require(oracle != address(0), "Invalid oracle address");
         authorizedOracles[oracle] = true;
     }
 
     function removeAuthorizedOracle(address oracle) external {
-        require(msg.sender == address(this) || authorizedOracles[msg.sender], "Not authorized");
+        require(msg.sender == owner, "Only owner");
         authorizedOracles[oracle] = false;
     }
 
     function addAuthorizedInvestigator(address investigator) external {
-        require(msg.sender == address(this) || authorizedInvestigators[msg.sender], "Not authorized");
+        require(msg.sender == owner, "Only owner");
+        require(investigator != address(0), "Invalid investigator address");
         authorizedInvestigators[investigator] = true;
+    }
+
+    /**
+     * @notice Initiate ownership transfer (2-step process)
+     */
+    function transferOwnership(address newOwner) external {
+        require(msg.sender == owner, "Only owner");
+        require(newOwner != address(0), "Invalid new owner");
+        pendingOwner = newOwner;
+    }
+
+    /**
+     * @notice Accept ownership transfer
+     */
+    function acceptOwnership() external {
+        require(msg.sender == pendingOwner, "Not pending owner");
+        owner = pendingOwner;
+        pendingOwner = address(0);
+    }
+
+    /**
+     * @notice Pause contract (emergency only)
+     */
+    function pause() external {
+        require(msg.sender == owner, "Only owner");
+        paused = true;
+    }
+
+    /**
+     * @notice Unpause contract
+     */
+    function unpause() external {
+        require(msg.sender == owner, "Only owner");
+        paused = false;
     }
 
     // ============ View Functions ============
