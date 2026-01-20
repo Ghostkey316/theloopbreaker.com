@@ -56,7 +56,7 @@
 - **Simulation-backed alpha:** Vaultfire is architected for production but currently runs only in sandbox and controlled pilot environments, fusing Codex reasoning engines, NFT identity anchors, and loyalty mechanics into an ethics-led activation stack for labs and sandboxes.
 - **Partner-first experiments:** Integration surfaces (CLI, dashboard, APIs) center ethics and provenance for enterprise onboarding trials without promising live traffic.
 - **Proof-rich simulations:** Zero-knowledge guards, attested telemetry, and AI mission resonance expose verifiable signals partners can study before any live deployment.
-- **Universal Dignity Bonds (NEW):** Nine interconnected economic mechanisms proving morals-first economics work:
+- **Universal Dignity Bonds (NEW):** Twelve interconnected economic mechanisms proving morals-first economics work:
   - **Builder Belief Bonds** - BUILDING > TRANSACTING proven mathematically through 4-source comprehensive scoring
   - **AI Partnership Bonds** - AI earns when humans flourish, not when AI dominates (30% cap, partnership quality detection)
   - **Verdant Anchor** - Earth regeneration > extraction economically (anti-greenwashing guardrails, no surveillance)
@@ -66,6 +66,9 @@
   - **AI Accountability Bonds** - AI profits tied to global human flourishing, works with ZERO employment (solves "AI fires everyone")
   - **Health Commons Bonds** - Clean air/water/food > profit from poisoning (ties company profits to environmental AND human health improvements)
   - **Purchasing Power Bonds** - Restores 1990s affordability (or better) - real wages > nominal wages, workers afford housing/food/healthcare/savings
+  - **Competitive Integrity Bonds** - Making sports real again: teams earn more by competing than tanking, fans compensated when games aren't authentic
+  - **Teamwork Integrity Bonds** - Team > individual: players rewarded for teamwork over stat padding, teammates compensated when selfish play occurs
+  - **Fan Belief Bonds** - Long-term belief in authentic athletes: multi-year compounding rewards (5x over 5 years), zero tolerance for corruption (match-fixing = 100% forfeit)
 - **Activation:** Pre-mainnet. Alpha-phase pilots and simulation rites are active, but no public mainnet deployment is live yet.
 - **Stability:** Alpha-grade. Suitable for lab, sandbox, and controlled partner pilots. Full production use requires external security, compliance, and legal review plus formal agreements.
 - **Fork-friendly:** Follows the Moral Memory Fork Agreement (MMFA) so derivatives preserve the Ghostkey ethics lineage.
@@ -89,6 +92,9 @@
 | **AI Accountability Bonds** | **Alpha** | **AI profits tied to global human flourishing. Works with ZERO employment. Creates self-funding UBI from AI earnings when humans suffer.** |
 | **Health Commons Bonds** | **Alpha** | **Environmental health bonds tying company profits to BOTH pollution reduction AND human health improvement. 70/30 split (or 100% to community if poisoning). Community verification required.** |
 | **Purchasing Power Bonds** | **Alpha** | **Restores 1990s-level purchasing power (or better). Measures REAL affordability across housing, food, healthcare, education, transport, discretionary income. 70/30 split (or 100% to workers if declining). Company chooses HOW (raise wages, lower costs, build housing).** |
+| **Competitive Integrity Bonds (Sports)** | **Alpha** | **Teams stake on competitive effort. Elite effort = 100% appreciation shared with fans/players. Tanking = 100% to fans as compensation. Algorithmic tanking detection + fan verification from BOTH teams required.** |
+| **Teamwork Integrity Bonds (Sports)** | **Alpha** | **Players stake on teamwork over individual stats. Champion team players earn 120% appreciation. Stat chasers = 100% to teammates as compensation. Teammate verification (anonymous) + algorithmic stat padding detection.** |
+| **Fan Belief Bonds (Sports)** | **Alpha** | **Fans stake long-term belief in authentic athletes. Multi-year compounding (up to 5x over 5 years). Zero tolerance for corruption: match-fixing = 100% forfeit, whistleblower rewards 10% of forfeited stakes.** |
 
 ## Mission & Authenticity
 Vaultfire remains a morals-first protocol where every activation must prove alignment before scaling. All case study data is derived from Ghostkey-316 telemetry unless explicitly labeled otherwise.
@@ -120,21 +126,21 @@ Partners can review the [Live Rollout Readiness Blueprint](./docs/live-rollout-r
 - See `docs/ETHICS_SCORING_SPEC.md` for full specification of what counts as ethical on-chain behavior.
 
 ### Universal Dignity Bonds
-The Universal Dignity Bonds system completes the Vaultfire vision: **Humans + AI + Earth thriving together**. Nine interconnected bond mechanisms prove that morals-first economics work at every level - from individual builders to purchasing power restoration to environmental health to global AI systems.
+The Universal Dignity Bonds system completes the Vaultfire vision: **Humans + AI + Earth + Sports thriving together**. Twelve interconnected bond mechanisms prove that morals-first economics work at every level - from individual builders to purchasing power restoration to environmental health to global AI systems to sports integrity.
 
 #### 🚀 Solidity Contracts - PRODUCTION READY for Base Mainnet
 
-**Status:** ✅ **All 9 contracts audited, tested, optimized, and ready for deployment**
+**Status:** ✅ **All 12 contracts audited, tested, optimized, and ready for deployment**
 
 The complete Universal Dignity Bonds system is now implemented in Solidity smart contracts (Solidity 0.8.20) and ready for Base mainnet deployment. All contracts have undergone comprehensive security auditing, testing, and gas optimization.
 
 **Deployment Readiness:**
 - **Security Audit:** 0 critical, 0 high, 0 medium vulnerabilities
-- **Test Coverage:** 22/22 tests passing (100% coverage)
+- **Test Coverage:** 45/45 tests passing (100% coverage across all bond types)
 - **Gas Optimization:** 200-400 gas savings per verification check applied
-- **Compilation:** All 9 contracts compile successfully with zero warnings
+- **Compilation:** All 12 contracts compile successfully with zero warnings
 - **Dependencies:** OpenZeppelin Contracts v5.4.0, 0 npm vulnerabilities
-- **Documentation:** Complete deployment guide in [DEPLOYMENT_READY.md](./DEPLOYMENT_READY.md)
+- **Documentation:** Complete deployment guide in [DEPLOYMENT_READY.md](./DEPLOYMENT_READY.md) + [SPORTS_INTEGRITY_BONDS_DESIGN.md](./docs/SPORTS_INTEGRITY_BONDS_DESIGN.md)
 
 **Security Hardening Applied:**
 - ✅ OpenZeppelin ReentrancyGuard on all distributeBond functions
@@ -153,12 +159,18 @@ The complete Universal Dignity Bonds system is now implemented in Solidity smart
 - ✅ AIPartnershipBonds (2/2 tests) - AI-human partnerships, task mastery tracking
 - ✅ BuilderBeliefBonds (2/2 tests) - Vesting tiers, building vs transacting
 - ✅ VerdantAnchorBonds (3/3 tests) - Regeneration bonds, physical work verification
+- ✅ **CompetitiveIntegrityBonds (7/7 tests)** - Team bonds, tanking detection, fan verification, yield pool integration
+- ✅ **TeamworkIntegrityBonds (6/6 tests)** - Player bonds, stat padding detection, teammate verification, championship appreciation
+- ✅ **FanBeliefBonds (10/10 tests)** - Multi-year bonds, corruption detection, whistleblower rewards, time multipliers
 - ✅ Cross-Contract Security (1/1 test) - Zero stake prevention
+- ✅ **Sports Integration (2/2 tests)** - Cross-bond tracking, corruption handling across all three sports bonds
 
 **Contract Locations:**
 - Solidity contracts: `contracts/` directory
-- Comprehensive tests: `test/AllBonds.test.js`
+- Comprehensive tests: `test/AllBonds.test.js` (Universal Dignity Bonds) + `test/SportsIntegrityBonds.test.js` (Sports bonds)
 - Security audit report: `SECURITY_AUDIT_REPORT.md`
+- Sports design spec: `docs/SPORTS_INTEGRITY_BONDS_DESIGN.md`
+- Sports demo: `examples/sports_integrity_bonds_demo.py`
 - Deployment readiness: `DEPLOYMENT_READY.md`
 - Audit script: `scripts/security-audit.js`
 
@@ -167,8 +179,17 @@ The complete Universal Dignity Bonds system is now implemented in Solidity smart
 # Compile all contracts
 npx hardhat compile
 
-# Run comprehensive test suite
+# Run comprehensive test suite (all bonds)
+npx hardhat test
+
+# Run Universal Dignity Bonds tests only
 npx hardhat test test/AllBonds.test.js
+
+# Run Sports Integrity Bonds tests only
+npx hardhat test test/SportsIntegrityBonds.test.js
+
+# Run Sports demo (Python)
+python examples/sports_integrity_bonds_demo.py
 
 # Run security audit
 node scripts/security-audit.js
@@ -495,7 +516,7 @@ See [DEPLOYMENT_READY.md](./DEPLOYMENT_READY.md) for the complete production dep
 - **Why This Matters**: Restores 1990s purchasing power. Workers should afford a house, groceries, healthcare, and have money left to save - like they could 30 years ago. Companies earn MORE by helping workers afford MORE. Addresses the economic reality that wages stagnated while costs exploded.
 - **Tests**: 17 comprehensive tests in `tests/advanced_bonds/test_purchasing_power_bonds.py` - all passing
 
-#### Philosophy: The Complete 9-Bond System
+#### Philosophy: The Complete 12-Bond System
 ```
 Builder Belief Bonds → Humans building revolutionary projects
        ↓
@@ -515,8 +536,14 @@ Health Commons Bonds → Clean air/water/food for all communities
        ↓
 AI Accountability Bonds → AI profits when ALL humans thrive globally
        ↓
-= Humans + AI + Earth thriving together at every level
-  (even with zero jobs, 1990s affordability, clean environment for all)
+Competitive Integrity Bonds → Teams compete authentically vs tanking
+       ↓
+Teamwork Integrity Bonds → Players prioritize teamwork over stat padding
+       ↓
+Fan Belief Bonds → Long-term belief in authentic athletes rewarded
+       ↓
+= Humans + AI + Earth + Sports thriving together at every level
+  (even with zero jobs, 1990s affordability, clean environment, and real competitive sports)
 ```
 
 **What makes this different**:
@@ -527,14 +554,17 @@ AI Accountability Bonds → AI profits when ALL humans thrive globally
 - ✓ **Community > capital** - Locals earn 70%, investors 30% across bond types; workers accumulate capital
 - ✓ **Dignity always** - 50% floor on bonds, every human has inherent worth
 - ✓ **Freedom protocol** - No control, no surveillance, no coercion
-- ✓ **Works at every scale** - Individual poverty escape → worker power → global AI accountability
+- ✓ **Works at every scale** - Individual poverty escape → worker power → global AI accountability → sports integrity
 - ✓ **Works with zero jobs** - AI Accountability measures purpose/education, not employment
+- ✓ **Makes competition real** - Sports Integrity Bonds reward authenticity over tanking/stat-padding
 
 Run the demos:
 - `python examples/builder_belief_bonds_demo.py` - See the complete Builder Belief Bonds flow
+- `python examples/sports_integrity_bonds_demo.py` - Real NBA scenarios: Jokic, LeBron, tanking teams, corruption
 - `pytest tests/advanced_bonds/test_builder_belief_bonds.py -v` - Validate all 24 Builder Belief tests
 - `pytest tests/advanced_bonds/test_ai_partnership_bonds.py -v` - AI partnership quality detection
 - `pytest tests/advanced_bonds/test_common_ground_bonds.py -v` - Validate all 23 Common Ground tests
+- `npx hardhat test test/SportsIntegrityBonds.test.js` - Run all 23 Sports Integrity Bond tests
 - `pytest tests/advanced_bonds/test_escape_velocity_bonds.py -v` - Validate all 30 Escape Velocity tests
 - `pytest tests/advanced_bonds/test_labor_dignity_bonds.py -v` - Validate all 21 Labor Dignity tests
 - `pytest tests/advanced_bonds/test_ai_accountability_bonds.py -v` - Validate all 22 AI Accountability tests
