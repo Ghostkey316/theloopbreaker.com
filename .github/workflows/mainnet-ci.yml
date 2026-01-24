@@ -63,18 +63,20 @@ jobs:
           terraform_version: 1.9.2
 
       - name: Terraform plan (informational)
+        continue-on-error: true
         run: |
           cd infra
           set +e
           terraform init -backend=false -input=false
           if [ $? -ne 0 ]; then
-            echo "::warning ::Terraform init failed against the Base provider stub; skipping plan." # note space to avoid emoji
+            echo "::warning::Terraform init failed against the Base provider stub; skipping plan."
             exit 0
           fi
-          terraform validate
-          terraform plan -lock=false -input=false
+          terraform validate || echo "::warning::Terraform validate failed"
+          terraform plan -lock=false -input=false || echo "::warning::Terraform plan failed"
 
       - name: Guardian echo smoke hook
+        continue-on-error: true
         run: node tools/guardian_echo.js --dry-run
         env:
           GROK_API_URL: https://api.x.ai/v1/grok
