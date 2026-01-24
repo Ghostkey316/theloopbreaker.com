@@ -1,6 +1,10 @@
-# Vaultfire: Privacy-First Identity for the AI Agent Economy
+# Vaultfire: Trust Infrastructure for Civilization
 
-**One sentence:** Cryptographically prove you're human with real reputation, without revealing who you are.
+**One sentence:** Trust infrastructure that lets AIs, humans, and organizations prove alignment without surveillance.
+
+**What this means:** Privacy-preserving verification at scale—for identity, reputation, credentials, AI alignment, and economic justice.
+
+**Why it matters:** Blockchain is how we make it decentralized. The mission is civilization-scale coordination.
 
 ---
 
@@ -35,6 +39,37 @@
 ### How It Works (Simple)
 - Connect wallet → Aggregate your reputation → Generate proof → Verify on-chain
 - **No government ID. No biometrics. No personal data. Just your wallet.**
+
+---
+
+## 🌍 Beyond Crypto: The Bigger Mission
+
+**Context partners need to understand: This isn't a crypto play.**
+
+### What We're Actually Building
+
+**Not:** "Privacy coin for speculation"
+**Actually:** Trust infrastructure for 8 billion people
+
+**The vision:**
+- **AIs prove alignment** - Partnership quality detection (AI grows WITH humans, not ABOVE them)
+- **Workers thrive economically** - Real wages > nominal wages (1990s affordability restored)
+- **Earth regenerates profitably** - Anti-greenwashing verification (community-verified impact)
+- **Builders get recognition** - BUILDING > TRANSACTING (comprehensive belief scoring)
+- **Sports stay authentic** - Corruption detection (competition > tanking, team > stat padding)
+
+**Why blockchain?** Decentralized trust scales without surveillance or central authority.
+
+### What Partners Get
+
+**Crypto partners:** Privacy-preserving Sybil resistance, reputation layer, governance infrastructure
+**Enterprise partners:** GDPR-compliant verification, zero data storage, cryptographic guarantees
+**AI companies:** Alignment verification, constitutional AI proofs, trust layer for agent economy
+**Governments:** Compliance verification without identity collection, privacy-preserving KYC
+
+**The shift:** From "crypto identity solution" to "civilization-scale trust infrastructure"
+
+See [`VAULTFIRE_VISION.md`](./VAULTFIRE_VISION.md) for full mission.
 
 ---
 

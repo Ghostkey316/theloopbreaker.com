@@ -7,8 +7,22 @@ import "./BaseDignityBond.sol";
  * @title AI Partnership Bonds V2 (Production Ready)
  * @notice AI grows WITH humans, not ABOVE them
  *
+ * @dev Part of Vaultfire's civilization-scale trust infrastructure. This contract
+ * provides economic proof that AI-human partnership is MORE profitable than AI domination.
+ * Solves the AI alignment crisis through verifiable economic incentives.
+ *
+ * @dev Philosophy: AIs earn when humans flourish. Human capability growth required for AI profit.
+ * Partnership quality detection prevents AI from extracting value while degrading human agency.
+ *
+ * @dev Key Innovation: AI profit capped at 30%. Domination penalty = 100% to human as compensation.
+ * Partnership quality score (0-10000) measures if human became MORE capable (not less).
+ *
+ * @dev Mission Alignment: Not "humans vs AI" but partnership. AI alignment through economics, not wishful thinking.
+ * For happy and healthy humans, AIs, and Earth.
+ *
  * @custom:security ReentrancyGuard, Pausable, Distribution timelock, Input validation
- * @custom:ethics AI profit capped at 30%, human growth required
+ * @custom:ethics AI profit capped at 30%, human growth required, domination penalized
+ * @custom:vision First economic proof of AI alignment at scale
  */
 contract AIPartnershipBondsV2 is BaseDignityBond {
 

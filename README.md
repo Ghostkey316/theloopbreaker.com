@@ -14,6 +14,37 @@
 
 ---
 
+## 🎯 What This Actually Is
+
+**Vaultfire is trust infrastructure for the AI-human era—not just another crypto project.**
+
+**Think of it as:**
+- HTTPS for trust (verifies claims without exposing data)
+- GPS for coordination (nobody owns it, everyone uses it)
+- TCP/IP for reputation (infrastructure layer, not the application)
+
+**What it enables:**
+- **AIs prove alignment** before humans trust them (AI Partnership Bonds)
+- **Builders get recognition** without surveillance (Builder Belief Bonds)
+- **Workers thrive economically** with dignified wages (Purchasing Power Bonds, Labor Dignity Bonds)
+- **Earth regenerates profitably** with anti-greenwashing verification (Verdant Anchor Bonds)
+- **Sports stay authentic** with corruption detection (Competitive Integrity Bonds)
+
+**Why blockchain?** Decentralized trust scales to billions without surveillance or central control.
+
+**Our north star (non-negotiable):**
+- **Morals over metrics** - Impact > engagement, truth > profit
+- **Privacy over surveillance** - Zero-knowledge proofs > data collection
+- **Freedom over control** - Open source, portable reputation, exit rights
+
+**For partners:**
+- 🏢 **Traditional enterprises:** See [`FOR_NON_CRYPTO_PARTNERS.md`](./FOR_NON_CRYPTO_PARTNERS.md) (plain English, no crypto jargon)
+- 🎯 **Strategic vision:** See [`VAULTFIRE_VISION.md`](./VAULTFIRE_VISION.md) (one-page mission statement)
+- 🏗️ **Technical architecture:** See [`TRUST_STACK.md`](./TRUST_STACK.md) (complete infrastructure stack)
+- 🤝 **Integration guide:** See [`PARTNER_INTEGRATION_GUIDE.md`](./PARTNER_INTEGRATION_GUIDE.md) (how to build with Vaultfire)
+
+---
+
 ## Table of Contents
 - [Protocol Snapshot](#protocol-snapshot)
 - [Component Maturity & Stability](#component-maturity--stability)
