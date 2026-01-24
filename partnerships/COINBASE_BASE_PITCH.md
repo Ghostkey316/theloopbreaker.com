@@ -17,6 +17,45 @@
 
 ---
 
+## 🌍 Beyond Crypto: What This Really Is
+
+**Important context: Vaultfire isn't a crypto project—it's trust infrastructure for civilization.**
+
+### The Bigger Picture
+
+**What we're actually solving:**
+- **AI-Human Coordination Crisis** - AIs need to prove alignment before humans trust them (not "how many tasks completed")
+- **Economic Inequality** - Workers need to afford housing/food/healthcare (not just "nominal wage increases")
+- **Environmental Collapse** - Earth needs actual regeneration (not carbon credit accounting tricks)
+- **Builder Recognition** - Creators need credit without surveillance (not transaction-count metrics)
+- **Cultural Authenticity** - Sports/art/culture need to stay real (not corrupted by betting/metrics)
+
+**Why blockchain?** Same reason internet uses TCP/IP - decentralized infrastructure scales without central control.
+
+### What Base Gets
+
+**Not:** "Another DeFi protocol"
+**Actually:** Trust infrastructure that makes Base the ONLY L2 where:
+- Enterprises can verify users without surveillance (GDPR-compliant by design)
+- Governments can prove compliance without identity collection
+- AIs can prove alignment without fakeable metrics
+- Workers can prove impact without doxxing themselves
+
+**Think of it as:**
+- HTTPS for trust (verifies without exposing data)
+- GPS for coordination (nobody owns it, everyone uses it)
+- Email infrastructure (many providers, one protocol)
+
+**The narrative shift:**
+- **Before:** "Base = cheaper Ethereum"
+- **After:** "Base = only L2 with privacy-preserving trust infrastructure for 8 billion people"
+
+**This is bigger than crypto. Blockchain is the HOW, not the WHY.**
+
+See [`VAULTFIRE_VISION.md`](../VAULTFIRE_VISION.md) for full mission statement.
+
+---
+
 ## The Opportunity You're Missing
 
 ### Base's Current Position

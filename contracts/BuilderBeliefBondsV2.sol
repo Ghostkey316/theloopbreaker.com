@@ -7,14 +7,23 @@ import "./BaseDignityBond.sol";
  * @title Builder Belief Bonds V2 (Production Ready)
  * @notice BUILDING > TRANSACTING
  *
+ * @dev Part of Vaultfire's civilization-scale trust infrastructure. This contract
+ * enables builders to get recognition and economic rewards WITHOUT surveillance.
+ * Proves that ethical behavior (building) is MORE profitable than extraction (token flipping).
+ *
  * @dev Philosophy: Stakers back builders with belief, not extractive profit.
  * Bonds appreciate when builders BUILD, not when they flip tokens.
  *
  * @dev Key Innovation: Anti-flipping vesting + tier system.
  * Supporters → Believers → Champions based on stake and commitment.
+ * Comprehensive 4-source belief scoring (GitHub, on-chain, community, external APIs).
+ *
+ * @dev Mission Alignment: Morals over metrics, privacy over surveillance, freedom over control.
+ * For happy and healthy humans, AIs, and Earth.
  *
  * @custom:security ReentrancyGuard, Pausable, Distribution timelock, Input validation
  * @custom:ethics Anti-flipping vesting, rewards genuine building
+ * @custom:vision Part of Universal Dignity Bonds proving ethics = economics
  */
 contract BuilderBeliefBondsV2 is BaseDignityBond {
 
