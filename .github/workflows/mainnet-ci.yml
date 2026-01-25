@@ -1,14 +1,6 @@
 name: Mainnet Sovereign CI
 
-permissions:
-  contents: read
-
 on:
-  push:
-    branches:
-      - main
-      - mainnet
-      - 'release/**'
   pull_request:
     branches:
       - main

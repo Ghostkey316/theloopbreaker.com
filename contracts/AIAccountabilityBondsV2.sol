@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./BaseDignityBond.sol";
+import "./BaseYieldPoolBond.sol";
 
 /**
  * @title AI Accountability Bonds V2 (Production Ready)
@@ -20,7 +20,7 @@ import "./BaseDignityBond.sol";
  * @custom:security ReentrancyGuard on distributeBond, Pausable for emergencies, Distribution timelock
  * @custom:ethics 100% to humans when suffering, works with zero jobs
  */
-contract AIAccountabilityBondsV2 is BaseDignityBond {
+contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
 
     // ============ Structs ============
 
@@ -379,6 +379,9 @@ contract AIAccountabilityBondsV2 is BaseDignityBond {
 
         if (appreciation > 0) {
             uint256 absAppreciation = uint256(appreciation);
+
+            // CRITICAL FIX: Check yield pool can cover appreciation
+            _useYieldPool(bondId, absAppreciation);
             if (locked) {
                 // Profits locked: 100% to humans
                 humanShare = absAppreciation;
@@ -410,7 +413,12 @@ contract AIAccountabilityBondsV2 is BaseDignityBond {
         // ✅ Safe ETH transfers using .call{} instead of deprecated .transfer()
 
         // Transfer AI company share
+        // CRITICAL FIX: Explicit balance checks before transfers
+        uint256 totalPayout = humanShare + aiCompanyShare;
+        require(address(this).balance >= totalPayout, "Insufficient contract balance for distribution");
+
         if (aiCompanyShare > 0) {
+            require(address(this).balance >= aiCompanyShare, "Insufficient balance for aiCompany share");
             (bool successAI, ) = payable(bond.aiCompany).call{value: aiCompanyShare}("");
             require(successAI, "AI company transfer failed");
         }

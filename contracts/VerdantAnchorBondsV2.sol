@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./BaseDignityBond.sol";
+import "./BaseYieldPoolBond.sol";
 
 /**
  * @title Verdant Anchor Bonds V2 (Production Ready)
  * @notice Earth regeneration > extraction economically
  *
- * @custom:security ReentrancyGuard, Pausable, Distribution timelock, Input validation
+ * @custom:security ReentrancyGuard, Pausable, YieldPool
+ * @custom:security-enhancement Added yield pool funding mechanism (2026 Audit), Distribution timelock, Input validation
  * @custom:ethics Anti-greenwashing verification from local communities
  */
-contract VerdantAnchorBondsV2 is BaseDignityBond {
+contract VerdantAnchorBondsV2 is BaseYieldPoolBond {
 
     struct Bond {
         uint256 bondId;
@@ -281,6 +282,12 @@ contract VerdantAnchorBondsV2 is BaseDignityBond {
 
         if (appreciation > 0) {
             uint256 abs = uint256(appreciation);
+
+            
+            // CRITICAL FIX: Check yield pool can cover appreciation
+
+            
+            _useYieldPool(bondId, abs);
             if (penaltyActive) {
                 regeneratorShare = 0; landownerShare = abs; fundShare = 0;
                 reason = "Greenwashing penalty";
@@ -302,12 +309,24 @@ contract VerdantAnchorBondsV2 is BaseDignityBond {
             earthFundShare: fundShare, reason: reason
         }));
 
+        // CRITICAL FIX: Explicit balance checks before transfers
+
+
+        uint256 totalPayout = regeneratorShare + landownerShare;
+
+
+        require(address(this).balance >= totalPayout, "Insufficient contract balance for distribution");
+
+
+
         // Safe ETH transfers using .call{} instead of deprecated .transfer()
         if (regeneratorShare > 0) {
+            require(address(this).balance >= regeneratorShare, "Insufficient balance for regenerator share");
             (bool successRegen, ) = payable(bond.regenerator).call{value: regeneratorShare}("");
             require(successRegen, "Regenerator transfer failed");
         }
         if (landownerShare > 0) {
+            require(address(this).balance >= landownerShare, "Insufficient balance for landowner share");
             (bool successLand, ) = payable(bond.landowner).call{value: landownerShare}("");
             require(successLand, "Landowner transfer failed");
         }

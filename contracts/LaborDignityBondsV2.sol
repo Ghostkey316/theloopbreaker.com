@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./BaseDignityBond.sol";
+import "./BaseYieldPoolBond.sol";
 
 /**
  * @title Labor Dignity Bonds V2 (Production Ready)
@@ -19,7 +19,7 @@ import "./BaseDignityBond.sol";
  * @custom:security ReentrancyGuard on distributeBond, Pausable for emergencies
  * @custom:ethics Dignity floor (never below 50%), worker verification required
  */
-contract LaborDignityBondsV2 is BaseDignityBond {
+contract LaborDignityBondsV2 is BaseYieldPoolBond {
 
     // ============ Structs ============
 
@@ -452,6 +452,12 @@ contract LaborDignityBondsV2 is BaseDignityBond {
 
         if (appreciation > 0) {
             uint256 absAppreciation = uint256(appreciation);
+
+            
+            // CRITICAL FIX: Check yield pool can cover appreciation
+
+            
+            _useYieldPool(bondId, absAppreciation);
             if (penaltyActive) {
                 // Exploitation penalty: 100% to workers
                 workerShare = absAppreciation;
@@ -485,7 +491,15 @@ contract LaborDignityBondsV2 is BaseDignityBond {
         }));
 
         // Safe ETH transfer using .call{} instead of deprecated .transfer()
+        // CRITICAL FIX: Explicit balance checks before transfers
+
+        uint256 totalPayout = workerShare + companyShare;
+
+        require(address(this).balance >= totalPayout, "Insufficient contract balance for distribution");
+
+
         if (companyShare > 0) {
+            require(address(this).balance >= companyShare, "Insufficient balance for company share");
             (bool success, ) = payable(bond.company).call{value: companyShare}("");
             require(success, "Company transfer failed");
         }

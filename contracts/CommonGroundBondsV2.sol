@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./BaseDignityBond.sol";
+import "./BaseYieldPoolBond.sol";
 
 /**
  * @title Common Ground Bonds V2 (Production Ready)
  * @notice Bridge-building > division economically
  *
- * @custom:security ReentrancyGuard, Pausable, Distribution timelock, Input validation
+ * @custom:security ReentrancyGuard, Pausable, YieldPool
+ * @custom:security-enhancement Added yield pool funding mechanism (2026 Audit), Distribution timelock, Input validation
  * @custom:ethics Unity without destroying diversity, dual-party verification
  */
-contract CommonGroundBondsV2 is BaseDignityBond {
+contract CommonGroundBondsV2 is BaseYieldPoolBond {
 
     struct Bond {
         uint256 bondId;
@@ -214,6 +215,9 @@ contract CommonGroundBondsV2 is BaseDignityBond {
 
         if (appreciation > 0) {
             uint256 abs = uint256(appreciation);
+
+            // CRITICAL FIX: Check yield pool can cover appreciation
+            _useYieldPool(bondId, abs);
             if (penaltyActive) {
                 bridgeShare = 0; communityShare = abs;
                 reason = penaltyReason;
@@ -232,6 +236,10 @@ contract CommonGroundBondsV2 is BaseDignityBond {
             timestamp: block.timestamp, totalAmount: appreciation,
             bridgeBuildersShare: bridgeShare, communityHealingShare: communityShare, reason: reason
         }));
+
+        // CRITICAL FIX: Explicit balance checks before transfers
+        uint256 totalPayout = bridgeShare + communityShare;
+        require(address(this).balance >= totalPayout, "Insufficient contract balance for distribution");
 
         // Safe ETH transfers using .call{} instead of deprecated .transfer()
         if (bridgeShare > 0) {
