@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./BaseDignityBond.sol";
+import "./BaseYieldPoolBond.sol";
 
 /**
  * @title Escape Velocity Bonds V2 (Production Ready)
  * @notice Little guy escaping poverty - $50-$500 stakes
  *
- * @custom:security ReentrancyGuard, Pausable, Distribution timelock, Input validation
+ * @custom:security ReentrancyGuard, Pausable, YieldPool
+ * @custom:security-enhancement Added yield pool funding mechanism (2026 Audit), Distribution timelock, Input validation
  * @custom:ethics Pay-it-forward, recapture protection
  */
-contract EscapeVelocityBondsV2 is BaseDignityBond {
+contract EscapeVelocityBondsV2 is BaseYieldPoolBond {
 
     struct Bond {
         uint256 bondId;
@@ -206,6 +207,12 @@ contract EscapeVelocityBondsV2 is BaseDignityBond {
 
         if (appreciation > 0) {
             uint256 abs = uint256(appreciation);
+
+            
+            // CRITICAL FIX: Check yield pool can cover appreciation
+
+            
+            _useYieldPool(bondId, abs);
             escaperShare = (abs * 80) / 100;
             payItForwardShare = (abs * 20) / 100;
             reason = bond.escaped ? "Escape achieved - pay it forward" : "Progress toward escape";
@@ -220,7 +227,15 @@ contract EscapeVelocityBondsV2 is BaseDignityBond {
         }));
 
         // Safe ETH transfer using .call{} instead of deprecated .transfer()
+        // CRITICAL FIX: Explicit balance checks before transfers
+
+        uint256 totalPayout = escaperShare + payItForwardShare;
+
+        require(address(this).balance >= totalPayout, "Insufficient contract balance for distribution");
+
+
         if (escaperShare > 0) {
+            require(address(this).balance >= escaperShare, "Insufficient balance for escaper share");
             (bool success, ) = payable(bond.staker).call{value: escaperShare}("");
             require(success, "Escaper transfer failed");
         }

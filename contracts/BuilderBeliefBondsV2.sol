@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./BaseDignityBond.sol";
+import "./BaseYieldPoolBond.sol";
 
 /**
  * @title Builder Belief Bonds V2 (Production Ready)
@@ -21,11 +21,12 @@ import "./BaseDignityBond.sol";
  * @dev Mission Alignment: Morals over metrics, privacy over surveillance, freedom over control.
  * For happy and healthy humans, AIs, and Earth.
  *
- * @custom:security ReentrancyGuard, Pausable, Distribution timelock, Input validation
+ * @custom:security ReentrancyGuard, Pausable, YieldPool, Distribution timelock, Input validation
+ * @custom:security-enhancement Added yield pool funding mechanism (2026 Audit)
  * @custom:ethics Anti-flipping vesting, rewards genuine building
  * @custom:vision Part of Universal Dignity Bonds proving ethics = economics
  */
-contract BuilderBeliefBondsV2 is BaseDignityBond {
+contract BuilderBeliefBondsV2 is BaseYieldPoolBond {
 
     enum BeliefTier { Supporter, Believer, Champion }
 
@@ -90,6 +91,9 @@ contract BuilderBeliefBondsV2 is BaseDignityBond {
     uint256 public constant CHAMPION_VESTING = 31536000;
     uint256 public constant BUILDING_THRESHOLD = 4000;
     uint256 public constant TRANSACTION_PENALTY = 5000;
+
+    // Gas optimization: Cap array iterations to prevent DOS
+    uint256 public constant MAX_ITERATIONS_PER_CALL = 100;
 
     event BondCreated(uint256 indexed bondId, address indexed staker, address indexed builder, string builderName, uint256 stakeAmount, uint256 timestamp);
     event BuildingMetricsSubmitted(uint256 indexed bondId, address submitter, uint256 timestamp, uint256 buildingScore);
@@ -311,6 +315,7 @@ contract BuilderBeliefBondsV2 is BaseDignityBond {
      * - Distribution must have been requested
      * - Timelock must have expired
      * - Must have appreciation to distribute
+     * - Yield pool must have sufficient balance (for appreciations)
      * - Contract must not be paused
      *
      * Emits:
@@ -320,7 +325,8 @@ contract BuilderBeliefBondsV2 is BaseDignityBond {
      * Mission Alignment: Builders get 60% when building, 100% when transacting (penalty).
      * 10% to builder fund supports next generation of builders.
      *
-     * @custom:security ReentrancyGuard, timelock protection, input validation
+     * @custom:security ReentrancyGuard, timelock protection, yield pool solvency checks
+     * @custom:security-enhancement Added yield pool usage and balance verification (2026 Audit)
      * @custom:anti-flip Transacting penalty = 100% to builder (stakers get nothing)
      */
     function distributeBond(uint256 bondId) external nonReentrant whenNotPaused onlyParticipants(bondId) bondExists(bondId) {
@@ -337,6 +343,10 @@ contract BuilderBeliefBondsV2 is BaseDignityBond {
 
         if (appreciation > 0) {
             uint256 abs = uint256(appreciation);
+
+            // CRITICAL FIX: Check yield pool can cover appreciation
+            _useYieldPool(bondId, abs);
+
             if (penaltyActive) {
                 builderShare = abs; stakersShare = 0; fundShare = 0;
                 reason = penaltyReason;
@@ -348,7 +358,11 @@ contract BuilderBeliefBondsV2 is BaseDignityBond {
                 reason = "BUILDING > TRANSACTING";
             }
         } else {
-            builderShare = uint256(-appreciation); stakersShare = 0; fundShare = 0;
+            // Depreciation replenishes yield pool (zero-sum economics)
+            uint256 absDepreciation = uint256(-appreciation);
+            _replenishYieldPool(bondId, absDepreciation);
+
+            builderShare = absDepreciation; stakersShare = 0; fundShare = 0;
             reason = "Support builder during setback";
         }
 
@@ -358,12 +372,18 @@ contract BuilderBeliefBondsV2 is BaseDignityBond {
             builderFundShare: fundShare, reason: reason
         }));
 
+        // CRITICAL FIX: Explicit balance checks before transfers
+        uint256 totalPayout = builderShare + stakersShare;
+        require(address(this).balance >= totalPayout, "Insufficient contract balance for distribution");
+
         // Safe ETH transfers using .call{} instead of deprecated .transfer()
         if (builderShare > 0) {
+            require(address(this).balance >= builderShare, "Insufficient balance for builder share");
             (bool successBuilder, ) = payable(bond.builder).call{value: builderShare}("");
             require(successBuilder, "Builder transfer failed");
         }
         if (stakersShare > 0) {
+            require(address(this).balance >= stakersShare, "Insufficient balance for staker share");
             (bool successStaker, ) = payable(bond.staker).call{value: stakersShare}("");
             require(successStaker, "Staker transfer failed");
         }
