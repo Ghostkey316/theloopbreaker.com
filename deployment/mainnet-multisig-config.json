@@ -1,0 +1,120 @@
+{
+  "network": "base-mainnet",
+  "chainId": 8453,
+  "deployed": false,
+  "deploymentDate": null,
+  "multisigs": {
+    "governance": {
+      "address": "0xGOVERNANCE_MULTISIG_ADDRESS_HERE",
+      "threshold": 3,
+      "signers": 5,
+      "purpose": "Protocol governance, emergency functions, ownership transfers",
+      "safeUrl": "https://app.safe.global/base:0xGOVERNANCE_MULTISIG_ADDRESS_HERE",
+      "controls": [
+        "BuilderBeliefBondsV2",
+        "LaborDignityBondsV2",
+        "PurchasingPowerBondsV2",
+        "AIAccountabilityBondsV2",
+        "HealthCommonsBondsV2",
+        "EscapeVelocityBondsV2",
+        "AIPartnershipBondsV2",
+        "CommonGroundBondsV2",
+        "VerdantAnchorBondsV2",
+        "RewardMultiplier",
+        "VaultfireDAO",
+        "DilithiumAttestor",
+        "BeliefOracle (guardian)"
+      ]
+    },
+    "operations": {
+      "address": "0xOPERATIONS_MULTISIG_ADDRESS_HERE",
+      "threshold": 2,
+      "signers": 3,
+      "purpose": "Day-to-day operations, reward distribution, role management",
+      "safeUrl": "https://app.safe.global/base:0xOPERATIONS_MULTISIG_ADDRESS_HERE",
+      "controls": [
+        "RewardStream (admin)",
+        "VaultfireRewardStream (admin)",
+        "ContributorUnlockKey",
+        "VaultfireLoyalty",
+        "SwapGate (owner)",
+        "BeliefOracle (admin)",
+        "MultiOracleConsensus (owner)"
+      ]
+    },
+    "treasury": {
+      "address": "0xTREASURY_MULTISIG_ADDRESS_HERE",
+      "threshold": 4,
+      "signers": 6,
+      "purpose": "Fund management, liquidity provisioning, treasury operations",
+      "safeUrl": "https://app.safe.global/base:0xTREASURY_MULTISIG_ADDRESS_HERE",
+      "controls": [
+        "SwapGate (feeRecipient)",
+        "Protocol revenue",
+        "Liquidity pools",
+        "Treasury funds"
+      ]
+    }
+  },
+  "deploymentConfiguration": {
+    "rewardStream": {
+      "admin": "operations",
+      "governorTimelock": "governance"
+    },
+    "beliefOracle": {
+      "guardian": "governance",
+      "admin": "operations"
+    },
+    "multiOracleConsensus": {
+      "owner": "operations"
+    },
+    "dilithiumAttestor": {
+      "origin": "governance",
+      "zkEnabled": false,
+      "verifierAddress": "0x0000000000000000000000000000000000000000"
+    },
+    "bondContracts": {
+      "owner": "governance",
+      "contracts": [
+        "BuilderBeliefBondsV2",
+        "LaborDignityBondsV2",
+        "PurchasingPowerBondsV2",
+        "AIAccountabilityBondsV2",
+        "HealthCommonsBondsV2",
+        "EscapeVelocityBondsV2",
+        "AIPartnershipBondsV2",
+        "CommonGroundBondsV2",
+        "VerdantAnchorBondsV2"
+      ]
+    }
+  },
+  "instructions": {
+    "step1": "Create three Gnosis Safe wallets on Base Mainnet (see MAINNET_MULTISIG_SETUP.md)",
+    "step2": "Replace placeholder addresses above with your actual Safe addresses",
+    "step3": "Fund each Safe with ETH (0.05 for governance, 0.1 for operations, 0.05 for treasury)",
+    "step4": "Run 'node scripts/verify-multisig-setup.js' to validate configuration",
+    "step5": "Proceed with mainnet deployment using 'node scripts/deploy-mainnet-production.js'"
+  },
+  "emergencyContacts": {
+    "governance": {
+      "signer1": "name@example.com",
+      "signer2": "name@example.com",
+      "signer3": "name@example.com",
+      "signer4": "name@example.com",
+      "signer5": "name@example.com"
+    },
+    "operations": {
+      "signer1": "name@example.com",
+      "signer2": "name@example.com",
+      "signer3": "name@example.com"
+    },
+    "treasury": {
+      "signer1": "name@example.com",
+      "signer2": "name@example.com",
+      "signer3": "name@example.com",
+      "signer4": "name@example.com",
+      "signer5": "name@example.com",
+      "signer6": "name@example.com"
+    }
+  }
+}

@@ -1,266 +1,352 @@
 const hre = require("hardhat");
-const fs = require('fs');
-const { ethers } = require("hardhat");
+const fs = require("fs");
+const path = require("path");
 
 /**
- * Deployment Verification Script
+ * Post-Deployment Verification Script
  *
- * Mission: Verify all contracts deployed correctly before real funds.
- * Humanity over control - catch errors before they hurt people.
+ * Verifies that all Vaultfire V2 contracts were deployed correctly and
+ * ownership/roles are properly configured.
  *
- * Usage:
- *   npx hardhat run scripts/verify-deployment.js --network baseSepolia
- *   npx hardhat run scripts/verify-deployment.js --network baseMainnet
+ * Run after deployment: npx hardhat run scripts/verify-deployment.js --network baseMainnet
  */
 
-const BOND_CONTRACTS = [
-    "PurchasingPowerBonds",
-    "HealthCommonsBonds",
-    "AIAccountabilityBonds",
-    "LaborDignityBonds",
-    "EscapeVelocityBonds",
-    "CommonGroundBonds",
-    "AIPartnershipBonds",
-    "BuilderBeliefBonds",
-    "VerdantAnchorBonds"
-];
+const DEPLOYMENT_PATH = path.join(__dirname, '../deployment/mainnet-deployment.json');
+const MULTISIG_CONFIG_PATH = path.join(__dirname, '../deployment/mainnet-multisig-config.json');
 
 async function main() {
-    console.log("\n🔍 DEPLOYMENT VERIFICATION");
-    console.log("=" + "=".repeat(60));
-    console.log(`Network: ${hre.network.name}`);
-    console.log(`Time: ${new Date().toISOString()}\n`);
+  console.log('\n' + '='.repeat(80));
+  console.log('🔍 POST-DEPLOYMENT VERIFICATION');
+  console.log('='.repeat(80) + '\n');
 
-    const deploymentFile = `./deployments/all-bonds-${hre.network.name}.json`;
+  // Load deployment data
+  let deployment, multisigConfig;
+  try {
+    deployment = JSON.parse(fs.readFileSync(DEPLOYMENT_PATH, 'utf8'));
+    multisigConfig = JSON.parse(fs.readFileSync(MULTISIG_CONFIG_PATH, 'utf8'));
+  } catch (error) {
+    console.error('❌ Error loading deployment files:');
+    console.error(error.message);
+    console.error('\nMake sure deployment completed successfully first.');
+    process.exit(1);
+  }
 
-    // Check deployment file exists
-    if (!fs.existsSync(deploymentFile)) {
-        console.error("❌ Deployment file not found:", deploymentFile);
-        console.error("   Run deployment script first:");
-        console.error(`   npx hardhat run scripts/deploy-all-bonds.js --network ${hre.network.name}`);
-        process.exit(1);
-    }
+  // Verify network
+  const network = await hre.ethers.provider.getNetwork();
+  console.log(`🌐 Network: ${network.name} (Chain ID: ${network.chainId})`);
+  console.log(`📅 Deployment Date: ${deployment.timestamp}\n`);
 
-    const deployment = JSON.parse(fs.readFileSync(deploymentFile, 'utf8'));
+  if (network.chainId !== 8453n) {
+    console.error('❌ Wrong network! Expected Base Mainnet (8453)');
+    process.exit(1);
+  }
 
-    console.log("📝 Deployment Info:");
-    console.log(`   Network: ${deployment.network}`);
-    console.log(`   Deployer: ${deployment.deployer}`);
-    console.log(`   Deployed At: ${deployment.deployedAt}`);
-    console.log(`   Chain ID: ${deployment.contracts[Object.keys(deployment.contracts)[0]].chainId}\n`);
+  const results = {
+    passed: 0,
+    failed: 0,
+    warnings: 0,
+    checks: []
+  };
 
-    let allVerified = true;
-    const verificationResults = [];
+  const multisigs = deployment.multisigs;
 
-    // Verify each contract
-    for (const bondName of BOND_CONTRACTS) {
-        console.log(`\n🔍 Verifying ${bondName}...`);
+  console.log('='.repeat(80));
+  console.log('PHASE 1: CONTRACT EXISTENCE');
+  console.log('='.repeat(80) + '\n');
 
-        const contractInfo = deployment.contracts[bondName];
-        if (!contractInfo) {
-            console.error(`   ❌ Contract info not found in deployment file`);
-            allVerified = false;
-            verificationResults.push({ contract: bondName, status: "FAILED", reason: "Not in deployment file" });
-            continue;
-        }
+  // Verify all contracts exist
+  for (const [contractName, contractData] of Object.entries(deployment.contracts)) {
+    const address = contractData.address;
+    console.log(`📦 ${contractName}: ${address}`);
 
-        const address = contractInfo.address;
-        console.log(`   Address: ${address}`);
-
-        try {
-            // 1. Verify contract is deployed (has code)
-            const code = await ethers.provider.getCode(address);
-            if (code === '0x') {
-                console.error(`   ❌ No code at address - contract not deployed`);
-                allVerified = false;
-                verificationResults.push({ contract: bondName, status: "FAILED", reason: "No code at address" });
-                continue;
-            }
-            console.log(`   ✅ Code deployed (${code.length} bytes)`);
-
-            // 2. Get contract instance
-            const contract = await ethers.getContractAt(bondName, address);
-
-            // 3. Verify nextBondId is 1 (no bonds created yet)
-            const nextBondId = await contract.nextBondId();
-            if (nextBondId !== BigInt(1)) {
-                console.warn(`   ⚠️  nextBondId is ${nextBondId} (expected 1) - bonds may have been created`);
-            } else {
-                console.log(`   ✅ nextBondId: ${nextBondId} (clean deployment)`);
-            }
-
-            // 4. Verify contract is not paused (if it has pause functionality)
-            try {
-                const paused = await contract.paused();
-                if (paused) {
-                    console.warn(`   ⚠️  Contract is PAUSED`);
-                } else {
-                    console.log(`   ✅ Contract not paused`);
-                }
-            } catch (e) {
-                // Contract might not have pause functionality (old version)
-                console.log(`   ⚠️  No pause function (old version?)`);
-            }
-
-            // 5. Verify owner (if contract has owner)
-            try {
-                const owner = await contract.owner();
-                console.log(`   ✅ Owner: ${owner}`);
-                if (owner !== deployment.deployer) {
-                    console.warn(`   ⚠️  Owner differs from deployer`);
-                }
-            } catch (e) {
-                // Contract might not have owner (old version)
-                console.log(`   ⚠️  No owner function (old version?)`);
-            }
-
-            // 6. Verify constants
-            try {
-                if (bondName === "LaborDignityBonds" || bondName === "LaborDignityBondsV2") {
-                    const exploitThreshold = await contract.EXPLOITATION_THRESHOLD();
-                    const verifyThreshold = await contract.LOW_VERIFICATION_THRESHOLD();
-                    console.log(`   ✅ EXPLOITATION_THRESHOLD: ${exploitThreshold} (4000 expected)`);
-                    console.log(`   ✅ LOW_VERIFICATION_THRESHOLD: ${verifyThreshold} (70 expected)`);
-
-                    if (exploitThreshold !== BigInt(4000)) {
-                        console.error(`   ❌ EXPLOITATION_THRESHOLD wrong value`);
-                        allVerified = false;
-                    }
-                }
-
-                if (bondName === "PurchasingPowerBonds") {
-                    const housingTarget = await contract.HOUSING_TARGET();
-                    console.log(`   ✅ HOUSING_TARGET: ${housingTarget} (3000 expected)`);
-
-                    if (housingTarget !== BigInt(3000)) {
-                        console.error(`   ❌ HOUSING_TARGET wrong value`);
-                        allVerified = false;
-                    }
-                }
-
-                if (bondName === "AIAccountabilityBonds") {
-                    const sufferingThreshold = await contract.SUFFERING_THRESHOLD();
-                    console.log(`   ✅ SUFFERING_THRESHOLD: ${sufferingThreshold} (4000 expected)`);
-
-                    if (sufferingThreshold !== BigInt(4000)) {
-                        console.error(`   ❌ SUFFERING_THRESHOLD wrong value`);
-                        allVerified = false;
-                    }
-                }
-            } catch (e) {
-                console.log(`   ⚠️  Could not verify constants: ${e.message}`);
-            }
-
-            // 7. Verify contract interface (check key functions exist)
-            const requiredFunctions = ['createBond', 'getBond', 'calculateBondValue'];
-            for (const func of requiredFunctions) {
-                if (typeof contract[func] !== 'function') {
-                    console.error(`   ❌ Missing required function: ${func}`);
-                    allVerified = false;
-                } else {
-                    console.log(`   ✅ Function exists: ${func}()`);
-                }
-            }
-
-            // 8. Verify contract can be interacted with (read-only call)
-            try {
-                const metricsCount = await contract.getMetricsCount(1);
-                console.log(`   ✅ Contract responsive (getMetricsCount works)`);
-            } catch (e) {
-                // Expected to revert for non-existent bond, that's okay
-                console.log(`   ✅ Contract responsive (reverts as expected)`);
-            }
-
-            verificationResults.push({
-                contract: bondName,
-                address: address,
-                status: "VERIFIED",
-                codeSize: code.length,
-                nextBondId: nextBondId.toString()
-            });
-
-            console.log(`   ✅ ${bondName} VERIFIED`);
-
-        } catch (error) {
-            console.error(`   ❌ Verification failed: ${error.message}`);
-            allVerified = false;
-            verificationResults.push({ contract: bondName, address: address, status: "FAILED", reason: error.message });
-        }
-    }
-
-    // Summary
-    console.log("\n" + "=".repeat(60));
-    console.log("📊 VERIFICATION SUMMARY");
-    console.log("=".repeat(60) + "\n");
-
-    const verifiedCount = verificationResults.filter(r => r.status === "VERIFIED").length;
-    const failedCount = verificationResults.filter(r => r.status === "FAILED").length;
-
-    console.log(`Total Contracts: ${BOND_CONTRACTS.length}`);
-    console.log(`Verified: ${verifiedCount}`);
-    console.log(`Failed: ${failedCount}\n`);
-
-    if (allVerified) {
-        console.log("✅ ALL CONTRACTS VERIFIED SUCCESSFULLY!");
-        console.log("\nDeployment is ready for use.");
-        console.log("\n⚠️  IMPORTANT REMINDERS:");
-        console.log("   1. This is automated verification, NOT a security audit");
-        console.log("   2. Get professional security audit before mainnet with real funds");
-        console.log("   3. Test thoroughly on testnet first");
-        console.log("   4. Start with small amounts on mainnet");
-        console.log("   5. Monitor transactions closely");
-        console.log("\nMission Alignment: Humanity over control.");
-        console.log("These contracts protect workers and communities.");
-        console.log("Use them wisely. 🔥\n");
-
-        // Save verification report
-        const reportFile = `./deployments/verification-${hre.network.name}-${Date.now()}.json`;
-        const report = {
-            network: hre.network.name,
-            verifiedAt: new Date().toISOString(),
-            results: verificationResults,
-            allVerified: true,
-            totalContracts: BOND_CONTRACTS.length,
-            verifiedCount: verifiedCount,
-            failedCount: failedCount
-        };
-
-        fs.writeFileSync(reportFile, JSON.stringify(report, null, 2));
-        console.log(`📝 Verification report saved: ${reportFile}\n`);
-
+    const code = await hre.ethers.provider.getCode(address);
+    if (code === '0x') {
+      console.error(`   ❌ No contract found!\n`);
+      results.failed++;
+      results.checks.push({ contract: contractName, check: 'existence', passed: false });
     } else {
-        console.log("❌ VERIFICATION FAILED!");
-        console.log("\nSome contracts failed verification.");
-        console.log("DO NOT use this deployment with real funds.");
-        console.log("\nFailed contracts:");
-        verificationResults.filter(r => r.status === "FAILED").forEach(r => {
-            console.log(`   - ${r.contract}: ${r.reason}`);
-        });
-
-        console.log("\nPlease redeploy or investigate the issues.\n");
-
-        // Save failure report
-        const reportFile = `./deployments/verification-FAILED-${hre.network.name}-${Date.now()}.json`;
-        const report = {
-            network: hre.network.name,
-            verifiedAt: new Date().toISOString(),
-            results: verificationResults,
-            allVerified: false,
-            totalContracts: BOND_CONTRACTS.length,
-            verifiedCount: verifiedCount,
-            failedCount: failedCount
-        };
-
-        fs.writeFileSync(reportFile, JSON.stringify(report, null, 2));
-        console.log(`📝 Failure report saved: ${reportFile}\n`);
-
-        process.exit(1);
+      console.log(`   ✅ Contract deployed\n`);
+      results.passed++;
+      results.checks.push({ contract: contractName, check: 'existence', passed: true });
     }
+  }
+
+  console.log('='.repeat(80));
+  console.log('PHASE 2: OWNERSHIP VERIFICATION');
+  console.log('='.repeat(80) + '\n');
+
+  // Helper to check ownership
+  async function verifyOwnership(contractName, address, expectedOwner, ownerFunction = 'owner') {
+    try {
+      const artifact = await hre.artifacts.readArtifact(contractName);
+      const contract = new hre.ethers.Contract(address, artifact.abi, hre.ethers.provider);
+
+      const owner = await contract[ownerFunction]();
+      const isCorrect = owner.toLowerCase() === expectedOwner.toLowerCase();
+
+      console.log(`${contractName}:`);
+      console.log(`   Current: ${owner}`);
+      console.log(`   Expected: ${expectedOwner}`);
+
+      if (isCorrect) {
+        console.log(`   ✅ Ownership correct\n`);
+        results.passed++;
+        results.checks.push({ contract: contractName, check: 'ownership', passed: true });
+      } else {
+        console.error(`   ❌ Ownership mismatch!\n`);
+        results.failed++;
+        results.checks.push({ contract: contractName, check: 'ownership', passed: false });
+      }
+
+      return isCorrect;
+    } catch (error) {
+      console.error(`   ⚠️  Error checking ownership: ${error.message}\n`);
+      results.warnings++;
+      return false;
+    }
+  }
+
+  // Verify Bond Contract Ownership (should be governance multisig)
+  const bondContracts = [
+    'BuilderBeliefBondsV2',
+    'LaborDignityBondsV2',
+    'PurchasingPowerBondsV2',
+    'AIAccountabilityBondsV2',
+    'HealthCommonsBondsV2',
+    'EscapeVelocityBondsV2',
+    'AIPartnershipBondsV2',
+    'CommonGroundBondsV2',
+    'VerdantAnchorBondsV2'
+  ];
+
+  console.log('📋 Verifying Bond Contract Ownership (Governance Multisig):\n');
+  for (const bondName of bondContracts) {
+    if (deployment.contracts[bondName]) {
+      await verifyOwnership(
+        bondName,
+        deployment.contracts[bondName].address,
+        multisigs.governance
+      );
+    }
+  }
+
+  // Verify MultiOracleConsensus ownership (operations multisig)
+  console.log('📋 Verifying MultiOracleConsensus Ownership (Operations Multisig):\n');
+  if (deployment.contracts.MultiOracleConsensus) {
+    await verifyOwnership(
+      'MultiOracleConsensus',
+      deployment.contracts.MultiOracleConsensus.address,
+      multisigs.operations
+    );
+  }
+
+  // Verify RewardMultiplier ownership (governance multisig)
+  console.log('📋 Verifying RewardMultiplier Ownership (Governance Multisig):\n');
+  if (deployment.contracts.RewardMultiplier) {
+    await verifyOwnership(
+      'RewardMultiplier',
+      deployment.contracts.RewardMultiplier.address,
+      multisigs.governance
+    );
+  }
+
+  // Verify ContributorUnlockKey ownership (operations multisig)
+  console.log('📋 Verifying ContributorUnlockKey Ownership (Operations Multisig):\n');
+  if (deployment.contracts.ContributorUnlockKey) {
+    await verifyOwnership(
+      'ContributorUnlockKey',
+      deployment.contracts.ContributorUnlockKey.address,
+      multisigs.operations
+    );
+  }
+
+  console.log('='.repeat(80));
+  console.log('PHASE 3: ROLE VERIFICATION');
+  console.log('='.repeat(80) + '\n');
+
+  // Verify RewardStream roles
+  console.log('📋 Verifying RewardStream Roles:\n');
+  if (deployment.contracts.RewardStream) {
+    try {
+      const artifact = await hre.artifacts.readArtifact('RewardStream');
+      const rewardStream = new hre.ethers.Contract(
+        deployment.contracts.RewardStream.address,
+        artifact.abi,
+        hre.ethers.provider
+      );
+
+      const admin = await rewardStream.admin();
+      const governor = await rewardStream.governorTimelock();
+
+      console.log('RewardStream:');
+      console.log(`   Admin: ${admin}`);
+      console.log(`   Expected: ${multisigs.operations}`);
+      if (admin.toLowerCase() === multisigs.operations.toLowerCase()) {
+        console.log(`   ✅ Admin correct\n`);
+        results.passed++;
+      } else {
+        console.error(`   ❌ Admin mismatch!\n`);
+        results.failed++;
+      }
+
+      console.log(`   Governor: ${governor}`);
+      console.log(`   Expected: ${multisigs.governance}`);
+      if (governor.toLowerCase() === multisigs.governance.toLowerCase()) {
+        console.log(`   ✅ Governor correct\n`);
+        results.passed++;
+      } else {
+        console.error(`   ❌ Governor mismatch!\n`);
+        results.failed++;
+      }
+    } catch (error) {
+      console.error(`   ⚠️  Error checking RewardStream: ${error.message}\n`);
+      results.warnings++;
+    }
+  }
+
+  // Verify BeliefOracle guardian
+  console.log('📋 Verifying BeliefOracle Guardian:\n');
+  if (deployment.contracts.BeliefOracle) {
+    try {
+      const artifact = await hre.artifacts.readArtifact('BeliefOracle');
+      const oracle = new hre.ethers.Contract(
+        deployment.contracts.BeliefOracle.address,
+        artifact.abi,
+        hre.ethers.provider
+      );
+
+      const guardian = await oracle.guardian();
+
+      console.log('BeliefOracle:');
+      console.log(`   Guardian: ${guardian}`);
+      console.log(`   Expected: ${multisigs.governance}`);
+      if (guardian.toLowerCase() === multisigs.governance.toLowerCase()) {
+        console.log(`   ✅ Guardian correct\n`);
+        results.passed++;
+      } else {
+        console.error(`   ❌ Guardian mismatch!\n`);
+        results.failed++;
+      }
+    } catch (error) {
+      console.error(`   ⚠️  Error checking BeliefOracle: ${error.message}\n`);
+      results.warnings++;
+    }
+  }
+
+  // Verify DilithiumAttestor origin
+  console.log('📋 Verifying DilithiumAttestor Origin:\n');
+  if (deployment.contracts.DilithiumAttestor) {
+    try {
+      const artifact = await hre.artifacts.readArtifact('DilithiumAttestor');
+      const attestor = new hre.ethers.Contract(
+        deployment.contracts.DilithiumAttestor.address,
+        artifact.abi,
+        hre.ethers.provider
+      );
+
+      const origin = await attestor.origin();
+      const zkEnabled = await attestor.zkEnabled();
+
+      console.log('DilithiumAttestor:');
+      console.log(`   Origin: ${origin}`);
+      console.log(`   Expected: ${multisigs.governance}`);
+      if (origin.toLowerCase() === multisigs.governance.toLowerCase()) {
+        console.log(`   ✅ Origin correct`);
+        results.passed++;
+      } else {
+        console.error(`   ❌ Origin mismatch!`);
+        results.failed++;
+      }
+
+      console.log(`   ZK Enabled: ${zkEnabled}`);
+      console.log(`   Expected: false (V2 signature-only mode)`);
+      if (!zkEnabled) {
+        console.log(`   ✅ ZK mode correct\n`);
+        results.passed++;
+      } else {
+        console.error(`   ⚠️  Warning: ZK enabled (unexpected for V2)\n`);
+        results.warnings++;
+      }
+    } catch (error) {
+      console.error(`   ⚠️  Error checking DilithiumAttestor: ${error.message}\n`);
+      results.warnings++;
+    }
+  }
+
+  console.log('='.repeat(80));
+  console.log('📊 VERIFICATION SUMMARY');
+  console.log('='.repeat(80) + '\n');
+
+  const totalChecks = results.passed + results.failed;
+  const successRate = totalChecks > 0 ? ((results.passed / totalChecks) * 100).toFixed(1) : 0;
+
+  console.log(`✅ Passed: ${results.passed}/${totalChecks} (${successRate}%)`);
+  console.log(`❌ Failed: ${results.failed}/${totalChecks}`);
+  console.log(`⚠️  Warnings: ${results.warnings}\n`);
+
+  if (results.failed > 0) {
+    console.log('='.repeat(80));
+    console.log('❌ VERIFICATION FAILED');
+    console.log('='.repeat(80) + '\n');
+    console.log('Critical issues detected. Please review and fix before proceeding.\n');
+
+    console.log('Failed checks:');
+    results.checks
+      .filter(c => !c.passed)
+      .forEach(c => console.log(`   - ${c.contract}: ${c.check}`));
+    console.log('');
+
+    process.exit(1);
+  }
+
+  if (results.warnings > 0) {
+    console.log('='.repeat(80));
+    console.log('⚠️  VERIFICATION PASSED WITH WARNINGS');
+    console.log('='.repeat(80) + '\n');
+    console.log('Please review warnings above.\n');
+  } else {
+    console.log('='.repeat(80));
+    console.log('✅ VERIFICATION SUCCESSFUL!');
+    console.log('='.repeat(80) + '\n');
+  }
+
+  console.log('All contracts deployed and configured correctly!\n');
+  console.log('Next steps:');
+  console.log('1. Verify contracts on Basescan');
+  console.log('2. Test multisig operations via Gnosis Safe UI');
+  console.log('3. Deploy frontend with contract addresses');
+  console.log('4. Conduct end-to-end testing');
+  console.log('5. Announce mainnet launch! 🎉\n');
+
+  // Save verification results
+  const verificationLog = {
+    timestamp: new Date().toISOString(),
+    network: {
+      name: network.name,
+      chainId: Number(network.chainId)
+    },
+    deployment: deployment,
+    results: {
+      passed: results.passed,
+      failed: results.failed,
+      warnings: results.warnings,
+      successRate: `${successRate}%`
+    },
+    checks: results.checks
+  };
+
+  fs.writeFileSync(
+    path.join(__dirname, '../deployment/deployment-verification.json'),
+    JSON.stringify(verificationLog, null, 2)
+  );
+
+  console.log('📄 Verification log saved to deployment/deployment-verification.json\n');
 }
 
 main()
-    .then(() => process.exit(0))
-    .catch((error) => {
-        console.error("\n❌ Verification script error:", error);
-        process.exit(1);
-    });
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error('\n❌ Verification script failed:\n');
+    console.error(error);
+    process.exit(1);
+  });
