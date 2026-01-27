@@ -255,19 +255,37 @@ npx hardhat run scripts/deploy-ai-partnership.js --network sepolia
 npx hardhat run scripts/deploy-ai-accountability.js --network sepolia
 ```
 
+### Base Mini App
+The project includes a production-ready Base dApp in `/base-mini-app`:
+- Next.js 14 frontend with wagmi + RainbowKit
+- Privacy-first belief attestation on Base blockchain
+- Zero-knowledge proof integration
+- See [base-mini-app/README.md](./base-mini-app/README.md) for setup instructions
+
 ---
 
 ## Documentation
 
-**Core Docs:**
-- [AI Trust Layer Integration](./docs/AI_TRUST_LAYER_INTEGRATION.md) - Complete integration guide
+**Core Protocol Docs:**
 - [AI Partnership Design](./docs/AI_PARTNERSHIP_DESIGN.md) - Partnership bonds philosophy
+- [Mission & Vision](./docs/MISSION.md) - Protocol mission and values
 - [Security Audit Reports](./COMPREHENSIVE_PROTOCOL_AUDIT_2026.md) - Latest audit findings
 
 **For Developers:**
 - Smart contract API documentation (in code comments)
-- Integration examples (in `/examples`)
 - Test cases (comprehensive examples in `/test`)
+- [Deployment Guide](./DEPLOYMENT_GUIDE.md) - Production deployment instructions
+
+**Partnership & Integration Materials:**
+- [Partnership Master Plan](./PARTNERSHIP_MASTER_PLAN.md) - Strategic partnership approach
+- [Partner Integration Guide](./PARTNER_INTEGRATION_GUIDE.md) - Technical integration guide
+- [Base Ecosystem Grant Application](./BASE_ECOSYSTEM_GRANT_APPLICATION.md) - Base grant proposal
+- [For Non-Crypto Partners](./FOR_NON_CRYPTO_PARTNERS.md) - Explaining Vaultfire to non-crypto audiences
+- **Full partnership pitch deck:** See `/partnerships` directory for:
+  - Coinbase/Base pitch materials
+  - OpenAI/Anthropic pitch materials
+  - Demo scripts and outreach templates
+  - ROI calculators and timing analysis
 
 ---
 
@@ -340,9 +358,9 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 - No upgradeable proxies (immutable once deployed)
 
 **Responsible Disclosure:**
-- Report security issues to: security@vaultfire.io (once live)
+- Report security issues to: ghostkey316@proton.me
 - PGP key available in SECURITY.md
-- Bug bounty program (launching with mainnet)
+- Bug bounty program (planned for mainnet launch)
 
 ---
 
@@ -356,11 +374,11 @@ MIT License - See [LICENSE](./LICENSE) for details
 
 ## Contact & Community
 
-**Website:** vaultfire.io (coming soon)
-**Documentation:** docs.vaultfire.io (coming soon)
+**Email:** ghostkey316@proton.me
 **GitHub:** https://github.com/ghostkey316/ghostkey-316-vaultfire-init
-**Discord:** (coming soon)
-**Twitter:** (coming soon)
+
+**For Partnership Inquiries:**
+See our comprehensive partnership materials in the `/partnerships` directory and root-level partnership docs.
 
 ---
 
