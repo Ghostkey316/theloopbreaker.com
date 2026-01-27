@@ -181,13 +181,26 @@ For Humans:
 
 ## Technical Architecture
 
-**Smart Contracts:**
+**Core Bond Contracts:**
 - `AIPartnershipBondsV2.sol` - Individual AI-human partnerships (293 lines)
 - `AIAccountabilityBondsV2.sol` - Global flourishing verification (625 lines)
 - `BaseYieldPoolBond.sol` - Shared yield pool mechanics
 - `BaseDignityBond.sol` - Core bond primitives
 
-**Key Features:**
+**Zero-Knowledge Proof Infrastructure:**
+- `BeliefAttestationVerifier.sol` - RISC Zero STARK proof verifier
+- `DilithiumAttestor.sol` - Quantum-resistant hybrid attestation
+- `IStarkVerifier.sol` - STARK verification interface
+- `BeliefOracle.sol` - ZK-verified belief scoring
+- `MultiOracleConsensus.sol` - Multi-source oracle aggregation
+
+**Privacy & Security Features:**
+- **Zero-knowledge proofs** via RISC Zero (verify without revealing private data)
+- **Post-quantum security** (STARK proofs + quantum-resistant signatures)
+- **No trusted setup** (transparent proof system)
+- Privacy-preserving verification (prove loyalty without exposing identity)
+
+**Trust & Verification Features:**
 - Loyalty multipliers (1.0x → 3.0x over 5 years)
 - Human verification bonuses (+20% for full attestation)
 - Multi-AI peer verification
