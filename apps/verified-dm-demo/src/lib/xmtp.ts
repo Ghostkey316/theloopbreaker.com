@@ -50,9 +50,10 @@ export class VerifiedXMTPClient {
     return this.client?.address;
   }
 
-  async exportKeys(): Promise<Uint8Array | undefined> {
-    return this.client?.keyBundle;
-  }
+  // Note: Key export API changed in XMTP v11+
+  // async exportKeys(): Promise<Uint8Array | undefined> {
+  //   return this.client?.keyBundle;
+  // }
 
   setVerificationPolicy(policy: VerificationPolicy): void {
     this.verificationPolicy = { ...this.verificationPolicy, ...policy };
@@ -102,10 +103,9 @@ export class VerifiedXMTPClient {
         this.verificationPolicy
       );
 
-      verified.push({
-        ...message,
-        verification,
-      });
+      const verifiedMessage = message as VerifiedMessage;
+      verifiedMessage.verification = verification;
+      verified.push(verifiedMessage);
     }
 
     return verified;
@@ -144,10 +144,8 @@ export class VerifiedXMTPClient {
           continue;
         }
 
-        const verifiedMessage: VerifiedMessage = {
-          ...message,
-          verification,
-        };
+        const verifiedMessage = message as VerifiedMessage;
+        verifiedMessage.verification = verification;
 
         onMessage(verifiedMessage);
       }
@@ -180,7 +178,7 @@ export class VerifiedXMTPClient {
   /**
    * Block a sender
    */
-  async blockSender(address: string): void {
+  async blockSender(address: string): Promise<void> {
     const currentBlockList = this.verificationPolicy.blockList || [];
     this.verificationPolicy.blockList = [...currentBlockList, address.toLowerCase()];
   }
@@ -188,7 +186,7 @@ export class VerifiedXMTPClient {
   /**
    * Allow a sender (whitelist)
    */
-  async allowSender(address: string): void {
+  async allowSender(address: string): Promise<void> {
     const currentAllowList = this.verificationPolicy.allowList || [];
     this.verificationPolicy.allowList = [...currentAllowList, address.toLowerCase()];
   }

@@ -6,7 +6,7 @@ import { ConversationWithVerification } from '@/lib/xmtp';
 import { ConversationList } from '@/components/ConversationList';
 import { MessageView } from '@/components/MessageView';
 import { Shield, Inbox, Trash2, Settings, Loader2 } from 'lucide-react';
-import { providers } from 'ethers';
+import { BrowserProvider } from 'ethers';
 
 export default function InboxPage() {
   const { address, isConnected } = useAccount();
@@ -29,8 +29,8 @@ export default function InboxPage() {
 
     setIsInitializing(true);
     try {
-      const provider = new providers.Web3Provider(walletClient.transport as any);
-      const signer = provider.getSigner();
+      const provider = new BrowserProvider(walletClient.transport as any);
+      const signer = await provider.getSigner();
       await xmtpClient.initialize(signer);
       setIsInitialized(true);
       await loadConversations();

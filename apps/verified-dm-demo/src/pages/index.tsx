@@ -38,7 +38,7 @@ export default function Home() {
           {/* Subtitle */}
           <p className="text-xl text-gray-300 mb-12 text-balance">
             Experience the future of messaging with built-in identity verification and anti-spam protection.
-            Vaultfire's proof/policy layer makes XMTP messages trustworthy.
+            Vaultfire&apos;s proof/policy layer makes XMTP messages trustworthy.
           </p>
 
           {/* CTA */}
@@ -59,7 +59,7 @@ export default function Home() {
             <h3 className="text-xl font-bold mb-3">Verified Senders</h3>
             <p className="text-gray-400">
               Every message includes cryptographic proof of sender identity and reputation.
-              Know who you're talking to.
+              Know who you&apos;re talking to.
             </p>
           </div>
 
@@ -157,8 +157,8 @@ export default function Home() {
             <li>Integration with existing XMTP infrastructure</li>
           </ul>
           <p className="text-sm text-gray-500">
-            Connect your wallet to test the verified messaging experience. The demo uses XMTP's production
-            network with Vaultfire's verification layer.
+            Connect your wallet to test the verified messaging experience. The demo uses XMTP&apos;s production
+            network with Vaultfire&apos;s verification layer.
           </p>
         </div>
       </section>
