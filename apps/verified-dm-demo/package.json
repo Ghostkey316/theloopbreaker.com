@@ -1,0 +1,43 @@
+{
+  "name": "vaultfire-verified-dm-demo",
+  "version": "1.0.0",
+  "description": "Verified DM Demo - Vaultfire + XMTP Integration for Shane Mac",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@xmtp/xmtp-js": "11.4.1",
+    "@rainbow-me/rainbowkit": "^2.1.0",
+    "@tanstack/react-query": "^5.28.0",
+    "wagmi": "^2.5.0",
+    "viem": "^2.9.0",
+    "ethers": "^6.11.0",
+    "next": "14.1.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "framer-motion": "^11.0.0",
+    "lucide-react": "^0.356.0"
+  },
+  "devDependencies": {
+    "@types/node": "20.10.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "typescript": "^5.3.0",
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.4.0",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "14.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "overrides": {
+    "undici-types": "~6.19.8"
+  }
+}
