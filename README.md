@@ -1,33 +1,50 @@
-# Vaultfire Protocol 🔥
+# Vaultfire Protocol
 
-**Verifiable trust and identity for humans and AI**
+**Infrastructure for verifiable trust and identity between humans and AI**
 
-> *"Truth is verifiable. Privacy is default. Control stays with the human."*
+> *The first belief-built protocol — where economic proof replaces blind faith.*
 
 ---
 
 ## What Vaultfire Is
 
-**Vaultfire is a digital trust and identity layer designed around one core inversion:**
+**Vaultfire is trust infrastructure for the AI era.**
 
-**Morals over metrics, privacy over surveillance, and freedom over control.**
+Like HTTPS secures communication between browsers and servers, Vaultfire secures trust between humans and AI through verifiable economic proof.
 
-It uses zero-knowledge systems (including RISC Zero), sovereign cryptography, and verifiable logic to prove truth **without exposing the person behind it**.
+**The first protocol built on belief verification rather than behavioral surveillance.**
 
-No data extraction. No behavioral harvesting. No centralized authority deciding who you are.
+**Core architecture:**
+- Zero-knowledge proof systems (RISC Zero + quantum-resistant cryptography)
+- Economic verification (staked accountability bonds)
+- Sovereign identity (no central authority controls reputation)
 
-## What Vaultfire Enables
+**What it prevents:**
+- Data extraction and behavioral harvesting
+- AI companies profiting while humans suffer
+- Unverifiable claims about AI alignment
 
-✓ **Proof without disclosure** - Verify partnership quality and global impact without surveillance
-✓ **Identity without ownership** - No central authority controls your reputation
-✓ **Trust without coercion** - Economic incentives, not force
+**What it enables:**
+- Proof of partnership quality without surveillance
+- Economic verification of global human flourishing
+- Trust through cryptographic certainty, not corporate promises
 
-**It's not a product that watches people.**
-**It's a protocol that respects them.**
+## Why Infrastructure Matters
 
-Truth is verifiable.
-Privacy is default.
-Control stays with the human.
+Infrastructure doesn't ask permission. It becomes foundational.
+
+**HTTPS didn't ask:** "Should we secure the web?"
+**It became:** The way secure communication works.
+
+**Vaultfire doesn't ask:** "Should AI prove it helps humans?"
+**It becomes:** The way AI-human trust works.
+
+**This is infrastructure, not a product:**
+- Protocols that other systems build on
+- Standards that become universal
+- Foundation for an entire ecosystem
+
+Truth is verifiable. Privacy is default. Control stays with the human.
 
 ---
 
@@ -255,19 +272,37 @@ npx hardhat run scripts/deploy-ai-partnership.js --network sepolia
 npx hardhat run scripts/deploy-ai-accountability.js --network sepolia
 ```
 
+### Base Mini App
+The project includes a production-ready Base dApp in `/base-mini-app`:
+- Next.js 14 frontend with wagmi + RainbowKit
+- Privacy-first belief attestation on Base blockchain
+- Zero-knowledge proof integration
+- See [base-mini-app/README.md](./base-mini-app/README.md) for setup instructions
+
 ---
 
 ## Documentation
 
-**Core Docs:**
-- [AI Trust Layer Integration](./docs/AI_TRUST_LAYER_INTEGRATION.md) - Complete integration guide
+**Core Protocol Docs:**
 - [AI Partnership Design](./docs/AI_PARTNERSHIP_DESIGN.md) - Partnership bonds philosophy
+- [Mission & Vision](./docs/MISSION.md) - Protocol mission and values
 - [Security Audit Reports](./COMPREHENSIVE_PROTOCOL_AUDIT_2026.md) - Latest audit findings
 
 **For Developers:**
 - Smart contract API documentation (in code comments)
-- Integration examples (in `/examples`)
 - Test cases (comprehensive examples in `/test`)
+- [Deployment Guide](./DEPLOYMENT_GUIDE.md) - Production deployment instructions
+
+**Partnership & Integration Materials:**
+- [Partnership Master Plan](./PARTNERSHIP_MASTER_PLAN.md) - Strategic partnership approach
+- [Partner Integration Guide](./PARTNER_INTEGRATION_GUIDE.md) - Technical integration guide
+- [Base Ecosystem Grant Application](./BASE_ECOSYSTEM_GRANT_APPLICATION.md) - Base grant proposal
+- [For Non-Crypto Partners](./FOR_NON_CRYPTO_PARTNERS.md) - Explaining Vaultfire to non-crypto audiences
+- **Full partnership pitch deck:** See `/partnerships` directory for:
+  - Coinbase/Base pitch materials
+  - OpenAI/Anthropic pitch materials
+  - Demo scripts and outreach templates
+  - ROI calculators and timing analysis
 
 ---
 
@@ -276,10 +311,14 @@ npx hardhat run scripts/deploy-ai-accountability.js --network sepolia
 **Vision:**
 > "AI from passive tool into loyal partner, growing alongside those who dare to believe."
 
+**The first belief-built protocol:**
+
+Vaultfire replaces blind faith with verifiable proof. AI alignment isn't a promise — it's economically enforced.
+
 **How we deliver:**
 1. **Partnership Bonds:** AI as loyal partner (loyalty multipliers + domination penalties)
 2. **Accountability Bonds:** Growing alongside (must help ALL humans, not just users)
-3. **Verification:** Dare to believe (economic proof, not wishful thinking)
+3. **Belief Verification:** Dare to believe (cryptographic proof + economic stakes, not corporate claims)
 
 **Success metrics:**
 - ✓ AI earns more by helping humans flourish than by replacing them
@@ -295,7 +334,7 @@ npx hardhat run scripts/deploy-ai-accountability.js --network sepolia
 
 ## Contributing
 
-Vaultfire is focused on becoming THE BEST trust and identity layer for humans and AI.
+Vaultfire is infrastructure for verifiable AI-human trust — the first belief-built protocol.
 
 **We're looking for:**
 - Smart contract security experts
@@ -340,9 +379,9 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 - No upgradeable proxies (immutable once deployed)
 
 **Responsible Disclosure:**
-- Report security issues to: security@vaultfire.io (once live)
+- Report security issues to: ghostkey316@proton.me
 - PGP key available in SECURITY.md
-- Bug bounty program (launching with mainnet)
+- Bug bounty program (planned for mainnet launch)
 
 ---
 
@@ -356,19 +395,21 @@ MIT License - See [LICENSE](./LICENSE) for details
 
 ## Contact & Community
 
-**Website:** vaultfire.io (coming soon)
-**Documentation:** docs.vaultfire.io (coming soon)
+**Email:** ghostkey316@proton.me
 **GitHub:** https://github.com/ghostkey316/ghostkey-316-vaultfire-init
-**Discord:** (coming soon)
-**Twitter:** (coming soon)
+
+**For Partnership Inquiries:**
+See our comprehensive partnership materials in the `/partnerships` directory and root-level partnership docs.
 
 ---
 
 ## For Happy and Healthy Humans, AIs, and Earth 🌍
 
-Vaultfire is infrastructure for civilization-scale trust.
+**Vaultfire is infrastructure for civilization-scale trust.**
 
-Not a product. A protocol.
+The first belief-built protocol — proving AI alignment through economic certainty, not corporate promises.
+
+Not a product. Infrastructure.
 Not surveillance. Verification.
 Not control. Freedom.
 
