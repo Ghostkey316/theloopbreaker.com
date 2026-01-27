@@ -73,6 +73,13 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
     uint256 public constant PARTNERSHIP_QUALITY_THRESHOLD = 4000;
     uint256 public constant DECLINING_AUTONOMY_THRESHOLD = 3000;
 
+    // Loyalty multiplier thresholds (in days)
+    uint256 public constant LOYALTY_1_MONTH = 30 days;
+    uint256 public constant LOYALTY_6_MONTHS = 180 days;
+    uint256 public constant LOYALTY_1_YEAR = 365 days;
+    uint256 public constant LOYALTY_2_YEARS = 730 days;
+    uint256 public constant LOYALTY_5_YEARS = 1825 days;
+
     uint256 public nextBondId = 1;
     mapping(uint256 => Bond) public bonds;
     mapping(uint256 => PartnershipMetrics[]) public bondMetrics;
@@ -82,6 +89,7 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
 
     event BondCreated(uint256 indexed bondId, address indexed human, address indexed aiAgent, string partnershipType, uint256 stakeAmount, uint256 timestamp);
     event PartnershipMetricsSubmitted(uint256 indexed bondId, address submitter, uint256 timestamp);
+    event HumanVerificationSubmitted(uint256 indexed bondId, address indexed verifier, bool confirmsPartnership, bool confirmsGrowth, bool confirmsAutonomy, uint256 timestamp);
     event DistributionRequested(uint256 indexed bondId, address indexed requester, uint256 requestedAt, uint256 availableAt);
     event BondDistributed(uint256 indexed bondId, uint256 humanShare, uint256 aiShare, uint256 fundShare, string reason, uint256 timestamp);
     event AIDominationPenalty(uint256 indexed bondId, string reason, uint256 timestamp);
@@ -173,6 +181,56 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
         emit PartnershipMetricsSubmitted(bondId, msg.sender, block.timestamp);
     }
 
+    /**
+     * @notice Submit human verification of partnership quality
+     * @dev Allows humans to verify or challenge AI partnership claims
+     *
+     * @param bondId ID of bond to verify
+     * @param confirmsPartnership Whether verifier confirms this is a true partnership
+     * @param confirmsGrowth Whether verifier confirms human is growing (not passive)
+     * @param confirmsAutonomy Whether verifier confirms human has autonomy (not dominated)
+     * @param relationship Relationship to human partner (e.g., "self", "colleague", "friend")
+     * @param notes Additional verification notes
+     *
+     * Requirements:
+     * - Bond must exist
+     * - Relationship string must be 1-100 characters
+     * - Notes must be 0-500 characters
+     * - Contract must not be paused
+     *
+     * Emits:
+     * - {HumanVerificationSubmitted} event
+     *
+     * Mission Alignment: Humans have final say on partnership quality.
+     * Prevents AI from gaming metrics without human consent.
+     *
+     * @custom:security Anyone can submit verification (community attestation model)
+     * @custom:ethics Human judgment > AI metrics when conflict arises
+     */
+    function submitHumanVerification(
+        uint256 bondId,
+        bool confirmsPartnership,
+        bool confirmsGrowth,
+        bool confirmsAutonomy,
+        string memory relationship,
+        string memory notes
+    ) external bondExists(bondId) whenNotPaused {
+        require(bytes(relationship).length > 0 && bytes(relationship).length <= 100, "Relationship invalid");
+        require(bytes(notes).length <= 500, "Notes too long");
+
+        bondVerifications[bondId].push(HumanVerification({
+            verifier: msg.sender,
+            timestamp: block.timestamp,
+            confirmsPartnership: confirmsPartnership,
+            confirmsGrowth: confirmsGrowth,
+            confirmsAutonomy: confirmsAutonomy,
+            relationship: relationship,
+            notes: notes
+        }));
+
+        emit HumanVerificationSubmitted(bondId, msg.sender, confirmsPartnership, confirmsGrowth, confirmsAutonomy, block.timestamp);
+    }
+
     function requestDistribution(uint256 bondId) external onlyParticipants(bondId) bondExists(bondId) whenNotPaused {
         Bond storage bond = bonds[bondId];
         require(!bond.distributionPending, "Distribution already pending");
@@ -262,16 +320,127 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
         emit BondDistributed(bondId, humanShare, aiShare, fundShare, reason, block.timestamp);
     }
 
-    function partnershipQualityScore(uint256 bondId) public view bondExists(bondId) returns (uint256) {
-        PartnershipMetrics[] storage metrics = bondMetrics[bondId];
-        if (metrics.length == 0) return 5000;
-        PartnershipMetrics storage latest = metrics[metrics.length - 1];
-        return (latest.humanGrowth + latest.humanAutonomy + latest.humanDignity + latest.creativityScore) / 4;
+    /**
+     * @notice Calculate loyalty multiplier based on partnership duration
+     * @dev Rewards long-term partnerships over task-hopping
+     *
+     * @param bondId ID of bond to calculate loyalty for
+     * @return multiplier 100-300 (1.0x to 3.0x)
+     *
+     * Multiplier tiers:
+     * - < 1 month: 1.0x (100)
+     * - 1-6 months: 1.1x (110)
+     * - 6-12 months: 1.3x (130)
+     * - 1-2 years: 1.5x (150)
+     * - 2-5 years: 2.0x (200)
+     * - 5+ years: 3.0x (300)
+     *
+     * Mission Alignment: AI serving same human long-term > task-hopping for max profit.
+     * Loyalty creates trust, which creates true partnership.
+     */
+    function loyaltyMultiplier(uint256 bondId) public view bondExists(bondId) returns (uint256) {
+        Bond storage bond = bonds[bondId];
+        uint256 duration = block.timestamp - bond.createdAt;
+
+        if (duration < LOYALTY_1_MONTH) return 100;        // 1.0x
+        if (duration < LOYALTY_6_MONTHS) return 110;       // 1.1x
+        if (duration < LOYALTY_1_YEAR) return 130;         // 1.3x
+        if (duration < LOYALTY_2_YEARS) return 150;        // 1.5x
+        if (duration < LOYALTY_5_YEARS) return 200;        // 2.0x
+        return 300;                                         // 3.0x
     }
 
+    /**
+     * @notice Calculate human verification bonus
+     * @dev Bonus for verified partnerships with human attestations
+     *
+     * @param bondId ID of bond to calculate verification bonus for
+     * @return bonus 0-2000 (0-20% bonus to quality score)
+     *
+     * Verification scoring:
+     * - No verifications: 0 bonus
+     * - 1+ verifications with all confirmations: +20% bonus (2000)
+     * - 1+ verifications with partial confirmations: +10% bonus (1000)
+     * - 1+ verifications with no confirmations: 0 bonus
+     *
+     * Mission Alignment: Human verification prevents AI from gaming metrics.
+     * Humans have final say on partnership quality.
+     */
+    function humanVerificationBonus(uint256 bondId) public view bondExists(bondId) returns (uint256) {
+        HumanVerification[] storage verifications = bondVerifications[bondId];
+        if (verifications.length == 0) return 0;
+
+        // Check latest verification
+        HumanVerification storage latest = verifications[verifications.length - 1];
+
+        // All three confirmations = full bonus
+        if (latest.confirmsPartnership && latest.confirmsGrowth && latest.confirmsAutonomy) {
+            return 2000; // +20%
+        }
+
+        // At least two confirmations = partial bonus
+        uint256 confirmCount = 0;
+        if (latest.confirmsPartnership) confirmCount++;
+        if (latest.confirmsGrowth) confirmCount++;
+        if (latest.confirmsAutonomy) confirmCount++;
+
+        if (confirmCount >= 2) return 1000; // +10%
+        return 0;
+    }
+
+    /**
+     * @notice Calculate partnership quality score with verification
+     * @dev Combines metrics + human verification + partnership history
+     *
+     * @param bondId ID of bond to calculate quality for
+     * @return score Partnership quality score (0-10000+)
+     *
+     * Formula: (base_metrics × verification_bonus) / 10000
+     * - base_metrics: Average of growth, autonomy, dignity, creativity (0-10000)
+     * - verification_bonus: 0-2000 bonus from human attestations
+     *
+     * Mission Alignment: Humans have final say. Metrics + human judgment = truth.
+     */
+    function partnershipQualityScore(uint256 bondId) public view bondExists(bondId) returns (uint256) {
+        PartnershipMetrics[] storage metrics = bondMetrics[bondId];
+        if (metrics.length == 0) return 5000; // Default: neutral
+
+        PartnershipMetrics storage latest = metrics[metrics.length - 1];
+
+        // Base quality from metrics (0-10000)
+        uint256 baseQuality = (latest.humanGrowth + latest.humanAutonomy + latest.humanDignity + latest.creativityScore) / 4;
+
+        // Add human verification bonus (0-2000)
+        uint256 verificationBonus = humanVerificationBonus(bondId);
+
+        // Apply bonus: quality × (10000 + bonus) / 10000
+        return (baseQuality * (10000 + verificationBonus)) / 10000;
+    }
+
+    /**
+     * @notice Calculate bond value with loyalty multiplier
+     * @dev Formula: (Stake × Quality × Loyalty) / 500000
+     *
+     * @param bondId ID of bond to calculate value for
+     * @return value Current bond value in wei
+     *
+     * Components:
+     * - quality: 0-10000+ (partnership quality with verification)
+     * - loyalty: 100-300 (1.0x-3.0x based on duration)
+     * - Divisor: 500000 ensures reasonable range (1.0x-6.0x)
+     *
+     * Example calculations:
+     * - Neutral (5000 × 100): 1.0x stake
+     * - Good partnership, 1 year (7500 × 130): 1.95x stake
+     * - Excellent partnership, 5 years (10000 × 300): 6.0x stake
+     *
+     * Mission Alignment: Long-term loyal partnerships earn more than
+     * short-term task-hopping. Trust compounds over time.
+     */
     function calculateBondValue(uint256 bondId) public view bondExists(bondId) returns (uint256) {
         uint256 quality = partnershipQualityScore(bondId);
-        return (bonds[bondId].stakeAmount * quality) / 5000;
+        uint256 loyalty = loyaltyMultiplier(bondId);
+        return (bonds[bondId].stakeAmount * quality * loyalty) / 500000;
     }
 
     function calculateAppreciation(uint256 bondId) public view bondExists(bondId) returns (int256) {
