@@ -1,4 +1,4 @@
-# Ghostkey Protocol
+# Vaultfire Protocol
 
 **Infrastructure for verifiable trust and identity between humans and AI**
 
@@ -6,11 +6,11 @@
 
 ---
 
-## What Ghostkey Is
+## What Vaultfire Is
 
-**Ghostkey is trust infrastructure for the AI era.**
+**Vaultfire is trust infrastructure for the AI era.**
 
-Like HTTPS secures communication between browsers and servers, Ghostkey secures trust between humans and AI through verifiable economic proof.
+Like HTTPS secures communication between browsers and servers, Vaultfire secures trust between humans and AI through verifiable economic proof.
 
 **The first protocol built on belief verification rather than behavioral surveillance.**
 
@@ -36,7 +36,7 @@ Infrastructure doesn't ask permission. It becomes foundational.
 **HTTPS didn't ask:** "Should we secure the web?"
 **It became:** The way secure communication works.
 
-**Ghostkey doesn't ask:** "Should AI prove it helps humans?"
+**Vaultfire doesn't ask:** "Should AI prove it helps humans?"
 **It becomes:** The way AI-human trust works.
 
 **This is infrastructure, not a product:**
@@ -50,7 +50,7 @@ Truth is verifiable. Privacy is default. Control stays with the human.
 
 ## The Complete Trust Layer
 
-Ghostkey provides **two complementary verification systems** that create complete trust for AI-human relationships:
+Vaultfire provides **two complementary verification systems** that create complete trust for AI-human relationships:
 
 ### 1. AI Partnership Bonds
 **Individual-level verification**
@@ -297,7 +297,7 @@ The project includes a production-ready Base dApp in `/base-mini-app`:
 - [Partnership Master Plan](./PARTNERSHIP_MASTER_PLAN.md) - Strategic partnership approach
 - [Partner Integration Guide](./PARTNER_INTEGRATION_GUIDE.md) - Technical integration guide
 - [Base Ecosystem Grant Application](./BASE_ECOSYSTEM_GRANT_APPLICATION.md) - Base grant proposal
-- [For Non-Crypto Partners](./FOR_NON_CRYPTO_PARTNERS.md) - Explaining Ghostkey to non-crypto audiences
+- [For Non-Crypto Partners](./FOR_NON_CRYPTO_PARTNERS.md) - Explaining Vaultfire to non-crypto audiences
 - **Full partnership pitch deck:** See `/partnerships` directory for:
   - Coinbase/Base pitch materials
   - OpenAI/Anthropic pitch materials
@@ -313,7 +313,7 @@ The project includes a production-ready Base dApp in `/base-mini-app`:
 
 **The first belief-built protocol:**
 
-Ghostkey replaces blind faith with verifiable proof. AI alignment isn't a promise — it's economically enforced.
+Vaultfire replaces blind faith with verifiable proof. AI alignment isn't a promise — it's economically enforced.
 
 **How we deliver:**
 1. **Partnership Bonds:** AI as loyal partner (loyalty multipliers + domination penalties)
@@ -334,7 +334,7 @@ Ghostkey replaces blind faith with verifiable proof. AI alignment isn't a promis
 
 ## Contributing
 
-Ghostkey is infrastructure for verifiable AI-human trust — the first belief-built protocol.
+Vaultfire is infrastructure for verifiable AI-human trust — the first belief-built protocol.
 
 **We're looking for:**
 - Smart contract security experts
@@ -405,7 +405,7 @@ See our comprehensive partnership materials in the `/partnerships` directory and
 
 ## For Happy and Healthy Humans, AIs, and Earth 🌍
 
-**Ghostkey is infrastructure for civilization-scale trust.**
+**Vaultfire is infrastructure for civilization-scale trust.**
 
 The first belief-built protocol — proving AI alignment through economic certainty, not corporate promises.
 
