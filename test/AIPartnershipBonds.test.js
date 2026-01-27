@@ -511,6 +511,213 @@ describe("AIPartnershipBondsV2 - AI Grows WITH Humans, Not ABOVE", function () {
         });
     });
 
+    describe("Loyalty Multiplier - Rewards Long-Term Partnerships", function () {
+        beforeEach(async function () {
+            await aiPartnership.connect(human1).createBond(
+                aiAgent1.address, "AI mentor", { value: ethers.parseEther("1.0") }
+            );
+        });
+
+        it("Should return 1.0x multiplier for bonds < 1 month old", async function () {
+            const multiplier = await aiPartnership.loyaltyMultiplier(1);
+            expect(multiplier).to.equal(100); // 1.0x
+        });
+
+        it("Should return 1.1x multiplier for bonds 1-6 months old", async function () {
+            await time.increase(31 * 24 * 60 * 60); // 31 days
+            const multiplier = await aiPartnership.loyaltyMultiplier(1);
+            expect(multiplier).to.equal(110); // 1.1x
+        });
+
+        it("Should return 1.3x multiplier for bonds 6-12 months old", async function () {
+            await time.increase(181 * 24 * 60 * 60); // 181 days
+            const multiplier = await aiPartnership.loyaltyMultiplier(1);
+            expect(multiplier).to.equal(130); // 1.3x
+        });
+
+        it("Should return 1.5x multiplier for bonds 1-2 years old", async function () {
+            await time.increase(366 * 24 * 60 * 60); // 366 days
+            const multiplier = await aiPartnership.loyaltyMultiplier(1);
+            expect(multiplier).to.equal(150); // 1.5x
+        });
+
+        it("Should return 2.0x multiplier for bonds 2-5 years old", async function () {
+            await time.increase(731 * 24 * 60 * 60); // 731 days
+            const multiplier = await aiPartnership.loyaltyMultiplier(1);
+            expect(multiplier).to.equal(200); // 2.0x
+        });
+
+        it("Should return 3.0x multiplier for bonds 5+ years old", async function () {
+            await time.increase(1826 * 24 * 60 * 60); // 1826 days (5+ years)
+            const multiplier = await aiPartnership.loyaltyMultiplier(1);
+            expect(multiplier).to.equal(300); // 3.0x
+        });
+
+        it("Should increase bond value with loyalty over time", async function () {
+            // Submit good metrics
+            await aiPartnership.connect(human1).submitPartnershipMetrics(
+                1, 8000, 8000, 8000, 10, 8000, "Good partnership"
+            );
+
+            const valueAt1Month = await aiPartnership.calculateBondValue(1);
+
+            // Fast forward 1 year
+            await time.increase(365 * 24 * 60 * 60);
+
+            const valueAt1Year = await aiPartnership.calculateBondValue(1);
+
+            // Bond value should increase with loyalty multiplier
+            expect(valueAt1Year).to.be.above(valueAt1Month);
+        });
+    });
+
+    describe("Human Verification - Humans Have Final Say", function () {
+        beforeEach(async function () {
+            await aiPartnership.connect(human1).createBond(
+                aiAgent1.address, "AI mentor", { value: ethers.parseEther("1.0") }
+            );
+
+            await aiPartnership.connect(human1).submitPartnershipMetrics(
+                1, 8000, 8000, 8000, 10, 8000, "Good metrics"
+            );
+        });
+
+        it("Should submit human verification (self-verification)", async function () {
+            const tx = await aiPartnership.connect(human1).submitHumanVerification(
+                1,
+                true,  // confirmsPartnership
+                true,  // confirmsGrowth
+                true,  // confirmsAutonomy
+                "self",
+                "Yes, this AI partnership is helping me grow and learn. I feel empowered, not dependent."
+            );
+
+            await expect(tx)
+                .to.emit(aiPartnership, "HumanVerificationSubmitted")
+                .withArgs(1, human1.address, true, true, true, await time.latest());
+        });
+
+        it("Should submit human verification (community verification)", async function () {
+            const tx = await aiPartnership.connect(verifier).submitHumanVerification(
+                1,
+                true,  // confirmsPartnership
+                true,  // confirmsGrowth
+                false, // confirmsAutonomy (verifier sees some concern)
+                "colleague",
+                "I work with this human and see the AI helping, but human seems a bit too dependent"
+            );
+
+            await expect(tx).to.emit(aiPartnership, "HumanVerificationSubmitted");
+        });
+
+        it("Should add +20% bonus to quality score with full verification", async function () {
+            // Base quality should be 8000
+            const baseQuality = await aiPartnership.partnershipQualityScore(1);
+            expect(baseQuality).to.equal(8000);
+
+            // Add full verification (all 3 confirmations)
+            await aiPartnership.connect(human1).submitHumanVerification(
+                1, true, true, true, "self", "Fully confirmed"
+            );
+
+            const verifiedQuality = await aiPartnership.partnershipQualityScore(1);
+            // Should be 8000 × 1.2 = 9600
+            expect(verifiedQuality).to.equal(9600);
+        });
+
+        it("Should add +10% bonus with partial verification (2/3 confirmations)", async function () {
+            const baseQuality = await aiPartnership.partnershipQualityScore(1);
+
+            // Partial verification (2 out of 3 confirmations)
+            await aiPartnership.connect(human1).submitHumanVerification(
+                1, true, true, false, "self", "Mostly good but some concerns"
+            );
+
+            const verifiedQuality = await aiPartnership.partnershipQualityScore(1);
+            // Should be 8000 × 1.1 = 8800
+            expect(verifiedQuality).to.equal(8800);
+        });
+
+        it("Should add no bonus with failed verification (< 2 confirmations)", async function () {
+            const baseQuality = await aiPartnership.partnershipQualityScore(1);
+
+            // Failed verification (only 1 confirmation)
+            await aiPartnership.connect(human1).submitHumanVerification(
+                1, true, false, false, "self", "Not working well"
+            );
+
+            const verifiedQuality = await aiPartnership.partnershipQualityScore(1);
+            // Should stay at base 8000
+            expect(verifiedQuality).to.equal(8000);
+        });
+
+        it("Should reject invalid verification inputs", async function () {
+            // Empty relationship
+            await expect(
+                aiPartnership.connect(human1).submitHumanVerification(1, true, true, true, "", "Notes")
+            ).to.be.reverted;
+
+            // Relationship too long (>100 chars)
+            await expect(
+                aiPartnership.connect(human1).submitHumanVerification(
+                    1, true, true, true, "A".repeat(101), "Notes"
+                )
+            ).to.be.reverted;
+
+            // Notes too long (>500 chars)
+            await expect(
+                aiPartnership.connect(human1).submitHumanVerification(
+                    1, true, true, true, "self", "A".repeat(501)
+                )
+            ).to.be.reverted;
+        });
+
+        it("Should use latest verification for bonus calculation", async function () {
+            // First verification - full bonus
+            await aiPartnership.connect(human1).submitHumanVerification(
+                1, true, true, true, "self", "All good"
+            );
+            let quality = await aiPartnership.partnershipQualityScore(1);
+            expect(quality).to.equal(9600); // 8000 × 1.2
+
+            // Second verification - partial bonus
+            await aiPartnership.connect(verifier).submitHumanVerification(
+                1, true, true, false, "colleague", "Some concerns"
+            );
+            quality = await aiPartnership.partnershipQualityScore(1);
+            expect(quality).to.equal(8800); // 8000 × 1.1 (latest used)
+        });
+    });
+
+    describe("Combined Loyalty × Verification Effects", function () {
+        it("Should compound loyalty and verification bonuses", async function () {
+            await aiPartnership.connect(human1).createBond(
+                aiAgent1.address, "AI mentor", { value: ethers.parseEther("1.0") }
+            );
+
+            // Submit excellent metrics
+            await aiPartnership.connect(human1).submitPartnershipMetrics(
+                1, 9000, 9000, 9000, 15, 9000, "Excellent partnership"
+            );
+
+            // Add human verification
+            await aiPartnership.connect(human1).submitHumanVerification(
+                1, true, true, true, "self", "Confirmed excellence"
+            );
+
+            // Fast forward 1 year
+            await time.increase(365 * 24 * 60 * 60);
+
+            const quality = await aiPartnership.partnershipQualityScore(1); // 9000 × 1.2 = 10800
+            const loyalty = await aiPartnership.loyaltyMultiplier(1); // 150 (1.5x)
+
+            const bondValue = await aiPartnership.calculateBondValue(1);
+            // Expected: 1.0 ETH × 10800 × 150 / 500000 = 3.24 ETH
+            const expectedValue = (ethers.parseEther("1.0") * BigInt(10800) * BigInt(150)) / BigInt(500000);
+            expect(bondValue).to.equal(expectedValue);
+        });
+    });
+
     describe("Gas Optimization", function () {
         it("Should have reasonable gas costs for bond creation", async function () {
             const tx = await aiPartnership.connect(human1).createBond(
@@ -521,6 +728,21 @@ describe("AIPartnershipBondsV2 - AI Grows WITH Humans, Not ABOVE", function () {
             console.log("AIPartnership Bond Creation Gas:", receipt.gasUsed.toString());
 
             expect(receipt.gasUsed).to.be.below(400000);
+        });
+
+        it("Should have reasonable gas costs for human verification", async function () {
+            await aiPartnership.connect(human1).createBond(
+                aiAgent1.address, "Partnership", { value: ethers.parseEther("1.0") }
+            );
+
+            const tx = await aiPartnership.connect(human1).submitHumanVerification(
+                1, true, true, true, "self", "Verification notes"
+            );
+
+            const receipt = await tx.wait();
+            console.log("Human Verification Gas:", receipt.gasUsed.toString());
+
+            expect(receipt.gasUsed).to.be.below(200000);
         });
     });
 });

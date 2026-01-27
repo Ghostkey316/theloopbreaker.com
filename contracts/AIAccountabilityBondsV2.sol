@@ -74,6 +74,45 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
         string reason;
     }
 
+    /**
+     * @notice Oracle source for external data
+     * @dev Allows integration with Chainlink, UMA, or custom oracles
+     */
+    struct OracleSource {
+        address oracleAddress;
+        string sourceName;
+        bool isActive;
+        uint256 registeredAt;
+        uint256 trustScore;  // 0-10000
+    }
+
+    /**
+     * @notice AI company verification of another company's metrics
+     * @dev Creates peer accountability among AI companies
+     */
+    struct AIVerification {
+        uint256 bondId;
+        address verifyingAI;
+        string verifyingCompanyName;
+        uint256 timestamp;
+        bool confirmsMetrics;
+        string notes;
+        uint256 stakeAmount;  // AI stakes on their verification
+    }
+
+    /**
+     * @notice Challenge to disputed metrics
+     * @dev Community can challenge suspicious flourishing claims
+     */
+    struct MetricsChallenge {
+        address challenger;
+        uint256 timestamp;
+        string reason;
+        uint256 challengeStake;
+        bool resolved;
+        bool challengeUpheld;
+    }
+
     // ============ State Variables ============
 
     uint256 public nextBondId = 1;
@@ -84,9 +123,25 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
     // ✅ Human treasury for distributing human share of profits
     address payable public humanTreasury;
 
+    // Oracle integration
+    mapping(address => OracleSource) public oracles;
+    address[] public registeredOracles;
+
+    // AI-to-AI verification
+    mapping(uint256 => AIVerification[]) public bondAIVerifications;
+    mapping(address => uint256) public aiCompanyVerificationCount;
+
+    // Metrics challenges
+    mapping(uint256 => MetricsChallenge[]) public bondChallenges;
+    uint256 public constant MIN_CHALLENGE_STAKE = 0.1 ether;
+
     // Profit locking thresholds
     uint256 public constant SUFFERING_THRESHOLD = 4000;  // Score < 40 = suffering
     uint256 public constant LOW_INCLUSION_THRESHOLD = 4000;  // education + purpose < 40
+
+    // Verification thresholds
+    uint256 public constant MIN_AI_VERIFICATIONS = 2;  // Minimum peer verifications needed
+    uint256 public constant MIN_ORACLE_TRUST_SCORE = 7000;  // Minimum oracle trust (70%)
 
     // ============ Events ============
 
@@ -145,6 +200,48 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
     event ProfitsLocked(
         uint256 indexed bondId,
         string reason,
+        uint256 timestamp
+    );
+
+    /**
+     * @notice Emitted when oracle source registered
+     */
+    event OracleRegistered(
+        address indexed oracleAddress,
+        string sourceName,
+        uint256 trustScore,
+        uint256 timestamp
+    );
+
+    /**
+     * @notice Emitted when AI verifies another AI's metrics
+     */
+    event AIVerificationSubmitted(
+        uint256 indexed bondId,
+        address indexed verifyingAI,
+        bool confirmsMetrics,
+        uint256 stakeAmount,
+        uint256 timestamp
+    );
+
+    /**
+     * @notice Emitted when metrics are challenged
+     */
+    event MetricsChallenged(
+        uint256 indexed bondId,
+        address indexed challenger,
+        string reason,
+        uint256 challengeStake,
+        uint256 timestamp
+    );
+
+    /**
+     * @notice Emitted when challenge is resolved
+     */
+    event ChallengeResolved(
+        uint256 indexed bondId,
+        uint256 indexed challengeIndex,
+        bool challengeUpheld,
         uint256 timestamp
     );
 
@@ -287,6 +384,192 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
 
         uint256 flourishingScore = globalFlourishingScore(bondId);
         emit MetricsSubmitted(bondId, block.timestamp, flourishingScore);
+    }
+
+    /**
+     * @notice Register oracle source (owner only)
+     * @dev Allows integration with Chainlink, UMA, or custom oracles
+     *
+     * @param oracleAddress Address of oracle contract
+     * @param sourceName Name/description of oracle source
+     * @param trustScore Initial trust score (0-10000)
+     *
+     * Requirements:
+     * - Caller must be owner
+     * - Oracle address cannot be zero
+     * - Source name must be 1-100 characters
+     * - Trust score must be 0-10000
+     *
+     * Emits:
+     * - {OracleRegistered} event
+     *
+     * Mission Alignment: Real-world data verification prevents AI from
+     * manipulating flourishing metrics. Truth > claims.
+     *
+     * @custom:security Only owner can register oracles to prevent spam
+     */
+    function registerOracle(
+        address oracleAddress,
+        string memory sourceName,
+        uint256 trustScore
+    ) external onlyOwner {
+        _validateAddress(oracleAddress, "Oracle address");
+        require(bytes(sourceName).length > 0 && bytes(sourceName).length <= 100, "Source name invalid");
+        _validateScore(trustScore, "Trust score");
+
+        if (!oracles[oracleAddress].isActive) {
+            registeredOracles.push(oracleAddress);
+        }
+
+        oracles[oracleAddress] = OracleSource({
+            oracleAddress: oracleAddress,
+            sourceName: sourceName,
+            isActive: true,
+            registeredAt: block.timestamp,
+            trustScore: trustScore
+        });
+
+        emit OracleRegistered(oracleAddress, sourceName, trustScore, block.timestamp);
+    }
+
+    /**
+     * @notice AI company verifies another AI's metrics
+     * @dev Creates peer accountability - AIs stake on verification
+     *
+     * @param bondId ID of bond to verify
+     * @param confirmsMetrics Whether verifier confirms metrics are accurate
+     * @param notes Verification notes/evidence
+     *
+     * Requirements:
+     * - Caller cannot be the bond's AI company (no self-verification)
+     * - Bond must exist
+     * - Must send stake with verification (skin in the game)
+     * - Notes must be 1-500 characters
+     * - Contract must not be paused
+     *
+     * Emits:
+     * - {AIVerificationSubmitted} event
+     *
+     * Mission Alignment: AI companies verify each other's flourishing claims.
+     * If one AI causes suffering, other AIs can call it out (or face consequences).
+     *
+     * @custom:ethics Peer accountability prevents "race to bottom" where AIs
+     * compete by harming humans. Economic incentive to verify truth.
+     */
+    function submitAIVerification(
+        uint256 bondId,
+        bool confirmsMetrics,
+        string memory notes
+    ) external payable bondExists(bondId) whenNotPaused {
+        Bond storage bond = bonds[bondId];
+        require(msg.sender != bond.aiCompany, "Cannot verify own metrics");
+        _validateNonZero(msg.value, "Verification stake");
+        require(bytes(notes).length > 0 && bytes(notes).length <= 500, "Notes invalid");
+
+        bondAIVerifications[bondId].push(AIVerification({
+            bondId: bondId,
+            verifyingAI: msg.sender,
+            verifyingCompanyName: "", // Could be looked up from another bond
+            timestamp: block.timestamp,
+            confirmsMetrics: confirmsMetrics,
+            notes: notes,
+            stakeAmount: msg.value
+        }));
+
+        aiCompanyVerificationCount[msg.sender]++;
+
+        emit AIVerificationSubmitted(bondId, msg.sender, confirmsMetrics, msg.value, block.timestamp);
+    }
+
+    /**
+     * @notice Challenge suspicious metrics
+     * @dev Community can challenge AI claims of human flourishing
+     *
+     * @param bondId ID of bond to challenge
+     * @param reason Why metrics are suspicious
+     *
+     * Requirements:
+     * - Bond must exist
+     * - Must send minimum challenge stake
+     * - Reason must be 10-500 characters
+     * - Contract must not be paused
+     *
+     * Emits:
+     * - {MetricsChallenged} event
+     *
+     * Mission Alignment: Community oversight prevents AI from lying about
+     * human flourishing. Truth matters more than profit.
+     *
+     * @custom:security Challenge stake prevents spam. Upheld challenges
+     * reward challenger, failed challenges forfeit stake to bond.
+     */
+    function challengeMetrics(
+        uint256 bondId,
+        string memory reason
+    ) external payable bondExists(bondId) whenNotPaused {
+        require(msg.value >= MIN_CHALLENGE_STAKE, "Insufficient challenge stake");
+        require(bytes(reason).length >= 10 && bytes(reason).length <= 500, "Reason invalid");
+
+        bondChallenges[bondId].push(MetricsChallenge({
+            challenger: msg.sender,
+            timestamp: block.timestamp,
+            reason: reason,
+            challengeStake: msg.value,
+            resolved: false,
+            challengeUpheld: false
+        }));
+
+        emit MetricsChallenged(bondId, msg.sender, reason, msg.value, block.timestamp);
+    }
+
+    /**
+     * @notice Resolve metrics challenge (owner only)
+     * @dev Owner investigates and resolves challenge
+     *
+     * @param bondId ID of bond with challenge
+     * @param challengeIndex Index of challenge to resolve
+     * @param upheld Whether challenge is upheld (metrics were false)
+     *
+     * Requirements:
+     * - Caller must be owner
+     * - Challenge must exist and not be resolved
+     *
+     * Emits:
+     * - {ChallengeResolved} event
+     *
+     * If upheld: Challenger gets stake back + penalty from bond
+     * If rejected: Challenge stake goes to bond's human treasury
+     *
+     * Mission Alignment: Truth enforcement. AI cannot lie about flourishing.
+     */
+    function resolveChallenge(
+        uint256 bondId,
+        uint256 challengeIndex,
+        bool upheld
+    ) external onlyOwner nonReentrant {
+        require(challengeIndex < bondChallenges[bondId].length, "Challenge does not exist");
+        MetricsChallenge storage challenge = bondChallenges[bondId][challengeIndex];
+        require(!challenge.resolved, "Challenge already resolved");
+
+        challenge.resolved = true;
+        challenge.challengeUpheld = upheld;
+
+        if (upheld) {
+            // Challenge upheld: Return stake + penalty to challenger
+            uint256 penalty = challenge.challengeStake; // 1:1 penalty
+            uint256 totalReturn = challenge.challengeStake + penalty;
+
+            require(address(this).balance >= totalReturn, "Insufficient balance for challenge payout");
+            (bool success, ) = payable(challenge.challenger).call{value: totalReturn}("");
+            require(success, "Challenge payout failed");
+        } else {
+            // Challenge rejected: Stake goes to human treasury
+            require(humanTreasury != address(0), "Human treasury not set");
+            (bool success, ) = humanTreasury.call{value: challenge.challengeStake}("");
+            require(success, "Treasury transfer failed");
+        }
+
+        emit ChallengeResolved(bondId, challengeIndex, upheld, block.timestamp);
     }
 
     /**
@@ -564,14 +847,79 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
     }
 
     /**
+     * @notice Calculate verification quality score
+     * @dev Combines AI peer verifications and oracle trust
+     *
+     * @param bondId ID of bond to calculate verification for
+     * @return score Verification quality (0-10000)
+     *
+     * Scoring:
+     * - No verifications: 5000 (neutral)
+     * - 2+ AI confirmations: +2000
+     * - 1+ AI rejections: -3000
+     * - Active challenges: -2000
+     *
+     * Mission Alignment: Multi-AI verification creates peer accountability.
+     * AIs cannot lie about flourishing without other AIs calling them out.
+     */
+    function verificationQualityScore(uint256 bondId) public view bondExists(bondId) returns (uint256) {
+        AIVerification[] storage verifications = bondAIVerifications[bondId];
+        MetricsChallenge[] storage challenges = bondChallenges[bondId];
+
+        if (verifications.length == 0) return 5000; // Neutral
+
+        uint256 confirmCount = 0;
+        uint256 rejectCount = 0;
+
+        for (uint256 i = 0; i < verifications.length; i++) {
+            if (verifications[i].confirmsMetrics) {
+                confirmCount++;
+            } else {
+                rejectCount++;
+            }
+        }
+
+        // Start at neutral
+        int256 score = 5000;
+
+        // Add bonus for confirmations
+        if (confirmCount >= 2) {
+            score += 2000;
+        } else if (confirmCount == 1) {
+            score += 1000;
+        }
+
+        // Penalize rejections heavily
+        if (rejectCount > 0) {
+            score -= int256(rejectCount * 3000);
+        }
+
+        // Penalize active challenges
+        uint256 activeChallenges = 0;
+        for (uint256 i = 0; i < challenges.length; i++) {
+            if (!challenges[i].resolved) {
+                activeChallenges++;
+            }
+        }
+        if (activeChallenges > 0) {
+            score -= int256(activeChallenges * 2000);
+        }
+
+        // Clamp to 0-10000
+        if (score < 0) return 0;
+        if (score > 10000) return 10000;
+        return uint256(score);
+    }
+
+    /**
      * @notice Check if profits should be locked
-     * @dev Locks if: humans suffering, declining trend, or low inclusion
+     * @dev Locks if: humans suffering, declining trend, low inclusion, OR failed verification
      *
      * @return shouldLock Whether profits should be locked
      * @return reason Human-readable reason for locking
      *
-     * Mission Alignment: AI can only profit when ALL humans thrive.
-     * Works with ZERO employment - measures purpose, not jobs.
+     * Mission Alignment: AI can only profit when ALL humans thrive AND
+     * verification confirms metrics are accurate. No lying allowed.
      */
     function shouldLockProfits(uint256 bondId) public view bondExists(bondId) returns (bool, string memory) {
         uint256 flourishing = globalFlourishingScore(bondId);
@@ -594,6 +942,12 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
             if (inclusionScore < LOW_INCLUSION_THRESHOLD) {
                 return (true, "Low inclusion - AI replacing without reskilling");
             }
+        }
+
+        // Failed verification (peer AIs or community challenge metrics)
+        uint256 verificationScore = verificationQualityScore(bondId);
+        if (verificationScore < 3000) {  // Less than 30% = failed verification
+            return (true, "Failed verification - metrics disputed by peers");
         }
 
         return (false, "");
