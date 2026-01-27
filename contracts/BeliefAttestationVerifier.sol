@@ -136,9 +136,33 @@ contract BeliefAttestationVerifier is IStarkVerifier {
         uint256 epoch,
         uint256 moduleID
     ) internal view returns (bool) {
-        // **INTEGRATION POINT FOR STARK VERIFIER**
+        // **CRITICAL: DEVELOPMENT MODE ONLY - NOT FOR PRODUCTION**
         //
-        // Option 1: StarkWare Integration
+        // ⚠️⚠️⚠️ SECURITY WARNING ⚠️⚠️⚠️
+        // This function currently uses a PLACEHOLDER verifier that accepts
+        // ANY non-empty proof. This is INSECURE and must be replaced before
+        // deploying to mainnet.
+        //
+        // **DO NOT DEPLOY TO PRODUCTION WITHOUT:**
+        // 1. Deploying a real STARK verifier (RISC Zero, StarkWare, or equivalent)
+        // 2. Replacing this placeholder with actual verifier call
+        // 3. Extensive testing with valid and INVALID proofs
+        // 4. Professional security audit of ZK proof system
+        //
+        // **INTEGRATION OPTIONS:**
+        //
+        // Option 1: RISC Zero Integration (RECOMMENDED for Vaultfire)
+        // ------------------------------------------------------------
+        // - Post-quantum secure (STARK proofs)
+        // - No trusted setup (transparency with privacy)
+        // - Programmable in Rust (flexible belief logic)
+        //
+        // IRiscZeroVerifier verifier = IRiscZeroVerifier(RISC_ZERO_VERIFIER_ADDRESS);
+        // bytes32 imageId = keccak256("VaultfireBeliefCircuit");
+        // bytes32 journalDigest = keccak256(abi.encode(beliefHash, proverAddress, epoch, moduleID));
+        // return verifier.verify(proofBytes, imageId, journalDigest);
+        //
+        // Option 2: StarkWare Integration
         // --------------------------------
         // IStarkVerifier starkVerifier = IStarkVerifier(STARKWARE_VERIFIER_ADDRESS);
         // uint256[] memory inputs = new uint256[](4);
@@ -148,23 +172,9 @@ contract BeliefAttestationVerifier is IStarkVerifier {
         // inputs[3] = moduleID;
         // return starkVerifier.verifyProof(proofBytes, inputs);
         //
-        // Option 2: Custom STARK Verifier
+        // Option 3: Custom STARK Verifier
         // --------------------------------
         // return CustomStarkVerifier.verify(proofBytes, beliefHash, proverAddress, epoch, moduleID);
-        //
-        // Option 3: Risc0 STARK Verifier
-        // -------------------------------
-        // return Risc0Verifier.verify(imageId, journalDigest, seal);
-
-        // **TEMPORARY IMPLEMENTATION FOR DEVELOPMENT**
-        // This validates the proof structure and public inputs without
-        // actual STARK verification. Replace with real verifier before mainnet.
-        //
-        // To enable real STARK verification:
-        // 1. Deploy a STARK verifier contract (StarkWare, Risc0, or custom)
-        // 2. Update this function to call the verifier
-        // 3. Generate proofs using the corresponding proof generation tool
-        // 4. Test with valid and invalid proofs extensively
 
         // Validate proof is non-empty
         require(proofBytes.length > 0, "Empty proof");
@@ -173,10 +183,15 @@ contract BeliefAttestationVerifier is IStarkVerifier {
         // Real STARK proofs are typically 100-200 KB
         require(proofBytes.length >= 32, "Proof too short");
 
-        // **FOR PRODUCTION: Replace with actual STARK verifier call**
-        // Currently returns true for any non-empty proof with valid public inputs
-        // This allows development and testing to continue while STARK verifier
-        // is being deployed and integrated.
+        // **PLACEHOLDER IMPLEMENTATION - TESTNET/DEVELOPMENT ONLY**
+        // Currently returns true for any non-empty proof with valid public inputs.
+        // This allows development and integration testing while real STARK verifier
+        // is being configured.
+        //
+        // **MISSION CRITICAL FOR PRODUCTION:**
+        // Zero-knowledge privacy REQUIRES real proof verification. Without it,
+        // the protocol cannot guarantee "privacy over surveillance" or protect
+        // beliefs from exposure. Deploy real verifier before mainnet.
 
         // Suppress unused variable warnings for development
         beliefHash;
@@ -184,8 +199,8 @@ contract BeliefAttestationVerifier is IStarkVerifier {
         epoch;
         moduleID;
 
-        // **WARNING: This is a placeholder! Do not deploy to mainnet without
-        // replacing with real STARK verification!**
+        // ⚠️ PLACEHOLDER: Returns true for any proof >= 32 bytes
+        // ⚠️ REPLACE WITH REAL STARK VERIFIER BEFORE PRODUCTION
         return proofBytes.length >= 32;
     }
 

@@ -1,0 +1,181 @@
+{
+  "network": "base-mainnet",
+  "chainId": 8453,
+  "beliefOracle": {
+    "deployed": false,
+    "address": null,
+    "deploymentTx": null,
+    "guardian": "governance_multisig",
+    "admin": "operations_multisig",
+    "ghostEcho": "0x0000000000000000000000000000000000000042",
+    "notes": "ghostEcho can be any address - used as entropy source for resonance calculation. Default: address(0x42) for determinism",
+    "constants": {
+      "maxResonance": 100,
+      "bonusThreshold": 80,
+      "bonusMultiplier": 120
+    },
+    "features": {
+      "resonanceDriftEnabled": false,
+      "automaticMultipliers": true,
+      "batchQuerySupport": true
+    }
+  },
+  "multiOracleConsensus": {
+    "deployed": false,
+    "address": null,
+    "deploymentTx": null,
+    "owner": "operations_multisig",
+    "activeForV2": false,
+    "notes": "MultiOracleConsensus is deployed but not actively used in V2. Reserved for future data feed requirements.",
+    "constants": {
+      "minimumOracleStake": "10000000000000000000",
+      "minimumOracleStakeETH": "10",
+      "consensusThreshold": 6000,
+      "consensusThresholdPercent": "60%",
+      "maxDeviation": 2000,
+      "maxDeviationPercent": "20%",
+      "consensusWindow": 86400,
+      "consensusWindowHours": 24,
+      "slashPercentage": 5000,
+      "slashPercentagePercent": "50%",
+      "minimumOracles": 3
+    },
+    "initialOracles": {
+      "oracle1": {
+        "address": null,
+        "dataSource": "Vaultfire Core Oracle",
+        "publicKey": null,
+        "stake": "10"
+      },
+      "oracle2": {
+        "address": null,
+        "dataSource": "Community Oracle 1",
+        "publicKey": null,
+        "stake": "10"
+      },
+      "oracle3": {
+        "address": null,
+        "dataSource": "Community Oracle 2",
+        "publicKey": null,
+        "stake": "10"
+      }
+    },
+    "funding": {
+      "totalRequired": "30",
+      "perOracle": "10",
+      "notes": "Initial 3 oracles need 10 ETH each for staking"
+    }
+  },
+  "deployment": {
+    "sequence": [
+      "1. Deploy DilithiumAttestor",
+      "2. Deploy RewardStream",
+      "3. Deploy BeliefOracle (requires attestor + rewardStream addresses)",
+      "4. Deploy MultiOracleConsensus",
+      "5. Transfer MultiOracleConsensus ownership to operations multisig",
+      "6. (Optional) Register initial oracles in MultiOracleConsensus"
+    ],
+    "dependencies": {
+      "BeliefOracle": [
+        "DilithiumAttestor",
+        "RewardStream",
+        "Governance Multisig",
+        "Entropy Address (ghostEcho)"
+      ],
+      "MultiOracleConsensus": [
+        "Operations Multisig"
+      ]
+    }
+  },
+  "monitoring": {
+    "beliefOracle": {
+      "metrics": [
+        "Total beliefs queried",
+        "Average resonance score",
+        "Multipliers applied count",
+        "Drift status",
+        "Guardian address",
+        "Unique vows processed"
+      ],
+      "alerts": [
+        "Drift enabled/disabled events",
+        "Guardian rotation events",
+        "Failed multiplier updates"
+      ]
+    },
+    "multiOracleConsensus": {
+      "metrics": [
+        "Active oracle count",
+        "Total consensus rounds",
+        "Consensus success rate",
+        "Total stake locked",
+        "Slash events count",
+        "Average oracle reputation"
+      ],
+      "alerts": [
+        "Oracle slashed events",
+        "Consensus failed events",
+        "Oracle registered/withdrawn events",
+        "Dispute created/resolved events"
+      ]
+    }
+  },
+  "operations": {
+    "beliefOracle": {
+      "commonActions": {
+        "setDrift": {
+          "contract": "BeliefOracle",
+          "function": "setResonanceDrift(bool)",
+          "requiredRole": "governance_multisig",
+          "description": "Enable/disable drift protection"
+        },
+        "updateGuardian": {
+          "contract": "BeliefOracle",
+          "function": "updateGuardian(address)",
+          "requiredRole": "governance_multisig",
+          "description": "Rotate guardian address"
+        },
+        "queryBelief": {
+          "contract": "BeliefOracle",
+          "function": "queryBelief(string,bytes)",
+          "requiredRole": "any",
+          "description": "Submit belief and get resonance score"
+        },
+        "previewResonance": {
+          "contract": "BeliefOracle",
+          "function": "previewResonance(string,address)",
+          "requiredRole": "any",
+          "description": "Preview resonance without attestation"
+        }
+      }
+    },
+    "multiOracleConsensus": {
+      "commonActions": {
+        "registerOracle": {
+          "contract": "MultiOracleConsensus",
+          "function": "registerOracle(string,string)",
+          "requiredRole": "any (with 10 ETH)",
+          "description": "Register as oracle"
+        },
+        "startRound": {
+          "contract": "MultiOracleConsensus",
+          "function": "startConsensusRound(bytes32)",
+          "requiredRole": "operations_multisig",
+          "description": "Start new consensus round"
+        },
+        "submitData": {
+          "contract": "MultiOracleConsensus",
+          "function": "submitData(uint256,uint256,bytes32,string)",
+          "requiredRole": "registered_oracle",
+          "description": "Submit data for consensus"
+        },
+        "pause": {
+          "contract": "MultiOracleConsensus",
+          "function": "pause()",
+          "requiredRole": "operations_multisig",
+          "description": "Emergency pause"
+        }
+      }
+    }
+  }
+}

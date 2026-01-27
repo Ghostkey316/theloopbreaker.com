@@ -18,16 +18,25 @@ Like HTTPS secures communication between browsers and servers, Vaultfire secures
 - Zero-knowledge proof systems (RISC Zero + quantum-resistant cryptography)
 - Economic verification (staked accountability bonds)
 - Sovereign identity (no central authority controls reputation)
+- Privacy guarantees (consent, data minimization, right to be forgotten)
+- Anti-surveillance shield (cryptographic ban on behavioral tracking)
+- Mission enforcement (immutable moral principles enforced by smart contracts)
 
 **What it prevents:**
 - Data extraction and behavioral harvesting
 - AI companies profiting while humans suffer
 - Unverifiable claims about AI alignment
+- Surveillance and behavioral tracking
+- Data sale and monetization
+- KYC and identity collection
 
 **What it enables:**
 - Proof of partnership quality without surveillance
 - Economic verification of global human flourishing
 - Trust through cryptographic certainty, not corporate promises
+- Privacy-preserving verification (zero-knowledge proofs)
+- User control over data (consent + deletion rights)
+- Immutable moral principles (enforced at protocol level)
 
 ## Why Infrastructure Matters
 
@@ -211,11 +220,21 @@ For Humans:
 - `BeliefOracle.sol` - ZK-verified belief scoring
 - `MultiOracleConsensus.sol` - Multi-source oracle aggregation
 
+**Privacy & Security Infrastructure:**
+- `PrivacyGuarantees.sol` - Consent, data minimization, right to be forgotten
+- `AntiSurveillance.sol` - Cryptographic ban on behavioral tracking
+- `MissionEnforcement.sol` - Immutable moral principles enforcement
+- `ConsentRegistry.sol` - Programmable consent tokens
+
 **Privacy & Security Features:**
 - **Zero-knowledge proofs** via RISC Zero (verify without revealing private data)
 - **Post-quantum security** (STARK proofs + quantum-resistant signatures)
 - **No trusted setup** (transparent proof system)
+- **Privacy guarantees** (consent, data minimization, deletion rights)
+- **Anti-surveillance shield** (banned: tracking, profiling, data sale)
+- **Mission enforcement** (immutable moral principles at contract level)
 - Privacy-preserving verification (prove loyalty without exposing identity)
+- **No KYC** - wallet addresses only, zero identity collection
 
 **Trust & Verification Features:**
 - Loyalty multipliers (1.0x → 3.0x over 5 years)
@@ -358,12 +377,15 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 **Current:** Core team maintains contracts during alpha
 **Future:** Progressive decentralization to DAO governance
 
-**Non-negotiable principles** (cannot be changed by governance):
-- Human verification always has final say
+**Non-negotiable principles** (enforced at smart contract level, cannot be changed by governance):
+- Human verification always has final say (MissionEnforcement contract)
 - AI profit caps (30% max in partnerships, 50% in accountability)
-- Privacy default (no surveillance)
+- Privacy default (PrivacyGuarantees contract - consent, data minimization, deletion rights)
+- No surveillance (AntiSurveillance contract - cryptographic ban on tracking)
 - Community can challenge any claim
 - Open source, verifiable, auditable
+- No KYC - wallet addresses only (MissionEnforcement verification)
+- No data sale or monetization (AntiSurveillance ban)
 
 ---
 
