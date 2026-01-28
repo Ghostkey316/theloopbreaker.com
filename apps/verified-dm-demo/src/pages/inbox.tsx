@@ -140,10 +140,23 @@ export default function InboxPage() {
               currentAddress={address}
             />
           ) : (
-            <div className="h-full flex items-center justify-center text-gray-500">
-              <div className="text-center">
-                <Inbox size={64} className="mx-auto mb-4 opacity-50" />
-                <p>Select a conversation to start messaging</p>
+            <div className="h-full flex items-center justify-center text-gray-500 p-8">
+              <div className="text-center max-w-md">
+                <div className="relative inline-block mb-6">
+                  <Inbox size={64} className="mx-auto opacity-50" />
+                  <div className="absolute -bottom-2 -right-2 bg-vaultfire-primary/20 rounded-full p-2">
+                    <Shield size={24} className="text-vaultfire-primary" />
+                  </div>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-300 mb-2">No Conversation Selected</h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  Select a conversation from the sidebar to view messages
+                </p>
+                <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700 text-left">
+                  <p className="text-xs text-gray-400">
+                    💡 <span className="font-semibold">Tip:</span> Each conversation shows the sender&apos;s verification status, reputation score, and trust level powered by Vaultfire attestations.
+                  </p>
+                </div>
               </div>
             </div>
           )}

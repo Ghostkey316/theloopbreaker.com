@@ -1,7 +1,7 @@
 import { ConversationWithVerification } from '@/lib/xmtp';
 import { VerificationBadge } from './VerificationBadge';
+import { EmptyInboxState } from './EmptyInboxState';
 import { formatDistanceToNow } from '@/lib/utils';
-import { Mail, ShieldX } from 'lucide-react';
 
 interface ConversationListProps {
   conversations: ConversationWithVerification[];
@@ -17,27 +17,7 @@ export function ConversationList({
   showSpam = false,
 }: ConversationListProps) {
   if (conversations.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-        {showSpam ? (
-          <>
-            <ShieldX size={48} className="text-gray-500 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-300 mb-2">No Spam Messages</h3>
-            <p className="text-sm text-gray-500">
-              Vaultfire is protecting your inbox from unverified senders
-            </p>
-          </>
-        ) : (
-          <>
-            <Mail size={48} className="text-gray-500 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-300 mb-2">No Conversations</h3>
-            <p className="text-sm text-gray-500">
-              Start a new conversation to get started
-            </p>
-          </>
-        )}
-      </div>
-    );
+    return <EmptyInboxState showSpam={showSpam} />;
   }
 
   return (
