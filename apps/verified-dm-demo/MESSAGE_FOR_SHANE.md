@@ -9,7 +9,7 @@ Hi Shane,
 I built the verified DM demo you mentioned wanting to see - Vaultfire as a proof/policy layer on top of XMTP.
 
 ## 🔥 Live Demo
-**[DEPLOYED URL WILL GO HERE]**
+**https://verified-dm-demo-1991.vercel.app**
 
 ## What It Does (30 seconds)
 
