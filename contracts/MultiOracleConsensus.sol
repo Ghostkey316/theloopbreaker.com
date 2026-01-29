@@ -118,9 +118,17 @@ contract MultiOracleConsensus is ReentrancyGuard {
     /// @notice Minimum oracles required for consensus
     uint256 public constant MINIMUM_ORACLES = 3;
 
+    /// @notice Maximum oracles allowed (Sybil attack prevention)
+    /// @dev HIGH-004 FIX: Prevents attacker from registering unlimited oracles
+    uint256 public constant MAXIMUM_ORACLES = 100;
+
     /// @notice All registered oracles
     mapping(address => Oracle) public oracles;
     address[] public oracleList;
+
+    /// @notice Active oracle count (gas optimization)
+    /// @dev MED-002 FIX: Cached count avoids O(n) loop on every query
+    uint256 public activeOracleCount;
 
     /// @notice Consensus rounds
     mapping(uint256 => ConsensusRound) public consensusRounds;
@@ -211,6 +219,9 @@ contract MultiOracleConsensus is ReentrancyGuard {
         require(oracles[msg.sender].status == OracleStatus.Inactive, "Already registered");
         require(bytes(dataSource).length > 0, "Data source required");
 
+        // ✅ HIGH-004 FIX: Enforce maximum oracle cap (Sybil attack prevention)
+        require(activeOracleCount < MAXIMUM_ORACLES, "Maximum oracle count reached");
+
         oracles[msg.sender] = Oracle({
             oracleAddress: msg.sender,
             stake: msg.value,
@@ -225,6 +236,9 @@ contract MultiOracleConsensus is ReentrancyGuard {
         });
 
         oracleList.push(msg.sender);
+
+        // ✅ MED-002 FIX: Update cached active oracle count
+        activeOracleCount++;
 
         emit OracleRegistered(msg.sender, msg.value, dataSource);
     }
@@ -253,6 +267,9 @@ contract MultiOracleConsensus is ReentrancyGuard {
         uint256 withdrawAmount = oracle.stake;
         oracle.stake = 0;
         oracle.status = OracleStatus.Inactive;
+
+        // ✅ MED-002 FIX: Update cached active oracle count
+        activeOracleCount--;
 
         (bool success, ) = payable(msg.sender).call{value: withdrawAmount}("");
         require(success, "Transfer failed");
@@ -450,17 +467,12 @@ contract MultiOracleConsensus is ReentrancyGuard {
     /**
      * @notice Get active oracle count
      * @return count Number of active oracles
+     *
+     * @custom:security MED-002 FIX: Gas optimization
+     * Uses cached count instead of O(n) loop. Prevents DoS with many oracles.
      */
     function getActiveOracleCount() public view returns (uint256) {
-        uint256 count = 0;
-        uint256 length = oracleList.length;
-        for (uint256 i = 0; i < length;) {
-            if (oracles[oracleList[i]].status == OracleStatus.Active) {
-                count++;
-            }
-            unchecked { ++i; }
-        }
-        return count;
+        return activeOracleCount;
     }
 
     /**
@@ -681,9 +693,17 @@ contract MultiOracleConsensus is ReentrancyGuard {
         Oracle storage oracleData = oracles[oracle];
         uint256 slashAmount = (oracleData.stake * SLASH_PERCENTAGE) / 10000;
 
+        // Only decrement active count if oracle was active before slash
+        bool wasActive = oracleData.status == OracleStatus.Active;
+
         oracleData.stake -= slashAmount;
         oracleData.slashCount++;
         oracleData.status = OracleStatus.Slashed;
+
+        // ✅ MED-002 FIX: Update cached active oracle count
+        if (wasActive) {
+            activeOracleCount--;
+        }
 
         slashPool += slashAmount;
 
