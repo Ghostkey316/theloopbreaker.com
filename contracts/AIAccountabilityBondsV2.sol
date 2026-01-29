@@ -551,23 +551,31 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
         MetricsChallenge storage challenge = bondChallenges[bondId][challengeIndex];
         require(!challenge.resolved, "Challenge already resolved");
 
-        challenge.resolved = true;
-        challenge.challengeUpheld = upheld;
+        // ✅ SECURITY FIX (HIGH-003): Store values before state changes
+        // Follows checks-effects-interactions pattern for maximum safety
+        address payable recipient;
+        uint256 payoutAmount;
 
         if (upheld) {
             // Challenge upheld: Return stake + penalty to challenger
             uint256 penalty = challenge.challengeStake; // 1:1 penalty
-            uint256 totalReturn = challenge.challengeStake + penalty;
-
-            require(address(this).balance >= totalReturn, "Insufficient balance for challenge payout");
-            (bool success, ) = payable(challenge.challenger).call{value: totalReturn}("");
-            require(success, "Challenge payout failed");
+            payoutAmount = challenge.challengeStake + penalty;
+            recipient = payable(challenge.challenger);
+            require(address(this).balance >= payoutAmount, "Insufficient balance for challenge payout");
         } else {
             // Challenge rejected: Stake goes to human treasury
             require(humanTreasury != address(0), "Human treasury not set");
-            (bool success, ) = humanTreasury.call{value: challenge.challengeStake}("");
-            require(success, "Treasury transfer failed");
+            payoutAmount = challenge.challengeStake;
+            recipient = humanTreasury;
         }
+
+        // ✅ EFFECTS: Update state BEFORE external calls (CEI pattern)
+        challenge.resolved = true;
+        challenge.challengeUpheld = upheld;
+
+        // ✅ INTERACTIONS: External calls LAST
+        (bool success, ) = recipient.call{value: payoutAmount}("");
+        require(success, upheld ? "Challenge payout failed" : "Treasury transfer failed");
 
         emit ChallengeResolved(bondId, challengeIndex, upheld, block.timestamp);
     }
@@ -834,7 +842,22 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
         uint256 inclusion = inclusionMultiplier(bondId);
         uint256 time = timeMultiplier(bondId);
 
-        return (bond.stakeAmount * flourishing * inclusion * time) / 50000000;
+        // ✅ SECURITY FIX (HIGH-004): Overflow protection
+        // Check for potential overflow before multiplication
+        // Max safe value: type(uint256).max / (10000 * 200 * 300) = ~1.9e70
+        // This allows stakes up to 1.9e64 wei (way beyond realistic values)
+        unchecked {
+            uint256 temp1 = bond.stakeAmount * flourishing; // First multiplication
+            require(temp1 / flourishing == bond.stakeAmount, "Overflow in bond value calculation");
+
+            uint256 temp2 = temp1 * inclusion; // Second multiplication
+            require(temp2 / inclusion == temp1, "Overflow in bond value calculation");
+
+            uint256 temp3 = temp2 * time; // Third multiplication
+            require(temp3 / time == temp2, "Overflow in bond value calculation");
+
+            return temp3 / 50000000;
+        }
     }
 
     /**

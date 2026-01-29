@@ -19,6 +19,10 @@ abstract contract BaseDignityBond is ReentrancyGuard, Pausable {
     /// @notice Contract owner (can pause in emergency)
     address public owner;
 
+    /// @notice Pending owner for two-step ownership transfer
+    /// @dev Prevents accidental ownership loss from typos in address
+    address public pendingOwner;
+
     /// @notice Timelock period for distributions (7 days)
     uint256 public constant DISTRIBUTION_TIMELOCK = 7 days;
 
@@ -29,6 +33,9 @@ abstract contract BaseDignityBond is ReentrancyGuard, Pausable {
 
     /// @notice Emitted when contract is unpaused
     event ContractUnpaused(address indexed by, uint256 timestamp);
+
+    /// @notice Emitted when ownership transfer is initiated
+    event OwnershipTransferStarted(address indexed previousOwner, address indexed newOwner);
 
     /// @notice Emitted when ownership is transferred
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
@@ -73,9 +80,12 @@ abstract contract BaseDignityBond is ReentrancyGuard, Pausable {
     }
 
     /**
-     * @notice Transfer ownership to new address
+     * @notice Transfer ownership to new address (step 1 of 2)
      * @dev Use for governance transitions or emergency handoff
      * @param newOwner Address of new owner
+     *
+     * @custom:security HIGH-005 FIX: Two-step ownership transfer
+     * Prevents accidental loss of ownership due to typos. New owner must accept.
      *
      * Mission Alignment: Ownership should be transferable to community governance.
      */
@@ -83,10 +93,39 @@ abstract contract BaseDignityBond is ReentrancyGuard, Pausable {
         require(newOwner != address(0), "New owner cannot be zero address");
         require(newOwner != owner, "Already the owner");
 
-        address previousOwner = owner;
-        owner = newOwner;
+        pendingOwner = newOwner;
+        emit OwnershipTransferStarted(owner, newOwner);
+    }
 
-        emit OwnershipTransferred(previousOwner, newOwner);
+    /**
+     * @notice Accept ownership transfer (step 2 of 2)
+     * @dev New owner must call this to complete transfer
+     *
+     * @custom:security HIGH-005 FIX: Two-step ownership transfer
+     * Only pending owner can accept. Prevents typo-based ownership loss.
+     */
+    function acceptOwnership() external {
+        require(msg.sender == pendingOwner, "Only pending owner can accept");
+        require(pendingOwner != address(0), "No pending ownership transfer");
+
+        address previousOwner = owner;
+        owner = pendingOwner;
+        pendingOwner = address(0);
+
+        emit OwnershipTransferred(previousOwner, owner);
+    }
+
+    /**
+     * @notice Cancel pending ownership transfer
+     * @dev Current owner can cancel if transfer was initiated by mistake
+     */
+    function cancelOwnershipTransfer() external onlyOwner {
+        require(pendingOwner != address(0), "No pending transfer to cancel");
+
+        address cancelledPendingOwner = pendingOwner;
+        pendingOwner = address(0);
+
+        emit OwnershipTransferStarted(owner, address(0)); // Signal cancellation
     }
 
     // ============ Validation Helpers ============
