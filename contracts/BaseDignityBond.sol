@@ -122,9 +122,7 @@ abstract contract BaseDignityBond is ReentrancyGuard, Pausable {
     function cancelOwnershipTransfer() external onlyOwner {
         require(pendingOwner != address(0), "No pending transfer to cancel");
 
-        address cancelledPendingOwner = pendingOwner;
         pendingOwner = address(0);
-
         emit OwnershipTransferStarted(owner, address(0)); // Signal cancellation
     }
 
