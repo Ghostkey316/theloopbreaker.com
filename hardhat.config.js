@@ -46,7 +46,7 @@ module.exports = {
     },
   },
   paths: {
-    tests: "contracts/test",
+    tests: "test",
   },
   vaultfireSandbox: sandbox,
 };

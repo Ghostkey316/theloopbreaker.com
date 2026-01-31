@@ -279,6 +279,9 @@ describe("AIPartnershipBondsV2 - AI Grows WITH Humans, Not ABOVE", function () {
             await aiPartnership.connect(human1).submitPartnershipMetrics(
                 1, 9000, 8500, 9000, 15, 8800, "True partnership - both thriving"
             );
+
+            // Fund yield pool so positive-appreciation distributions are solvent.
+            await aiPartnership.connect(owner).fundYieldPool({ value: ethers.parseEther("100") });
         });
 
         it("Should request distribution (start timelock)", async function () {
@@ -436,6 +439,9 @@ describe("AIPartnershipBondsV2 - AI Grows WITH Humans, Not ABOVE", function () {
 
             const appreciation = await aiPartnership.calculateAppreciation(1);
             const aiMaxShare = (appreciation * BigInt(30)) / BigInt(100);
+
+            // Fund yield pool so positive-appreciation distribution can proceed.
+            await aiPartnership.connect(owner).fundYieldPool({ value: ethers.parseEther("100") });
 
             const aiBalBefore = await ethers.provider.getBalance(aiAgent1.address);
             await aiPartnership.connect(human1).distributeBond(1);

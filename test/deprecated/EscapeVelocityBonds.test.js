@@ -293,6 +293,9 @@ describe("EscapeVelocityBondsV2 - Poverty Escape ($50-$500)", function () {
 
     describe("Distribution - 80/20 Pay-It-Forward Split", function () {
         beforeEach(async function () {
+            // V2 distributions with positive appreciation require the yield pool to be funded.
+            await escapeVelocity.connect(owner).fundYieldPool({ value: ethers.parseEther("100") });
+
             await escapeVelocity.connect(escaper1).createBond(
                 "Maria",
                 2000,
@@ -411,6 +414,9 @@ describe("EscapeVelocityBondsV2 - Poverty Escape ($50-$500)", function () {
 
     describe("Pay-It-Forward Pool", function () {
         it("Should accumulate funds from multiple escapers", async function () {
+            // V2 positive-appreciation distributions require yield pool funding.
+            await escapeVelocity.connect(owner).fundYieldPool({ value: ethers.parseEther("100") });
+
             // Fund the contract by creating additional bonds to simulate a pool
             // In production, appreciation would come from yield/fees/external funding
             await escapeVelocity.connect(verifier).createBond("Pool Funder 1", 2000, { value: MAX_STAKE });
