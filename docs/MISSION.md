@@ -64,6 +64,16 @@ This protocol was built through human-AI partnership. That partnership is encode
 
 ---
 
+## Quick links (implementation)
+If you're applying Vaultfire to agent systems/skills, these repo docs translate the mission into concrete primitives:
+- `AGENT_CAPABILITY_MANIFEST.md` — declared + enforceable capabilities (deny-by-default)
+- `ATTESTATION_SCHEMA.md` — provenance + review scope tags
+- `TRUST_STACK_MATURITY_MODEL.md` — rollout ladder (gateway → sandbox → attested)
+- `INCIDENT_TRIAGE_CHECKLIST.md` — 60-second containment-first response
+- `ANTI_PANOPTICON_INVARIANTS.md` — mission lock (no KYC / no surveillance)
+
+---
+
 ## What Vaultfire IS
 
 ### ✅ Belief-Secured Intelligence
