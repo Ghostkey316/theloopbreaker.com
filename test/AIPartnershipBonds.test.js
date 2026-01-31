@@ -450,6 +450,37 @@ describe("AIPartnershipBondsV2 - AI Grows WITH Humans, Not ABOVE", function () {
     });
 
     describe("Edge Cases", function () {
+        it("Should not revert when yield pool warning triggers (no underflow)", async function () {
+            // Fund yield pool so that AFTER distribution it falls into [min, 2*min)
+            // which should emit LowYieldPoolWarning with deficit=0 (not underflow).
+            await aiPartnership.connect(owner).fundYieldPool({ value: ethers.parseEther("25") });
+
+            // Create a bond with stake == appreciation so we control _useYieldPool(amount)
+            const stake = ethers.parseEther("6");
+            await aiPartnership.connect(human1).createBond(
+                aiAgent1.address,
+                "AI mentor",
+                { value: stake }
+            );
+
+            // Force appreciation == stake (value = 2x) by setting all metrics to 10000 with default loyalty 1.0x
+            await aiPartnership.connect(human1).submitPartnershipMetrics(
+                1, 10000, 10000, 10000, 10, 10000, "Max metrics"
+            );
+
+            // Sanity: appreciation should be exactly stake
+            const appreciation = await aiPartnership.calculateAppreciation(1);
+            expect(appreciation).to.equal(stake);
+
+            await aiPartnership.connect(human1).requestDistribution(1);
+            await time.increase(604800);
+
+            // After _useYieldPool(6), yieldPool becomes 19 (<20), warning should emit without underflow.
+            await expect(aiPartnership.connect(human1).distributeBond(1))
+                .to.emit(aiPartnership, "LowYieldPoolWarning")
+                .withArgs(ethers.parseEther("19"), ethers.parseEther("10"), 0);
+        });
+
         it("Should handle multiple partnerships from same human", async function () {
             await aiPartnership.connect(human1).createBond(
                 aiAgent1.address, "AI Tutor 1", { value: ethers.parseEther("0.5") }
