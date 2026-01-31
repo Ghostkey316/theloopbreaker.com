@@ -120,6 +120,10 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
     mapping(uint256 => GlobalFlourishingMetrics[]) public bondMetrics;
     mapping(uint256 => Distribution[]) public bondDistributions;
 
+    // Tracks the bond value baseline already accounted for in distributions.
+    // Prevents repeated distributeBond() calls from paying out the same appreciation multiple times.
+    mapping(uint256 => uint256) public lastDistributedValue;
+
     // ✅ Human treasury for distributing human share of profits
     address payable public humanTreasury;
 
@@ -324,6 +328,9 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
             distributionPending: false,
             active: true
         });
+
+        // Initialize distribution baseline to the initial stake.
+        lastDistributedValue[bondId] = msg.value;
 
         emit BondCreated(bondId, msg.sender, companyName, quarterlyRevenue, msg.value, block.timestamp);
         return bondId;
@@ -658,9 +665,16 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
         );
 
         bond.distributionPending = false;
-        int256 appreciation = calculateAppreciation(bondId);
+
+        // Compute delta appreciation since the last distribution baseline.
+        uint256 currentValue = calculateBondValue(bondId);
+        uint256 baseline = lastDistributedValue[bondId];
+        int256 appreciation = int256(currentValue) - int256(baseline);
 
         require(appreciation != 0, "No appreciation to distribute");
+
+        // Effects: update baseline before external interactions (CEI).
+        lastDistributedValue[bondId] = currentValue;
 
         (bool locked, string memory lockReason) = shouldLockProfits(bondId);
 

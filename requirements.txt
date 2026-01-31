@@ -35,3 +35,4 @@ tqdm==4.67.1
 typing-inspection==0.4.1
 typing_extensions==4.14.1
 web3==6.20.1
+cryptography==43.0.1

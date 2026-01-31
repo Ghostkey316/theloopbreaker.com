@@ -60,6 +60,7 @@ contract MultiOracleConsensus is ReentrancyGuard {
         address oracle;
         uint256 value;
         uint256 timestamp;
+        uint256 stakeAtSubmission; // Snapshot of oracle stake at submission time
         bytes32 dataHash;       // Hash of supporting evidence
         string notes;
     }
@@ -129,6 +130,10 @@ contract MultiOracleConsensus is ReentrancyGuard {
     /// @notice Active oracle count (gas optimization)
     /// @dev MED-002 FIX: Cached count avoids O(n) loop on every query
     uint256 public activeOracleCount;
+
+    /// @notice Lock time until which an oracle's stake cannot be changed/withdrawn
+    /// @dev Set when an oracle submits to an active consensus round. Prevents stake manipulation.
+    mapping(address => uint256) public oracleLockedUntil;
 
     /// @notice Consensus rounds
     mapping(uint256 => ConsensusRound) public consensusRounds;
@@ -250,6 +255,7 @@ contract MultiOracleConsensus is ReentrancyGuard {
      */
     function increaseStake() external payable onlyActiveOracle {
         require(msg.value > 0, "Must send ETH");
+        require(block.timestamp > oracleLockedUntil[msg.sender], "Oracle stake locked (active rounds)" );
         oracles[msg.sender].stake += msg.value;
         emit OracleStakeIncreased(msg.sender, oracles[msg.sender].stake);
     }
@@ -263,6 +269,7 @@ contract MultiOracleConsensus is ReentrancyGuard {
         Oracle storage oracle = oracles[msg.sender];
         require(oracle.status == OracleStatus.Active, "Not active");
         require(oracle.stake > 0, "No stake to withdraw");
+        require(block.timestamp > oracleLockedUntil[msg.sender], "Oracle stake locked (active rounds)" );
 
         uint256 withdrawAmount = oracle.stake;
         oracle.stake = 0;
@@ -322,15 +329,23 @@ contract MultiOracleConsensus is ReentrancyGuard {
         require(round.status == SubmissionStatus.Pending, "Round not pending");
         require(!_hasOracleSubmitted(roundId, msg.sender), "Already submitted");
 
+        uint256 stakeSnapshot = oracles[msg.sender].stake;
+
         round.submissions.push(DataPoint({
             oracle: msg.sender,
             value: value,
             timestamp: block.timestamp,
+            stakeAtSubmission: stakeSnapshot,
             dataHash: dataHash,
             notes: notes
         }));
 
-        round.totalStakeSubmitted += oracles[msg.sender].stake;
+        round.totalStakeSubmitted += stakeSnapshot;
+
+        // Lock stake changes until after the round deadline to prevent manipulation.
+        if (oracleLockedUntil[msg.sender] < round.consensusDeadline) {
+            oracleLockedUntil[msg.sender] = round.consensusDeadline;
+        }
         oracles[msg.sender].totalSubmissions++;
 
         emit DataSubmitted(roundId, msg.sender, value);
@@ -429,11 +444,15 @@ contract MultiOracleConsensus is ReentrancyGuard {
 
         address loser = winner == dispute.disputer ? dispute.disputed : dispute.disputer;
 
+        // Snapshot loser stake before slashing (reward should be based on the actual slash amount).
+        uint256 loserStakeBefore = oracles[loser].stake;
+        uint256 slashAmount = (loserStakeBefore * SLASH_PERCENTAGE) / 10000;
+
         // Slash loser
         _slashOracle(loser, "Dispute resolution - inaccurate data");
 
-        // Reward winner from slash pool
-        uint256 reward = (oracles[loser].stake * SLASH_PERCENTAGE) / 10000 / 2; // Half of slash
+        // Reward winner from slash pool (half of the slash amount)
+        uint256 reward = slashAmount / 2;
         if (reward > 0 && slashPool >= reward) {
             slashPool -= reward;
             oracles[winner].stake += reward;
@@ -640,7 +659,7 @@ contract MultiOracleConsensus is ReentrancyGuard {
         for (uint256 i = 0; i < length;) {
             uint256 deviation = _calculateDeviation(round.submissions[i].value, consensusValue);
             if (deviation <= MAX_DEVIATION) {
-                agreeingStake += oracles[round.submissions[i].oracle].stake;
+                agreeingStake += round.submissions[i].stakeAtSubmission;
             }
             unchecked { ++i; }
         }
