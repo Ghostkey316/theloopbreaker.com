@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from hashlib import sha256
@@ -58,8 +59,27 @@ def generate_pack(*, signer: str, label: str | None = None) -> Mapping[str, Any]
         "codex_validation": validation,
     }
     checksum = _hash_bytes(json.dumps(body, sort_keys=True).encode("utf-8"))
-    signature = _hash_bytes(f"{signer}:{checksum}".encode("utf-8"))
-    return {"pack": body, "checksum": checksum, "signature": {"signer": signer, "digest": signature}}
+
+    # NOTE: checksum is integrity-only. For provenance, provide a real Ed25519 key.
+    # Env: VAULTFIRE_ATTESTOR_ED25519_PRIVATE_KEY_B64 (base64-encoded 32-byte seed)
+    signature: Mapping[str, Any]
+    priv_b64 = os.getenv("VAULTFIRE_ATTESTOR_ED25519_PRIVATE_KEY_B64")
+    if priv_b64:
+        import base64
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+        seed = base64.b64decode(priv_b64)
+        if len(seed) != 32:
+            raise ValueError("Ed25519 private key seed must be 32 bytes")
+
+        sk = Ed25519PrivateKey.from_private_bytes(seed)
+        sig = sk.sign(checksum.encode("utf-8"))
+        signature = {"signer": signer, "type": "ed25519", "value": base64.b64encode(sig).decode("utf-8")}
+    else:
+        digest = _hash_bytes(f"{signer}:{checksum}".encode("utf-8"))
+        signature = {"signer": signer, "type": "integrity-only", "value": digest}
+
+    return {"pack": body, "checksum": checksum, "signature": signature}
 
 
 def write_pack(payload: Mapping[str, Any], destination: Path) -> Path:

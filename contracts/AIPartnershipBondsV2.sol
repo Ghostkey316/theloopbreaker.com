@@ -85,6 +85,11 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
     mapping(uint256 => PartnershipMetrics[]) public bondMetrics;
     mapping(uint256 => HumanVerification[]) public bondVerifications;
     mapping(uint256 => Distribution[]) public bondDistributions;
+
+    // Tracks the bond value baseline that has already been accounted for in distributions.
+    // Prevents repeated distributeBond() calls from paying out the same appreciation multiple times.
+    mapping(uint256 => uint256) public lastDistributedValue;
+
     uint256 public partnershipFund;
 
     event BondCreated(uint256 indexed bondId, address indexed human, address indexed aiAgent, string partnershipType, uint256 stakeAmount, uint256 timestamp);
@@ -132,6 +137,9 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
             stakeAmount: msg.value, createdAt: block.timestamp,
             distributionRequestedAt: 0, distributionPending: false, active: true
         });
+
+        // Initialize distribution baseline to the initial stake.
+        lastDistributedValue[bondId] = msg.value;
 
         emit BondCreated(bondId, msg.sender, aiAgent, partnershipType, msg.value, block.timestamp);
         return bondId;
@@ -269,8 +277,15 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
         require(block.timestamp >= bond.distributionRequestedAt + DISTRIBUTION_TIMELOCK, "Timelock not expired");
 
         bond.distributionPending = false;
-        int256 appreciation = calculateAppreciation(bondId);
+
+        // Compute delta appreciation since the last distribution baseline.
+        uint256 currentValue = calculateBondValue(bondId);
+        uint256 baseline = lastDistributedValue[bondId];
+        int256 appreciation = int256(currentValue) - int256(baseline);
         require(appreciation != 0, "No appreciation");
+
+        // Effects: update baseline before external interactions (CEI).
+        lastDistributedValue[bondId] = currentValue;
 
         (bool penaltyActive, string memory penaltyReason) = shouldActivateDominationPenalty(bondId);
         uint256 humanShare; uint256 aiShare; uint256 fundShare; string memory reason;
