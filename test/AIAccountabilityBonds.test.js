@@ -427,6 +427,10 @@ describe("AIAccountabilityBondsV2 - AI Can Only Profit When ALL Humans Thrive", 
 
     describe("Distribution - 50/50 or 100/0 Split", function () {
         beforeEach(async function () {
+            // Fund yield pool to cover appreciations during distribution.
+            // This keeps tests aligned with the protocol's solvency model.
+            await accountability.connect(owner).fundYieldPool({ value: ethers.parseEther("200") });
+
             await accountability.connect(aiCompany1).createBond(
                 "AI Corp", ethers.parseEther("100"), { value: ethers.parseEther("30") }
             );
@@ -443,6 +447,9 @@ describe("AIAccountabilityBondsV2 - AI Can Only Profit When ALL Humans Thrive", 
             await accountability.connect(aiCompany3).submitAIVerification(
                 1, true, "Confirmed", { value: ethers.parseEther("1.0") }
             );
+
+            // Fund yield pool so positive-appreciation distributions are solvent.
+            await accountability.connect(owner).fundYieldPool({ value: ethers.parseEther("100") });
         });
 
         it("Should distribute 50/50 when humans thriving", async function () {
@@ -469,18 +476,27 @@ describe("AIAccountabilityBondsV2 - AI Can Only Profit When ALL Humans Thrive", 
         });
 
         it("Should distribute 100/0 when profits locked", async function () {
-            // Create new bond with low metrics (profits locked)
+            // Create a second bond with strong metrics (positive appreciation),
+            // but *failed verification* so profits are locked.
             await accountability.connect(aiCompany2).createBond(
                 "AI Corp 2", ethers.parseEther("100"), { value: ethers.parseEther("30") }
             );
 
-            // Submit metrics showing suffering
+            // Submit strong metrics (humans thriving)
             await accountability.connect(aiCompany2).submitMetrics(
-                2, 3000, 3000, 3000, 3000, 3000, 3000
+                2, 9000, 9000, 9000, 9000, 9000, 9000
+            );
+
+            // One rejection => verificationQualityScore = 2000 (<3000) => lock
+            await accountability.connect(aiCompany3).submitAIVerification(
+                2, false, "Disputed", { value: ethers.parseEther("1.0") }
             );
 
             await accountability.connect(aiCompany2).requestDistribution(2);
             await time.increase(604800);
+
+            const appreciation = await accountability.calculateAppreciation(2);
+            expect(appreciation).to.be.above(0);
 
             const [shouldLock, _] = await accountability.shouldLockProfits(2);
             expect(shouldLock).to.be.true;
