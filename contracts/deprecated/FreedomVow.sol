@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
-import {BeliefOracle} from "./BeliefOracle.sol";
-import {DilithiumAttestor} from "./DilithiumAttestor.sol";
+import {BeliefOracle} from "../BeliefOracle.sol";
+import {DilithiumAttestor} from "../DilithiumAttestor.sol";
 import {RewardStream} from "./RewardStream.sol";
 
 /// @title FreedomVow

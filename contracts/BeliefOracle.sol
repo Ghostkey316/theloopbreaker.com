@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {DilithiumAttestor} from "./DilithiumAttestor.sol";
-import {RewardStream} from "./RewardStream.sol";
+import {RewardStream} from "./deprecated/RewardStream.sol";
 
 /// @title BeliefOracle
 /// @notice Gateway for resonance scoring backed by Dilithium attestations.

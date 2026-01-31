@@ -163,7 +163,7 @@ contract BeliefAttestationVerifierProduction is IStarkVerifier {
         address proverAddress,
         uint256 epoch,
         uint256 moduleID
-    ) internal view returns (bool) {
+    ) internal returns (bool) {
         // Validate proof is non-empty
         require(proofBytes.length > 0, "Empty proof");
 
