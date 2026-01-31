@@ -1,0 +1,13 @@
+{
+  "exclude_dependencies": true,
+  "filter_paths": [
+    "node_modules",
+    "artifacts",
+    "cache",
+    "coverage",
+    "docs",
+    "scripts",
+    "test"
+  ],
+  "solc_disable_warnings": true
+}
