@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.25;
 
 import {DilithiumAttestor} from "./DilithiumAttestor.sol";
 import {RewardStream} from "./deprecated/RewardStream.sol";

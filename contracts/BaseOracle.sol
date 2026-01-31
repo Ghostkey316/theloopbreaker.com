@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.25;
 
 /// @title Vaultfire Base Oracle
 /// @notice Emits CID and zkHash attestations for live visualizations.
@@ -42,7 +42,8 @@ contract BaseOracle {
         onlyGuardian
         returns (bytes32 attestationId)
     {
-        attestationId = keccak256(abi.encodePacked(cid, zkHash, block.timestamp));
+        // Use abi.encode (not encodePacked) to avoid ambiguity/collision with multiple dynamic types.
+        attestationId = keccak256(abi.encode(cid, zkHash, block.timestamp));
         emit VisualizationPinned(msg.sender, cid, zkHash, block.timestamp);
     }
 
