@@ -690,6 +690,12 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
             humanShare = uint256(-appreciation);
             aiCompanyShare = 0;
             reason = "Depreciation compensation - humans suffering";
+
+            // Even on depreciation, if profits are locked we still emit the lock event
+            // to make the enforcement visible/auditable.
+            if (locked) {
+                emit ProfitsLocked(bondId, lockReason, block.timestamp);
+            }
         }
 
         bondDistributions[bondId].push(Distribution({
@@ -889,8 +895,8 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
         AIVerification[] storage verifications = bondAIVerifications[bondId];
         MetricsChallenge[] storage challenges = bondChallenges[bondId];
 
-        if (verifications.length == 0) return 5000; // Neutral
-
+        // Start at neutral even if there are no verifications.
+        // Challenges can still reduce confidence in reported metrics.
         uint256 confirmCount = 0;
         uint256 rejectCount = 0;
 
