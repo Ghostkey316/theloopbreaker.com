@@ -59,6 +59,15 @@ Truth is verifiable. Privacy is default. Control stays with the human.
 
 ## The Complete Trust Layer
 
+### Agent Trust Building Blocks (repo-grounded)
+If you're applying Vaultfire primitives to agents/skills, start here:
+- `docs/AGENT_CAPABILITY_MANIFEST.md` — declared + enforceable capabilities
+- `docs/ATTESTATION_SCHEMA.md` — provenance + audit scope
+- `docs/TRUST_STACK_MATURITY_MODEL.md` — rollout levels (deny-by-default → gateway → sandbox)
+- `docs/INCIDENT_TRIAGE_CHECKLIST.md` — 60-second response playbook
+- `docs/ANTI_PANOPTICON_INVARIANTS.md` — mission lock (no KYC / no surveillance)
+
+
 Vaultfire provides **two complementary verification systems** that create complete trust for AI-human relationships:
 
 ### 1. AI Partnership Bonds

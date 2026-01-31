@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./BaseYieldPoolBond.sol";
+import "../BaseYieldPoolBond.sol";
 
 /**
  * @title Builder Belief Bonds V2 (Production Ready)

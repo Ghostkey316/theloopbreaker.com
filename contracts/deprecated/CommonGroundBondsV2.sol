@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./BaseYieldPoolBond.sol";
+import "../BaseYieldPoolBond.sol";
 
 /**
  * @title Common Ground Bonds V2 (Production Ready)
