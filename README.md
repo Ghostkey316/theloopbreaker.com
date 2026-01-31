@@ -273,7 +273,7 @@ npm >= 9.0.0
 
 ### Install
 ```bash
-git clone https://github.com/ghostkey316/ghostkey-316-vaultfire-init.git
+git clone https://github.com/Ghostkey316/ghostkey-316-vaultfire-init.git
 cd ghostkey-316-vaultfire-init
 npm install
 ```
@@ -427,7 +427,7 @@ MIT License - See [LICENSE](./LICENSE) for details
 ## Contact & Community
 
 **Email:** ghostkey316@proton.me
-**GitHub:** https://github.com/ghostkey316/ghostkey-316-vaultfire-init
+**GitHub:** https://github.com/Ghostkey316/ghostkey-316-vaultfire-init
 
 **For Partnership Inquiries:**
 See our comprehensive partnership materials in the `/partnerships` directory and root-level partnership docs.
