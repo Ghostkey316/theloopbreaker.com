@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.20;
 
 import "./BaseYieldPoolBond.sol";
 
@@ -133,6 +133,9 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
             distributionRequestedAt: 0, distributionPending: false, active: true
         });
 
+        // ✅ HIGH-003 FIX: Update total active bond value
+        _updateTotalActiveBondValue(totalActiveBondValue + msg.value);
+
         emit BondCreated(bondId, msg.sender, aiAgent, partnershipType, msg.value, block.timestamp);
         return bondId;
     }
@@ -234,6 +237,11 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
     function requestDistribution(uint256 bondId) external onlyParticipants(bondId) bondExists(bondId) whenNotPaused {
         Bond storage bond = bonds[bondId];
         require(!bond.distributionPending, "Distribution already pending");
+
+        // ✅ CRITICAL-002 & HIGH-002 FIX: Snapshot appreciation to prevent manipulation
+        int256 appreciation = calculateAppreciation(bondId);
+        _trackPendingDistribution(bondId, appreciation);
+
         bond.distributionRequestedAt = block.timestamp;
         bond.distributionPending = true;
         emit DistributionRequested(bondId, msg.sender, block.timestamp, block.timestamp + DISTRIBUTION_TIMELOCK);
@@ -269,8 +277,13 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
         require(block.timestamp >= bond.distributionRequestedAt + DISTRIBUTION_TIMELOCK, "Timelock not expired");
 
         bond.distributionPending = false;
-        int256 appreciation = calculateAppreciation(bondId);
+
+        // ✅ HIGH-002 FIX: Use snapshotted appreciation to prevent front-running
+        int256 appreciation = snapshotAppreciation[bondId];
         require(appreciation != 0, "No appreciation");
+
+        // Clear snapshot after use
+        snapshotAppreciation[bondId] = 0;
 
         (bool penaltyActive, string memory penaltyReason) = shouldActivateDominationPenalty(bondId);
         uint256 humanShare; uint256 aiShare; uint256 fundShare; string memory reason;
@@ -316,6 +329,10 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
             require(successAI, "AI transfer failed");
         }
         if (fundShare > 0) partnershipFund += fundShare;
+
+        // ✅ HIGH-003 FIX: Update total active bond value (bond no longer active)
+        bond.active = false;
+        _updateTotalActiveBondValue(totalActiveBondValue - bond.stakeAmount);
 
         emit BondDistributed(bondId, humanShare, aiShare, fundShare, reason, block.timestamp);
     }

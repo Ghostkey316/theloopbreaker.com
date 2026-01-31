@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.20;
 
 import "./BaseYieldPoolBond.sol";
 
@@ -325,6 +325,9 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
             active: true
         });
 
+        // ✅ HIGH-003 FIX: Update total active bond value
+        _updateTotalActiveBondValue(totalActiveBondValue + msg.value);
+
         emit BondCreated(bondId, msg.sender, companyName, quarterlyRevenue, msg.value, block.timestamp);
         return bondId;
     }
@@ -609,6 +612,10 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
         Bond storage bond = bonds[bondId];
         require(!bond.distributionPending, "Distribution already pending");
 
+        // ✅ CRITICAL-002 & HIGH-002 FIX: Snapshot appreciation to prevent manipulation
+        int256 appreciation = calculateAppreciation(bondId);
+        _trackPendingDistribution(bondId, appreciation);
+
         bond.distributionRequestedAt = block.timestamp;
         bond.distributionPending = true;
 
@@ -658,9 +665,13 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
         );
 
         bond.distributionPending = false;
-        int256 appreciation = calculateAppreciation(bondId);
 
+        // ✅ HIGH-002 FIX: Use snapshotted appreciation to prevent front-running
+        int256 appreciation = snapshotAppreciation[bondId];
         require(appreciation != 0, "No appreciation to distribute");
+
+        // Clear snapshot after use
+        snapshotAppreciation[bondId] = 0;
 
         (bool locked, string memory lockReason) = shouldLockProfits(bondId);
 
@@ -720,6 +731,10 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
             (bool successHuman, ) = humanTreasury.call{value: humanShare}("");
             require(successHuman, "Human treasury transfer failed");
         }
+
+        // ✅ HIGH-003 FIX: Update total active bond value (bond no longer active)
+        bond.active = false;
+        _updateTotalActiveBondValue(totalActiveBondValue - bond.stakeAmount);
 
         emit BondDistributed(
             bondId,
@@ -842,22 +857,14 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
         uint256 inclusion = inclusionMultiplier(bondId);
         uint256 time = timeMultiplier(bondId);
 
-        // ✅ SECURITY FIX (HIGH-004): Overflow protection
-        // Check for potential overflow before multiplication
-        // Max safe value: type(uint256).max / (10000 * 200 * 300) = ~1.9e70
-        // This allows stakes up to 1.9e64 wei (way beyond realistic values)
-        unchecked {
-            uint256 temp1 = bond.stakeAmount * flourishing; // First multiplication
-            require(temp1 / flourishing == bond.stakeAmount, "Overflow in bond value calculation");
+        // ✅ HIGH-005 FIX: Use Solidity 0.8.20 built-in overflow protection
+        // Removed unchecked block - let compiler handle overflow checks automatically
+        // This is safer and simpler than manual checks
+        uint256 temp1 = bond.stakeAmount * flourishing;
+        uint256 temp2 = temp1 * inclusion;
+        uint256 temp3 = temp2 * time;
 
-            uint256 temp2 = temp1 * inclusion; // Second multiplication
-            require(temp2 / inclusion == temp1, "Overflow in bond value calculation");
-
-            uint256 temp3 = temp2 * time; // Third multiplication
-            require(temp3 / time == temp2, "Overflow in bond value calculation");
-
-            return temp3 / 50000000;
-        }
+        return temp3 / 50000000;
     }
 
     /**
