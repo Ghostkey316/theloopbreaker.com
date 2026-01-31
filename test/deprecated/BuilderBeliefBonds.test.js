@@ -287,6 +287,9 @@ describe("BuilderBeliefBondsV2 - BUILDING > TRANSACTING", function () {
 
     describe("Distribution Flow - Timelock & Penalties", function () {
         beforeEach(async function () {
+            // V2 distributions with positive appreciation require the yield pool to be funded.
+            await builderBelief.connect(owner).fundYieldPool({ value: ethers.parseEther("100") });
+
             await builderBelief.connect(staker).createBond(
                 builder.address,
                 "Alice the Builder",
@@ -595,6 +598,9 @@ describe("BuilderBeliefBondsV2 - BUILDING > TRANSACTING", function () {
 
     describe("Builder Fund - Supporting Next Generation", function () {
         it("Should accumulate 10% of distributions to builder fund when appreciation is positive", async function () {
+            // V2 positive-appreciation distributions require yield pool funding.
+            await builderBelief.connect(owner).fundYieldPool({ value: ethers.parseEther("100") });
+
             await builderBelief.connect(staker).createBond(
                 builder.address,
                 "Alice",

@@ -331,6 +331,9 @@ describe("CommonGroundBondsV2 - Bridge-Building > Division", function () {
 
     describe("Distribution - 80/20 Split (Bridge-Builders/Community)", function () {
         beforeEach(async function () {
+            // V2 distributions with positive appreciation require the yield pool to be funded.
+            await commonGround.connect(owner).fundYieldPool({ value: ethers.parseEther("100") });
+
             await commonGround.connect(person1).createBond(
                 person2.address,
                 "Position A",
@@ -483,6 +486,9 @@ describe("CommonGroundBondsV2 - Bridge-Building > Division", function () {
 
     describe("Community Healing Pool", function () {
         it("Should accumulate funds from multiple successful bridges", async function () {
+            // V2 positive-appreciation distributions require yield pool funding.
+            await commonGround.connect(owner).fundYieldPool({ value: ethers.parseEther("100") });
+
             // First bridge
             await commonGround.connect(person1).createBond(
                 person2.address, "Position A", "Position B", { value: ethers.parseEther("1.0") }
