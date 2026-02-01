@@ -37,7 +37,10 @@ describe('FHESetupWizard', () => {
   });
 
   it('parses CLI arguments', () => {
-    const options = parseWizardArgs(['--mode', 'tfhe', '--network=testnet', '--non-interactive', '--diagnostics']);
+    const options = parseWizardArgs(
+      ['--mode', 'tfhe', '--network=testnet', '--non-interactive', '--diagnostics'],
+      { stdin: { isTTY: false } }
+    );
     expect(options.mode).toBe('tfhe');
     expect(options.network).toBe('testnet');
     expect(options.interactive).toBe(false);
