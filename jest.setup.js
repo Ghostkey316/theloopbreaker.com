@@ -2,6 +2,18 @@ const fetchMock = require('jest-fetch-mock');
 
 fetchMock.enableMocks();
 
+function shouldWarnOptionalDeps() {
+  // Keep test output clean by default; opt-in when debugging.
+  return String(process.env.VAULTFIRE_TEST_WARN_OPTIONAL_DEPS || '').toLowerCase() === '1'
+    || String(process.env.VAULTFIRE_TEST_WARN_OPTIONAL_DEPS || '').toLowerCase() === 'true';
+}
+
+function warnOptional(message) {
+  if (!shouldWarnOptionalDeps()) return;
+  // eslint-disable-next-line no-console
+  console.warn(message);
+}
+
 beforeEach(() => {
   fetchMock.resetMocks();
 });
@@ -11,8 +23,7 @@ try {
   require.resolve('@sentry/react');
   hasSentryReact = true;
 } catch (error) {
-  // eslint-disable-next-line no-console
-  console.warn('[jest setup] Optional dependency @sentry/react not found, using fallback mock.');
+  warnOptional('[jest setup] Optional dependency @sentry/react not found, using fallback mock.');
 }
 
 if (hasSentryReact) {
@@ -43,8 +54,7 @@ try {
   require.resolve('@sentry/node');
 } catch (error) {
   hasSentryNode = false;
-  // eslint-disable-next-line no-console
-  console.warn('[jest setup] Optional dependency @sentry/node not found, using noop mock.');
+  warnOptional('[jest setup] Optional dependency @sentry/node not found, using noop mock.');
 }
 
 if (hasSentryNode) {
@@ -76,8 +86,7 @@ try {
   require.resolve('helmet');
 } catch (error) {
   hasHelmet = false;
-  // eslint-disable-next-line no-console
-  console.warn('[jest setup] Optional dependency helmet not found, using noop mock.');
+  warnOptional('[jest setup] Optional dependency helmet not found, using noop mock.');
 }
 
 if (!hasHelmet) {

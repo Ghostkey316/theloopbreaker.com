@@ -200,8 +200,13 @@ class MultiTierTelemetryLedger {
     });
 
     Promise.resolve(this.#persistEntry(entry, visibility)).catch((error) => {
-      // eslint-disable-next-line no-console
-      console.warn('Telemetry persistence error:', error.message);
+      const shouldWarnOptional =
+        String(process.env.VAULTFIRE_TEST_WARN_OPTIONAL_DEPS || '').toLowerCase() === '1' ||
+        String(process.env.VAULTFIRE_TEST_WARN_OPTIONAL_DEPS || '').toLowerCase() === 'true';
+      if (process.env.NODE_ENV !== 'test' || shouldWarnOptional) {
+        // eslint-disable-next-line no-console
+        console.warn('Telemetry persistence error:', error.message);
+      }
     });
 
     return entry;

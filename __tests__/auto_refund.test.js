@@ -9,8 +9,13 @@ test('auto_refund python tests', () => {
 
   if (result.status !== 0) {
     if (/ModuleNotFoundError: No module named 'vaultfire'/.test(result.output)) {
-      // eslint-disable-next-line no-console
-      console.warn('[auto_refund] Skipping python suite: vaultfire python package not available in this environment.');
+      const shouldWarnOptional =
+        String(process.env.VAULTFIRE_TEST_WARN_OPTIONAL_DEPS || '').toLowerCase() === '1' ||
+        String(process.env.VAULTFIRE_TEST_WARN_OPTIONAL_DEPS || '').toLowerCase() === 'true';
+      if (process.env.NODE_ENV !== 'test' || shouldWarnOptional) {
+        // eslint-disable-next-line no-console
+        console.warn('[auto_refund] Skipping python suite: vaultfire python package not available in this environment.');
+      }
       expect(result.output).toContain("ModuleNotFoundError: No module named 'vaultfire'");
       return;
     }

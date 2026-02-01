@@ -10,15 +10,25 @@ test('yield_engine_v1 python tests', () => {
   const output = result.output;
   if (result.status !== 0) {
     if (/ModuleNotFoundError: No module named 'cryptography'/.test(output)) {
-      // eslint-disable-next-line no-console
-      console.warn('[yield-engine] Skipping python suite: cryptography dependency unavailable in this environment.');
+      const shouldWarnOptional =
+        String(process.env.VAULTFIRE_TEST_WARN_OPTIONAL_DEPS || '').toLowerCase() === '1' ||
+        String(process.env.VAULTFIRE_TEST_WARN_OPTIONAL_DEPS || '').toLowerCase() === 'true';
+      if (process.env.NODE_ENV !== 'test' || shouldWarnOptional) {
+        // eslint-disable-next-line no-console
+        console.warn('[yield-engine] Skipping python suite: cryptography dependency unavailable in this environment.');
+      }
       expect(output).toContain("ModuleNotFoundError: No module named 'cryptography'");
       return;
     }
 
     if (/ModuleNotFoundError: No module named 'vaultfire'/.test(output)) {
-      // eslint-disable-next-line no-console
-      console.warn('[yield-engine] Skipping python suite: vaultfire python package not available in this environment.');
+      const shouldWarnOptional =
+        String(process.env.VAULTFIRE_TEST_WARN_OPTIONAL_DEPS || '').toLowerCase() === '1' ||
+        String(process.env.VAULTFIRE_TEST_WARN_OPTIONAL_DEPS || '').toLowerCase() === 'true';
+      if (process.env.NODE_ENV !== 'test' || shouldWarnOptional) {
+        // eslint-disable-next-line no-console
+        console.warn('[yield-engine] Skipping python suite: vaultfire python package not available in this environment.');
+      }
       expect(output).toContain("ModuleNotFoundError: No module named 'vaultfire'");
       return;
     }

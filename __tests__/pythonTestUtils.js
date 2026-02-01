@@ -23,8 +23,13 @@ function runPythonTest(args, { suiteName = 'python tests', allowMissing = true }
   if (!python) {
     const message = `[${suiteName}] Skipping: python not found in PATH (tried python3, python).`;
     if (allowMissing) {
-      // eslint-disable-next-line no-console
-      console.warn(message);
+      const shouldWarnOptional =
+        String(process.env.VAULTFIRE_TEST_WARN_OPTIONAL_DEPS || '').toLowerCase() === '1' ||
+        String(process.env.VAULTFIRE_TEST_WARN_OPTIONAL_DEPS || '').toLowerCase() === 'true';
+      if (!process.env.NODE_ENV || process.env.NODE_ENV !== 'test' || shouldWarnOptional) {
+        // eslint-disable-next-line no-console
+        console.warn(message);
+      }
       return { skipped: true, output: message, status: 0 };
     }
     throw new Error(message);
