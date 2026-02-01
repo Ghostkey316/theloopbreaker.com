@@ -12,6 +12,11 @@ contract BeliefOracle {
     uint256 public constant BONUS_THRESHOLD = 80;
     uint256 public constant BONUS_MULTIPLIER = 120;
 
+    // Conservative safety rail for production orchestrations.
+    // Note: we do NOT enforce this on `batchQuery` (to avoid a behavior change);
+    // instead we provide a bounded alternative.
+    uint256 public constant MAX_BATCH_QUERY = 50;
+
     DilithiumAttestor public immutable attestor;
     RewardStream public immutable rewardStream;
     address public guardian;
@@ -100,6 +105,8 @@ contract BeliefOracle {
     }
 
     /// @notice Batch version for DAO orchestrations.
+    /// @dev Unbounded by design (bounded only by gas / calldata). For predictable gas,
+    /// use `batchQueryBounded`.
     function batchQuery(string[] calldata vows, bytes[] calldata zkSigs)
         external
         returns (uint256[] memory)
@@ -107,6 +114,25 @@ contract BeliefOracle {
         if (vows.length != zkSigs.length) {
             revert LengthMismatch();
         }
+        uint256[] memory resonances = new uint256[](vows.length);
+        for (uint256 i = 0; i < vows.length; ++i) {
+            resonances[i] = queryBelief(vows[i], zkSigs[i]);
+        }
+        return resonances;
+    }
+
+    /// @notice Bounded batch query for production use.
+    /// @dev Provides a predictable upper bound on gas usage and reduces DoS risk
+    /// from overly-large batches.
+    function batchQueryBounded(string[] calldata vows, bytes[] calldata zkSigs)
+        external
+        returns (uint256[] memory)
+    {
+        if (vows.length != zkSigs.length) {
+            revert LengthMismatch();
+        }
+        require(vows.length <= MAX_BATCH_QUERY, "Batch too large");
+
         uint256[] memory resonances = new uint256[](vows.length);
         for (uint256 i = 0; i < vows.length; ++i) {
             resonances[i] = queryBelief(vows[i], zkSigs[i]);

@@ -316,6 +316,7 @@ The project includes a production-ready Base dApp in `/base-mini-app`:
 - [Mission & Vision](./docs/MISSION.md) - Protocol mission and values
 - [Trust Assumptions](./docs/TRUST_ASSUMPTIONS.md) - explicit trust boundaries (what is trusted today vs enforced)
 - [Threat Model](./docs/security/THREAT_MODEL.md) - assets, actors, threats, mitigations, residual risks
+- [Privileged Functions](./docs/security/PRIVILEGED_FUNCTIONS.md) - explicit owner/governance powers + production defaults
 - [Security Audit Reports](./COMPREHENSIVE_PROTOCOL_AUDIT_2026.md) - Latest audit findings
 
 **For Developers:**
