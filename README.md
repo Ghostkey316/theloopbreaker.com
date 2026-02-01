@@ -322,6 +322,7 @@ The project includes a production-ready Base dApp in `/base-mini-app`:
 - [Monitoring & Alerts](./docs/security/MONITORING_ALERTS.md) - privacy-preserving ops signals (no surveillance)
 - [Event Index](./docs/EVENT_INDEX.md) - build dashboards/monitors without reading every contract
 - [Policy Guardrails](./docs/security/POLICY_GUARDRAILS.md) - enforced repo-level no-go zones (no KYC/surveillance)
+- [Security Posture](./docs/security/SECURITY_POSTURE.md) - fast, honest snapshot of security + maturity
 - [Security Audit Reports](./COMPREHENSIVE_PROTOCOL_AUDIT_2026.md) - Latest audit findings
 
 **For Developers:**
