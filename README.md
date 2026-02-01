@@ -317,6 +317,8 @@ The project includes a production-ready Base dApp in `/base-mini-app`:
 - [Trust Assumptions](./docs/TRUST_ASSUMPTIONS.md) - explicit trust boundaries (what is trusted today vs enforced)
 - [Threat Model](./docs/security/THREAT_MODEL.md) - assets, actors, threats, mitigations, residual risks
 - [Privileged Functions](./docs/security/PRIVILEGED_FUNCTIONS.md) - explicit owner/governance powers + production defaults
+- [Deployment Profiles](./docs/security/DEPLOYMENT_PROFILES.md) - dev→pilot→production hardening path
+- [Monitoring & Alerts](./docs/security/MONITORING_ALERTS.md) - privacy-preserving ops signals (no surveillance)
 - [Security Audit Reports](./COMPREHENSIVE_PROTOCOL_AUDIT_2026.md) - Latest audit findings
 
 **For Developers:**
