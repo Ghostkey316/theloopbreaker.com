@@ -89,19 +89,19 @@ Vaultfire principle: monitoring should be **privacy-preserving** (protocol integ
 - contracts/AIAccountabilityBondsV2.sol:546 → AIVerificationSubmitted
 - contracts/AIAccountabilityBondsV2.sol:589 → MetricsChallenged
 - contracts/AIAccountabilityBondsV2.sol:652 → ChallengeResolved
-- contracts/AIAccountabilityBondsV2.sol:688 → DistributionRequested
-- contracts/AIAccountabilityBondsV2.sol:762 → ProfitsLocked
-- contracts/AIAccountabilityBondsV2.sol:778 → ProfitsLocked
-- contracts/AIAccountabilityBondsV2.sol:811 → BondDistributed
+- contracts/AIAccountabilityBondsV2.sol:692 → DistributionRequested
+- contracts/AIAccountabilityBondsV2.sol:766 → ProfitsLocked
+- contracts/AIAccountabilityBondsV2.sol:782 → ProfitsLocked
+- contracts/AIAccountabilityBondsV2.sol:819 → BondDistributed
 - contracts/AIPartnershipBondsV2.sol:118 → MissionEnforcementUpdated
 - contracts/AIPartnershipBondsV2.sol:123 → MissionEnforcementEnabled
 - contracts/AIPartnershipBondsV2.sol:188 → BondCreated
 - contracts/AIPartnershipBondsV2.sol:233 → PartnershipMetricsSubmitted
 - contracts/AIPartnershipBondsV2.sol:283 → HumanVerificationSubmitted
-- contracts/AIPartnershipBondsV2.sol:292 → DistributionRequested
-- contracts/AIPartnershipBondsV2.sol:347 → AIDominationPenalty
-- contracts/AIPartnershipBondsV2.sol:381 → PartnershipFundAccrued
-- contracts/AIPartnershipBondsV2.sol:384 → BondDistributed
+- contracts/AIPartnershipBondsV2.sol:297 → DistributionRequested
+- contracts/AIPartnershipBondsV2.sol:352 → AIDominationPenalty
+- contracts/AIPartnershipBondsV2.sol:386 → PartnershipFundAccrued
+- contracts/AIPartnershipBondsV2.sol:393 → BondDistributed
 - contracts/AntiSurveillance.sol:118 → ModuleBannedForSurveillance
 - contracts/AntiSurveillance.sol:139 → ModuleVerifiedSurveillanceFree
 - contracts/BaseDignityBond.sol:70 → ContractPaused
@@ -111,14 +111,14 @@ Vaultfire principle: monitoring should be **privacy-preserving** (protocol integ
 - contracts/BaseDignityBond.sol:126 → OwnershipTransferStarted
 - contracts/BaseOracle.sol:47 → VisualizationPinned
 - contracts/BaseOracle.sol:62 → MissionEvoBroadcast
-- contracts/BaseYieldPoolBond.sol:77 → YieldPoolFunded
-- contracts/BaseYieldPoolBond.sol:100 → YieldPoolWithdrawn
-- contracts/BaseYieldPoolBond.sol:114 → MinimumYieldPoolUpdated
-- contracts/BaseYieldPoolBond.sol:126 → YieldPoolEnforcementChanged
-- contracts/BaseYieldPoolBond.sol:151 → YieldPoolUsed
-- contracts/BaseYieldPoolBond.sol:158 → LowYieldPoolWarning
-- contracts/BaseYieldPoolBond.sol:172 → YieldPoolReplenished
-- contracts/BaseYieldPoolBond.sol:236 → ReserveRatioWarning
+- contracts/BaseYieldPoolBond.sol:92 → YieldPoolFunded
+- contracts/BaseYieldPoolBond.sol:115 → YieldPoolWithdrawn
+- contracts/BaseYieldPoolBond.sol:129 → MinimumYieldPoolUpdated
+- contracts/BaseYieldPoolBond.sol:141 → YieldPoolEnforcementChanged
+- contracts/BaseYieldPoolBond.sol:173 → YieldPoolUsed
+- contracts/BaseYieldPoolBond.sol:180 → LowYieldPoolWarning
+- contracts/BaseYieldPoolBond.sol:219 → YieldPoolReplenished
+- contracts/BaseYieldPoolBond.sol:283 → ReserveRatioWarning
 - contracts/BeliefAttestationVerifier.sol:112 → ProofVerified
 - contracts/BeliefAttestationVerifierProduction.sol:133 → ProofVerified
 - contracts/BeliefAttestationVerifierProduction.sol:135 → ProofVerificationFailed
@@ -128,6 +128,16 @@ Vaultfire principle: monitoring should be **privacy-preserving** (protocol integ
 - contracts/BeliefOracle.sol:81 → GuardianUpdated
 - contracts/BeliefOracle.sol:103 → ResonanceQueried
 - contracts/DilithiumAttestor.sol:109 → BeliefAttested
+- contracts/ERC8004IdentityRegistry.sol:92 → AgentRegistered
+- contracts/ERC8004IdentityRegistry.sol:111 → AgentUpdated
+- contracts/ERC8004IdentityRegistry.sol:123 → AgentDeactivated
+- contracts/ERC8004ReputationRegistry.sol:127 → FeedbackSubmitted
+- contracts/ERC8004ReputationRegistry.sol:164 → ReputationUpdated
+- contracts/ERC8004ValidationRegistry.sol:190 → ValidationRequested
+- contracts/ERC8004ValidationRegistry.sol:247 → ValidationResponseSubmitted
+- contracts/ERC8004ValidationRegistry.sol:280 → ValidationCompleted
+- contracts/ERC8004ValidationRegistry.sol:307 → ValidatorSlashed
+- contracts/ERC8004ValidationRegistry.sol:326 → ValidatorStaked
 - contracts/MissionEnforcement.sol:219 → MissionViolationReported
 - contracts/MissionEnforcement.sol:238 → MissionViolationDetected
 - contracts/MissionEnforcement.sol:258 → ModuleMissionCompliant
@@ -151,6 +161,8 @@ Vaultfire principle: monitoring should be **privacy-preserving** (protocol integ
 - contracts/PrivacyGuarantees.sol:94 → ConsentGranted
 - contracts/PrivacyGuarantees.sol:104 → ConsentRevoked
 - contracts/PrivacyGuarantees.sol:118 → DataDeletionRequested
+- contracts/VaultfireERC8004Adapter.sol:108 → AgentAutoRegistered
+- contracts/VaultfireERC8004Adapter.sol:150 → PartnershipReputationSynced
 
 ---
 
