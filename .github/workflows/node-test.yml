@@ -35,6 +35,7 @@ jobs:
       - name: Run tests
         env:
           CI: true
+          VAULTFIRE_TEST_QUIET: "1"
         run: npm test
       - name: Upload coverage report
         if: always()
