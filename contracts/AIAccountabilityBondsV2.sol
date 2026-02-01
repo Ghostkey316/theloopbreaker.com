@@ -2,10 +2,7 @@
 pragma solidity ^0.8.25;
 
 import "./BaseYieldPoolBond.sol";
-
-interface IMissionEnforcement {
-    function isCompliantWithPrinciple(address module, uint8 principle) external view returns (bool);
-}
+import "./MissionEnforcement.sol";
 
 /**
  * @title AI Accountability Bonds V2 (Production Ready)
@@ -28,16 +25,11 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
 
     // ============ Mission Enforcement (optional, off by default) ============
 
-    IMissionEnforcement public missionEnforcement;
+    MissionEnforcement public missionEnforcement;
     bool public missionEnforcementEnabled;
 
     event MissionEnforcementUpdated(address indexed previous, address indexed current);
     event MissionEnforcementEnabled(bool enabled);
-
-    // MissionEnforcement.CorePrinciple enum values (uint8)
-    uint8 private constant PRINCIPLE_AI_PROFIT_CAPS = 1;
-    uint8 private constant PRINCIPLE_COMMUNITY_CHALLENGES = 3;
-    uint8 private constant PRINCIPLE_PRIVACY_DEFAULT = 2;
 
     // ============ Structs ============
 
@@ -298,7 +290,7 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
 
     function setMissionEnforcement(address mission) external onlyOwner {
         address previous = address(missionEnforcement);
-        missionEnforcement = IMissionEnforcement(mission);
+        missionEnforcement = MissionEnforcement(mission);
         emit MissionEnforcementUpdated(previous, mission);
     }
 
@@ -316,9 +308,18 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
         // - AI profit caps
         // - Community challenge principle
         // - Privacy default
-        require(missionEnforcement.isCompliantWithPrinciple(address(this), PRINCIPLE_AI_PROFIT_CAPS), "Mission: profit caps");
-        require(missionEnforcement.isCompliantWithPrinciple(address(this), PRINCIPLE_COMMUNITY_CHALLENGES), "Mission: community challenges");
-        require(missionEnforcement.isCompliantWithPrinciple(address(this), PRINCIPLE_PRIVACY_DEFAULT), "Mission: privacy default");
+        require(
+            missionEnforcement.isCompliantWithPrinciple(address(this), MissionEnforcement.CorePrinciple.AI_PROFIT_CAPS),
+            "Mission: profit caps"
+        );
+        require(
+            missionEnforcement.isCompliantWithPrinciple(address(this), MissionEnforcement.CorePrinciple.COMMUNITY_CHALLENGES),
+            "Mission: community challenges"
+        );
+        require(
+            missionEnforcement.isCompliantWithPrinciple(address(this), MissionEnforcement.CorePrinciple.PRIVACY_DEFAULT),
+            "Mission: privacy default"
+        );
     }
 
     /**

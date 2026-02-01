@@ -3,7 +3,6 @@ const { ethers } = require("hardhat");
 const { time } = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("AIPartnershipBondsV2 - AI Grows WITH Humans, Not ABOVE", function () {
-    let mission;
     let aiPartnership;
     let owner, human1, aiAgent1, human2, aiAgent2, verifier;
 
@@ -13,8 +12,8 @@ describe("AIPartnershipBondsV2 - AI Grows WITH Humans, Not ABOVE", function () {
         const AIPartnership = await ethers.getContractFactory("AIPartnershipBondsV2");
         aiPartnership = await AIPartnership.deploy();
 
-        const MissionEnforcement = await ethers.getContractFactory("MissionEnforcement");
-        mission = await MissionEnforcement.deploy();
+        // (mission enforcement not required in this suite)
+        //
     });
 
     describe("Bond Creation - Human + AI Partnership", function () {
