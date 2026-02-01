@@ -135,8 +135,13 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
     mapping(uint256 => AIVerification[]) public bondAIVerifications;
     mapping(address => uint256) public aiCompanyVerificationCount;
 
+    // O(1) counters to avoid iterating unbounded arrays in distribution paths
+    mapping(uint256 => uint256) public verificationConfirmCount;
+    mapping(uint256 => uint256) public verificationRejectCount;
+
     // Metrics challenges
     mapping(uint256 => MetricsChallenge[]) public bondChallenges;
+    mapping(uint256 => uint256) public activeChallengeCount;
     uint256 public constant MIN_CHALLENGE_STAKE = 0.1 ether;
 
     // Profit locking thresholds
@@ -483,6 +488,13 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
             stakeAmount: msg.value
         }));
 
+        // Update O(1) counters for verification quality scoring
+        if (confirmsMetrics) {
+            verificationConfirmCount[bondId]++;
+        } else {
+            verificationRejectCount[bondId]++;
+        }
+
         aiCompanyVerificationCount[msg.sender]++;
 
         emit AIVerificationSubmitted(bondId, msg.sender, confirmsMetrics, msg.value, block.timestamp);
@@ -525,6 +537,8 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
             resolved: false,
             challengeUpheld: false
         }));
+
+        activeChallengeCount[bondId]++;
 
         emit MetricsChallenged(bondId, msg.sender, reason, msg.value, block.timestamp);
     }
@@ -579,6 +593,11 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
         // ✅ EFFECTS: Update state BEFORE external calls (CEI pattern)
         challenge.resolved = true;
         challenge.challengeUpheld = upheld;
+
+        // Maintain O(1) active challenge count for verification quality
+        if (activeChallengeCount[bondId] > 0) {
+            activeChallengeCount[bondId]--;
+        }
 
         // ✅ INTERACTIONS: External calls LAST
         (bool success, ) = recipient.call{value: payoutAmount}("");
@@ -906,21 +925,10 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
      * AIs cannot lie about flourishing without other AIs calling them out.
      */
     function verificationQualityScore(uint256 bondId) public view bondExists(bondId) returns (uint256) {
-        AIVerification[] storage verifications = bondAIVerifications[bondId];
-        MetricsChallenge[] storage challenges = bondChallenges[bondId];
-
-        // Start at neutral even if there are no verifications.
-        // Challenges can still reduce confidence in reported metrics.
-        uint256 confirmCount = 0;
-        uint256 rejectCount = 0;
-
-        for (uint256 i = 0; i < verifications.length; i++) {
-            if (verifications[i].confirmsMetrics) {
-                confirmCount++;
-            } else {
-                rejectCount++;
-            }
-        }
+        // Use O(1) counters to avoid unbounded loops (prevents gas griefing).
+        uint256 confirmCount = verificationConfirmCount[bondId];
+        uint256 rejectCount = verificationRejectCount[bondId];
+        uint256 activeChallenges = activeChallengeCount[bondId];
 
         // Start at neutral
         int256 score = 5000;
@@ -938,12 +946,6 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
         }
 
         // Penalize active challenges
-        uint256 activeChallenges = 0;
-        for (uint256 i = 0; i < challenges.length; i++) {
-            if (!challenges[i].resolved) {
-                activeChallenges++;
-            }
-        }
         if (activeChallenges > 0) {
             score -= int256(activeChallenges * 2000);
         }
