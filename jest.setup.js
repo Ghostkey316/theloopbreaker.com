@@ -14,6 +14,24 @@ function warnOptional(message) {
   console.warn(message);
 }
 
+function isTestQuietMode() {
+  return String(process.env.VAULTFIRE_TEST_QUIET || '').toLowerCase() === '1'
+    || String(process.env.VAULTFIRE_TEST_QUIET || '').toLowerCase() === 'true';
+}
+
+if (process.env.NODE_ENV === 'test' && isTestQuietMode()) {
+  // Keep CI/test output clean by default. We still allow console.error so genuine failures remain visible.
+  // (If you need full output, unset VAULTFIRE_TEST_QUIET or set VAULTFIRE_TEST_WARN_OPTIONAL_DEPS=1.)
+  // eslint-disable-next-line no-console
+  console.log = () => {};
+  // eslint-disable-next-line no-console
+  console.info = () => {};
+  // eslint-disable-next-line no-console
+  console.warn = () => {};
+  // eslint-disable-next-line no-console
+  console.debug = () => {};
+}
+
 beforeEach(() => {
   fetchMock.resetMocks();
 });
