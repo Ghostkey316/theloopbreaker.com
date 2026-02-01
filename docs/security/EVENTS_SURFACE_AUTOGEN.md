@@ -161,8 +161,8 @@ Vaultfire principle: monitoring should be **privacy-preserving** (protocol integ
 - contracts/PrivacyGuarantees.sol:94 → ConsentGranted
 - contracts/PrivacyGuarantees.sol:104 → ConsentRevoked
 - contracts/PrivacyGuarantees.sol:118 → DataDeletionRequested
-- contracts/VaultfireERC8004Adapter.sol:108 → AgentAutoRegistered
-- contracts/VaultfireERC8004Adapter.sol:150 → PartnershipReputationSynced
+- contracts/VaultfireERC8004Adapter.sol:114 → AgentAutoRegistered
+- contracts/VaultfireERC8004Adapter.sol:156 → PartnershipReputationSynced
 
 ---
 
