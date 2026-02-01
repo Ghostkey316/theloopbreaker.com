@@ -314,6 +314,7 @@ The project includes a production-ready Base dApp in `/base-mini-app`:
 **Core Protocol Docs:**
 - [AI Partnership Design](./docs/AI_PARTNERSHIP_DESIGN.md) - Partnership bonds philosophy
 - [Mission & Vision](./docs/MISSION.md) - Protocol mission and values
+- [Trust Assumptions](./docs/TRUST_ASSUMPTIONS.md) - explicit trust boundaries (what is trusted today vs enforced)
 - [Security Audit Reports](./COMPREHENSIVE_PROTOCOL_AUDIT_2026.md) - Latest audit findings
 
 **For Developers:**
