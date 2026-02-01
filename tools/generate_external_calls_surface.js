@@ -44,7 +44,7 @@ function extractSites(filePath) {
   const lines = content.split(/\r?\n/);
 
   const sites = []; // { kind, fileRel, line, snippet }
-  const fileRel = path.relative(ROOT, filePath);
+  const fileRel = path.relative(ROOT, filePath).split(path.sep).join('/');
 
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];

@@ -8,7 +8,7 @@ Vaultfire principle: unbounded state growth should be **visible**, and UIs/index
 
 ## MultiOracleConsensus
 
-- contracts\MultiOracleConsensus.sol:76 [array] DataPoint[] submissions;
+- contracts/MultiOracleConsensus.sol:76 [array] DataPoint[] submissions;
 
 ---
 

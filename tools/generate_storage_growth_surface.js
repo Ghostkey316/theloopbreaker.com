@@ -79,7 +79,7 @@ function extract(filePath) {
     if (trimmed.includes('mapping') && /=>\s*.*\[\]\s+/.test(trimmed)) {
       hits.push({
         contractName: contractName || '(unknown-contract)',
-        fileRel: path.relative(ROOT, filePath),
+        fileRel: path.relative(ROOT, filePath).split(path.sep).join('/'),
         line: i + 1,
         kind: 'mapping→array',
         decl: raw.trim(),
@@ -91,7 +91,7 @@ function extract(filePath) {
     if (/\b[A-Za-z0-9_]+\s*\[\]\s+[A-Za-z0-9_]+\s*;/.test(trimmed) && !trimmed.startsWith('mapping')) {
       hits.push({
         contractName: contractName || '(unknown-contract)',
-        fileRel: path.relative(ROOT, filePath),
+        fileRel: path.relative(ROOT, filePath).split(path.sep).join('/'),
         line: i + 1,
         kind: 'array',
         decl: raw.trim(),

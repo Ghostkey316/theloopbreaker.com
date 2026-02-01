@@ -60,9 +60,13 @@ function extractEventsAndEmits(filePath) {
     // emit site: `emit X(`
     const emitMatch = line.match(/\bemit\s+([A-Za-z0-9_]+)\s*\(/);
     if (emitMatch) {
+      const fileRel = path
+        .relative(ROOT, filePath)
+        .split(path.sep)
+        .join('/');
       emits.push({
         eventName: emitMatch[1],
-        fileRel: path.relative(ROOT, filePath),
+        fileRel,
         line: i + 1,
         lineText: raw.trim(),
       });
