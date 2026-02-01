@@ -107,6 +107,7 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
     event DistributionRequested(uint256 indexed bondId, address indexed requester, uint256 requestedAt, uint256 availableAt);
     event BondDistributed(uint256 indexed bondId, uint256 humanShare, uint256 aiShare, uint256 fundShare, string reason, uint256 timestamp);
     event AIDominationPenalty(uint256 indexed bondId, string reason, uint256 timestamp);
+    event PartnershipFundAccrued(uint256 indexed bondId, uint256 amount, uint256 newTotal, uint256 timestamp);
 
     modifier onlyParticipants(uint256 bondId) { require(bonds[bondId].human == msg.sender || bonds[bondId].aiAgent == msg.sender, "Only participants"); _; }
     modifier bondExists(uint256 bondId) { require(bonds[bondId].active, "Bond does not exist"); _; }
@@ -375,7 +376,10 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
             (bool successAI, ) = payable(bond.aiAgent).call{value: aiShare}("");
             require(successAI, "AI transfer failed");
         }
-        if (fundShare > 0) partnershipFund += fundShare;
+        if (fundShare > 0) {
+            partnershipFund += fundShare;
+            emit PartnershipFundAccrued(bondId, fundShare, partnershipFund, block.timestamp);
+        }
 
         emit BondDistributed(bondId, humanShare, aiShare, fundShare, reason, block.timestamp);
     }
@@ -515,6 +519,74 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
         uint256 quality = partnershipQualityScore(bondId);
         if (quality < PARTNERSHIP_QUALITY_THRESHOLD) return (true, "Poor partnership quality");
         return (false, "");
+    }
+
+    // ============ Pagination helpers (for unbounded arrays) ============
+
+    function getBondMetricsCount(uint256 bondId) external view returns (uint256) {
+        return bondMetrics[bondId].length;
+    }
+
+    function getBondHumanVerificationsCount(uint256 bondId) external view returns (uint256) {
+        return bondVerifications[bondId].length;
+    }
+
+    function getBondDistributionsCount(uint256 bondId) external view returns (uint256) {
+        return bondDistributions[bondId].length;
+    }
+
+    function getMetrics(uint256 bondId, uint256 offset, uint256 limit)
+        external
+        view
+        returns (PartnershipMetrics[] memory page)
+    {
+        PartnershipMetrics[] storage items = bondMetrics[bondId];
+        uint256 len = items.length;
+        if (offset >= len || limit == 0) return new PartnershipMetrics[](0);
+
+        uint256 end = offset + limit;
+        if (end > len) end = len;
+
+        page = new PartnershipMetrics[](end - offset);
+        for (uint256 i = offset; i < end; i++) {
+            page[i - offset] = items[i];
+        }
+    }
+
+    function getHumanVerifications(uint256 bondId, uint256 offset, uint256 limit)
+        external
+        view
+        returns (HumanVerification[] memory page)
+    {
+        HumanVerification[] storage items = bondVerifications[bondId];
+        uint256 len = items.length;
+        if (offset >= len || limit == 0) return new HumanVerification[](0);
+
+        uint256 end = offset + limit;
+        if (end > len) end = len;
+
+        page = new HumanVerification[](end - offset);
+        for (uint256 i = offset; i < end; i++) {
+            page[i - offset] = items[i];
+        }
+    }
+
+    function getDistributions(uint256 bondId, uint256 offset, uint256 limit)
+        external
+        view
+        returns (Distribution[] memory page)
+    {
+        Distribution[] storage items = bondDistributions[bondId];
+        uint256 len = items.length;
+        if (offset >= len || limit == 0) return new Distribution[](0);
+
+        uint256 end = offset + limit;
+        if (end > len) end = len;
+
+        page = new Distribution[](end - offset);
+        for (uint256 i = offset; i < end; i++) {
+            page[i - offset] = items[i];
+        }
     }
 
     function getBond(uint256 bondId) external view returns (Bond memory) { return bonds[bondId]; }

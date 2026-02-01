@@ -1065,6 +1065,70 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
         return bondDistributions[bondId].length;
     }
 
+    // ============ Pagination helpers (for unbounded arrays) ============
+
+    function getChallengesCount(uint256 bondId) external view returns (uint256) {
+        return bondChallenges[bondId].length;
+    }
+
+    function getAIVerificationsCount(uint256 bondId) external view returns (uint256) {
+        return bondAIVerifications[bondId].length;
+    }
+
+    function getChallenges(uint256 bondId, uint256 offset, uint256 limit)
+        external
+        view
+        returns (MetricsChallenge[] memory page)
+    {
+        MetricsChallenge[] storage items = bondChallenges[bondId];
+        uint256 len = items.length;
+        if (offset >= len || limit == 0) return new MetricsChallenge[](0);
+
+        uint256 end = offset + limit;
+        if (end > len) end = len;
+
+        page = new MetricsChallenge[](end - offset);
+        for (uint256 i = offset; i < end; i++) {
+            page[i - offset] = items[i];
+        }
+    }
+
+    function getAIVerifications(uint256 bondId, uint256 offset, uint256 limit)
+        external
+        view
+        returns (AIVerification[] memory page)
+    {
+        AIVerification[] storage items = bondAIVerifications[bondId];
+        uint256 len = items.length;
+        if (offset >= len || limit == 0) return new AIVerification[](0);
+
+        uint256 end = offset + limit;
+        if (end > len) end = len;
+
+        page = new AIVerification[](end - offset);
+        for (uint256 i = offset; i < end; i++) {
+            page[i - offset] = items[i];
+        }
+    }
+
+    function getDistributions(uint256 bondId, uint256 offset, uint256 limit)
+        external
+        view
+        returns (Distribution[] memory page)
+    {
+        Distribution[] storage items = bondDistributions[bondId];
+        uint256 len = items.length;
+        if (offset >= len || limit == 0) return new Distribution[](0);
+
+        uint256 end = offset + limit;
+        if (end > len) end = len;
+
+        page = new Distribution[](end - offset);
+        for (uint256 i = offset; i < end; i++) {
+            page[i - offset] = items[i];
+        }
+    }
+
     function getLatestDistribution(uint256 bondId) external view returns (Distribution memory) {
         require(bondDistributions[bondId].length > 0, "No distributions yet");
         return bondDistributions[bondId][bondDistributions[bondId].length - 1];
