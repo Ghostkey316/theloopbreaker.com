@@ -7,4 +7,8 @@ npm run lint:guardrails
 npm run lint:values
 npm run gen:privileged-surface
 npm run lint:privileged-surface
+npm run gen:events-surface
+npm run lint:events-surface
+npm run gen:external-calls
+npm run lint:external-calls
 npm run audit

@@ -325,6 +325,8 @@ The project includes a production-ready Base dApp in `/base-mini-app`:
 - [Policy Guardrails](./docs/security/POLICY_GUARDRAILS.md) - enforced repo-level no-go zones (no KYC/surveillance)
 - [Security Posture](./docs/security/SECURITY_POSTURE.md) - fast, honest snapshot of security + maturity
 - [Privileged Surface (Autogen)](./docs/security/PRIVILEGED_SURFACE_AUTOGEN.md) - machine-generated list of `onlyOwner` entrypoints
+- [Events Surface (Autogen)](./docs/security/EVENTS_SURFACE_AUTOGEN.md) - machine-generated map of events + emit sites
+- [External Calls Surface (Autogen)](./docs/security/EXTERNAL_CALLS_SURFACE_AUTOGEN.md) - machine-generated map of low-level call sites
 - [Security Audit Reports](./COMPREHENSIVE_PROTOCOL_AUDIT_2026.md) - Latest audit findings
 
 **For Developers:**

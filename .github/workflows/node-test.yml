@@ -27,6 +27,8 @@ jobs:
           npm run lint:guardrails
           npm run lint:values
           npm run lint:privileged-surface
+          npm run lint:events-surface
+          npm run lint:external-calls
       - name: Build TypeScript (root only, excludes base-mini-app)
         run: npm run build:test
       - name: Run tests
