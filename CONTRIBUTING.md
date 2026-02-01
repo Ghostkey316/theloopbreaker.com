@@ -34,6 +34,18 @@ npx hardhat test
 - Avoid introducing surveillance/KYC requirements.
 - If you change economics/security invariants, add/adjust tests.
 
+## Transparency & Preconditions (Vaultfire default)
+
+Vaultfire is built to be **honest, inspectable, and audit-friendly**. That means code and tests should be explicit about what they need, what they guarantee, and what they *cannot* guarantee.
+
+**Rules of thumb:**
+- **Fail loudly on real risk or broken invariants.** Don’t swallow errors that could hide corruption, security regressions, or incorrect economics.
+- **Skip loudly on missing prerequisites.** If a test depends on optional tooling (e.g., Python, external binaries), it must detect that and `skip()` with a clear reason.
+- **Best-effort operations must be labeled.** If something is inherently platform-dependent (e.g., certain filesystem flush semantics on Windows), treat it as best-effort and document the behavior.
+- **Make decisions observable.** When something is denied, degraded, or skipped, surface a human-readable reason in logs/test output.
+
+If you add a new prerequisite, document it in the relevant README/docs and ensure CI behavior is deterministic (no silent passes).
+
 ## Security
 
 Please do not open public issues for vulnerabilities. See `SECURITY.md`.
