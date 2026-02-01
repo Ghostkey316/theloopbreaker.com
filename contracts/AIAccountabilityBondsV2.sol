@@ -737,14 +737,12 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
 
         bond.distributionPending = false;
 
-        // Compute delta appreciation since the last distribution baseline.
-        uint256 currentValue = calculateBondValue(bondId);
-        uint256 baseline = lastDistributedValue[bondId];
-        int256 appreciation = int256(currentValue) - int256(baseline);
-
         // ✅ HIGH-002 FIX: Use snapshotted appreciation to prevent front-running
         int256 appreciation = snapshotAppreciation[bondId];
         require(appreciation != 0, "No appreciation to distribute");
+
+        // Calculate current value for baseline update
+        uint256 currentValue = calculateBondValue(bondId);
 
         // Effects: update baseline before external interactions (CEI).
         lastDistributedValue[bondId] = currentValue;

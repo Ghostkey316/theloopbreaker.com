@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity ^0.8.25;
 
 import "./ERC8004IdentityRegistry.sol";
 import "./ERC8004ReputationRegistry.sol";
@@ -157,7 +157,7 @@ contract VaultfireERC8004Adapter {
      */
     function _calculatePartnershipRating(uint256 bondId) internal view returns (uint256 rating) {
         // Get partnership quality score from VaultFire
-        uint256 qualityScore = partnershipBonds.getPartnershipQualityScore(bondId);
+        uint256 qualityScore = partnershipBonds.partnershipQualityScore(bondId);
 
         // VaultFire quality score is 0-10000, which maps directly to ERC-8004 rating
         return qualityScore;
@@ -191,7 +191,7 @@ contract VaultfireERC8004Adapter {
         require(identityRegistry.isAgentActive(aiAgent), "Agent not registered");
 
         // Generate claim hash from bond ID and partnership data
-        uint256 qualityScore = partnershipBonds.getPartnershipQualityScore(bondId);
+        uint256 qualityScore = partnershipBonds.partnershipQualityScore(bondId);
         bytes32 claimHash = keccak256(abi.encodePacked(bondId, qualityScore, block.timestamp));
 
         // Request validation via ERC-8004 Validation Registry
