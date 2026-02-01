@@ -3,4 +3,6 @@
 set -e
 
 npm run lint:syntax
+npm run lint:guardrails
+npm run lint:values
 npm run audit

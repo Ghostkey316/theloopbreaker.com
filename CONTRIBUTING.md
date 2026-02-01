@@ -20,8 +20,10 @@ git checkout -b feat/my-change
 
 2) Make changes
 
-3) Run tests
+3) Run guardrails + tests
 ```bash
+npm run lint:guardrails
+npm run lint:values
 npx hardhat test
 ```
 
@@ -31,7 +33,7 @@ npx hardhat test
 
 - Keep claims repo-grounded (code/tests/audit backed).
 - Prefer small diffs.
-- Avoid introducing surveillance/KYC requirements.
+- Avoid introducing surveillance/KYC requirements (guardrails enforce this).
 - If you change economics/security invariants, add/adjust tests.
 
 ## Transparency & Preconditions (Vaultfire default)
