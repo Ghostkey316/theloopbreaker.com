@@ -2,6 +2,7 @@
 pragma solidity ^0.8.25;
 
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "../MissionEnforcement.sol";
 
 /**
  * @title AI Accountability Bonds
@@ -14,6 +15,54 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * Measures purpose/education, not jobs.
  */
 contract AIAccountabilityBonds is ReentrancyGuard {
+
+    // ============ Owner / Governance ============
+
+    address public owner;
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner");
+        _;
+    }
+
+    // ============ Mission Enforcement (optional, off by default) ============
+
+    MissionEnforcement public missionEnforcement;
+    bool public missionEnforcementEnabled;
+
+    event MissionEnforcementUpdated(address indexed previous, address indexed current);
+    event MissionEnforcementEnabled(bool enabled);
+
+    constructor() {
+        owner = msg.sender;
+        missionEnforcementEnabled = false;
+    }
+
+    function setMissionEnforcement(address mission) external onlyOwner {
+        address previous = address(missionEnforcement);
+        missionEnforcement = MissionEnforcement(mission);
+        emit MissionEnforcementUpdated(previous, mission);
+    }
+
+    function setMissionEnforcementEnabled(bool enabled) external onlyOwner {
+        missionEnforcementEnabled = enabled;
+        emit MissionEnforcementEnabled(enabled);
+    }
+
+    function _requireMissionCompliance() internal view {
+        if (!missionEnforcementEnabled) return;
+        address m = address(missionEnforcement);
+        require(m != address(0), "MissionEnforcement not set");
+
+        require(
+            missionEnforcement.isCompliantWithPrinciple(address(this), MissionEnforcement.CorePrinciple.AI_PROFIT_CAPS),
+            "Mission: profit caps"
+        );
+        require(
+            missionEnforcement.isCompliantWithPrinciple(address(this), MissionEnforcement.CorePrinciple.PRIVACY_DEFAULT),
+            "Mission: privacy default"
+        );
+    }
 
     // ============ Structs ============
 
@@ -263,6 +312,7 @@ contract AIAccountabilityBonds is ReentrancyGuard {
      * @dev 50% to humans, 50% to AI company (or 100% to humans if locked)
      */
     function distributeBond(uint256 bondId) external nonReentrant onlyAICompany(bondId) bondExists(bondId) {
+        _requireMissionCompliance();
         Bond storage bond = bonds[bondId];
         int256 appreciation = calculateAppreciation(bondId);
 

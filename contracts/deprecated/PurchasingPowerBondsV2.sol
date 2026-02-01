@@ -2,6 +2,7 @@
 pragma solidity ^0.8.25;
 
 import "../BaseYieldPoolBond.sol";
+import "../MissionEnforcement.sol";
 
 /**
  * @title Purchasing Power Bonds V2 (Production Ready)
@@ -20,6 +21,14 @@ import "../BaseYieldPoolBond.sol";
  * @custom:ethics 100% to workers when purchasing power declining, can't fake affordability
  */
 contract PurchasingPowerBondsV2 is BaseYieldPoolBond {
+
+    // ============ Mission Enforcement (optional, off by default) ============
+
+    MissionEnforcement public missionEnforcement;
+    bool public missionEnforcementEnabled;
+
+    event MissionEnforcementUpdated(address indexed previous, address indexed current);
+    event MissionEnforcementEnabled(bool enabled);
 
     // ============ Structs ============
 
@@ -185,6 +194,40 @@ contract PurchasingPowerBondsV2 is BaseYieldPoolBond {
     modifier bondExists(uint256 bondId) {
         require(bonds[bondId].active, "Bond does not exist");
         _;
+    }
+
+    constructor() {
+        // Mission enforcement is optional/off by default.
+        missionEnforcementEnabled = false;
+    }
+
+    function setMissionEnforcement(address mission) external onlyOwner {
+        address previous = address(missionEnforcement);
+        missionEnforcement = MissionEnforcement(mission);
+        emit MissionEnforcementUpdated(previous, mission);
+    }
+
+    function setMissionEnforcementEnabled(bool enabled) external onlyOwner {
+        missionEnforcementEnabled = enabled;
+        emit MissionEnforcementEnabled(enabled);
+    }
+
+    function _requireMissionCompliance() internal view {
+        if (!missionEnforcementEnabled) return;
+        address m = address(missionEnforcement);
+        require(m != address(0), "MissionEnforcement not set");
+
+        // Minimal gating set (can expand over time):
+        // - Human verification final say
+        // - No KYC
+        require(
+            missionEnforcement.isCompliantWithPrinciple(address(this), MissionEnforcement.CorePrinciple.HUMAN_VERIFICATION_FINAL_SAY),
+            "Mission: human final say"
+        );
+        require(
+            missionEnforcement.isCompliantWithPrinciple(address(this), MissionEnforcement.CorePrinciple.NO_KYC_WALLET_ONLY),
+            "Mission: no kyc"
+        );
     }
 
     // ============ Core Functions ============
@@ -365,6 +408,7 @@ contract PurchasingPowerBondsV2 is BaseYieldPoolBond {
         bondExists(bondId)
         whenNotPaused
     {
+        _requireMissionCompliance();
         Bond storage bond = bonds[bondId];
         require(!bond.distributionPending, "Distribution already pending");
 
@@ -409,6 +453,7 @@ contract PurchasingPowerBondsV2 is BaseYieldPoolBond {
         onlyCompany(bondId)
         bondExists(bondId)
     {
+        _requireMissionCompliance();
         Bond storage bond = bonds[bondId];
         require(bond.distributionPending, "Must request distribution first");
         require(

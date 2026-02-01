@@ -283,6 +283,7 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
     }
 
     function requestDistribution(uint256 bondId) external onlyParticipants(bondId) bondExists(bondId) whenNotPaused {
+        _requireMissionCompliance();
         Bond storage bond = bonds[bondId];
         require(!bond.distributionPending, "Distribution already pending");
         bond.distributionRequestedAt = block.timestamp;

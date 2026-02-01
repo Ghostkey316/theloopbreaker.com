@@ -2,6 +2,7 @@
 pragma solidity ^0.8.25;
 
 import "../BaseYieldPoolBond.sol";
+import "../MissionEnforcement.sol";
 
 /**
  * @title Builder Belief Bonds V2 (Production Ready)
@@ -27,6 +28,14 @@ import "../BaseYieldPoolBond.sol";
  * @custom:vision Part of Universal Dignity Bonds proving ethics = economics
  */
 contract BuilderBeliefBondsV2 is BaseYieldPoolBond {
+
+    // ============ Mission Enforcement (optional, off by default) ============
+
+    MissionEnforcement public missionEnforcement;
+    bool public missionEnforcementEnabled;
+
+    event MissionEnforcementUpdated(address indexed previous, address indexed current);
+    event MissionEnforcementEnabled(bool enabled);
 
     enum BeliefTier { Supporter, Believer, Champion }
 
@@ -111,6 +120,40 @@ contract BuilderBeliefBondsV2 is BaseYieldPoolBond {
     modifier bondExists(uint256 bondId) {
         require(bonds[bondId].active, "Bond does not exist");
         _;
+    }
+
+    constructor() {
+        // Mission enforcement is optional/off by default.
+        missionEnforcementEnabled = false;
+    }
+
+    function setMissionEnforcement(address mission) external onlyOwner {
+        address previous = address(missionEnforcement);
+        missionEnforcement = MissionEnforcement(mission);
+        emit MissionEnforcementUpdated(previous, mission);
+    }
+
+    function setMissionEnforcementEnabled(bool enabled) external onlyOwner {
+        missionEnforcementEnabled = enabled;
+        emit MissionEnforcementEnabled(enabled);
+    }
+
+    function _requireMissionCompliance() internal view {
+        if (!missionEnforcementEnabled) return;
+        address m = address(missionEnforcement);
+        require(m != address(0), "MissionEnforcement not set");
+
+        // Minimal gating set (can expand over time):
+        // - Open source / verifiable
+        // - Privacy default
+        require(
+            missionEnforcement.isCompliantWithPrinciple(address(this), MissionEnforcement.CorePrinciple.OPEN_SOURCE_VERIFIABLE),
+            "Mission: open source"
+        );
+        require(
+            missionEnforcement.isCompliantWithPrinciple(address(this), MissionEnforcement.CorePrinciple.PRIVACY_DEFAULT),
+            "Mission: privacy default"
+        );
     }
 
     /**
@@ -296,6 +339,7 @@ contract BuilderBeliefBondsV2 is BaseYieldPoolBond {
      * @custom:security Timelock prevents instant rug pull
      */
     function requestDistribution(uint256 bondId) external onlyParticipants(bondId) bondExists(bondId) whenNotPaused {
+        _requireMissionCompliance();
         Bond storage bond = bonds[bondId];
         require(!bond.distributionPending, "Distribution already pending");
         bond.distributionRequestedAt = block.timestamp;
@@ -330,6 +374,7 @@ contract BuilderBeliefBondsV2 is BaseYieldPoolBond {
      * @custom:anti-flip Transacting penalty = 100% to builder (stakers get nothing)
      */
     function distributeBond(uint256 bondId) external nonReentrant whenNotPaused onlyParticipants(bondId) bondExists(bondId) {
+        _requireMissionCompliance();
         Bond storage bond = bonds[bondId];
         require(bond.distributionPending, "Must request distribution first");
         require(block.timestamp >= bond.distributionRequestedAt + DISTRIBUTION_TIMELOCK, "Timelock not expired");

@@ -678,6 +678,7 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
         bondExists(bondId)
         whenNotPaused
     {
+        _requireMissionCompliance();
         Bond storage bond = bonds[bondId];
         require(!bond.distributionPending, "Distribution already pending");
 

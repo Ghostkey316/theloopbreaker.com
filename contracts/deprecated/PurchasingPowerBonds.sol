@@ -2,6 +2,7 @@
 pragma solidity ^0.8.25;
 
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "../MissionEnforcement.sol";
 
 /**
  * @title Purchasing Power Bonds
@@ -14,6 +15,54 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * Can't game by raising wages 3% while raising costs 10%.
  */
 contract PurchasingPowerBonds is ReentrancyGuard {
+
+    // ============ Owner / Governance ============
+
+    address public owner;
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner");
+        _;
+    }
+
+    // ============ Mission Enforcement (optional, off by default) ============
+
+    MissionEnforcement public missionEnforcement;
+    bool public missionEnforcementEnabled;
+
+    event MissionEnforcementUpdated(address indexed previous, address indexed current);
+    event MissionEnforcementEnabled(bool enabled);
+
+    constructor() {
+        owner = msg.sender;
+        missionEnforcementEnabled = false;
+    }
+
+    function setMissionEnforcement(address mission) external onlyOwner {
+        address previous = address(missionEnforcement);
+        missionEnforcement = MissionEnforcement(mission);
+        emit MissionEnforcementUpdated(previous, mission);
+    }
+
+    function setMissionEnforcementEnabled(bool enabled) external onlyOwner {
+        missionEnforcementEnabled = enabled;
+        emit MissionEnforcementEnabled(enabled);
+    }
+
+    function _requireMissionCompliance() internal view {
+        if (!missionEnforcementEnabled) return;
+        address m = address(missionEnforcement);
+        require(m != address(0), "MissionEnforcement not set");
+
+        require(
+            missionEnforcement.isCompliantWithPrinciple(address(this), MissionEnforcement.CorePrinciple.HUMAN_VERIFICATION_FINAL_SAY),
+            "Mission: human final say"
+        );
+        require(
+            missionEnforcement.isCompliantWithPrinciple(address(this), MissionEnforcement.CorePrinciple.NO_KYC_WALLET_ONLY),
+            "Mission: no kyc"
+        );
+    }
 
     // ============ Structs ============
 
@@ -342,6 +391,7 @@ contract PurchasingPowerBonds is ReentrancyGuard {
      * @dev 70% to workers, 30% to company (or 100% to workers if declining)
      */
     function distributeBond(uint256 bondId) external nonReentrant onlyCompany(bondId) bondExists(bondId) {
+        _requireMissionCompliance();
         Bond storage bond = bonds[bondId];
         int256 appreciation = calculateAppreciation(bondId);
 
