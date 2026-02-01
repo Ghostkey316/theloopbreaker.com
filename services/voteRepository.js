@@ -29,9 +29,28 @@ function writeJsonAtomic(filePath, data) {
   const tmpPath = path.join(dir, `${path.basename(filePath)}.tmp-${process.pid}-${Date.now()}`);
   fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2));
   fs.renameSync(tmpPath, filePath);
-  const fd = fs.openSync(filePath, 'r');
-  fs.fsyncSync(fd);
-  fs.closeSync(fd);
+
+  // Best-effort durability: on some platforms (notably Windows or locked filesystems)
+  // fsync can throw EPERM even though the write succeeded.
+  let fd;
+  try {
+    fd = fs.openSync(filePath, 'r');
+    try {
+      fs.fsyncSync(fd);
+    } catch (error) {
+      if (process.platform !== 'win32' || error?.code !== 'EPERM') {
+        throw error;
+      }
+    }
+  } finally {
+    if (typeof fd === 'number') {
+      try {
+        fs.closeSync(fd);
+      } catch (error) {
+        // ignore close errors; file content is already on disk
+      }
+    }
+  }
 }
 
 class VoteRepository {

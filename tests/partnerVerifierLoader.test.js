@@ -26,7 +26,25 @@ describe('partner verifier loader', () => {
   it('loads canonical config from filesystem when available', () => {
     const record = loadPartnerVerifierConfig('ghostkey316.eth', { allowFallback: false });
     expect(record.canonical).toBe(true);
-    expect(record.source).toBe(path.resolve(__dirname, '..', 'vaultfire', 'verification', 'canonical', 'ghostkey316.eth.json'));
+
+    const expectedSource = path.resolve(
+      __dirname,
+      '..',
+      'vaultfire',
+      'verification',
+      'canonical',
+      'ghostkey316.eth.json'
+    );
+
+    const normalizeForAssert = (value) => {
+      if (typeof value !== 'string') {
+        return value;
+      }
+      const normalized = path.normalize(value);
+      return process.platform === 'win32' ? normalized.toLowerCase() : normalized;
+    };
+
+    expect(normalizeForAssert(record.source)).toBe(normalizeForAssert(expectedSource));
     expect(record.metadata.sourceType).toBe('filesystem');
     expect(record.config).toBeTruthy();
     expect(record.config.partnerId).toBe('ghostkey316.eth');
