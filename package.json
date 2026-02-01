@@ -19,6 +19,7 @@
     "build": "node tools/update-version.js && npm run dashboard:build",
     "build:test": "tsc --project tsconfig.json --noEmit",
     "lint:guardrails": "node tools/lint_guardrails.js",
+    "lint:values": "node tools/lint_values_guardrails.js",
     "lint:syntax": "node tools/run-eslint-syntax.js",
     "preflight": "node tools/preflight-check.js",
     "postinstall": "node scripts/check-mobile-optional.js",

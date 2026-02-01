@@ -70,6 +70,29 @@ jobs:
         run: |
           slither ./contracts --config-file slither.config.json --fail-high
 
+  values-guardrails:
+    name: Values guardrails (no KYC / no surveillance)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run guardrails
+        run: |
+          npm run lint:guardrails
+          npm run lint:values
+
   npm-audit:
     name: NPM audit (high)
     runs-on: ubuntu-latest
