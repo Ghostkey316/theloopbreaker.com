@@ -11,4 +11,6 @@ npm run gen:events-surface
 npm run lint:events-surface
 npm run gen:external-calls
 npm run lint:external-calls
+npm run gen:storage-growth
+npm run lint:storage-growth
 npm run audit

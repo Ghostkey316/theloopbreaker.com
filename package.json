@@ -26,6 +26,8 @@
     "lint:events-surface": "node tools/check_events_surface.js",
     "gen:external-calls": "node tools/generate_external_calls_surface.js",
     "lint:external-calls": "node tools/check_external_calls_surface.js",
+    "gen:storage-growth": "node tools/generate_storage_growth_surface.js",
+    "lint:storage-growth": "node tools/check_storage_growth_surface.js",
     "lint:syntax": "node tools/run-eslint-syntax.js",
     "preflight": "node tools/preflight-check.js",
     "postinstall": "node scripts/check-mobile-optional.js",

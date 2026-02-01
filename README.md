@@ -327,6 +327,7 @@ The project includes a production-ready Base dApp in `/base-mini-app`:
 - [Privileged Surface (Autogen)](./docs/security/PRIVILEGED_SURFACE_AUTOGEN.md) - machine-generated list of `onlyOwner` entrypoints
 - [Events Surface (Autogen)](./docs/security/EVENTS_SURFACE_AUTOGEN.md) - machine-generated map of events + emit sites
 - [External Calls Surface (Autogen)](./docs/security/EXTERNAL_CALLS_SURFACE_AUTOGEN.md) - machine-generated map of low-level call sites
+- [Storage Growth Surface (Autogen)](./docs/security/STORAGE_GROWTH_SURFACE_AUTOGEN.md) - machine-generated map of unbounded state growth vectors
 - [Security Audit Reports](./COMPREHENSIVE_PROTOCOL_AUDIT_2026.md) - Latest audit findings
 
 **For Developers:**

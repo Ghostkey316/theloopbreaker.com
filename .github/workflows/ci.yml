@@ -95,6 +95,7 @@ jobs:
           npm run lint:privileged-surface
           npm run lint:events-surface
           npm run lint:external-calls
+          npm run lint:storage-growth
 
   npm-audit:
     name: NPM audit (high)

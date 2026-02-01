@@ -33,6 +33,7 @@ jobs:
           npm run lint:privileged-surface
           npm run lint:events-surface
           npm run lint:external-calls
+          npm run lint:storage-growth
 
       - name: Run Jest with coverage gate
         run: npm test
