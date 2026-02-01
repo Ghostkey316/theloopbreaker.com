@@ -27,10 +27,11 @@ function runGeneratorToTemp() {
 }
 
 (function main() {
+  const normalize = (s) => String(s || '').replace(/\r\n/g, '\n');
   const existing = fs.existsSync(OUT_PATH) ? fs.readFileSync(OUT_PATH, 'utf8') : '';
   const { generated } = runGeneratorToTemp();
 
-  if (existing !== generated) {
+  if (normalize(existing) !== normalize(generated)) {
     console.error('Privileged surface doc is out of date.');
     console.error('Run: npm run gen:privileged-surface');
     process.exitCode = 1;

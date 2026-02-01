@@ -13,11 +13,12 @@ const ROOT = process.cwd();
 const OUT_PATH = path.join(ROOT, 'docs', 'security', 'STORAGE_GROWTH_SURFACE_AUTOGEN.md');
 
 (function main() {
+  const normalize = (s) => String(s || '').replace(/\r\n/g, '\n');
   const before = fs.existsSync(OUT_PATH) ? fs.readFileSync(OUT_PATH, 'utf8') : '';
   execFileSync('node', [path.join('tools', 'generate_storage_growth_surface.js')], { stdio: 'inherit' });
   const after = fs.existsSync(OUT_PATH) ? fs.readFileSync(OUT_PATH, 'utf8') : '';
 
-  if (before !== after) {
+  if (normalize(before) !== normalize(after)) {
     console.error('Storage growth surface doc is out of date.');
     console.error('Run: npm run gen:storage-growth');
     process.exitCode = 1;
