@@ -318,7 +318,9 @@ The project includes a production-ready Base dApp in `/base-mini-app`:
 - [Threat Model](./docs/security/THREAT_MODEL.md) - assets, actors, threats, mitigations, residual risks
 - [Privileged Functions](./docs/security/PRIVILEGED_FUNCTIONS.md) - explicit owner/governance powers + production defaults
 - [Deployment Profiles](./docs/security/DEPLOYMENT_PROFILES.md) - dev→pilot→production hardening path
+- [Production Defaults](./docs/security/PRODUCTION_DEFAULTS.md) - one-page real deployment checklist
 - [Monitoring & Alerts](./docs/security/MONITORING_ALERTS.md) - privacy-preserving ops signals (no surveillance)
+- [Event Index](./docs/EVENT_INDEX.md) - build dashboards/monitors without reading every contract
 - [Security Audit Reports](./COMPREHENSIVE_PROTOCOL_AUDIT_2026.md) - Latest audit findings
 
 **For Developers:**
