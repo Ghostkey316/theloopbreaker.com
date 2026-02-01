@@ -26,6 +26,11 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
+      - name: Guardrails (no KYC / no surveillance)
+        run: |
+          npm run lint:guardrails
+          npm run lint:values
+
       - name: Run Jest with coverage gate
         run: npm test
 

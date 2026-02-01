@@ -22,6 +22,10 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Guardrails (no KYC / no surveillance)
+        run: |
+          npm run lint:guardrails
+          npm run lint:values
       - name: Build TypeScript (root only, excludes base-mini-app)
         run: npm run build:test
       - name: Run tests
