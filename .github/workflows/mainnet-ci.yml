@@ -30,6 +30,7 @@ jobs:
         run: |
           npm run lint:guardrails
           npm run lint:values
+          npm run lint:privileged-surface
 
       - name: Run Jest with coverage gate
         run: npm test

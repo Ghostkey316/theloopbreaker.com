@@ -324,6 +324,7 @@ The project includes a production-ready Base dApp in `/base-mini-app`:
 - [Economic Invariants](./docs/ECONOMIC_INVARIANTS.md) - principle → mechanism → test map (auditable claims)
 - [Policy Guardrails](./docs/security/POLICY_GUARDRAILS.md) - enforced repo-level no-go zones (no KYC/surveillance)
 - [Security Posture](./docs/security/SECURITY_POSTURE.md) - fast, honest snapshot of security + maturity
+- [Privileged Surface (Autogen)](./docs/security/PRIVILEGED_SURFACE_AUTOGEN.md) - machine-generated list of `onlyOwner` entrypoints
 - [Security Audit Reports](./COMPREHENSIVE_PROTOCOL_AUDIT_2026.md) - Latest audit findings
 
 **For Developers:**
