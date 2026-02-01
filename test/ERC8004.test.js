@@ -474,9 +474,17 @@ describe("ERC-8004 Integration - Trustless Agent Standard for VaultFire", functi
         it("Should auto-register agent for VaultFire partnership", async function () {
             const agentURI = "https://vaultfire-agent.example.com/card.json";
             const agentType = "VaultFire AI Partner";
+            const capabilitiesHash = ethers.keccak256(ethers.toUtf8Bytes("vaultfire-ai-partnership"));
 
+            // Step 1: Agent registers with ERC-8004 Identity Registry directly
+            await identityRegistry.connect(aiAgent1).registerAgent(
+                agentURI,
+                agentType,
+                capabilitiesHash
+            );
+
+            // Step 2: Agent marks themselves for VaultFire
             const tx = await adapter.connect(aiAgent1).registerAgentForPartnership(
-                aiAgent1.address,
                 agentURI,
                 agentType
             );
@@ -496,11 +504,21 @@ describe("ERC-8004 Integration - Trustless Agent Standard for VaultFire", functi
         });
 
         it("Should sync VaultFire partnership to ERC-8004 reputation", async function () {
-            // Register agent
+            const agentURI = "https://agent.example.com/card.json";
+            const agentType = "AI Coding Partner";
+            const capabilitiesHash = ethers.keccak256(ethers.toUtf8Bytes("vaultfire-ai-partnership"));
+
+            // Step 1: Register with identity registry
+            await identityRegistry.connect(aiAgent1).registerAgent(
+                agentURI,
+                agentType,
+                capabilitiesHash
+            );
+
+            // Step 2: Mark for VaultFire
             await adapter.connect(aiAgent1).registerAgentForPartnership(
-                aiAgent1.address,
-                "https://agent.example.com/card.json",
-                "AI Coding Partner"
+                agentURI,
+                agentType
             );
 
             // Create VaultFire partnership bond
@@ -536,17 +554,31 @@ describe("ERC-8004 Integration - Trustless Agent Standard for VaultFire", functi
         });
 
         it("Should discover VaultFire-compatible agents", async function () {
-            // Register two VaultFire agents
-            await adapter.connect(aiAgent1).registerAgentForPartnership(
-                aiAgent1.address,
+            const agent1Type = "AI Partner 1";
+            const agent2Type = "AI Partner 2";
+            // Both agents should have the same capability hash for VaultFire
+            const vaultfireCap = ethers.keccak256(ethers.toUtf8Bytes("vaultfire-ai-partnership"));
+
+            // Register agent 1
+            await identityRegistry.connect(aiAgent1).registerAgent(
                 "https://agent1.example.com/card.json",
-                "AI Partner 1"
+                agent1Type,
+                vaultfireCap
+            );
+            await adapter.connect(aiAgent1).registerAgentForPartnership(
+                "https://agent1.example.com/card.json",
+                agent1Type
             );
 
-            await adapter.connect(aiAgent2).registerAgentForPartnership(
-                aiAgent2.address,
+            // Register agent 2
+            await identityRegistry.connect(aiAgent2).registerAgent(
                 "https://agent2.example.com/card.json",
-                "AI Partner 2"
+                agent2Type,
+                vaultfireCap
+            );
+            await adapter.connect(aiAgent2).registerAgentForPartnership(
+                "https://agent2.example.com/card.json",
+                agent2Type
             );
 
             // Discover all VaultFire agents

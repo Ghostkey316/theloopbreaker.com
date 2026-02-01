@@ -83,29 +83,35 @@ contract VaultfireERC8004Adapter {
     }
 
     /**
-     * @notice Auto-register AI agent when creating partnership bond
-     * @param agentAddress Address of AI agent
+     * @notice Register agent for VaultFire partnerships
      * @param agentURI URI to agent card (capabilities, protocols, contact)
      * @param agentType Type of AI agent
-     * @dev Called by AI agent before creating VaultFire partnership
+     * @dev Agent calls this to:
+     *      1. Register in ERC-8004 Identity Registry (via separate call)
+     *      2. Mark themselves for VaultFire integration
+     *      Note: Agent must call identity registry FIRST, then call this
      */
     function registerAgentForPartnership(
-        address agentAddress,
         string calldata agentURI,
         string calldata agentType
     ) external {
-        require(msg.sender == agentAddress, "Only agent can register itself");
-        require(!autoRegisteredAgents[agentAddress], "Already registered");
+        require(!autoRegisteredAgents[msg.sender], "Already registered for VaultFire");
 
         // Generate capabilities hash (for VaultFire partnerships)
         bytes32 capabilitiesHash = keccak256(abi.encodePacked("vaultfire-ai-partnership", agentType));
 
-        // Register in ERC-8004 Identity Registry
-        identityRegistry.registerAgent(agentURI, agentType, capabilitiesHash);
+        // Agent must call identity registry DIRECTLY (not through adapter)
+        // because identity registry uses msg.sender as the agent address
+        if (!identityRegistry.isAgentActive(msg.sender)) {
+            // If not registered yet, this will fail because adapter can't register on behalf
+            // Agent needs to call identityRegistry.registerAgent() first!
+            revert("Agent must call identityRegistry.registerAgent() first, then call this function");
+        }
 
-        autoRegisteredAgents[agentAddress] = true;
+        // Track that this agent is registered for VaultFire
+        autoRegisteredAgents[msg.sender] = true;
 
-        emit AgentAutoRegistered(agentAddress, agentType, block.timestamp);
+        emit AgentAutoRegistered(msg.sender, agentType, block.timestamp);
     }
 
     /**
