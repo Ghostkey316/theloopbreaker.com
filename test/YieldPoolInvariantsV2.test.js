@@ -205,23 +205,36 @@ describe("V2 YieldPool/solvency invariants", function () {
 
   for (const tc of cases) {
     describe(tc.name, function () {
+      // Contracts with security fixes (AIAccountabilityBondsV2, AIPartnershipBondsV2) revert during requestDistribution
+      // Deprecated contracts without fixes revert during distributeBond
+      const hasSecurityFixes = tc.name === "AIAccountabilityBondsV2" || tc.name === "AIPartnershipBondsV2";
+
       it("reverts positive-appreciation distribution when yield pool is insufficient", async function () {
         const signers = await ethers.getSigners();
         const c = await tc.deploy(signers);
-        const { bondId, caller } = await tc.setupPositiveAppreciationBond(c, signers);
 
-        await expect(c.connect(caller).distributeBond(bondId)).to.be.revertedWith(
-          "Insufficient yield pool for distribution"
-        );
+        if (hasSecurityFixes) {
+          // New contracts: expect revert during requestDistribution (inside setupPositiveAppreciationBond)
+          await expect(tc.setupPositiveAppreciationBond(c, signers)).to.be.revertedWith(
+            "Insufficient yield pool for all pending distributions"
+          );
+        } else {
+          // Deprecated contracts: expect revert during distributeBond
+          const { bondId, caller } = await tc.setupPositiveAppreciationBond(c, signers);
+          await expect(c.connect(caller).distributeBond(bondId)).to.be.revertedWith(
+            "Insufficient yield pool for distribution"
+          );
+        }
       });
 
       it("reverts distribution when contract ETH balance cannot cover payout (even if yieldPool accounting can)", async function () {
         const signers = await ethers.getSigners();
         const c = await tc.deploy(signers);
-        const { bondId, caller } = await tc.setupPositiveAppreciationBond(c, signers);
 
-        // Overfund yield pool so the internal accounting check passes.
+        // Fund yield pool FIRST so requestDistribution doesn't fail (for contracts with security fixes)
         await c.fundYieldPool({ value: ethers.parseEther("100") });
+
+        const { bondId, caller } = await tc.setupPositiveAppreciationBond(c, signers);
 
         // Force the contract's actual ETH balance below the required payout.
         await setBalance(await c.getAddress(), 0n);

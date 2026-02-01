@@ -185,6 +185,9 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
         // Initialize distribution baseline to the initial stake.
         lastDistributedValue[bondId] = msg.value;
 
+        // ✅ HIGH-003 FIX: Track total active bond value for reserve ratio calculation
+        _updateTotalActiveBondValue(totalActiveBondValue + msg.value);
+
         emit BondCreated(bondId, msg.sender, aiAgent, partnershipType, msg.value, block.timestamp);
         return bondId;
     }

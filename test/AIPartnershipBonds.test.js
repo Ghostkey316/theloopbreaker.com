@@ -417,12 +417,10 @@ describe("AIPartnershipBondsV2 - AI Grows WITH Humans, Not ABOVE", function () {
                 aiAgent2.address, "New", { value: ethers.parseEther("1.0") }
             );
 
-            await aiPartnership.connect(human2).requestDistribution(2);
-            await time.increase(604800);
-
+            // With security fixes, requestDistribution now checks for appreciation
             await expect(
-                aiPartnership.connect(human2).distributeBond(2)
-            ).to.be.revertedWith("No appreciation");
+                aiPartnership.connect(human2).requestDistribution(2)
+            ).to.be.revertedWith("No appreciation to distribute");
         });
     });
 
@@ -437,14 +435,14 @@ describe("AIPartnershipBondsV2 - AI Grows WITH Humans, Not ABOVE", function () {
                 1, 9500, 9000, 9500, 25, 9500, "Outstanding partnership"
             );
 
-            await aiPartnership.connect(human1).requestDistribution(1);
-            await time.increase(604800);
-
             const appreciation = await aiPartnership.calculateAppreciation(1);
             const aiMaxShare = (appreciation * BigInt(30)) / BigInt(100);
 
-            // Fund yield pool so positive-appreciation distribution can proceed.
+            // Fund yield pool BEFORE requestDistribution (security fix checks pool during request)
             await aiPartnership.connect(owner).fundYieldPool({ value: ethers.parseEther("100") });
+
+            await aiPartnership.connect(human1).requestDistribution(1);
+            await time.increase(604800);
 
             const aiBalBefore = await ethers.provider.getBalance(aiAgent1.address);
             await aiPartnership.connect(human1).distributeBond(1);
