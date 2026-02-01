@@ -115,9 +115,9 @@ function buildNextSteps({ network, diagnostics }) {
   return steps;
 }
 
-function parseWizardArgs(argv = process.argv.slice(2)) {
+function parseWizardArgs(argv = process.argv.slice(2), { stdin = process.stdin } = {}) {
   const options = {
-    interactive: process.stdin.isTTY,
+    interactive: Boolean(stdin && stdin.isTTY),
     diagnostics: false,
     mode: undefined,
     network: undefined,
@@ -158,7 +158,7 @@ function parseWizardArgs(argv = process.argv.slice(2)) {
 }
 
 async function runWizardCli() {
-  const args = parseWizardArgs();
+  const args = parseWizardArgs(undefined, { stdin: process.stdin });
   const wizard = new FHESetupWizard();
   const plan = await wizard.run({
     interactive: args.interactive,
