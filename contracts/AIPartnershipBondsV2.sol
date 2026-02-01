@@ -3,6 +3,10 @@ pragma solidity ^0.8.25;
 
 import "./BaseYieldPoolBond.sol";
 
+interface IMissionEnforcement {
+    function isCompliantWithPrinciple(address module, uint8 principle) external view returns (bool);
+}
+
 /**
  * @title AI Partnership Bonds V2 (Production Ready)
  * @notice AI grows WITH humans, not ABOVE them
@@ -26,6 +30,19 @@ import "./BaseYieldPoolBond.sol";
  * @custom:vision First economic proof of AI alignment at scale
  */
 contract AIPartnershipBondsV2 is BaseYieldPoolBond {
+
+    // ============ Mission Enforcement (optional, off by default) ============
+
+    IMissionEnforcement public missionEnforcement;
+    bool public missionEnforcementEnabled;
+
+    event MissionEnforcementUpdated(address indexed previous, address indexed current);
+    event MissionEnforcementEnabled(bool enabled);
+
+    // MissionEnforcement.CorePrinciple enum values (uint8)
+    uint8 private constant PRINCIPLE_HUMAN_VERIFICATION_FINAL_SAY = 0;
+    uint8 private constant PRINCIPLE_AI_PROFIT_CAPS = 1;
+    uint8 private constant PRINCIPLE_PRIVACY_DEFAULT = 2;
 
     struct Bond {
         uint256 bondId;
@@ -101,6 +118,31 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
 
     modifier onlyParticipants(uint256 bondId) { require(bonds[bondId].human == msg.sender || bonds[bondId].aiAgent == msg.sender, "Only participants"); _; }
     modifier bondExists(uint256 bondId) { require(bonds[bondId].active, "Bond does not exist"); _; }
+
+    function setMissionEnforcement(address mission) external onlyOwner {
+        address previous = address(missionEnforcement);
+        missionEnforcement = IMissionEnforcement(mission);
+        emit MissionEnforcementUpdated(previous, mission);
+    }
+
+    function setMissionEnforcementEnabled(bool enabled) external onlyOwner {
+        missionEnforcementEnabled = enabled;
+        emit MissionEnforcementEnabled(enabled);
+    }
+
+    function _requireMissionCompliance() internal view {
+        if (!missionEnforcementEnabled) return;
+        address m = address(missionEnforcement);
+        require(m != address(0), "MissionEnforcement not set");
+
+        // Minimal gating set (can expand over time):
+        // - Human verification final say
+        // - AI profit caps
+        // - Privacy default
+        require(missionEnforcement.isCompliantWithPrinciple(address(this), PRINCIPLE_HUMAN_VERIFICATION_FINAL_SAY), "Mission: human final say");
+        require(missionEnforcement.isCompliantWithPrinciple(address(this), PRINCIPLE_AI_PROFIT_CAPS), "Mission: profit caps");
+        require(missionEnforcement.isCompliantWithPrinciple(address(this), PRINCIPLE_PRIVACY_DEFAULT), "Mission: privacy default");
+    }
 
     /**
      * @notice Create AI Partnership Bond
@@ -272,6 +314,7 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
      * @custom:ethics AI can only profit when human thrives
      */
     function distributeBond(uint256 bondId) external nonReentrant whenNotPaused onlyParticipants(bondId) bondExists(bondId) {
+        _requireMissionCompliance();
         Bond storage bond = bonds[bondId];
         require(bond.distributionPending, "Must request distribution first");
         require(block.timestamp >= bond.distributionRequestedAt + DISTRIBUTION_TIMELOCK, "Timelock not expired");
