@@ -13,7 +13,11 @@ import hmac
 
 
 BASE_DIR = Path(__file__).resolve().parents[1]
-DEFAULT_SECRET = os.getenv("VAULTFIRE_ATTESTATION_SECRET", "vaultfire-attestor-sandbox")
+DEFAULT_SECRET = os.getenv("VAULTFIRE_ATTESTATION_SECRET")
+if not SECRET:
+    raise RuntimeError(
+        "VAULTFIRE_ATTESTATION_SECRET is required. Refusing to run with an insecure default."
+    )
 
 
 def _canonicalize(payload: Mapping[str, Any]) -> str:

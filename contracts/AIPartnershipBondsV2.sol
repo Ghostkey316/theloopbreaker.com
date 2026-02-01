@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity ^0.8.25;
 
 import "./BaseYieldPoolBond.sol";
+import "./MissionEnforcement.sol";
 
 /**
  * @title AI Partnership Bonds V2 (Production Ready)
@@ -26,6 +27,14 @@ import "./BaseYieldPoolBond.sol";
  * @custom:vision First economic proof of AI alignment at scale
  */
 contract AIPartnershipBondsV2 is BaseYieldPoolBond {
+
+    // ============ Mission Enforcement (optional, off by default) ============
+
+    MissionEnforcement public missionEnforcement;
+    bool public missionEnforcementEnabled;
+
+    event MissionEnforcementUpdated(address indexed previous, address indexed current);
+    event MissionEnforcementEnabled(bool enabled);
 
     struct Bond {
         uint256 bondId;
@@ -85,6 +94,11 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
     mapping(uint256 => PartnershipMetrics[]) public bondMetrics;
     mapping(uint256 => HumanVerification[]) public bondVerifications;
     mapping(uint256 => Distribution[]) public bondDistributions;
+
+    // Tracks the bond value baseline that has already been accounted for in distributions.
+    // Prevents repeated distributeBond() calls from paying out the same appreciation multiple times.
+    mapping(uint256 => uint256) public lastDistributedValue;
+
     uint256 public partnershipFund;
 
     event BondCreated(uint256 indexed bondId, address indexed human, address indexed aiAgent, string partnershipType, uint256 stakeAmount, uint256 timestamp);
@@ -93,9 +107,44 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
     event DistributionRequested(uint256 indexed bondId, address indexed requester, uint256 requestedAt, uint256 availableAt);
     event BondDistributed(uint256 indexed bondId, uint256 humanShare, uint256 aiShare, uint256 fundShare, string reason, uint256 timestamp);
     event AIDominationPenalty(uint256 indexed bondId, string reason, uint256 timestamp);
+    event PartnershipFundAccrued(uint256 indexed bondId, uint256 amount, uint256 newTotal, uint256 timestamp);
 
     modifier onlyParticipants(uint256 bondId) { require(bonds[bondId].human == msg.sender || bonds[bondId].aiAgent == msg.sender, "Only participants"); _; }
     modifier bondExists(uint256 bondId) { require(bonds[bondId].active, "Bond does not exist"); _; }
+
+    function setMissionEnforcement(address mission) external onlyOwner {
+        address previous = address(missionEnforcement);
+        missionEnforcement = MissionEnforcement(mission);
+        emit MissionEnforcementUpdated(previous, mission);
+    }
+
+    function setMissionEnforcementEnabled(bool enabled) external onlyOwner {
+        missionEnforcementEnabled = enabled;
+        emit MissionEnforcementEnabled(enabled);
+    }
+
+    function _requireMissionCompliance() internal view {
+        if (!missionEnforcementEnabled) return;
+        address m = address(missionEnforcement);
+        require(m != address(0), "MissionEnforcement not set");
+
+        // Minimal gating set (can expand over time):
+        // - Human verification final say
+        // - AI profit caps
+        // - Privacy default
+        require(
+            missionEnforcement.isCompliantWithPrinciple(address(this), MissionEnforcement.CorePrinciple.HUMAN_VERIFICATION_FINAL_SAY),
+            "Mission: human final say"
+        );
+        require(
+            missionEnforcement.isCompliantWithPrinciple(address(this), MissionEnforcement.CorePrinciple.AI_PROFIT_CAPS),
+            "Mission: profit caps"
+        );
+        require(
+            missionEnforcement.isCompliantWithPrinciple(address(this), MissionEnforcement.CorePrinciple.PRIVACY_DEFAULT),
+            "Mission: privacy default"
+        );
+    }
 
     /**
      * @notice Create AI Partnership Bond
@@ -133,8 +182,8 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
             distributionRequestedAt: 0, distributionPending: false, active: true
         });
 
-        // ✅ HIGH-003 FIX: Update total active bond value
-        _updateTotalActiveBondValue(totalActiveBondValue + msg.value);
+        // Initialize distribution baseline to the initial stake.
+        lastDistributedValue[bondId] = msg.value;
 
         emit BondCreated(bondId, msg.sender, aiAgent, partnershipType, msg.value, block.timestamp);
         return bondId;
@@ -235,6 +284,7 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
     }
 
     function requestDistribution(uint256 bondId) external onlyParticipants(bondId) bondExists(bondId) whenNotPaused {
+        _requireMissionCompliance();
         Bond storage bond = bonds[bondId];
         require(!bond.distributionPending, "Distribution already pending");
 
@@ -272,18 +322,21 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
      * @custom:ethics AI can only profit when human thrives
      */
     function distributeBond(uint256 bondId) external nonReentrant whenNotPaused onlyParticipants(bondId) bondExists(bondId) {
+        _requireMissionCompliance();
         Bond storage bond = bonds[bondId];
         require(bond.distributionPending, "Must request distribution first");
         require(block.timestamp >= bond.distributionRequestedAt + DISTRIBUTION_TIMELOCK, "Timelock not expired");
 
         bond.distributionPending = false;
 
-        // ✅ HIGH-002 FIX: Use snapshotted appreciation to prevent front-running
-        int256 appreciation = snapshotAppreciation[bondId];
+        // Compute delta appreciation since the last distribution baseline.
+        uint256 currentValue = calculateBondValue(bondId);
+        uint256 baseline = lastDistributedValue[bondId];
+        int256 appreciation = int256(currentValue) - int256(baseline);
         require(appreciation != 0, "No appreciation");
 
-        // Clear snapshot after use
-        snapshotAppreciation[bondId] = 0;
+        // Effects: update baseline before external interactions (CEI).
+        lastDistributedValue[bondId] = currentValue;
 
         (bool penaltyActive, string memory penaltyReason) = shouldActivateDominationPenalty(bondId);
         uint256 humanShare; uint256 aiShare; uint256 fundShare; string memory reason;
@@ -328,7 +381,10 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
             (bool successAI, ) = payable(bond.aiAgent).call{value: aiShare}("");
             require(successAI, "AI transfer failed");
         }
-        if (fundShare > 0) partnershipFund += fundShare;
+        if (fundShare > 0) {
+            partnershipFund += fundShare;
+            emit PartnershipFundAccrued(bondId, fundShare, partnershipFund, block.timestamp);
+        }
 
         // ✅ HIGH-003 FIX: Update total active bond value (bond no longer active)
         bond.active = false;
@@ -472,6 +528,74 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
         uint256 quality = partnershipQualityScore(bondId);
         if (quality < PARTNERSHIP_QUALITY_THRESHOLD) return (true, "Poor partnership quality");
         return (false, "");
+    }
+
+    // ============ Pagination helpers (for unbounded arrays) ============
+
+    function getBondMetricsCount(uint256 bondId) external view returns (uint256) {
+        return bondMetrics[bondId].length;
+    }
+
+    function getBondHumanVerificationsCount(uint256 bondId) external view returns (uint256) {
+        return bondVerifications[bondId].length;
+    }
+
+    function getBondDistributionsCount(uint256 bondId) external view returns (uint256) {
+        return bondDistributions[bondId].length;
+    }
+
+    function getMetrics(uint256 bondId, uint256 offset, uint256 limit)
+        external
+        view
+        returns (PartnershipMetrics[] memory page)
+    {
+        PartnershipMetrics[] storage items = bondMetrics[bondId];
+        uint256 len = items.length;
+        if (offset >= len || limit == 0) return new PartnershipMetrics[](0);
+
+        uint256 end = offset + limit;
+        if (end > len) end = len;
+
+        page = new PartnershipMetrics[](end - offset);
+        for (uint256 i = offset; i < end; i++) {
+            page[i - offset] = items[i];
+        }
+    }
+
+    function getHumanVerifications(uint256 bondId, uint256 offset, uint256 limit)
+        external
+        view
+        returns (HumanVerification[] memory page)
+    {
+        HumanVerification[] storage items = bondVerifications[bondId];
+        uint256 len = items.length;
+        if (offset >= len || limit == 0) return new HumanVerification[](0);
+
+        uint256 end = offset + limit;
+        if (end > len) end = len;
+
+        page = new HumanVerification[](end - offset);
+        for (uint256 i = offset; i < end; i++) {
+            page[i - offset] = items[i];
+        }
+    }
+
+    function getDistributions(uint256 bondId, uint256 offset, uint256 limit)
+        external
+        view
+        returns (Distribution[] memory page)
+    {
+        Distribution[] storage items = bondDistributions[bondId];
+        uint256 len = items.length;
+        if (offset >= len || limit == 0) return new Distribution[](0);
+
+        uint256 end = offset + limit;
+        if (end > len) end = len;
+
+        page = new Distribution[](end - offset);
+        for (uint256 i = offset; i < end; i++) {
+            page[i - offset] = items[i];
+        }
     }
 
     function getBond(uint256 bondId) external view returns (Bond memory) { return bonds[bondId]; }

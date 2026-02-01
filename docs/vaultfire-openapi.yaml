@@ -1,0 +1,26 @@
+openapi: 3.0.3
+info:
+  title: Vaultfire API (Reference)
+  version: 0.1.0
+  description: |
+    Minimal OpenAPI spec shipped with the reference implementation.
+
+    This file exists to prevent missing-spec warnings in local dev/tests and to provide
+    a stable anchor for future API documentation.
+servers:
+  - url: http://localhost:3000
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+components: {}

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity ^0.8.25;
 
 import "./BaseYieldPoolBond.sol";
+import "./MissionEnforcement.sol";
 
 /**
  * @title AI Accountability Bonds V2 (Production Ready)
@@ -21,6 +22,14 @@ import "./BaseYieldPoolBond.sol";
  * @custom:ethics 100% to humans when suffering, works with zero jobs
  */
 contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
+
+    // ============ Mission Enforcement (optional, off by default) ============
+
+    MissionEnforcement public missionEnforcement;
+    bool public missionEnforcementEnabled;
+
+    event MissionEnforcementUpdated(address indexed previous, address indexed current);
+    event MissionEnforcementEnabled(bool enabled);
 
     // ============ Structs ============
 
@@ -120,6 +129,10 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
     mapping(uint256 => GlobalFlourishingMetrics[]) public bondMetrics;
     mapping(uint256 => Distribution[]) public bondDistributions;
 
+    // Tracks the bond value baseline already accounted for in distributions.
+    // Prevents repeated distributeBond() calls from paying out the same appreciation multiple times.
+    mapping(uint256 => uint256) public lastDistributedValue;
+
     // ✅ Human treasury for distributing human share of profits
     address payable public humanTreasury;
 
@@ -131,8 +144,13 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
     mapping(uint256 => AIVerification[]) public bondAIVerifications;
     mapping(address => uint256) public aiCompanyVerificationCount;
 
+    // O(1) counters to avoid iterating unbounded arrays in distribution paths
+    mapping(uint256 => uint256) public verificationConfirmCount;
+    mapping(uint256 => uint256) public verificationRejectCount;
+
     // Metrics challenges
     mapping(uint256 => MetricsChallenge[]) public bondChallenges;
+    mapping(uint256 => uint256) public activeChallengeCount;
     uint256 public constant MIN_CHALLENGE_STAKE = 0.1 ether;
 
     // Profit locking thresholds
@@ -265,6 +283,43 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
         require(_humanTreasury != address(0), "Human treasury cannot be zero address");
         humanTreasury = _humanTreasury;
         emit HumanTreasuryUpdated(address(0), _humanTreasury);
+
+        // Mission enforcement is optional/off by default.
+        missionEnforcementEnabled = false;
+    }
+
+    function setMissionEnforcement(address mission) external onlyOwner {
+        address previous = address(missionEnforcement);
+        missionEnforcement = MissionEnforcement(mission);
+        emit MissionEnforcementUpdated(previous, mission);
+    }
+
+    function setMissionEnforcementEnabled(bool enabled) external onlyOwner {
+        missionEnforcementEnabled = enabled;
+        emit MissionEnforcementEnabled(enabled);
+    }
+
+    function _requireMissionCompliance() internal view {
+        if (!missionEnforcementEnabled) return;
+        address m = address(missionEnforcement);
+        require(m != address(0), "MissionEnforcement not set");
+
+        // Minimal gating set (can expand over time):
+        // - AI profit caps
+        // - Community challenge principle
+        // - Privacy default
+        require(
+            missionEnforcement.isCompliantWithPrinciple(address(this), MissionEnforcement.CorePrinciple.AI_PROFIT_CAPS),
+            "Mission: profit caps"
+        );
+        require(
+            missionEnforcement.isCompliantWithPrinciple(address(this), MissionEnforcement.CorePrinciple.COMMUNITY_CHALLENGES),
+            "Mission: community challenges"
+        );
+        require(
+            missionEnforcement.isCompliantWithPrinciple(address(this), MissionEnforcement.CorePrinciple.PRIVACY_DEFAULT),
+            "Mission: privacy default"
+        );
     }
 
     /**
@@ -325,8 +380,8 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
             active: true
         });
 
-        // ✅ HIGH-003 FIX: Update total active bond value
-        _updateTotalActiveBondValue(totalActiveBondValue + msg.value);
+        // Initialize distribution baseline to the initial stake.
+        lastDistributedValue[bondId] = msg.value;
 
         emit BondCreated(bondId, msg.sender, companyName, quarterlyRevenue, msg.value, block.timestamp);
         return bondId;
@@ -479,6 +534,13 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
             stakeAmount: msg.value
         }));
 
+        // Update O(1) counters for verification quality scoring
+        if (confirmsMetrics) {
+            verificationConfirmCount[bondId]++;
+        } else {
+            verificationRejectCount[bondId]++;
+        }
+
         aiCompanyVerificationCount[msg.sender]++;
 
         emit AIVerificationSubmitted(bondId, msg.sender, confirmsMetrics, msg.value, block.timestamp);
@@ -521,6 +583,8 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
             resolved: false,
             challengeUpheld: false
         }));
+
+        activeChallengeCount[bondId]++;
 
         emit MetricsChallenged(bondId, msg.sender, reason, msg.value, block.timestamp);
     }
@@ -576,6 +640,11 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
         challenge.resolved = true;
         challenge.challengeUpheld = upheld;
 
+        // Maintain O(1) active challenge count for verification quality
+        if (activeChallengeCount[bondId] > 0) {
+            activeChallengeCount[bondId]--;
+        }
+
         // ✅ INTERACTIONS: External calls LAST
         (bool success, ) = recipient.call{value: payoutAmount}("");
         require(success, upheld ? "Challenge payout failed" : "Treasury transfer failed");
@@ -609,6 +678,7 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
         bondExists(bondId)
         whenNotPaused
     {
+        _requireMissionCompliance();
         Bond storage bond = bonds[bondId];
         require(!bond.distributionPending, "Distribution already pending");
 
@@ -657,6 +727,7 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
         onlyAICompany(bondId)
         bondExists(bondId)
     {
+        _requireMissionCompliance();
         Bond storage bond = bonds[bondId];
         require(bond.distributionPending, "Must request distribution first");
         require(
@@ -666,12 +737,17 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
 
         bond.distributionPending = false;
 
+        // Compute delta appreciation since the last distribution baseline.
+        uint256 currentValue = calculateBondValue(bondId);
+        uint256 baseline = lastDistributedValue[bondId];
+        int256 appreciation = int256(currentValue) - int256(baseline);
+
         // ✅ HIGH-002 FIX: Use snapshotted appreciation to prevent front-running
         int256 appreciation = snapshotAppreciation[bondId];
         require(appreciation != 0, "No appreciation to distribute");
 
-        // Clear snapshot after use
-        snapshotAppreciation[bondId] = 0;
+        // Effects: update baseline before external interactions (CEI).
+        lastDistributedValue[bondId] = currentValue;
 
         (bool locked, string memory lockReason) = shouldLockProfits(bondId);
 
@@ -701,6 +777,12 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
             humanShare = uint256(-appreciation);
             aiCompanyShare = 0;
             reason = "Depreciation compensation - humans suffering";
+
+            // Even on depreciation, if profits are locked we still emit the lock event
+            // to make the enforcement visible/auditable.
+            if (locked) {
+                emit ProfitsLocked(bondId, lockReason, block.timestamp);
+            }
         }
 
         bondDistributions[bondId].push(Distribution({
@@ -893,21 +975,10 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
      * AIs cannot lie about flourishing without other AIs calling them out.
      */
     function verificationQualityScore(uint256 bondId) public view bondExists(bondId) returns (uint256) {
-        AIVerification[] storage verifications = bondAIVerifications[bondId];
-        MetricsChallenge[] storage challenges = bondChallenges[bondId];
-
-        if (verifications.length == 0) return 5000; // Neutral
-
-        uint256 confirmCount = 0;
-        uint256 rejectCount = 0;
-
-        for (uint256 i = 0; i < verifications.length; i++) {
-            if (verifications[i].confirmsMetrics) {
-                confirmCount++;
-            } else {
-                rejectCount++;
-            }
-        }
+        // Use O(1) counters to avoid unbounded loops (prevents gas griefing).
+        uint256 confirmCount = verificationConfirmCount[bondId];
+        uint256 rejectCount = verificationRejectCount[bondId];
+        uint256 activeChallenges = activeChallengeCount[bondId];
 
         // Start at neutral
         int256 score = 5000;
@@ -925,12 +996,6 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
         }
 
         // Penalize active challenges
-        uint256 activeChallenges = 0;
-        for (uint256 i = 0; i < challenges.length; i++) {
-            if (!challenges[i].resolved) {
-                activeChallenges++;
-            }
-        }
         if (activeChallenges > 0) {
             score -= int256(activeChallenges * 2000);
         }
@@ -1000,6 +1065,70 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
 
     function getDistributionsCount(uint256 bondId) external view returns (uint256) {
         return bondDistributions[bondId].length;
+    }
+
+    // ============ Pagination helpers (for unbounded arrays) ============
+
+    function getChallengesCount(uint256 bondId) external view returns (uint256) {
+        return bondChallenges[bondId].length;
+    }
+
+    function getAIVerificationsCount(uint256 bondId) external view returns (uint256) {
+        return bondAIVerifications[bondId].length;
+    }
+
+    function getChallenges(uint256 bondId, uint256 offset, uint256 limit)
+        external
+        view
+        returns (MetricsChallenge[] memory page)
+    {
+        MetricsChallenge[] storage items = bondChallenges[bondId];
+        uint256 len = items.length;
+        if (offset >= len || limit == 0) return new MetricsChallenge[](0);
+
+        uint256 end = offset + limit;
+        if (end > len) end = len;
+
+        page = new MetricsChallenge[](end - offset);
+        for (uint256 i = offset; i < end; i++) {
+            page[i - offset] = items[i];
+        }
+    }
+
+    function getAIVerifications(uint256 bondId, uint256 offset, uint256 limit)
+        external
+        view
+        returns (AIVerification[] memory page)
+    {
+        AIVerification[] storage items = bondAIVerifications[bondId];
+        uint256 len = items.length;
+        if (offset >= len || limit == 0) return new AIVerification[](0);
+
+        uint256 end = offset + limit;
+        if (end > len) end = len;
+
+        page = new AIVerification[](end - offset);
+        for (uint256 i = offset; i < end; i++) {
+            page[i - offset] = items[i];
+        }
+    }
+
+    function getDistributions(uint256 bondId, uint256 offset, uint256 limit)
+        external
+        view
+        returns (Distribution[] memory page)
+    {
+        Distribution[] storage items = bondDistributions[bondId];
+        uint256 len = items.length;
+        if (offset >= len || limit == 0) return new Distribution[](0);
+
+        uint256 end = offset + limit;
+        if (end > len) end = len;
+
+        page = new Distribution[](end - offset);
+        for (uint256 i = offset; i < end; i++) {
+            page[i - offset] = items[i];
+        }
     }
 
     function getLatestDistribution(uint256 bondId) external view returns (Distribution memory) {

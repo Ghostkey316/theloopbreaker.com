@@ -1,0 +1,55 @@
+﻿# DUP HASH A5338D955B09046EC0B16F3A9625B7955C763AAE07DC722E474E6078745F932F (count=13)
+- earners.json
+- event_log.json
+- governance/flags.json
+- governance/proposals.json
+- governance/stewards.json
+- live-pilot/telemetry-log.json
+- og_loyalists.json
+- retro_yield.json
+- telemetry/belief-log.json
+- vaultfire-core/ethics/morals_audit_log.json
+- vaultfire-core/ethics/pr_merge_log.json
+- vaultfire-core/ethics/self_audit_log.json
+- votes.json
+
+# DUP HASH E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855 (count=12)
+- audit_logs/.gitkeep
+- belief_protocols/.gitkeep
+- contributor_registry.json.lock
+- docs/deprecated/attestations/signed/.gitkeep
+- partners.json.lock
+- secure_upload_audit.log
+- user_scorecard.json.lock
+- vaultfire_arcade/minigames/__init__.py
+- vaultfire_cli_plugins/.gitkeep
+- vaultfire_drop/__init__.py
+- vaultfire_drop/secure_upload/__init__.py
+- vaultfire_drop/tests/__init__.py
+
+# DUP HASH E3566B3A06430868D71E9287DFD6C6C520A3DA027AABEA01951D407EE131DC2F (count=7)
+- athlete_node_log.json
+- governance/steward_votes.json
+- rivalry_matrix.json
+- sports_nft_map.json
+- sports_registry.json
+- vaultfire-core/ethics/last_audit.json
+- vaultfire-core/partner_revenue.json
+
+# DUP HASH 7EB70257593DA06F682A3DDDA54A9D260D4FC514F645237F5CA74B08F8DA61A6 (count=3)
+- attestations/guardian/.gitkeep
+- compliance/review-logs/live-beta/.gitkeep
+- deployment/live/profiles/.gitkeep
+
+# DUP HASH 38C4B9ADADB6B4F603034F99D713996D619560F5DF76E0CBE29F80CF97D16DE6 (count=2)
+- risc0-guest/src/main.rs
+- risc0-prover/methods/guest/src/main.rs
+
+# DUP HASH 54A758307A2CE79551EAC8E5A0646F6A291B4E5E81E498B07A5D89329C5DD068 (count=2)
+- apps/verified-dm-demo/postcss.config.js
+- base-mini-app/postcss.config.js
+
+# DUP HASH 636B3E0981360A3F7AF4D70C99A56A4AF77207C605EB011306E51E3675DA93A1 (count=2)
+- .githooks/pre-commit
+- .githooks/pre-merge
+

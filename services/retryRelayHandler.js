@@ -1,7 +1,17 @@
+function shouldLogTestWarnings() {
+  const shouldWarnOptional =
+    String(process.env.VAULTFIRE_TEST_WARN_OPTIONAL_DEPS || '').toLowerCase() === '1' ||
+    String(process.env.VAULTFIRE_TEST_WARN_OPTIONAL_DEPS || '').toLowerCase() === 'true';
+  return process.env.NODE_ENV !== 'test' || shouldWarnOptional;
+}
+
 const DEFAULT_LOGGER = {
   debug: () => {},
   info: () => {},
-  warn: (...args) => console.warn(...args),
+  warn: (...args) => {
+    if (!shouldLogTestWarnings()) return;
+    console.warn(...args);
+  },
   error: (...args) => console.error(...args),
 };
 

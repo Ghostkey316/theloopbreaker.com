@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.25;
 
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "../MissionEnforcement.sol";
 
 /**
  * @title Common Ground Bonds
@@ -14,6 +15,54 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * Ripple effect tracking - bridges that inspire more bridges earn more.
  */
 contract CommonGroundBonds is ReentrancyGuard {
+
+    // ============ Owner / Governance ============
+
+    address public owner;
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner");
+        _;
+    }
+
+    // ============ Mission Enforcement (optional, off by default) ============
+
+    MissionEnforcement public missionEnforcement;
+    bool public missionEnforcementEnabled;
+
+    event MissionEnforcementUpdated(address indexed previous, address indexed current);
+    event MissionEnforcementEnabled(bool enabled);
+
+    constructor() {
+        owner = msg.sender;
+        missionEnforcementEnabled = false;
+    }
+
+    function setMissionEnforcement(address mission) external onlyOwner {
+        address previous = address(missionEnforcement);
+        missionEnforcement = MissionEnforcement(mission);
+        emit MissionEnforcementUpdated(previous, mission);
+    }
+
+    function setMissionEnforcementEnabled(bool enabled) external onlyOwner {
+        missionEnforcementEnabled = enabled;
+        emit MissionEnforcementEnabled(enabled);
+    }
+
+    function _requireMissionCompliance() internal view {
+        if (!missionEnforcementEnabled) return;
+        address m = address(missionEnforcement);
+        require(m != address(0), "MissionEnforcement not set");
+
+        require(
+            missionEnforcement.isCompliantWithPrinciple(address(this), MissionEnforcement.CorePrinciple.COMMUNITY_CHALLENGES),
+            "Mission: community challenges"
+        );
+        require(
+            missionEnforcement.isCompliantWithPrinciple(address(this), MissionEnforcement.CorePrinciple.PRIVACY_DEFAULT),
+            "Mission: privacy default"
+        );
+    }
 
     // ============ Structs ============
 
@@ -372,6 +421,7 @@ contract CommonGroundBonds is ReentrancyGuard {
      * @dev 60% to bridge-builders, 40% to community healing pool (or 100% pool if division worsening)
      */
     function distributeBond(uint256 bondId) external nonReentrant onlyParticipants(bondId) bondExists(bondId) {
+        _requireMissionCompliance();
         Bond storage bond = bonds[bondId];
         int256 appreciation = calculateAppreciation(bondId);
 

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.25;
 
-import "./BaseYieldPoolBond.sol";
+import "../BaseYieldPoolBond.sol";
+import "../MissionEnforcement.sol";
 
 /**
  * @title Health Commons Bonds V2 (Production Ready)
@@ -21,6 +22,14 @@ import "./BaseYieldPoolBond.sol";
  * @custom:ethics Community verification required, can't fake health improvements
  */
 contract HealthCommonsBondsV2 is BaseYieldPoolBond {
+
+    // ============ Mission Enforcement (optional, off by default) ============
+
+    MissionEnforcement public missionEnforcement;
+    bool public missionEnforcementEnabled;
+
+    event MissionEnforcementUpdated(address indexed previous, address indexed current);
+    event MissionEnforcementEnabled(bool enabled);
 
     // ============ Structs ============
 
@@ -104,6 +113,40 @@ contract HealthCommonsBondsV2 is BaseYieldPoolBond {
     modifier bondExists(uint256 bondId) {
         require(bonds[bondId].active, "Bond does not exist");
         _;
+    }
+
+    constructor() {
+        // Mission enforcement is optional/off by default.
+        missionEnforcementEnabled = false;
+    }
+
+    function setMissionEnforcement(address mission) external onlyOwner {
+        address previous = address(missionEnforcement);
+        missionEnforcement = MissionEnforcement(mission);
+        emit MissionEnforcementUpdated(previous, mission);
+    }
+
+    function setMissionEnforcementEnabled(bool enabled) external onlyOwner {
+        missionEnforcementEnabled = enabled;
+        emit MissionEnforcementEnabled(enabled);
+    }
+
+    function _requireMissionCompliance() internal view {
+        if (!missionEnforcementEnabled) return;
+        address m = address(missionEnforcement);
+        require(m != address(0), "MissionEnforcement not set");
+
+        // Minimal gating set (can expand over time):
+        // - No data sale
+        // - Privacy default
+        require(
+            missionEnforcement.isCompliantWithPrinciple(address(this), MissionEnforcement.CorePrinciple.NO_DATA_SALE),
+            "Mission: no data sale"
+        );
+        require(
+            missionEnforcement.isCompliantWithPrinciple(address(this), MissionEnforcement.CorePrinciple.PRIVACY_DEFAULT),
+            "Mission: privacy default"
+        );
     }
 
     // ============ Core Functions ============
@@ -217,6 +260,7 @@ contract HealthCommonsBondsV2 is BaseYieldPoolBond {
         bondExists(bondId)
         whenNotPaused
     {
+        _requireMissionCompliance();
         Bond storage bond = bonds[bondId];
         require(!bond.distributionPending, "Distribution already pending");
 
@@ -238,6 +282,7 @@ contract HealthCommonsBondsV2 is BaseYieldPoolBond {
         onlyCompany(bondId)
         bondExists(bondId)
     {
+        _requireMissionCompliance();
         Bond storage bond = bonds[bondId];
         require(bond.distributionPending, "Must request distribution first");
         require(

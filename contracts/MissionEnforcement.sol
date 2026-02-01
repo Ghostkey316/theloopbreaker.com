@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity ^0.8.25;
 
 /**
  * @title Vaultfire Mission Enforcement
@@ -23,6 +23,22 @@ pragma solidity 0.8.20;
  * @custom:ethics Morals > Metrics: We will never compromise ethics for growth
  */
 contract MissionEnforcement {
+
+    // ============ Governance ============
+
+    /// @notice Contract owner / governance authority
+    address public owner;
+
+    /// @notice Pending owner for two-step transfer
+    address public pendingOwner;
+
+    event OwnershipTransferStarted(address indexed previousOwner, address indexed newOwner);
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner");
+        _;
+    }
 
     /**
      * @notice The canonical Vaultfire mission statement
@@ -55,6 +71,18 @@ contract MissionEnforcement {
     mapping(address => mapping(CorePrinciple => bool)) public missionCompliance;
 
     /**
+     * @notice Community-submitted reports (non-binding until adjudicated)
+     */
+    struct MissionReport {
+        address reporter;
+        uint256 timestamp;
+        CorePrinciple principle;
+        string evidence;
+    }
+
+    mapping(address => MissionReport[]) public missionReports;
+
+    /**
      * @notice Tracks modules that have been verified as mission-compliant
      * @dev address => verification timestamp
      */
@@ -70,6 +98,17 @@ contract MissionEnforcement {
      * @notice Emitted when a module is verified as mission-compliant
      */
     event ModuleMissionCompliant(address indexed module, uint256 timestamp);
+
+    /**
+     * @notice Emitted when a community report is filed (non-binding)
+     */
+    event MissionViolationReported(
+        address indexed module,
+        address indexed reporter,
+        CorePrinciple principle,
+        string evidence,
+        uint256 timestamp
+    );
 
     /**
      * @notice Emitted when a mission violation is detected
@@ -153,9 +192,12 @@ contract MissionEnforcement {
     }
 
     /**
-     * @notice Report a mission principle violation
-     * @param module Address of the violating module
-     * @param principle Which core principle was violated
+     * @notice Report a mission principle violation (community report)
+     * @dev This is deliberately non-binding: it records a report and emits an event.
+     *      Governance/owner must adjudicate to change compliance state.
+     *
+     * @param module Address of the reported module
+     * @param principle Which core principle was allegedly violated
      * @param evidence Human-readable evidence of violation
      */
     function reportMissionViolation(
@@ -163,6 +205,30 @@ contract MissionEnforcement {
         CorePrinciple principle,
         string memory evidence
     ) external {
+        require(module != address(0), "Module cannot be zero");
+        require(bytes(evidence).length > 0, "Evidence required");
+        require(bytes(evidence).length <= 1000, "Evidence too long");
+
+        missionReports[module].push(MissionReport({
+            reporter: msg.sender,
+            timestamp: block.timestamp,
+            principle: principle,
+            evidence: evidence
+        }));
+
+        emit MissionViolationReported(module, msg.sender, principle, evidence, block.timestamp);
+    }
+
+    /**
+     * @notice Adjudicate a mission violation (governance/owner)
+     * @dev This is the binding state transition that can disable compliance.
+     */
+    function adjudicateMissionViolation(
+        address module,
+        CorePrinciple principle,
+        string memory evidence
+    ) external onlyOwner {
+        require(module != address(0), "Module cannot be zero");
         require(bytes(evidence).length > 0, "Evidence required");
         require(bytes(evidence).length <= 1000, "Evidence too long");
 
@@ -173,15 +239,15 @@ contract MissionEnforcement {
     }
 
     /**
-     * @notice Certify a module as mission-compliant
-     * @dev In production, this should be controlled by DAO governance
+     * @notice Certify a module as mission-compliant (governance/owner)
      * @param module Address of module to certify
      * @param principles Array of principles the module complies with
      */
     function certifyModuleMissionCompliant(
         address module,
         CorePrinciple[] memory principles
-    ) external {
+    ) external onlyOwner {
+        require(module != address(0), "Module cannot be zero");
         require(principles.length > 0, "Must verify at least one principle");
 
         for (uint256 i = 0; i < principles.length; i++) {
@@ -190,6 +256,31 @@ contract MissionEnforcement {
 
         missionCompliantModules[module] = block.timestamp;
         emit ModuleMissionCompliant(module, block.timestamp);
+    }
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    /**
+     * @notice Transfer ownership (step 1 of 2)
+     */
+    function transferOwnership(address newOwner) external onlyOwner {
+        require(newOwner != address(0), "New owner cannot be zero");
+        require(newOwner != owner, "Already owner");
+        pendingOwner = newOwner;
+        emit OwnershipTransferStarted(owner, newOwner);
+    }
+
+    /**
+     * @notice Accept ownership (step 2 of 2)
+     */
+    function acceptOwnership() external {
+        require(msg.sender == pendingOwner, "Only pending owner");
+        address previous = owner;
+        owner = pendingOwner;
+        pendingOwner = address(0);
+        emit OwnershipTransferred(previous, owner);
     }
 
     /**

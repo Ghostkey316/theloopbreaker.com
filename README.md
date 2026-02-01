@@ -59,6 +59,15 @@ Truth is verifiable. Privacy is default. Control stays with the human.
 
 ## The Complete Trust Layer
 
+### Agent Trust Building Blocks (repo-grounded)
+If you're applying Vaultfire primitives to agents/skills, start here:
+- `docs/AGENT_CAPABILITY_MANIFEST.md` — declared + enforceable capabilities
+- `docs/ATTESTATION_SCHEMA.md` — provenance + audit scope
+- `docs/TRUST_STACK_MATURITY_MODEL.md` — rollout levels (deny-by-default → gateway → sandbox)
+- `docs/INCIDENT_TRIAGE_CHECKLIST.md` — 60-second response playbook
+- `docs/ANTI_PANOPTICON_INVARIANTS.md` — mission lock (no KYC / no surveillance)
+
+
 Vaultfire provides **two complementary verification systems** that create complete trust for AI-human relationships:
 
 ### 1. AI Partnership Bonds
@@ -273,7 +282,7 @@ npm >= 9.0.0
 
 ### Install
 ```bash
-git clone https://github.com/ghostkey316/ghostkey-316-vaultfire-init.git
+git clone https://github.com/Ghostkey316/ghostkey-316-vaultfire-init.git
 cd ghostkey-316-vaultfire-init
 npm install
 ```
@@ -314,6 +323,20 @@ The project includes a production-ready Base dApp in `/base-mini-app`:
 **Core Protocol Docs:**
 - [AI Partnership Design](./docs/AI_PARTNERSHIP_DESIGN.md) - Partnership bonds philosophy
 - [Mission & Vision](./docs/MISSION.md) - Protocol mission and values
+- [Trust Assumptions](./docs/TRUST_ASSUMPTIONS.md) - explicit trust boundaries (what is trusted today vs enforced)
+- [Threat Model](./docs/security/THREAT_MODEL.md) - assets, actors, threats, mitigations, residual risks
+- [Privileged Functions](./docs/security/PRIVILEGED_FUNCTIONS.md) - explicit owner/governance powers + production defaults
+- [Deployment Profiles](./docs/security/DEPLOYMENT_PROFILES.md) - dev→pilot→production hardening path
+- [Production Defaults](./docs/security/PRODUCTION_DEFAULTS.md) - one-page real deployment checklist
+- [Monitoring & Alerts](./docs/security/MONITORING_ALERTS.md) - privacy-preserving ops signals (no surveillance)
+- [Event Index](./docs/EVENT_INDEX.md) - build dashboards/monitors without reading every contract
+- [Economic Invariants](./docs/ECONOMIC_INVARIANTS.md) - principle → mechanism → test map (auditable claims)
+- [Policy Guardrails](./docs/security/POLICY_GUARDRAILS.md) - enforced repo-level no-go zones (no KYC/surveillance)
+- [Security Posture](./docs/security/SECURITY_POSTURE.md) - fast, honest snapshot of security + maturity
+- [Privileged Surface (Autogen)](./docs/security/PRIVILEGED_SURFACE_AUTOGEN.md) - machine-generated list of `onlyOwner` entrypoints
+- [Events Surface (Autogen)](./docs/security/EVENTS_SURFACE_AUTOGEN.md) - machine-generated map of events + emit sites
+- [External Calls Surface (Autogen)](./docs/security/EXTERNAL_CALLS_SURFACE_AUTOGEN.md) - machine-generated map of low-level call sites
+- [Storage Growth Surface (Autogen)](./docs/security/STORAGE_GROWTH_SURFACE_AUTOGEN.md) - machine-generated map of unbounded state growth vectors
 - [Security Audit Reports](./COMPREHENSIVE_PROTOCOL_AUDIT_2026.md) - Latest audit findings
 - [ERC-8004 Integration](./docs/ERC8004_INTEGRATION.md) - **NEW:** Trustless agent standard integration
 
@@ -429,7 +452,7 @@ MIT License - See [LICENSE](./LICENSE) for details
 ## Contact & Community
 
 **Email:** ghostkey316@proton.me
-**GitHub:** https://github.com/ghostkey316/ghostkey-316-vaultfire-init
+**GitHub:** https://github.com/Ghostkey316/ghostkey-316-vaultfire-init
 
 **For Partnership Inquiries:**
 See our comprehensive partnership materials in the `/partnerships` directory and root-level partnership docs.

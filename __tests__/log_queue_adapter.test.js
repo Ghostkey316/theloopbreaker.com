@@ -10,6 +10,7 @@ describe('LogQueueAdapter', () => {
     const backend = createBackend();
     const adapter = new LogQueueAdapter({
       backend,
+      logger: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
       defaults: {
         flushIntervalMs: 0,
         maxBatchSize: 2,
@@ -38,6 +39,7 @@ describe('LogQueueAdapter', () => {
     const backend = createBackend();
     const adapter = new LogQueueAdapter({
       backend,
+      logger: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
       defaults: {
         flushIntervalMs: 0,
         maxBatchSize: 4,
@@ -75,6 +77,7 @@ describe('LogQueueAdapter', () => {
 
     const adapter = new LogQueueAdapter({
       backend,
+      logger: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
       defaults: {
         flushIntervalMs: 0,
         maxBatchSize: 5,

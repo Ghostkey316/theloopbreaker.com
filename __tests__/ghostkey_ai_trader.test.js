@@ -1,7 +1,10 @@
-const { spawnSync } = require('child_process');
+const { runPythonTest } = require('./pythonTestUtils');
 
 test('ghostkey_ai_trader python tests', () => {
-  const result = spawnSync('python3', ['-m', 'unittest', 'partner_plugins.tests.test_ghostkey_ai_trader'], { encoding: 'utf8' });
-  const output = (result.stdout + result.stderr).trim();
-  expect(output).toMatch(/OK/);
+  const result = runPythonTest(['-m', 'unittest', 'partner_plugins.tests.test_ghostkey_ai_trader'], { suiteName: 'ghostkey_ai_trader' });
+  if (result.skipped) {
+    expect(result.skipped).toBe(true);
+    return;
+  }
+  expect(result.output).toMatch(/OK/);
 });

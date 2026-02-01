@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity ^0.8.25;
 
 import "../AIPartnershipBondsV2.sol";
 
@@ -227,14 +227,14 @@ contract PartnershipBondsEnhanced is AIPartnershipBondsV2 {
      * @notice Check if bond can be distributed
      * @dev Useful for UI to show "ready to distribute" status
      * @param bondId ID of bond
-     * @return canDistribute Whether distribution is available
+     * @return isDistributable Whether distribution is available
      * @return reason Human-readable reason if cannot distribute
      */
     function canDistribute(uint256 bondId)
         external
         view
         bondExists(bondId)
-        returns (bool canDistribute, string memory reason)
+        returns (bool isDistributable, string memory reason)
     {
         Bond storage bond = bonds[bondId];
 

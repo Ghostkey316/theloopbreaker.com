@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.25;
 
-import "./BaseYieldPoolBond.sol";
+import "../BaseYieldPoolBond.sol";
+import "../MissionEnforcement.sol";
 
 /**
  * @title Escape Velocity Bonds V2 (Production Ready)
@@ -12,6 +13,14 @@ import "./BaseYieldPoolBond.sol";
  * @custom:ethics Pay-it-forward, recapture protection
  */
 contract EscapeVelocityBondsV2 is BaseYieldPoolBond {
+
+    // ============ Mission Enforcement (optional, off by default) ============
+
+    MissionEnforcement public missionEnforcement;
+    bool public missionEnforcementEnabled;
+
+    event MissionEnforcementUpdated(address indexed previous, address indexed current);
+    event MissionEnforcementEnabled(bool enabled);
 
     struct Bond {
         uint256 bondId;
@@ -73,6 +82,40 @@ contract EscapeVelocityBondsV2 is BaseYieldPoolBond {
 
     modifier onlyStaker(uint256 bondId) { require(bonds[bondId].staker == msg.sender, "Only staker"); _; }
     modifier bondExists(uint256 bondId) { require(bonds[bondId].active, "Bond does not exist"); _; }
+
+    constructor() {
+        // Mission enforcement is optional/off by default.
+        missionEnforcementEnabled = false;
+    }
+
+    function setMissionEnforcement(address mission) external onlyOwner {
+        address previous = address(missionEnforcement);
+        missionEnforcement = MissionEnforcement(mission);
+        emit MissionEnforcementUpdated(previous, mission);
+    }
+
+    function setMissionEnforcementEnabled(bool enabled) external onlyOwner {
+        missionEnforcementEnabled = enabled;
+        emit MissionEnforcementEnabled(enabled);
+    }
+
+    function _requireMissionCompliance() internal view {
+        if (!missionEnforcementEnabled) return;
+        address m = address(missionEnforcement);
+        require(m != address(0), "MissionEnforcement not set");
+
+        // Minimal gating set (can expand over time):
+        // - No KYC (wallets only)
+        // - Privacy default
+        require(
+            missionEnforcement.isCompliantWithPrinciple(address(this), MissionEnforcement.CorePrinciple.NO_KYC_WALLET_ONLY),
+            "Mission: no kyc"
+        );
+        require(
+            missionEnforcement.isCompliantWithPrinciple(address(this), MissionEnforcement.CorePrinciple.PRIVACY_DEFAULT),
+            "Mission: privacy default"
+        );
+    }
 
     /**
      * @notice Create Escape Velocity Bond for poverty escape
@@ -165,6 +208,7 @@ contract EscapeVelocityBondsV2 is BaseYieldPoolBond {
     }
 
     function requestDistribution(uint256 bondId) external onlyStaker(bondId) bondExists(bondId) whenNotPaused {
+        _requireMissionCompliance();
         Bond storage bond = bonds[bondId];
         require(!bond.distributionPending, "Distribution already pending");
         bond.distributionRequestedAt = block.timestamp;
@@ -195,6 +239,7 @@ contract EscapeVelocityBondsV2 is BaseYieldPoolBond {
      * @custom:security ReentrancyGuard, timelock protection
      */
     function distributeBond(uint256 bondId) external nonReentrant whenNotPaused onlyStaker(bondId) bondExists(bondId) {
+        _requireMissionCompliance();
         Bond storage bond = bonds[bondId];
         require(bond.distributionPending, "Must request distribution first");
         require(block.timestamp >= bond.distributionRequestedAt + DISTRIBUTION_TIMELOCK, "Timelock not expired");

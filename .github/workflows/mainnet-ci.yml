@@ -24,20 +24,29 @@ jobs:
           node-version: 18
 
       - name: Install Node dependencies
-        run: npm install
+        run: npm ci
+
+      - name: Guardrails (no KYC / no surveillance)
+        run: |
+          npm run lint:guardrails
+          npm run lint:values
+          npm run lint:privileged-surface
+          npm run lint:events-surface
+          npm run lint:external-calls
+          npm run lint:storage-growth
 
       - name: Run Jest with coverage gate
+        env:
+          VAULTFIRE_TEST_QUIET: "1"
         run: npm test
 
       - name: Hardhat unit tests
         run: npx hardhat test
-        env:
-          BASE_PRIVATE_KEY: 0x59c6995e998f97a5a0044976f9d2025c207d2d0c6f1c5db29d46a26fb47e6c2a
 
       - name: Deploy smoke (local hardhat)
         run: npx hardhat run scripts/deploy-covenant.js
         env:
-          GHOSTKEY_ECHO: 0xF891c5E6B60a9c07B7f2A2f1fF8B7FF9aE0F0000
+          GHOSTKEY_ECHO: "0xF891c5E6B60a9c07B7f2A2f1fF8B7FF9aE0F0000"
 
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
@@ -73,6 +82,3 @@ jobs:
       - name: Guardian echo smoke hook
         continue-on-error: true
         run: node tools/guardian_echo.js --dry-run
-        env:
-          GROK_API_URL: https://api.x.ai/v1/grok
-          GROK_API_KEY: test-placeholder

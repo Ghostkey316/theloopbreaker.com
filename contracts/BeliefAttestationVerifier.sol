@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity ^0.8.25;
 
 import "./IStarkVerifier.sol";
 
@@ -198,6 +198,13 @@ contract BeliefAttestationVerifier is IStarkVerifier {
         proverAddress;
         epoch;
         moduleID;
+
+        // Hard guardrail: this development verifier MUST NOT be used on real networks.
+        // Local dev / testnets only.
+        require(
+            block.chainid == 31337 || block.chainid == 1337,
+            "DEV_VERIFIER_DO_NOT_DEPLOY"
+        );
 
         // ⚠️ PLACEHOLDER: Returns true for any proof >= 32 bytes
         // ⚠️ REPLACE WITH REAL STARK VERIFIER BEFORE PRODUCTION

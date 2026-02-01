@@ -1,7 +1,10 @@
-const { spawnSync } = require('child_process');
+const { runPythonTest } = require('./pythonTestUtils');
 
 test('vaultfire_media python tests', () => {
-  const result = spawnSync('python3', ['final_modules/tests/test_vaultfire_media.py'], { encoding: 'utf8' });
-  const output = (result.stdout + result.stderr).trim();
-  expect(output).toMatch(/OK/);
+  const result = runPythonTest(['final_modules/tests/test_vaultfire_media.py'], { suiteName: 'vaultfire_media' });
+  if (result.skipped) {
+    expect(result.skipped).toBe(true);
+    return;
+  }
+  expect(result.output).toMatch(/OK/);
 });

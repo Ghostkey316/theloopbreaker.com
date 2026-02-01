@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity ^0.8.25;
 
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
@@ -122,9 +122,7 @@ abstract contract BaseDignityBond is ReentrancyGuard, Pausable {
     function cancelOwnershipTransfer() external onlyOwner {
         require(pendingOwner != address(0), "No pending transfer to cancel");
 
-        address cancelledPendingOwner = pendingOwner;
         pendingOwner = address(0);
-
         emit OwnershipTransferStarted(owner, address(0)); // Signal cancellation
     }
 

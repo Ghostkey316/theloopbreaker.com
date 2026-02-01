@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity ^0.8.25;
 
 import "./BaseDignityBond.sol";
 
@@ -172,9 +172,12 @@ abstract contract BaseYieldPoolBond is BaseDignityBond {
 
         emit YieldPoolUsed(bondId, amount, yieldPool);
 
-        // Emit warning if pool is getting low
+        // Emit warning if pool is getting low.
+        // NOTE: yieldPool can be between [minimum, 2×minimum). In that case, "deficit" is 0,
+        // and we must NOT underflow (Solidity 0.8+ checked arithmetic).
         if (yieldPool < minimumYieldPoolBalance * 2) {
-            emit LowYieldPoolWarning(yieldPool, minimumYieldPoolBalance, minimumYieldPoolBalance - yieldPool);
+            uint256 deficit = yieldPool >= minimumYieldPoolBalance ? 0 : (minimumYieldPoolBalance - yieldPool);
+            emit LowYieldPoolWarning(yieldPool, minimumYieldPoolBalance, deficit);
         }
     }
 

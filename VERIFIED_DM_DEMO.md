@@ -2,7 +2,9 @@
 
 ## Summary
 
-**We built a perfect demo of Vaultfire + XMTP integration** showcasing verified DMs with anti-spam filtering.
+**We built a working UX demo of a Vaultfire + XMTP integration** showcasing a Verified/Spam inbox split with anti-spam filtering.
+
+Important: in the current demo, the trust signals (attestations / scores) are **mocked locally**. It is a UX + policy prototype, not yet a full on-chain attestation integration.
 
 ### Location
 ```

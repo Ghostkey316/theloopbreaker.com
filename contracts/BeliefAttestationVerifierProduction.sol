@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity ^0.8.25;
 
 import "./IStarkVerifier.sol";
 import "./IRiscZeroVerifier.sol";
@@ -163,7 +163,7 @@ contract BeliefAttestationVerifierProduction is IStarkVerifier {
         address proverAddress,
         uint256 epoch,
         uint256 moduleID
-    ) internal view returns (bool) {
+    ) internal returns (bool) {
         // Validate proof is non-empty
         require(proofBytes.length > 0, "Empty proof");
 

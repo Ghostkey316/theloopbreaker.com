@@ -22,11 +22,20 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Guardrails (no KYC / no surveillance)
+        run: |
+          npm run lint:guardrails
+          npm run lint:values
+          npm run lint:privileged-surface
+          npm run lint:events-surface
+          npm run lint:external-calls
+          npm run lint:storage-growth
       - name: Build TypeScript (root only, excludes base-mini-app)
         run: npm run build:test
       - name: Run tests
         env:
           CI: true
+          VAULTFIRE_TEST_QUIET: "1"
         run: npm test
       - name: Upload coverage report
         if: always()

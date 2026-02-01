@@ -1,5 +1,12 @@
 # AI-Human Trust Layer Integration
 
+> **Agent/skill security note:** If you're adapting Vaultfire primitives to agent tooling, see:
+> - `AGENT_CAPABILITY_MANIFEST.md`
+> - `ATTESTATION_SCHEMA.md`
+> - `TRUST_STACK_MATURITY_MODEL.md`
+> - `INCIDENT_TRIAGE_CHECKLIST.md`
+> - `ANTI_PANOPTICON_INVARIANTS.md`
+
 **Vaultfire's Complete AI Verification System**
 
 ## Overview

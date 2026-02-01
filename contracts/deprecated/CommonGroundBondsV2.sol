@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.25;
 
-import "./BaseYieldPoolBond.sol";
+import "../BaseYieldPoolBond.sol";
+import "../MissionEnforcement.sol";
 
 /**
  * @title Common Ground Bonds V2 (Production Ready)
@@ -12,6 +13,14 @@ import "./BaseYieldPoolBond.sol";
  * @custom:ethics Unity without destroying diversity, dual-party verification
  */
 contract CommonGroundBondsV2 is BaseYieldPoolBond {
+
+    // ============ Mission Enforcement (optional, off by default) ============
+
+    MissionEnforcement public missionEnforcement;
+    bool public missionEnforcementEnabled;
+
+    event MissionEnforcementUpdated(address indexed previous, address indexed current);
+    event MissionEnforcementEnabled(bool enabled);
 
     struct Bond {
         uint256 bondId;
@@ -72,6 +81,40 @@ contract CommonGroundBondsV2 is BaseYieldPoolBond {
 
     modifier onlyParticipants(uint256 bondId) { require(bonds[bondId].person1 == msg.sender || bonds[bondId].person2 == msg.sender, "Only participants"); _; }
     modifier bondExists(uint256 bondId) { require(bonds[bondId].active, "Bond does not exist"); _; }
+
+    constructor() {
+        // Mission enforcement is optional/off by default.
+        missionEnforcementEnabled = false;
+    }
+
+    function setMissionEnforcement(address mission) external onlyOwner {
+        address previous = address(missionEnforcement);
+        missionEnforcement = MissionEnforcement(mission);
+        emit MissionEnforcementUpdated(previous, mission);
+    }
+
+    function setMissionEnforcementEnabled(bool enabled) external onlyOwner {
+        missionEnforcementEnabled = enabled;
+        emit MissionEnforcementEnabled(enabled);
+    }
+
+    function _requireMissionCompliance() internal view {
+        if (!missionEnforcementEnabled) return;
+        address m = address(missionEnforcement);
+        require(m != address(0), "MissionEnforcement not set");
+
+        // Minimal gating set (can expand over time):
+        // - Community can challenge any claim
+        // - Privacy default
+        require(
+            missionEnforcement.isCompliantWithPrinciple(address(this), MissionEnforcement.CorePrinciple.COMMUNITY_CHALLENGES),
+            "Mission: community challenges"
+        );
+        require(
+            missionEnforcement.isCompliantWithPrinciple(address(this), MissionEnforcement.CorePrinciple.PRIVACY_DEFAULT),
+            "Mission: privacy default"
+        );
+    }
 
     /**
      * @notice Create Common Ground Bond for bridge-building across divides
@@ -170,6 +213,7 @@ contract CommonGroundBondsV2 is BaseYieldPoolBond {
     }
 
     function requestDistribution(uint256 bondId) external onlyParticipants(bondId) bondExists(bondId) whenNotPaused {
+        _requireMissionCompliance();
         Bond storage bond = bonds[bondId];
         require(!bond.distributionPending, "Distribution already pending");
         bond.distributionRequestedAt = block.timestamp;
@@ -202,6 +246,7 @@ contract CommonGroundBondsV2 is BaseYieldPoolBond {
      * @custom:ethics Superficial bridges don't profit - must be genuine
      */
     function distributeBond(uint256 bondId) external nonReentrant whenNotPaused onlyParticipants(bondId) bondExists(bondId) {
+        _requireMissionCompliance();
         Bond storage bond = bonds[bondId];
         require(bond.distributionPending, "Must request distribution first");
         require(block.timestamp >= bond.distributionRequestedAt + DISTRIBUTION_TIMELOCK, "Timelock not expired");

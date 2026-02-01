@@ -314,6 +314,9 @@ describe("VerdantAnchorBondsV2 - Earth Regeneration > Extraction", function () {
 
     describe("Distribution Flow - Regenerator + Landowner Split", function () {
         beforeEach(async function () {
+            // V2 distributions with positive appreciation require the yield pool to be funded.
+            await verdantAnchor.connect(owner).fundYieldPool({ value: ethers.parseEther("100") });
+
             await verdantAnchor.connect(regenerator).createBond(
                 landowner.address,
                 "Regeneration Co",
