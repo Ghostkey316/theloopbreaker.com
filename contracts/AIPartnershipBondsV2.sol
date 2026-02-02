@@ -185,6 +185,9 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
         // Initialize distribution baseline to the initial stake.
         lastDistributedValue[bondId] = msg.value;
 
+        // ✅ HIGH-003 FIX: Track total active bond value for reserve ratio calculation
+        _updateTotalActiveBondValue(totalActiveBondValue + msg.value);
+
         emit BondCreated(bondId, msg.sender, aiAgent, partnershipType, msg.value, block.timestamp);
         return bondId;
     }
@@ -287,6 +290,11 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
         _requireMissionCompliance();
         Bond storage bond = bonds[bondId];
         require(!bond.distributionPending, "Distribution already pending");
+
+        // ✅ CRITICAL-002 & HIGH-002 FIX: Snapshot appreciation to prevent manipulation
+        int256 appreciation = calculateAppreciation(bondId);
+        _trackPendingDistribution(bondId, appreciation);
+
         bond.distributionRequestedAt = block.timestamp;
         bond.distributionPending = true;
         emit DistributionRequested(bondId, msg.sender, block.timestamp, block.timestamp + DISTRIBUTION_TIMELOCK);
@@ -360,6 +368,10 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
             timestamp: block.timestamp, totalAmount: appreciation,
             humanShare: humanShare, aiShare: aiShare, partnershipFundShare: fundShare, reason: reason
         }));
+
+        // ✅ HIGH-003 FIX + CEI PATTERN: Update state BEFORE external calls (prevents reentrancy)
+        bond.active = false;
+        _updateTotalActiveBondValue(totalActiveBondValue - bond.stakeAmount);
 
         // CRITICAL FIX: Explicit balance checks before transfers
         uint256 totalPayout = humanShare + aiShare;

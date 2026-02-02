@@ -222,6 +222,15 @@ For Humans:
 - `BaseYieldPoolBond.sol` - Shared yield pool mechanics
 - `BaseDignityBond.sol` - Core bond primitives
 
+**ERC-8004 Trustless Agent Standard Integration:**
+- `ERC8004IdentityRegistry.sol` - On-chain AI agent identities (portable across platforms)
+- `ERC8004ReputationRegistry.sol` - Decentralized reputation from verified partnerships
+- `ERC8004ValidationRegistry.sol` - Cryptoeconomic claim validation (ZK proofs + multi-validator)
+- `VaultfireERC8004Adapter.sol` - Bridge VaultFire partnerships to ERC-8004 ecosystem
+- **Portable reputation:** VaultFire trust works across entire ERC-8004 ecosystem
+- **Agent discovery:** Find trustworthy AI agents via standard registries
+- **No KYC maintained:** Wallet addresses only, privacy-first
+
 **Zero-Knowledge Proof Infrastructure:**
 - `BeliefAttestationVerifier.sol` - RISC Zero STARK proof verifier
 - `DilithiumAttestor.sol` - Quantum-resistant hybrid attestation
@@ -329,11 +338,13 @@ The project includes a production-ready Base dApp in `/base-mini-app`:
 - [External Calls Surface (Autogen)](./docs/security/EXTERNAL_CALLS_SURFACE_AUTOGEN.md) - machine-generated map of low-level call sites
 - [Storage Growth Surface (Autogen)](./docs/security/STORAGE_GROWTH_SURFACE_AUTOGEN.md) - machine-generated map of unbounded state growth vectors
 - [Security Audit Reports](./COMPREHENSIVE_PROTOCOL_AUDIT_2026.md) - Latest audit findings
+- [ERC-8004 Integration](./docs/ERC8004_INTEGRATION.md) - **NEW:** Trustless agent standard integration
 
 **For Developers:**
 - Smart contract API documentation (in code comments)
 - Test cases (comprehensive examples in `/test`)
 - [Deployment Guide](./DEPLOYMENT_GUIDE.md) - Production deployment instructions
+- [ERC-8004 Integration Guide](./docs/ERC8004_INTEGRATION.md) - Portable reputation across platforms
 
 **Partnership & Integration Materials:**
 - [Partnership Master Plan](./PARTNERSHIP_MASTER_PLAN.md) - Strategic partnership approach

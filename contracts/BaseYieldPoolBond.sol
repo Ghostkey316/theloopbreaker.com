@@ -33,6 +33,19 @@ abstract contract BaseYieldPoolBond is BaseDignityBond {
     /// @dev Can be disabled by governance in special circumstances
     bool public yieldPoolEnforced;
 
+    /// @notice Total pending distribution amounts across all bonds
+    /// @dev CRITICAL-002 FIX: Tracks obligations to prevent insolvency
+    uint256 public totalPendingDistributions;
+
+    /// @notice Pending distribution amount for each bond
+    /// @dev bondId => pending amount waiting for distribution
+    mapping(uint256 => uint256) public pendingDistributionAmounts;
+
+    /// @notice Snapshotted appreciation at distribution request time
+    /// @dev HIGH-002 FIX: Prevents metrics manipulation during timelock
+    /// @dev bondId => appreciation value at request time
+    mapping(uint256 => int256) public snapshotAppreciation;
+
     // ============ Constants ============
 
     /// @notice Default minimum yield pool balance (10 ETH)
@@ -68,8 +81,10 @@ abstract contract BaseYieldPoolBond is BaseDignityBond {
      *
      * Mission Alignment: Decentralized funding ensures no single point of control.
      * Community can support the protocol's economic sustainability.
+     *
+     * @custom:security MEDIUM-003 FIX: Added nonReentrant for best practices
      */
-    function fundYieldPool() external payable {
+    function fundYieldPool() external payable nonReentrant {
         require(msg.value > 0, "Must send ETH");
 
         yieldPool += msg.value;
@@ -135,6 +150,7 @@ abstract contract BaseYieldPoolBond is BaseDignityBond {
      * @param amount Amount of appreciation to deduct
      *
      * @custom:security Includes solvency checks to prevent insolvency
+     * @custom:security CRITICAL-002 FIX: Removes pending distribution tracking after use
      */
     function _useYieldPool(uint256 bondId, uint256 amount) internal {
         // Check yield pool sufficiency
@@ -148,6 +164,12 @@ abstract contract BaseYieldPoolBond is BaseDignityBond {
 
         yieldPool -= amount;
 
+        // ✅ CRITICAL-002 FIX: Remove from pending distributions
+        if (pendingDistributionAmounts[bondId] > 0) {
+            totalPendingDistributions -= pendingDistributionAmounts[bondId];
+            pendingDistributionAmounts[bondId] = 0;
+        }
+
         emit YieldPoolUsed(bondId, amount, yieldPool);
 
         // Emit warning if pool is getting low.
@@ -157,6 +179,31 @@ abstract contract BaseYieldPoolBond is BaseDignityBond {
             uint256 deficit = yieldPool >= minimumYieldPoolBalance ? 0 : (minimumYieldPoolBalance - yieldPool);
             emit LowYieldPoolWarning(yieldPool, minimumYieldPoolBalance, deficit);
         }
+    }
+
+    /**
+     * @notice Track pending distribution request
+     * @dev CRITICAL-002 FIX: Prevents insolvency by checking total obligations
+     * @dev HIGH-002 FIX: Snapshots appreciation to prevent front-running
+     * @param bondId ID of bond requesting distribution
+     * @param appreciationValue Appreciation value at request time (can be negative)
+     */
+    function _trackPendingDistribution(uint256 bondId, int256 appreciationValue) internal {
+        require(appreciationValue != 0, "No appreciation to distribute");
+
+        uint256 amount = appreciationValue > 0 ? uint256(appreciationValue) : uint256(-appreciationValue);
+
+        // ✅ CRITICAL-002 FIX: Check yield pool can cover ALL pending distributions
+        require(
+            yieldPool >= totalPendingDistributions + amount,
+            "Insufficient yield pool for all pending distributions"
+        );
+
+        // ✅ HIGH-002 FIX: Snapshot appreciation to prevent metrics manipulation
+        snapshotAppreciation[bondId] = appreciationValue;
+
+        pendingDistributionAmounts[bondId] = amount;
+        totalPendingDistributions += amount;
     }
 
     /**
