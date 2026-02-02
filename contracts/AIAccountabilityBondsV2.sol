@@ -797,6 +797,10 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
 
         // ✅ Safe ETH transfers using .call{} instead of deprecated .transfer()
 
+        // ✅ HIGH-003 FIX + CEI PATTERN: Update state BEFORE external calls (prevents reentrancy)
+        bond.active = false;
+        _updateTotalActiveBondValue(totalActiveBondValue - bond.stakeAmount);
+
         // Transfer AI company share
         // CRITICAL FIX: Explicit balance checks before transfers
         uint256 totalPayout = humanShare + aiCompanyShare;
@@ -814,10 +818,6 @@ contract AIAccountabilityBondsV2 is BaseYieldPoolBond {
             (bool successHuman, ) = humanTreasury.call{value: humanShare}("");
             require(successHuman, "Human treasury transfer failed");
         }
-
-        // ✅ HIGH-003 FIX: Update total active bond value (bond no longer active)
-        bond.active = false;
-        _updateTotalActiveBondValue(totalActiveBondValue - bond.stakeAmount);
 
         emit BondDistributed(
             bondId,

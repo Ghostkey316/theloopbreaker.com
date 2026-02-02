@@ -369,6 +369,10 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
             humanShare: humanShare, aiShare: aiShare, partnershipFundShare: fundShare, reason: reason
         }));
 
+        // ✅ HIGH-003 FIX + CEI PATTERN: Update state BEFORE external calls (prevents reentrancy)
+        bond.active = false;
+        _updateTotalActiveBondValue(totalActiveBondValue - bond.stakeAmount);
+
         // CRITICAL FIX: Explicit balance checks before transfers
         uint256 totalPayout = humanShare + aiShare;
         require(address(this).balance >= totalPayout, "Insufficient contract balance for distribution");
@@ -388,10 +392,6 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
             partnershipFund += fundShare;
             emit PartnershipFundAccrued(bondId, fundShare, partnershipFund, block.timestamp);
         }
-
-        // ✅ HIGH-003 FIX: Update total active bond value (bond no longer active)
-        bond.active = false;
-        _updateTotalActiveBondValue(totalActiveBondValue - bond.stakeAmount);
 
         emit BondDistributed(bondId, humanShare, aiShare, fundShare, reason, block.timestamp);
     }
