@@ -9,10 +9,10 @@ Vaultfire principle: external call sites are part of the attack surface and shou
 ## Sites
 
 - contracts/AIAccountabilityBondsV2.sol:652 [call{value:}] (bool success, ) = recipient.call{value: payoutAmount}("");
-- contracts/AIAccountabilityBondsV2.sol:807 [call{value:}] (bool successAI, ) = payable(bond.aiCompany).call{value: aiCompanyShare}("");
-- contracts/AIAccountabilityBondsV2.sol:814 [call{value:}] (bool successHuman, ) = humanTreasury.call{value: humanShare}("");
-- contracts/AIPartnershipBondsV2.sol:379 [call{value:}] (bool successHuman, ) = payable(bond.human).call{value: humanShare}("");
-- contracts/AIPartnershipBondsV2.sol:384 [call{value:}] (bool successAI, ) = payable(bond.aiAgent).call{value: aiShare}("");
+- contracts/AIAccountabilityBondsV2.sol:811 [call{value:}] (bool successAI, ) = payable(bond.aiCompany).call{value: aiCompanyShare}("");
+- contracts/AIAccountabilityBondsV2.sol:818 [call{value:}] (bool successHuman, ) = humanTreasury.call{value: humanShare}("");
+- contracts/AIPartnershipBondsV2.sol:383 [call{value:}] (bool successHuman, ) = payable(bond.human).call{value: humanShare}("");
+- contracts/AIPartnershipBondsV2.sol:388 [call{value:}] (bool successAI, ) = payable(bond.aiAgent).call{value: aiShare}("");
 - contracts/BaseYieldPoolBond.sol:112 [call{value:}] (bool success, ) = payable(owner).call{value: amount}("");
 - contracts/BeliefAttestationVerifierProduction.sol:178 [try-call] try riscZeroVerifier.verify(
 - contracts/BeliefOracle.sol:96 [try-call] try rewardStream.updateMultiplier(msg.sender, BONUS_MULTIPLIER) {

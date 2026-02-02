@@ -100,7 +100,7 @@ Vaultfire principle: monitoring should be **privacy-preserving** (protocol integ
 - contracts/AIPartnershipBondsV2.sol:286 → HumanVerificationSubmitted
 - contracts/AIPartnershipBondsV2.sol:300 → DistributionRequested
 - contracts/AIPartnershipBondsV2.sol:355 → AIDominationPenalty
-- contracts/AIPartnershipBondsV2.sol:389 → PartnershipFundAccrued
+- contracts/AIPartnershipBondsV2.sol:393 → PartnershipFundAccrued
 - contracts/AIPartnershipBondsV2.sol:396 → BondDistributed
 - contracts/AntiSurveillance.sol:118 → ModuleBannedForSurveillance
 - contracts/AntiSurveillance.sol:139 → ModuleVerifiedSurveillanceFree
