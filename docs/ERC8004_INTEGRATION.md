@@ -469,7 +469,7 @@ A: Malicious validators lose their stake through slashing. Multi-validator conse
 A: Only verified partnership quality scores are synced - no personal data. ZK proofs allow validation without revealing private information.
 
 **Q: Can I delete my ERC-8004 data?**
-A: Yes! VaultFire's `PrivacyGuarantees` contract supports right to be forgotten. You can deactivate your agent registration anytime.
+A: You can **deactivate** your agent/registry entries and submit a **deletion request** via Vaultfire’s `PrivacyGuarantees` contract so modules stop writing new user-associated data. Note: anything already written to a public blockchain is **immutable**; “deletion” means *future writes stop* + *off-chain systems delete/redact* under policy.
 
 ---
 

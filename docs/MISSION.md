@@ -126,7 +126,7 @@ If you're applying Vaultfire to agent systems/skills, these repo docs translate 
 
 **5. Transparent and Auditable**
 - All code is open-source (GitHub)
-- All rules are published and immutable
+- All mission-critical rules are published and immutable (non-critical parameters may change via transparent governance)
 - No hidden algorithms or black-box scoring
 - Community can verify fairness
 

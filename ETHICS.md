@@ -137,7 +137,7 @@
 1. **Never collect KYC data** - Wallet address is enough
 2. **Never work with surveillance states** - No government digital ID systems
 3. **Never use dark patterns** - No manipulation, just transparency
-4. **Always preserve privacy** - ZK proofs mean we CAN'T see your data
+4. **Always preserve privacy** - ZK proofs + client-side processing are designed so we don’t need to see your raw data (and we treat collecting it as a violation)
 5. **Always be open-source** - Anyone can audit our code
 6. **Wallet-only forever** - Your keys, your identity, your control
 

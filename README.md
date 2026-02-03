@@ -18,7 +18,7 @@ Like HTTPS secures communication between browsers and servers, Vaultfire secures
 - Zero-knowledge proof systems (RISC Zero + quantum-resistant cryptography)
 - Economic verification (staked accountability bonds)
 - Sovereign identity (no central authority controls reputation)
-- Privacy guarantees (consent, data minimization, right to be forgotten)
+- Privacy guarantees (consent by purpose-hash, data minimization, deletion requests + off-chain redaction; on-chain history is immutable)
 - Anti-surveillance shield (cryptographic ban on behavioral tracking)
 - Mission enforcement (immutable moral principles enforced by smart contracts)
 
@@ -239,7 +239,7 @@ For Humans:
 - `MultiOracleConsensus.sol` - Multi-source oracle aggregation
 
 **Privacy & Security Infrastructure:**
-- `PrivacyGuarantees.sol` - Consent, data minimization, right to be forgotten
+- `PrivacyGuarantees.sol` - Consent-by-hash, data minimization, deletion requests (stop future writes + off-chain deletion/redaction policy)
 - `AntiSurveillance.sol` - Cryptographic ban on behavioral tracking
 - `MissionEnforcement.sol` - Immutable moral principles enforcement
 - `ConsentRegistry.sol` - Programmable consent tokens
@@ -248,7 +248,7 @@ For Humans:
 - **Zero-knowledge proofs** via RISC Zero (verify without revealing private data)
 - **Post-quantum security** (STARK proofs + quantum-resistant signatures)
 - **No trusted setup** (transparent proof system)
-- **Privacy guarantees** (consent, data minimization, deletion rights)
+- **Privacy guarantees** (consent-by-hash, data minimization, deletion requests + off-chain deletion/redaction policy)
 - **Anti-surveillance shield** (banned: tracking, profiling, data sale)
 - **Mission enforcement** (immutable moral principles at contract level)
 - Privacy-preserving verification (prove loyalty without exposing identity)
@@ -414,7 +414,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 **Non-negotiable principles** (enforced at smart contract level, cannot be changed by governance):
 - Human verification always has final say (MissionEnforcement contract)
 - AI profit caps (30% max in partnerships, 50% in accountability)
-- Privacy default (PrivacyGuarantees contract - consent, data minimization, deletion rights)
+- Privacy default (PrivacyGuarantees contract - consent-by-hash, data minimization, deletion requests + off-chain deletion/redaction policy)
 - No surveillance (AntiSurveillance contract - cryptographic ban on tracking)
 - Community can challenge any claim
 - Open source, verifiable, auditable
