@@ -30,6 +30,34 @@ npm install @vaultfire/sdk ethers
 
 ## Quick Start
 
+### Recommended (safe defaults)
+
+Use `VaultfireSafeSDK` to avoid accidentally leaking raw statements/PII and to keep analytics off by default.
+
+```typescript
+import { VaultfireSafeSDK, ModuleType } from '@vaultfire/sdk';
+import { Wallet } from 'ethers';
+
+const vaultfire = new VaultfireSafeSDK({
+  chain: 'base',
+  privacySalt: process.env.VAULTFIRE_PRIVACY_SALT,
+});
+
+vaultfire.connect(new Wallet('YOUR_PRIVATE_KEY'));
+
+const result = await vaultfire.verifyStatement({
+  statement: 'I contribute to open source',
+  moduleId: ModuleType.GITHUB,
+});
+
+console.log('Verified:', result.verified);
+console.log('TX Hash:', result.txHash);
+```
+
+See: [SAFE_DEFAULTS.md](./SAFE_DEFAULTS.md)
+
+### Raw SDK (advanced)
+
 ```typescript
 import { VaultfireSDK, ModuleType } from '@vaultfire/sdk';
 import { Wallet } from 'ethers';

@@ -423,3 +423,7 @@ export default VaultfireSDK;
 export function createVaultfireSDK(chain: ChainId = 'base'): VaultfireSDK {
   return new VaultfireSDK({ chain });
 }
+
+// Safe-default wrapper (privacy-preserving)
+export { VaultfireSafeSDK, createVaultfireSafeSDK, createVaultfireSafeSDKForChain } from './safe';
+export type { VaultfireSafeConfig, VerifyStatementRequest } from './safe';

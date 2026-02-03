@@ -11,6 +11,6 @@
     "skipLibCheck": true,
     "resolveJsonModule": true
   },
-  "include": ["vaultfire.ts", "api-server.ts", "index.ts"],
+  "include": ["vaultfire.ts", "safe.ts", "api-server.ts", "index.ts"],
   "exclude": ["dist", "tests", "node_modules", "examples"]
 }
