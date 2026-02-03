@@ -6,7 +6,7 @@ This doc is a map from **principle → mechanism → test**.
 
 ---
 
-## Invariant 1 — Humans thrive 0 AI profits
+## Invariant 1 — Humans thrive ≥ AI profits
 
 **Claim:** AI should not be able to profit while humans are suffering.
 
@@ -38,6 +38,7 @@ This doc is a map from **principle → mechanism → test**.
   - `contracts/AIPartnershipBondsV2.sol`
 - Tests:
   - `test/AIPartnershipBonds.test.js` (profit cap, domination penalty, loyalty)
+  - `tests/loyaltyEngine.fuzz.test.js` (randomized monotonic tier + multiplier combination properties)
 
 ---
 
