@@ -13,5 +13,14 @@
     "types": ["node", "jest"]
   },
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", "dist", ".github", "apps/vaultfire-arcade", "apps/verified-dm-demo", "base-mini-app"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".github",
+    "apps/vaultfire-arcade",
+    "apps/verified-dm-demo",
+    "base-mini-app",
+    "sdk/examples"
+  ]
 }
+
