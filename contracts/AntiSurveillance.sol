@@ -28,6 +28,17 @@ pragma solidity ^0.8.25;
  */
 contract AntiSurveillance {
 
+    /// @notice Admin for enforcement actions (defaults to deployer; use multisig in production)
+    address public owner;
+
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner");
+        _;
+    }
+
+
     /**
      * @notice Protocol commitment to anti-surveillance
      * @dev Immutable - this protocol will NEVER collect surveillance data
@@ -112,10 +123,24 @@ contract AntiSurveillance {
         require(bytes(evidence).length > 0, "Evidence required");
         require(bytes(evidence).length <= 1000, "Evidence too long");
 
-        // Ban the module immediately (safety first)
-        bannedForSurveillance[module] = true;
-
+        // NOTE: Reporting is intentionally non-binding to prevent griefing/DoS.
+        // Enforcement actions must be executed via governance/admin process.
         emit ModuleBannedForSurveillance(module, violationType, evidence, block.timestamp);
+    }
+
+    /// @notice Governance/admin action: ban a module for surveillance.
+    function banModuleForSurveillance(address module, BannedDataType violationType, string memory reason)
+        external
+        onlyOwner
+    {
+        require(bytes(reason).length > 0, "Reason required");
+        bannedForSurveillance[module] = true;
+        emit ModuleBannedForSurveillance(module, violationType, reason, block.timestamp);
+    }
+
+    /// @notice Governance/admin action: unban a module (appeal or false report).
+    function unbanModule(address module) external onlyOwner {
+        bannedForSurveillance[module] = false;
     }
 
     /**
@@ -131,7 +156,22 @@ contract AntiSurveillance {
      * @dev In production, this should be controlled by DAO governance
      * @param module Address of module to verify
      */
-    function verifyModuleSurveillanceFree(address module) external {
+    constructor() {
+        owner = msg.sender;
+    }
+
+    function transferOwnership(address newOwner) external onlyOwner {
+        require(newOwner != address(0), "New owner cannot be zero address");
+        address previous = owner;
+        owner = newOwner;
+        emit OwnershipTransferred(previous, newOwner);
+    }
+
+    /**
+     * @notice Verify a module as surveillance-free (governance-administered)
+     * @dev Restricting this prevents spoofing and preserves the integrity of any downstream gating.
+     */
+    function verifyModuleSurveillanceFree(address module) external onlyOwner {
         require(!bannedForSurveillance[module], "Module previously banned");
         require(surveillanceFreeModules[module] == 0, "Module already verified");
 

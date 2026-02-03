@@ -15,7 +15,7 @@ pragma solidity ^0.8.25;
  * **Privacy Principles:**
  * 1. Data Minimization: Collect only what's absolutely necessary
  * 2. Purpose Limitation: Data used only for stated purpose
- * 3. Right to be Forgotten: Users can delete their data
+ * 3. Right to be Forgotten: Users can request deletion (on-chain means: stop future writes + off-chain deletion; historic chain data is immutable)
  * 4. Transparency: All data collection is explicit and visible
  * 5. Consent: All data usage requires explicit consent
  *
@@ -32,7 +32,7 @@ contract PrivacyGuarantees {
 
     /**
      * @notice Data retention period (30 days after user deletion request)
-     * @dev After this period, all user data must be permanently deleted
+     * @dev Note: on-chain state cannot be erased; "deletion" here means other modules should stop writing user-associated data and off-chain systems should delete/redact within policy.
      */
     uint256 public constant DATA_RETENTION_PERIOD = 30 days;
 

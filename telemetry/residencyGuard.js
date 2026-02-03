@@ -13,7 +13,13 @@ function resolveMobileModeFlag(value) {
 }
 
 const processEnv = typeof process !== 'undefined' && process && process.env ? process.env : {};
-function isMobileRuntimeRelaxed() {
+function isMobileRuntimeRelaxed(config = {}) {
+  // Default: DO NOT relax residency enforcement on mobile/browser.
+  // If a deployment explicitly opts into relaxed mode, it must do so via config.
+  const relaxOnMobile = Boolean(config.relaxOnMobile);
+  if (!relaxOnMobile) {
+    return false;
+  }
   const mobileModeEnvFlag = resolveMobileModeFlag(processEnv.MOBILE_MODE);
   const mobileRuntimeFlag = Boolean(globalScope.__VAULTFIRE_MOBILE_MODE);
   return isBrowserRuntime || mobileModeEnvFlag || mobileRuntimeFlag;
@@ -114,7 +120,7 @@ function createResidencyGuard(config = {}) {
   }
 
   function ensureEndpointAllowed(endpoint, { kind = 'telemetry', region, label = 'endpoint' } = {}) {
-    const relaxed = isMobileRuntimeRelaxed();
+    const relaxed = isMobileRuntimeRelaxed(config);
     if (!enforce || !endpoint || relaxed) {
       return {
         allowed: true,
@@ -174,12 +180,12 @@ function createResidencyGuard(config = {}) {
       }
     }
     return {
-      enforced: Boolean(enforce) && !isMobileRuntimeRelaxed(),
+      enforced: Boolean(enforce) && !isMobileRuntimeRelaxed(config),
       defaultRegion,
       allowLocalhost: Boolean(allowLocalhost),
       summary,
       globalAllowList: normalizedGlobal,
-      mobileRelaxed: isMobileRuntimeRelaxed(),
+      mobileRelaxed: isMobileRuntimeRelaxed(config),
     };
   }
 
