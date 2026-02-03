@@ -40,6 +40,7 @@ Vaultfire principle: monitoring should be **privacy-preserving** (protocol integ
 
 ### AntiSurveillance
 - `event ModuleVerifiedSurveillanceFree(address indexed module, uint256 timestamp);`
+- `event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);`
 
 ### BaseOracle
 - `event VisualizationPinned(address indexed guardian, string cid, string zkHash, uint256 timestamp);`
@@ -102,8 +103,10 @@ Vaultfire principle: monitoring should be **privacy-preserving** (protocol integ
 - contracts/AIPartnershipBondsV2.sol:355 → AIDominationPenalty
 - contracts/AIPartnershipBondsV2.sol:393 → PartnershipFundAccrued
 - contracts/AIPartnershipBondsV2.sol:396 → BondDistributed
-- contracts/AntiSurveillance.sol:118 → ModuleBannedForSurveillance
-- contracts/AntiSurveillance.sol:139 → ModuleVerifiedSurveillanceFree
+- contracts/AntiSurveillance.sol:128 → ModuleBannedForSurveillance
+- contracts/AntiSurveillance.sol:138 → ModuleBannedForSurveillance
+- contracts/AntiSurveillance.sol:167 → OwnershipTransferred
+- contracts/AntiSurveillance.sol:179 → ModuleVerifiedSurveillanceFree
 - contracts/BaseDignityBond.sol:70 → ContractPaused
 - contracts/BaseDignityBond.sol:79 → ContractUnpaused
 - contracts/BaseDignityBond.sol:97 → OwnershipTransferStarted
