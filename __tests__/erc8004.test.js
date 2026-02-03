@@ -7,6 +7,8 @@ const {
   fetchAgentRegistrationFromUri,
   discoverErc8004Agent,
   resolveIpfsUri,
+  validateRemoteUrl,
+  isPrivateHost,
 } = require('../services/erc8004');
 
 describe('ERC-8004 integration', () => {
@@ -23,6 +25,27 @@ describe('ERC-8004 integration', () => {
     expect(resolveIpfsUri('ipfs://bafybeigdyr', 'https://example.com')).toBe('https://example.com/ipfs/bafybeigdyr');
   });
 
+  test('isPrivateHost catches localhost and private ranges', () => {
+    expect(isPrivateHost('localhost')).toBe(true);
+    expect(isPrivateHost('127.0.0.1')).toBe(true);
+    expect(isPrivateHost('10.0.0.5')).toBe(true);
+    expect(isPrivateHost('192.168.1.10')).toBe(true);
+    expect(isPrivateHost('172.16.0.1')).toBe(true);
+    expect(isPrivateHost('172.31.9.9')).toBe(true);
+    expect(isPrivateHost('172.32.0.1')).toBe(false);
+    expect(isPrivateHost('example.com')).toBe(false);
+  });
+
+  test('validateRemoteUrl blocks http by default and blocks private hosts', () => {
+    expect(() => validateRemoteUrl('http://example.com/agent.json')).toThrow('agent-registration-disallowed-scheme');
+    expect(() => validateRemoteUrl('https://127.0.0.1/agent.json')).toThrow('agent-registration-disallowed-host');
+  });
+
+  test('validateRemoteUrl can allow http when enabled', () => {
+    const url = validateRemoteUrl('http://example.com/agent.json', { allowHttp: true, allowPrivate: true });
+    expect(url.protocol).toBe('http:');
+  });
+
   test('fetchAgentRegistrationFromUri supports data:application/json;base64', async () => {
     const payload = {
       type: 'https://eips.ethereum.org/EIPS/eip-8004#registration-v1',
@@ -35,7 +58,20 @@ describe('ERC-8004 integration', () => {
     const uri = `data:application/json;base64,${Buffer.from(JSON.stringify(payload)).toString('base64')}`;
     const registration = await fetchAgentRegistrationFromUri(uri);
     expect(registration.name).toBe('myAgent');
-    expect(registration.services).toEqual([{ name: 'web', endpoint: 'https://example.com', version: null, skills: undefined, domains: undefined }]);
+    expect(registration.services).toEqual([
+      { name: 'web', endpoint: 'https://example.com', version: null, skills: undefined, domains: undefined },
+    ]);
+  });
+
+  test('fetchAgentRegistrationFromUri blocks http url by default (ssrf guard)', async () => {
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn();
+
+    await expect(fetchAgentRegistrationFromUri('http://example.com/agent.json')).rejects.toThrow(
+      'agent-registration-disallowed-scheme',
+    );
+
+    global.fetch = originalFetch;
   });
 
   test('discoverErc8004Agent returns a Vaultfire-friendly record', async () => {
