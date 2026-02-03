@@ -5,6 +5,7 @@ set -e
 npm run lint:syntax
 npm run lint:guardrails
 npm run lint:values
+npm run lint:claim-map
 npm run gen:privileged-surface
 npm run lint:privileged-surface
 npm run gen:events-surface

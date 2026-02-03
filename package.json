@@ -29,6 +29,7 @@
     "gen:storage-growth": "node tools/generate_storage_growth_surface.js",
     "lint:storage-growth": "node tools/check_storage_growth_surface.js",
     "lint:syntax": "node tools/run-eslint-syntax.js",
+    "lint:claim-map": "node tools/claim_map_check.js",
     "preflight": "node tools/preflight-check.js",
     "postinstall": "node scripts/check-mobile-optional.js",
     "deploy:sandbox": "node cli/deployVaultfire.js --env sandbox",
