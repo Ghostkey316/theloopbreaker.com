@@ -27,6 +27,12 @@ Vaultfire principle: privileged power must be **explicit, reviewable, and minima
 - `function setMissionEnforcement(address mission) external onlyOwner`
 - `function setMissionEnforcementEnabled(bool enabled) external onlyOwner`
 
+## AntiSurveillance
+
+- `function transferOwnership(address newOwner) external onlyOwner`
+- `function unbanModule(address module) external onlyOwner`
+- `function verifyModuleSurveillanceFree(address module) external onlyOwner`
+
 ## MissionEnforcement
 
 - `function transferOwnership(address newOwner) external onlyOwner`

@@ -13,12 +13,29 @@ describe('Vaultfire mobile mode toggles', () => {
     delete global.__VAULTFIRE_MOBILE_MODE;
   });
 
-  it('relaxes residency guard enforcement when MOBILE_MODE is set', () => {
+  it('does not relax residency enforcement by default in mobile mode', () => {
     process.env.MOBILE_MODE = 'true';
     jest.resetModules();
     const { createResidencyGuard } = require('../residencyGuard');
     const guard = createResidencyGuard({
       enforce: true,
+      defaultRegion: 'us',
+      telemetry: { us: ['telemetry.us.vaultfire.xyz'] },
+    });
+    expect(() => guard.ensureEndpointAllowed('https://example.invalid', {
+      kind: 'telemetry',
+      region: 'us',
+    })).toThrow(/Residency enforcement blocked/);
+    expect(guard.inspect().mobileRelaxed).toBe(false);
+  });
+
+  it('can explicitly relax residency enforcement in mobile mode when configured', () => {
+    process.env.MOBILE_MODE = 'true';
+    jest.resetModules();
+    const { createResidencyGuard } = require('../residencyGuard');
+    const guard = createResidencyGuard({
+      enforce: true,
+      relaxOnMobile: true,
       defaultRegion: 'us',
       telemetry: { us: ['telemetry.us.vaultfire.xyz'] },
     });
@@ -55,13 +72,21 @@ describe('Vaultfire mobile mode toggles', () => {
     initSpy.mockRestore();
   });
 
-  it('honours global mobile overrides for hybrid runtimes', () => {
+  it('honours global mobile overrides only when explicitly configured', () => {
     delete process.env.MOBILE_MODE;
     global.__VAULTFIRE_MOBILE_MODE = true;
     jest.resetModules();
     const { createResidencyGuard } = require('../residencyGuard');
-    const guard = createResidencyGuard({ enforce: true, defaultRegion: 'eu', telemetry: { eu: ['telemetry.eu'] } });
-    const inspection = guard.inspect();
-    expect(inspection.mobileRelaxed).toBe(true);
+
+    const guardDefault = createResidencyGuard({ enforce: true, defaultRegion: 'eu', telemetry: { eu: ['telemetry.eu'] } });
+    expect(guardDefault.inspect().mobileRelaxed).toBe(false);
+
+    const guardRelaxed = createResidencyGuard({
+      enforce: true,
+      relaxOnMobile: true,
+      defaultRegion: 'eu',
+      telemetry: { eu: ['telemetry.eu'] },
+    });
+    expect(guardRelaxed.inspect().mobileRelaxed).toBe(true);
   });
 });

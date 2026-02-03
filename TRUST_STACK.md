@@ -222,7 +222,8 @@
 │  ✅ Pausable (emergency stop for all bonds)                    │
 │  ✅ Bug bounty (incentivize white-hat disclosure)              │
 │  ✅ Rate limiting (prevent spam/DOS)                           │
-│  ✅ Upgradeability (fix bugs without losing state)             │
+│  ✅ No upgradeable proxies (fixes ship as new deployments +    │
+│     migrations; existing contracts are immutable once live)    │
 └─────────────────────────────────────────────────────────────────┘
 ```
 

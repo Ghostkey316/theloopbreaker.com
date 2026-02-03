@@ -243,7 +243,9 @@ function trackEvent(eventName, { wallet, ...context } = {}) {
   }
   initTelemetry();
   Sentry.withScope((scope) => {
-    scope.setUser({ id: normalized });
+    // Privacy: do not send wallet identifiers to third-party telemetry sinks.
+    // Consent gating can still be wallet-based locally, but outbound identity must be ephemeral.
+    scope.setUser(null);
     scope.setTag('event', eventName);
     const sanitized = sanitizeContext(eventName, context);
     if (Object.keys(sanitized).length) {
@@ -260,7 +262,8 @@ function trackEvent(eventName, { wallet, ...context } = {}) {
         scope.setContext('details', rest);
       }
     }
-    scope.setFingerprint([eventName, normalized]);
+    // Avoid stable fingerprinting that links events across time.
+    scope.setFingerprint([eventName]);
     Sentry.captureMessage(eventName, 'info');
   });
 }

@@ -22,6 +22,11 @@ Still, supply-chain risk matters because:
   - Vite/esbuild
   - misc utility libs (e.g. `tmp`, `undici`, `cookie`, `elliptic`)
 
+### Audit note (2026-02-03)
+- We ran `npm audit fix` (non-force) to pick up safe, non-breaking patches.
+- Remaining advisories largely require **major** toolchain upgrades (e.g., Hardhat/Vite majors) or have **no fix available** upstream.
+- Policy: do not apply `--force` upgrades in a “quiet” way; do them as a dedicated change with full test + release notes.
+
 ## Mitigations already in place
 - **Pinned lockfile** (`package-lock.json`) for deterministic installs.
 - CI runs guardrails + tests so unintended drift is caught quickly.

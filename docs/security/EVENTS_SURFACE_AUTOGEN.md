@@ -40,6 +40,8 @@ Vaultfire principle: monitoring should be **privacy-preserving** (protocol integ
 
 ### AntiSurveillance
 - `event ModuleVerifiedSurveillanceFree(address indexed module, uint256 timestamp);`
+- `event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);`
+- `event SurveillanceAttemptBlocked(address indexed attacker, BannedDataType attemptedType, uint256 timestamp);`
 
 ### BaseOracle
 - `event VisualizationPinned(address indexed guardian, string cid, string zkHash, uint256 timestamp);`
@@ -72,8 +74,8 @@ Vaultfire principle: monitoring should be **privacy-preserving** (protocol integ
 - `event Unpaused();`
 
 ### PrivacyGuarantees
-- `event ConsentGranted(address indexed user, bytes32 indexed purposeHash, string purpose);`
-- `event ConsentRevoked(address indexed user, bytes32 indexed purposeHash, string purpose);`
+- `event ConsentGranted(address indexed user, bytes32 indexed purposeHash);`
+- `event ConsentRevoked(address indexed user, bytes32 indexed purposeHash);`
 - `event DataDeletionRequested(address indexed user, uint256 effectiveAt);`
 - `event DataPermanentlyDeleted(address indexed user, uint256 timestamp);`
 
@@ -102,8 +104,10 @@ Vaultfire principle: monitoring should be **privacy-preserving** (protocol integ
 - contracts/AIPartnershipBondsV2.sol:355 → AIDominationPenalty
 - contracts/AIPartnershipBondsV2.sol:393 → PartnershipFundAccrued
 - contracts/AIPartnershipBondsV2.sol:396 → BondDistributed
-- contracts/AntiSurveillance.sol:118 → ModuleBannedForSurveillance
-- contracts/AntiSurveillance.sol:139 → ModuleVerifiedSurveillanceFree
+- contracts/AntiSurveillance.sol:97 → OwnershipTransferred
+- contracts/AntiSurveillance.sol:112 → ModuleBannedForSurveillance
+- contracts/AntiSurveillance.sol:124 → ModuleBannedForSurveillance
+- contracts/AntiSurveillance.sol:141 → ModuleVerifiedSurveillanceFree
 - contracts/BaseDignityBond.sol:70 → ContractPaused
 - contracts/BaseDignityBond.sol:79 → ContractUnpaused
 - contracts/BaseDignityBond.sol:97 → OwnershipTransferStarted
@@ -158,9 +162,9 @@ Vaultfire principle: monitoring should be **privacy-preserving** (protocol integ
 - contracts/MultiOracleConsensus.sol:613 → ConsensusReached
 - contracts/MultiOracleConsensus.sol:729 → OracleSlashed
 - contracts/MultiOracleConsensus.sol:804 → RewardPoolFunded
-- contracts/PrivacyGuarantees.sol:94 → ConsentGranted
-- contracts/PrivacyGuarantees.sol:104 → ConsentRevoked
-- contracts/PrivacyGuarantees.sol:118 → DataDeletionRequested
+- contracts/PrivacyGuarantees.sol:69 → ConsentGranted
+- contracts/PrivacyGuarantees.sol:79 → ConsentRevoked
+- contracts/PrivacyGuarantees.sol:92 → DataDeletionRequested
 - contracts/VaultfireERC8004Adapter.sol:114 → AgentAutoRegistered
 - contracts/VaultfireERC8004Adapter.sol:156 → PartnershipReputationSynced
 
