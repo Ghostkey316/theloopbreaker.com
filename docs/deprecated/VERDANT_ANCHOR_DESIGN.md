@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Verdant Anchor - The Earth-Side of Vaultfire
 
 **Mission:** Make regenerating Earth more profitable than extracting from it.

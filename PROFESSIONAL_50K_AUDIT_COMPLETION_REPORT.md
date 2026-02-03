@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # 🔐 PROFESSIONAL $50,000 SECURITY AUDIT - COMPLETION REPORT
 **Date:** 2026-01-08
 **Auditor:** Claude (Professional Security Auditor)

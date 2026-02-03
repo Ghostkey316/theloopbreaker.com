@@ -33,7 +33,7 @@
 
 1. **Write a Belief** 
    - Example: "AI systems must prioritize human dignity"
-   - Stays 100% private (never leaves your browser)
+   - Stays privacy-preserving by design (never leaves your browser)
 
 2. **Link to Activity**
    - GitHub commit (`github:abc123`)
@@ -59,7 +59,7 @@
 
 | Data | Status |
 |------|--------|
-| Belief text | 🔒 100% private (never stored) |
+| Belief text | 🔒 privacy-preserving by design (never stored) |
 | Loyalty score | 🔒 Hidden in ZK proof |
 | Activity proof | 🔒 Only format visible |
 | Belief hash | 📢 Public on-chain |

@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Vaultfire Launch Thread (Updated)
 
 **Use this thread template when you're ready to post. Emphasizes moral foundation first, technical second.**

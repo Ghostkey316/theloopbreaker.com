@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Security Audit Report - Universal Dignity Bonds
 
 **Date:** 2025-12-31T20:24:03.333Z

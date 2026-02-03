@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # NanoLoop v3.0 – Predictive Immunity Layer
 
 NanoLoop v3.0 introduces a proactive protection layer called **NanoShield**. It focuses on identifying stress indicators before damage occurs and creates temporary soft barriers around at-risk regions.

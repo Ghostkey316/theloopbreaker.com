@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # NanoLoop v6.0 – Sovereign Loop Layer
 
 NanoLoop v6.0 introduces the **Sovereign Loop**, a recursive behavior engine that allows Vaultfire agents to self-reflect and adjust in real time. Each command is validated against the Ghostkey Ethics Framework and encrypted using GuardianNet with CrossMirror support.

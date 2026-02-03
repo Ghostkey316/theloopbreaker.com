@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Vaultfire Founder's Manifesto
 
 This document outlines the personal principles of Ghostkey-316, the original architect of Vaultfire.

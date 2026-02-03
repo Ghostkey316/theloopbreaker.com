@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Vaultfire Play2Earn Engine
 
 The Play2Earn module links external game accounts with Vaultfire and rewards contributors for verified play sessions.

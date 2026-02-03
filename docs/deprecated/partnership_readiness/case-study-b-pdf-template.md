@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Case Study B PDF Layout – Orchestrating Ethical Engagement Through NS3 & Ghostkey Signals
 
 **Partner:** _______________________________

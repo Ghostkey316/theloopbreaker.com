@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Governance Configuration
 
 Vaultfire governance defaults are production-safe but partners should supply their own `.govrc` file or pass `--config-path=`

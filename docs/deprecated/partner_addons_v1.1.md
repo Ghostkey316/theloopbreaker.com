@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Partner Add-ons v1.1
 
 This update introduces four optional modules for partners. Each module can be enabled or disabled per partner without affecting core protocol logic.

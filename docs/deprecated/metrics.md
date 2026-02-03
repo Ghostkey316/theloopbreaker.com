@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Operational Metrics Overview
 
 Vaultfire's production readiness depends on consistent visibility into webhook throughput, posture rotation integrity, and telemetry health. This document outlines the minimum set of signals that should be wired into observability dashboards before going live.

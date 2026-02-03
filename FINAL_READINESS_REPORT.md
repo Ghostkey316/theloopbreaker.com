@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Vaultfire Protocol Readiness Report
 
 > **Reality Check:** This report summarizes alpha-stage readiness based on Ghostkey-316 simulation telemetry and controlled pilot rehearsals. No public mainnet activation has been approved.

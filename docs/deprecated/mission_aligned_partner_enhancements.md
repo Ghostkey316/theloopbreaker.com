@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Mission-Aligned Partner Enhancements
 
 Vaultfire already ships enterprise-grade safeguards such as Purposeful Scale approvals, durable logging, identity resolution, and partner add-ons that are deeply rooted in the ethics framework. To make the protocol even more attractive to larger partners without compromising that mission, we can layer on the following incremental upgrades.

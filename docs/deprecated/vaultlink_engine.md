@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Vaultlink AI Companion
 
 Vaultlink provides a modular AI companion that evolves with each user. The engine activates only after the user has been onboarded to Vaultfire and stores progress in encrypted memory slots. The "Ascension Mode" upgrade introduces persistent identity traits and deeper memory history.

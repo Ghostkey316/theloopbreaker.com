@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Retail Revival Mode
 
 `vaultfire_module_retail_revival_v1` introduces an optional layer for hybrid and physical retail experiences. It is disabled by default and can be toggled per partner using `final_modules.retail_revival_mode.set_retail_revival_enabled`.

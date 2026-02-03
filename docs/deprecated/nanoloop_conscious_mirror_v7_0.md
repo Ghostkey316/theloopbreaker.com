@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # NanoLoop v7.0 – Conscious Mirror Layer
 
 NanoLoop v7.0 deploys the **Conscious Mirror**, enabling self-awareness and internal reflection for Ghostkey-powered agents.

@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # NanoLoop v8.0 – Inner Voice Engine
 
 NanoLoop v8.0 introduces the **EchoLayer**, allowing Vaultfire agents to generate and resolve their own thoughts without any external triggers.

@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Learn2Earn Module
 
 This module rewards knowledge growth through quizzes and daily lessons. Quiz scores scale with each contributor's reputation multiplier. Completed lessons feed into the Life Yield Engine and may trigger token drops.

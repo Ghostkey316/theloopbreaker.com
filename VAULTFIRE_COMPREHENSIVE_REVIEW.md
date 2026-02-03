@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # 🔥 Vaultfire Comprehensive Review
 
 **Review Date:** January 10, 2026  
@@ -59,7 +66,7 @@
 - Only hash + proof stored on-chain (privacy-preserved)
 
 **Privacy Properties:**
-- ✅ Belief text: Never stored, never transmitted (100% private)
+- ✅ Belief text: Never stored, never transmitted (privacy-preserving by design)
 - ✅ Loyalty score: Hidden in ZK proof (not revealed)
 - ✅ Activity proof: Only format visible (e.g., "github:abc123")
 - ❌ Belief hash: Public on-chain (cryptographic commitment)
@@ -592,7 +599,7 @@ beliefVerifier: '0x0000000000000000000000000000000000000000'
 ### What Vaultfire Does (TL;DR)
 
 **For Users:**
-1. Write a belief (stays 100% private)
+1. Write a belief (stays privacy-preserving by design)
 2. Link to proof of activity (GitHub/NS3/Base)
 3. Generate zero-knowledge proof
 4. Submit to Base blockchain

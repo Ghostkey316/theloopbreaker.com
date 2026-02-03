@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # FitSync Layer
 
 Vaultfire FitSync v1.0 links Apple Health, Google Fit and wearable devices to the protocol. Workouts are validated using a simple "Proof of Sweat" check before awarding Vault Points. Providers can register custom validators so new devices plug in without modifying the core code.

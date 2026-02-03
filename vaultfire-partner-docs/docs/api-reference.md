@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Vaultfire Partner API Reference
 
 Welcome to the Vaultfire Protocol partner API. These endpoints empower integration teams to activate users, surface rewards, and align belief profiles securely. All requests must be authenticated and made over HTTPS.

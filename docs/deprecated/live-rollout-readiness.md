@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Live Rollout Readiness Blueprint
 
 Vaultfire now maintains a living blueprint for partners who want proof points beyond the simulated pilots. Every control in this plan is mapped to verifiable artifacts so that partners can validate production readiness before scaling traffic or revenue.

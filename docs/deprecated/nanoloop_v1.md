@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # NanoLoop v1.0
 
 Vaultfire NanoLoop v1.0 establishes the baseline ethics for cell-scale nanomedicine. The module is anchored to **Ghostkey-316** (`ghostkey316.eth`, wallet `bpow20.cb.id`) and is marked as the lead ethical authority for future deployments.

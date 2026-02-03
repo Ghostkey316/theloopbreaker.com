@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Vaultfire Deployment Readiness Summary – Simulated Phase
 
 > **Truth Signal:** Checklist reflects sandbox status only. Production deployment remains out of scope until future approval.

@@ -33,7 +33,7 @@
 - Coinbase: x402 gateway
 
 ## SLA Highlights
-- 99.9% uptime guarantee
+- 99.9% uptime target (SLA subject to deployment + contract terms)
 - <2m passive payout latency (10s Ghostkey-priority)
 - <5m disaster recovery SLA
 - Daily backups @ 04:00 UTC

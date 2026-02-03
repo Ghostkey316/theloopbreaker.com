@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Synced Circles
 
 This module builds private social groups based on encrypted profile metrics. Users opt in and provide a small profile describing their growth style, ethics alignment, health goals, or portfolio moves. The system decrypts these metrics with user-provided keys and automatically assigns members to circles with similar traits.

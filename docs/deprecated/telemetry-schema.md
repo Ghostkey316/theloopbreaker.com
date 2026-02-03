@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Vaultfire Telemetry Schema
 
 Vaultfire collects only a narrow, pseudonymous set of telemetry events. Anything outside this schema must be rejected by senders and will be discarded by the runtime guard in [`telemetry/nodeTelemetry.js`](../telemetry/nodeTelemetry.js).

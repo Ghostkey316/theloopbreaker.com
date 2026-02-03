@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Vaultfire Threat Model
 
 Vaultfire is an alpha-stage protocol. This document captures the highest-impact risks so contributors can prioritise mitigation work. Pair these notes with [`SECURITY.md`](../SECURITY.md) and [`docs/telemetry-schema.md`](./telemetry-schema.md) when planning upgrades.

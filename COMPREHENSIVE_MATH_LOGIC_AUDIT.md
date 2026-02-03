@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # 🔍 COMPREHENSIVE MATHEMATICAL LOGIC AUDIT - Vaultfire Protocol
 **Date:** 2026-01-07
 **Auditor:** Claude (Autonomous Agent)

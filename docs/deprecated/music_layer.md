@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Music Layer
 
 This module connects streaming services like Spotify, Apple Music, SoundCloud and Audius to build a user's music identity. Top tracks help map genre preferences which feed into AI‑curated playlists and community sync features.

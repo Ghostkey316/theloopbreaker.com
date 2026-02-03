@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Vaultfire Pilot Success Metrics Toolkit
 
 This toolkit equips mid-market innovators and Fortune 100 partners with belief-driven metrics, ethics-first guardrails, and sandbox-to-production scaffolding.

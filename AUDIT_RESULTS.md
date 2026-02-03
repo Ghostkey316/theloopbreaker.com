@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # System Audit Report
 
 This audit covers the Vaultfire protocol repository to validate activation flows, integrity checks and CLI tooling. No issues were discovered during review and testing.

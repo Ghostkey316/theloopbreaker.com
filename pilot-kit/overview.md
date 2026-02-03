@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Vaultfire Scoped Pilot Engagement – Simulated Phase
 
 **Status:** Simulation-only sandbox engagement approved through Codex review. No live production deployment is active.

@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Vaultfire Production Readiness (10/10 Improvements)
 
 This document describes the production-grade enhancements that elevate Vaultfire from 9.0/10 to **10/10 production readiness**.

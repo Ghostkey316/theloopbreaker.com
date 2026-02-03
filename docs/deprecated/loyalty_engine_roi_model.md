@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Vaultfire Loyalty Engine ROI Model
 
 Vaultfire's belief-driven loyalty engine ties mission outcomes to verifiable telemetry. Use this model to articulate ROI improvements for procurement, finance, and governance stakeholders.

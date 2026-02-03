@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Vaultfire Complete Economic Alignment Stack
 
 **Revolutionary Achievement:** The first crypto protocol where human thriving is economically optimal at every scale.

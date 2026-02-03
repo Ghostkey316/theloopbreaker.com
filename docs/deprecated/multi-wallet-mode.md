@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Multi-Wallet Mode
 
 Vaultfire Core now supports multi-party wallet alignment so consortium operators can coordinate without sacrificing the legacy single-wallet defaults. This guide covers configuration, behaviour, and governance expectations.

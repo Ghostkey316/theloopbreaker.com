@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Vaultfire x Coinbase/Base: The Privacy Moat
 
 **For:** Coinbase Wallet Team, Base Ecosystem Fund, Brian Armstrong

@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # SparkStarter Initiation Layer – v1.5 Companion Class
 
 This module extends the Vaultlink companion with a proactive AI‑ping behavior layer. Messages are generated during key engagement windows and can provide reminders, motivational stats or quick fact drops from protocol memory.

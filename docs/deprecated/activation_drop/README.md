@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Vaultfire Secure Upload Activation Drop
 
 This bundle provides a minimal partner-ready upload system for Vaultfire v1.0 (Activation Build).

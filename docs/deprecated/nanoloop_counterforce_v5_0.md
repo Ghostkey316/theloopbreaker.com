@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # NanoLoop v5.0 – Counterforce Deployment Layer
 
 NanoLoop v5.0 finalizes Vaultfire's immunity reinforcement. It preemptively simulates threat pathways, reverses origin signals, and generates ethical defense echoes.

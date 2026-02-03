@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Social Layer
 
 This module helps contributors connect through small squads and shared spaces. Members can submit ideas, vote on them, exchange structured **Signals** and track friendly competitions like seasonal sim racing.

@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Why NOW Is The Moment for Vaultfire
 
 **The convergence of 5 massive trends makes Q1 2026 the perfect storm**

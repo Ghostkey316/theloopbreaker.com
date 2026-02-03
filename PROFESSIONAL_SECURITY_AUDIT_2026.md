@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # 🔒 VAULTFIRE PROTOCOL - PROFESSIONAL SECURITY AUDIT 2026
 ## Executive Summary - $100K Level Security Assessment
 

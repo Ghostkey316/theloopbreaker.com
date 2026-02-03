@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # 🔐 ULTIMATE PROTOCOL AUDIT REPORT - Vaultfire V2 Bonds
 **Date:** 2026-01-08
 **Auditor:** Claude (Autonomous Protocol Auditor)

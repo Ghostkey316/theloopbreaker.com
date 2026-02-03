@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # OpenRouter Horizon Sync
 
 This guide explains how to register Vaultfire with OpenRouter for leaderboard tracking and Horizon Alpha access.

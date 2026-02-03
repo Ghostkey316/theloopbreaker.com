@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Life XP Module
 
 This component rewards growth behavior such as finishing lessons, passing tests and exploring new ideas. Each action grants **Life XP** scaled by the user's learning multiplier from the Ethical Growth Engine. XP events are also sent to the Vaultlink AI companion so memory evolves alongside the user's progress.

@@ -34,7 +34,7 @@ Status: ✅ PERFECT - Aligned with all core principles
 ### ✅ Freedom Over Control
 
 **User Control:**
-- Users can delete their data anytime (right to be forgotten)
+- users can request deletion; future writes should stop and off-chain systems should delete/redact (on-chain history is immutable) (right to be forgotten)
 - Users can revoke consent for any purpose
 - Users can challenge any metrics or claims
 - Users can rotate wallet addresses (ephemeral identifiers)

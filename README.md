@@ -55,6 +55,8 @@ Infrastructure doesn't ask permission. It becomes foundational.
 
 Truth is verifiable. Privacy is default. Control stays with the human.
 
+**Normative claims & limits:** see [`docs/CLAIMS_AND_LIMITS.md`](./docs/CLAIMS_AND_LIMITS.md).
+
 ---
 
 ## The Complete Trust Layer

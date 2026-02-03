@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Wellness Companion
 
 This module links journaling and mood tracking with the Vaultlink AI companion. It stores journal entries, records mood check-ins and provides reflection prompts along with simple coping suggestions.

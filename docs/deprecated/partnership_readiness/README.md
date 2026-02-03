@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Vaultfire Partnership Readiness Toolkit
 
 Vaultfire partners, validators, and enterprise collaborators can use this bundle to accelerate diligence, demonstrate belief-aligned impact, and share deployment wins with confidence. Every block below is formatted for GitHub or Notion so it can be dropped into partner hubs without additional styling.

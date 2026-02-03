@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Vaultfire Attestation Request Templates
 
 Enterprise partners can reference these templates when requesting independent verification of Vaultfire's smart contracts and compliance posture. Each request is designed for direct use in email threads, audit portals, or third-party intake forms.

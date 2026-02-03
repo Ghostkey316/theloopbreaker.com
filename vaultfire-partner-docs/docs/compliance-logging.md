@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Vaultfire Compliance & Logging Guidelines
 
 Vaultfire partners must uphold rigorous data protection and ethics-first logging practices. This guide outlines minimum controls and recommended patterns for compliant operations.

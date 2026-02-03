@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # 🔒 VAULTFIRE PROTOCOL - COMPREHENSIVE SECURITY AUDIT REPORT
 **Date:** 2026-01-29
 **Auditor:** Professional Security Audit (World-Class Standards)

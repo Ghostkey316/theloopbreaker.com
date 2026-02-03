@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Vaultfire Authentication Paths
 
 Vaultfire partners default to wallet-based authentication. When a partner cannot complete a wallet challenge, a fallback path

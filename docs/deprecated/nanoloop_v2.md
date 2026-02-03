@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # NanoLoop v2.0
 
 NanoLoop_MirrorSync_v2.0 links Ghostkey-316's behavior metrics to real-time regenerative logic. Healing speed adapts to Purpose Engine v2 signal clarity and the current belief synchronization state. When `ghostkey.alignment` is set to `ethical`, the module accelerates all recovery operations by 20%.

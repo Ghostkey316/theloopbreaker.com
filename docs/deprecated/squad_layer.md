@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # Squad Layer
 
 This module lets contributors build purpose-driven squads that accumulate XP through shared quests. Multipliers grow as members maintain loyalty and work together.

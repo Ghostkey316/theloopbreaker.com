@@ -1,3 +1,10 @@
+<!--
+NON-NORMATIVE DOCUMENT
+
+This file is historical/legacy/audit material and may contain aspirational language.
+The canonical, current claims & limits are in: docs/CLAIMS_AND_LIMITS.md
+-->
+
 # 🔒 VAULTFIRE BASE MINI APP - PROFESSIONAL AUDIT REPORT
 
 **Audit Date:** January 9, 2026
