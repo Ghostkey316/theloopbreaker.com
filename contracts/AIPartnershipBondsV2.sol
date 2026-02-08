@@ -59,6 +59,19 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
         string progressNotes;
     }
 
+    /// @notice Privacy-hardened variant of PartnershipMetrics.
+    /// @dev Stores only hashes on-chain; UIs/off-chain systems can map hashes to text.
+    struct PartnershipMetricsHashed {
+        uint256 timestamp;
+        address submitter;
+        uint256 humanGrowth;        // 0-10000
+        uint256 humanAutonomy;      // 0-10000
+        uint256 humanDignity;       // 0-10000
+        uint256 tasksMastered;
+        uint256 creativityScore;    // 0-10000
+        bytes32 progressNotesHash;  // keccak256(progressNotes)
+    }
+
     struct HumanVerification {
         address verifier;
         uint256 timestamp;
@@ -67,6 +80,18 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
         bool confirmsAutonomy;
         string relationship;
         string notes;
+    }
+
+    /// @notice Privacy-hardened variant of HumanVerification.
+    /// @dev Stores only hashes on-chain; UIs/off-chain systems can map hashes to text.
+    struct HumanVerificationHashed {
+        address verifier;
+        uint256 timestamp;
+        bool confirmsPartnership;
+        bool confirmsGrowth;
+        bool confirmsAutonomy;
+        bytes32 relationshipHash;   // keccak256(relationship)
+        bytes32 notesHash;          // keccak256(notes)
     }
 
     struct Distribution {
@@ -92,7 +117,9 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
     uint256 public nextBondId = 1;
     mapping(uint256 => Bond) public bonds;
     mapping(uint256 => PartnershipMetrics[]) public bondMetrics;
+    mapping(uint256 => PartnershipMetricsHashed[]) public bondMetricsHashed;
     mapping(uint256 => HumanVerification[]) public bondVerifications;
+    mapping(uint256 => HumanVerificationHashed[]) public bondVerificationsHashed;
     mapping(uint256 => Distribution[]) public bondDistributions;
 
     // Tracks the bond value baseline that has already been accounted for in distributions.
@@ -103,7 +130,9 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
 
     event BondCreated(uint256 indexed bondId, address indexed human, address indexed aiAgent, string partnershipType, uint256 stakeAmount, uint256 timestamp);
     event PartnershipMetricsSubmitted(uint256 indexed bondId, address submitter, uint256 timestamp);
+    event PartnershipMetricsSubmittedHashed(uint256 indexed bondId, address submitter, uint256 timestamp, bytes32 progressNotesHash);
     event HumanVerificationSubmitted(uint256 indexed bondId, address indexed verifier, bool confirmsPartnership, bool confirmsGrowth, bool confirmsAutonomy, uint256 timestamp);
+    event HumanVerificationSubmittedHashed(uint256 indexed bondId, address indexed verifier, bool confirmsPartnership, bool confirmsGrowth, bool confirmsAutonomy, uint256 timestamp, bytes32 relationshipHash, bytes32 notesHash);
     event DistributionRequested(uint256 indexed bondId, address indexed requester, uint256 requestedAt, uint256 availableAt);
     event BondDistributed(uint256 indexed bondId, uint256 humanShare, uint256 aiShare, uint256 fundShare, string reason, uint256 timestamp);
     event AIDominationPenalty(uint256 indexed bondId, string reason, uint256 timestamp);
@@ -237,6 +266,39 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
     }
 
     /**
+     * @notice Submit partnership metrics without writing freeform notes on-chain.
+     * @dev Stores only a keccak256 hash of notes; keep full text off-chain.
+     */
+    function submitPartnershipMetricsHashed(
+        uint256 bondId,
+        uint256 humanGrowth,
+        uint256 humanAutonomy,
+        uint256 humanDignity,
+        uint256 tasksMastered,
+        uint256 creativityScore,
+        bytes32 progressNotesHash
+    ) external onlyParticipants(bondId) bondExists(bondId) whenNotPaused {
+        _validateScore(humanGrowth, "Human growth");
+        _validateScore(humanAutonomy, "Human autonomy");
+        _validateScore(humanDignity, "Human dignity");
+        _validateScore(creativityScore, "Creativity score");
+        require(progressNotesHash != bytes32(0), "Notes hash required");
+
+        bondMetricsHashed[bondId].push(PartnershipMetricsHashed({
+            timestamp: block.timestamp,
+            submitter: msg.sender,
+            humanGrowth: humanGrowth,
+            humanAutonomy: humanAutonomy,
+            humanDignity: humanDignity,
+            tasksMastered: tasksMastered,
+            creativityScore: creativityScore,
+            progressNotesHash: progressNotesHash
+        }));
+
+        emit PartnershipMetricsSubmittedHashed(bondId, msg.sender, block.timestamp, progressNotesHash);
+    }
+
+    /**
      * @notice Submit human verification of partnership quality
      * @dev Allows humans to verify or challenge AI partnership claims
      *
@@ -284,6 +346,40 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
         }));
 
         emit HumanVerificationSubmitted(bondId, msg.sender, confirmsPartnership, confirmsGrowth, confirmsAutonomy, block.timestamp);
+    }
+
+    /// @notice Submit human verification without writing freeform relationship/notes on-chain.
+    function submitHumanVerificationHashed(
+        uint256 bondId,
+        bool confirmsPartnership,
+        bool confirmsGrowth,
+        bool confirmsAutonomy,
+        bytes32 relationshipHash,
+        bytes32 notesHash
+    ) external bondExists(bondId) whenNotPaused {
+        require(relationshipHash != bytes32(0), "Relationship hash required");
+        require(notesHash != bytes32(0), "Notes hash required");
+
+        bondVerificationsHashed[bondId].push(HumanVerificationHashed({
+            verifier: msg.sender,
+            timestamp: block.timestamp,
+            confirmsPartnership: confirmsPartnership,
+            confirmsGrowth: confirmsGrowth,
+            confirmsAutonomy: confirmsAutonomy,
+            relationshipHash: relationshipHash,
+            notesHash: notesHash
+        }));
+
+        emit HumanVerificationSubmittedHashed(
+            bondId,
+            msg.sender,
+            confirmsPartnership,
+            confirmsGrowth,
+            confirmsAutonomy,
+            block.timestamp,
+            relationshipHash,
+            notesHash
+        );
     }
 
     function requestDistribution(uint256 bondId) external onlyParticipants(bondId) bondExists(bondId) whenNotPaused {
