@@ -5,7 +5,7 @@ use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use risc0_zkvm::{default_prover, ExecutorEnv};
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
+use sha3::{Digest, Keccak256};
 use std::fs;
 use std::path::PathBuf;
 
@@ -122,8 +122,8 @@ fn main() -> Result<()> {
             println!("  - Module ID: {}", input_data.module_id);
             println!();
 
-            // Compute belief hash
-            let mut hasher = Sha256::new();
+            // Compute belief hash (keccak256 to match Solidity)
+            let mut hasher = Keccak256::new();
             hasher.update(input_data.belief_message.as_bytes());
             let belief_hash: [u8; 32] = hasher.finalize().into();
 
@@ -197,18 +197,39 @@ fn main() -> Result<()> {
             println!();
 
             // Extract the journal (public outputs)
+            // Guest commits EXACT ABI-encoded bytes:
+            //   abi.encode(bytes32 beliefHash, address proverAddress, uint256 epoch, uint256 moduleID)
+            // which is 4 * 32 = 128 bytes.
             let journal = receipt.journal.bytes.clone();
-            let output: ProofOutput = receipt
-                .journal
-                .decode()
-                .context("Failed to decode proof output")?;
+            if journal.len() != 128 {
+                anyhow::bail!("Unexpected journal size: {} (expected 128)", journal.len());
+            }
 
-            println!("📊 Proof Output:");
-            println!("  - Valid: {}", output.is_valid);
-            println!("  - Belief Hash: 0x{}", hex::encode(output.belief_hash));
-            println!("  - Prover Address: 0x{}", hex::encode(output.prover_address));
-            println!("  - Epoch: {}", output.epoch);
-            println!("  - Module ID: {}", output.module_id);
+            let mut out_belief_hash = [0u8; 32];
+            out_belief_hash.copy_from_slice(&journal[0..32]);
+
+            let mut out_prover_address = [0u8; 20];
+            out_prover_address.copy_from_slice(&journal[32 + 12..64]);
+
+            let out_epoch = u32::from_be_bytes([
+                journal[64 + 28],
+                journal[64 + 29],
+                journal[64 + 30],
+                journal[64 + 31],
+            ]);
+
+            let out_module_id = u32::from_be_bytes([
+                journal[96 + 28],
+                journal[96 + 29],
+                journal[96 + 30],
+                journal[96 + 31],
+            ]);
+
+            println!("📊 Journal Output (ABI-encoded):");
+            println!("  - Belief Hash: 0x{}", hex::encode(out_belief_hash));
+            println!("  - Prover Address: 0x{}", hex::encode(out_prover_address));
+            println!("  - Epoch: {}", out_epoch);
+            println!("  - Module ID: {}", out_module_id);
             println!();
 
             // Serialize the proof for on-chain submission

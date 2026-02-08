@@ -1,7 +1,7 @@
 /**
  * RISC Zero Proof Generation Script for Vaultfire Belief Attestation
  *
- * This script generates STARK proofs using RISC Zero for belief attestation.
+ * This script generates REAL STARK proofs using the Rust RISC Zero host prover.
  *
  * Usage:
  *   node scripts/generate-risc0-proof.js <beliefMessage> <loyaltyProof> <loyaltyScore>
@@ -10,139 +10,96 @@
  *   node scripts/generate-risc0-proof.js "Vaultfire protects human agency" "github:abc123" 9500
  */
 
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { keccak256, toUtf8Bytes, AbiCoder } = require('ethers');
 
-// ============================================
-// RISC Zero Proof Generation
-// ============================================
+const abi = AbiCoder.defaultAbiCoder();
+
+function bigIntFromHex32(hex32) {
+  const h = hex32.startsWith('0x') ? hex32 : '0x' + hex32;
+  return BigInt(h);
+}
 
 /**
  * Generate a RISC Zero STARK proof for belief attestation
  *
- * @param {Object} params - Proof generation parameters
- * @param {string} params.beliefMessage - The private belief message
- * @param {string} params.signature - Hex-encoded signature (0x...)
- * @param {string} params.loyaltyProof - Loyalty proof string (e.g., "github:abc123")
- * @param {number} params.loyaltyScore - Loyalty score (0-10000)
- * @param {string} params.proverAddress - Ethereum address (0x...)
- * @param {number} params.epoch - Campaign/era identifier
- * @param {number} params.moduleId - Vaultfire module ID (1=GitHub, 2=NS3, 3=Base)
- * @returns {Object} - { proofBytes, publicInputs, journal }
+ * @param {Object} params
+ * @returns {Promise<{ proofBytes: string, publicInputs: string[], journalDigest: string, imageId?: string, raw?: any }>}
  */
 async function generateRisc0Proof(params) {
-  console.log('🧠 Generating RISC Zero STARK proof for Vaultfire belief...\n');
+  const repoRoot = path.join(__dirname, '..');
+  const tmpDir = path.join(repoRoot, 'proofs', 'tmp');
+  fs.mkdirSync(tmpDir, { recursive: true });
 
-  // Compute belief hash (SHA256 for zkVM, convert to bytes32 for Solidity)
-  const beliefHash = crypto
-    .createHash('sha256')
-    .update(params.beliefMessage)
-    .digest();
+  // Compute belief hash (keccak256 to match Solidity + guest)
+  const beliefHashHex = keccak256(toUtf8Bytes(params.beliefMessage));
 
-  console.log('📊 Public Inputs:');
-  console.log(`  - Belief Hash: 0x${beliefHash.toString('hex')}`);
-  console.log(`  - Prover Address: ${params.proverAddress}`);
-  console.log(`  - Epoch: ${params.epoch}`);
-  console.log(`  - Module ID: ${params.moduleId}\n`);
-
-  // Prepare private inputs (never leave the zkVM)
-  const privateInputs = {
+  // Prepare input JSON expected by risc0-prover/host
+  const inputData = {
     belief_message: params.beliefMessage,
-    signature: Buffer.from(params.signature.replace('0x', ''), 'hex').toJSON().data,
+    signature: params.signature,
     loyalty_proof: params.loyaltyProof,
     loyalty_score: params.loyaltyScore,
-  };
-
-  // Prepare public inputs (revealed on-chain)
-  const proverAddressBytes = Buffer.from(params.proverAddress.replace('0x', ''), 'hex');
-  const publicInputs = {
-    belief_hash: Array.from(beliefHash),
-    prover_address: Array.from(proverAddressBytes),
+    prover_address: params.proverAddress,
     epoch: params.epoch,
     module_id: params.moduleId,
   };
 
-  console.log('🔒 Private Inputs (hidden in zkVM):');
-  console.log(`  - Belief Message: "${params.beliefMessage}"`);
-  console.log(`  - Loyalty Proof: "${params.loyaltyProof}"`);
-  console.log(`  - Loyalty Score: ${params.loyaltyScore / 100}%\n`);
-
-  // Create temporary input file for RISC Zero
-  const inputData = {
-    private: privateInputs,
-    public: publicInputs,
-  };
-
-  const inputPath = path.join(__dirname, '../risc0-guest/.risc0-inputs.json');
+  const inputPath = path.join(tmpDir, `risc0-input-${Date.now()}.json`);
+  const outputPath = path.join(tmpDir, `risc0-proof-${Date.now()}.json`);
   fs.writeFileSync(inputPath, JSON.stringify(inputData, null, 2));
 
-  console.log('⚙️  Building RISC Zero guest program...');
+  // Invoke the Rust prover (real STARK proof)
+  // NOTE: requires Rust toolchain installed.
+  const cargoArgs = [
+    'run',
+    '--release',
+    '--manifest-path',
+    path.join(repoRoot, 'risc0-prover', 'host', 'Cargo.toml'),
+    '--',
+    'prove',
+    '--input',
+    inputPath,
+    '--output',
+    outputPath,
+  ];
 
-  try {
-    // Build the RISC Zero guest program
-    execSync('cargo build --release --manifest-path risc0-guest/Cargo.toml', {
-      cwd: path.join(__dirname, '..'),
-      stdio: 'inherit',
-    });
+  execFileSync('cargo', cargoArgs, {
+    cwd: repoRoot,
+    stdio: 'inherit',
+  });
 
-    console.log('✅ Guest program built successfully\n');
+  const proofJson = JSON.parse(fs.readFileSync(outputPath, 'utf8'));
 
-    // Generate the STARK proof using RISC Zero
-    console.log('🔐 Generating STARK proof (this may take 30-60 seconds)...');
+  // proof_bytes is hex (no 0x) from Rust host
+  const proofBytes = '0x' + proofJson.proof_bytes;
 
-    // In production, you would use the RISC Zero Rust host to generate the proof
-    // For now, we'll create a placeholder proof structure that matches the on-chain verifier
+  // Solidity publicInputs: uint256[]
+  const publicInputs = [
+    bigIntFromHex32(beliefHashHex).toString(),
+    BigInt(params.proverAddress).toString(),
+    params.epoch.toString(),
+    params.moduleId.toString(),
+  ];
 
-    const mockProof = {
-      seal: crypto.randomBytes(128), // STARK seal (proof data)
-      journal: Buffer.from(JSON.stringify({
-        is_valid: true,
-        belief_hash: Array.from(beliefHash),
-        prover_address: Array.from(proverAddressBytes),
-        epoch: params.epoch,
-        module_id: params.moduleId,
-      })),
-    };
+  // journalDigest must match contract computation
+  const journalDigest = keccak256(
+    abi.encode(
+      ['bytes32', 'address', 'uint256', 'uint256'],
+      [beliefHashHex, params.proverAddress, BigInt(params.epoch), BigInt(params.moduleId)]
+    )
+  );
 
-    console.log('✅ STARK proof generated successfully\n');
-
-    console.log('📦 Proof Output:');
-    console.log(`  - Seal Size: ${mockProof.seal.length} bytes`);
-    console.log(`  - Journal Size: ${mockProof.journal.length} bytes\n`);
-
-    // Encode proof for Solidity
-    const proofBytes = Buffer.concat([
-      mockProof.seal,
-      Buffer.from([mockProof.journal.length]),
-      mockProof.journal,
-    ]);
-
-    // Format public inputs for Solidity (uint256[])
-    const solidityPublicInputs = [
-      '0x' + beliefHash.toString('hex'),
-      BigInt(params.proverAddress).toString(),
-      params.epoch.toString(),
-      params.moduleId.toString(),
-    ];
-
-    console.log('✅ Proof ready for on-chain verification\n');
-
-    return {
-      proofBytes: '0x' + proofBytes.toString('hex'),
-      publicInputs: solidityPublicInputs,
-      journal: mockProof.journal,
-    };
-  } catch (error) {
-    console.error('❌ Proof generation failed:', error.message);
-    throw error;
-  } finally {
-    // Clean up temporary files
-    if (fs.existsSync(inputPath)) {
-      fs.unlinkSync(inputPath);
-    }
-  }
+  return {
+    proofBytes,
+    publicInputs,
+    journalDigest,
+    imageId: proofJson.image_id ? '0x' + proofJson.image_id : undefined,
+    raw: proofJson,
+  };
 }
 
 // ============================================
@@ -153,9 +110,9 @@ async function main() {
   const args = process.argv.slice(2);
 
   if (args.length < 3) {
-    console.log('Usage: node generate-risc0-proof.js <beliefMessage> <loyaltyProof> <loyaltyScore>');
+    console.log('Usage: node scripts/generate-risc0-proof.js <beliefMessage> <loyaltyProof> <loyaltyScore>');
     console.log('\nExample:');
-    console.log('  node generate-risc0-proof.js "Vaultfire protects human agency" "github:abc123" 9500');
+    console.log('  node scripts/generate-risc0-proof.js "Vaultfire protects human agency" "github:abc123" 9500');
     console.log('\nLoyalty Proof Formats:');
     console.log('  - GitHub: "github:<commit_sha>"');
     console.log('  - NS3: "ns3:<session_id>"');
@@ -166,7 +123,7 @@ async function main() {
   const [beliefMessage, loyaltyProof, loyaltyScoreStr] = args;
   const loyaltyScore = parseInt(loyaltyScoreStr, 10);
 
-  if (loyaltyScore < 0 || loyaltyScore > 10000) {
+  if (Number.isNaN(loyaltyScore) || loyaltyScore < 0 || loyaltyScore > 10000) {
     console.error('❌ Loyalty score must be between 0 and 10000 (0-100.00%)');
     process.exit(1);
   }
@@ -193,13 +150,14 @@ async function main() {
     moduleId,
   });
 
-  console.log('📋 Proof Details:');
-  console.log('  - Proof Bytes:', proof.proofBytes);
-  console.log('  - Public Inputs:', JSON.stringify(proof.publicInputs, null, 2));
+  console.log('\n📋 Proof Details (for Solidity):');
+  console.log('  - proofBytes:', proof.proofBytes);
+  console.log('  - publicInputs:', JSON.stringify(proof.publicInputs, null, 2));
+  console.log('  - journalDigest:', proof.journalDigest);
+  if (proof.imageId) console.log('  - imageId:', proof.imageId);
   console.log('\n✅ Proof generation complete!');
 }
 
-// Run if called directly
 if (require.main === module) {
   main().catch((error) => {
     console.error('❌ Error:', error);

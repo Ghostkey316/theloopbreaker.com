@@ -5,7 +5,7 @@
 
 use risc0_zkvm::guest::env;
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
+use tiny_keccak::{Hasher, Keccak};
 
 // Minimum belief alignment threshold (80%)
 const MIN_BELIEF_THRESHOLD: u32 = 8000; // 80.00%
@@ -30,7 +30,7 @@ struct PrivateInputs {
 /// Public inputs (revealed on-chain for verification)
 #[derive(Serialize, Deserialize)]
 struct PublicInputs {
-    /// Hash of the belief (keccak256 in Solidity, sha256 here for zkVM compatibility)
+    /// keccak256(utf8(belief_message))
     belief_hash: [u8; 32],
 
     /// Address of the prover (Ethereum address as 20 bytes)
@@ -43,17 +43,37 @@ struct PublicInputs {
     module_id: u32,
 }
 
-/// Output commitment (what gets verified on-chain)
-#[derive(Serialize, Deserialize)]
-struct ProofOutput {
-    /// Confirms: "This person is loyal, meets threshold, passed integrity check"
-    is_valid: bool,
+fn keccak256(data: &[u8]) -> [u8; 32] {
+    let mut out = [0u8; 32];
+    let mut hasher = Keccak::v256();
+    hasher.update(data);
+    hasher.finalize(&mut out);
+    out
+}
 
-    /// Public inputs echo (for verification binding)
+/// ABI-encode (Solidity) as: abi.encode(bytes32,address,uint256,uint256)
+/// Produces 4 * 32 = 128 bytes.
+fn abi_encode_journal(
     belief_hash: [u8; 32],
     prover_address: [u8; 20],
     epoch: u32,
     module_id: u32,
+) -> [u8; 128] {
+    let mut out = [0u8; 128];
+
+    // word0: bytes32 belief_hash
+    out[0..32].copy_from_slice(&belief_hash);
+
+    // word1: address prover_address (left padded to 32)
+    out[32 + 12..64].copy_from_slice(&prover_address);
+
+    // word2: uint256 epoch (u32 -> big-endian in last 4 bytes)
+    out[64 + 28..96].copy_from_slice(&epoch.to_be_bytes());
+
+    // word3: uint256 module_id
+    out[96 + 28..128].copy_from_slice(&module_id.to_be_bytes());
+
+    out
 }
 
 fn main() {
@@ -66,10 +86,7 @@ fn main() {
     // ============================================
     // CONSTRAINT 1: Belief Hash Integrity
     // ============================================
-    // Verify that the private belief message hashes to the public belief hash
-    let mut hasher = Sha256::new();
-    hasher.update(private.belief_message.as_bytes());
-    let computed_hash: [u8; 32] = hasher.finalize().into();
+    let computed_hash = keccak256(private.belief_message.as_bytes());
 
     assert_eq!(
         computed_hash,
@@ -80,7 +97,6 @@ fn main() {
     // ============================================
     // CONSTRAINT 2: Loyalty Threshold
     // ============================================
-    // Verify that the loyalty score meets the minimum threshold (80%)
     assert!(
         private.loyalty_score >= MIN_BELIEF_THRESHOLD,
         "Loyalty score {} below threshold {}",
@@ -91,12 +107,11 @@ fn main() {
     // ============================================
     // CONSTRAINT 3: Loyalty Proof Authenticity
     // ============================================
-    // Verify that the loyalty proof is well-formed and matches the module
     let proof_valid = match public.module_id {
         1 => private.loyalty_proof.starts_with("github:"),
         2 => private.loyalty_proof.starts_with("ns3:"),
         3 => private.loyalty_proof.starts_with("base:"),
-        _ => private.loyalty_proof.len() > 0, // Generic proof for other modules
+        _ => !private.loyalty_proof.is_empty(),
     };
 
     assert!(
@@ -108,35 +123,25 @@ fn main() {
     // ============================================
     // CONSTRAINT 4: Signature Verification
     // ============================================
-    // In production, verify ECDSA signature here using risc0-zkvm crypto
-    // For now, ensure signature is present and non-empty
-    assert!(
-        !private.signature.is_empty(),
-        "Signature cannot be empty"
-    );
+    // In production, verify ECDSA signature here.
+    assert!(!private.signature.is_empty(), "Signature cannot be empty");
 
     // ============================================
     // CONSTRAINT 5: Prover Address Binding
     // ============================================
-    // Ensure the proof is bound to the specific prover address
-    // This prevents proof reuse by other addresses
-    assert!(
-        public.prover_address != [0u8; 20],
-        "Prover address cannot be zero"
+    assert!(public.prover_address != [0u8; 20], "Prover address cannot be zero");
+
+    // ============================================
+    // OUTPUT COMMITMENT (JOURNAL)
+    // ============================================
+    // Commit ABI-encoded bytes so Solidity can compute:
+    // keccak256(abi.encode(beliefHash, proverAddress, epoch, moduleID))
+    let journal_bytes = abi_encode_journal(
+        public.belief_hash,
+        public.prover_address,
+        public.epoch,
+        public.module_id,
     );
 
-    // ============================================
-    // OUTPUT COMMITMENT
-    // ============================================
-    // All constraints passed - commit the proof output
-    let output = ProofOutput {
-        is_valid: true,
-        belief_hash: public.belief_hash,
-        prover_address: public.prover_address,
-        epoch: public.epoch,
-        module_id: public.module_id,
-    };
-
-    // Commit output to the journal (this becomes the public proof output)
-    env::commit(&output);
+    env::commit(&journal_bytes);
 }
