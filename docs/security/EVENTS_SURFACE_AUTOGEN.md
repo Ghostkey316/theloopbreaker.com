@@ -33,10 +33,12 @@ Vaultfire principle: monitoring should be **privacy-preserving** (protocol integ
 - `event BondDistributed(uint256 indexed bondId, uint256 humanShare, uint256 aiShare, uint256 fundShare, string reason, uint256 timestamp);`
 - `event DistributionRequested(uint256 indexed bondId, address indexed requester, uint256 requestedAt, uint256 availableAt);`
 - `event HumanVerificationSubmitted(uint256 indexed bondId, address indexed verifier, bool confirmsPartnership, bool confirmsGrowth, bool confirmsAutonomy, uint256 timestamp);`
+- `event HumanVerificationSubmittedHashed(uint256 indexed bondId, address indexed verifier, bool confirmsPartnership, bool confirmsGrowth, bool confirmsAutonomy, uint256 timestamp, bytes32 relationshipHash, bytes32 notesHash);`
 - `event MissionEnforcementEnabled(bool enabled);`
 - `event MissionEnforcementUpdated(address indexed previous, address indexed current);`
 - `event PartnershipFundAccrued(uint256 indexed bondId, uint256 amount, uint256 newTotal, uint256 timestamp);`
 - `event PartnershipMetricsSubmitted(uint256 indexed bondId, address submitter, uint256 timestamp);`
+- `event PartnershipMetricsSubmittedHashed(uint256 indexed bondId, address submitter, uint256 timestamp, bytes32 progressNotesHash);`
 
 ### AntiSurveillance
 - `event ModuleVerifiedSurveillanceFree(address indexed module, uint256 timestamp);`
@@ -95,15 +97,17 @@ Vaultfire principle: monitoring should be **privacy-preserving** (protocol integ
 - contracts/AIAccountabilityBondsV2.sol:769 → ProfitsLocked
 - contracts/AIAccountabilityBondsV2.sol:785 → ProfitsLocked
 - contracts/AIAccountabilityBondsV2.sol:822 → BondDistributed
-- contracts/AIPartnershipBondsV2.sol:118 → MissionEnforcementUpdated
-- contracts/AIPartnershipBondsV2.sol:123 → MissionEnforcementEnabled
-- contracts/AIPartnershipBondsV2.sol:191 → BondCreated
-- contracts/AIPartnershipBondsV2.sol:236 → PartnershipMetricsSubmitted
-- contracts/AIPartnershipBondsV2.sol:286 → HumanVerificationSubmitted
-- contracts/AIPartnershipBondsV2.sol:300 → DistributionRequested
-- contracts/AIPartnershipBondsV2.sol:355 → AIDominationPenalty
-- contracts/AIPartnershipBondsV2.sol:393 → PartnershipFundAccrued
-- contracts/AIPartnershipBondsV2.sol:396 → BondDistributed
+- contracts/AIPartnershipBondsV2.sol:147 → MissionEnforcementUpdated
+- contracts/AIPartnershipBondsV2.sol:152 → MissionEnforcementEnabled
+- contracts/AIPartnershipBondsV2.sol:220 → BondCreated
+- contracts/AIPartnershipBondsV2.sol:265 → PartnershipMetricsSubmitted
+- contracts/AIPartnershipBondsV2.sol:298 → PartnershipMetricsSubmittedHashed
+- contracts/AIPartnershipBondsV2.sol:348 → HumanVerificationSubmitted
+- contracts/AIPartnershipBondsV2.sol:373 → HumanVerificationSubmittedHashed
+- contracts/AIPartnershipBondsV2.sol:396 → DistributionRequested
+- contracts/AIPartnershipBondsV2.sol:451 → AIDominationPenalty
+- contracts/AIPartnershipBondsV2.sol:489 → PartnershipFundAccrued
+- contracts/AIPartnershipBondsV2.sol:492 → BondDistributed
 - contracts/AntiSurveillance.sol:97 → OwnershipTransferred
 - contracts/AntiSurveillance.sol:112 → ModuleBannedForSurveillance
 - contracts/AntiSurveillance.sol:124 → ModuleBannedForSurveillance
