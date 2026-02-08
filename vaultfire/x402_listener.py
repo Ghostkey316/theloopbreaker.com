@@ -11,6 +11,7 @@ from flask import Blueprint, Flask, jsonify, request
 
 from .x402_dashboard import aggregate_totals, count_total_events, load_dashboard_entries
 from .x402_gateway import X402Gateway, get_default_gateway
+from .x402_receipts import get_partner_secret, get_partner_secret_by_id, verify_hmac_receipt
 
 _STATE_PATH = Path("logs/x402_airdrop_state.json")
 
@@ -90,6 +91,7 @@ def x402EventListener(app: Flask | None = None) -> Blueprint:
         except (TypeError, ValueError):
             amount_value = None
         currency = payload.get("currency")
+        rail = payload.get("rail") or payload.get("provider")
         wallet_address = payload.get("wallet_address") or payload.get("wallet")
         belief_signal = payload.get("belief_signal") if isinstance(payload.get("belief_signal"), dict) else None
         signature = payload.get("signature") or payload.get("codex_signature")
@@ -99,11 +101,34 @@ def x402EventListener(app: Flask | None = None) -> Blueprint:
             wallet_address = gateway.identity_handle
             if signature is None:
                 signature = "codex::listener"
+        # If a third-party rail is claiming a payment, require a signed receipt.
+        # Preferred integration: partner_id + key_id (supports rotation + revocation).
+        partner_id = payload.get("partner_id") or payload.get("issuer")
+        key_id = payload.get("key_id") or payload.get("kid")
+
+        if rail in {"assemble", "ns3"}:
+            partner_secret = get_partner_secret_by_id(partner_id=partner_id, key_id=key_id)
+            if not partner_secret:
+                # Backward compatible fallback for early partners.
+                partner_secret = get_partner_secret(rail)
+                require_partner = False
+            else:
+                require_partner = True
+
+            if not partner_secret:
+                return jsonify({"status": "rejected", "reason": f"missing partner key for rail {rail}"}), 403
+            verdict = verify_hmac_receipt(payload, secret=partner_secret, require_partner=require_partner)
+            if not verdict.ok:
+                return jsonify({"status": "rejected", "reason": verdict.reason}), 403
+
         metadata = {
             "tx_hash": payload.get("tx_hash") or payload.get("transaction_hash"),
             "loyalty_score": payload.get("loyalty_score"),
             "authorized_by": payload.get("authorized_by"),
             "relay": payload.get("relay"),
+            "rail": rail,
+            "partner_id": partner_id,
+            "key_id": key_id,
             "trigger_phrase": trigger_phrase,
         }
         try:

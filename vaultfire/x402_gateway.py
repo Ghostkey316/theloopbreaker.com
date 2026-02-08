@@ -53,6 +53,8 @@ from .x402_privacy import (
     MAX_TRACE_WINDOW,
 )
 
+from Vaultfire.x402_rails import DEFAULT_RAILS
+
 __all__ = [
     "X402PaymentRequired",
     "X402GatewayOffline",
@@ -149,6 +151,8 @@ class X402Gateway:
         self.companion_path = companion_path or Path("logs/x402_companion.jsonl")
         self._backup_manager = backup_manager or DailyBackupManager()
         self._rules: MutableMapping[str, X402Rule] = {}
+        # Rail adapters (EVM/ASM/NS3, etc.) used for best-effort currency validation.
+        self._rails = dict(DEFAULT_RAILS)
         self._lock = threading.Lock()
         self._denial_counts: MutableMapping[str, int] = {}
         self.ghostkey_mode = X402_GHOSTKEY_MODE
@@ -301,10 +305,18 @@ class X402Gateway:
         self._check_redaction_trigger(prepared_metadata)
 
         if charge_amount and charge_amount > 0:
+            resolved_currency = (currency or (rule.currency if rule else "ETH")).upper()
+            supported = any(
+                getattr(rail, "supports_currency", lambda _: False)(resolved_currency)
+                for rail in self._rails.values()
+            )
+            if not supported:
+                prepared_metadata = dict(prepared_metadata)
+                prepared_metadata["currency_unrecognized"] = True
             self._record_transaction(
                 endpoint=endpoint,
                 amount=charge_amount,
-                currency=currency or (rule.currency if rule else "ETH"),
+                currency=resolved_currency,
                 metadata=prepared_metadata,
                 unlocks=rule.unlocks if rule else (),
             )
