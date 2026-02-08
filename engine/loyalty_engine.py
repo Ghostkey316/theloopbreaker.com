@@ -8,7 +8,19 @@ from pathlib import Path
 from typing import Mapping, Optional
 
 from . import storage
-from vaultfire.security.fhe import FHECipherSuite
+
+# `rt` tasks sometimes invoke engine scripts with a working directory that is not
+# the repo root, which can make `import vaultfire` fail. To keep the demo + engine
+# usable in constrained runners, defensively ensure the repo root is on sys.path.
+try:
+    from vaultfire.security.fhe import FHECipherSuite
+except ModuleNotFoundError:  # pragma: no cover
+    import sys
+
+    _REPO_ROOT = Path(__file__).resolve().parents[1]
+    if str(_REPO_ROOT) not in sys.path:
+        sys.path.insert(0, str(_REPO_ROOT))
+    from vaultfire.security.fhe import FHECipherSuite
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 SCORECARD_PATH = BASE_DIR / "user_scorecard.json"
