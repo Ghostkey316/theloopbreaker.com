@@ -214,11 +214,11 @@ contract ERC8004ValidationRegistry is PrivacyGuarantees {
         require(request.status == ValidationStatus.PENDING, "Request not pending");
         require(validatorStakes[msg.sender] >= MIN_VALIDATOR_STAKE, "Insufficient validator stake");
 
-        // For ZK proof validation, verify the proof
+        // For ZK proof validation:
+        // - submitValidation() is backward compatible and stores the proof bytes.
+        // - For enforceable verification, use submitValidationZK() which calls the zkVerifier.
         if (request.validationType == ValidationType.ZK_PROOF) {
             require(zkProof.length > 0, "ZK proof required");
-            // Note: Actual ZK verification would happen here
-            // This is a simplified version
         }
 
         uint256 responseId = nextResponseId++;
@@ -253,6 +253,55 @@ contract ERC8004ValidationRegistry is PrivacyGuarantees {
         );
 
         // Check if validation is complete
+        _checkValidationComplete(requestId);
+    }
+
+    /**
+     * @notice Submit a ZK validation response with on-chain proof verification.
+     * @dev Enforces zkVerifier.verifyProof(). If the proof is invalid, this call reverts.
+     *
+     * NOTE: The expected publicInputs format is defined by the verifier implementation.
+     */
+    function submitValidationZK(
+        uint256 requestId,
+        bool approved,
+        string calldata evidenceURI,
+        bytes calldata proofBytes,
+        uint256[] calldata publicInputs
+    ) external payable {
+        ValidationRequest storage request = validationRequests[requestId];
+        require(request.status == ValidationStatus.PENDING, "Request not pending");
+        require(request.validationType == ValidationType.ZK_PROOF, "Not a ZK validation request");
+        require(validatorStakes[msg.sender] >= MIN_VALIDATOR_STAKE, "Insufficient validator stake");
+        require(proofBytes.length > 0, "ZK proof required");
+
+        bool ok = zkVerifier.verifyProof(proofBytes, publicInputs);
+        require(ok, "ZK proof invalid");
+
+        uint256 responseId = nextResponseId++;
+
+        validationResponses[responseId] = ValidationResponse({
+            responseId: responseId,
+            requestId: requestId,
+            validator: msg.sender,
+            approved: approved,
+            evidenceURI: evidenceURI,
+            zkProof: proofBytes,
+            timestamp: block.timestamp,
+            validatorStake: msg.value
+        });
+
+        requestResponses[requestId].push(responseId);
+        validatorActiveValidations[msg.sender] += 1;
+
+        if (approved) {
+            request.approvalsCount += 1;
+        } else {
+            request.rejectionsCount += 1;
+        }
+
+        emit ValidationResponseSubmitted(responseId, requestId, msg.sender, approved, block.timestamp);
+
         _checkValidationComplete(requestId);
     }
 
