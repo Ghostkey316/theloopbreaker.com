@@ -11,9 +11,23 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterable, Mapping, Sequence
 
-from cryptography.exceptions import InvalidTag
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from hashlib import pbkdf2_hmac, sha256
+
+try:
+    from cryptography.exceptions import InvalidTag
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+    _CRYPTO_AVAILABLE = True
+except ModuleNotFoundError:  # pragma: no cover
+    # In minimal/demo runners we prefer graceful degradation over a hard crash.
+    # When cryptography is unavailable, Vaultfire will treat encryption as disabled
+    # (see should_encrypt) and will not emit ENC:: tokens.
+    AESGCM = None  # type: ignore[assignment]
+
+    class InvalidTag(Exception):
+        pass
+
+    _CRYPTO_AVAILABLE = False
 
 from .keyring import KeyManager
 
@@ -249,6 +263,12 @@ def _component_category(component: str) -> str:
 def should_encrypt(component: str | None) -> bool:
     if not component:
         return False
+
+    # If cryptography isn't installed, we cannot safely encrypt/decrypt.
+    # Treat encryption as disabled so demo flows still run.
+    if not _CRYPTO_AVAILABLE:
+        return False
+
     config = _load_config()
     overrides = config.encryption_overrides
     if overrides and component in overrides:
@@ -406,6 +426,13 @@ def decrypt_token(component: str, token: str) -> Mapping[str, Any]:
             return parsed if isinstance(parsed, Mapping) else {}
         except json.JSONDecodeError:
             return {}
+
+    if not _CRYPTO_AVAILABLE:
+        raise RuntimeError(
+            "Encrypted payload encountered but 'cryptography' is not installed. "
+            "Install cryptography or disable encryption for this environment."
+        )
+
     raw = _base64url_decode(token[len(PREFIX) :])
     if len(raw) <= 1 + _SALT_LENGTH + _NONCE_LENGTH:
         raise ValueError("Encrypted payload is malformed")
