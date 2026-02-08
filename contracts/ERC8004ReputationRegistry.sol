@@ -29,6 +29,14 @@ import "./ERC8004IdentityRegistry.sol";
  */
 contract ERC8004ReputationRegistry is PrivacyGuarantees {
 
+    // --------------------
+    // Privacy hardening
+    // --------------------
+    // Legacy feedback uses on-chain strings (category, feedbackURI). These are
+    // easy to misuse (PII risk) on immutable ledgers.
+    //
+    // Prefer submitFeedbackHashed() which stores only keccak256 hashes.
+
     ERC8004IdentityRegistry public identityRegistry;
 
     struct Feedback {
@@ -40,6 +48,17 @@ contract ERC8004ReputationRegistry is PrivacyGuarantees {
         string feedbackURI;        // Off-chain detailed feedback (optional)
         bool verified;             // True if from verified VaultFire partnership
         uint256 bondId;            // VaultFire bond ID (0 if not from bond)
+    }
+
+    struct FeedbackHashed {
+        address reviewer;
+        address agentAddress;
+        uint256 timestamp;
+        uint256 rating;            // 0-10000
+        bytes32 categoryHash;      // keccak256(category)
+        bytes32 feedbackURIHash;   // keccak256(feedbackURI)
+        bool verified;
+        uint256 bondId;
     }
 
     struct AgentReputation {
@@ -54,13 +73,19 @@ contract ERC8004ReputationRegistry is PrivacyGuarantees {
 
     // Global feedback ID => Feedback
     mapping(uint256 => Feedback) public feedbacks;
+    // Global hashed feedback ID => FeedbackHashed
+    mapping(uint256 => FeedbackHashed) public feedbacksHashed;
+
     uint256 public nextFeedbackId = 1;
+    uint256 public nextFeedbackIdHashed = 1;
 
     // Agent address => feedback IDs
     mapping(address => uint256[]) public agentFeedbacks;
+    mapping(address => uint256[]) public agentFeedbacksHashed;
 
     // Reviewer address => feedback IDs (for transparency)
     mapping(address => uint256[]) public reviewerFeedbacks;
+    mapping(address => uint256[]) public reviewerFeedbacksHashed;
 
     event FeedbackSubmitted(
         uint256 indexed feedbackId,
@@ -68,6 +93,18 @@ contract ERC8004ReputationRegistry is PrivacyGuarantees {
         address indexed agentAddress,
         uint256 rating,
         string category,
+        bool verified,
+        uint256 bondId,
+        uint256 timestamp
+    );
+
+    event FeedbackSubmittedHashed(
+        uint256 indexed feedbackId,
+        address indexed reviewer,
+        address indexed agentAddress,
+        uint256 rating,
+        bytes32 categoryHash,
+        bytes32 feedbackURIHash,
         bool verified,
         uint256 bondId,
         uint256 timestamp
@@ -130,6 +167,51 @@ contract ERC8004ReputationRegistry is PrivacyGuarantees {
             agentAddress,
             rating,
             category,
+            verified,
+            bondId,
+            block.timestamp
+        );
+    }
+
+    /// @notice Submit feedback without putting freeform strings on-chain.
+    function submitFeedbackHashed(
+        address agentAddress,
+        uint256 rating,
+        bytes32 categoryHash,
+        bytes32 feedbackURIHash,
+        bool verified,
+        uint256 bondId
+    ) external {
+        require(identityRegistry.isAgentActive(agentAddress), "Agent not registered");
+        require(rating <= 10000, "Rating must be 0-10000");
+        require(categoryHash != bytes32(0), "Category hash required");
+        require(feedbackURIHash != bytes32(0), "Feedback URI hash required");
+
+        uint256 feedbackId = nextFeedbackIdHashed++;
+
+        feedbacksHashed[feedbackId] = FeedbackHashed({
+            reviewer: msg.sender,
+            agentAddress: agentAddress,
+            timestamp: block.timestamp,
+            rating: rating,
+            categoryHash: categoryHash,
+            feedbackURIHash: feedbackURIHash,
+            verified: verified,
+            bondId: bondId
+        });
+
+        agentFeedbacksHashed[agentAddress].push(feedbackId);
+        reviewerFeedbacksHashed[msg.sender].push(feedbackId);
+
+        _updateReputation(agentAddress, rating, verified);
+
+        emit FeedbackSubmittedHashed(
+            feedbackId,
+            msg.sender,
+            agentAddress,
+            rating,
+            categoryHash,
+            feedbackURIHash,
             verified,
             bondId,
             block.timestamp
