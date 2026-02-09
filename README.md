@@ -327,24 +327,13 @@ For Humans:
 
 ---
 
-## Installation & Quick Start
+## Smart Contracts (Hardhat)
 
-### Prerequisites
-```bash
-node >= 18.0.0
-npm >= 9.0.0
-```
+If you haven’t already, follow the **Requirements** + **Quickstart** above to clone the repo and install dependencies.
 
-### Install
+### Run Hardhat Tests
 ```bash
-git clone https://github.com/Ghostkey316/ghostkey-316-vaultfire-init.git
-cd ghostkey-316-vaultfire-init
-npm install
-```
-
-### Run Tests
-```bash
-# Run all tests
+# Run all contract tests
 npx hardhat test
 
 # Run Partnership Bonds tests
