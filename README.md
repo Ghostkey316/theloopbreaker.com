@@ -17,6 +17,7 @@ This repo contains:
 
 Quick links:
 - Quickstart: see **Requirements** + **Quickstart (bash)** below
+- Partner Fast Verify: [`docs/PARTNER_FAST_VERIFY.md`](./docs/PARTNER_FAST_VERIFY.md)
 - Verify receipts: [`docs/VERIFY_RECEIPTS.md`](./docs/VERIFY_RECEIPTS.md)
 - Claims & limits: [`docs/CLAIMS_AND_LIMITS.md`](./docs/CLAIMS_AND_LIMITS.md)
 
