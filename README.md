@@ -14,6 +14,13 @@
 git clone https://github.com/ghostkey316/ghostkey-316-vaultfire-init.git && cd ghostkey-316-vaultfire-init && npm install && npm run preflight && npm test
 ```
 
+Expected output: the command finishes with a successful Jest run (exit code 0). The last lines should look like:
+
+```text
+Test Suites: ... passed, ... total
+Tests:       ... passed, ... total
+```
+
 **Step-by-step:**
 
 ```bash
@@ -21,18 +28,25 @@ git clone https://github.com/ghostkey316/ghostkey-316-vaultfire-init.git && cd g
 git clone https://github.com/ghostkey316/ghostkey-316-vaultfire-init.git
 cd ghostkey-316-vaultfire-init
 npm install
+# Expected output: completes without errors (exit code 0).
 
 # Sanity checks
 npm run preflight
+# Expected output: completes without errors (exit code 0).
 
 # Run tests
 npm test
+# Expected output: Jest reports all tests passing (exit code 0), e.g.
+#   Test Suites: ... passed, ... total
+#   Tests:       ... passed, ... total
 
 # Optional: run the dashboard (Vite dev server)
 npm run dashboard:dev
+# Expected output: a local dev server starts and prints a URL (typically http://localhost:5173).
 
 # Optional: run the example API server
 npm run start:api
+# Expected output: an Express server starts listening on a local port.
 ```
 
 ## What Vaultfire Is
