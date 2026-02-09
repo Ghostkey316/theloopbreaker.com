@@ -8,7 +8,7 @@
 
 ## Quickstart (bash)
 
-**Golden path (one command):**
+**Fast verify (one command):**
 
 Runs preflight + tests to verify Vaultfire installs cleanly and core invariants pass.
 
