@@ -8,6 +8,14 @@
 
 ## Quickstart (bash)
 
+**Golden path (one command):**
+
+```bash
+git clone https://github.com/ghostkey316/ghostkey-316-vaultfire-init.git && cd ghostkey-316-vaultfire-init && npm install && npm run preflight && npm test
+```
+
+**Step-by-step:**
+
 ```bash
 # Clone + install
 git clone https://github.com/ghostkey316/ghostkey-316-vaultfire-init.git
