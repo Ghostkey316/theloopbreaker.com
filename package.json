@@ -31,6 +31,8 @@
     "lint:syntax": "node tools/run-eslint-syntax.js",
     "lint:claim-map": "node tools/claim_map_check.js",
     "preflight": "node tools/preflight-check.js",
+    "verify:receipt": "node tools/verify_receipt.js",
+    "verify": "npm run preflight && npm test && npm run verify:receipt",
     "postinstall": "node scripts/check-mobile-optional.js",
     "deploy:sandbox": "node cli/deployVaultfire.js --env sandbox",
     "deploy:production": "node cli/deployVaultfire.js --env production",

@@ -18,18 +18,17 @@ Before running the Quickstart, make sure you have:
 
 **Fast verify (one command):**
 
-Runs preflight + tests to verify Vaultfire installs cleanly and core invariants pass.
+Runs preflight + tests to verify Vaultfire installs cleanly and core invariants pass, then writes a tamper-evident verification receipt.
 
 ```bash
-git clone https://github.com/ghostkey316/ghostkey-316-vaultfire-init.git && cd ghostkey-316-vaultfire-init && npm install && npm run preflight && npm test
+git clone https://github.com/ghostkey316/ghostkey-316-vaultfire-init.git && cd ghostkey-316-vaultfire-init && npm install && npm run verify
 ```
 
 Expected output (high level):
+- `npm run verify` exits successfully (exit code 0)
 - preflight passes
-- tests pass (Jest exits successfully, exit code 0)
-- the last lines include a Jest summary like:
-  - `Test Suites: ... passed`
-  - `Tests: ... passed`
+- tests pass (Jest summary shows `... passed`)
+- a receipt is written to `artifacts/verify-receipt.json`
 
 **Step-by-step:**
 
@@ -49,6 +48,10 @@ npm test
 # Expected output: Jest reports all tests passing (exit code 0), e.g.
 #   Test Suites: ... passed, ... total
 #   Tests:       ... passed, ... total
+
+# Write a tamper-evident verification receipt
+npm run verify:receipt
+# Expected output: writes artifacts/verify-receipt.json and prints its SHA256.
 
 # Optional: run the dashboard (Vite dev server)
 npm run dashboard:dev
