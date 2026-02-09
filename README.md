@@ -6,6 +6,14 @@
 
 ---
 
+## Requirements
+
+Before running the Quickstart, make sure you have:
+- **Node.js** (recommend **22.x**; 20+ should work)
+- **npm** (ships with Node)
+- **git**
+- A **bash**-compatible shell (macOS/Linux terminal, or Windows **WSL**)
+
 ## Quickstart (bash)
 
 **Fast verify (one command):**
