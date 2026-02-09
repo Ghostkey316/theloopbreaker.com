@@ -89,5 +89,8 @@
     "winston-daily-rotate-file": "^5.0.0",
     "wrap-ansi": "^7.0.0",
     "yamljs": "^0.3.0"
+  },
+  "overrides": {
+    "axios": "^1.13.5"
   }
 }

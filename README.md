@@ -6,6 +6,27 @@
 
 ---
 
+## Quickstart (bash)
+
+```bash
+# Clone + install
+git clone https://github.com/ghostkey316/ghostkey-316-vaultfire-init.git
+cd ghostkey-316-vaultfire-init
+npm install
+
+# Sanity checks
+npm run preflight
+
+# Run tests
+npm test
+
+# Optional: run the dashboard (Vite dev server)
+npm run dashboard:dev
+
+# Optional: run the example API server
+npm run start:api
+```
+
 ## What Vaultfire Is
 
 **Vaultfire is trust infrastructure for the AI era.**
