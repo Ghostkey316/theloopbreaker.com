@@ -17,8 +17,11 @@ git clone https://github.com/ghostkey316/ghostkey-316-vaultfire-init.git && cd g
 ```
 
 Expected output (high level):
-- exits successfully (exit code 0)
-- includes a Jest summary like `Test Suites: ... passed`
+- preflight passes
+- tests pass (Jest exits successfully, exit code 0)
+- the last lines include a Jest summary like:
+  - `Test Suites: ... passed`
+  - `Tests: ... passed`
 
 **Step-by-step:**
 
