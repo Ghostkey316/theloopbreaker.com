@@ -6,6 +6,20 @@
 
 ---
 
+## TL;DR
+
+Vaultfire is a protocol for **verifiable human<->AI trust** using cryptographic + economic proof (not behavioral surveillance).
+
+This repo contains:
+- protocol docs + reference implementations
+- a preflight + test suite you can run locally
+- optional **signed verification receipts** for coordination/auditing
+
+Quick links:
+- Quickstart: see **Requirements** + **Quickstart (bash)** below
+- Verify receipts: [`docs/VERIFY_RECEIPTS.md`](./docs/VERIFY_RECEIPTS.md)
+- Claims & limits: [`docs/CLAIMS_AND_LIMITS.md`](./docs/CLAIMS_AND_LIMITS.md)
+
 ## Requirements
 
 Before running the Quickstart, make sure you have:
@@ -14,6 +28,8 @@ Before running the Quickstart, make sure you have:
 - **git**
 - A **bash**-compatible shell (macOS/Linux terminal, or Windows **WSL**)
 - Optional (for signed receipts): **OpenSSH** (`ssh-keygen`) and an SSH key (or set `VAULTFIRE_SIGNING_KEY`)
+
+Windows note: if you are not using WSL, run the same commands in PowerShell (replace `export ...` with `$env:...=...`).
 
 ## Quickstart (bash)
 
@@ -64,9 +80,13 @@ npm test
 #   Test Suites: ... passed, ... total
 #   Tests:       ... passed, ... total
 
-# Write a tamper-evident verification receipt
+# Write a tamper-evident verification receipt (no signing)
 npm run verify:receipt
 # Expected output: writes artifacts/verify-receipt.json and prints its SHA256.
+
+# Optional: signed receipt (requires a configured key)
+# export VAULTFIRE_SIGNING_KEY=~/.ssh/id_ed25519
+# npm run verify:receipt:signed
 
 # Optional: run the dashboard (Vite dev server)
 npm run dashboard:dev
@@ -83,7 +103,7 @@ npm run start:api
 
 Like HTTPS secures communication between browsers and servers, Vaultfire secures trust between humans and AI through verifiable economic proof.
 
-**The first protocol built on belief verification rather than behavioral surveillance.**
+Built on belief verification rather than behavioral surveillance.
 
 **Core architecture:**
 - Zero-knowledge proof systems (RISC Zero + quantum-resistant cryptography)
@@ -141,7 +161,7 @@ If you're applying Vaultfire primitives to agents/skills, start here:
 - `docs/ANTI_PANOPTICON_INVARIANTS.md` — mission lock (no KYC / no surveillance)
 
 
-Vaultfire provides **two complementary verification systems** that create complete trust for AI-human relationships:
+Vaultfire provides **two complementary verification systems** intended to cover both individual partnerships and ecosystem-wide accountability:
 
 ### 1. AI Partnership Bonds
 **Individual-level verification**
@@ -214,10 +234,9 @@ Proves that AI companies benefit ALL humans, not just their users.
 
 ## Why This Matters
 
-**The AI-human trust problem is THE problem:**
-- Most important unsolved challenge of our time
-- Everyone talks about AI alignment, nobody has economic proof
-- We have that proof now
+**The AI-human trust problem is the problem:**
+- Lots of people talk about alignment; few systems provide verifiable incentives.
+- Vaultfire’s approach is to make key claims *auditable* via economic + cryptographic proof.
 
 **Economic incentives created:**
 
@@ -241,14 +260,14 @@ For Humans:
 
 ## Current Status
 
-**✅ Core Protocol:** Complete and tested
+**✅ Core Protocol:** Implemented and tested in-repo
 - AI Partnership Bonds: implemented + tested in-repo (loyalty, verification, quality scoring)
 - AI Accountability Bonds: implemented + tested in-repo (oracles, multi-AI verification, challenges)
 
 Note: "implemented + tested" is not the same as "production-secure". See the audit items below before deploying value.
-- Comprehensive test coverage (168 test cases)
-- Gas-optimized contracts
-- Full documentation
+- Extensive test coverage (see `/tests`, `/test`, and `__tests__`)
+- Gas-optimization work included (verify before mainnet deployment)
+- Documentation included (see `/docs`)
 
 **🔨 What Needs To Be Done:**
 
@@ -339,11 +358,11 @@ Note: "implemented + tested" is not the same as "production-secure". See the aud
 - Reentrancy guards
 - Emergency pause functionality
 
-**Testing:**
-- 168 comprehensive test cases
-- Coverage: bond creation, metrics, verification, distribution, edge cases
-- Gas optimization verified
-- All security features tested
+**Testing (repo):**
+- Extensive automated tests (see `/tests`, `/test`, and `__tests__`)
+- Coverage includes bond creation, metrics, verification, distribution, and edge cases
+- Gas considerations are addressed, but treat mainnet deployment as a separate hardening step
+- Security features have tests, but are not a substitute for an external audit
 
 ---
 
