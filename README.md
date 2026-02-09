@@ -13,6 +13,7 @@ Before running the Quickstart, make sure you have:
 - **npm** (ships with Node)
 - **git**
 - A **bash**-compatible shell (macOS/Linux terminal, or Windows **WSL**)
+- Optional (for signed receipts): **OpenSSH** (`ssh-keygen`) and an SSH key (or set `VAULTFIRE_SIGNING_KEY`)
 
 ## Quickstart (bash)
 
@@ -29,6 +30,7 @@ Expected output (high level):
 - preflight passes
 - tests pass (Jest summary shows `... passed`)
 - a receipt is written to `artifacts/verify-receipt.json`
+- if an SSH signing key is available/configured, the receipt is signed to `artifacts/verify-receipt.sig` (and self-verified)
 
 **Step-by-step:**
 
