@@ -32,6 +32,19 @@ Expected output (high level):
 - a receipt is written to `artifacts/verify-receipt.json`
 - if an SSH signing key is available/configured, the receipt is signed to `artifacts/verify-receipt.sig` (and self-verified)
 
+**Signed receipt (recommended):**
+
+Set your signing key once, then run the strict signed verify:
+
+```bash
+export VAULTFIRE_SIGNING_KEY=~/.ssh/id_ed25519
+npm run verify:signed
+```
+
+Expected output: same as `verify`, plus the signed receipt artifacts:
+- `artifacts/verify-receipt.sig`
+- `artifacts/verify-receipt.allowed_signers`
+
 **Step-by-step:**
 
 ```bash
@@ -331,6 +344,24 @@ For Humans:
 - All security features tested
 
 ---
+
+## Verify a receipt from someone else
+
+If someone sends you a Vaultfire verification receipt + signature artifacts, you can verify it locally with OpenSSH.
+
+You need:
+- `verify-receipt.json`
+- `verify-receipt.sig`
+- `verify-receipt.allowed_signers`
+- the signer identity string they used (printed during signing; defaults to their `git config user.email`)
+
+```bash
+npm run verify:check -- \
+  --receipt artifacts/verify-receipt.json \
+  --sig artifacts/verify-receipt.sig \
+  --allowed artifacts/verify-receipt.allowed_signers \
+  --identity someone@example.com
+```
 
 ## Smart Contracts (Hardhat)
 

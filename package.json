@@ -34,6 +34,7 @@
     "verify:receipt": "node tools/verify_receipt.js",
     "verify:receipt:sign": "node tools/verify_receipt.js --sign=auto",
     "verify:receipt:signed": "node tools/verify_receipt.js --sign --require-sign",
+    "verify:check": "node tools/verify_check.js",
     "verify": "npm run preflight && npm test && npm run verify:receipt:sign",
     "verify:signed": "npm run preflight && npm test && npm run verify:receipt:signed",
     "postinstall": "node scripts/check-mobile-optional.js",
