@@ -10,16 +10,15 @@
 
 **Golden path (one command):**
 
+Runs preflight + tests to verify Vaultfire installs cleanly and core invariants pass.
+
 ```bash
 git clone https://github.com/ghostkey316/ghostkey-316-vaultfire-init.git && cd ghostkey-316-vaultfire-init && npm install && npm run preflight && npm test
 ```
 
-Expected output: the command finishes with a successful Jest run (exit code 0). The last lines should look like:
-
-```text
-Test Suites: ... passed, ... total
-Tests:       ... passed, ... total
-```
+Expected output (high level):
+- exits successfully (exit code 0)
+- includes a Jest summary like `Test Suites: ... passed`
 
 **Step-by-step:**
 
