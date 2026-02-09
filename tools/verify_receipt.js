@@ -53,6 +53,12 @@ function parseArgs(argv) {
   return out;
 }
 
+function toBoolean(value, fallback = false) {
+  if (value === undefined || value === null) return fallback;
+  if (typeof value === 'boolean') return value;
+  return ['true', '1', 'yes', 'on'].includes(String(value).toLowerCase());
+}
+
 function expandHome(p) {
   if (!p) return p;
   if (p.startsWith('~' + path.sep) || p === '~') {
@@ -110,18 +116,16 @@ function sshVerifyFile({ allowedSignersPath, identity, namespace, sigPath, fileP
   );
 }
 
-function buildReceipt({ repoRoot }) {
+function buildReceipt({ repoRoot, redactPaths, includeRemote, includeStatus }) {
   const receipt = {
     kind: 'vaultfire.verify.receipt',
     version: 2,
     createdAtUtc: new Date().toISOString(),
     repo: {
-      path: repoRoot,
+      path: redactPaths ? '<redacted>' : repoRoot,
       git: {
         commit: run('git rev-parse HEAD'),
-        branch: run('git branch --show-current'),
-        status: run('git status -sb'),
-        remote: run('git remote -v')
+        branch: run('git branch --show-current')
       }
     },
     runtime: {
@@ -135,6 +139,13 @@ function buildReceipt({ repoRoot }) {
       'README.md': null
     }
   };
+
+  if (includeStatus) {
+    receipt.repo.git.status = run('git status -sb');
+  }
+  if (includeRemote) {
+    receipt.repo.git.remote = run('git remote -v');
+  }
 
   for (const file of Object.keys(receipt.inputs)) {
     const abs = path.join(repoRoot, file);
@@ -173,7 +184,11 @@ function buildReceipt({ repoRoot }) {
   const signerIdentity =
     String(args.identity || process.env.VAULTFIRE_SIGNER_ID || run('git config user.email') || 'local');
 
-  const receipt = buildReceipt({ repoRoot });
+  const redactPaths = toBoolean(args['redact-paths'] || args.redactPaths, false);
+  const includeRemote = !toBoolean(args['no-remote'] || args.noRemote, false);
+  const includeStatus = !toBoolean(args['no-status'] || args.noStatus, false);
+
+  const receipt = buildReceipt({ repoRoot, redactPaths, includeRemote, includeStatus });
   fs.writeFileSync(outPath, JSON.stringify(receipt, null, 2) + '\n', 'utf8');
   fs.writeFileSync(outHashPath, `${receipt.receiptSha256}  verify-receipt.json\n`, 'utf8');
 
@@ -221,6 +236,21 @@ function buildReceipt({ repoRoot }) {
 
   // Move signature next to receipt with stable name
   fs.renameSync(sigPath, sigOutPath);
+
+  // Add signature metadata to the receipt file after signing.
+  // (We keep the receipt hash as an integrity anchor; the signature covers the JSON file bytes.)
+  receipt.signature = {
+    scheme: 'ssh-keygen -Y sign',
+    namespace,
+    identity: signerIdentity,
+    publicKey,
+    sigPath: path.relative(repoRoot, sigOutPath).replace(/\\/g, '/'),
+    allowedSignersPath: path.relative(repoRoot, allowedSignersPath).replace(/\\/g, '/'),
+    redactPaths,
+    includeRemote,
+    includeStatus
+  };
+  fs.writeFileSync(outPath, JSON.stringify(receipt, null, 2) + '\n', 'utf8');
 
   console.log(`Signed receipt (ssh-keygen -Y sign): ${sigOutPath}`);
   console.log(`Allowed signers file: ${allowedSignersPath}`);

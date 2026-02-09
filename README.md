@@ -242,8 +242,10 @@ For Humans:
 ## Current Status
 
 **✅ Core Protocol:** Complete and tested
-- AI Partnership Bonds: Production-ready with loyalty, verification, quality scoring
-- AI Accountability Bonds: Production-ready with oracles, multi-AI verification, challenges
+- AI Partnership Bonds: implemented + tested in-repo (loyalty, verification, quality scoring)
+- AI Accountability Bonds: implemented + tested in-repo (oracles, multi-AI verification, challenges)
+
+Note: "implemented + tested" is not the same as "production-secure". See the audit items below before deploying value.
 - Comprehensive test coverage (168 test cases)
 - Gas-optimized contracts
 - Full documentation
@@ -345,6 +347,10 @@ For Humans:
 
 ---
 
+## Verify receipts
+
+See [`docs/VERIFY_RECEIPTS.md`](./docs/VERIFY_RECEIPTS.md) for the receipt schema, privacy controls, and a short threat-model note.
+
 ## Verify a receipt from someone else
 
 If someone sends you a Vaultfire verification receipt + signature artifacts, you can verify it locally with OpenSSH.
@@ -390,7 +396,7 @@ npx hardhat run scripts/deploy-ai-accountability.js --network sepolia
 ```
 
 ### Base Mini App
-The project includes a production-ready Base dApp in `/base-mini-app`:
+The project includes a Base mini-app reference implementation in `/base-mini-app`:
 - Next.js 14 frontend with wagmi + RainbowKit
 - Privacy-first belief attestation on Base blockchain
 - Zero-knowledge proof integration
