@@ -415,12 +415,14 @@ npx hardhat run scripts/deploy-ai-partnership.js --network sepolia
 npx hardhat run scripts/deploy-ai-accountability.js --network sepolia
 ```
 
-### Base Mini App
-The project includes a Base mini-app reference implementation in `/base-mini-app`:
-- Next.js 14 frontend with wagmi + RainbowKit
-- Privacy-first belief attestation on Base blockchain
-- Zero-knowledge proof integration
-- See [base-mini-app/README.md](./base-mini-app/README.md) for setup instructions
+### Base Mini App (Optional UI demo)
+This repo includes a Next.js Base mini-app reference UI in `/base-mini-app`.
+
+**Status:** optional / demo-only. It may be temporarily disabled while we focus on core protocol correctness.
+
+- Not required for Vaultfire protocol verification.
+- The canonical verification path is `npm run verify` (root).
+- If you want to explore the UI anyway, see [base-mini-app/README.md](./base-mini-app/README.md).
 
 ---
 
