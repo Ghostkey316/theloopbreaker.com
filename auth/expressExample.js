@@ -9,6 +9,8 @@ const http = require('http');
 const { Server } = require('socket.io');
 const TokenService = require('./tokenService');
 const { createAuthMiddleware } = require('./authMiddleware');
+const { RedisNonceStore, createErc8128Middleware, createAuthOrErc8128Middleware } = require('./erc8128');
+const { buildProvidersFromEnv } = require('../services/erc8128Providers');
 const { ROLES } = require('./roles');
 const createEthicsGuard = require('../middleware/ethicsGuard');
 const MultiTierTelemetryLedger = require('../services/telemetryLedger');
@@ -42,10 +44,32 @@ app.use(
     crossOriginEmbedderPolicy: false,
   })
 );
-app.use(bodyParser.json({ limit: '1mb' }));
+// Capture raw body bytes for ERC-8128 content-digest verification.
+app.use(
+  bodyParser.json({
+    limit: '1mb',
+    verify: (req, res, buf) => {
+      req.rawBody = buf;
+    },
+  })
+);
 
 const tokenService = new TokenService();
 const ethicsGuard = createEthicsGuard();
+
+// ERC-8128 setup (optional). If RPC URLs are not configured, ERC-8128 will be unavailable.
+const erc8128Providers = buildProvidersFromEnv();
+const erc8128NonceStore = process.env.VAULTFIRE_REDIS_URL
+  ? new RedisNonceStore({ url: process.env.VAULTFIRE_REDIS_URL })
+  : null;
+const erc8128Middleware = erc8128NonceStore
+  ? createErc8128Middleware({
+      requiredRole: ROLES.PARTNER,
+      nonceStore: erc8128NonceStore,
+      providersByChainId: erc8128Providers,
+      policy: { skewSec: 60, maxWindowSec: 60 },
+    })
+  : null;
 const trustConfig = loadTrustSyncConfig();
 const telemetryLedger = new MultiTierTelemetryLedger(trustConfig.telemetry);
 const deploymentMode = new DeploymentModeController({
@@ -337,7 +361,13 @@ app.post('/auth/refresh', (req, res) => {
 
 app.post(
   '/vaultfire/activate',
-  ...createAuthMiddleware({ requiredRoles: [ROLES.PARTNER, ROLES.ADMIN], tokenService }),
+  ...(erc8128Middleware
+    ? [createAuthOrErc8128Middleware({
+        requiredRoles: [ROLES.PARTNER, ROLES.ADMIN],
+        bearerAuth: createAuthMiddleware({ requiredRoles: [ROLES.PARTNER, ROLES.ADMIN], tokenService }),
+        erc8128: erc8128Middleware,
+      })]
+    : createAuthMiddleware({ requiredRoles: [ROLES.PARTNER, ROLES.ADMIN], tokenService })),
   ethicsGuard,
   (req, res) => {
     const { walletId, activationChannel } = req.body || {};
@@ -380,7 +410,13 @@ app.post(
 
 app.post(
   '/telemetry/realtime',
-  ...createAuthMiddleware({ requiredRoles: [ROLES.PARTNER, ROLES.ADMIN], tokenService }),
+  ...(erc8128Middleware
+    ? [createAuthOrErc8128Middleware({
+        requiredRoles: [ROLES.PARTNER, ROLES.ADMIN],
+        bearerAuth: createAuthMiddleware({ requiredRoles: [ROLES.PARTNER, ROLES.ADMIN], tokenService }),
+        erc8128: erc8128Middleware,
+      })]
+    : createAuthMiddleware({ requiredRoles: [ROLES.PARTNER, ROLES.ADMIN], tokenService })),
   ethicsGuard,
   (req, res) => {
     const { events, channel, obfuscate } = req.body || {};
@@ -592,7 +628,13 @@ app.post(
 
 app.post(
   '/partner/hooks/subscribe',
-  ...createAuthMiddleware({ requiredRoles: [ROLES.PARTNER, ROLES.ADMIN], tokenService }),
+  ...(erc8128Middleware
+    ? [createAuthOrErc8128Middleware({
+        requiredRoles: [ROLES.PARTNER, ROLES.ADMIN],
+        bearerAuth: createAuthMiddleware({ requiredRoles: [ROLES.PARTNER, ROLES.ADMIN], tokenService }),
+        erc8128: erc8128Middleware,
+      })]
+    : createAuthMiddleware({ requiredRoles: [ROLES.PARTNER, ROLES.ADMIN], tokenService })),
   ethicsGuard,
   (req, res) => {
     const { event, targetUrl, metadata = {} } = req.body || {};
@@ -711,7 +753,13 @@ app.post(
 
 app.post(
   '/belief/actions/sign',
-  ...createAuthMiddleware({ requiredRoles: [ROLES.CONTRIBUTOR, ROLES.PARTNER, ROLES.ADMIN], tokenService }),
+  ...(erc8128Middleware
+    ? [createAuthOrErc8128Middleware({
+        requiredRoles: [ROLES.CONTRIBUTOR, ROLES.PARTNER, ROLES.ADMIN],
+        bearerAuth: createAuthMiddleware({ requiredRoles: [ROLES.CONTRIBUTOR, ROLES.PARTNER, ROLES.ADMIN], tokenService }),
+        erc8128: erc8128Middleware,
+      })]
+    : createAuthMiddleware({ requiredRoles: [ROLES.CONTRIBUTOR, ROLES.PARTNER, ROLES.ADMIN], tokenService })),
   ethicsGuard,
   (req, res) => {
     const { walletId, action, signature, metadata = {} } = req.body || {};

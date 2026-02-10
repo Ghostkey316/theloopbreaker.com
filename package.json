@@ -98,5 +98,9 @@
   },
   "overrides": {
     "axios": "^1.13.5"
+  },
+  "dependencies": {
+    "redis": "^5.10.0",
+    "structured-headers": "^2.0.2"
   }
 }
