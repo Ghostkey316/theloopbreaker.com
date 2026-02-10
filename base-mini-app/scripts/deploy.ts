@@ -1,4 +1,4 @@
-import { ethers } from "hardhat";
+import hre, { ethers } from "hardhat";
 
 async function main() {
   console.log("🔥 Deploying Vaultfire Contracts to Base...\n");
