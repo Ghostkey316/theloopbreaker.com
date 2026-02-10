@@ -23,4 +23,46 @@ paths:
                 properties:
                   ok:
                     type: boolean
+
+  /partner/hooks/subscribe:
+    post:
+      summary: Subscribe a partner webhook (JWT or ERC-8128)
+      description: |
+        This endpoint accepts either:
+        - Bearer JWT (Authorization: Bearer ...), or
+        - ERC-8128 signed HTTP request headers (Signature-Input, Signature)
+
+        Vaultfire's ERC-8128 acceptance policy is documented in docs/ERC8128_HTTP_AUTH.md.
+      responses:
+        '201':
+          description: Created
+        '401':
+          description: Unauthorized
+
+  /telemetry/realtime:
+    post:
+      summary: Ingest realtime telemetry (JWT or ERC-8128)
+      responses:
+        '202':
+          description: Accepted
+        '401':
+          description: Unauthorized
+
+  /vaultfire/activate:
+    post:
+      summary: Activate Vaultfire for a wallet (JWT or ERC-8128)
+      responses:
+        '201':
+          description: Created
+        '401':
+          description: Unauthorized
+
+  /belief/actions/sign:
+    post:
+      summary: Submit a belief action signature (JWT or ERC-8128)
+      responses:
+        '202':
+          description: Accepted
+        '401':
+          description: Unauthorized
 components: {}
