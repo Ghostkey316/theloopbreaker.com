@@ -2,7 +2,17 @@ import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { Providers } from './providers';
 
+const rawSiteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+
+// Ensure metadataBase always receives a valid absolute URL.
+const siteUrl = rawSiteUrl.startsWith('http://') || rawSiteUrl.startsWith('https://')
+  ? rawSiteUrl
+  : `https://${rawSiteUrl}`;
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: 'Vaultfire | Prove Your Beliefs on Base',
   description: 'Privacy-first belief attestation with zero-knowledge proofs on Base blockchain',
   keywords: ['Base', 'blockchain', 'zero-knowledge', 'privacy', 'beliefs', 'attestation', 'RISC Zero', 'STARK'],
