@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
-import {IRiscZeroVerifier} from "../interfaces/IRiscZeroVerifier.sol";
-import {IStarkVerifier} from "../interfaces/IStarkVerifier.sol";
+import {IRiscZeroVerifier} from "./IRiscZeroVerifier.sol";
+import {IStarkVerifier} from "./IStarkVerifier.sol";
 
 // =============================================================================
 //
@@ -221,17 +221,6 @@ contract ProductionBeliefAttestationVerifier is IStarkVerifier {
     // =========================================================================
 
     /// @inheritdoc IStarkVerifier
-    /// @notice Verifies a RISC Zero proof via the legacy 4-input interface.
-    /// @dev The `proofBytes` parameter is the Groth16 seal from the RISC Zero
-    ///      receipt.  The `publicInputs` array contains:
-    ///        [0] beliefHash   (bytes32 cast to uint256)
-    ///        [1] attester     (address cast to uint256)
-    ///        [2] epoch        (uint256, must fit uint32)
-    ///        [3] moduleID     (uint256)
-    ///
-    ///      The journal is reconstructed as:
-    ///        abi.encode(beliefHash, attester, epoch, moduleId)
-    ///      and its sha256 digest is passed to the RISC Zero verifier.
     function verifyProof(
         bytes calldata proofBytes,
         uint256[] calldata publicInputs
@@ -256,27 +245,15 @@ contract ProductionBeliefAttestationVerifier is IStarkVerifier {
     // =========================================================================
 
     /// @notice Verify a belief attestation proof and record the result.
-    /// @dev This is the preferred entry point for new integrations.  It
-    ///      accepts the seal and journal components directly, avoiding the
-    ///      uint256[] encoding overhead of the legacy interface.
-    /// @param seal The Groth16 SNARK seal from the RISC Zero receipt.
-    /// @param journalData The raw journal bytes committed by the guest program.
-    ///        The journal is ABI-encoded as:
-    ///          (bytes32 beliefHash, address attester, uint32 epoch,
-    ///           uint32 moduleId, uint32 beliefScore, uint64 timestamp)
-    /// @return verified True if the proof was valid and the attestation recorded.
     function verifyAttestation(
         bytes calldata seal,
         bytes calldata journalData
     ) external returns (bool verified) {
         if (seal.length == 0) revert EmptyProof();
 
-        // Compute the journal digest (SHA-256, matching RISC Zero convention)
         bytes32 journalDigest = sha256(journalData);
 
-        // Verify the RISC Zero proof — reverts on failure
-        try riscZeroVerifier.verify(seal, imageId, journalDigest) {
-            // Proof is valid — decode the journal
+        try riscZeroVerifier.verify(seal, imageId, journalDigest) returns (bool) {
             (
                 bytes32 beliefHash,
                 address attester,
@@ -289,7 +266,6 @@ contract ProductionBeliefAttestationVerifier is IStarkVerifier {
                 (bytes32, address, uint32, uint32, uint32, uint64)
             );
 
-            // Record the attestation
             _recordAttestation(
                 beliefHash, attester, epoch, moduleId, beliefScore, timestamp
             );
@@ -308,8 +284,6 @@ contract ProductionBeliefAttestationVerifier is IStarkVerifier {
     //  Internal Verification Logic
     // =========================================================================
 
-    /// @dev Verify a proof using the legacy public-inputs format and record
-    ///      the attestation on success.
     function _verifyAndRecord(
         bytes calldata seal,
         bytes32 beliefHash,
@@ -319,10 +293,6 @@ contract ProductionBeliefAttestationVerifier is IStarkVerifier {
     ) internal returns (bool) {
         if (seal.length == 0) revert EmptyProof();
 
-        // Reconstruct the journal as the guest program would have committed it.
-        // The guest commits: (beliefHash, attester, epoch, moduleId, beliefScore, timestamp)
-        // For the legacy interface we don't have beliefScore and timestamp in
-        // publicInputs, so we construct a minimal journal with the 4 fields.
         bytes memory journal = abi.encode(
             beliefHash,
             attester,
@@ -332,14 +302,13 @@ contract ProductionBeliefAttestationVerifier is IStarkVerifier {
 
         bytes32 journalDigest = sha256(journal);
 
-        try riscZeroVerifier.verify(seal, imageId, journalDigest) {
-            // Record with default score and current timestamp
+        try riscZeroVerifier.verify(seal, imageId, journalDigest) returns (bool) {
             _recordAttestation(
                 beliefHash,
                 attester,
                 epoch,
                 moduleId,
-                MIN_BELIEF_THRESHOLD, // minimum score guaranteed by guest
+                MIN_BELIEF_THRESHOLD,
                 block.timestamp
             );
 
@@ -353,7 +322,6 @@ contract ProductionBeliefAttestationVerifier is IStarkVerifier {
         }
     }
 
-    /// @dev Record a verified attestation in storage.
     function _recordAttestation(
         bytes32 beliefHash,
         address attester,
@@ -388,11 +356,6 @@ contract ProductionBeliefAttestationVerifier is IStarkVerifier {
     //  View Functions
     // =========================================================================
 
-    /// @notice Look up a verified attestation by its composite key.
-    /// @param beliefHash The belief hash.
-    /// @param attester The attester address.
-    /// @param epoch The epoch.
-    /// @return The VerifiedAttestation struct (check `.exists` field).
     function getAttestation(
         bytes32 beliefHash,
         address attester,
@@ -404,8 +367,6 @@ contract ProductionBeliefAttestationVerifier is IStarkVerifier {
         return attestations[key];
     }
 
-    /// @notice Check whether an attester has any verified attestation for a
-    ///         given belief hash (across all epochs).
     function isAttested(
         bytes32 beliefHash,
         address attester
@@ -423,30 +384,23 @@ contract ProductionBeliefAttestationVerifier is IStarkVerifier {
         return PROOF_SYSTEM_ID;
     }
 
-    /// @notice Returns the minimum belief threshold in basis points.
     function getMinBeliefThreshold() external pure returns (uint256) {
         return MIN_BELIEF_THRESHOLD;
     }
 
-    /// @notice Returns the address of the RISC Zero verifier router.
     function getRiscZeroVerifier() external view returns (address) {
         return address(riscZeroVerifier);
     }
 
-    /// @notice Returns the current image ID.
     function getImageId() external view returns (bytes32) {
         return imageId;
     }
 
-    /// @notice Returns the timelock delay for image ID changes.
     function getTimelockDelay() external pure returns (uint256) {
         return IMAGE_ID_TIMELOCK_DELAY;
     }
 
     /// @notice Returns pending image ID change details.
-    /// @return pendingId The proposed image ID (bytes32(0) if none).
-    /// @return effectiveAt Timestamp when the change becomes effective.
-    /// @return isReady True if the timelock has expired and the change can be executed.
     function getPendingImageIdChange() external view returns (
         bytes32 pendingId,
         uint256 effectiveAt,
@@ -464,10 +418,6 @@ contract ProductionBeliefAttestationVerifier is IStarkVerifier {
 
     /// @notice Propose a new image ID.  The change takes effect after the
     ///         timelock delay (48 hours).
-    /// @dev Only callable by the owner.  Emits ImageIdChangeProposed.
-    ///      Stakeholders can monitor this event and react before the change
-    ///      takes effect.
-    /// @param _newImageId The new image ID from the recompiled guest program.
     function proposeImageIdChange(bytes32 _newImageId) external onlyOwner {
         if (_newImageId == bytes32(0)) revert ZeroImageId();
         if (pendingImageId != bytes32(0)) revert ImageIdAlreadyPending();
@@ -479,7 +429,6 @@ contract ProductionBeliefAttestationVerifier is IStarkVerifier {
     }
 
     /// @notice Execute a pending image ID change after the timelock has expired.
-    /// @dev Only callable by the owner.  Emits ImageIdUpdated.
     function executeImageIdChange() external onlyOwner {
         if (pendingImageId == bytes32(0)) revert NoPendingImageId();
         if (block.timestamp < pendingImageIdEffectiveAt) revert TimelockNotExpired();
@@ -495,8 +444,6 @@ contract ProductionBeliefAttestationVerifier is IStarkVerifier {
     }
 
     /// @notice Cancel a pending image ID change.
-    /// @dev Only callable by the owner.  Useful if the proposed change is
-    ///      found to be incorrect or malicious.
     function cancelImageIdChange() external onlyOwner {
         if (pendingImageId == bytes32(0)) revert NoPendingImageId();
 
@@ -508,7 +455,6 @@ contract ProductionBeliefAttestationVerifier is IStarkVerifier {
     }
 
     /// @notice Transfer ownership of the contract.
-    /// @param _newOwner The address of the new owner.
     function transferOwnership(address _newOwner) external onlyOwner {
         if (_newOwner == address(0)) revert ZeroAddress();
 
