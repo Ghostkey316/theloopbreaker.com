@@ -1,0 +1,27 @@
+graph TD
+    subgraph "Off-Chain"
+        A[1. User Input] --> B{Host Program};
+        B -- Guest Input --> C{RISC Zero zkVM};
+        D[Guest Program: vaultfire-belief-attestation-guest] --> C;
+        C -- Execution Trace --> E{Prover};
+        E -- Proof Request --> F[Boundless Marketplace];
+        F -- Bids --> G[Provers];
+        G -- Generates Proof --> F;
+        F -- Returns Proof --> B;
+        B -- Seal & Journal --> H[2. Proof Artifacts];
+    end
+
+    subgraph "On-Chain (Base Mainnet)"
+        I[3. User/Operator] -- verifyAttestation(seal, journal) --> J{ProductionBeliefAttestationVerifier};
+        J -- imageId --> K[RISC Zero Verifier Router];
+        J -- journalDigest (sha256) --> K;
+        J -- seal --> K;
+        K -- Verifies Proof --> J;
+        J -- Stores Attestation --> L[Attestation Records];
+        J -- Emits Event --> M[AttestationVerified Event];
+    end
+
+    style B fill:#f9f,stroke:#333,stroke-width:2px
+    style D fill:#ccf,stroke:#333,stroke-width:2px
+    style J fill:#cfc,stroke:#333,stroke-width:2px
+    style K fill:#fcf,stroke:#333,stroke-width:2px

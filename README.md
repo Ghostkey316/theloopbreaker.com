@@ -327,11 +327,21 @@ Note: "implemented + tested" is not the same as "production-secure". See the aud
 - **No KYC maintained:** Wallet addresses only, privacy-first
 
 **Zero-Knowledge Proof Infrastructure:**
-- `BeliefAttestationVerifier.sol` - RISC Zero STARK proof verifier
+- `BeliefAttestationVerifier.sol` - RISC Zero STARK proof verifier (development mode)
+- `risc0/ProductionBeliefAttestationVerifier.sol` - **Production RISC Zero verifier** (mainnet-ready)
 - `DilithiumAttestor.sol` - Quantum-resistant hybrid attestation
 - `IStarkVerifier.sol` - STARK verification interface
 - `BeliefOracle.sol` - ZK-verified belief scoring
 - `MultiOracleConsensus.sol` - Multi-source oracle aggregation
+
+**RISC Zero Production Integration** (`/risc0`):
+- **Guest Program** (`risc0/guest/`) - Rust zkVM program for belief validation
+- **Production Verifier** (`risc0/src/ProductionBeliefAttestationVerifier.sol`) - On-chain proof verification
+- **Boundless Integration** (`risc0/boundless-integration/`) - Decentralized proof generation
+- **Foundry Test Suite** (`risc0/test/`) - Comprehensive verifier tests
+- **Technical Note**: Uses sha256 for journal hashing (RISC Zero requirement) vs keccak256 in development verifier
+- **Drop-in Replacement**: Implements same `IStarkVerifier` interface for backward compatibility
+- See `risc0/README.md` for setup, deployment, and usage instructions
 
 **Privacy & Security Infrastructure:**
 - `PrivacyGuarantees.sol` - Consent-by-hash, data minimization, deletion requests (stop future writes + off-chain deletion/redaction policy)
