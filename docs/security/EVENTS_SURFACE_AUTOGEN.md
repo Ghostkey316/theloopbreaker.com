@@ -55,6 +55,12 @@ Vaultfire principle: monitoring should be **privacy-preserving** (protocol integ
 ### DilithiumAttestor
 - `event BeliefAttested(bytes32 beliefHash, address prover, bool zkVerified);`
 
+### FlourishingMetricsOracle
+- `event OracleAdded(address indexed oracle);`
+- `event OracleRemoved(address indexed oracle);`
+- `event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);`
+- `event RoundExpired(uint256 indexed roundId);`
+
 ### MissionEnforcement
 - `event ModuleMissionCompliant(address indexed module, uint256 timestamp);`
 - `event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);`
@@ -74,6 +80,11 @@ Vaultfire principle: monitoring should be **privacy-preserving** (protocol integ
 - `event RewardDistributed(address indexed oracle, uint256 amount);`
 - `event RewardPoolFunded(address indexed funder, uint256 amount);`
 - `event Unpaused();`
+
+### MultisigGovernance
+- `event SignerAdded(address indexed signer);`
+- `event SignerRemoved(address indexed signer);`
+- `event ThresholdChanged(uint256 oldThreshold, uint256 newThreshold);`
 
 ### PrivacyGuarantees
 - `event ConsentGranted(address indexed user, bytes32 indexed purposeHash);`
@@ -148,6 +159,14 @@ Vaultfire principle: monitoring should be **privacy-preserving** (protocol integ
 - contracts/ERC8004ValidationRegistry.sol:329 → ValidationCompleted
 - contracts/ERC8004ValidationRegistry.sol:356 → ValidatorSlashed
 - contracts/ERC8004ValidationRegistry.sol:375 → ValidatorStaked
+- contracts/FlourishingMetricsOracle.sol:140 → OwnershipTransferred
+- contracts/FlourishingMetricsOracle.sol:156 → OracleAdded
+- contracts/FlourishingMetricsOracle.sol:178 → OracleRemoved
+- contracts/FlourishingMetricsOracle.sol:201 → RoundStarted
+- contracts/FlourishingMetricsOracle.sol:224 → MetricSubmitted
+- contracts/FlourishingMetricsOracle.sol:238 → RoundExpired
+- contracts/FlourishingMetricsOracle.sol:251 → ConsensusReached
+- contracts/FlourishingMetricsOracle.sol:296 → OwnershipTransferred
 - contracts/MissionEnforcement.sol:219 → MissionViolationReported
 - contracts/MissionEnforcement.sol:238 → MissionViolationDetected
 - contracts/MissionEnforcement.sol:258 → ModuleMissionCompliant
@@ -168,9 +187,28 @@ Vaultfire principle: monitoring should be **privacy-preserving** (protocol integ
 - contracts/MultiOracleConsensus.sol:613 → ConsensusReached
 - contracts/MultiOracleConsensus.sol:729 → OracleSlashed
 - contracts/MultiOracleConsensus.sol:804 → RewardPoolFunded
+- contracts/MultisigGovernance.sol:151 → SignerAdded
+- contracts/MultisigGovernance.sol:184 → TransactionProposed
+- contracts/MultisigGovernance.sol:218 → ConfirmationRevoked
+- contracts/MultisigGovernance.sol:238 → TransactionExecuted
+- contracts/MultisigGovernance.sol:252 → SignerAdded
+- contracts/MultisigGovernance.sol:275 → SignerRemoved
+- contracts/MultisigGovernance.sol:287 → ThresholdChanged
+- contracts/MultisigGovernance.sol:350 → TransactionConfirmed
 - contracts/PrivacyGuarantees.sol:69 → ConsentGranted
 - contracts/PrivacyGuarantees.sol:79 → ConsentRevoked
 - contracts/PrivacyGuarantees.sol:92 → DataDeletionRequested
+- contracts/ProductionBeliefAttestationVerifier.sol:215 → OwnershipTransferred
+- contracts/ProductionBeliefAttestationVerifier.sol:216 → ImageIdUpdated
+- contracts/ProductionBeliefAttestationVerifier.sol:275 → VerificationFailed
+- contracts/ProductionBeliefAttestationVerifier.sol:278 → VerificationFailed
+- contracts/ProductionBeliefAttestationVerifier.sol:317 → VerificationFailed
+- contracts/ProductionBeliefAttestationVerifier.sol:320 → VerificationFailed
+- contracts/ProductionBeliefAttestationVerifier.sol:350 → AttestationVerified
+- contracts/ProductionBeliefAttestationVerifier.sol:428 → ImageIdChangeProposed
+- contracts/ProductionBeliefAttestationVerifier.sol:443 → ImageIdUpdated
+- contracts/ProductionBeliefAttestationVerifier.sol:454 → ImageIdChangeCancelled
+- contracts/ProductionBeliefAttestationVerifier.sol:464 → OwnershipTransferred
 - contracts/VaultfireERC8004Adapter.sol:114 → AgentAutoRegistered
 - contracts/VaultfireERC8004Adapter.sol:156 → PartnershipReputationSynced
 
