@@ -33,6 +33,13 @@ Vaultfire principle: privileged power must be **explicit, reviewable, and minima
 - `function unbanModule(address module) external onlyOwner`
 - `function verifyModuleSurveillanceFree(address module) external onlyOwner`
 
+## FlourishingMetricsOracle
+
+- `function addOracle(address oracle) external onlyOwner`
+- `function removeOracle(address oracle) external onlyOwner`
+- `function startRound(bytes32 metricId) external onlyOwner returns (uint256)`
+- `function transferOwnership(address newOwner) external onlyOwner`
+
 ## MissionEnforcement
 
 - `function transferOwnership(address newOwner) external onlyOwner`
@@ -42,6 +49,13 @@ Vaultfire principle: privileged power must be **explicit, reviewable, and minima
 - `function pause() external onlyOwner`
 - `function startConsensusRound(bytes32 metricId) external onlyOwner whenNotPaused returns (uint256)`
 - `function unpause() external onlyOwner`
+
+## ProductionBeliefAttestationVerifier
+
+- `function cancelImageIdChange() external onlyOwner`
+- `function executeImageIdChange() external onlyOwner`
+- `function proposeImageIdChange(bytes32 _newImageId) external onlyOwner`
+- `function transferOwnership(address _newOwner) external onlyOwner`
 
 ---
 

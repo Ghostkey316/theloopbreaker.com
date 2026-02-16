@@ -17,6 +17,9 @@ Vaultfire principle: external call sites are part of the attack surface and shou
 - contracts/BeliefAttestationVerifierProduction.sol:178 [try-call] try riscZeroVerifier.verify(
 - contracts/BeliefOracle.sol:96 [try-call] try rewardStream.updateMultiplier(msg.sender, BONUS_MULTIPLIER) {
 - contracts/MultiOracleConsensus.sol:281 [call{value:}] (bool success, ) = payable(msg.sender).call{value: withdrawAmount}("");
+- contracts/MultisigGovernance.sol:235 [call{value:}] (bool success, ) = txn.target.call{value: txn.value}(txn.data);
+- contracts/ProductionBeliefAttestationVerifier.sol:256 [try-call] try riscZeroVerifier.verify(seal, imageId, journalDigest) returns (bool) {
+- contracts/ProductionBeliefAttestationVerifier.sol:305 [try-call] try riscZeroVerifier.verify(seal, imageId, journalDigest) returns (bool) {
 
 ---
 
