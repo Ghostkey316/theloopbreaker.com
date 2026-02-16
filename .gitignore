@@ -45,3 +45,6 @@ vaultfire-core/*_status.json
 vaultfire-core/*_log.json
 vaultfire-core/*.status
 .vaultfire_tmp/
+risc0/lib/
+risc0/out/
+risc0/cache/
