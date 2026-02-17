@@ -21,7 +21,8 @@
     "apps/verified-dm-demo",
     "base-mini-app",
     "sdk/examples",
-    "dashboard"
+    "dashboard",
+    "agent"
   ]
 }
 
