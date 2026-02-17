@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { TrendingUp, Shield, Users, Zap } from 'lucide-react';
+import { TrendingUp, Shield, Users, Zap, Database } from 'lucide-react';
 
 export function StatsSection() {
   const stats = [
@@ -13,17 +13,17 @@ export function StatsSection() {
       color: 'from-vaultfire-purple to-vaultfire-purple-dark',
     },
     {
-      icon: <Zap className="w-6 h-6" />,
-      value: '~61k',
-      label: 'Gas Cost',
-      description: 'Efficient STARK verification',
+      icon: <Database className="w-6 h-6" />,
+      value: '13',
+      label: 'Smart Contracts',
+      description: 'Verified on Base mainnet',
       color: 'from-base-blue to-base-blue-dark',
     },
     {
       icon: <Users className="w-6 h-6" />,
       value: 'A+',
       label: 'Security Grade',
-      description: 'Professional audit certified',
+      description: 'Audited + hardened security layer',
       color: 'from-vaultfire-green to-vaultfire-green-dark',
     },
     {
@@ -48,7 +48,7 @@ export function StatsSection() {
             Why Vaultfire on <span className="gradient-text">Base</span>
           </h2>
           <p className="text-base-gray-400 max-w-2xl mx-auto">
-            Built with RISC Zero STARKs, deployed on Base for fast and affordable transactions
+            13 verified smart contracts powered by RISC Zero STARKs, deployed on Base for fast and affordable transactions
           </p>
         </motion.div>
 
@@ -91,7 +91,7 @@ export function StatsSection() {
           </div>
           <p className="text-base-gray-400 max-w-2xl mx-auto">
             Leveraging Base's low fees and fast finality for affordable zero-knowledge proof
-            verification. All belief attestations are permanently recorded on-chain.
+            verification. All 13 protocol contracts are permanently deployed and verified on-chain.
           </p>
         </motion.div>
       </div>

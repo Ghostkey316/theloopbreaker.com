@@ -75,6 +75,30 @@ export const MODULE_IDS = {
 } as const;
 
 /**
+ * All 13 Vaultfire protocol contracts deployed on Base mainnet (chain ID 8453).
+ * The first 10 are core protocol contracts; the last 3 are security enhancements.
+ */
+export const PROTOCOL_CONTRACTS = [
+  // Core protocol contracts (original 10)
+  { name: 'PrivacyGuarantees', address: '0x1dCbeD76E05Eaf829c8BDf10a9511504cDa8EB1e', category: 'core' as const },
+  { name: 'MissionEnforcement', address: '0x6EC0440e1601558024f285903F0F4577B109B609', category: 'core' as const },
+  { name: 'AntiSurveillance', address: '0x2baE308ddCfc6a270d6dFCeeF947bd8B77b9d3Ac', category: 'core' as const },
+  { name: 'ERC8004IdentityRegistry', address: '0x206265EAbDE04E15ebeb6E27Cad64D9BfDB470DD', category: 'core' as const },
+  { name: 'BeliefAttestationVerifier', address: '0x5657DA7E68CBbA1B529F74e2137CBA7bf3663B4a', category: 'core' as const },
+  { name: 'ERC8004ReputationRegistry', address: '0x1043A9fBeAEDD401735c46Aa17B4a2FA1193B06C', category: 'core' as const },
+  { name: 'ERC8004ValidationRegistry', address: '0x50E4609991691D5104016c4a2F6D2875234d4B06', category: 'core' as const },
+  { name: 'AIPartnershipBondsV2', address: '0xd167A4F5eb428766Fc14C074e9f0C979c5CB4855', category: 'core' as const },
+  { name: 'AIAccountabilityBondsV2', address: '0x956a99C8f50bAc8b8b69dA934AEaBFEaCF41B140', category: 'core' as const },
+  { name: 'VaultfireERC8004Adapter', address: '0x02Cb2bFBeC479Cb1EA109E4c92744e08d5A5B361', category: 'core' as const },
+  // Security enhancement contracts (new 3)
+  { name: 'MultisigGovernance', address: '0xd979025D0384Ea4F1b2562b9855d8Be7Eb89856D', category: 'security' as const },
+  { name: 'FlourishingMetricsOracle', address: '0xb751abb1158908114662b254567b8135C460932C', category: 'security' as const },
+  { name: 'ProductionBeliefAttestationVerifier', address: '0xBDB5d85B3a84C773113779be89A166Ed515A7fE2', category: 'security' as const },
+] as const;
+
+export const TOTAL_CONTRACTS = PROTOCOL_CONTRACTS.length; // 13
+
+/**
  * Check if contracts are configured (not using zero addresses)
  */
 export function areContractsConfigured(): boolean {

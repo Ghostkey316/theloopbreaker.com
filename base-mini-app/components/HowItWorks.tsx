@@ -97,23 +97,23 @@ export function HowItWorks() {
 
           <div className="grid md:grid-cols-3 gap-6">
             <div>
-              <h4 className="font-semibold mb-2 text-base-blue">🔐 RISC Zero STARKs</h4>
+              <h4 className="font-semibold mb-2 text-base-blue">RISC Zero STARKs</h4>
               <p className="text-sm text-base-gray-400">
                 Zero-knowledge proofs generated using RISC Zero's zkVM. Your belief text and loyalty score
-                stay private - only the proof of validity is revealed.
+                stay private — only the proof of validity is revealed.
               </p>
             </div>
 
             <div>
-              <h4 className="font-semibold mb-2 text-vaultfire-purple">🔗 Smart Contracts</h4>
+              <h4 className="font-semibold mb-2 text-vaultfire-purple">13 Smart Contracts</h4>
               <p className="text-sm text-base-gray-400">
-                DilithiumAttestor verifies signatures and STARK proofs on-chain. BeliefAttestationVerifier
-                handles the cryptographic verification (~61k gas).
+                A complete protocol stack: identity registries, bond contracts, attestation verifiers,
+                and a hardened security layer with multisig governance, oracle consensus, and timelocks.
               </p>
             </div>
 
             <div>
-              <h4 className="font-semibold mb-2 text-vaultfire-green">⚡ Base Network</h4>
+              <h4 className="font-semibold mb-2 text-vaultfire-green">Base Network</h4>
               <p className="text-sm text-base-gray-400">
                 Fast, affordable L2 transactions on Base. Your belief attestations are permanently
                 recorded with low fees and instant finality.
