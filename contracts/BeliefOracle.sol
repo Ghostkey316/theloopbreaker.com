@@ -82,6 +82,7 @@ contract BeliefOracle {
     }
 
     /// @notice Query belief resonance and optionally vest RewardStream multipliers.
+    /// @return resonance The deterministic resonance score [0, 100].
     function queryBelief(string memory vow, bytes calldata zkSig) public virtual returns (uint256) {
         bytes32 vowHash = keccak256(bytes(vow));
         attestor.attestBelief(vowHash, zkSig);
@@ -90,12 +91,15 @@ contract BeliefOracle {
         _cachedResonance[vowHash] = resonance;
         lastResonance[msg.sender] = resonance;
 
-        bool applied;
+        // FIX M-01: Explicitly initialize `applied` to false so the return
+        // value accurately reflects whether the multiplier was applied.
+        bool applied = false;
         if (!resonanceDrifted && resonance > BONUS_THRESHOLD && !bonusApplied[vowHash]) {
             bonusApplied[vowHash] = true;
             try rewardStream.updateMultiplier(msg.sender, BONUS_MULTIPLIER) {
                 applied = true;
             } catch {
+                // updateMultiplier reverted — leave applied as false.
                 applied = false;
             }
         }

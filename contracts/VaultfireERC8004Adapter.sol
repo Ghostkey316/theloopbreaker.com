@@ -34,10 +34,10 @@ import "./AIPartnershipBondsV2.sol";
  */
 contract VaultfireERC8004Adapter {
 
-    AIPartnershipBondsV2 public partnershipBonds;
-    ERC8004IdentityRegistry public identityRegistry;
-    ERC8004ReputationRegistry public reputationRegistry;
-    ERC8004ValidationRegistry public validationRegistry;
+    AIPartnershipBondsV2 public immutable partnershipBonds;
+    ERC8004IdentityRegistry public immutable identityRegistry;
+    ERC8004ReputationRegistry public immutable reputationRegistry;
+    ERC8004ValidationRegistry public immutable validationRegistry;
 
     // Track which AI agents are auto-registered
     mapping(address => bool) public autoRegisteredAgents;
@@ -96,6 +96,8 @@ contract VaultfireERC8004Adapter {
         string calldata agentType
     ) external {
         require(!autoRegisteredAgents[msg.sender], "Already registered for VaultFire");
+        require(bytes(agentURI).length > 0, "Agent URI required");
+        require(bytes(agentType).length > 0, "Agent type required");
 
         // Generate capabilities hash (for VaultFire partnerships)
         bytes32 capabilitiesHash = keccak256(abi.encodePacked("vaultfire-ai-partnership", agentType));
@@ -107,6 +109,11 @@ contract VaultfireERC8004Adapter {
             // Agent needs to call identityRegistry.registerAgent() first!
             revert("Agent must call identityRegistry.registerAgent() first, then call this function");
         }
+
+        // Suppress unused variable warning — capabilitiesHash is computed for
+        // consistency with the discovery function but not stored here because
+        // the identity registry already tracks it.
+        capabilitiesHash;
 
         // Track that this agent is registered for VaultFire
         autoRegisteredAgents[msg.sender] = true;
@@ -136,6 +143,7 @@ contract VaultfireERC8004Adapter {
         ) = partnershipBonds.bonds(bondId);
 
         require(active, "Bond not active");
+        require(aiAgent != address(0), "Invalid agent address");
         require(identityRegistry.isAgentActive(aiAgent), "Agent not registered");
 
         // Calculate partnership quality rating
@@ -180,6 +188,8 @@ contract VaultfireERC8004Adapter {
         string calldata claimURI,
         ERC8004ValidationRegistry.ValidationType validationType
     ) external payable {
+        require(bytes(claimURI).length > 0, "Claim URI required");
+
         // Get bond data
         (
             ,
@@ -194,6 +204,7 @@ contract VaultfireERC8004Adapter {
         ) = partnershipBonds.bonds(bondId);
 
         require(active, "Bond not active");
+        require(aiAgent != address(0), "Invalid agent address");
         require(identityRegistry.isAgentActive(aiAgent), "Agent not registered");
 
         // Generate claim hash from bond ID and partnership data
@@ -230,6 +241,8 @@ contract VaultfireERC8004Adapter {
             uint256 verifiedPercentage
         )
     {
+        require(agentAddress != address(0), "Invalid agent address");
+
         // Get VaultFire rating (would need to add this function to AIPartnershipBonds)
         // For now, return placeholder
         vaultfireRating = 0;
@@ -255,13 +268,39 @@ contract VaultfireERC8004Adapter {
             bool registeredVaultFire
         )
     {
+        require(agentAddress != address(0), "Invalid agent address");
         registeredERC8004 = identityRegistry.isAgentActive(agentAddress);
         registeredVaultFire = autoRegisteredAgents[agentAddress];
     }
 
     /**
      * @notice Discover VaultFire-compatible agents via ERC-8004
+     * @param agentType The agent type to filter by (e.g., "AI Assistant")
+     * @return Array of agent addresses registered for VaultFire partnerships with the given type
+     *
+     * @dev FIX H-01: The original implementation computed a capabilitiesHash from
+     *      "vaultfire-ai-partnership" (without agentType) and then passed it to
+     *      `discoverAgentsByCapability`. However, during `registerAgent` the hash
+     *      is computed as keccak256("vaultfire-ai-partnership" ++ agentType). The
+     *      mismatch meant the lookup always returned an empty array.
+     *
+     *      This overload accepts an `agentType` parameter so the hash matches
+     *      what was stored during registration.
+     */
+    function discoverVaultfireAgents(string calldata agentType) external view returns (address[] memory) {
+        bytes32 capabilitiesHash = keccak256(abi.encodePacked("vaultfire-ai-partnership", agentType));
+        return identityRegistry.discoverAgentsByCapability(capabilitiesHash);
+    }
+
+    /**
+     * @notice Discover ALL VaultFire-compatible agents via ERC-8004 (type-agnostic)
      * @return Array of agent addresses registered for VaultFire partnerships
+     *
+     * @dev Uses the base capability hash "vaultfire-ai-partnership" without an
+     *      agentType suffix. Agents that were registered with a type-specific hash
+     *      will NOT appear here; use the overload with `agentType` for those.
+     *
+     *      Kept for backward compatibility.
      */
     function discoverVaultfireAgents() external view returns (address[] memory) {
         bytes32 capabilitiesHash = keccak256(abi.encodePacked("vaultfire-ai-partnership"));
