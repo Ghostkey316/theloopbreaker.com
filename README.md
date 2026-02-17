@@ -588,3 +588,15 @@ Not surveillance. Verification.
 Not control. Freedom.
 
 **Let's build trust that respects everyone.**
+
+## Security Enhancements (2026 Audit)
+
+Following a professional security audit in early 2026, several enhancements were implemented to further decentralize the protocol and harden it against attack vectors. These changes address potential centralization risks and improve the robustness of the oracle systems.
+
+| Contract | Enhancement | Purpose |
+|---|---|---|
+| **MultisigGovernance.sol** | M-of-N Multisig | Replaces single-owner control for critical protocol operations with a multi-signature wallet, requiring a configurable threshold of signers to approve any administrative action. This significantly mitigates the risk of a single point of compromise. |
+| **FlourishingMetricsOracle.sol** | Multi-Oracle Consensus | Establishes a decentralized oracle network for reporting flourishing metrics. By requiring a quorum of at least three independent oracles and using median aggregation, the system becomes highly resistant to manipulation or failure of a single oracle. |
+| **ProductionBeliefAttestationVerifier.sol** | Image ID Timelock | Introduces a mandatory 48-hour timelock for any changes to the RISC Zero guest program's `imageId`. This delay ensures that all stakeholders have adequate time to review and verify proposed upgrades, preventing malicious or rushed changes to the core verification logic. |
+
+These enhancements represent a significant step forward in the security and decentralization of the Vaultfire protocol, ensuring that its foundational trust guarantees are cryptographically and economically secure for all participants.
