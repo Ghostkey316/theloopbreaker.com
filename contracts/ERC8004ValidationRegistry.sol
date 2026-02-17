@@ -31,8 +31,8 @@ import "./BeliefAttestationVerifier.sol";
  */
 contract ERC8004ValidationRegistry is PrivacyGuarantees {
 
-    ERC8004IdentityRegistry public identityRegistry;
-    BeliefAttestationVerifier public zkVerifier;
+    ERC8004IdentityRegistry public immutable identityRegistry;
+    BeliefAttestationVerifier public immutable zkVerifier;
 
     enum ValidationType {
         STAKER_RERUN,      // Validator re-runs the agent's task
@@ -92,6 +92,9 @@ contract ERC8004ValidationRegistry is PrivacyGuarantees {
     // Validator address => active validation count
     mapping(address => uint256) public validatorActiveValidations;
 
+    // Agent address => request IDs (for discovery / pagination)
+    mapping(address => uint256[]) public agentValidationRequests;
+
     // Minimum stake required to become validator
     uint256 public constant MIN_VALIDATOR_STAKE = 1 ether;
 
@@ -135,6 +138,13 @@ contract ERC8004ValidationRegistry is PrivacyGuarantees {
         uint256 timestamp
     );
 
+    event ValidatorStakeWithdrawn(
+        address indexed validator,
+        uint256 amount,
+        uint256 remainingStake,
+        uint256 timestamp
+    );
+
     constructor(
         address _identityRegistry,
         address _zkVerifier
@@ -160,6 +170,7 @@ contract ERC8004ValidationRegistry is PrivacyGuarantees {
         ValidationType validationType,
         uint256 validatorsRequired
     ) external payable {
+        require(agentAddress != address(0), "Invalid agent address");
         require(identityRegistry.isAgentActive(agentAddress), "Agent not registered");
         require(bytes(claimURI).length > 0, "Claim URI required");
         require(msg.value >= MIN_VALIDATOR_STAKE, "Insufficient stake");
@@ -186,6 +197,9 @@ contract ERC8004ValidationRegistry is PrivacyGuarantees {
             approvalsCount: 0,
             rejectionsCount: 0
         });
+
+        // Track request for the agent (for paginated queries)
+        agentValidationRequests[agentAddress].push(requestId);
 
         emit ValidationRequested(
             requestId,
@@ -306,7 +320,7 @@ contract ERC8004ValidationRegistry is PrivacyGuarantees {
     }
 
     /**
-     * @notice Internal: Check if validation request has enough responses
+     * @notice Internal: Check if validation is complete
      * @param requestId Validation request ID
      */
     function _checkValidationComplete(uint256 requestId) internal {
@@ -385,11 +399,19 @@ contract ERC8004ValidationRegistry is PrivacyGuarantees {
      * @param amount Amount to withdraw
      */
     function withdrawValidatorStake(uint256 amount) external {
+        require(amount > 0, "Amount must be greater than zero");
         require(validatorStakes[msg.sender] >= amount, "Insufficient stake");
         require(validatorActiveValidations[msg.sender] == 0, "Active validations pending");
 
         validatorStakes[msg.sender] -= amount;
         payable(msg.sender).transfer(amount);
+
+        emit ValidatorStakeWithdrawn(
+            msg.sender,
+            amount,
+            validatorStakes[msg.sender],
+            block.timestamp
+        );
     }
 
     /**
@@ -423,7 +445,7 @@ contract ERC8004ValidationRegistry is PrivacyGuarantees {
     }
 
     /**
-     * @notice Get all responses for a validation request
+     * @notice Get all responses for a validation request (unbounded — kept for backward compatibility)
      * @param requestId Request ID
      * @return Array of response IDs
      */
@@ -433,5 +455,87 @@ contract ERC8004ValidationRegistry is PrivacyGuarantees {
         returns (uint256[] memory)
     {
         return requestResponses[requestId];
+    }
+
+    // =========================================================================
+    //  FIX M-02: Paginated query functions to prevent gas-griefing DoS
+    // =========================================================================
+
+    /**
+     * @notice Get the total number of responses for a validation request.
+     * @param requestId Request ID
+     * @return count Number of responses
+     */
+    function getValidationResponsesCount(uint256 requestId)
+        external
+        view
+        returns (uint256 count)
+    {
+        return requestResponses[requestId].length;
+    }
+
+    /**
+     * @notice Get a paginated slice of responses for a validation request.
+     * @dev Prevents gas-griefing DoS by bounding the iteration to `limit` items.
+     * @param requestId Request ID
+     * @param offset Starting index (0-based)
+     * @param limit Maximum number of items to return
+     * @return page Array of response IDs in the requested range
+     */
+    function getValidationResponsesPaginated(
+        uint256 requestId,
+        uint256 offset,
+        uint256 limit
+    ) external view returns (uint256[] memory page) {
+        uint256[] storage ids = requestResponses[requestId];
+        uint256 len = ids.length;
+        if (offset >= len || limit == 0) return new uint256[](0);
+
+        uint256 end = offset + limit;
+        if (end > len) end = len;
+
+        page = new uint256[](end - offset);
+        for (uint256 i = offset; i < end; i++) {
+            page[i - offset] = ids[i];
+        }
+    }
+
+    /**
+     * @notice Get the total number of validation requests for an agent.
+     * @param agentAddress Agent address
+     * @return count Number of validation requests
+     */
+    function getAgentValidationRequestsCount(address agentAddress)
+        external
+        view
+        returns (uint256 count)
+    {
+        return agentValidationRequests[agentAddress].length;
+    }
+
+    /**
+     * @notice Get a paginated slice of validation request IDs for an agent.
+     * @param agentAddress Agent address
+     * @param offset Starting index (0-based)
+     * @param limit Maximum number of items to return
+     * @return page Array of request IDs in the requested range
+     */
+    function getAgentValidationRequestsPaginated(
+        address agentAddress,
+        uint256 offset,
+        uint256 limit
+    ) external view returns (uint256[] memory page) {
+        require(agentAddress != address(0), "Invalid agent address");
+        uint256[] storage ids = agentValidationRequests[agentAddress];
+        uint256 len = ids.length;
+        if (offset >= len || limit == 0) return new uint256[](0);
+
+        uint256 end = offset + limit;
+        if (end > len) end = len;
+
+        page = new uint256[](end - offset);
+        for (uint256 i = offset; i < end; i++) {
+            page[i - offset] = ids[i];
+        }
     }
 }

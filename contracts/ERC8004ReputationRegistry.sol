@@ -37,7 +37,7 @@ contract ERC8004ReputationRegistry is PrivacyGuarantees {
     //
     // Prefer submitFeedbackHashed() which stores only keccak256 hashes.
 
-    ERC8004IdentityRegistry public identityRegistry;
+    ERC8004IdentityRegistry public immutable identityRegistry;
 
     struct Feedback {
         address reviewer;          // Human or AI providing feedback

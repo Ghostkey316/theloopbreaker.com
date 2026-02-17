@@ -217,6 +217,10 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
         // ✅ HIGH-003 FIX: Track total active bond value for reserve ratio calculation
         _updateTotalActiveBondValue(totalActiveBondValue + msg.value);
 
+        // Track bond for both participants (FIX M-04)
+        participantBondIds[msg.sender].push(bondId);
+        participantBondIds[aiAgent].push(bondId);
+
         emit BondCreated(bondId, msg.sender, aiAgent, partnershipType, msg.value, block.timestamp);
         return bondId;
     }
@@ -694,6 +698,57 @@ contract AIPartnershipBondsV2 is BaseYieldPoolBond {
         page = new Distribution[](end - offset);
         for (uint256 i = offset; i < end; i++) {
             page[i - offset] = items[i];
+        }
+    }
+
+    // ============ Participant bond tracking (FIX M-04) ============
+
+    /// @notice Mapping from participant address to their bond IDs.
+    mapping(address => uint256[]) public participantBondIds;
+
+    /**
+     * @notice Get all bond IDs for a participant (unbounded — kept for backward compatibility).
+     * @param participant Address of the human or AI agent
+     * @return bondIds Array of bond IDs the participant is involved in
+     */
+    function getBondsByParticipant(address participant) external view returns (uint256[] memory) {
+        require(participant != address(0), "Invalid participant address");
+        return participantBondIds[participant];
+    }
+
+    /**
+     * @notice Get the total number of bonds for a participant.
+     * @param participant Address of the human or AI agent
+     * @return count Number of bonds
+     */
+    function getBondsByParticipantCount(address participant) external view returns (uint256 count) {
+        return participantBondIds[participant].length;
+    }
+
+    /**
+     * @notice Get a paginated slice of bond IDs for a participant.
+     * @dev Prevents gas-griefing DoS by bounding the iteration to `limit` items.
+     * @param participant Address of the human or AI agent
+     * @param offset Starting index (0-based)
+     * @param limit Maximum number of items to return
+     * @return page Array of bond IDs in the requested range
+     */
+    function getBondsByParticipantPaginated(
+        address participant,
+        uint256 offset,
+        uint256 limit
+    ) external view returns (uint256[] memory page) {
+        require(participant != address(0), "Invalid participant address");
+        uint256[] storage ids = participantBondIds[participant];
+        uint256 len = ids.length;
+        if (offset >= len || limit == 0) return new uint256[](0);
+
+        uint256 end = offset + limit;
+        if (end > len) end = len;
+
+        page = new uint256[](end - offset);
+        for (uint256 i = offset; i < end; i++) {
+            page[i - offset] = ids[i];
         }
     }
 
