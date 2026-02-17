@@ -20,7 +20,8 @@
     "apps/vaultfire-arcade",
     "apps/verified-dm-demo",
     "base-mini-app",
-    "sdk/examples"
+    "sdk/examples",
+    "dashboard"
   ]
 }
 
