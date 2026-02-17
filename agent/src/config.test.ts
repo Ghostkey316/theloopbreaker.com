@@ -11,7 +11,7 @@ describe('CONTRACTS', () => {
     expect(CONTRACTS.AIAccountabilityBondsV2).toBe('0x956a99C8f50bAc8b8b69dA934AEaBFEaCF41B140');
     expect(CONTRACTS.FlourishingMetricsOracle).toBe('0xb751abb1158908114662b254567b8135C460932C');
     expect(CONTRACTS.ERC8004ReputationRegistry).toBe('0x1043A9fBeAEDD401735c46Aa17B4a2FA1193B06C');
-    expect(CONTRACTS.ERC8004ValidationRegistry).toBe('0x50E4609991691D5104016c4a92744e08d5A5B361');
+    expect(CONTRACTS.ERC8004ValidationRegistry).toBe('0x50E4609991691D5104016c4a2F6D2875234d4B06');
   });
 
   it('should have valid Ethereum addresses (checksummed)', () => {

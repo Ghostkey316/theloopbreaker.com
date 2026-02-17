@@ -85,7 +85,7 @@ export const FlourishingMetricsOracleABI = [
 // AIAccountabilityBondsV2
 // ---------------------------------------------------------------------------
 export const AIAccountabilityBondsV2ABI = [
-  'function getBond(uint256 bondId) external view returns (tuple(uint256 bondId, address human, address aiAgent, string partnershipType, uint256 stakeAmount, uint256 createdAt, uint256 distributionRequestedAt, bool distributionPending, bool active))',
+  'function getBond(uint256 bondId) external view returns (tuple(uint256 bondId, address aiCompany, string companyName, uint256 quarterlyRevenue, uint256 stakeAmount, uint256 createdAt, uint256 distributionRequestedAt, bool distributionPending, bool active))',
   'function nextBondId() external view returns (uint256)',
 ] as const;
 
@@ -93,12 +93,14 @@ export const AIAccountabilityBondsV2ABI = [
 // ERC8004ReputationRegistry
 // ---------------------------------------------------------------------------
 export const ERC8004ReputationRegistryABI = [
-  'function getReputation(address agent) external view returns (uint256 score, uint256 totalReviews)',
+  'function getReputation(address agentAddress) external view returns (uint256 averageRating, uint256 totalFeedbacks, uint256 verifiedFeedbacks, uint256 lastUpdated)',
 ] as const;
 
 // ---------------------------------------------------------------------------
 // ERC8004ValidationRegistry
 // ---------------------------------------------------------------------------
 export const ERC8004ValidationRegistryABI = [
-  'function isValidated(address agent) external view returns (bool)',
+  'function getValidationRequest(uint256 requestId) external view returns (address agentAddress, uint8 status, uint8 validationType, uint256 approvalsCount, uint256 rejectionsCount)',
+  'function getAgentValidationRequestsCount(address agentAddress) external view returns (uint256 count)',
+  'function nextRequestId() external view returns (uint256)',
 ] as const;

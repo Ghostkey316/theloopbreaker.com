@@ -84,9 +84,12 @@ async function runTaskLoop(
   });
 
   // Graceful shutdown support
-  const stopLoop = () => { running = false; };
-  process.once('SIGINT', stopLoop);
-  process.once('SIGTERM', stopLoop);
+  const stopLoop = (signal: string) => {
+    log.info(`Received ${signal} — completing current cycle then shutting down`);
+    running = false;
+  };
+  process.once('SIGINT', () => stopLoop('SIGINT'));
+  process.once('SIGTERM', () => stopLoop('SIGTERM'));
 
   while (running) {
     try {
@@ -121,13 +124,9 @@ async function runTaskLoop(
 // ---------------------------------------------------------------------------
 
 function setupShutdownHandlers(): void {
-  const shutdown = (signal: string) => {
-    log.info(`Received ${signal} — shutting down gracefully`);
-    process.exit(0);
-  };
-
-  process.on('SIGINT', () => shutdown('SIGINT'));
-  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  // NOTE: SIGINT and SIGTERM are handled inside runTaskLoop() for graceful shutdown.
+  // We only set up handlers for unhandled errors here to avoid conflicting
+  // with the task loop's own signal handlers.
 
   process.on('unhandledRejection', (reason) => {
     log.error('Unhandled promise rejection', {
