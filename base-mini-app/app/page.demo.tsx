@@ -7,6 +7,8 @@ import { useAccount } from 'wagmi';
 import { BeliefAttestationForm } from '@/components/BeliefAttestationForm';
 import { StatsSection } from '@/components/StatsSection';
 import { HowItWorks } from '@/components/HowItWorks';
+import { SecurityLayer } from '@/components/SecurityLayer';
+import { ProtocolContracts } from '@/components/ProtocolContracts';
 
 export default function Home() {
   const { isConnected } = useAccount();
@@ -61,7 +63,7 @@ export default function Home() {
             >
               <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-base-blue animate-pulse" />
               <span className="text-xs sm:text-sm text-base-blue font-medium">
-                Zero-Knowledge Belief Attestation
+                13 Contracts — Zero-Knowledge Belief Attestation
               </span>
             </motion.div>
 
@@ -152,8 +154,14 @@ export default function Home() {
       {/* Stats Section */}
       <StatsSection />
 
+      {/* Security Enhancements */}
+      <SecurityLayer />
+
       {/* How It Works */}
       <HowItWorks />
+
+      {/* Protocol Contracts */}
+      <ProtocolContracts />
 
       {/* Footer - Enhanced */}
       <footer className="border-t border-white/10 py-8 sm:py-12 px-4 sm:px-6 safe-bottom">
@@ -165,13 +173,15 @@ export default function Home() {
               </div>
               <div>
                 <p className="font-semibold text-sm sm:text-base">Vaultfire Protocol</p>
-                <p className="text-xs sm:text-sm text-base-gray-400">Built on Base</p>
+                <p className="text-xs sm:text-sm text-base-gray-400">13 contracts on Base</p>
               </div>
             </div>
 
             <div className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm text-base-gray-400">
               <a
-                href="#"
+                href="https://github.com/Ghostkey316/ghostkey-316-vaultfire-init"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="hover:text-white transition-colors flex items-center gap-2 focus-ring rounded-lg p-1"
                 aria-label="GitHub"
               >
@@ -199,7 +209,7 @@ export default function Home() {
 
           <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-white/10 text-center text-xs sm:text-sm text-base-gray-400">
             <p className="text-balance">
-              Alpha demo • ZK proofs are mocked unless a prover is configured • Open source • Audits pending
+              Alpha demo • ZK proofs are mocked unless a prover is configured • Open source • Audited
             </p>
           </div>
         </div>
