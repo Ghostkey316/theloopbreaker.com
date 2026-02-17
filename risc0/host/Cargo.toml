@@ -1,26 +1,15 @@
 [package]
-name = "vaultfire-boundless-integration"
+name = "vaultfire-belief-attestation-host"
 version = "1.0.0"
 edition = "2021"
-description = "Boundless proving marketplace integration for Vaultfire belief attestation"
+description = "Host program for Vaultfire belief attestation RISC Zero proof generation"
 license = "MIT"
 
 [workspace]
 
 [dependencies]
-# Boundless SDK
-boundless-market = "1.2"
-
 # RISC Zero
 risc0-zkvm = "1.2"
-
-# Ethereum / Alloy
-alloy = { version = "0.8", features = ["full"] }
-alloy-primitives = "0.8"
-alloy-sol-types = "0.8"
-
-# Async runtime
-tokio = { version = "1", features = ["full"] }
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
@@ -33,6 +22,11 @@ clap = { version = "4", features = ["derive", "env"] }
 hex = "0.4"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+sha2 = "0.10"
 
 [build-dependencies]
 risc0-build = "1.2"
+
+[[bin]]
+name = "vaultfire-host"
+path = "src/main.rs"

@@ -22,6 +22,17 @@
 //   - module_id:       The Vaultfire module identifier
 //   - belief_score:    The computed belief alignment score
 //   - timestamp:       The attestation timestamp
+//
+// IMPORTANT — Hashing Strategy:
+//   - belief_hash uses keccak256 to match Solidity's keccak256() on-chain.
+//   - Journal verification uses sha256 (RISC Zero's native hash function).
+//   - The on-chain verifier checks: verify(seal, imageId, sha256(journal))
+//   - These are two separate operations serving different purposes.
+//
+// IMPORTANT — Journal Encoding:
+//   - The journal is ABI-encoded to match the on-chain abi.decode() call.
+//   - Format: (bytes32, address, uint32, uint32, uint32, uint64)
+//   - Each field is left-padded to 32 bytes (Solidity ABI convention).
 
 #![no_main]
 #![no_std]
@@ -30,7 +41,6 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 use risc0_zkvm::guest::env;
-use sha2::{Digest, Sha256};
 
 // ---------------------------------------------------------------------------
 // Data Structures
@@ -64,7 +74,9 @@ struct AttestationInput {
 /// Journal entry committed as the public output of the guest execution.
 /// The on-chain verifier reconstructs this from calldata and checks that
 /// `sha256(journal_bytes) == journalDigest` inside the RISC Zero receipt.
-#[derive(serde::Serialize)]
+///
+/// The journal is ABI-encoded to match the on-chain abi.decode() call:
+///   (bytes32, address, uint32, uint32, uint32, uint64)
 struct AttestationJournal {
     /// keccak256(belief_message) — computed inside the guest.
     belief_hash: [u8; 32],
@@ -260,9 +272,49 @@ fn main() {
         timestamp: input.timestamp,
     };
 
-    // 7. Commit the journal to the zkVM output.
-    //    The on-chain verifier will check:
-    //      sha256(serialized_journal) == journalDigest
+    // 7. ABI-encode the journal to match the on-chain abi.decode() format.
+    //    The on-chain verifier checks:
+    //      sha256(abi_encoded_journal) == journalDigest
     //    where journalDigest is part of the RISC Zero receipt.
-    env::commit(&journal);
+    //
+    //    Layout (each slot is 32 bytes, big-endian):
+    //      [0]  bytes32  belief_hash
+    //      [1]  address  attester       (left-padded to 32 bytes)
+    //      [2]  uint32   epoch          (left-padded to 32 bytes)
+    //      [3]  uint32   module_id      (left-padded to 32 bytes)
+    //      [4]  uint32   belief_score   (left-padded to 32 bytes)
+    //      [5]  uint64   timestamp      (left-padded to 32 bytes)
+    let encoded = abi_encode_journal(&journal);
+
+    // 8. Commit the ABI-encoded journal to the zkVM output.
+    env::commit_slice(&encoded);
+}
+
+// ---------------------------------------------------------------------------
+// ABI Encoding Helper
+// ---------------------------------------------------------------------------
+
+/// ABI-encode the journal fields to match Solidity's abi.encode().
+fn abi_encode_journal(journal: &AttestationJournal) -> [u8; 192] {
+    let mut buf = [0u8; 192]; // 6 * 32 = 192
+
+    // Slot 0: bytes32 belief_hash
+    buf[0..32].copy_from_slice(&journal.belief_hash);
+
+    // Slot 1: address attester (right-aligned in 32 bytes)
+    buf[44..64].copy_from_slice(&journal.attester);
+
+    // Slot 2: uint32 epoch (right-aligned in 32 bytes)
+    buf[92..96].copy_from_slice(&journal.epoch.to_be_bytes());
+
+    // Slot 3: uint32 module_id (right-aligned in 32 bytes)
+    buf[124..128].copy_from_slice(&journal.module_id.to_be_bytes());
+
+    // Slot 4: uint32 belief_score (right-aligned in 32 bytes)
+    buf[156..160].copy_from_slice(&journal.belief_score.to_be_bytes());
+
+    // Slot 5: uint64 timestamp (right-aligned in 32 bytes)
+    buf[184..192].copy_from_slice(&journal.timestamp.to_be_bytes());
+
+    buf
 }
