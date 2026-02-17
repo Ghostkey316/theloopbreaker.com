@@ -12,12 +12,13 @@ The RISC Zero integration provides **cryptographically secure belief attestation
 
 ### Key Components
 
-1. **Guest Program** (`guest/`) — Rust program that runs inside the RISC Zero zkVM to validate attestations
-2. **Solidity Verifier** (`src/ProductionBeliefAttestationVerifier.sol`) — On-chain contract that verifies ZK proofs
-3. **Boundless Integration** (`boundless-integration/`) — Host program for generating proofs via the Boundless marketplace
-4. **Interfaces** (`interfaces/`) — Solidity interfaces for RISC Zero and backward compatibility
-5. **Tests** (`test/`) — Foundry test suite for the verifier contract
-6. **Deployment Scripts** (`script/`) — Foundry scripts for deploying and submitting proofs
+1. **Guest Program** (`guest/`) — Rust program that runs inside the RISC Zero zkVM to validate attestations and produce ABI-encoded journals
+2. **Host Program** (`host/`) — CLI tool for local proof generation (STARK or Groth16)
+3. **Solidity Verifier** (`src/ProductionBeliefAttestationVerifier.sol`) — On-chain contract that verifies ZK proofs
+4. **Boundless Integration** (`boundless-integration/`) — Host program for generating proofs via the Boundless marketplace
+5. **Interfaces** (`interfaces/`) — Solidity interfaces for RISC Zero and backward compatibility
+6. **Tests** (`test/`) — Foundry test suite for the verifier contract
+7. **Deployment Scripts** (`script/`) — Foundry scripts for deploying and submitting proofs
 
 ---
 
@@ -117,9 +118,40 @@ forge script script/Deploy.s.sol:DeployProductionVerifier \
 
 **Output**: The deployed verifier address. Copy this for the next step.
 
-### 3. Generate a Proof
+### 3a. Generate a Proof Locally (Host Program)
 
-Use the Boundless integration to generate a ZK proof:
+Use the host program for local proof generation:
+
+```bash
+cd host
+cargo build --release
+
+# STARK proof (faster, for testing)
+cargo run --release -- \
+  --guest-elf ../guest/target/riscv-guest/riscv32im-risc0-zkvm-elf/release/vaultfire-belief-attestation-guest \
+  --belief-message "I believe in decentralised identity and human agency" \
+  --attester 0xf6A677de83C407875C9A9115Cf100F121f9c4816 \
+  --epoch 1 \
+  --module-id 1 \
+  --loyalty-score 9000
+
+# Groth16 proof (slower, for on-chain verification)
+cargo run --release -- \
+  --guest-elf ../guest/target/riscv-guest/riscv32im-risc0-zkvm-elf/release/vaultfire-belief-attestation-guest \
+  --belief-message "I believe in decentralised identity and human agency" \
+  --attester 0xf6A677de83C407875C9A9115Cf100F121f9c4816 \
+  --epoch 1 \
+  --module-id 1 \
+  --loyalty-score 9000 \
+  --groth16 \
+  --output-dir ./proof_output
+```
+
+**Output files**: `proof_seal.hex`, `proof_journal.hex`, `image_id.hex`, `journal_digest.hex`
+
+### 3b. Generate a Proof via Boundless (Production)
+
+For production use, submit proofs to the Boundless decentralised proving marketplace:
 
 ```bash
 cd boundless-integration
@@ -199,7 +231,12 @@ To integrate:
 
 The **image ID** is the cryptographic hash of the guest program. It ensures that only proofs from the correct program are accepted.
 
-- The contract owner can update the image ID via `setImageId()` when the guest program is upgraded
+- The `ProductionBeliefAttestationVerifier` includes a **48-hour timelock** for image ID changes:
+  1. `proposeImageIdChange(newImageId)` — Starts the timelock
+  2. Wait 48 hours
+  3. `executeImageIdChange()` — Applies the new image ID
+  4. `cancelImageIdChange()` — Cancel if needed
+- This prevents malicious instant changes and gives stakeholders time to review
 - Always verify the new image ID matches the recompiled guest program before updating
 
 ### RISC Zero Verifier Address
@@ -210,6 +247,18 @@ The RISC Zero verifier router on Base mainnet is at:
 ```
 
 This address is hardcoded in the deployment script. Verify it matches the official RISC Zero deployment before using.
+
+### Ownership
+
+The `ProductionBeliefAttestationVerifier` is owned by the `MultisigGovernance` contract at `0xd979025D0384Ea4F1b2562b9855d8Be7Eb89856D`. All privileged operations (image ID changes, ownership transfers) must go through the multisig governance flow.
+
+## Deployed Contracts
+
+| Contract | Address | Network |
+|----------|---------|--------|
+| ProductionBeliefAttestationVerifier | `0xBDB5d85B3a84C773113779be89A166Ed515A7fE2` | Base Mainnet |
+| MultisigGovernance | `0xd979025D0384Ea4F1b2562b9855d8Be7Eb89856D` | Base Mainnet |
+| RISC Zero Verifier Router | `0x0b144e07a0826182b6b59788c34b32bfa86fb711` | Base Mainnet |
 
 ---
 
