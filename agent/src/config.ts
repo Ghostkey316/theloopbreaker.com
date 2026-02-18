@@ -116,18 +116,19 @@ export const SUPPORTED_CHAINS: Record<string, ChainDefinition> = {
  * These will be populated after the first Avalanche deployment.
  */
 export const AVALANCHE_CONTRACTS: Record<string, string> = {
-  ERC8004IdentityRegistry: '',
-  AIPartnershipBondsV2: '',
-  AIAccountabilityBondsV2: '',
-  FlourishingMetricsOracle: '',
-  ProductionBeliefAttestationVerifier: '',
-  ERC8004ReputationRegistry: '',
-  ERC8004ValidationRegistry: '',
-  VaultfireERC8004Adapter: '',
-  MultisigGovernance: '',
-  PrivacyGuarantees: '',
-  MissionEnforcement: '',
-  AntiSurveillance: '',
+  ERC8004IdentityRegistry: '0x5dcD3022fBa187346b9cA9f4fFAF6C42f9839e13',
+  AIPartnershipBondsV2: '0x3d10A72490aDc57F1718a5917E101AD7562950C9',
+  AIAccountabilityBondsV2: '0x2100872b5d1880eC03dcea79e16FDE00f9df656a',
+  FlourishingMetricsOracle: '0xCe6D8BBd45B03C88C273f0bE79955d3c3E8F35c6',
+  ProductionBeliefAttestationVerifier: '0xd83503756878e6C0A5f806f9Cd35E6cA590622c5',
+  ERC8004ReputationRegistry: '0xe8EBf0a9Cd9f87F2e2f4CBd2e47b26BB61BbAb57',
+  ERC8004ValidationRegistry: '0x6f3D378E7751233A344F1BFAc4d37ED621D5F7A5',
+  VaultfireERC8004Adapter: '0xC9CF6df488AFE919a58482d9d18305E2DfF29470',
+  MultisigGovernance: '0x4D6249BE0293fC148e6341BbD49E4B41785C49e4',
+  PrivacyGuarantees: '0x7Fc0fb687f86DdF5b026a24F2DC77852358712F1',
+  MissionEnforcement: '0xfC479CBC997Ab605d506e5326E5063b0821202C6',
+  AntiSurveillance: '0xeF72b60DB38D41c6752ebf093C15A2AFA718ecE1',
+  BeliefAttestationVerifier: '0xF9dBC97997136cA7C9Ab02E03579D8a33CD02617',
 };
 
 /**
