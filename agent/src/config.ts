@@ -8,6 +8,12 @@
  *   Base mainnet is the PRIMARY / CANONICAL chain (default).
  *   Avalanche C-Chain is a supported SECONDARY chain.
  *   Set VAULTFIRE_CHAIN=avalanche to target Avalanche.
+ *
+ * Demo mode:
+ *   Set DEMO_MODE=true to run a shortened demo loop suitable for
+ *   Build Games showcases.  When DEMO_MODE is active and the chain
+ *   is avalancheFuji, the agent runs through registration, bond
+ *   discovery, and metrics reporting in a single pass then exits.
  */
 
 import dotenv from 'dotenv';
@@ -141,6 +147,48 @@ export function resolveChain(): ChainDefinition {
 }
 
 // ---------------------------------------------------------------------------
+// Demo mode configuration
+// ---------------------------------------------------------------------------
+
+/**
+ * Read the current DEMO_MODE flag from the environment.
+ *
+ * This is a function (not a module-level constant) so that tests can set
+ * process.env.DEMO_MODE *after* the module is imported and still get the
+ * correct value.
+ */
+export function getDemoMode(): boolean {
+  return boolEnv('DEMO_MODE', false);
+}
+
+/**
+ * Convenience re-export — reads DEMO_MODE at call time.
+ * Kept as a getter-style constant for backward compatibility with code that
+ * references `DEMO_MODE` directly.
+ */
+export const DEMO_MODE: boolean = false; // default; use getDemoMode() at runtime
+
+/** Number of task cycles to execute in demo mode before exiting. */
+export function getDemoCycles(): number {
+  return intEnv('DEMO_CYCLES', 1);
+}
+
+/** Task interval override when demo mode is active (seconds). */
+export function getDemoTaskInterval(): number {
+  return intEnv('DEMO_TASK_INTERVAL', 10);
+}
+
+/**
+ * Returns true when the agent should run in demo mode.
+ * Demo mode is only active when DEMO_MODE=true AND the chain is avalancheFuji.
+ */
+export function isDemoActive(): boolean {
+  if (!getDemoMode()) return false;
+  const chain = resolveChain();
+  return chain.chainId === 43113; // avalancheFuji
+}
+
+// ---------------------------------------------------------------------------
 // Agent configuration
 // ---------------------------------------------------------------------------
 
@@ -166,10 +214,15 @@ export interface AgentConfig {
   // Retry
   maxRetries: number;
   retryDelayMs: number;
+
+  // Demo
+  demoMode: boolean;
+  demoCycles: number;
 }
 
 export function loadConfig(): AgentConfig {
   const chain = resolveChain();
+  const demoActive = isDemoActive();
 
   return {
     privateKey: requireEnv('AGENT_PRIVATE_KEY'),
@@ -186,11 +239,16 @@ export function loadConfig(): AgentConfig {
     ),
 
     dryRun: boolEnv('DRY_RUN', true),
-    taskIntervalSeconds: intEnv('TASK_INTERVAL_SECONDS', 300),
+    taskIntervalSeconds: demoActive
+      ? getDemoTaskInterval()
+      : intEnv('TASK_INTERVAL_SECONDS', 300),
     logLevel: optionalEnv('LOG_LEVEL', 'info'),
 
     maxRetries: intEnv('MAX_RETRIES', 3),
     retryDelayMs: intEnv('RETRY_DELAY_MS', 5000),
+
+    demoMode: demoActive,
+    demoCycles: demoActive ? getDemoCycles() : 0,
   };
 }
 
