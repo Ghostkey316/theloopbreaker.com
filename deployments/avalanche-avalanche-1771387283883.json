@@ -1,0 +1,24 @@
+{
+  "protocol": "Vaultfire",
+  "chain": "avalanche",
+  "chainId": 43114,
+  "canonical": false,
+  "deployer": "0xf6A677de83C407875C9A9115Cf100F121f9c4816",
+  "timestamp": "2026-02-18T04:01:23.882Z",
+  "deploymentTimeMinutes": "3.73",
+  "contracts": {
+    "PrivacyGuarantees": "0x7Fc0fb687f86DdF5b026a24F2DC77852358712F1",
+    "MissionEnforcement": "0xfC479CBC997Ab605d506e5326E5063b0821202C6",
+    "AntiSurveillance": "0xeF72b60DB38D41c6752ebf093C15A2AFA718ecE1",
+    "ERC8004IdentityRegistry": "0x5dcD3022fBa187346b9cA9f4fFAF6C42f9839e13",
+    "BeliefAttestationVerifier": "0xF9dBC97997136cA7C9Ab02E03579D8a33CD02617",
+    "AIPartnershipBondsV2": "0x3d10A72490aDc57F1718a5917E101AD7562950C9",
+    "FlourishingMetricsOracle": "0xCe6D8BBd45B03C88C273f0bE79955d3c3E8F35c6",
+    "ERC8004ReputationRegistry": "0xe8EBf0a9Cd9f87F2e2f4CBd2e47b26BB61BbAb57",
+    "ERC8004ValidationRegistry": "0x6f3D378E7751233A344F1BFAc4d37ED621D5F7A5",
+    "AIAccountabilityBondsV2": "0x2100872b5d1880eC03dcea79e16FDE00f9df656a",
+    "VaultfireERC8004Adapter": "0xC9CF6df488AFE919a58482d9d18305E2DfF29470",
+    "MultisigGovernance": "0x4D6249BE0293fC148e6341BbD49E4B41785C49e4",
+    "ProductionBeliefAttestationVerifier": "0xd83503756878e6C0A5f806f9Cd35E6cA590622c5"
+  }
+}
