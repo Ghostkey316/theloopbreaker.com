@@ -2,7 +2,7 @@
  * Tests for the Vaultfire Agent Configuration
  */
 
-import { CONTRACTS, METRIC_IDS, loadConfig } from './config';
+import { CONTRACTS, METRIC_IDS, loadConfig, DEMO_MODE, isDemoActive } from './config';
 
 describe('CONTRACTS', () => {
   it('should have all required contract addresses', () => {
@@ -96,5 +96,67 @@ describe('loadConfig', () => {
 
     const config = loadConfig();
     expect(config.taskIntervalSeconds).toBe(300); // Falls back to default
+  });
+
+  it('should include demo mode fields defaulting to off', () => {
+    process.env.AGENT_PRIVATE_KEY = '0x' + 'e'.repeat(64);
+    delete process.env.DEMO_MODE;
+    delete process.env.VAULTFIRE_CHAIN;
+
+    const config = loadConfig();
+    expect(config.demoMode).toBe(false);
+    expect(config.demoCycles).toBe(0);
+  });
+
+  it('should activate demo mode only on avalancheFuji', () => {
+    process.env.AGENT_PRIVATE_KEY = '0x' + 'f'.repeat(64);
+    process.env.DEMO_MODE = 'true';
+    process.env.VAULTFIRE_CHAIN = 'avalancheFuji';
+
+    const config = loadConfig();
+    expect(config.demoMode).toBe(true);
+    expect(config.demoCycles).toBe(1);
+    expect(config.taskIntervalSeconds).toBe(10);
+  });
+
+  it('should not activate demo mode on base even if DEMO_MODE=true', () => {
+    process.env.AGENT_PRIVATE_KEY = '0x' + 'a'.repeat(64);
+    process.env.DEMO_MODE = 'true';
+    process.env.VAULTFIRE_CHAIN = 'base';
+
+    const config = loadConfig();
+    expect(config.demoMode).toBe(false);
+    expect(config.demoCycles).toBe(0);
+    expect(config.taskIntervalSeconds).toBe(300);
+  });
+});
+
+describe('isDemoActive', () => {
+  const originalEnv = process.env;
+
+  beforeEach(() => {
+    process.env = { ...originalEnv };
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+  });
+
+  it('should return false when DEMO_MODE is not set', () => {
+    delete process.env.DEMO_MODE;
+    delete process.env.VAULTFIRE_CHAIN;
+    expect(isDemoActive()).toBe(false);
+  });
+
+  it('should return true when DEMO_MODE=true and chain is avalancheFuji', () => {
+    process.env.DEMO_MODE = 'true';
+    process.env.VAULTFIRE_CHAIN = 'avalancheFuji';
+    expect(isDemoActive()).toBe(true);
+  });
+
+  it('should return false when DEMO_MODE=true but chain is base', () => {
+    process.env.DEMO_MODE = 'true';
+    process.env.VAULTFIRE_CHAIN = 'base';
+    expect(isDemoActive()).toBe(false);
   });
 });
