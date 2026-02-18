@@ -567,6 +567,18 @@ MIT License - See [LICENSE](./LICENSE) for details
 
 ---
 
+## Multichain Support
+
+The Vaultfire Protocol is designed for a multichain future, with Base mainnet serving as the primary, canonical deployment.
+
+### Avalanche C-Chain (Secondary Deployment)
+
+As part of the Avalanche Build Games, the protocol has been deployed to the **Avalanche C-Chain** as a secondary supported network. This deployment mirrors the full functionality of the Base mainnet contracts.
+
+For detailed information on the multichain architecture, deployment procedures, and contract verification on Avalanche, please see the **[Multichain Deployment Guide](./docs/MULTICHAIN_DEPLOYMENT.md)**.
+
+---
+
 ## Contact & Community
 
 **Email:** ghostkey316@proton.me

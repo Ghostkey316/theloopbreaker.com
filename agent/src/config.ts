@@ -3,6 +3,11 @@
  *
  * Centralizes all environment-driven configuration, contract addresses,
  * and operational parameters for the Vaultfire Sentinel agent.
+ *
+ * Multichain support:
+ *   Base mainnet is the PRIMARY / CANONICAL chain (default).
+ *   Avalanche C-Chain is a supported SECONDARY chain.
+ *   Set VAULTFIRE_CHAIN=avalanche to target Avalanche.
  */
 
 import dotenv from 'dotenv';
@@ -41,7 +46,7 @@ function intEnv(key: string, fallback: number): number {
 }
 
 // ---------------------------------------------------------------------------
-// Deployed contract addresses on Base mainnet (Chain ID 8453)
+// Deployed contract addresses on Base mainnet (Chain ID 8453) — PRIMARY
 // ---------------------------------------------------------------------------
 
 export const CONTRACTS = {
@@ -58,6 +63,82 @@ export const CONTRACTS = {
   MissionEnforcement: '0x6EC0440e1601558024f285903F0F4577B109B609',
   AntiSurveillance: '0x2baE308ddCfc6a270d6dFCeeF947bd8B77b9d3Ac',
 } as const;
+
+// ---------------------------------------------------------------------------
+// Multichain support — chain definitions
+// ---------------------------------------------------------------------------
+
+/** Metadata for a supported chain. */
+export interface ChainDefinition {
+  chainId: number;
+  label: string;
+  role: 'primary' | 'secondary' | 'testnet';
+  rpcUrl: string;
+  explorer: string;
+}
+
+/**
+ * Registry of all chains supported by the Vaultfire Protocol.
+ * Base mainnet is the canonical / primary deployment.
+ */
+export const SUPPORTED_CHAINS: Record<string, ChainDefinition> = {
+  base: {
+    chainId: 8453,
+    label: 'Base Mainnet',
+    role: 'primary',
+    rpcUrl: 'https://mainnet.base.org',
+    explorer: 'https://basescan.org',
+  },
+  avalanche: {
+    chainId: 43114,
+    label: 'Avalanche C-Chain',
+    role: 'secondary',
+    rpcUrl: 'https://api.avax.network/ext/bc/C/rpc',
+    explorer: 'https://snowtrace.io',
+  },
+  avalancheFuji: {
+    chainId: 43113,
+    label: 'Avalanche Fuji',
+    role: 'testnet',
+    rpcUrl: 'https://api.avax-test.network/ext/bc/C/rpc',
+    explorer: 'https://testnet.snowtrace.io',
+  },
+} as const;
+
+/**
+ * Placeholder contract addresses for Avalanche C-Chain (Chain ID 43114).
+ * These will be populated after the first Avalanche deployment.
+ */
+export const AVALANCHE_CONTRACTS: Record<string, string> = {
+  ERC8004IdentityRegistry: '',
+  AIPartnershipBondsV2: '',
+  AIAccountabilityBondsV2: '',
+  FlourishingMetricsOracle: '',
+  ProductionBeliefAttestationVerifier: '',
+  ERC8004ReputationRegistry: '',
+  ERC8004ValidationRegistry: '',
+  VaultfireERC8004Adapter: '',
+  MultisigGovernance: '',
+  PrivacyGuarantees: '',
+  MissionEnforcement: '',
+  AntiSurveillance: '',
+};
+
+/**
+ * Resolve the active chain from the VAULTFIRE_CHAIN environment variable.
+ * Defaults to "base" (primary) when unset.
+ */
+export function resolveChain(): ChainDefinition {
+  const chainKey = optionalEnv('VAULTFIRE_CHAIN', 'base');
+  const chain = SUPPORTED_CHAINS[chainKey];
+  if (!chain) {
+    throw new Error(
+      `Unsupported VAULTFIRE_CHAIN value: "${chainKey}". ` +
+      `Supported: ${Object.keys(SUPPORTED_CHAINS).join(', ')}`,
+    );
+  }
+  return chain;
+}
 
 // ---------------------------------------------------------------------------
 // Agent configuration
@@ -88,10 +169,12 @@ export interface AgentConfig {
 }
 
 export function loadConfig(): AgentConfig {
+  const chain = resolveChain();
+
   return {
     privateKey: requireEnv('AGENT_PRIVATE_KEY'),
-    rpcUrl: optionalEnv('BASE_RPC_URL', 'https://mainnet.base.org'),
-    chainId: 8453,
+    rpcUrl: optionalEnv('BASE_RPC_URL', chain.rpcUrl),
+    chainId: chain.chainId,
 
     agentUri: optionalEnv('AGENT_URI', 'https://vaultfire.io/agents/vaultfire-sentinel'),
     agentType: optionalEnv('AGENT_TYPE', 'autonomous-sentinel'),
