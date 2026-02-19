@@ -3,7 +3,7 @@
  * Design: "Obsidian Forge" — frosted glass nav bar
  */
 
-import { RefreshCw, ExternalLink, Menu, X } from "lucide-react";
+import { RefreshCw, ExternalLink, Menu, X, Shield } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -73,6 +73,14 @@ export default function Header({ navItems, activeSection, onNavClick, onRefresh,
             >
               <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
             </button>
+            <a
+              href="/verify"
+              className="px-3 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:text-ember hover:bg-ember-glow transition-all hidden sm:flex items-center gap-1.5"
+              title="Trust Verification"
+            >
+              <Shield className="w-4 h-4" />
+              <span className="hidden md:inline">Verify</span>
+            </a>
             <a
               href="https://basescan.org"
               target="_blank"

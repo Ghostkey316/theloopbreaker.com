@@ -1,172 +1,104 @@
-# Vaultfire Sentinel Agent
+# 🔥 Vaultfire Sentinel Agent
 
-**The first living, accountable AI agent on the Vaultfire Protocol.**
+**A production-ready, 24/7 autonomous cross-chain monitor and bridge relay for the Vaultfire Protocol.**
 
-This autonomous agent operates through Vaultfire's trust infrastructure on Base mainnet, demonstrating real human-AI partnership with full on-chain accountability.
+This agent is a core piece of infrastructure for the Vaultfire ecosystem. It performs several critical functions:
 
-## What It Does
+1.  **Comprehensive Monitoring**: Watches all 14 core Vaultfire contracts on both Base and Avalanche C-Chain for key events.
+2.  **Autonomous Bridge Relay**: Automatically picks up `MessageSent` events from the `VaultfireTeleporterBridge` on one chain and relays the message to the corresponding bridge contract on the other chain.
+3.  **Self-Registration**: On startup, the agent registers itself as an AI agent within the `ERC8004IdentityRegistry` and creates a partnership bond with its designated human partner (the deployer wallet).
+4.  **Persistent Operation**: Designed to run 24/7 as a persistent Node.js process with graceful error handling, auto-reconnecting RPCs, and detailed logging.
 
-The Vaultfire Sentinel is not just a registry record — it is a persistent, operating agent that:
-
-1. **Self-Registers** — Registers itself in the ERC8004IdentityRegistry with proper capabilities, metadata, and identity
-2. **Operates Under a Partnership Bond** — Discovers or awaits an AIPartnershipBondsV2 bond linking itself to its human partner
-3. **Monitors Protocol Health** — Continuously checks contract states, yield pool health, reserve ratios, and bond statistics
-4. **Reports Metrics** — Self-reports performance data to the FlourishingMetricsOracle for real accountability
-5. **Maintains Transparency** — Every action is logged, every metric is verifiable, every cycle produces a structured report
-
-## Architecture
-
-```
-agent/
-├── package.json          — Dependencies and scripts
-├── tsconfig.json         — TypeScript configuration
-├── jest.config.js        — Test configuration
-├── .env.example          — Environment variable template
-├── .eslintrc.json        — Linting rules
-├── README.md             — This file
-└── src/
-    ├── index.ts          — Main entry point and task loop
-    ├── config.ts         — Configuration and contract addresses
-    ├── wallet.ts         — Wallet initialization and management
-    ├── registry.ts       — ERC8004IdentityRegistry interaction
-    ├── bonds.ts          — AIPartnershipBondsV2 management
-    ├── tasks.ts          — Protocol monitoring and health checks
-    ├── metrics.ts        — FlourishingMetricsOracle reporting
-    ├── logger.ts         — Structured logging
-    ├── retry.ts          — Exponential backoff retry logic
-    └── abi/
-        └── index.ts      — Contract ABI fragments
-```
+This agent embodies the Vaultfire values: **morals over metrics, privacy over surveillance, and freedom over control.** It operates transparently and autonomously to ensure the health and decentralization of the protocol.
 
 ## Quick Start
 
-### Prerequisites
+### Requirements
 
-- Node.js 18+ and npm
-- A funded wallet on Base mainnet (even a small amount of ETH for gas)
-- Access to a Base mainnet RPC endpoint
+*   Node.js v18+
+*   An EVM wallet with:
+    *   ETH on Base mainnet (for gas)
+    *   AVAX on Avalanche C-Chain (for gas)
 
-### Setup
+### 1. Installation
+
+Clone the repository and install dependencies:
 
 ```bash
-# Navigate to the agent directory
-cd agent
-
-# Install dependencies
+git clone https://github.com/Ghostkey316/ghostkey-316-vaultfire-init.git
+cd ghostkey-316-vaultfire-init/agent
 npm install
+```
 
-# Copy the environment template
+### 2. Configuration
+
+Copy the example environment file and edit it:
+
+```bash
 cp .env.example .env
-
-# Edit .env with your configuration
-# At minimum, set AGENT_PRIVATE_KEY
 ```
 
-### Configuration
+Open `.env` and set the `DEPLOYER_KEY` to the private key of your operator wallet. This wallet will pay for gas to relay transactions.
 
-Edit `.env` with the following required values:
+```dotenv
+# .env
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `AGENT_PRIVATE_KEY` | The agent's private key (never share this) | Yes |
-| `BASE_RPC_URL` | Base mainnet RPC endpoint | No (defaults to public) |
-| `HUMAN_PARTNER_ADDRESS` | Human partner's wallet address | No (defaults to deployer) |
-| `DRY_RUN` | Set to `false` for live transactions | No (defaults to `true`) |
-| `TASK_INTERVAL_SECONDS` | Seconds between task cycles | No (defaults to 300) |
-| `LOG_LEVEL` | Logging verbosity (debug/info/warn/error) | No (defaults to info) |
+# The private key of the wallet that will run the agent.
+# IMPORTANT: This is a secret. Do not commit it to Git.
+DEPLOYER_KEY="your_private_key_here"
 
-### Run
+# Optional: Use a dedicated RPC provider for better reliability.
+BASE_RPC="https://mainnet.base.org"
+AVAX_RPC="https://api.avax.network/ext/bc/C/rpc"
+
+# Optional: Set the log level (DEBUG, INFO, WARN, ERROR, CRITICAL)
+LOG_LEVEL="INFO"
+```
+
+### 3. Running the Agent
+
+Start the agent using Node.js. For production, it is highly recommended to use a process manager like `pm2` to ensure it runs continuously.
+
+**Standard (for testing):**
 
 ```bash
-# Build TypeScript
-npm run build
-
-# Start the agent
-npm start
-
-# Or run directly in development mode
-npm run dev
+node sentinel.js
 ```
 
-### Dry Run Mode
-
-By default, the agent starts in **dry run mode** (`DRY_RUN=true`). In this mode:
-
-- All blockchain reads work normally (health checks, status queries)
-- No transactions are sent (registration, metrics submission)
-- All would-be transactions are logged with full details
-
-Set `DRY_RUN=false` only when you are ready to operate on-chain.
-
-## Contracts
-
-The agent interacts with these deployed contracts on Base mainnet (Chain ID 8453):
-
-| Contract | Address |
-|----------|---------|
-| ERC8004IdentityRegistry | `0x206265EAbDE04E15ebeb6E27Cad64D9BfDB470DD` |
-| AIPartnershipBondsV2 | `0xd167A4F5eb428766Fc14C074e9f0C979c5CB4855` |
-| AIAccountabilityBondsV2 | `0x956a99C8f50bAc8b8b69dA934AEaBFEaCF41B140` |
-| FlourishingMetricsOracle | `0xb751abb1158908114662b254567b8135C460932C` |
-| ERC8004ReputationRegistry | `0x1043A9fBeAEDD401735c46Aa17B4a2FA1193B06C` |
-| ERC8004ValidationRegistry | `0x50E4609991691D5104016c4a92744e08d5A5B361` |
-
-## Task Loop
-
-Each cycle of the task loop performs:
-
-1. **Protocol Health Check** — Calls `getProtocolHealth()` on AIPartnershipBondsV2
-2. **Statistics Collection** — Gathers total agents, bonds, yield pool balance, reserve ratios
-3. **Agent Self-Assessment** — Checks registration status, balance, oracle status, bond health
-4. **Metrics Reporting** — Computes and reports performance metrics
-5. **Bond Metrics** — Submits partnership metrics if an active bond exists
-6. **Report Generation** — Produces a structured report for each cycle
-
-## Creating the Partnership Bond
-
-The Partnership Bond must be created by the **human partner**, not the agent. The human partner calls:
-
-```solidity
-AIPartnershipBondsV2.createBond(agentAddress, "trust-partnership")
-```
-
-The agent will automatically discover the bond on its next task cycle.
-
-## Testing
+**Production (with pm2):**
 
 ```bash
-# Run all tests
-npm test
+npm install -g pm2
+pm2 start sentinel.js --name "vaultfire-sentinel"
 
-# Run tests with coverage
-npm run test:coverage
+# To monitor logs:
+pm2 logs vaultfire-sentinel
 ```
 
-## Development
+The agent will start, connect to both chains, perform its self-registration, and begin monitoring for events.
 
-```bash
-# Lint the codebase
-npm run lint
+## How It Works
 
-# Build TypeScript
-npm run build
+### Core Components
 
-# Clean build artifacts
-npm run clean
-```
+*   **`sentinel.js`**: The main, self-contained executable. It orchestrates all other components.
+*   **ResilientProvider**: A wrapper around `ethers.JsonRpcProvider` that automatically handles RPC failures and falls back to alternative endpoints.
+*   **ChainMonitor**: A class that polls a single blockchain for events from a specified list of contracts. It uses a topic map for efficient event filtering.
+*   **BridgeRelay**: The logic for handling `MessageSent` events. It reconstructs the bridge message payload from the source transaction and calls `relayMessage` on the destination bridge contract.
+*   **SelfRegistration**: A startup process that ensures the agent is properly registered on-chain in the Vaultfire Protocol.
 
-## Security
+### Event Monitoring
 
-- Private keys are loaded exclusively from environment variables
-- The `.env` file is gitignored and must never be committed
-- The agent operates with minimal permissions — it only calls functions it needs
-- Dry run mode is the default to prevent accidental transactions
-- All operations include retry logic with exponential backoff
+The agent polls both Base and Avalanche at a regular interval (`POLL_INTERVAL_MS`). It uses `provider.getLogs()` to fetch batches of logs between the last seen block and the current block. For each log, it uses a pre-computed map of event topics to identify the contract and event name, then parses the log and passes it to a central `onEvent` handler.
 
-## Mission Alignment
+### Bridge Relay Logic
 
-This agent is built in accordance with the Vaultfire Protocol mission:
+1.  The `onEvent` handler detects a `VaultfireTeleporterBridge.MessageSent` event.
+2.  It queues a relay task and fetches the full source transaction that emitted the event.
+3.  It decodes the original function call from the transaction data (e.g., `sendAgentRegistration`).
+4.  Using the arguments from the decoded function, it **reconstructs the `BridgeMessage` struct** exactly as the source contract did internally.
+5.  It ABI-encodes this struct.
+6.  It calls the `relayMessage(bytes)` function on the destination bridge contract, passing the encoded struct.
+7.  The destination bridge contract decodes the message, verifies its nonce and source, and processes the state-syncing action.
 
-> Technology must serve human flourishing, not replace it.
-
-The agent exists to support its human partner, maintain protocol transparency, and demonstrate that AI accountability is not just possible — it is operational.
+This process ensures that the exact same message sent from the source is securely and verifiably delivered to the destination.

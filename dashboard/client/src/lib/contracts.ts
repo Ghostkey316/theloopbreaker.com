@@ -125,6 +125,7 @@ export const BeliefAttestationVerifierABI = [
 export const ERC8004ValidationRegistryABI = [
   "function nextRequestId() view returns (uint256)",
   "function nextResponseId() view returns (uint256)",
+  "function getAgentValidationRequestsCount(address) view returns (uint256)",
 ];
 
 export const PrivacyGuaranteesABI = [
@@ -142,6 +143,7 @@ export const AntiSurveillanceABI = [
 
 export const VaultfireERC8004AdapterABI = [
   "function discoverVaultfireAgents() view returns (address[])",
+  "function isAgentFullyRegistered(address) view returns (bool registeredERC8004, bool registeredVaultFire)",
 ];
 
 export const VaultfireTeleporterBridgeABI = [
@@ -153,6 +155,8 @@ export const VaultfireTeleporterBridgeABI = [
   "function paused() external view returns (bool)",
   "function messageCount() external view returns (uint256)",
   "function getRelayers() external view returns (address[])",
+  "function isAgentRecognized(address) external view returns (bool)",
+  "function getSyncedAgentCount() external view returns (uint256)",
 ];
 
 // Generic owner ABI for contracts that have owner()

@@ -1,39 +1,25 @@
 {
-  "name": "vaultfire-agent",
+  "name": "vaultfire-sentinel-agent",
   "version": "1.0.0",
-  "description": "Vaultfire Autonomous Agent — the first living AI agent on the Vaultfire Protocol trust infrastructure",
-  "main": "dist/index.js",
+  "description": "24/7 Autonomous Cross-Chain Monitor & Bridge Relay for the Vaultfire Protocol",
+  "main": "sentinel.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts",
-    "lint": "eslint src/ --ext .ts",
-    "test": "jest --forceExit --detectOpenHandles",
-    "test:coverage": "jest --coverage --forceExit --detectOpenHandles",
-    "clean": "rm -rf dist"
+    "start": "node sentinel.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
     "vaultfire",
+    "sentinel",
     "ai-agent",
     "blockchain",
     "base",
-    "erc8004",
-    "trust-infrastructure"
+    "avalanche",
+    "teleporter",
+    "ethers"
   ],
+  "author": "Vaultfire Protocol",
   "license": "MIT",
   "dependencies": {
-    "dotenv": "^16.4.7",
-    "ethers": "^6.13.4"
-  },
-  "devDependencies": {
-    "@types/jest": "^29.5.14",
-    "@types/node": "^22.12.0",
-    "@typescript-eslint/eslint-plugin": "^7.18.0",
-    "@typescript-eslint/parser": "^7.18.0",
-    "eslint": "^8.57.1",
-    "jest": "^29.7.0",
-    "ts-jest": "^29.2.5",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.7.3"
+    "ethers": "^6.13.1"
   }
 }
