@@ -45,7 +45,7 @@
     "audit:gov": "node governance/governance-core.js --audit",
     "security:watch": "node tools/security-watch.js",
     "drift:scan": "node cli/drift_anchor_verifier.js",
-    "prepare": "husky"
+    "prepare": "[ -n \"\" ] || husky"
   },
   "keywords": [],
   "author": "",
