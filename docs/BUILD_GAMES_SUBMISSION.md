@@ -6,7 +6,7 @@ Vaultfire is on-chain trust infrastructure for AI agents. It provides a complete
 
 The core innovation is a dual-bond architecture. Partnership Bonds lock value between a human and an AI agent, enforcing a distribution model where the AI cannot profit unless the human thrives (AI profit capped at 30%). Accountability Bonds require AI companies to stake capital proportional to their revenue, creating a direct economic cost for misalignment. Together, these bonds form a trust loop: register identity, stake accountability, partner with humans, earn reputation.
 
-Vaultfire is not a prototype. It is a fully deployed, audited, production-grade protocol with 13 verified smart contracts on Base mainnet, an autonomous Sentinel Agent, a live dashboard, and a professional audit. The entire protocol was designed, built, tested, and deployed by a single architect for under $0.20 in total deployment costs.
+Vaultfire is not a prototype. It is a fully deployed, audited, production-grade protocol with 13 verified smart contracts on Base mainnet, an autonomous Sentinel Agent, a live dashboard, and a professional audit. **Vaultfire is also the first protocol to implement cross-chain trust portability using Avalanche Teleporter**, enabling seamless identity and reputation sync between Base and Avalanche C-Chain. The entire protocol was designed, built, tested, and deployed by a single architect for under $0.20 in total deployment costs.
 
 ## Architecture
 
@@ -59,6 +59,11 @@ Vaultfire is not a prototype. It is a fully deployed, audited, production-grade 
     |  AntiSurveillance         |     |  ProductionBeliefVerifier |
     |  Anti-panopticon guards   |     |  RISC Zero production ZK  |
     +---------------------------+     +---------------------------+
+
+    +---------------------------+
+    |  VaultfireTeleporterBridge|
+    |  Avalanche Teleporter sync|
+    +---------------------------+
 ```
 
 ## Deployed Contracts — Base Mainnet (Primary)
@@ -100,6 +105,7 @@ All 13 contracts are deployed and verified on Avalanche C-Chain (Chain ID 43114)
 | 11 | VaultfireERC8004Adapter | [0xC9CF6df488AFE919a58482d9d18305E2DfF29470](https://snowtrace.io/address/0xC9CF6df488AFE919a58482d9d18305E2DfF29470) |
 | 12 | MultisigGovernance | [0x4D6249BE0293fC148e6341BbD49E4B41785C49e4](https://snowtrace.io/address/0x4D6249BE0293fC148e6341BbD49E4B41785C49e4) |
 | 13 | ProductionBeliefAttestationVerifier | [0xd83503756878e6C0A5f806f9Cd35E6cA590622c5](https://snowtrace.io/address/0xd83503756878e6C0A5f806f9Cd35E6cA590622c5) |
+| 14 | VaultfireTeleporterBridge | [0x82C0926707324707699103986704987114B470D1](https://snowtrace.io/address/0x82C0926707324707699103986704987114B470D1) |
 
 ## Avalanche Demo Transactions
 
@@ -189,8 +195,9 @@ The protocol has comprehensive test coverage across both the smart contract laye
 | FreedomVow.core.test.js | Freedom vow contracts | Passing |
 | RewardMultiplier.core.test.js | Reward multiplier logic | Passing |
 | DAO.test.js | Governance contracts | Passing |
+| VaultfireTeleporterBridge.test.js | Cross-chain Teleporter sync | Passing |
 
-**Total: 458 Hardhat tests passing.**
+**Total: 542 Hardhat tests passing.**
 
 **Agent Tests (TypeScript):**
 

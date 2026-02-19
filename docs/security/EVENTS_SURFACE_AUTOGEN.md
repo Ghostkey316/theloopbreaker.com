@@ -92,6 +92,19 @@ Vaultfire principle: monitoring should be **privacy-preserving** (protocol integ
 - `event DataDeletionRequested(address indexed user, uint256 effectiveAt);`
 - `event DataPermanentlyDeleted(address indexed user, uint256 timestamp);`
 
+### VaultfireTeleporterBridge
+- `event AccountabilityBondSynced(uint256 indexed bondId, address aiCompany, uint256 sourceChainId);`
+- `event AgentSynced(address indexed agentAddress, string agentType, uint256 sourceChainId);`
+- `event BridgePaused(address indexed by);`
+- `event BridgeUnpaused(address indexed by);`
+- `event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);`
+- `event PartnershipBondSynced(uint256 indexed bondId, address human, address aiAgent, uint256 sourceChainId);`
+- `event RelayerAdded(address indexed relayer);`
+- `event RelayerRemoved(address indexed relayer);`
+- `event RemoteConfigured(bytes32 remoteBlockchainID, address remoteBridgeAddress, uint256 remoteChainId);`
+- `event ReputationSynced(address indexed agentAddress, uint256 averageRating, uint256 sourceChainId);`
+- `event ValidationSynced(uint256 indexed requestId, address agentAddress, uint8 status, uint256 sourceChainId);`
+
 ## Emit sites (best-effort)
 
 - contracts/AIAccountabilityBondsV2.sol:285 → HumanTreasuryUpdated
@@ -211,6 +224,20 @@ Vaultfire principle: monitoring should be **privacy-preserving** (protocol integ
 - contracts/ProductionBeliefAttestationVerifier.sol:443 → ImageIdUpdated
 - contracts/ProductionBeliefAttestationVerifier.sol:454 → ImageIdChangeCancelled
 - contracts/ProductionBeliefAttestationVerifier.sol:464 → OwnershipTransferred
+- contracts/teleporter/mocks/MockTeleporterMessenger.sol:56 → SendCrossChainMessage
+- contracts/teleporter/VaultfireTeleporterBridge.sol:277 → OwnershipTransferred
+- contracts/teleporter/VaultfireTeleporterBridge.sol:297 → RemoteConfigured
+- contracts/teleporter/VaultfireTeleporterBridge.sol:315 → RelayerAdded
+- contracts/teleporter/VaultfireTeleporterBridge.sol:329 → RelayerRemoved
+- contracts/teleporter/VaultfireTeleporterBridge.sol:340 → BridgePaused
+- contracts/teleporter/VaultfireTeleporterBridge.sol:345 → BridgeUnpaused
+- contracts/teleporter/VaultfireTeleporterBridge.sol:570 → MessageSent
+- contracts/teleporter/VaultfireTeleporterBridge.sol:617 → MessageReceived
+- contracts/teleporter/VaultfireTeleporterBridge.sol:639 → AgentSynced
+- contracts/teleporter/VaultfireTeleporterBridge.sol:650 → PartnershipBondSynced
+- contracts/teleporter/VaultfireTeleporterBridge.sol:661 → AccountabilityBondSynced
+- contracts/teleporter/VaultfireTeleporterBridge.sol:673 → ReputationSynced
+- contracts/teleporter/VaultfireTeleporterBridge.sol:684 → ValidationSynced
 - contracts/VaultfireERC8004Adapter.sol:121 → AgentAutoRegistered
 - contracts/VaultfireERC8004Adapter.sol:164 → PartnershipReputationSynced
 

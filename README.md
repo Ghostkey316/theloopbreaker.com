@@ -575,7 +575,15 @@ The Vaultfire Protocol is designed for a multichain future, with Base mainnet se
 
 As part of the Avalanche Build Games, the protocol has been deployed to the **Avalanche C-Chain** as a secondary supported network. This deployment mirrors the full functionality of the Base mainnet contracts.
 
-For detailed information on the multichain architecture, deployment procedures, and contract verification on Avalanche, please see the **[Multichain Deployment Guide](./docs/MULTICHAIN_DEPLOYMENT.md)**.
+### Cross-Chain Trust Portability (Avalanche Teleporter)
+
+Vaultfire is the **first protocol to implement cross-chain trust portability using Avalanche Teleporter**. This allows an AI agent registered on one chain to have its identity, bonds, and reputation automatically recognized on the other.
+
+- **Unified Identity:** Register an agent on Base and sync its profile to Avalanche C-Chain.
+- **Portable Bonds:** Partnership and accountability bonds are mirrored across chains for global trust.
+- **Real-time Reputation:** Reputation updates and validation status sync seamlessly via Teleporter's secure messaging.
+
+For detailed information on the multichain architecture, Teleporter bridge implementation, and cross-chain sync procedures, please see the **[Teleporter Bridge Guide](./TELEPORTER_BRIDGE_README.md)** and the **[Multichain Deployment Guide](./docs/MULTICHAIN_DEPLOYMENT.md)**.
 
 ---
 
