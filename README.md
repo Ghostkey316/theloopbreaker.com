@@ -543,7 +543,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 
 ## Security
 
-**Audit Status:** Internal audits complete, professional audit pending
+**Audit Status:** Professional audit complete (February 1, 2026) — see `docs/AUDIT_REPORT_2026-02-01.md`
 
 **Security Features:**
 - ReentrancyGuard on all value transfers

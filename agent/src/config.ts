@@ -68,6 +68,7 @@ export const CONTRACTS = {
   PrivacyGuarantees: '0x1dCbeD76E05Eaf829c8BDf10a9511504cDa8EB1e',
   MissionEnforcement: '0x6EC0440e1601558024f285903F0F4577B109B609',
   AntiSurveillance: '0x2baE308ddCfc6a270d6dFCeeF947bd8B77b9d3Ac',
+  BeliefAttestationVerifier: '0x5657DA7E68CBbA1B529F74e2137CBA7bf3663B4a',
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -112,8 +113,8 @@ export const SUPPORTED_CHAINS: Record<string, ChainDefinition> = {
 } as const;
 
 /**
- * Placeholder contract addresses for Avalanche C-Chain (Chain ID 43114).
- * These will be populated after the first Avalanche deployment.
+ * Deployed contract addresses for Avalanche C-Chain (Chain ID 43114).
+ * All 13 contracts deployed and verified on Snowtrace — Feb 18, 2026.
  */
 export const AVALANCHE_CONTRACTS: Record<string, string> = {
   ERC8004IdentityRegistry: '0x5dcD3022fBa187346b9cA9f4fFAF6C42f9839e13',

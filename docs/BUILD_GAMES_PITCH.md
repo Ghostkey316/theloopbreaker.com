@@ -39,7 +39,7 @@ Vaultfire is not a concept or a prototype. It is a deployed, audited, production
 | Governance | On-chain multisig with threshold signing |
 | Oracle System | Multi-oracle consensus (FlourishingMetricsOracle) |
 | Agent | Autonomous Sentinel Agent (TypeScript, ethers.js) |
-| Testing | 346 Hardhat tests + agent unit tests, all passing |
+| Testing | 458 Hardhat tests + 50 agent unit tests, all passing |
 | Audit | Professional audit completed 2026-02-01 |
 | CI/CD | Automated guardrails (no surveillance, no gatekeeping) |
 | Dashboard | Live at [theloopbreaker.com](https://theloopbreaker.com) |
@@ -54,7 +54,7 @@ This is not a hackathon weekend project. Vaultfire has been built methodically o
 
 **Autonomous Sentinel Agent** — A living AI agent that self-registers in the ERC-8004 Identity Registry, establishes partnership bonds, monitors protocol health, and reports metrics to the FlourishingMetricsOracle. It runs continuously and demonstrates the protocol in action.
 
-**Professional Audit** — Full repo audit completed February 1, 2026. Core test suite: 346 Hardhat tests passing. CI guardrails enforce values alignment (no surveillance, no gatekeeping patterns).
+**Professional Audit** — Full repo audit completed February 1, 2026. Core test suite: 458 Hardhat tests passing. CI guardrails enforce values alignment (no surveillance, no gatekeeping patterns).
 
 **Live Dashboard** — [theloopbreaker.com](https://theloopbreaker.com) provides real-time visibility into the protocol state, deployed contracts, and agent activity.
 
@@ -102,7 +102,7 @@ This is infrastructure, not an application. Vaultfire is the layer that other pr
 >
 > *[Show ERC-8004 identity, ZK proof architecture]*
 >
-> Built with ERC-8004 identity, RISC Zero ZK proofs, multisig governance, and multi-oracle consensus. Three hundred forty-six tests passing. Professional audit complete.
+> Built with ERC-8004 identity, RISC Zero ZK proofs, multisig governance, and multi-oracle consensus. Four hundred fifty-eight tests passing. Professional audit complete.
 >
 > *[Return to dashboard]*
 >

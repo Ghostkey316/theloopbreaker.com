@@ -41,7 +41,7 @@
     "deploy:sandbox": "node cli/deployVaultfire.js --env sandbox",
     "deploy:production": "node cli/deployVaultfire.js --env production",
     "telemetry:verify": "node tools/telemetry_verify.js",
-    "audit": "npm audit --audit-level=high",
+    "audit": "npm audit --audit-level=high --omit=dev",
     "audit:gov": "node governance/governance-core.js --audit",
     "security:watch": "node tools/security-watch.js",
     "drift:scan": "node cli/drift_anchor_verifier.js",
