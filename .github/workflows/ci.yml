@@ -117,4 +117,4 @@ jobs:
 
       - name: Audit
         # Keep this at "high" so moderate ecosystem issues don't block dev.
-        run: npm audit -audit-level=high –omit=dev
+        run: npm audit --audit-level=high
