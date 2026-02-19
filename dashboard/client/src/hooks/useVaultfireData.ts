@@ -1,6 +1,12 @@
 /**
  * Vaultfire Protocol — On-chain data fetching hooks
  * Reads live data from 14 contracts on Base mainnet via ethers.js
+ *
+ * Resilience strategy:
+ * - Multiple public RPC fallbacks to handle rate-limiting
+ * - safeCallWithRetry: retries once with delay before returning fallback
+ * - Parallel eth_getCode via raw fetch (bypasses ethers.js provider queue)
+ * - Individual contract failures do not block other contracts
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -22,31 +28,139 @@ import {
   OwnerABI,
 } from "@/lib/contracts";
 
-// Create a shared provider with static network to avoid detection issues
+// ============ RPC Provider pool with fallbacks ============
+
+const RPC_URLS = [
+  BASE_RPC_URL,                                   // https://mainnet.base.org
+  "https://base.publicnode.com",                  // PublicNode (no rate limit)
+  "https://base-rpc.publicnode.com",              // PublicNode alt
+  "https://1rpc.io/base",                         // 1RPC
+];
+
 const BASE_NETWORK = new ethers.Network("base", 8453);
-let _provider: ethers.JsonRpcProvider | null = null;
-function getProvider() {
-  if (!_provider) {
-    _provider = new ethers.JsonRpcProvider(BASE_RPC_URL, BASE_NETWORK, {
-      staticNetwork: BASE_NETWORK,
-    });
+
+// Provider pool — one per RPC URL, created lazily
+const _providers: Map<string, ethers.JsonRpcProvider> = new Map();
+
+function getProvider(rpcUrl: string = RPC_URLS[0]): ethers.JsonRpcProvider {
+  if (!_providers.has(rpcUrl)) {
+    _providers.set(
+      rpcUrl,
+      new ethers.JsonRpcProvider(rpcUrl, BASE_NETWORK, { staticNetwork: BASE_NETWORK })
+    );
   }
-  return _provider;
+  return _providers.get(rpcUrl)!;
 }
 
-function getContract(address: string, abi: string[]) {
+// Primary provider (first in list)
+function getPrimaryProvider(): ethers.JsonRpcProvider {
+  return getProvider(RPC_URLS[0]);
+}
+
+function getContract(address: string, abi: string[], rpcUrl?: string): ethers.Contract {
   // Normalize to EIP-55 checksum address to prevent INVALID_ARGUMENT errors
   const checksumAddr = ethers.getAddress(address.toLowerCase());
-  return new ethers.Contract(checksumAddr, abi, getProvider());
+  return new ethers.Contract(checksumAddr, abi, getProvider(rpcUrl));
 }
 
-// Safe call wrapper
+// ============ Safe call helpers ============
+
+const RETRY_DELAY_MS = 600;
+
+/** Try fn(), on failure wait RETRY_DELAY_MS and try once more, then return fallback */
+async function safeCallWithRetry<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await fn();
+  } catch {
+    // Wait and retry once
+    await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+    try {
+      return await fn();
+    } catch {
+      return fallback;
+    }
+  }
+}
+
+/** Try fn() with each RPC URL in order until one succeeds */
+async function safeCallWithFallback<T>(
+  fnFactory: (rpcUrl: string) => () => Promise<T>,
+  fallback: T
+): Promise<T> {
+  for (const rpcUrl of RPC_URLS) {
+    try {
+      return await fnFactory(rpcUrl)();
+    } catch {
+      // Try next RPC
+    }
+  }
+  return fallback;
+}
+
+/** Simple safe call — no retry */
 async function safeCall<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   try {
     return await fn();
   } catch {
     return fallback;
   }
+}
+
+// ============ Raw JSON-RPC helpers (bypass ethers.js for getCode) ============
+
+/** Call eth_getCode via raw fetch, trying each RPC URL in order */
+async function rawGetCode(address: string): Promise<string> {
+  const checksumAddr = ethers.getAddress(address.toLowerCase());
+  for (const rpcUrl of RPC_URLS) {
+    try {
+      const res = await fetch(rpcUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "eth_getCode",
+          params: [checksumAddr, "latest"],
+          id: 1,
+        }),
+      });
+      const data = await res.json();
+      if (data.result && data.result !== "0x") {
+        return data.result;
+      }
+      if (data.result === "0x") {
+        return "0x"; // Confirmed empty — no need to try fallback
+      }
+    } catch {
+      // Try next RPC
+    }
+  }
+  return "0x";
+}
+
+/** Call an eth_call via raw fetch with fallback RPCs */
+async function rawEthCall(address: string, data: string): Promise<string> {
+  const checksumAddr = ethers.getAddress(address.toLowerCase());
+  for (const rpcUrl of RPC_URLS) {
+    try {
+      const res = await fetch(rpcUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "eth_call",
+          params: [{ to: checksumAddr, data }, "latest"],
+          id: 1,
+        }),
+      });
+      const json = await res.json();
+      if (json.result && json.result !== "0x" && !json.error) {
+        return json.result;
+      }
+    } catch {
+      // Try next RPC
+    }
+  }
+  return "0x";
 }
 
 // ============ Types ============
@@ -138,31 +252,51 @@ export function useProtocolOverview() {
   const fetch = useCallback(async () => {
     try {
       setLoading(true);
-      const identity = getContract(CONTRACTS.ERC8004IdentityRegistry, ERC8004IdentityRegistryABI);
-      const partnership = getContract(CONTRACTS.AIPartnershipBondsV2, AIPartnershipBondsV2ABI);
-      const accountability = getContract(CONTRACTS.AIAccountabilityBondsV2, AIAccountabilityBondsV2ABI);
-      const prodAttestation = getContract(CONTRACTS.ProductionBeliefAttestationVerifier, ProductionBeliefAttestationVerifierABI);
-      const validation = getContract(CONTRACTS.ERC8004ValidationRegistry, ERC8004ValidationRegistryABI);
-      const reputation = getContract(CONTRACTS.ERC8004ReputationRegistry, ERC8004ReputationRegistryABI);
 
-      const [totalAgents, nextPartnershipId, nextAccountabilityId, attestationCount, nextRequestId, nextFeedbackId] = await Promise.all([
-        safeCall(() => identity.getTotalAgents(), BigInt(0)),
-        safeCall(() => partnership.nextBondId(), BigInt(1)),
-        safeCall(() => accountability.nextBondId(), BigInt(1)),
-        safeCall(() => prodAttestation.attestationCount(), BigInt(0)),
-        safeCall(() => validation.nextRequestId(), BigInt(1)),
-        safeCall(() => reputation.nextFeedbackId(), BigInt(1)),
+      // Use raw eth_call with fallback RPCs for maximum reliability
+      // Function selectors (keccak256 of signature, first 4 bytes):
+      const SEL_getTotalAgents  = "0x3731a16f"; // getTotalAgents()
+      const SEL_nextBondId      = "0xee53a423"; // nextBondId()
+      const SEL_attestationCount = "0xa15b9321"; // attestationCount()
+      const SEL_nextRequestId   = "0x6a84a985"; // nextRequestId()
+      const SEL_nextFeedbackId  = "0x98928e15"; // nextFeedbackId()
+
+      const [
+        agentsRaw,
+        partnershipRaw,
+        accountabilityRaw,
+        attestationRaw,
+        requestRaw,
+        feedbackRaw,
+      ] = await Promise.all([
+        rawEthCall(CONTRACTS.ERC8004IdentityRegistry, SEL_getTotalAgents),
+        rawEthCall(CONTRACTS.AIPartnershipBondsV2, SEL_nextBondId),
+        rawEthCall(CONTRACTS.AIAccountabilityBondsV2, SEL_nextBondId),
+        rawEthCall(CONTRACTS.ProductionBeliefAttestationVerifier, SEL_attestationCount),
+        rawEthCall(CONTRACTS.ERC8004ValidationRegistry, SEL_nextRequestId),
+        rawEthCall(CONTRACTS.ERC8004ReputationRegistry, SEL_nextFeedbackId),
       ]);
+
+      const toNum = (hex: string, fallback = 0) => {
+        try { return parseInt(hex, 16); } catch { return fallback; }
+      };
+
+      const totalAgents     = toNum(agentsRaw);
+      const nextPartnership = toNum(partnershipRaw, 1);
+      const nextAccount     = toNum(accountabilityRaw, 1);
+      const attestations    = toNum(attestationRaw);
+      const nextRequest     = toNum(requestRaw, 1);
+      const nextFeedback    = toNum(feedbackRaw, 1);
 
       setData({
         totalContracts: 14,
         network: "Base",
-        totalAgents: Number(totalAgents),
-        totalPartnershipBonds: Number(nextPartnershipId) - 1,
-        totalAccountabilityBonds: Number(nextAccountabilityId) - 1,
-        totalAttestations: Number(attestationCount),
-        totalValidationRequests: Number(nextRequestId) - 1,
-        totalFeedbacks: Number(nextFeedbackId) - 1,
+        totalAgents,
+        totalPartnershipBonds: Math.max(0, nextPartnership - 1),
+        totalAccountabilityBonds: Math.max(0, nextAccount - 1),
+        totalAttestations: attestations,
+        totalValidationRequests: Math.max(0, nextRequest - 1),
+        totalFeedbacks: Math.max(0, nextFeedback - 1),
       });
       setError(null);
     } catch (e: unknown) {
@@ -186,7 +320,7 @@ export function useRegisteredAgents() {
     try {
       setLoading(true);
       const contract = getContract(CONTRACTS.ERC8004IdentityRegistry, ERC8004IdentityRegistryABI);
-      const totalAgents = await safeCall(() => contract.getTotalAgents(), BigInt(0));
+      const totalAgents = await safeCallWithRetry(() => contract.getTotalAgents(), BigInt(0));
       const count = Number(totalAgents);
 
       if (count === 0) {
@@ -238,7 +372,7 @@ export function usePartnershipBonds() {
     try {
       setLoading(true);
       const contract = getContract(CONTRACTS.AIPartnershipBondsV2, AIPartnershipBondsV2ABI);
-      const nextId = await safeCall(() => contract.nextBondId(), BigInt(1));
+      const nextId = await safeCallWithRetry(() => contract.nextBondId(), BigInt(1));
       const count = Number(nextId) - 1;
 
       if (count <= 0) {
@@ -291,7 +425,7 @@ export function useAccountabilityBonds() {
     try {
       setLoading(true);
       const contract = getContract(CONTRACTS.AIAccountabilityBondsV2, AIAccountabilityBondsV2ABI);
-      const nextId = await safeCall(() => contract.nextBondId(), BigInt(1));
+      const nextId = await safeCallWithRetry(() => contract.nextBondId(), BigInt(1));
       const count = Number(nextId) - 1;
 
       if (count <= 0) {
@@ -348,9 +482,9 @@ export function useGovernance() {
       const contract = getContract(CONTRACTS.MultisigGovernance, MultisigGovernanceABI);
 
       const [signerList, thresh, txCount] = await Promise.all([
-        safeCall(() => contract.getSigners(), []),
-        safeCall(() => contract.threshold(), BigInt(0)),
-        safeCall(() => contract.transactionCount(), BigInt(0)),
+        safeCallWithRetry(() => contract.getSigners(), []),
+        safeCallWithRetry(() => contract.threshold(), BigInt(0)),
+        safeCallWithRetry(() => contract.transactionCount(), BigInt(0)),
       ]);
 
       setSigners(signerList);
@@ -406,9 +540,9 @@ export function useOracleStatus() {
       const contract = getContract(CONTRACTS.FlourishingMetricsOracle, FlourishingMetricsOracleABI);
 
       const [oracleList, count, nextRound] = await Promise.all([
-        safeCall(() => contract.getOracles(), []),
-        safeCall(() => contract.oracleCount(), BigInt(0)),
-        safeCall(() => contract.nextRoundId(), BigInt(0)),
+        safeCallWithRetry(() => contract.getOracles(), []),
+        safeCallWithRetry(() => contract.oracleCount(), BigInt(0)),
+        safeCallWithRetry(() => contract.nextRoundId(), BigInt(0)),
       ]);
 
       setOracles(oracleList);
@@ -457,7 +591,7 @@ export function useTimelockInfo() {
     try {
       setLoading(true);
       const contract = getContract(CONTRACTS.ProductionBeliefAttestationVerifier, ProductionBeliefAttestationVerifierABI);
-      const result = await safeCall(() => contract.getPendingImageIdChange(), null);
+      const result = await safeCallWithRetry(() => contract.getPendingImageIdChange(), null);
       if (result) {
         setTimelockInfo({
           pendingImageId: result[0] ?? result.pendingId,
@@ -484,9 +618,7 @@ export function useContractHealth() {
   const fetch = useCallback(async () => {
     try {
       setLoading(true);
-      const provider = getProvider();
       const entries = Object.entries(CONTRACTS);
-      const results: ContractHealth[] = [];
 
       // Contracts that have owner()
       const ownerContracts: Record<string, string[]> = {
@@ -499,32 +631,30 @@ export function useContractHealth() {
         VaultfireTeleporterBridge: ["function owner() external view returns (address)"],
       };
 
-      for (const [name, address] of entries) {
-        // Normalize address to EIP-55 checksum to prevent INVALID_ARGUMENT errors
-        const checksumAddress = ethers.getAddress(address.toLowerCase());
-        const code = await safeCall(() => provider.getCode(checksumAddress), "0x");
-        let owner: string | null = null;
-        let paused: boolean | null = null;
+      // Check all 14 contracts in parallel using raw fetch (avoids ethers.js rate limiting)
+      const results = await Promise.all(
+        entries.map(async ([name, address]) => {
+          // Raw fetch for getCode — most reliable, bypasses ethers.js provider queue
+          const code = await rawGetCode(address);
+          const hasCode = code !== "0x" && code.length > 2;
 
-        if (ownerContracts[name]) {
-          const c = getContract(address, ownerContracts[name]);
-          owner = await safeCall(() => c.owner(), null);
-        }
+          let owner: string | null = null;
+          let paused: boolean | null = null;
 
-        // Check paused for bond contracts
-        if (name === "AIPartnershipBondsV2" || name === "AIAccountabilityBondsV2") {
-          const c = getContract(address, ["function paused() view returns (bool)"]);
-          paused = await safeCall(() => c.paused(), null);
-        }
+          if (ownerContracts[name]) {
+            const c = getContract(address, ownerContracts[name]);
+            owner = await safeCallWithRetry(() => c.owner(), null);
+          }
 
-        results.push({
-          name,
-          address,
-          owner,
-          hasCode: code !== "0x" && code.length > 2,
-          paused,
-        });
-      }
+          // Check paused for bond contracts
+          if (name === "AIPartnershipBondsV2" || name === "AIAccountabilityBondsV2") {
+            const c = getContract(address, ["function paused() view returns (bool)"]);
+            paused = await safeCallWithRetry(() => c.paused(), null);
+          }
+
+          return { name, address, owner, hasCode, paused };
+        })
+      );
 
       setContracts(results);
     } catch {
