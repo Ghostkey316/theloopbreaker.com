@@ -7,6 +7,10 @@ export const BASE_CHAIN_ID = 8453;
 export const BASE_RPC_URL = "https://mainnet.base.org";
 export const BASESCAN_URL = "https://basescan.org";
 
+export const AVAX_CHAIN_ID = 43114;
+export const AVAX_RPC_URL = "https://api.avax.network/ext/bc/C/rpc";
+export const SNOWTRACE_URL = "https://snowscan.xyz";
+
 export const CONTRACTS = {
   PrivacyGuarantees: "0x1dCbeD76E05Eaf829c8BDf10a9511504cDa8EB1e",
   MissionEnforcement: "0x6EC0440e1601558024f285903F0F4577B109B609",
@@ -21,7 +25,17 @@ export const CONTRACTS = {
   MultisigGovernance: "0xd979025D0384Ea4F1b2562b9855d8Be7Eb89856D",
   FlourishingMetricsOracle: "0xb751abb1158908114662b254567b8135C460932C",
   ProductionBeliefAttestationVerifier: "0xBDB5d85B3a84C773113779be89A166Ed515A7fE2",
+  VaultfireTeleporterBridge: "0xaD8D7aE60805B6e5d4BF6b70248AD8B46DEE9528",
 } as const;
+
+/** Avalanche C-Chain contract addresses (chain ID 43114) */
+export const AVAX_CONTRACTS = {
+  VaultfireTeleporterBridge: "0x75de435Acc5dec0f612408f02Ae169528ce3a91b",
+} as const;
+
+export function snowtraceAddress(addr: string) {
+  return `${SNOWTRACE_URL}/address/${addr}`;
+}
 
 export type ContractName = keyof typeof CONTRACTS;
 
@@ -128,6 +142,17 @@ export const AntiSurveillanceABI = [
 
 export const VaultfireERC8004AdapterABI = [
   "function discoverVaultfireAgents() view returns (address[])",
+];
+
+export const VaultfireTeleporterBridgeABI = [
+  "function owner() external view returns (address)",
+  "function teleporterMessenger() external view returns (address)",
+  "function requiredGasLimit() external view returns (uint256)",
+  "function remoteBridgeAddress() external view returns (address)",
+  "function remoteChainId() external view returns (uint256)",
+  "function paused() external view returns (bool)",
+  "function messageCount() external view returns (uint256)",
+  "function getRelayers() external view returns (address[])",
 ];
 
 // Generic owner ABI for contracts that have owner()

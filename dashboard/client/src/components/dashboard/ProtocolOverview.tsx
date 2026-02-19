@@ -17,7 +17,7 @@ export default function ProtocolOverviewSection({ data, loading }: Props) {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <StatCard
           label="Contracts"
-          value={data?.totalContracts ?? 13}
+          value={data?.totalContracts ?? 14}
           icon={<Shield className="w-4 h-4" />}
           loading={loading}
           delay={0}

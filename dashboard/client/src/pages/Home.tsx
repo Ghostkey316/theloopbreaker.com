@@ -126,7 +126,7 @@ export default function Home() {
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl leading-relaxed">
               Real-time on-chain dashboard for AI alignment infrastructure.
-              Tracking {overview.data?.totalContracts ?? 13} contracts across identity,
+              Tracking {overview.data?.totalContracts ?? 14} contracts across identity,
               bonds, attestations, and governance.
             </p>
           </motion.div>

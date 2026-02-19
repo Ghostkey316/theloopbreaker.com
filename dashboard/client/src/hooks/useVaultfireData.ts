@@ -1,6 +1,6 @@
 /**
  * Vaultfire Protocol — On-chain data fetching hooks
- * Reads live data from 13 contracts on Base mainnet via ethers.js
+ * Reads live data from 14 contracts on Base mainnet via ethers.js
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -153,7 +153,7 @@ export function useProtocolOverview() {
       ]);
 
       setData({
-        totalContracts: 13,
+        totalContracts: 14,
         network: "Base",
         totalAgents: Number(totalAgents),
         totalPartnershipBonds: Number(nextPartnershipId) - 1,
@@ -494,6 +494,7 @@ export function useContractHealth() {
         AIAccountabilityBondsV2: AIAccountabilityBondsV2ABI,
         FlourishingMetricsOracle: FlourishingMetricsOracleABI,
         ProductionBeliefAttestationVerifier: ProductionBeliefAttestationVerifierABI,
+        VaultfireTeleporterBridge: ["function owner() external view returns (address)"],
       };
 
       for (const [name, address] of entries) {
