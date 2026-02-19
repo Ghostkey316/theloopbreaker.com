@@ -35,7 +35,9 @@ function getProvider() {
 }
 
 function getContract(address: string, abi: string[]) {
-  return new ethers.Contract(address, abi, getProvider());
+  // Normalize to EIP-55 checksum address to prevent INVALID_ARGUMENT errors
+  const checksumAddr = ethers.getAddress(address.toLowerCase());
+  return new ethers.Contract(checksumAddr, abi, getProvider());
 }
 
 // Safe call wrapper
@@ -498,7 +500,9 @@ export function useContractHealth() {
       };
 
       for (const [name, address] of entries) {
-        const code = await safeCall(() => provider.getCode(address), "0x");
+        // Normalize address to EIP-55 checksum to prevent INVALID_ARGUMENT errors
+        const checksumAddress = ethers.getAddress(address.toLowerCase());
+        const code = await safeCall(() => provider.getCode(checksumAddress), "0x");
         let owner: string | null = null;
         let paused: boolean | null = null;
 
