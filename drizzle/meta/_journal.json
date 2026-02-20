@@ -15,6 +15,13 @@
       "when": 1771626027986,
       "tag": "0001_stale_rictor",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1771627799670,
+      "tag": "0002_long_captain_america",
+      "breakpoints": true
     }
   ]
 }

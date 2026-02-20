@@ -45,3 +45,29 @@ export const messages = mysqlTable("messages", {
 
 export type ChatMessage = typeof messages.$inferSelect;
 export type InsertMessage = typeof messages.$inferInsert;
+
+/**
+ * Ember memory — key facts Ember remembers about each user.
+ */
+export const emberMemories = mysqlTable("ember_memories", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  category: varchar("category", { length: 64 }).notNull().default("general"),
+  fact: text("fact").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type EmberMemory = typeof emberMemories.$inferSelect;
+export type InsertEmberMemory = typeof emberMemories.$inferInsert;
+
+/**
+ * User session tracking — last_seen for time-aware greetings.
+ */
+export const userSessions = mysqlTable("user_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  lastSeen: timestamp("lastSeen").defaultNow().notNull(),
+});
+
+export type UserSession = typeof userSessions.$inferSelect;
+export type InsertUserSession = typeof userSessions.$inferInsert;

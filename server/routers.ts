@@ -5,7 +5,7 @@ import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { invokeLLM, type Message } from "./_core/llm";
 import { z } from "zod";
 import { getDb } from "./db";
-import { conversations, messages } from "../drizzle/schema";
+import { conversations, messages, emberMemories, userSessions } from "../drizzle/schema";
 import { eq, desc, and, asc } from "drizzle-orm";
 
 const EMBER_SYSTEM_PROMPT = `You are Ember, the AI assistant for Vaultfire Protocol — a Web3 trust and identity platform built on Base and Avalanche. You help users understand trust verification, cross-chain bridges, AI partnership bonds, belief attestations, reputation scores, and governance.
@@ -22,6 +22,95 @@ Key Vaultfire concepts you know about:
 - Flourishing Metrics Oracle: On-chain oracle for human flourishing data
 
 Always be helpful and guide users through the Vaultfire ecosystem.`;
+
+/**
+ * Build a time-aware greeting prefix based on how long since the user's last message.
+ */
+function getTimeAwareGreeting(lastSeen: Date | null): string | null {
+  if (!lastSeen) return null;
+  const now = new Date();
+  const diffMs = now.getTime() - lastSeen.getTime();
+  const diffHours = diffMs / (1000 * 60 * 60);
+
+  if (diffHours < 4) return null; // Recent — no special greeting
+
+  const hour = now.getHours();
+  let timeOfDay = "evening";
+  if (hour >= 5 && hour < 12) timeOfDay = "morning";
+  else if (hour >= 12 && hour < 17) timeOfDay = "afternoon";
+
+  if (diffHours >= 72) {
+    return `It's been a few days since we last talked! Good ${timeOfDay}. I'm glad you're back.`;
+  } else if (diffHours >= 24) {
+    return `Good ${timeOfDay}! It's been about a day since we chatted. Welcome back.`;
+  } else {
+    return `Good ${timeOfDay}! It's been a while since our last conversation.`;
+  }
+}
+
+/**
+ * Build the memory context block to inject into the system prompt.
+ */
+function buildMemoryContext(memories: { category: string; fact: string }[]): string {
+  if (memories.length === 0) return "";
+  const lines = memories.map((m) => `- [${m.category}] ${m.fact}`);
+  return `\n\nYou remember the following about this user from previous conversations:\n${lines.join("\n")}\n\nUse this knowledge naturally in conversation. Don't list everything — just be aware of it and reference relevant facts when appropriate.`;
+}
+
+/**
+ * Extract key facts from a conversation exchange using a second LLM call.
+ * Returns an array of {category, fact} objects.
+ */
+async function extractMemories(
+  userMessage: string,
+  assistantMessage: string
+): Promise<{ category: string; fact: string }[]> {
+  try {
+    const result = await invokeLLM({
+      messages: [
+        {
+          role: "system",
+          content: `You are a memory extraction system. Analyze the user's message and extract key personal facts about the user. Only extract facts the USER reveals about themselves — not questions they ask.
+
+Categories: name, preference, interest, goal, wallet, location, occupation, other
+
+Output ONLY valid JSON: an array of objects like [{"category":"name","fact":"User's name is Alex"}]
+If there are no personal facts to extract, output an empty array: []
+Do NOT extract facts about the AI assistant. Only about the user.`,
+        },
+        {
+          role: "user",
+          content: `User said: "${userMessage}"\n\nAssistant replied: "${assistantMessage.slice(0, 500)}"`,
+        },
+      ],
+      maxTokens: 300,
+    });
+
+    const raw = typeof result.choices?.[0]?.message?.content === "string"
+      ? result.choices[0].message.content
+      : "[]";
+
+    // Extract JSON array from the response (handle markdown code blocks)
+    const jsonMatch = raw.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) return [];
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .filter(
+        (item: unknown): item is { category: string; fact: string } =>
+          typeof item === "object" &&
+          item !== null &&
+          typeof (item as Record<string, unknown>).category === "string" &&
+          typeof (item as Record<string, unknown>).fact === "string"
+      )
+      .slice(0, 5); // Max 5 facts per exchange
+  } catch (err) {
+    console.warn("[Memory] Failed to extract memories:", err);
+    return [];
+  }
+}
 
 export const appRouter = router({
   system: systemRouter,
@@ -67,6 +156,48 @@ export const appRouter = router({
           content: input.content,
         });
 
+        // --- TIME-AWARENESS: Check last seen ---
+        let timeGreeting: string | null = null;
+        try {
+          const [session] = await db
+            .select()
+            .from(userSessions)
+            .where(eq(userSessions.userId, ctx.user.id))
+            .limit(1);
+          timeGreeting = getTimeAwareGreeting(session?.lastSeen ?? null);
+
+          // Update last_seen to now
+          if (session) {
+            await db
+              .update(userSessions)
+              .set({ lastSeen: new Date() })
+              .where(eq(userSessions.userId, ctx.user.id));
+          } else {
+            await db.insert(userSessions).values({ userId: ctx.user.id });
+          }
+        } catch (err) {
+          console.warn("[Session] Failed to track session:", err);
+        }
+
+        // --- CONTEXT INJECTION: Fetch memories ---
+        let memoryContext = "";
+        try {
+          const memories = await db
+            .select({ category: emberMemories.category, fact: emberMemories.fact })
+            .from(emberMemories)
+            .where(eq(emberMemories.userId, ctx.user.id))
+            .limit(50);
+          memoryContext = buildMemoryContext(memories);
+        } catch (err) {
+          console.warn("[Memory] Failed to fetch memories:", err);
+        }
+
+        // Build system prompt with memory + time awareness
+        let systemPrompt = EMBER_SYSTEM_PROMPT + memoryContext;
+        if (timeGreeting) {
+          systemPrompt += `\n\nIMPORTANT: The user hasn't messaged in a while. Start your response with a warm greeting: "${timeGreeting}" — then answer their question normally.`;
+        }
+
         // Load recent messages for context (last 20)
         const recentMessages = await db
           .select()
@@ -76,7 +207,7 @@ export const appRouter = router({
           .limit(20);
 
         const llmMessages: Message[] = [
-          { role: "system", content: EMBER_SYSTEM_PROMPT },
+          { role: "system", content: systemPrompt },
           ...recentMessages.reverse().map((m) => ({
             role: m.role as "user" | "assistant" | "system",
             content: m.content,
@@ -100,6 +231,25 @@ export const appRouter = router({
           content: assistantContent,
         });
 
+        // --- MEMORY EXTRACTION: Extract facts in background ---
+        extractMemories(input.content, assistantContent).then(async (facts) => {
+          if (facts.length === 0) return;
+          try {
+            const db2 = await getDb();
+            if (!db2) return;
+            for (const fact of facts) {
+              await db2.insert(emberMemories).values({
+                userId: ctx.user.id,
+                category: fact.category,
+                fact: fact.fact,
+              });
+            }
+            console.log(`[Memory] Stored ${facts.length} memories for user ${ctx.user.id}`);
+          } catch (err) {
+            console.warn("[Memory] Failed to store memories:", err);
+          }
+        });
+
         // Auto-title: if this is the first user message, generate a title
         const allMsgs = await db
           .select()
@@ -108,7 +258,6 @@ export const appRouter = router({
           .limit(5);
         const userMsgs = allMsgs.filter((m) => m.role === "user");
         if (userMsgs.length === 1) {
-          // Generate a short title from the first message
           const titleResult = await invokeLLM({
             messages: [
               {
@@ -191,7 +340,6 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
         if (!db) throw new Error("Database not available");
-        // Verify ownership
         const [conv] = await db
           .select()
           .from(conversations)
@@ -214,7 +362,6 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         const db = await getDb();
         if (!db) return [];
-        // Verify ownership
         const [conv] = await db
           .select()
           .from(conversations)
@@ -234,6 +381,49 @@ export const appRouter = router({
           .limit(200);
         return rows;
       }),
+
+    /** List all memories for the current user */
+    listMemories: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const rows = await db
+        .select()
+        .from(emberMemories)
+        .where(eq(emberMemories.userId, ctx.user.id))
+        .orderBy(desc(emberMemories.createdAt))
+        .limit(100);
+      return rows;
+    }),
+
+    /** Delete a single memory */
+    deleteMemory: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+        // Verify ownership
+        const [mem] = await db
+          .select()
+          .from(emberMemories)
+          .where(
+            and(
+              eq(emberMemories.id, input.id),
+              eq(emberMemories.userId, ctx.user.id)
+            )
+          )
+          .limit(1);
+        if (!mem) throw new Error("Memory not found");
+        await db.delete(emberMemories).where(eq(emberMemories.id, input.id));
+        return { success: true };
+      }),
+
+    /** Clear all memories for the current user */
+    clearAllMemories: protectedProcedure.mutation(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      await db.delete(emberMemories).where(eq(emberMemories.userId, ctx.user.id));
+      return { success: true };
+    }),
   }),
 });
 

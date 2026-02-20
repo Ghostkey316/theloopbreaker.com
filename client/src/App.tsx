@@ -8,6 +8,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import EmberChat from "./pages/EmberChat";
 import Subscription from "./pages/Subscription";
+import EmberMemory from "./pages/EmberMemory";
 
 function Router() {
   return (
@@ -15,6 +16,7 @@ function Router() {
       <Route path={"/"} component={Home} />
       <Route path={"/ember"} component={EmberChat} />
       <Route path={"/subscription"} component={Subscription} />
+      <Route path={"/memory"} component={EmberMemory} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
