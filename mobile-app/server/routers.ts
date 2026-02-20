@@ -1019,8 +1019,14 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         const { messages, walletAddress, permissionLevel } = input;
 
-        // Build system prompt with wallet context
+        // Build system prompt with wallet context and memory
         let systemPrompt = EMBER_SYSTEM_PROMPT;
+        
+        // Memory context is passed in the first system message from client
+        const firstMsg = messages[0];
+        if (firstMsg && firstMsg.role === "system" && firstMsg.content.includes("EMBER'S MEMORY")) {
+          systemPrompt = firstMsg.content + "\n\n" + systemPrompt;
+        }
         if (walletAddress) {
           systemPrompt += `\n\nCONNECTED WALLET: The user has connected wallet address ${walletAddress}. You can reference their on-chain data in responses.`;
         }

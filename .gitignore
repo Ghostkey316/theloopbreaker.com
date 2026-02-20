@@ -1,65 +1,51 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
+logs/
+!logs/ethics_log.json
+!logs/loopmirror_echo_v13.log
+!logs/trustengine_sync_v14.log
+!logs/pathatlas_consequence_v16.log
+coverage/
+__pycache__/
 node_modules/
+artifacts/
+cache/
+vaultfire.db
+.env
+.env.*
+*.local.env
+*.secret
 
-# Expo
-.expo/
+# local configuration snapshots that may hold credentials
+*.vaultfire.local.json
+config/local/
+
+# audit artifacts
+audit_logs/*.jsonl
+audit_logs/*.log
+.next/
 dist/
-web-build/
-expo-env.d.ts
 
-# Native
-.kotlin/
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
+# Runtime generated files from test execution
+backups/
+chain_event_log.json
+entry_log.json
+rewards_log.json
+simulated_tx.json
+humanity_manifest.json
+vaultfire-core/mission-ledger.jsonl
+vaultfire-core/ethics/ai_trader_audit.json
+codex/VAULTFIRE_CLI_LEDGER.jsonl
+vaultfire/audit_logs/
 
-# Metro
-.metro-health-check*
-
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
-# macOS
-.DS_Store
-*.pem
-
-# local env files
-.env*.local
-
-# typescript
-*.tsbuildinfo
-
-app-example
-
-# generated native folders
-/ios
-/android
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Logs
-logs
-*.log
-
-# OS
-Thumbs.db
-
-# Build files
-*.tgz
-*.tar.gz
-.cache/
-
-# Webdev artifacts (checkpoint zips, migrations, etc.)
-.webdev/
+# Test artifacts and generated files
+codex-integrity.json
+docs/badges/trust-badge.svg
+status/alerts.jsonl
+tests/tmp/
+vaultfire-core/*_status.json
+vaultfire-core/*_log.json
+vaultfire-core/*.status
+.vaultfire_tmp/
+risc0/lib/
+risc0/out/
+risc0/cache/
+.manus-logs/

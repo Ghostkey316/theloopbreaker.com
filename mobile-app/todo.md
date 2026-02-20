@@ -186,10 +186,24 @@
 - [x] Compile with zero TypeScript errors
 - [x] Run all tests (23 passed, 0 failed)
 - [x] CI green on GitHub (both Node.js CI and Hardhat CI)
-- [ ] Save checkpoint
-- [ ] Push updated code to GitHub mobile-app/
+- [x] Save checkpoint
+- [x] Push updated code to GitHub mobile-app/
 
 ## CI Fix
 - [x] Diagnose CI failure from GitHub Actions run #746
 - [x] Fix failing tests (tsconfig.json exclude + jest.config.js testPathIgnorePatterns)
 - [x] Push fix and verify CI is green
+
+## Ember Memory System
+- [ ] Create MemoryService with AsyncStorage persistence
+- [ ] Define memory types: user_profile, preference, context, interaction, trust_cache, milestone
+- [ ] Memory extraction after each conversation exchange
+- [ ] Cap memory at 50 items with oldest-replaced-unless-pinned logic
+- [ ] Integrate memories into Ember system prompt at conversation start
+- [ ] Server-side memory extraction endpoint (lightweight LLM call)
+- [ ] "Remembered" toast notification in chat
+- [ ] Memory count in sidebar ("Ember remembers 12 things about you")
+- [ ] Memory Settings screen with view/delete/clear all
+- [ ] Privacy notice: "Stored only on your device"
+- [ ] Growth metrics tracking (days using, milestones)
+- [ ] Test, checkpoint, push to GitHub

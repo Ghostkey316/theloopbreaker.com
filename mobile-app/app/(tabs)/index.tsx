@@ -28,6 +28,7 @@ import {
 import type { Conversation, ChatMessage } from "@/lib/ember";
 import { useWallet } from "@/lib/wallet-context";
 import { useEmberPermission } from "@/lib/ember-permissions";
+import { memoryService, extractMemoriesLocally } from "@/lib/memory-service";
 import { v4 as uuidv4 } from "uuid";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -227,10 +228,16 @@ export default function ChatScreen() {
     await saveConversation(updatedConvo);
 
     try {
-      const apiMessages = updatedMessages.map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
+      // Load memory and build context
+      const memoryContext = await memoryService.buildMemoryContext();
+      
+      const apiMessages = [
+        ...(memoryContext ? [{ role: "system" as const, content: memoryContext }] : []),
+        ...updatedMessages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
+      ];
 
       // Detect intent from user message to show contextual status
       const lowerInput = userMessage.content.toLowerCase();
@@ -295,6 +302,16 @@ export default function ChatScreen() {
         content: responseText,
         timestamp: Date.now(),
       };
+
+      // Extract and save memories from this exchange
+      const extracted = extractMemoriesLocally(userMessage.content, responseText);
+      for (const mem of extracted) {
+        await memoryService.addMemory(mem.category, mem.key, mem.value, "conversation");
+      }
+      await memoryService.recordMessage();
+      if (extracted.length > 0) {
+        await memoryService.recordConversation();
+      }
 
       setIsLoading(false);
       setToolStatus("");
