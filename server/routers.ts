@@ -7,6 +7,11 @@ import { z } from "zod";
 import { getDb } from "./db";
 import { conversations, messages, emberMemories, userSessions } from "../drizzle/schema";
 import { eq, desc, and, asc } from "drizzle-orm";
+import {
+  emberSendMessageLimiter,
+  emberQuickSendLimiter,
+  RateLimitError,
+} from "./_core/rateLimit";
 
 const EMBER_SYSTEM_PROMPT = `You are Ember, the AI assistant for Vaultfire Protocol — a Web3 trust and identity platform built on Base and Avalanche. You help users understand trust verification, cross-chain bridges, AI partnership bonds, belief attestations, reputation scores, and governance.
 
@@ -133,6 +138,16 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
+        // Rate limit: 20 requests per minute per user
+        try {
+          emberSendMessageLimiter.check(`user:${ctx.user.id}`);
+        } catch (err) {
+          if (err instanceof RateLimitError) {
+            throw new Error(`Rate limit exceeded. Try again in ${Math.ceil(err.retryAfterMs / 1000)}s.`);
+          }
+          throw err;
+        }
+
         const db = await getDb();
         if (!db) throw new Error("Database not available");
 
@@ -294,7 +309,17 @@ export const appRouter = router({
           ),
         })
       )
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
+        // Rate limit: 10 requests per minute per user
+        try {
+          emberQuickSendLimiter.check(`user:${ctx.user.id}`);
+        } catch (err) {
+          if (err instanceof RateLimitError) {
+            throw new Error(`Rate limit exceeded. Try again in ${Math.ceil(err.retryAfterMs / 1000)}s.`);
+          }
+          throw err;
+        }
+
         const llmMessages: Message[] = [
           { role: "system", content: EMBER_SYSTEM_PROMPT },
           ...input.messages,
