@@ -19,8 +19,8 @@
     "changelog": "./VERSION.md",
     "readme": "./README.md",
     "commit": {
-      "hash": "a546eceb82ce14e2ba3e7968c7c68775e6d6e0cd",
-      "url": "http://local_proxy@127.0.0.1:58037/git/Ghostkey316/ghostkey-316-vaultfire-init/commit/a546eceb82ce14e2ba3e7968c7c68775e6d6e0cd"
+      "hash": "de3e5ae8608a2ee2adf804ca876eff4ac426e402",
+      "url": "https://github.com/Ghostkey316/ghostkey-316-vaultfire-init/commit/de3e5ae8608a2ee2adf804ca876eff4ac426e402"
     }
   }
 }

@@ -14,3 +14,10 @@
 - [x] Zero TypeScript errors
 - [x] Write vitest tests for new endpoints
 - [x] Deploy checkpoint
+- [ ] Fix CI: restore original package.json, tsconfig.json, jest.config.js exclusions
+- [ ] Polish Home page to competition-grade quality
+- [ ] Polish EmberChat page to ChatGPT-quality UI
+- [ ] Polish Subscription page
+- [ ] Polish FloatingEmber component
+- [ ] Push to GitHub with CI green
+- [ ] Redeploy
