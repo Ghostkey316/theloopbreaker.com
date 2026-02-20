@@ -1,6 +1,10 @@
 /**
  * Vaultfire Protocol — Contract addresses and ABIs for Base mainnet (Chain ID 8453)
  * Design: "Obsidian Forge" — Dark luxury fintech with ember-to-purple accents
+ *
+ * Last updated: 2026-02-20
+ * Avalanche C-Chain contracts redeployed (all 8) — new addresses below.
+ * Base ERC8004IdentityRegistry updated to new address.
  */
 
 export const BASE_CHAIN_ID = 8453;
@@ -11,11 +15,13 @@ export const AVAX_CHAIN_ID = 43114;
 export const AVAX_RPC_URL = "https://api.avax.network/ext/bc/C/rpc";
 export const SNOWTRACE_URL = "https://snowscan.xyz";
 
+/** Base Mainnet contract addresses (chain ID 8453) */
 export const CONTRACTS = {
   PrivacyGuarantees: "0x1dCbeD76E05Eaf829c8BDf10a9511504cDa8EB1e",
   MissionEnforcement: "0x6EC0440e1601558024f285903F0F4577B109B609",
   AntiSurveillance: "0x2baE308ddCfc6a270d6dFCeeF947bd8B77b9d3Ac",
-  ERC8004IdentityRegistry: "0x206265EAbDE04E15ebeb6E27Cad64D9BfDB470DD",
+  // Updated 2026-02-20: new ERC8004IdentityRegistry deployment on Base
+  ERC8004IdentityRegistry: "0xaCB59e0f0eA47B25b24390B71b877928E5842630",
   BeliefAttestationVerifier: "0x5657DA7E68CBbA1B529F74e2137CBA7bf3663B4a",
   ERC8004ReputationRegistry: "0x1043A9fBeAEDD401735c46Aa17B4a2FA1193B06C",
   ERC8004ValidationRegistry: "0x50E4609991691D5104016c4a2F6D2875234d4B06",
@@ -28,16 +34,29 @@ export const CONTRACTS = {
   VaultfireTeleporterBridge: "0xaD8D7aE60805B6e5d4BF6b70248AD8B46DEE9528",
 } as const;
 
-/** Avalanche C-Chain contract addresses (chain ID 43114) */
+/**
+ * Avalanche C-Chain contract addresses (chain ID 43114)
+ * Updated 2026-02-20: full redeploy of all 8 contracts to new secure wallet.
+ * Previous deployer (0xf6A677de83C407875C9A9115Cf100F121f9c4816) was compromised — DO NOT USE.
+ * New deployer: 0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324
+ */
 export const AVAX_CONTRACTS = {
-  VaultfireTeleporterBridge: "0x75de435Acc5dec0f612408f02Ae169528ce3a91b",
+  MissionEnforcement: "0xE1D52bF7A842B207B8C48eAE801f9d97A3C4D709",
+  AntiSurveillance: "0xaCB59e0f0eA47B25b24390B71b877928E5842630",
+  ERC8004IdentityRegistry: "0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5",
+  AIPartnershipBondsV2: "0x37679B1dCfabE6eA6b8408626815A1426bE2D717",
+  FlourishingMetricsOracle: "0x83b2D1a8e383c4239dE66b6614176636618c1c0A",
+  AIAccountabilityBondsV2: "0xEF022Bdf55940491d4efeBDE61Ffa3f3fF81b192",
+  ProductionBeliefAttestationVerifier: "0x20E8CDFae485F0E8E90D24c9E071957A53eE0cB1",
+  VaultfireTeleporterBridge: "0x964562f712c5690465B0AA2F8fA16d9dDAc6eCdf",
 } as const;
+
+export type ContractName = keyof typeof CONTRACTS;
+export type AvaxContractName = keyof typeof AVAX_CONTRACTS;
 
 export function snowtraceAddress(addr: string) {
   return `${SNOWTRACE_URL}/address/${addr}`;
 }
-
-export type ContractName = keyof typeof CONTRACTS;
 
 export function basescanAddress(addr: string) {
   return `${BASESCAN_URL}/address/${addr}`;
