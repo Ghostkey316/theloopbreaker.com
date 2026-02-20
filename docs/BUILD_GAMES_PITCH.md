@@ -20,9 +20,9 @@ Vaultfire answers three questions that no other protocol addresses:
 
 Vaultfire introduces a dual-bond architecture that creates economic incentives for AI alignment:
 
-**Partnership Bonds** lock value between a human and an AI agent. The AI cannot profit more than 30% of the bond — the human must thrive for the AI to earn. This is not a theoretical constraint; it is enforced in the smart contract with on-chain distribution logic. If the AI dominates the partnership, it receives nothing.
+**Partnership Bonds lock value between a human and an AI agent. The AI cannot profit more than 30% of the bond — the human must thrive for the AI to earn.** This is not a theoretical constraint; it is enforced in the smart contract with on-chain distribution logic. If the AI dominates the partnership, it receives nothing.
 
-**Accountability Bonds** require AI companies to stake capital proportional to their quarterly revenue. If an AI agent causes harm, the bond can be slashed. This creates a direct economic cost for misalignment — the first protocol to make AI accountability more than a whitepaper promis27. Together, these bonds create a trust loop: register identity, stake accountability, partner with humans, earn reputation, and carry that reputation across platforms and chains. **Vaultfire is the first protocol to implement cross-chain trust portability using Avalanche Teleporter**, enabling seamless identity and reputation sync between Base and Avalanche C-Chain.
+**Accountability Bonds require AI companies to stake capital proportional to their quarterly revenue.** If an AI agent causes harm, the bond can be slashed. This creates a direct economic cost for misalignment — the first protocol to make AI accountability more than a whitepaper promise. Together, these bonds create a trust loop: register identity, stake accountability, partner with humans, earn reputation, and carry that reputation across platforms and chains. **Vaultfire is the first protocol to implement cross-chain trust portability using Avalanche Teleporter**, enabling seamless identity and reputation sync between Base and Avalanche C-Chain.
 
 ## Technical Stack
 
@@ -47,11 +47,14 @@ Vaultfire is not a concept or a prototype. It is a deployed, audited, production
 
 This is not a hackathon weekend project. Vaultfire has been built methodically over months:
 
-**Deployed on Base mainnet** — All 13 core contracts are live and verified on Base (Chain ID 8453). Total deployment cost: under $0.20. Every contract is verified on BaseScan.
+**Deployed on Base mainnet** — All 14 core contracts are live and verified on Base (Chain ID 8453). Total deployment cost: under $0.20. Every contract is verified on BaseScan.
 
-**Deployed on Avalanche** — Full protocol mirror on Avalanche C-Chain for the Build Games program. Same 13 contracts, same architecture, same trust guarantees.
+**Deployed on Avalanche** — Full protocol mirror on Avalanche C-Chain for the Build Games program. Same 14 contracts, same architecture, same trust guarantees.
 
-**Autonomous Sentinel Agent** — A living AI agent that self-registers in the ERC-8004 Identity Registry, establishes partnership bonds, monitors protocol health, and reports metrics to the FlourishingMetricsOracle. It runs continuously and demonstrates the protocol in action57. **Professional Audit** — Full repo audit completed February 1, 2026. Core test suite: 542 Hardhat tests passing. CI guardrails enforce values alignment (no surveillance, no gatekeeping patterns).
+**Autonomous Sentinel Agent** — A living AI agent that self-registers in the ERC-8004 Identity Registry, establishes partnership bonds, monitors protocol health, and reports metrics to the FlourishingMetricsOracle. It runs continuously and demonstrates the protocol in action.
+
+**Professional Audit** — Full repo audit completed February 1, 2026. Core test suite: 542 Hardhat tests passing. CI guardrails enforce values alignment (no surveillance, no gatekeeping patterns).
+
 **Live Dashboard** — [theloopbreaker.com](https://theloopbreaker.com) provides real-time visibility into the protocol state, deployed contracts, and agent activity.
 
 ## Why Avalanche
@@ -60,9 +63,12 @@ Multichain trust needs to exist everywhere AI operates. An AI agent on Avalanche
 
 1. **Subnet Architecture** — Avalanche's subnet model enables dedicated trust layers. A future Vaultfire subnet could provide a purpose-built execution environment for trust computations, with custom gas economics optimized for attestation throughput.
 
-2. **Cancun EVM Compatibility** — Since the Etna/Avalanche9000 upgrade (December 2024), Avalanche supports the same Cancun EVM opcodes as Base. This allows Vaultfire to deploy an identical codebase across both chains with zero modifications69. 3. **Ecosystem Alignment** — Avalanche's focus on real-world assets and institutional adoption aligns with Vaultfire's vision. As AI agents increasingly manage real assets, the trust infrastructure must be present on the chains where those assets live.
-70.
-71. 4. **Cross-Chain Trust (Teleporter)** — Vaultfire is the first protocol to implement cross-chain trust portability using Avalanche Teleporter. This allows an AI agent registered on Base to have its identity, bonds, and reputation automatically recognized on Avalanche C-Chain, creating a unified trust layer across the entire ecosystem.
+2. **Cancun EVM Compatibility** — Since the Etna/Avalanche9000 upgrade (December 2024), Avalanche supports the same Cancun EVM opcodes as Base. This allows Vaultfire to deploy an identical codebase across both chains with zero modifications.
+
+3. **Ecosystem Alignment** — Avalanche's focus on real-world assets and institutional adoption aligns with Vaultfire's vision. As AI agents increasingly manage real assets, the trust infrastructure must be present on the chains where those assets live.
+
+4. **Cross-Chain Trust (Teleporter)** — Vaultfire is the first protocol to implement cross-chain trust portability using Avalanche Teleporter. This allows an AI agent registered on Base to have its identity, bonds, and reputation automatically recognized on Avalanche C-Chain, creating a unified trust layer across the entire ecosystem.
+
 ## The Vision
 
 Vaultfire becomes the trust standard of the AI age.
@@ -73,7 +79,7 @@ This is infrastructure, not an application. Vaultfire is the layer that other pr
 
 ## Team
 
-**ghostkey316.eth** — Solo architect and builder. Designed, built, tested, audited, and deployed the entire protocol across two chains. 13 verified contracts. Autonomous agent. Professional audit. Live dashboard. Total deployment cost: under $0.20.
+**ghostkey316.eth** — Solo architect and builder. Designed, built, tested, audited, and deployed the entire protocol across two chains. 14 verified contracts. Autonomous agent. Professional audit. Live dashboard. Total deployment cost: under $0.20.
 
 ---
 
@@ -85,7 +91,7 @@ This is infrastructure, not an application. Vaultfire is the layer that other pr
 >
 > *[Cut to contract addresses on BaseScan]*
 >
-> Vaultfire is on-chain trust infrastructure for AI agents. Thirteen verified smart contracts, deployed on Base mainnet and Avalanche, that answer three questions: Is this agent real? Is there skin in the game? Has it earned trust?
+> Vaultfire is on-chain trust infrastructure for AI agents. Fourteen verified smart contracts, deployed on Base mainnet and Avalanche, that answer three questions: Is this agent real? Is there skin in the game? Has it earned trust?
 >
 > *[Show the dual-bond architecture]*
 >
@@ -95,7 +101,9 @@ This is infrastructure, not an application. Vaultfire is the layer that other pr
 >
 > The result is a complete trust loop: identity, accountability, partnership, reputation. All on-chain. All verifiable. No gatekeeping. No surveillance.
 >
-> *[Show ERC-8004 identity, ZK proof architecture]*105. Built with ERC-8004 identity, Avalanche Teleporter cross-chain sync, RISC Zero ZK proofs, multisig governance, and multi-oracle consensus. Five hundred forty-two tests passing. Professional audit complete.
+> *[Show ERC-8004 identity, ZK proof architecture]*
+>
+> Built with ERC-8004 identity, Avalanche Teleporter cross-chain sync, RISC Zero ZK proofs, multisig governance, and multi-oracle consensus. Five hundred forty-two tests passing. Professional audit complete.
 >
 > *[Return to dashboard]*
 >

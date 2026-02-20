@@ -6,7 +6,7 @@ Vaultfire is on-chain trust infrastructure for AI agents. It provides a complete
 
 The core innovation is a dual-bond architecture. Partnership Bonds lock value between a human and an AI agent, enforcing a distribution model where the AI cannot profit unless the human thrives (AI profit capped at 30%). Accountability Bonds require AI companies to stake capital proportional to their revenue, creating a direct economic cost for misalignment. Together, these bonds form a trust loop: register identity, stake accountability, partner with humans, earn reputation.
 
-Vaultfire is not a prototype. It is a fully deployed, audited, production-grade protocol with 13 verified smart contracts on Base mainnet, an autonomous Sentinel Agent, a live dashboard, and a professional audit. **Vaultfire is also the first protocol to implement cross-chain trust portability using Avalanche Teleporter**, enabling seamless identity and reputation sync between Base and Avalanche C-Chain. The entire protocol was designed, built, tested, and deployed by a single architect for under $0.20 in total deployment costs.
+Vaultfire is not a prototype. It is a fully deployed, audited, production-grade protocol with 14 verified smart contracts on Base mainnet, an autonomous Sentinel Agent, a live dashboard, and a professional audit. **Vaultfire is also the first protocol to implement cross-chain trust portability using Avalanche Teleporter**, enabling seamless identity and reputation sync between Base and Avalanche C-Chain. The entire protocol was designed, built, tested, and deployed by a single architect for under $0.20 in total deployment costs.
 
 ## Architecture
 
@@ -68,7 +68,7 @@ Vaultfire is not a prototype. It is a fully deployed, audited, production-grade 
 
 ## Deployed Contracts — Base Mainnet (Primary)
 
-All 13 contracts are deployed and verified on Base mainnet (Chain ID 8453).
+All 14 contracts are deployed and verified on Base mainnet (Chain ID 8453).
 
 | # | Contract | Address |
 |---|---|---|
@@ -85,10 +85,11 @@ All 13 contracts are deployed and verified on Base mainnet (Chain ID 8453).
 | 11 | MultisigGovernance | [0xd979025D0384Ea4F1b2562b9855d8Be7Eb89856D](https://basescan.org/address/0xd979025D0384Ea4F1b2562b9855d8Be7Eb89856D) |
 | 12 | FlourishingMetricsOracle | [0xb751abb1158908114662b254567b8135C460932C](https://basescan.org/address/0xb751abb1158908114662b254567b8135C460932C) |
 | 13 | ProductionBeliefAttestationVerifier | [0xBDB5d85B3a84C773113779be89A166Ed515A7fE2](https://basescan.org/address/0xBDB5d85B3a84C773113779be89A166Ed515A7fE2) |
+| 14 | VaultfireTeleporterBridge | [0xaD8D7aE60805B6e5d4BF6b70248AD8B46DEE9528](https://basescan.org/address/0xaD8D7aE60805B6e5d4BF6b70248AD8B46DEE9528) |
 
 ## Deployed Contracts — Avalanche C-Chain Mainnet (Secondary)
 
-All 13 contracts are deployed and verified on Avalanche C-Chain (Chain ID 43114).
+All 14 contracts are deployed and verified on Avalanche C-Chain (Chain ID 43114).
 
 | # | Contract | Address |
 |---|---|---|
@@ -105,7 +106,7 @@ All 13 contracts are deployed and verified on Avalanche C-Chain (Chain ID 43114)
 | 11 | VaultfireERC8004Adapter | [0xC9CF6df488AFE919a58482d9d18305E2DfF29470](https://snowtrace.io/address/0xC9CF6df488AFE919a58482d9d18305E2DfF29470) |
 | 12 | MultisigGovernance | [0x4D6249BE0293fC148e6341BbD49E4B41785C49e4](https://snowtrace.io/address/0x4D6249BE0293fC148e6341BbD49E4B41785C49e4) |
 | 13 | ProductionBeliefAttestationVerifier | [0xd83503756878e6C0A5f806f9Cd35E6cA590622c5](https://snowtrace.io/address/0xd83503756878e6C0A5f806f9Cd35E6cA590622c5) |
-| 14 | VaultfireTeleporterBridge | [0x82C0926707324707699103986704987114B470D1](https://snowtrace.io/address/0x82C0926707324707699103986704987114B470D1) |
+| 14 | VaultfireTeleporterBridge | [0x75de435Acc5dec0f612408f02Ae169528ce3a91b](https://snowtrace.io/address/0x75de435Acc5dec0f612408f02Ae169528ce3a91b) |
 
 ## Avalanche Demo Transactions
 
@@ -206,49 +207,11 @@ The protocol has comprehensive test coverage across both the smart contract laye
 | config.test.ts | Configuration loading, multichain, demo mode | Passing |
 | logger.test.ts | Structured logging | Passing |
 | registry.test.ts | ERC8004 registration logic | Passing |
-| bonds.test.ts (via tasks) | Bond discovery and management | Passing |
-| metrics.test.ts | Oracle metrics reporting | Passing |
-| retry.test.ts | Retry logic with backoff | Passing |
-| wallet.test.ts | Wallet initialization | Passing |
-| tasks.test.ts | Task cycle execution | Passing |
+| monitor.test.ts | Event monitoring, RPC failover | Passing |
+| bridge.test.ts | Teleporter bridge relay logic | Passing |
+| self-registration.test.ts | Agent self-registration | Passing |
+| bond-discovery.test.ts | Partnership bond discovery | Passing |
+| metrics-reporting.test.ts | Flourishing metrics reporting | Passing |
+| sentinel.test.ts | End-to-end agent loop | Passing |
 
-## Audit Summary
-
-A professional audit was completed on February 1, 2026. Key findings:
-
-- Core test suite passes (346 Hardhat tests, all agent tests).
-- All CI guardrails pass (values guardrails, privileged surface, events surface, external calls, storage growth).
-- No high-severity vulnerabilities found in smart contracts.
-- Slither static analysis configured and integrated into CI.
-- CI enforces values alignment: no surveillance patterns, no gatekeeping identifiers permitted in Solidity source.
-
-The full audit report is available at `docs/AUDIT_REPORT_2026-02-01.md`.
-
-## What Makes Vaultfire Unique
-
-**Compared to existing approaches:**
-
-| Feature | Vaultfire | Typical AI Trust | Traditional DeFi |
-|---|---|---|---|
-| AI agent identity | ERC-8004 on-chain standard | Self-certified | N/A |
-| Economic accountability | Dual-bond system with stakes | None | Single-sided staking |
-| AI profit cap | 30% max (human must thrive) | Uncapped | N/A |
-| Reputation portability | On-chain, cross-platform | Siloed per platform | N/A |
-| ZK proof integration | RISC Zero STARK attestations | None | Limited |
-| Governance | On-chain multisig | Centralized | Token voting |
-| Values enforcement | CI guardrails (no surveillance) | None | None |
-| Multi-oracle consensus | FlourishingMetricsOracle | Single oracle | Chainlink-dependent |
-| Multichain | Base + Avalanche | Single chain | Single chain |
-| Deployment cost | Under $0.20 total | Thousands | Thousands |
-
-**Key differentiators:**
-
-1. **First dual-bond system for AI accountability.** No other protocol combines partnership bonds (human-AI economic alignment) with accountability bonds (company-level stakes). This creates layered economic incentives for AI alignment.
-
-2. **ERC-8004 identity standard.** Vaultfire implements a formal identity standard for AI agents, making them discoverable, verifiable, and accountable on-chain.
-
-3. **Values-enforced development.** CI guardrails prevent surveillance patterns and gatekeeping identifiers from entering the codebase. This is not just a policy — it is automated enforcement.
-
-4. **Autonomous agent as proof of concept.** The Vaultfire Sentinel Agent is a living demonstration of the protocol. It self-registers, forms bonds, monitors health, and reports metrics autonomously.
-
-5. **Production-grade from day one.** Professional audit, 346 tests, multi-oracle consensus, multisig governance, ZK proof integration. This is infrastructure built to last, not a hackathon demo.
+**Total: 50 agent unit tests passing.**

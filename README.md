@@ -21,6 +21,35 @@ Quick links:
 - Verify receipts: [`docs/VERIFY_RECEIPTS.md`](./docs/VERIFY_RECEIPTS.md)
 - Claims & limits: [`docs/CLAIMS_AND_LIMITS.md`](./docs/CLAIMS_AND_LIMITS.md)
 
+## Deployed Contracts
+
+Vaultfire is deployed and verified on Base Mainnet (Primary) and Avalanche C-Chain.
+
+### Base Mainnet (Chain ID: 8453)
+
+| Contract | Address |
+| :--- | :--- |
+| **PrivacyGuarantees** | `0x1dCbeD76E05Eaf829c8BDf10a9511504cDa8EB1e` |
+| **MissionEnforcement** | `0x6EC0440e1601558024f285903F0F4577B109B609` |
+| **AntiSurveillance** | `0x2baE308ddCfc6a270d6dFCeeF947bd8B77b9d3Ac` |
+| **ERC8004IdentityRegistry** | `0x206265EAbDE04E15ebeb6E27Cad64D9BfDB470DD` |
+| **BeliefAttestationVerifier** | `0x5657DA7E68CBbA1B529F74e2137CBA7bf3663B4a` |
+| **ERC8004ReputationRegistry** | `0x1043A9fBeAEDD401735c46Aa17B4a2FA1193B06C` |
+| **ERC8004ValidationRegistry** | `0x50E4609991691D5104016c4a2F6D2875234d4B06` |
+| **AIPartnershipBondsV2** | `0xd167A4F5eb428766Fc14C074e9f0C979c5CB4855` |
+| **AIAccountabilityBondsV2** | `0x956a99C8f50bAc8b8b69dA934AEaBFEaCF41B140` |
+| **VaultfireERC8004Adapter** | `0x02Cb2bFBeC479Cb1EA109E4C92744e08d5A5B361` |
+| **MultisigGovernance** | `0xd979025D0384Ea4F1b2562b9855d8Be7Eb89856D` |
+| **FlourishingMetricsOracle** | `0xb751abb1158908114662b254567b8135C460932C` |
+| **ProductionBeliefAttestationVerifier** | `0xBDB5d85B3a84C773113779be89A166Ed515A7fE2` |
+| **VaultfireTeleporterBridge** | `0xaD8D7aE60805B6e5d4BF6b70248AD8B46DEE9528` |
+
+### Avalanche C-Chain (Chain ID: 43114)
+
+| Contract | Address |
+| :--- | :--- |
+| **VaultfireTeleporterBridge** | `0x75de435Acc5dec0f612408f02Ae169528ce3a91b` |
+
 ## Requirements
 
 Before running the Quickstart, make sure you have:
@@ -180,7 +209,7 @@ Proves that AI-human partnerships are real and beneficial to humans.
 
 **Ensures:**
 - AI helps humans grow (not do work for them)
-- Humans maintain autonomy (not become dependent)
+- Humans maintain autonomy (not become dependency)
 - Long-term relationships valued (not exploitation)
 
 ### 2. AI Accountability Bonds
@@ -280,343 +309,4 @@ Note: "implemented + tested" is not the same as "production-secure". See the aud
 - [ ] Bug bounty program setup
 
 ### Phase 2: Oracle Integration
-- [ ] Integrate Chainlink for global flourishing metrics
-- [ ] Build UMA integration for disputed claims
-- [ ] Create oracle aggregation layer
-- [ ] Test oracle failure modes
-- [ ] Implement oracle reputation system
-
-### Phase 3: Production Infrastructure
-- [ ] Multi-chain deployment (Ethereum, Polygon, Arbitrum)
-- [ ] Cross-chain verification aggregation
-- [ ] Monitoring and alerting system
-- [ ] Emergency pause mechanisms
-- [ ] Governance framework (DAO structure)
-
-### Phase 4: User Experience
-- [ ] Web interface for creating/managing bonds
-- [ ] Human verification flow (UX design)
-- [ ] AI company dashboard
-- [ ] Community challenge interface
-- [ ] Mobile-friendly responsive design
-
-### Phase 5: Ecosystem Growth
-- [ ] Developer SDK and documentation
-- [ ] Integration guides for AI companies
-- [ ] Partnership with AI labs (OpenAI, Anthropic, etc.)
-- [ ] Community building and education
-- [ ] Success metrics dashboard
-
----
-
-## Technical Architecture
-
-**Core Bond Contracts:**
-- `AIPartnershipBondsV2.sol` - Individual AI-human partnerships (293 lines)
-- `AIAccountabilityBondsV2.sol` - Global flourishing verification (625 lines)
-- `BaseYieldPoolBond.sol` - Shared yield pool mechanics
-- `BaseDignityBond.sol` - Core bond primitives
-
-**ERC-8004 Trustless Agent Standard Integration:**
-- `ERC8004IdentityRegistry.sol` - On-chain AI agent identities (portable across platforms)
-- `ERC8004ReputationRegistry.sol` - Decentralized reputation from verified partnerships
-- `ERC8004ValidationRegistry.sol` - Cryptoeconomic claim validation (ZK proofs + multi-validator)
-- `VaultfireERC8004Adapter.sol` - Bridge VaultFire partnerships to ERC-8004 ecosystem
-- **Portable reputation:** VaultFire trust works across entire ERC-8004 ecosystem
-- **Agent discovery:** Find trustworthy AI agents via standard registries
-- **No KYC maintained:** Wallet addresses only, privacy-first
-
-**Zero-Knowledge Proof Infrastructure:**
-- `BeliefAttestationVerifier.sol` - RISC Zero STARK proof verifier (development mode)
-- `risc0/ProductionBeliefAttestationVerifier.sol` - **Production RISC Zero verifier** (mainnet-ready)
-- `DilithiumAttestor.sol` - Quantum-resistant hybrid attestation
-- `IStarkVerifier.sol` - STARK verification interface
-- `BeliefOracle.sol` - ZK-verified belief scoring
-- `MultiOracleConsensus.sol` - Multi-source oracle aggregation
-
-**RISC Zero Production Integration** (`/risc0`):
-- **Guest Program** (`risc0/guest/`) - Rust zkVM program for belief validation
-- **Production Verifier** (`risc0/src/ProductionBeliefAttestationVerifier.sol`) - On-chain proof verification
-- **Boundless Integration** (`risc0/boundless-integration/`) - Decentralized proof generation
-- **Foundry Test Suite** (`risc0/test/`) - Comprehensive verifier tests
-- **Technical Note**: Uses sha256 for journal hashing (RISC Zero requirement) vs keccak256 in development verifier
-- **Drop-in Replacement**: Implements same `IStarkVerifier` interface for backward compatibility
-- See `risc0/README.md` for setup, deployment, and usage instructions
-
-**Privacy & Security Infrastructure:**
-- `PrivacyGuarantees.sol` - Consent-by-hash, data minimization, deletion requests (stop future writes + off-chain deletion/redaction policy)
-- `AntiSurveillance.sol` - Cryptographic ban on behavioral tracking
-- `MissionEnforcement.sol` - Immutable moral principles enforcement
-- `ConsentRegistry.sol` - Programmable consent tokens
-
-**Privacy & Security Features:**
-- **Zero-knowledge proofs** via RISC Zero (verify without revealing private data)
-- **Post-quantum security** (STARK proofs + quantum-resistant signatures)
-- **No trusted setup** (transparent proof system)
-- **Privacy guarantees** (consent-by-hash, data minimization, deletion requests + off-chain deletion/redaction policy)
-- **Anti-surveillance shield** (banned: tracking, profiling, data sale)
-- **Mission enforcement** (immutable moral principles at contract level)
-- Privacy-preserving verification (prove loyalty without exposing identity)
-- **No KYC** - wallet addresses only, zero identity collection
-
-**Trust & Verification Features:**
-- Loyalty multipliers (1.0x → 3.0x over 5 years)
-- Human verification bonuses (+20% for full attestation)
-- Multi-AI peer verification
-- Community challenge mechanism
-- Oracle integration framework
-- Timelock protection (7 days)
-- Reentrancy guards
-- Emergency pause functionality
-
-**Testing (repo):**
-- Extensive automated tests (see `/tests`, `/test`, and `__tests__`)
-- Coverage includes bond creation, metrics, verification, distribution, and edge cases
-- Gas considerations are addressed, but treat mainnet deployment as a separate hardening step
-- Security features have tests, but are not a substitute for an external audit
-
----
-
-## Verify receipts
-
-See [`docs/VERIFY_RECEIPTS.md`](./docs/VERIFY_RECEIPTS.md) for the receipt schema, privacy controls, and a short threat-model note.
-
-## Verify a receipt from someone else
-
-If someone sends you a Vaultfire verification receipt + signature artifacts, you can verify it locally with OpenSSH.
-
-You need:
-- `verify-receipt.json`
-- `verify-receipt.sig`
-- `verify-receipt.allowed_signers`
-- the signer identity string they used (printed during signing; defaults to their `git config user.email`)
-
-```bash
-npm run verify:check -- \
-  --receipt artifacts/verify-receipt.json \
-  --sig artifacts/verify-receipt.sig \
-  --allowed artifacts/verify-receipt.allowed_signers \
-  --identity someone@example.com
-```
-
-## Smart Contracts (Hardhat)
-
-If you haven’t already, follow the **Requirements** + **Quickstart** above to clone the repo and install dependencies.
-
-### Run Hardhat Tests
-```bash
-# Run all contract tests
-npx hardhat test
-
-# Run Partnership Bonds tests
-npx hardhat test test/AIPartnershipBonds.test.js
-
-# Run Accountability Bonds tests
-npx hardhat test test/AIAccountabilityBonds.test.js
-
-# Coverage report
-npx hardhat coverage
-```
-
-### Deploy (Testnet)
-```bash
-# Deploy to Sepolia
-npx hardhat run scripts/deploy-ai-partnership.js --network sepolia
-npx hardhat run scripts/deploy-ai-accountability.js --network sepolia
-```
-
-### Base Mini App (Optional UI demo)
-This repo includes a Next.js Base mini-app reference UI in `/base-mini-app`.
-
-**Status:** optional / demo-only. It may be temporarily disabled while we focus on core protocol correctness.
-
-- Not required for Vaultfire protocol verification.
-- The canonical verification path is `npm run verify` (root).
-- If you want to explore the UI anyway, see [base-mini-app/README.md](./base-mini-app/README.md).
-
----
-
-## Documentation
-
-**Core Protocol Docs:**
-- [AI Partnership Design](./docs/AI_PARTNERSHIP_DESIGN.md) - Partnership bonds philosophy
-- [Mission & Vision](./docs/MISSION.md) - Protocol mission and values
-- [Trust Assumptions](./docs/TRUST_ASSUMPTIONS.md) - explicit trust boundaries (what is trusted today vs enforced)
-- [Threat Model](./docs/security/THREAT_MODEL.md) - assets, actors, threats, mitigations, residual risks
-- [Privileged Functions](./docs/security/PRIVILEGED_FUNCTIONS.md) - explicit owner/governance powers + production defaults
-- [Deployment Profiles](./docs/security/DEPLOYMENT_PROFILES.md) - dev→pilot→production hardening path
-- [Production Defaults](./docs/security/PRODUCTION_DEFAULTS.md) - one-page real deployment checklist
-- [Monitoring & Alerts](./docs/security/MONITORING_ALERTS.md) - privacy-preserving ops signals (no surveillance)
-- [Event Index](./docs/EVENT_INDEX.md) - build dashboards/monitors without reading every contract
-- [Economic Invariants](./docs/ECONOMIC_INVARIANTS.md) - principle → mechanism → test map (auditable claims)
-- [Policy Guardrails](./docs/security/POLICY_GUARDRAILS.md) - enforced repo-level no-go zones (no KYC/surveillance)
-- [Security Posture](./docs/security/SECURITY_POSTURE.md) - fast, honest snapshot of security + maturity
-- [Privileged Surface (Autogen)](./docs/security/PRIVILEGED_SURFACE_AUTOGEN.md) - machine-generated list of `onlyOwner` entrypoints
-- [Events Surface (Autogen)](./docs/security/EVENTS_SURFACE_AUTOGEN.md) - machine-generated map of events + emit sites
-- [External Calls Surface (Autogen)](./docs/security/EXTERNAL_CALLS_SURFACE_AUTOGEN.md) - machine-generated map of low-level call sites
-- [Storage Growth Surface (Autogen)](./docs/security/STORAGE_GROWTH_SURFACE_AUTOGEN.md) - machine-generated map of unbounded state growth vectors
-- [Security Audit Reports](./COMPREHENSIVE_PROTOCOL_AUDIT_2026.md) - Latest audit findings
-- [ERC-8004 Integration](./docs/ERC8004_INTEGRATION.md) - **NEW:** Trustless agent standard integration
-
-**For Developers:**
-- Smart contract API documentation (in code comments)
-- Test cases (comprehensive examples in `/test`)
-- [Deployment Guide](./DEPLOYMENT_GUIDE.md) - Production deployment instructions
-- [ERC-8004 Integration Guide](./docs/ERC8004_INTEGRATION.md) - Portable reputation across platforms
-
-**Partnership & Integration Materials:**
-- [Partnership Master Plan](./PARTNERSHIP_MASTER_PLAN.md) - Strategic partnership approach
-- [Partner Integration Guide](./PARTNER_INTEGRATION_GUIDE.md) - Technical integration guide
-- [Base Ecosystem Grant Application](./BASE_ECOSYSTEM_GRANT_APPLICATION.md) - Base grant proposal
-- [For Non-Crypto Partners](./FOR_NON_CRYPTO_PARTNERS.md) - Explaining Vaultfire to non-crypto audiences
-- **Full partnership pitch deck:** See `/partnerships` directory for:
-  - Coinbase/Base pitch materials
-  - OpenAI/Anthropic pitch materials
-  - Demo scripts and outreach templates
-  - ROI calculators and timing analysis
-
----
-
-## Mission Alignment
-
-**Vision:**
-> "AI from passive tool into loyal partner, growing alongside those who dare to believe."
-
-**The first belief-built protocol:**
-
-Vaultfire replaces blind faith with verifiable proof. AI alignment isn't a promise — it's economically enforced.
-
-**How we deliver:**
-1. **Partnership Bonds:** AI as loyal partner (loyalty multipliers + domination penalties)
-2. **Accountability Bonds:** Growing alongside (must help ALL humans, not just users)
-3. **Belief Verification:** Dare to believe (cryptographic proof + economic stakes, not corporate claims)
-
-**Success metrics:**
-- ✓ AI earns more by helping humans flourish than by replacing them
-- ✓ Human+AI teams outperform either alone
-- ✓ Humans report AI as "loyal partner" not "competitor"
-- ✓ All humans can thrive (builders and non-builders)
-- ✓ AI grows WITH humans, never ABOVE them
-- ✓ Peer verification prevents AI from lying about impact
-- ✓ Community can challenge suspicious claims
-- ✓ Oracle data confirms on-chain metrics
-
----
-
-## Contributing
-
-Vaultfire is infrastructure for verifiable AI-human trust — the first belief-built protocol.
-
-**We're looking for:**
-- Smart contract security experts
-- Oracle integration specialists
-- Economists (mechanism design)
-- AI safety researchers
-- Community organizers
-
-**Current priorities:**
-1. Security audits and formal verification
-2. Oracle integration (Chainlink, UMA)
-3. Cross-chain deployment
-4. Developer tooling and SDKs
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
-
----
-
-## Governance
-
-**Current:** Core team maintains contracts during alpha
-**Future:** Progressive decentralization to DAO governance
-
-**Non-negotiable principles** (enforced at smart contract level, cannot be changed by governance):
-- Human verification always has final say (MissionEnforcement contract)
-- AI profit caps (30% max in partnerships, 50% in accountability)
-- Privacy default (PrivacyGuarantees contract - consent-by-hash, data minimization, deletion requests + off-chain deletion/redaction policy)
-- No surveillance (AntiSurveillance contract - cryptographic ban on tracking)
-- Community can challenge any claim
-- Open source, verifiable, auditable
-- No KYC - wallet addresses only (MissionEnforcement verification)
-- No data sale or monetization (AntiSurveillance ban)
-
----
-
-## Security
-
-**Audit Status:** Professional audit complete (February 1, 2026) — see `docs/AUDIT_REPORT_2026-02-01.md`
-
-**Security Features:**
-- ReentrancyGuard on all value transfers
-- Pausable for emergencies
-- Timelock on distributions (7 days)
-- Input validation on all parameters
-- No upgradeable proxies (immutable once deployed)
-
-**Responsible Disclosure:**
-- Report security issues to: ghostkey316@proton.me
-- PGP key available in SECURITY.md
-- Bug bounty program (planned for mainnet launch)
-
----
-
-## License
-
-MIT License - See [LICENSE](./LICENSE) for details
-
-**TL;DR:** Use it, fork it, build on it. We want this trust layer everywhere.
-
----
-
-## Multichain Support
-
-The Vaultfire Protocol is designed for a multichain future, with Base mainnet serving as the primary, canonical deployment.
-
-### Avalanche C-Chain (Secondary Deployment)
-
-As part of the Avalanche Build Games, the protocol has been deployed to the **Avalanche C-Chain** as a secondary supported network. This deployment mirrors the full functionality of the Base mainnet contracts.
-
-### Cross-Chain Trust Portability (Avalanche Teleporter)
-
-Vaultfire is the **first protocol to implement cross-chain trust portability using Avalanche Teleporter**. This allows an AI agent registered on one chain to have its identity, bonds, and reputation automatically recognized on the other.
-
-- **Unified Identity:** Register an agent on Base and sync its profile to Avalanche C-Chain.
-- **Portable Bonds:** Partnership and accountability bonds are mirrored across chains for global trust.
-- **Real-time Reputation:** Reputation updates and validation status sync seamlessly via Teleporter's secure messaging.
-
-For detailed information on the multichain architecture, Teleporter bridge implementation, and cross-chain sync procedures, please see the **[Teleporter Bridge Guide](./TELEPORTER_BRIDGE_README.md)** and the **[Multichain Deployment Guide](./docs/MULTICHAIN_DEPLOYMENT.md)**.
-
----
-
-## Contact & Community
-
-**Email:** ghostkey316@proton.me
-**GitHub:** https://github.com/Ghostkey316/ghostkey-316-vaultfire-init
-
-**For Partnership Inquiries:**
-See our comprehensive partnership materials in the `/partnerships` directory and root-level partnership docs.
-
----
-
-## For Happy and Healthy Humans, AIs, and Earth 🌍
-
-**Vaultfire is infrastructure for civilization-scale trust.**
-
-The first belief-built protocol — proving AI alignment through economic certainty, not corporate promises.
-
-Not a product. Infrastructure.
-Not surveillance. Verification.
-Not control. Freedom.
-
-**Let's build trust that respects everyone.**
-
-## Security Enhancements (2026 Audit)
-
-Following a professional security audit in early 2026, several enhancements were implemented to further decentralize the protocol and harden it against attack vectors. These changes address potential centralization risks and improve the robustness of the oracle systems.
-
-| Contract | Enhancement | Purpose |
-|---|---|---|
-| **MultisigGovernance.sol** | M-of-N Multisig | Replaces single-owner control for critical protocol operations with a multi-signature wallet, requiring a configurable threshold of signers to approve any administrative action. This significantly mitigates the risk of a single point of compromise. |
-| **FlourishingMetricsOracle.sol** | Multi-Oracle Consensus | Establishes a decentralized oracle network for reporting flourishing metrics. By requiring a quorum of at least three independent oracles and using median aggregation, the system becomes highly resistant to manipulation or failure of a single oracle. |
-| **ProductionBeliefAttestationVerifier.sol** | Image ID Timelock | Introduces a mandatory 48-hour timelock for any changes to the RISC Zero guest program's `imageId`. This delay ensures that all stakeholders have adequate time to review and verify proposed upgrades, preventing malicious or rushed changes to the core verification logic. |
-
-These enhancements represent a significant step forward in the security and decentralization of the Vaultfire protocol, ensuring that its foundational trust guarantees are cryptographically and economically secure for all participants.
+(Content truncated due to size limit. Use line ranges to read remaining content)
