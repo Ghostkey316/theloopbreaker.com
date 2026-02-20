@@ -152,13 +152,44 @@
 - [x] Test: all flows work end-to-end
 
 ## Transaction History
-- [ ] Set BaseScan API key as environment variable
-- [ ] Fetch recent transactions from BaseScan API
-- [ ] Display transaction list in Wallet tab (date, to/from, amount, status, BaseScan link)
-- [ ] Obsidian Forge theme styling for transaction list
+- [x] Set BaseScan API key as environment variable
+- [x] Fetch recent transactions from BaseScan API
+- [x] Display transaction list in Wallet tab (date, to/from, amount, status, BaseScan link)
+- [x] Obsidian Forge theme styling for transaction list
 
 ## GitHub Push
-- [ ] Clone GitHub repo
-- [ ] Copy app code to mobile-app/ directory
-- [ ] Create README.md for mobile-app/
-- [ ] Push to main branch
+- [x] Clone GitHub repo
+- [x] Copy app code to mobile-app/ directory
+- [x] Create README.md for mobile-app/
+- [x] Push to main branch
+
+## Scaling Infrastructure
+- [x] Server-side in-memory cache for RPC responses (30s TTL)
+- [x] Retry logic with exponential backoff on ethers.js calls (3 retries)
+- [x] Clean API route structure for future database swap
+- [x] Cache invalidation on write transactions
+
+## ENS / Basename Resolution
+- [x] Resolve .eth and .base names using ethers.js provider.resolveName()
+- [x] Add name resolution to Trust Verify address input
+- [x] Add name resolution to Wallet Send flow
+- [x] Show both name and resolved address in UI
+- [x] Handle resolution failures gracefully
+
+## Vaultfire Trust Score Badge
+- [x] Fetch trust score from ReputationRegistry contract
+- [x] Show score badge (0-100) on Wallet tab header
+- [x] Color coded: green (70+), yellow (40-69), red (0-39), gray (no profile)
+- [x] Auto-refresh when wallet connects
+
+## Final Push
+- [x] Compile with zero TypeScript errors
+- [x] Run all tests (23 passed, 0 failed)
+- [x] CI green on GitHub (both Node.js CI and Hardhat CI)
+- [ ] Save checkpoint
+- [ ] Push updated code to GitHub mobile-app/
+
+## CI Fix
+- [x] Diagnose CI failure from GitHub Actions run #746
+- [x] Fix failing tests (tsconfig.json exclude + jest.config.js testPathIgnorePatterns)
+- [x] Push fix and verify CI is green

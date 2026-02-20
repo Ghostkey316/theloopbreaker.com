@@ -61,10 +61,13 @@ export default function WalletScreen() {
   const [selectedToken, setSelectedToken] = useState<TokenBalance | null>(null);
   const [sendAmount, setSendAmount] = useState("");
   const [sendRecipient, setSendRecipient] = useState("");
+  const [trustScore, setTrustScore] = useState<{ score: number; level: string; color: string } | null>(null);
+  const [resolvedName, setResolvedName] = useState<string | null>(null);
 
   useEffect(() => {
     if (connectedAddress) {
       loadBalances();
+      loadTrustScore();
       if (activeChain === "base") {
         loadTransactions();
       } else {
@@ -72,6 +75,34 @@ export default function WalletScreen() {
       }
     }
   }, [connectedAddress, activeChain]);
+
+  const loadTrustScore = async () => {
+    if (!connectedAddress) return;
+    try {
+      const apiBase = getApiBaseUrl();
+      const res = await fetch(`${apiBase}/trpc/trustScore.get?input=${encodeURIComponent(JSON.stringify({ address: connectedAddress }))}`);
+      const json = await res.json();
+      if (json?.result?.data) {
+        setTrustScore(json.result.data);
+      }
+    } catch {}
+  };
+
+  const resolveRecipient = async (input: string) => {
+    setSendRecipient(input);
+    setResolvedName(null);
+    if (input.endsWith(".eth") || input.endsWith(".base") || input.endsWith(".base.eth")) {
+      try {
+        const apiBase = getApiBaseUrl();
+        const res = await fetch(`${apiBase}/trpc/resolveAddress.resolve?input=${encodeURIComponent(JSON.stringify({ input }))}`);
+        const json = await res.json();
+        if (json?.result?.data?.address) {
+          setResolvedName(input);
+          setSendRecipient(json.result.data.address);
+        }
+      } catch {}
+    }
+  };
 
   const loadBalances = async () => {
     if (!connectedAddress) return;
@@ -289,16 +320,26 @@ export default function WalletScreen() {
   return (
     <ScreenContainer>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
+        {/* Header with Trust Score Badge */}
         <View style={styles.header}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.headerLabel}>Connected Wallet</Text>
             <Text style={styles.headerAddress}>
               {connectedAddress.slice(0, 10)}...{connectedAddress.slice(-8)}
             </Text>
           </View>
+          {trustScore && (
+            <View style={[styles.trustBadge, { borderColor: trustScore.color }]}>
+              <Text style={[styles.trustBadgeScore, { color: trustScore.color }]}>
+                {trustScore.score}
+              </Text>
+              <Text style={[styles.trustBadgeLabel, { color: trustScore.color }]}>
+                {trustScore.level}
+              </Text>
+            </View>
+          )}
           <Pressable
-            onPress={() => { loadBalances(); if (activeChain === "base") loadTransactions(); }}
+            onPress={() => { loadBalances(); loadTrustScore(); if (activeChain === "base") loadTransactions(); }}
             style={({ pressed }) => [styles.refreshButton, pressed && { opacity: 0.6 }]}
           >
             <MaterialIcons name="refresh" size={20} color="#F97316" />
@@ -476,15 +517,30 @@ export default function WalletScreen() {
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={styles.modalBody}>
-                <Text style={styles.inputLabel}>Recipient Address</Text>
+                <Text style={styles.inputLabel}>Recipient Address or ENS Name</Text>
                 <TextInput
                   style={styles.textInput}
-                  placeholder="0x..."
+                  placeholder="0x... or name.eth / name.base"
                   placeholderTextColor="#6B7280"
-                  value={sendRecipient}
-                  onChangeText={setSendRecipient}
+                  value={resolvedName || sendRecipient}
+                  onChangeText={(text) => {
+                    if (text.endsWith(".eth") || text.endsWith(".base")) {
+                      resolveRecipient(text);
+                    } else {
+                      setResolvedName(null);
+                      setSendRecipient(text);
+                    }
+                  }}
                   autoCapitalize="none"
                 />
+                {resolvedName && (
+                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+                    <MaterialIcons name="check-circle" size={14} color="#22C55E" />
+                    <Text style={{ color: "#22C55E", fontSize: 12, marginLeft: 4 }}>
+                      Resolved: {sendRecipient.slice(0, 10)}...{sendRecipient.slice(-6)}
+                    </Text>
+                  </View>
+                )}
                 <Text style={[styles.inputLabel, { marginTop: 16 }]}>Amount</Text>
                 <View style={styles.amountInput}>
                   <TextInput
@@ -544,6 +600,28 @@ const styles = StyleSheet.create({
     color: "#F97316",
     fontFamily: "monospace",
     marginTop: 4,
+  },
+  trustBadge: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    backgroundColor: "rgba(10, 10, 15, 0.8)",
+    marginRight: 8,
+  },
+  trustBadgeScore: {
+    fontSize: 18,
+    fontWeight: "800",
+    lineHeight: 22,
+  },
+  trustBadgeLabel: {
+    fontSize: 9,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    lineHeight: 12,
   },
   refreshButton: {
     width: 36,

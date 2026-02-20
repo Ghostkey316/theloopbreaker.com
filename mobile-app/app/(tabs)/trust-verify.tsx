@@ -23,6 +23,7 @@ export default function TrustVerifyScreen() {
   const [profile, setProfile] = useState<TrustProfile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resolvedName, setResolvedName] = useState<string | null>(null);
 
   useEffect(() => {
     if (connectedAddress && !searchAddress) {
@@ -31,20 +32,47 @@ export default function TrustVerifyScreen() {
     }
   }, [connectedAddress]);
 
-  const handleSearch = async (address: string) => {
-    if (!address.trim()) {
-      setError("Please enter an address");
-      return;
-    }
-
-    if (!ethers.isAddress(address)) {
-      setError("Invalid Ethereum address");
+  const handleSearch = async (input: string) => {
+    if (!input.trim()) {
+      setError("Please enter an address or ENS name");
       return;
     }
 
     setIsLoading(true);
     setError(null);
     setProfile(null);
+    setResolvedName(null);
+
+    let address: string = input.trim();
+    const inputStr: string = address;
+
+    // Try ENS/Basename resolution
+    if (!ethers.isAddress(address)) {
+      if (inputStr.endsWith(".eth") || inputStr.endsWith(".base") || inputStr.endsWith(".base.eth")) {
+        try {
+          const { getApiBaseUrl } = await import("@/constants/oauth");
+          const apiBase = getApiBaseUrl();
+          const res = await fetch(`${apiBase}/trpc/resolveAddress.resolve?input=${encodeURIComponent(JSON.stringify({ input: address }))}`);
+          const json = await res.json();
+          if (json?.result?.data?.address) {
+            setResolvedName(address);
+            address = json.result.data.address;
+          } else {
+            setError(`Could not resolve "${address}". Try a 0x address.`);
+            setIsLoading(false);
+            return;
+          }
+        } catch {
+          setError(`Failed to resolve "${address}". Try a 0x address.`);
+          setIsLoading(false);
+          return;
+        }
+      } else {
+        setError("Invalid address. Enter a 0x address, .eth name, or .base name.");
+        setIsLoading(false);
+        return;
+      }
+    }
 
     try {
       const checksummed = ethers.getAddress(address);
@@ -181,7 +209,7 @@ export default function TrustVerifyScreen() {
             <MaterialIcons name="search" size={18} color="#6B7280" />
             <TextInput
               style={styles.searchInput}
-              placeholder="Enter address..."
+              placeholder="0x address, name.eth, or name.base"
               placeholderTextColor="#6B7280"
               value={searchAddress}
               onChangeText={setSearchAddress}

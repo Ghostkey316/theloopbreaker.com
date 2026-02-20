@@ -42,6 +42,59 @@ const BASE_TOKENS = [
   { symbol: "cbETH", address: "0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22", decimals: 18 },
 ];
 
+// ============ Caching Layer ============
+
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+const rpcCache = new Map<string, CacheEntry<unknown>>();
+const CACHE_TTL_MS = 30_000; // 30 seconds
+
+function getCached<T>(key: string): T | null {
+  const entry = rpcCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
+    rpcCache.delete(key);
+    return null;
+  }
+  return entry.data as T;
+}
+
+function setCache<T>(key: string, data: T): void {
+  rpcCache.set(key, { data, timestamp: Date.now() });
+  // Evict old entries if cache grows too large
+  if (rpcCache.size > 500) {
+    const now = Date.now();
+    for (const [k, v] of rpcCache) {
+      if (now - v.timestamp > CACHE_TTL_MS) rpcCache.delete(k);
+    }
+  }
+}
+
+// ============ Retry with Exponential Backoff ============
+
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries = 3,
+  baseDelayMs = 500
+): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      if (attempt < maxRetries) {
+        const delay = baseDelayMs * Math.pow(2, attempt);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+  }
+  throw lastError;
+}
+
 // ============ Providers ============
 
 let baseProvider: ethers.JsonRpcProvider | null = null;
@@ -57,6 +110,42 @@ function getAvaxProvider() {
   return avaxProvider;
 }
 
+// ============ ENS / Basename Resolution ============
+
+async function resolveAddressOrName(input: string): Promise<{ address: string; name: string | null }> {
+  const trimmed: string = input.trim();
+  const nameStr: string = trimmed;
+
+  // If it's already a valid address, return it
+  if (ethers.isAddress(trimmed)) {
+    return { address: ethers.getAddress(trimmed), name: null };
+  }
+
+  // Try ENS resolution (.eth names)
+  if (nameStr.endsWith(".eth")) {
+    try {
+      const mainnetProvider = new ethers.JsonRpcProvider("https://eth.llamarpc.com");
+      const resolved = await withRetry(() => mainnetProvider.resolveName(nameStr));
+      if (resolved) {
+        return { address: ethers.getAddress(resolved), name: nameStr };
+      }
+    } catch {}
+  }
+
+  // Try Base name resolution (.base names)
+  if (nameStr.endsWith(".base") || nameStr.endsWith(".base.eth")) {
+    try {
+      const bProvider = getBaseProvider();
+      const resolved = await withRetry(() => bProvider.resolveName(nameStr));
+      if (resolved) {
+        return { address: ethers.getAddress(resolved), name: nameStr };
+      }
+    } catch {}
+  }
+
+  throw new Error(`Could not resolve "${nameStr}" to an address. Enter a valid 0x address or .eth/.base name.`);
+}
+
 // ============ On-Chain Tool Executors ============
 
 async function lookupTrustProfile(address: string) {
@@ -65,6 +154,12 @@ async function lookupTrustProfile(address: string) {
       return { error: "Invalid Ethereum address" };
     }
     const checksummed = ethers.getAddress(address);
+
+    // Check cache first
+    const cacheKey = `trust:${checksummed}`;
+    const cached = getCached<any>(cacheKey);
+    if (cached) return cached;
+
     const provider = getBaseProvider();
 
     const identityABI = [
@@ -98,7 +193,7 @@ async function lookupTrustProfile(address: string) {
       } catch {}
     }
 
-    return {
+    const profileResult = {
       address: checksummed,
       isRegistered: isActive.status === "fulfilled" ? isActive.value : false,
       agentType: agentData ? agentData.agentType : null,
@@ -115,8 +210,58 @@ async function lookupTrustProfile(address: string) {
       } : null,
       basescanUrl: `${BASESCAN_URL}/address/${checksummed}`,
     };
+
+    setCache(cacheKey, profileResult);
+    return profileResult;
   } catch (error) {
     return { error: `Failed to fetch trust profile: ${error instanceof Error ? error.message : String(error)}` };
+  }
+}
+
+async function getTrustScore(address: string): Promise<{ score: number; level: string; color: string } | null> {
+  try {
+    if (!ethers.isAddress(address)) return null;
+    const checksummed = ethers.getAddress(address);
+    const cacheKey = `trustscore:${checksummed}`;
+    const cached = getCached<{ score: number; level: string; color: string }>(cacheKey);
+    if (cached) return cached;
+
+    const provider = getBaseProvider();
+    const reputationABI = [
+      "function getReputation(address) view returns (uint256 averageRating, uint256 totalFeedbacks, uint256 verifiedFeedbacks, uint256 lastUpdated)",
+    ];
+    const identityABI = ["function isAgentActive(address) view returns (bool)"];
+
+    const reputationContract = new ethers.Contract(CONTRACTS.ERC8004ReputationRegistry, reputationABI, provider);
+    const identityContract = new ethers.Contract(CONTRACTS.ERC8004IdentityRegistry, identityABI, provider);
+
+    const [repResult, isActive] = await Promise.allSettled([
+      withRetry(() => reputationContract.getReputation(checksummed)),
+      withRetry(() => identityContract.isAgentActive(checksummed)),
+    ]);
+
+    let score = 0;
+    // Base score from registration
+    if (isActive.status === "fulfilled" && isActive.value) score += 40;
+    // Score from reputation
+    if (repResult.status === "fulfilled") {
+      const avgRating = Number(repResult.value.averageRating);
+      const totalFeedbacks = Number(repResult.value.totalFeedbacks);
+      if (totalFeedbacks > 0) {
+        score += Math.min(40, avgRating * 0.4);
+        score += Math.min(20, totalFeedbacks * 2);
+      }
+    }
+    score = Math.min(100, Math.max(0, Math.round(score)));
+
+    const level = score >= 70 ? "Trusted" : score >= 40 ? "Moderate" : score > 0 ? "Low" : "Unknown";
+    const color = score >= 70 ? "#22C55E" : score >= 40 ? "#F59E0B" : score > 0 ? "#EF4444" : "#6B7280";
+
+    const result = { score, level, color };
+    setCache(cacheKey, result);
+    return result;
+  } catch {
+    return null;
   }
 }
 
@@ -178,9 +323,14 @@ async function getTokenBalances(address: string) {
     const erc20ABI = ["function balanceOf(address) view returns (uint256)"];
 
     // ETH balances on both chains
-    const [baseEth, avaxEth] = await Promise.all([
-      baseProvider.getBalance(checksummed),
-      avaxProviderInstance.getBalance(checksummed),
+    // Check cache
+    const cacheKey = `balances:${checksummed}`;
+    const cached = getCached<any>(cacheKey);
+    if (cached) return cached;
+
+    const [baseEth, avaxEth] = await Promise.allSettled([
+      withRetry(() => baseProvider.getBalance(checksummed)),
+      withRetry(() => avaxProviderInstance.getBalance(checksummed)),
     ]);
 
     // ERC-20 token balances on Base
@@ -202,13 +352,15 @@ async function getTokenBalances(address: string) {
       })
     );
 
-    return {
+    const result = {
       address: checksummed,
-      baseETH: ethers.formatEther(baseEth),
-      avaxETH: ethers.formatEther(avaxEth),
+      baseETH: ethers.formatEther(baseEth.status === "fulfilled" ? baseEth.value : 0n),
+      avaxETH: ethers.formatEther(avaxEth.status === "fulfilled" ? avaxEth.value : 0n),
       tokens: tokenBalances.filter((t) => t.hasBalance),
       allTokens: tokenBalances,
     };
+    setCache(cacheKey, result);
+    return result;
   } catch (error) {
     return { error: `Failed to fetch balances: ${error instanceof Error ? error.message : String(error)}` };
   }
@@ -823,6 +975,27 @@ export const appRouter = router({
           return data;
         } catch (error) {
           return { status: "0", message: "Failed to fetch transactions", result: [] };
+        }
+      }),
+  }),
+
+  trustScore: router({
+    get: publicProcedure
+      .input(z.object({ address: z.string() }))
+      .query(async ({ input }) => {
+        return getTrustScore(input.address);
+      }),
+  }),
+
+  resolveAddress: router({
+    resolve: publicProcedure
+      .input(z.object({ input: z.string() }))
+      .query(async ({ input: { input: nameOrAddr } }) => {
+        try {
+          const result = await resolveAddressOrName(nameOrAddr);
+          return result;
+        } catch (error) {
+          return { address: null, name: null, error: error instanceof Error ? error.message : String(error) };
         }
       }),
   }),
