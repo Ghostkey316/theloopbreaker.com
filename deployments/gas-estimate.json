@@ -1,0 +1,59 @@
+{
+  "timestamp": "2026-02-20T17:57:03.640Z",
+  "chain": "Avalanche C-Chain (43114)",
+  "gasPriceGwei": "0.126896249",
+  "contracts": [
+    {
+      "name": "MissionEnforcement",
+      "bytecodeSize": 4960,
+      "estimatedGas": "221784",
+      "costAVAX": "0.000028143557688216"
+    },
+    {
+      "name": "AntiSurveillance",
+      "bytecodeSize": 2955,
+      "estimatedGas": "157720",
+      "costAVAX": "0.00002001407639228"
+    },
+    {
+      "name": "ERC8004IdentityRegistry",
+      "bytecodeSize": 9298,
+      "estimatedGas": "360048",
+      "costAVAX": "0.000045688740659952"
+    },
+    {
+      "name": "AIPartnershipBondsV2",
+      "bytecodeSize": 18622,
+      "estimatedGas": "656136",
+      "costAVAX": "0.000083261197233864"
+    },
+    {
+      "name": "FlourishingMetricsOracle",
+      "bytecodeSize": 4201,
+      "estimatedGas": "198144",
+      "costAVAX": "0.000025143730361856"
+    },
+    {
+      "name": "AIAccountabilityBondsV2",
+      "bytecodeSize": 20950,
+      "estimatedGas": "729984",
+      "costAVAX": "0.000092632231430016"
+    },
+    {
+      "name": "ProductionBeliefAttestationVerifier",
+      "bytecodeSize": 4773,
+      "estimatedGas": "213136",
+      "costAVAX": "0.000027046158926864"
+    },
+    {
+      "name": "VaultfireTeleporterBridge",
+      "bytecodeSize": 15270,
+      "estimatedGas": "550792",
+      "costAVAX": "0.000069893438779208"
+    }
+  ],
+  "totalEstimatedGas": "3087744",
+  "totalCostAVAX": "0.000391823131472256",
+  "withSafetyMarginAVAX": "0.000587734697208384",
+  "recommendedFundingAVAX": "0.001175469394416768"
+}

@@ -1,0 +1,43 @@
+{
+  "protocol": "Vaultfire",
+  "chain": "avalanche",
+  "chainId": 43114,
+  "deployer": "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324",
+  "secureWallet": "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324",
+  "compromisedWallet": "0xf6A677de83c407875c9a9115cf100f121f9c4816 (DO NOT USE)",
+  "timestamp": "2026-02-20T18:42:07.732Z",
+  "deploymentTimeMinutes": "2.71",
+  "contracts": {
+    "MissionEnforcement": "0xE1D52bF7A842B207B8C48eAE801f9d97A3C4D709",
+    "AntiSurveillance": "0xaCB59e0f0eA47B25b24390B71b877928E5842630",
+    "ERC8004IdentityRegistry": "0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5",
+    "AIPartnershipBondsV2": "0x37679B1dCfabE6eA6b8408626815A1426bE2D717",
+    "FlourishingMetricsOracle": "0x83b2D1a8e383c4239dE66b6614176636618c1c0A",
+    "AIAccountabilityBondsV2": "0xEF022Bdf55940491d4efeBDE61Ffa3f3fF81b192",
+    "ProductionBeliefAttestationVerifier": "0x20E8CDFae485F0E8E90D24c9E071957A53eE0cB1",
+    "VaultfireTeleporterBridge": "0x964562f712c5690465B0AA2F8fA16d9dDAc6eCdf"
+  },
+  "constructorArgs": {
+    "AIAccountabilityBondsV2": [
+      "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324"
+    ],
+    "ProductionBeliefAttestationVerifier": [
+      "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324",
+      "0x0000000000000000000000000000000000000000000000000000000000000001"
+    ],
+    "VaultfireTeleporterBridge": [
+      "0x253b2784c75e510dD0fF1da844684a1aC0aa5fcf",
+      500000
+    ]
+  },
+  "transactions": {
+    "MissionEnforcement": "0xbe783ae58a29fcef5024c932bb0a320d0b9df4e064fb1c6359977a807d783574",
+    "AntiSurveillance": "0x5cfc91a8e5a091bd9e9c9d312e2f7fc449b9f0f89666879966566868d86411aa",
+    "ERC8004IdentityRegistry": "0x1b5e9817d42fe8abaef2ca3a6967787829d9a729ee17db2eaa2b61ee0706164b",
+    "AIPartnershipBondsV2": "0x6d58b5e420234fce22b15efaee7767be9bbeacdc61846785da23a0acfb1a79f1",
+    "FlourishingMetricsOracle": "0x8b2d055fa7b34f68f4313ac6abfef62e0fd5d5bd336d4dba2489b9377ae0df0a",
+    "AIAccountabilityBondsV2": "0xd082da7e33354b4ee9e49255124bcd594052db1ba6b224d81cd8790d7a6a4394",
+    "ProductionBeliefAttestationVerifier": "0xcf424225fab6c1dbd4182144463e23c69789f876f596ddf680082e3f1273842b",
+    "VaultfireTeleporterBridge": "0x9b2f836dafcf65cbeca198bf15a2cd5008b61f48cd19e64a3923845d5040eb2e"
+  }
+}

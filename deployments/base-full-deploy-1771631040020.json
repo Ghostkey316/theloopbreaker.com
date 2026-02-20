@@ -1,0 +1,74 @@
+{
+  "protocol": "Vaultfire",
+  "chain": "base",
+  "chainId": 8453,
+  "deployer": "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324",
+  "timestamp": "2026-02-20T23:44:00.020Z",
+  "contracts": {
+    "MissionEnforcement": "0x38165D2D7a8584985CCa5640f4b32b1f3347CC83",
+    "AntiSurveillance": "0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C",
+    "PrivacyGuarantees": "0xBdB6c89f5cb86f4d44F7E01d9393b29D83e3DB55",
+    "ERC8004IdentityRegistry": "0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5",
+    "BeliefAttestationVerifier": "0x10180c8430cfD61d27F1d7a548Cff0C4D143bFEF",
+    "AIPartnershipBondsV2": "0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1",
+    "FlourishingMetricsOracle": "0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1",
+    "AIAccountabilityBondsV2": "0xDfc66395A4742b5168712a04942C90B99394aEEb",
+    "ERC8004ReputationRegistry": "0x544B575431ECD927bA83E85008446fA1e100204a",
+    "ERC8004ValidationRegistry": "0x501fE0f960c1e061C4d295Af241f9F1512775556",
+    "VaultfireERC8004Adapter": "0x5470d8189849675C043fFA7fc451e5F2f4e5532c",
+    "MultisigGovernance": "0xea0A6750642AA294658dC9f1eDf36b95D21e7B22",
+    "ProductionBeliefAttestationVerifier": "0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B",
+    "VaultfireTeleporterBridge": "0xFe122605364f428570c4C0EB2CCAEBb68dD22d05"
+  },
+  "constructorArgs": {
+    "AIAccountabilityBondsV2": [
+      "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324"
+    ],
+    "ERC8004ReputationRegistry": [
+      "0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5"
+    ],
+    "ERC8004ValidationRegistry": [
+      "0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5",
+      "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324"
+    ],
+    "VaultfireERC8004Adapter": [
+      "0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1",
+      "0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5",
+      "0x544B575431ECD927bA83E85008446fA1e100204a",
+      "0x501fE0f960c1e061C4d295Af241f9F1512775556"
+    ],
+    "MultisigGovernance": [
+      [
+        "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324"
+      ],
+      1
+    ],
+    "ProductionBeliefAttestationVerifier": [
+      "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324",
+      "0x0000000000000000000000000000000000000000000000000000000000000001"
+    ],
+    "VaultfireTeleporterBridge": [
+      "0x253b2784c75e510dD0fF1da844684a1aC0aa5fcf",
+      500000
+    ]
+  },
+  "transactions": {
+    "MissionEnforcement": "0x982f35a87cae39425c204e56f8414f22feab4e4747b78b58c7a85ebb1774741f",
+    "AntiSurveillance": "0x706c27fe86b0aae629ed723ad8b5ad3207ba3252497174c18b91889b16c26bbc",
+    "PrivacyGuarantees": "0xb253e580a0e4ce97a90a62fc9fd5de5705543a29553b3c61261d8c7451ed6943",
+    "ERC8004IdentityRegistry": "0x35de1cf7b988bedeb4923f8a7ff6c42d5aab608a3f97764c75714cdb4aa95e87",
+    "BeliefAttestationVerifier": "0x9373cc27108aed2e05e4617bf00ac62792a06a1a139765f234c7b8b3e0ca924c",
+    "AIPartnershipBondsV2": "0xee9d38bd71dfcba25711d3e3f2cb755bc989b3a35da1eae0dfcd752fa599e4d4",
+    "FlourishingMetricsOracle": "0xb10cc6872b13e1ea4b58edb8ea051380d3b9aa6025d2ffc9648d45253f8eb73a",
+    "AIAccountabilityBondsV2": "0xdc7863e10b81860d124a5bb600cd46f93cbf327522b357b52a75433bf8d556cc",
+    "ERC8004ReputationRegistry": "0xc0f15dd77e4357a0e87fef5781e31767df122753055d0d8d0dba5497ab0f1767",
+    "ERC8004ValidationRegistry": "0x26c9ff6c83ed32df385cc8f66f8899ce82b302ff533d07a0ae3c202ef86dbee5",
+    "VaultfireERC8004Adapter": "0xf28b825d9b3bfa9b138252eea8baf1a05fac899be7ea4db8e6c7c3920771e657",
+    "MultisigGovernance": "0xa1a994bdefa632de78d07dde8693b0058ed96387d8d51f2da651290f47fe56fc",
+    "ProductionBeliefAttestationVerifier": "0x6a14975ebb22dcf249fa415b2e168761e4bab8279997f8719f6d6601759d0af0",
+    "VaultfireTeleporterBridge": "0xb2d35dc3d438b26c94f0f28576a276a8fe757c37fe99ab396f099b6770b8f9af"
+  },
+  "successCount": 14,
+  "failCount": 0,
+  "gasSpent": "0.000167750394040846"
+}

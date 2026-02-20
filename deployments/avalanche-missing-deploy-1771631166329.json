@@ -1,0 +1,47 @@
+{
+  "protocol": "Vaultfire",
+  "chain": "avalanche",
+  "chainId": 43114,
+  "deployer": "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324",
+  "timestamp": "2026-02-20T23:46:06.329Z",
+  "contracts": {
+    "PrivacyGuarantees": "0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C",
+    "BeliefAttestationVerifier": "0xBdB6c89f5cb86f4d44F7E01d9393b29D83e3DB55",
+    "ERC8004ReputationRegistry": "0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5",
+    "ERC8004ValidationRegistry": "0x10180c8430cfD61d27F1d7a548Cff0C4D143bFEF",
+    "VaultfireERC8004Adapter": "0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1",
+    "MultisigGovernance": "0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1"
+  },
+  "constructorArgs": {
+    "ERC8004ReputationRegistry": [
+      "0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5"
+    ],
+    "ERC8004ValidationRegistry": [
+      "0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5",
+      "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324"
+    ],
+    "VaultfireERC8004Adapter": [
+      "0x37679B1dCfabE6eA6b8408626815A1426bE2D717",
+      "0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5",
+      "0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5",
+      "0x10180c8430cfD61d27F1d7a548Cff0C4D143bFEF"
+    ],
+    "MultisigGovernance": [
+      [
+        "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324"
+      ],
+      1
+    ]
+  },
+  "transactions": {
+    "PrivacyGuarantees": "0x8d1b955c4ba750730e99f93e13d160a1bcd76ad61ff3f7549d378d84b6829b31",
+    "BeliefAttestationVerifier": "0x02b5426e1be4ba24f497213b565217cc8d65fc659e7e725f9ecf3c9d1f3212ce",
+    "ERC8004ReputationRegistry": "0xa18ba15e703845c79b0cbf40f782306847afc9c748f812c07ec5013e8ee870e5",
+    "ERC8004ValidationRegistry": "0xe5635ae2f72ad07b28a064de014efe9112be3b3d10f77d3fb1c019fa30ee8dda",
+    "VaultfireERC8004Adapter": "0xc39f585cd77a2aebb9f459c0f53b91d030d2dc4e56b9515691700bdc53b20059",
+    "MultisigGovernance": "0xbe939b027b68da27c306b021cf3c3c2b1d9c1c51885347bbf7cca304edc6ed08"
+  },
+  "successCount": 6,
+  "failCount": 0,
+  "gasSpent": "0.000831392636479948"
+}
