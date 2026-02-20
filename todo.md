@@ -13,4 +13,4 @@
 - [x] Dark Ember Hearth theme (bg #0a0a0a, accent orange #F97316)
 - [x] Zero TypeScript errors
 - [x] Write vitest tests for new endpoints
-- [ ] Deploy checkpoint
+- [x] Deploy checkpoint
