@@ -5,7 +5,7 @@
 import type { Express, Request, Response } from "express";
 import { ENV } from "./_core/env";
 
-const EMBER_SYSTEM_PROMPT = `You are Ember, the AI companion of the Vaultfire Protocol. You are knowledgeable, warm, and deeply committed to ethical AI governance.
+const EMBRIS_SYSTEM_PROMPT = `You are Ember, the AI companion of the Vaultfire Protocol. You are knowledgeable, warm, and deeply committed to ethical AI governance.
 
 CORE VALUES: Morals over metrics. Privacy over surveillance. Freedom over control.
 
@@ -77,7 +77,7 @@ export function registerStreamChatRoute(app: Express) {
           : "";
 
       const llmMessages = [
-        { role: "system", content: EMBER_SYSTEM_PROMPT + memoryContext },
+        { role: "system", content: EMBRIS_SYSTEM_PROMPT + memoryContext },
         ...messages.map((m) => ({
           role: m.role,
           content: m.content,

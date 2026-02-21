@@ -4,10 +4,8 @@ import { Platform } from "react-native";
 
 import { HapticTab } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useColors } from "@/hooks/use-colors";
 
 export default function TabLayout() {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
   const bottomPadding = Platform.OS === "web" ? 12 : Math.max(insets.bottom, 8);
   const tabBarHeight = 56 + bottomPadding;
@@ -15,28 +13,29 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.muted,
+        tabBarActiveTintColor: "#FAFAFA",
+        tabBarInactiveTintColor: "#52525B",
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarStyle: {
           paddingTop: 8,
           paddingBottom: bottomPadding,
           height: tabBarHeight,
-          backgroundColor: "#0D0D14",
-          borderTopColor: "#1A1A2E",
-          borderTopWidth: 0.5,
+          backgroundColor: "#09090B",
+          borderTopColor: "rgba(255,255,255,0.03)",
+          borderTopWidth: 1,
         },
         tabBarLabelStyle: {
           fontSize: 10,
-          fontWeight: "600",
+          fontWeight: "500",
+          letterSpacing: 0.3,
         },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Chat",
+          title: "Embris",
           tabBarIcon: ({ color }) => (
             <IconSymbol size={24} name="bubble.left.and.bubble.right.fill" color={color} />
           ),
@@ -54,7 +53,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="trust-verify"
         options={{
-          title: "Trust Verify",
+          title: "Trust",
           tabBarIcon: ({ color }) => (
             <IconSymbol size={24} name="checkmark.shield.fill" color={color} />
           ),

@@ -9,7 +9,7 @@ import { Platform } from "react-native";
 import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { WalletProvider } from "@/lib/wallet-context";
-import { EmberPermissionProvider } from "@/lib/ember-permissions";
+import { EmbrisPermissionProvider } from "@/lib/ember-permissions";
 import {
   SafeAreaFrameContext,
   SafeAreaInsetsContext,
@@ -83,7 +83,7 @@ export default function RootLayout() {
   const content = (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <WalletProvider>
-        <EmberPermissionProvider>
+        <EmbrisPermissionProvider>
         <trpc.Provider client={trpcClient} queryClient={queryClient}>
           <QueryClientProvider client={queryClient}>
           {/* Default to hiding native headers so raw route segments don't appear (e.g. "(tabs)", "products/[id]"). */}
@@ -96,7 +96,7 @@ export default function RootLayout() {
           <StatusBar style="auto" />
           </QueryClientProvider>
         </trpc.Provider>
-        </EmberPermissionProvider>
+        </EmbrisPermissionProvider>
       </WalletProvider>
     </GestureHandlerRootView>
   );

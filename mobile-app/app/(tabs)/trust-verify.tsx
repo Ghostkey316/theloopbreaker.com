@@ -206,11 +206,11 @@ export default function TrustVerifyScreen() {
         {/* Search Bar */}
         <View style={styles.searchSection}>
           <View style={styles.searchContainer}>
-            <MaterialIcons name="search" size={18} color="#6B7280" />
+            <MaterialIcons name="search" size={18} color="#52525B" />
             <TextInput
               style={styles.searchInput}
               placeholder="0x address, name.eth, or name.base"
-              placeholderTextColor="#6B7280"
+              placeholderTextColor="#52525B"
               value={searchAddress}
               onChangeText={setSearchAddress}
               autoCapitalize="none"
@@ -233,9 +233,9 @@ export default function TrustVerifyScreen() {
             ]}
           >
             {isLoading ? (
-              <ActivityIndicator color="#0A0A0F" size="small" />
+              <ActivityIndicator color="#09090B" size="small" />
             ) : (
-              <MaterialIcons name="search" size={20} color="#0A0A0F" />
+              <MaterialIcons name="search" size={20} color="#09090B" />
             )}
           </Pressable>
         </View>
@@ -301,7 +301,7 @@ function DataRow({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0A0A0F",
+    backgroundColor: "#09090B",
   },
   header: {
     flexDirection: "row",
@@ -309,8 +309,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#1A1A2E",
+    borderBottomWidth: 1,
+    borderBottomColor: "#111113",
   },
   headerLeft: {
     flexDirection: "row",
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#FAFAFA",
   },
   searchSection: {
     flexDirection: "row",
@@ -333,10 +333,10 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1A1A2E",
+    backgroundColor: "#111113",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#2A2A3E",
+    borderColor: "rgba(255,255,255,0.06)",
     paddingHorizontal: 12,
     height: 44,
     gap: 8,
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 14,
-    color: "#FFFFFF",
+    color: "#FAFAFA",
   },
   pasteButton: {
     padding: 4,
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
   addressDisplay: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1A1A2E",
+    backgroundColor: "#111113",
     borderRadius: 12,
     padding: 12,
     gap: 12,
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 8,
-    backgroundColor: "#252540",
+    backgroundColor: "rgba(255,255,255,0.03)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -407,13 +407,13 @@ const styles = StyleSheet.create({
   },
   addressLabel: {
     fontSize: 12,
-    color: "#6B7280",
+    color: "#52525B",
     marginBottom: 2,
   },
   addressValue: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#FAFAFA",
     fontFamily: "monospace",
   },
   registeredBadge: {
@@ -425,11 +425,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   card: {
-    backgroundColor: "#1A1A2E",
+    backgroundColor: "#111113",
     borderRadius: 12,
     padding: 12,
-    borderWidth: 0.5,
-    borderColor: "#2A2A3E",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
   },
   cardHeader: {
     flexDirection: "row",
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#FAFAFA",
   },
   cardContent: {
     gap: 0,
@@ -453,25 +453,25 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 6,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#252540",
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.03)",
   },
   dataLabel: {
     fontSize: 13,
-    color: "#9CA3AF",
+    color: "#A1A1AA",
   },
   dataValue: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#FAFAFA",
   },
   ratingRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     paddingVertical: 6,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#252540",
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.03)",
   },
   ratingScore: {
     fontSize: 18,
@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
   },
   statusLabel: {
     fontSize: 13,
-    color: "#9CA3AF",
+    color: "#A1A1AA",
   },
   statusBadge: {
     flexDirection: "row",
@@ -518,7 +518,7 @@ const styles = StyleSheet.create({
   },
   noData: {
     fontSize: 13,
-    color: "#6B7280",
+    color: "#52525B",
     fontStyle: "italic",
   },
   emptyState: {
@@ -531,12 +531,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#FAFAFA",
     textAlign: "center",
   },
   emptySubtitle: {
     fontSize: 13,
-    color: "#9CA3AF",
+    color: "#A1A1AA",
     textAlign: "center",
     lineHeight: 18,
   },

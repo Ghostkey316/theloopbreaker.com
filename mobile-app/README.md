@@ -2,7 +2,7 @@
 
 **The ethical AI wallet and agent for the Vaultfire Protocol.**
 
-Vaultfire AI is a ChatGPT-style mobile wallet with an on-chain AI agent called **Ember** — the flame inside the Vaultfire shield. Ember uses OpenAI function calling with gpt-4o to execute live blockchain reads, analyze smart contracts, monitor wallets, and help users interact with the Vaultfire Protocol across Base and Avalanche.
+Vaultfire AI is a ChatGPT-style mobile wallet with an on-chain AI agent called **Embris** — the flame inside the Vaultfire shield. Embris uses OpenAI function calling with gpt-4o to execute live blockchain reads, analyze smart contracts, monitor wallets, and help users interact with the Vaultfire Protocol across Base and Avalanche.
 
 Built for the **Avalanche Build Games** competition.
 
@@ -10,8 +10,8 @@ Built for the **Avalanche Build Games** competition.
 
 ## Features
 
-### Ember AI Agent
-Ember is a full on-chain AI agent, not just a chatbot. Ember can:
+### Embris AI Agent
+Embris is a full on-chain AI agent, not just a chatbot. Embris can:
 - **Blockchain Analysis** — Look up any address or contract live on-chain using ethers.js
 - **Smart Contract Analysis** — Check if contracts are verified, read functions, advise on safety
 - **Wallet Monitoring** — Proactively alert users to new transactions, approvals, and threats
@@ -23,7 +23,7 @@ Ember is a full on-chain AI agent, not just a chatbot. Ember can:
 - Clean message bubbles (user right, AI left)
 - Word-by-word streaming response effect
 - Slide-out conversation sidebar with history
-- "Ember is checking the chain..." status while tools execute
+- "Embris is checking the chain..." status while tools execute
 - Transaction preview modals before signing
 
 ### Multi-Chain Wallet
@@ -67,7 +67,7 @@ Ember is a full on-chain AI agent, not just a chatbot. Ember can:
 | TypeScript | Type-safe development |
 | NativeWind (Tailwind CSS) | Styling |
 | ethers.js v6 | On-chain reads and transaction building |
-| OpenAI API (gpt-4o) | Ember AI agent with function calling |
+| OpenAI API (gpt-4o) | Embris AI agent with function calling |
 | AsyncStorage | Local conversation and wallet persistence |
 | Express + tRPC | Server-side API with tool execution |
 | expo-notifications | Local push notifications for wallet alerts |
@@ -90,7 +90,7 @@ cd mobile-app
 pnpm install
 
 # Set environment variables
-# OPENAI_API_KEY — Required for Ember AI
+# OPENAI_API_KEY — Required for Embris AI
 # BASESCAN_API_KEY — Required for transaction history
 
 # Start the development server
@@ -137,13 +137,13 @@ The app integrates with **28 deployed Vaultfire Protocol contracts** across Base
 
 ---
 
-## Ember Permission Levels
+## Embris Permission Levels
 
 | Level | Description |
 |---|---|
-| **View Only** | Ember can see balances and trust profile, cannot suggest transactions |
-| **Advisory** (default) | Ember suggests actions, user approves everything manually |
-| **Guardian** | Ember proactively flags suspicious activity and recommends protective actions |
+| **View Only** | Embris can see balances and trust profile, cannot suggest transactions |
+| **Advisory** (default) | Embris suggests actions, user approves everything manually |
+| **Guardian** | Embris proactively flags suspicious activity and recommends protective actions |
 
 ---
 
@@ -152,7 +152,7 @@ The app integrates with **28 deployed Vaultfire Protocol contracts** across Base
 | Element | Color |
 |---|---|
 | Background | Deep black `#0A0A0F` |
-| Primary accent | Ember orange `#F97316` |
+| Primary accent | Embris orange `#F97316` |
 | Secondary accent | Purple `#8B5CF6` |
 | Cards | Dark gray `#1A1A2E` |
 | Text | White `#FFFFFF` |
@@ -177,7 +177,7 @@ These rules are enforced at every level of the application:
 
 > **Morals over metrics. Privacy over surveillance. Freedom over control.**
 
-Vaultfire Protocol exists to prove that AI can be accountable, transparent, and aligned with human dignity. Every agent registered on Vaultfire is bound by on-chain commitments to ethical behavior. Ember embodies these values — it's warm, real, trustworthy, and accountable.
+Vaultfire Protocol exists to prove that AI can be accountable, transparent, and aligned with human dignity. Every agent registered on Vaultfire is bound by on-chain commitments to ethical behavior. Embris embodies these values — it's warm, real, trustworthy, and accountable.
 
 ---
 

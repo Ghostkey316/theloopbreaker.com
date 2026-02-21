@@ -37,7 +37,7 @@ import {
 } from "@/lib/wallet";
 import {
   getWalletAddress as getNativeWalletAddress,
-  getWalletContextForEmber,
+  getWalletContextForEmbris,
 } from "@/lib/wallet-core";
 import { streamChat } from "@/lib/stream-chat";
 import {
@@ -234,7 +234,7 @@ export default function ChatScreen() {
 
       const memoryStrings = memories.map((m) => m.content);
       // Add wallet context from native wallet if available
-      const walletCtx = await getWalletContextForEmber();
+      const walletCtx = await getWalletContextForEmbris();
       if (walletCtx) {
         memoryStrings.push(walletCtx);
       } else if (walletAddress) {
@@ -405,7 +405,7 @@ export default function ChatScreen() {
         return (
           <Animated.View entering={SlideInRight.duration(250).delay(50)} style={styles.userRow}>
             <View style={[styles.userBubble, { backgroundColor: colors.primary }]}>
-              <Text style={{ color: "#FFFFFF", fontSize: 15, lineHeight: 22 }}>
+              <Text style={{ color: "#FAFAFA", fontSize: 15, lineHeight: 22 }}>
                 {item.content}
               </Text>
             </View>
@@ -467,7 +467,7 @@ export default function ChatScreen() {
               <Text style={{ fontSize: 18 }}>🔥</Text>
             </View>
             <View>
-              <Text style={[styles.headerTitle, { color: colors.foreground }]}>Ember</Text>
+              <Text style={[styles.headerTitle, { color: colors.foreground }]}>Embris</Text>
               <Text style={[styles.headerSubtitle, { color: colors.muted }]}>
                 {isLoading ? "Thinking..." : syncEnabled ? "Synced ✓" : "Vaultfire Protocol"}
               </Text>
@@ -515,7 +515,7 @@ export default function ChatScreen() {
                 <Text style={{ fontSize: 40 }}>🔥</Text>
               </View>
               <Text style={[styles.welcomeTitle, { color: colors.foreground }]}>
-                Welcome to Ember
+                Welcome to Embris
               </Text>
               <Text style={[styles.welcomeSubtitle, { color: colors.muted }]}>
                 Your AI companion for the Vaultfire Protocol. Ask about contracts, ERC-8004,
@@ -577,7 +577,7 @@ export default function ChatScreen() {
               ref={inputRef}
               value={inputText}
               onChangeText={setInputText}
-              placeholder="Message Ember..."
+              placeholder="Message Embris..."
               placeholderTextColor={colors.muted}
               style={[styles.input, { color: colors.foreground }]}
               multiline
@@ -603,13 +603,13 @@ export default function ChatScreen() {
                 <IconSymbol
                   name="paperplane.fill"
                   size={16}
-                  color={hasText ? "#FFFFFF" : colors.muted}
+                  color={hasText ? "#FAFAFA" : colors.muted}
                 />
               )}
             </Pressable>
           </View>
           <Text style={[styles.inputDisclaimer, { color: colors.muted }]}>
-            Ember can make mistakes. Verify important information.
+            Embris can make mistakes. Verify important information.
           </Text>
         </View>
 
@@ -798,11 +798,11 @@ export default function ChatScreen() {
                       ]}
                     >
                       {walletLoading ? (
-                        <ActivityIndicator size="small" color="#FFFFFF" />
+                        <ActivityIndicator size="small" color="#FAFAFA" />
                       ) : (
                         <Text
                           style={{
-                            color: walletInput.trim() ? "#FFFFFF" : colors.muted,
+                            color: walletInput.trim() ? "#FAFAFA" : colors.muted,
                             fontWeight: "600",
                             fontSize: 14,
                           }}

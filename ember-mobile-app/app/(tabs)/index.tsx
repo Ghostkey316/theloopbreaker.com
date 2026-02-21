@@ -143,7 +143,7 @@ export default function HomeScreen() {
   }, [checkNetworks]);
 
   const quickActions = [
-    { icon: "bubble.left.fill" as const, label: "Chat with Ember", route: "/chat" as const },
+    { icon: "bubble.left.fill" as const, label: "Chat with Embris", route: "/chat" as const },
     { icon: "shield.checkered" as const, label: "Trust Verification", route: "/verify" as const },
     { icon: "arrow.left.arrow.right" as const, label: "Cross-Chain Bridge", route: "/bridge" as const },
     { icon: "chart.bar.fill" as const, label: "Dashboard", route: "/dashboard" as const },
@@ -164,7 +164,7 @@ export default function HomeScreen() {
             <IconSymbol name="flame.fill" size={44} color={colors.primary} />
           </View>
           <Text style={[styles.title, { color: colors.foreground }]}>Vaultfire Protocol</Text>
-          <Text style={[styles.subtitle, { color: colors.primary }]}>Powered by Ember AI</Text>
+          <Text style={[styles.subtitle, { color: colors.primary }]}>Powered by Embris AI</Text>
           <Text style={[styles.coreValues, { color: colors.muted }]}>{CORE_VALUES}</Text>
         </Animated.View>
 

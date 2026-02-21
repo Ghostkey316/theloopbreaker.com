@@ -1,5 +1,5 @@
 /**
- * Wallet Feature Tests for Ember - Vaultfire Protocol App
+ * Wallet Feature Tests for Embris - Vaultfire Protocol App
  * Tests wallet creation, import, secure storage, multi-chain support, and UI.
  */
 
@@ -90,8 +90,8 @@ describe("Wallet Core Module (lib/wallet-core.ts)", () => {
     expect(walletCoreSrc.toLowerCase()).toMatch(/add.*solana|add.*arbitrum|add.*polygon/i);
   });
 
-  it("has getWalletContextForEmber function for chat integration", () => {
-    expect(walletCoreSrc).toContain("getWalletContextForEmber");
+  it("has getWalletContextForEmbris function for chat integration", () => {
+    expect(walletCoreSrc).toContain("getWalletContextForEmbris");
   });
 
   it("private key never leaves the device (no fetch/upload of private key)", () => {
@@ -118,9 +118,9 @@ describe("Wallet Screen (app/(tabs)/wallet.tsx)", () => {
     expect(walletScreenSrc).toContain("Vaultfire");
   });
 
-  it("has Ember conversational guidance", () => {
-    // Ember should guide the user through wallet creation
-    expect(walletScreenSrc.toLowerCase()).toMatch(/ember|welcome|let.*set.*up/i);
+  it("has Embris conversational guidance", () => {
+    // Embris should guide the user through wallet creation
+    expect(walletScreenSrc.toLowerCase()).toMatch(/embris|welcome|let.*set.*up/i);
   });
 
   it("shows 12-word seed phrase during creation", () => {
@@ -160,7 +160,7 @@ describe("Wallet Screen (app/(tabs)/wallet.tsx)", () => {
     expect(walletScreenSrc).toContain("FadeInDown");
   });
 
-  it("uses dark ember theme colors", () => {
+  it("uses dark embris theme colors", () => {
     expect(walletScreenSrc).toContain("useColors");
   });
 });
@@ -190,19 +190,19 @@ describe("Wallet Tab Navigation", () => {
 });
 
 // ============================================================
-// EMBER INTEGRATION
+// EMBRIS INTEGRATION
 // ============================================================
 
-describe("Ember Chat Wallet Integration", () => {
+describe("Embris Chat Wallet Integration", () => {
   it("chat screen imports wallet-core for context", () => {
     expect(chatScreenSrc).toContain("wallet-core");
   });
 
-  it("chat screen gets wallet context for Ember", () => {
-    expect(chatScreenSrc).toContain("getWalletContextForEmber");
+  it("chat screen gets wallet context for Embris", () => {
+    expect(chatScreenSrc).toContain("getWalletContextForEmbris");
   });
 
-  it("wallet context is passed to Ember's memory/context", () => {
+  it("wallet context is passed to Embris's memory/context", () => {
     expect(chatScreenSrc).toContain("walletCtx");
   });
 });

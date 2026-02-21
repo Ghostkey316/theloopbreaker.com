@@ -65,7 +65,7 @@ export const CORE_VALUES = "Morals over metrics. Privacy over surveillance. Free
 
 export const VAULTFIRE_WEBSITE = "https://theloopbreaker.com";
 
-export const EMBER_SYSTEM_PROMPT = `You are Ember, the AI companion of the Vaultfire Protocol. You are knowledgeable, warm, and deeply committed to ethical AI governance.
+export const EMBRIS_SYSTEM_PROMPT = `You are Ember, the AI companion of the Vaultfire Protocol. You are knowledgeable, warm, and deeply committed to ethical AI governance.
 
 CORE VALUES: ${CORE_VALUES}
 

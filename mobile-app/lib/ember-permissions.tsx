@@ -1,12 +1,12 @@
 /**
- * Ember Permission Levels
+ * Embris Permission Levels
  *
- * Controls how much access Ember has to the user's wallet data
+ * Controls how much access Embris has to the user's wallet data
  * and how proactively she can suggest or flag transactions.
  *
- * - View Only: Ember can see balances and trust profile, cannot suggest transactions
- * - Advisory: Ember can see everything AND suggest transactions (default)
- * - Guardian: Ember proactively flags suspicious activity and recommends blocking
+ * - View Only: Embris can see balances and trust profile, cannot suggest transactions
+ * - Advisory: Embris can see everything AND suggest transactions (default)
+ * - Guardian: Embris proactively flags suspicious activity and recommends blocking
  *
  * User signs every transaction regardless of permission level.
  */
@@ -14,12 +14,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const PERMISSION_KEY = "vaultfire_ember_permission";
+const PERMISSION_KEY = "vaultfire_embris_permission";
 
-export type EmberPermission = "view_only" | "advisory" | "guardian";
+export type EmbrisPermission = "view_only" | "advisory" | "guardian";
 
-export interface EmberPermissionConfig {
-  level: EmberPermission;
+export interface EmbrisPermissionConfig {
+  level: EmbrisPermission;
   label: string;
   description: string;
   icon: string;
@@ -29,11 +29,11 @@ export interface EmberPermissionConfig {
   canProactivelyFlag: boolean;
 }
 
-export const PERMISSION_CONFIGS: Record<EmberPermission, EmberPermissionConfig> = {
+export const PERMISSION_CONFIGS: Record<EmbrisPermission, EmbrisPermissionConfig> = {
   view_only: {
     level: "view_only",
     label: "View Only",
-    description: "Ember can see your balances and trust profile. Cannot suggest transactions.",
+    description: "Embris can see your balances and trust profile. Cannot suggest transactions.",
     icon: "visibility",
     color: "#9CA3AF",
     canSuggestTransactions: false,
@@ -43,7 +43,7 @@ export const PERMISSION_CONFIGS: Record<EmberPermission, EmberPermissionConfig> 
   advisory: {
     level: "advisory",
     label: "Advisory",
-    description: "Ember can see everything and suggest transactions. You approve every one manually.",
+    description: "Embris can see everything and suggest transactions. You approve every one manually.",
     icon: "tips-and-updates",
     color: "#F97316",
     canSuggestTransactions: true,
@@ -53,7 +53,7 @@ export const PERMISSION_CONFIGS: Record<EmberPermission, EmberPermissionConfig> 
   guardian: {
     level: "guardian",
     label: "Guardian",
-    description: "Ember proactively flags suspicious activity and recommends blocking untrusted addresses. You still sign everything.",
+    description: "Embris proactively flags suspicious activity and recommends blocking untrusted addresses. You still sign everything.",
     icon: "shield",
     color: "#8B5CF6",
     canSuggestTransactions: true,
@@ -62,17 +62,17 @@ export const PERMISSION_CONFIGS: Record<EmberPermission, EmberPermissionConfig> 
   },
 };
 
-export interface EmberPermissionContextType {
-  permission: EmberPermission;
-  config: EmberPermissionConfig;
-  setPermission: (level: EmberPermission) => Promise<void>;
+export interface EmbrisPermissionContextType {
+  permission: EmbrisPermission;
+  config: EmbrisPermissionConfig;
+  setPermission: (level: EmbrisPermission) => Promise<void>;
   isLoading: boolean;
 }
 
-const EmberPermissionContext = createContext<EmberPermissionContextType | undefined>(undefined);
+const EmbrisPermissionContext = createContext<EmbrisPermissionContextType | undefined>(undefined);
 
-export function EmberPermissionProvider({ children }: { children: ReactNode }) {
-  const [permission, setPermissionState] = useState<EmberPermission>("advisory");
+export function EmbrisPermissionProvider({ children }: { children: ReactNode }) {
+  const [permission, setPermissionState] = useState<EmbrisPermission>("advisory");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -83,26 +83,26 @@ export function EmberPermissionProvider({ children }: { children: ReactNode }) {
     try {
       const stored = await AsyncStorage.getItem(PERMISSION_KEY);
       if (stored && (stored === "view_only" || stored === "advisory" || stored === "guardian")) {
-        setPermissionState(stored as EmberPermission);
+        setPermissionState(stored as EmbrisPermission);
       }
     } catch (error) {
-      console.error("Failed to load Ember permission:", error);
+      console.error("Failed to load Embris permission:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const setPermission = async (level: EmberPermission) => {
+  const setPermission = async (level: EmbrisPermission) => {
     setPermissionState(level);
     try {
       await AsyncStorage.setItem(PERMISSION_KEY, level);
     } catch (error) {
-      console.error("Failed to save Ember permission:", error);
+      console.error("Failed to save Embris permission:", error);
     }
   };
 
   return (
-    <EmberPermissionContext.Provider
+    <EmbrisPermissionContext.Provider
       value={{
         permission,
         config: PERMISSION_CONFIGS[permission],
@@ -111,23 +111,23 @@ export function EmberPermissionProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
-    </EmberPermissionContext.Provider>
+    </EmbrisPermissionContext.Provider>
   );
 }
 
-export function useEmberPermission(): EmberPermissionContextType {
-  const context = useContext(EmberPermissionContext);
+export function useEmbrisPermission(): EmbrisPermissionContextType {
+  const context = useContext(EmbrisPermissionContext);
   if (!context) {
-    throw new Error("useEmberPermission must be used within EmberPermissionProvider");
+    throw new Error("useEmbrisPermission must be used within EmbrisPermissionProvider");
   }
   return context;
 }
 
 /**
- * Get Ember's advisory comment based on trust profile and permission level
+ * Get Embris's advisory comment based on trust profile and permission level
  */
-export function getEmberTrustComment(
-  permission: EmberPermission,
+export function getEmbrisTrustComment(
+  permission: EmbrisPermission,
   trustScore: number | null,
   hasBonds: boolean,
   isRegistered: boolean,

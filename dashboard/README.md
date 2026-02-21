@@ -19,7 +19,7 @@ A real-time on-chain dashboard for the Vaultfire protocol, reading live data fro
 - **Tailwind CSS 4** with shadcn/ui components
 - **ethers.js v6** for on-chain data reading
 - **Framer Motion** for animations
-- Dark "Obsidian Forge" theme with ember-to-purple accents
+- Dark "Obsidian Forge" theme with embris-to-purple accents
 
 ## Contracts Monitored
 

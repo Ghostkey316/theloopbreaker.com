@@ -60,18 +60,18 @@ The `MultisigGovernance` contract, through its current 1-of-1 configuration, hol
 
 ### Rate Limiting
 
-The Ember chat API endpoints implement rate limiting to prevent abuse:
+The Embris chat API endpoints implement rate limiting to prevent abuse:
 
 | Endpoint | Limit | Window |
 |---|---|---|
-| `ember.sendMessage` | 20 requests | per minute per user |
-| `ember.quickSend` | 10 requests | per minute per IP |
+| `embris.sendMessage` | 20 requests | per minute per user |
+| `embris.quickSend` | 10 requests | per minute per IP |
 
 Rate limiting is enforced server-side using an in-memory sliding window counter. Exceeding the limit returns a `429 Too Many Requests` error.
 
 ### Authentication
 
-All Ember chat endpoints (except `quickSend`) require authentication via session cookies. The `protectedProcedure` middleware validates the session before processing any request.
+All Embris chat endpoints (except `quickSend`) require authentication via session cookies. The `protectedProcedure` middleware validates the session before processing any request.
 
 ## 4. Decentralization Roadmap
 

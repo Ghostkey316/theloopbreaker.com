@@ -1,4 +1,3 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -27,7 +26,7 @@ import {
 } from "@/lib/chat-storage";
 import type { Conversation, ChatMessage } from "@/lib/ember";
 import { useWallet } from "@/lib/wallet-context";
-import { useEmberPermission } from "@/lib/ember-permissions";
+import { useEmbrisPermission } from "@/lib/ember-permissions";
 import { memoryService, extractMemoriesLocally } from "@/lib/memory-service";
 import { v4 as uuidv4 } from "uuid";
 
@@ -54,7 +53,7 @@ interface AgentMessage {
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
   const { connectedAddress, shortenAddress, connectWallet, disconnectWallet, isConnecting } = useWallet();
-  const { permission } = useEmberPermission();
+  const { permission } = useEmbrisPermission();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [inputText, setInputText] = useState("");
@@ -155,7 +154,7 @@ export default function ChatScreen() {
       await connectWallet(walletInput.trim());
       setWalletInput("");
       setShowWalletModal(false);
-      Alert.alert("Success", "Wallet connected! Ember can now reference your on-chain data.");
+      Alert.alert("Connected", "Wallet connected. Embris can now reference your on-chain data.");
     } catch (error) {
       Alert.alert("Error", error instanceof Error ? error.message : "Failed to connect wallet");
     }
@@ -164,7 +163,7 @@ export default function ChatScreen() {
   const handleDisconnectWallet = async () => {
     try {
       await disconnectWallet();
-      Alert.alert("Success", "Wallet disconnected");
+      Alert.alert("Disconnected", "Wallet disconnected");
       setShowWalletModal(false);
     } catch (error) {
       Alert.alert("Error", "Failed to disconnect wallet");
@@ -228,9 +227,8 @@ export default function ChatScreen() {
     await saveConversation(updatedConvo);
 
     try {
-      // Load memory and build context
       const memoryContext = await memoryService.buildMemoryContext();
-      
+
       const apiMessages = [
         ...(memoryContext ? [{ role: "system" as const, content: memoryContext }] : []),
         ...updatedMessages.map((m) => ({
@@ -239,34 +237,32 @@ export default function ChatScreen() {
         })),
       ];
 
-      // Detect intent from user message to show contextual status
       const lowerInput = userMessage.content.toLowerCase();
       const isOnChainQuery = /check|look ?up|scan|trust|security|balance|portfolio|contract|address|0x/i.test(lowerInput);
       const isTransactionRequest = /register|bond|feedback|revoke|send|transfer/i.test(lowerInput);
 
       if (isOnChainQuery) {
-        setToolStatus("🔗 Ember is checking the chain...");
+        setToolStatus("Checking the chain...");
       } else if (isTransactionRequest) {
-        setToolStatus("⚡ Ember is preparing a transaction...");
+        setToolStatus("Preparing transaction...");
       } else {
-        setToolStatus("Ember is thinking...");
+        setToolStatus("Thinking...");
       }
 
-      // Start a status rotation for long-running tool calls
       const statusMessages = isOnChainQuery
         ? [
-            "🔗 Ember is checking the chain...",
-            "📡 Reading on-chain data...",
-            "🔍 Analyzing contract state...",
-            "🛡️ Verifying trust profile...",
+            "Checking the chain...",
+            "Reading on-chain data...",
+            "Analyzing contract state...",
+            "Verifying trust profile...",
           ]
         : isTransactionRequest
         ? [
-            "⚡ Ember is preparing a transaction...",
-            "📋 Building transaction data...",
-            "🔐 Preparing preview for your review...",
+            "Preparing transaction...",
+            "Building transaction data...",
+            "Preparing preview...",
           ]
-        : ["Ember is thinking..."];
+        : ["Thinking..."];
 
       let statusIdx = 0;
       const statusInterval = setInterval(() => {
@@ -284,15 +280,13 @@ export default function ChatScreen() {
 
       const responseText = result.content;
 
-      // Handle pending transaction from tool calls
       if (result.pendingTransaction) {
         setPendingTransaction(result.pendingTransaction);
         setShowTransactionModal(true);
       }
 
-      // Show a brief "tools used" indicator before streaming
       if (result.toolsUsed) {
-        setToolStatus("✅ On-chain data retrieved");
+        setToolStatus("Data retrieved");
         await new Promise((r) => setTimeout(r, 800));
       }
 
@@ -303,7 +297,6 @@ export default function ChatScreen() {
         timestamp: Date.now(),
       };
 
-      // Extract and save memories from this exchange
       const extracted = extractMemoriesLocally(userMessage.content, responseText);
       for (const mem of extracted) {
         await memoryService.addMemory(mem.category, mem.key, mem.value, "conversation");
@@ -331,8 +324,8 @@ export default function ChatScreen() {
       setToolStatus("");
       console.error("Chat error:", error);
       const errorContent = error instanceof Error && error.message.includes("OPENAI_API_KEY")
-        ? "I'm having trouble connecting to my AI backend. Please make sure the API key is configured."
-        : "Sorry, I ran into an issue processing that. Let me try again — could you rephrase your question?";
+        ? "I'm having trouble connecting right now. Please make sure the API key is configured."
+        : "Sorry, I ran into an issue. Could you try rephrasing that?";
       const errorMessage: ChatMessage = {
         id: uuidv4(),
         role: "assistant",
@@ -380,16 +373,14 @@ export default function ChatScreen() {
 
     if (isLoadingMsg) {
       return (
-        <View style={styles.aiMessageRow}>
-          <View style={styles.avatarContainer}>
-            <View style={styles.emberAvatar}>
-              <MaterialIcons name="local-fire-department" size={16} color="#F97316" />
+        <View style={s.aiRow}>
+          <View style={s.avatarWrap}>
+            <View style={s.avatar}>
+              <MaterialIcons name="local-fire-department" size={14} color="#F97316" />
             </View>
           </View>
-          <View style={styles.aiBubble}>
-            <View style={styles.typingDots}>
-              <TypingDots />
-            </View>
+          <View style={s.aiContent}>
+            <TypingDots />
           </View>
         </View>
       );
@@ -397,17 +388,15 @@ export default function ChatScreen() {
 
     if (isToolStatus) {
       return (
-        <View style={styles.aiMessageRow}>
-          <View style={styles.avatarContainer}>
-            <View style={styles.emberAvatar}>
-              <MaterialIcons name="local-fire-department" size={16} color="#F97316" />
+        <View style={s.aiRow}>
+          <View style={s.avatarWrap}>
+            <View style={s.avatar}>
+              <MaterialIcons name="local-fire-department" size={14} color="#F97316" />
             </View>
           </View>
-          <View style={[styles.aiBubble, styles.toolStatusBubble]}>
-            <View style={styles.toolStatusContent}>
-              <ActivityIndicator color="#F97316" size="small" />
-              <Text style={styles.toolStatusText}>{item.content}</Text>
-            </View>
+          <View style={s.toolRow}>
+            <ActivityIndicator color="#A1A1AA" size="small" />
+            <Text style={s.toolText}>{item.content}</Text>
           </View>
         </View>
       );
@@ -415,25 +404,25 @@ export default function ChatScreen() {
 
     if (isUser) {
       return (
-        <View style={styles.userMessageRow}>
-          <View style={styles.userBubble}>
-            <Text style={styles.messageText}>{item.content}</Text>
+        <View style={s.userRow}>
+          <View style={s.userBubble}>
+            <Text style={s.userText}>{item.content}</Text>
           </View>
         </View>
       );
     }
 
     return (
-      <View style={styles.aiMessageRow}>
-        <View style={styles.avatarContainer}>
-          <View style={styles.emberAvatar}>
-            <MaterialIcons name="local-fire-department" size={16} color="#F97316" />
+      <View style={s.aiRow}>
+        <View style={s.avatarWrap}>
+          <View style={s.avatar}>
+            <MaterialIcons name="local-fire-department" size={14} color="#F97316" />
           </View>
         </View>
-        <View style={styles.aiBubble}>
-          <Text style={styles.messageText}>
-            {isStreamingMsg ? item.content : item.content}
-            {isStreamingMsg && <Text style={styles.cursor}>|</Text>}
+        <View style={s.aiContent}>
+          <Text style={s.aiText}>
+            {item.content}
+            {isStreamingMsg && <Text style={s.cursor}>|</Text>}
           </Text>
         </View>
       </View>
@@ -441,65 +430,66 @@ export default function ChatScreen() {
   };
 
   const renderEmptyState = () => (
-    <View style={styles.emptyState}>
-      <View style={styles.emptyLogo}>
-        <MaterialIcons name="local-fire-department" size={48} color="#F97316" />
+    <View style={s.empty}>
+      <View style={s.emptyIcon}>
+        <MaterialIcons name="local-fire-department" size={40} color="#F97316" />
       </View>
-      <Text style={styles.emptyTitle}>Ember</Text>
-      <Text style={styles.emptySubtitle}>The flame inside the Vaultfire shield</Text>
-      <Text style={styles.emptyHint}>Ask me about Vaultfire Protocol, web3, AI ethics, crypto, or anything else. I can also help you interact with the protocol and manage your wallet.</Text>
+      <Text style={s.emptyTitle}>Embris</Text>
+      <Text style={s.emptySubtitle}>Powered by Vaultfire Protocol</Text>
+      <Text style={s.emptyHint}>
+        Ask about Vaultfire, web3, AI ethics, or anything on your mind. I can also look up on-chain data and trust profiles.
+      </Text>
       {connectedAddress && (
-        <View style={styles.connectedBadge}>
-          <MaterialIcons name="check-circle" size={14} color="#22C55E" />
-          <Text style={styles.connectedText}>Connected: {shortenAddress(connectedAddress)}</Text>
+        <View style={s.connectedPill}>
+          <MaterialIcons name="check-circle" size={12} color="#22C55E" />
+          <Text style={s.connectedPillText}>{shortenAddress(connectedAddress)}</Text>
         </View>
       )}
     </View>
   );
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[s.container, { paddingTop: insets.top }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={s.header}>
         <Pressable
           onPress={openSidebar}
-          style={({ pressed }) => [styles.headerButton, pressed && { opacity: 0.6 }]}
+          style={({ pressed }) => [s.headerBtn, pressed && { opacity: 0.5 }]}
         >
-          <MaterialIcons name="menu" size={24} color="#9CA3AF" />
+          <MaterialIcons name="menu" size={22} color="#A1A1AA" />
         </Pressable>
-        <View style={styles.headerCenter}>
-          <MaterialIcons name="local-fire-department" size={20} color="#F97316" />
-          <Text style={styles.headerTitle}>Ember</Text>
+        <View style={s.headerCenter}>
+          <MaterialIcons name="local-fire-department" size={18} color="#F97316" />
+          <Text style={s.headerTitle}>Embris</Text>
         </View>
-        <View style={styles.headerRight}>
+        <View style={s.headerRight}>
           {connectedAddress && (
-            <View style={styles.walletBadge}>
-              <MaterialIcons name="account-balance-wallet" size={14} color="#F97316" />
-              <Text style={styles.walletBadgeText}>{shortenAddress(connectedAddress)}</Text>
+            <View style={s.walletChip}>
+              <Text style={s.walletChipText}>{shortenAddress(connectedAddress)}</Text>
             </View>
           )}
           <Pressable
             onPress={() => setShowWalletModal(true)}
-            style={({ pressed }) => [styles.headerButton, pressed && { opacity: 0.6 }]}
+            style={({ pressed }) => [s.headerBtn, pressed && { opacity: 0.5 }]}
           >
             <MaterialIcons
               name={connectedAddress ? "account-balance-wallet" : "link"}
-              size={22}
-              color={connectedAddress ? "#F97316" : "#9CA3AF"}
+              size={20}
+              color={connectedAddress ? "#F97316" : "#52525B"}
             />
           </Pressable>
           <Pressable
             onPress={handleNewChat}
-            style={({ pressed }) => [styles.headerButton, pressed && { opacity: 0.6 }]}
+            style={({ pressed }) => [s.headerBtn, pressed && { opacity: 0.5 }]}
           >
-            <MaterialIcons name="edit" size={22} color="#9CA3AF" />
+            <MaterialIcons name="edit" size={20} color="#52525B" />
           </Pressable>
         </View>
       </View>
 
       {/* Chat Area */}
       <KeyboardAvoidingView
-        style={styles.chatArea}
+        style={s.chatArea}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={0}
       >
@@ -509,8 +499,8 @@ export default function ChatScreen() {
           renderItem={renderMessage}
           keyExtractor={(item) => item.id}
           contentContainerStyle={[
-            styles.messageList,
-            displayMessages.length === 0 && styles.messageListEmpty,
+            s.messageList,
+            displayMessages.length === 0 && s.messageListEmpty,
           ]}
           ListEmptyComponent={renderEmptyState}
           showsVerticalScrollIndicator={false}
@@ -518,14 +508,14 @@ export default function ChatScreen() {
         />
 
         {/* Input Bar */}
-        <View style={[styles.inputBar, { paddingBottom: Math.max(insets.bottom, 8) + 8 }]}>
-          <View style={styles.inputContainer}>
+        <View style={[s.inputBar, { paddingBottom: Math.max(insets.bottom, 8) + 8 }]}>
+          <View style={s.inputWrap}>
             <TextInput
-              style={styles.textInput}
+              style={s.textInput}
               value={inputText}
               onChangeText={setInputText}
-              placeholder="Ask Ember anything..."
-              placeholderTextColor="#6B7280"
+              placeholder="Message Embris..."
+              placeholderTextColor="#52525B"
               multiline
               maxLength={4000}
               returnKeyType="default"
@@ -534,15 +524,15 @@ export default function ChatScreen() {
               onPress={handleSend}
               disabled={!inputText.trim() || isLoading}
               style={({ pressed }) => [
-                styles.sendButton,
-                inputText.trim() && !isLoading ? styles.sendButtonActive : styles.sendButtonDisabled,
-                pressed && inputText.trim() && { opacity: 0.8, transform: [{ scale: 0.95 }] },
+                s.sendBtn,
+                inputText.trim() && !isLoading ? s.sendBtnActive : s.sendBtnDisabled,
+                pressed && inputText.trim() && { opacity: 0.8 },
               ]}
             >
               <MaterialIcons
                 name="arrow-upward"
-                size={20}
-                color={inputText.trim() && !isLoading ? "#0A0A0F" : "#4B5563"}
+                size={18}
+                color={inputText.trim() && !isLoading ? "#09090B" : "#52525B"}
               />
             </Pressable>
           </View>
@@ -551,9 +541,7 @@ export default function ChatScreen() {
 
       {/* Sidebar Overlay */}
       {sidebarOpen && (
-        <Animated.View
-          style={[styles.overlay, { opacity: overlayAnim }]}
-        >
+        <Animated.View style={[s.overlay, { opacity: overlayAnim }]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={closeSidebar} />
         </Animated.View>
       )}
@@ -562,7 +550,7 @@ export default function ChatScreen() {
       {sidebarOpen && (
         <Animated.View
           style={[
-            styles.sidebar,
+            s.sidebar,
             {
               width: SIDEBAR_WIDTH,
               transform: [{ translateX: sidebarAnim }],
@@ -572,10 +560,10 @@ export default function ChatScreen() {
         >
           <Pressable
             onPress={handleNewChat}
-            style={({ pressed }) => [styles.newChatButton, pressed && { opacity: 0.8, transform: [{ scale: 0.97 }] }]}
+            style={({ pressed }) => [s.newChatBtn, pressed && { opacity: 0.8 }]}
           >
-            <MaterialIcons name="add" size={20} color="#0A0A0F" />
-            <Text style={styles.newChatText}>New Chat</Text>
+            <MaterialIcons name="add" size={18} color="#09090B" />
+            <Text style={s.newChatText}>New Chat</Text>
           </Pressable>
 
           <FlatList
@@ -585,16 +573,16 @@ export default function ChatScreen() {
               <Pressable
                 onPress={() => handleSelectConversation(item)}
                 style={({ pressed }) => [
-                  styles.convoItem,
-                  activeConversation?.id === item.id && styles.convoItemActive,
+                  s.convoItem,
+                  activeConversation?.id === item.id && s.convoItemActive,
                   pressed && { opacity: 0.7 },
                 ]}
               >
-                <View style={styles.convoContent}>
-                  <Text style={styles.convoTitle} numberOfLines={1}>
+                <View style={s.convoContent}>
+                  <Text style={s.convoTitle} numberOfLines={1}>
                     {item.title}
                   </Text>
-                  <Text style={styles.convoPreview} numberOfLines={1}>
+                  <Text style={s.convoMeta} numberOfLines={1}>
                     {item.messages.length > 0
                       ? `${item.messages.length} messages`
                       : "No messages yet"}
@@ -602,20 +590,20 @@ export default function ChatScreen() {
                 </View>
                 <Pressable
                   onPress={() => handleDeleteConversation(item.id)}
-                  style={({ pressed }) => [styles.deleteButton, pressed && { opacity: 0.5 }]}
+                  style={({ pressed }) => [s.deleteBtn, pressed && { opacity: 0.4 }]}
                 >
-                  <MaterialIcons name="delete-outline" size={18} color="#6B7280" />
+                  <MaterialIcons name="delete-outline" size={16} color="#52525B" />
                 </Pressable>
               </Pressable>
             )}
-            contentContainerStyle={styles.convoList}
+            contentContainerStyle={s.convoList}
             showsVerticalScrollIndicator={false}
           />
 
-          <View style={styles.sidebarFooter}>
-            <View style={styles.sidebarBrand}>
-              <MaterialIcons name="shield" size={20} color="#F97316" />
-              <Text style={styles.sidebarBrandText}>Vaultfire Protocol</Text>
+          <View style={s.sidebarFooter}>
+            <View style={s.sidebarBrand}>
+              <MaterialIcons name="shield" size={16} color="#52525B" />
+              <Text style={s.sidebarBrandText}>Vaultfire Protocol</Text>
             </View>
           </View>
         </Animated.View>
@@ -628,63 +616,60 @@ export default function ChatScreen() {
         animationType="fade"
         onRequestClose={() => setShowWalletModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <MaterialIcons name="account-balance-wallet" size={24} color="#F97316" />
-              <Text style={styles.modalTitle}>Connect Wallet</Text>
+        <View style={s.modalOverlay}>
+          <View style={s.modalContent}>
+            <View style={s.modalHeader}>
+              <Text style={s.modalTitle}>Connect Wallet</Text>
               <Pressable
                 onPress={() => setShowWalletModal(false)}
-                style={({ pressed }) => [pressed && { opacity: 0.6 }]}
+                style={({ pressed }) => [pressed && { opacity: 0.5 }]}
               >
-                <MaterialIcons name="close" size={24} color="#9CA3AF" />
+                <MaterialIcons name="close" size={22} color="#52525B" />
               </Pressable>
             </View>
 
             {connectedAddress ? (
-              <View style={styles.modalConnected}>
-                <View style={styles.connectedIcon}>
-                  <MaterialIcons name="check-circle" size={32} color="#22C55E" />
-                </View>
-                <Text style={styles.connectedTitle}>Wallet Connected</Text>
-                <Text style={styles.connectedAddress}>{shortenAddress(connectedAddress)}</Text>
-                <Text style={styles.connectedSubtext}>
-                  Ember can now reference your on-chain data in conversations. Your wallet is read-only — no transactions or approvals needed.
+              <View style={s.modalConnected}>
+                <MaterialIcons name="check-circle" size={28} color="#22C55E" />
+                <Text style={s.modalConnectedTitle}>Connected</Text>
+                <Text style={s.modalConnectedAddr}>{shortenAddress(connectedAddress)}</Text>
+                <Text style={s.modalConnectedHint}>
+                  Embris can reference your on-chain data. Read-only — no transactions or approvals.
                 </Text>
                 <Pressable
                   onPress={handleDisconnectWallet}
-                  style={({ pressed }) => [styles.disconnectButton, pressed && { opacity: 0.8 }]}
+                  style={({ pressed }) => [s.disconnectBtn, pressed && { opacity: 0.8 }]}
                 >
-                  <Text style={styles.disconnectButtonText}>Disconnect</Text>
+                  <Text style={s.disconnectBtnText}>Disconnect</Text>
                 </Pressable>
               </View>
             ) : (
-              <View style={styles.modalForm}>
-                <Text style={styles.modalLabel}>Enter your Ethereum address:</Text>
+              <View style={s.modalForm}>
+                <Text style={s.modalLabel}>ETHEREUM ADDRESS</Text>
                 <TextInput
-                  style={styles.modalInput}
+                  style={s.modalInput}
                   placeholder="0x..."
-                  placeholderTextColor="#6B7280"
+                  placeholderTextColor="#52525B"
                   value={walletInput}
                   onChangeText={setWalletInput}
                   autoCapitalize="none"
                 />
-                <Text style={styles.modalHint}>
+                <Text style={s.modalHint}>
                   Read-only connection. We never request approvals or initiate transactions.
                 </Text>
                 <Pressable
                   onPress={handleConnectWallet}
                   disabled={isConnecting || !walletInput.trim()}
                   style={({ pressed }) => [
-                    styles.connectButton,
-                    (!walletInput.trim() || isConnecting) && styles.connectButtonDisabled,
+                    s.connectBtn,
+                    (!walletInput.trim() || isConnecting) && s.connectBtnDisabled,
                     pressed && walletInput.trim() && { opacity: 0.8 },
                   ]}
                 >
                   {isConnecting ? (
-                    <ActivityIndicator color="#0A0A0F" size="small" />
+                    <ActivityIndicator color="#09090B" size="small" />
                   ) : (
-                    <Text style={styles.connectButtonText}>Connect</Text>
+                    <Text style={s.connectBtnText}>Connect</Text>
                   )}
                 </Pressable>
               </View>
@@ -700,54 +685,54 @@ export default function ChatScreen() {
         animationType="slide"
         onRequestClose={() => setShowTransactionModal(false)}
       >
-        <View style={styles.txModalOverlay}>
-          <View style={styles.txModalContent}>
-            <View style={styles.txModalHeader}>
-              <Text style={styles.txModalTitle}>Transaction Preview</Text>
+        <View style={s.txOverlay}>
+          <View style={s.txContent}>
+            <View style={s.txHeader}>
+              <Text style={s.txTitle}>Transaction Preview</Text>
               <Pressable
                 onPress={() => setShowTransactionModal(false)}
-                style={({ pressed }) => [pressed && { opacity: 0.6 }]}
+                style={({ pressed }) => [pressed && { opacity: 0.5 }]}
               >
-                <MaterialIcons name="close" size={24} color="#9CA3AF" />
+                <MaterialIcons name="close" size={22} color="#52525B" />
               </Pressable>
             </View>
 
             {pendingTransaction && (
-              <ScrollView style={styles.txModalBody} showsVerticalScrollIndicator={false}>
-                <View style={styles.txPreviewCard}>
-                  <Text style={styles.txPreviewLabel}>Contract</Text>
-                  <Text style={styles.txPreviewValue}>{pendingTransaction.preview?.contractName}</Text>
+              <ScrollView style={s.txBody} showsVerticalScrollIndicator={false}>
+                <View style={s.txCard}>
+                  <Text style={s.txLabel}>CONTRACT</Text>
+                  <Text style={s.txValue}>{pendingTransaction.preview?.contractName}</Text>
 
-                  <Text style={[styles.txPreviewLabel, { marginTop: 12 }]}>Function</Text>
-                  <Text style={styles.txPreviewValue}>{pendingTransaction.preview?.functionName}</Text>
+                  <Text style={[s.txLabel, { marginTop: 16 }]}>FUNCTION</Text>
+                  <Text style={s.txValue}>{pendingTransaction.preview?.functionName}</Text>
 
-                  <Text style={[styles.txPreviewLabel, { marginTop: 12 }]}>Parameters</Text>
+                  <Text style={[s.txLabel, { marginTop: 16 }]}>PARAMETERS</Text>
                   {pendingTransaction.preview?.params?.map((param: any, idx: number) => (
-                    <View key={idx} style={styles.paramRow}>
-                      <Text style={styles.paramName}>{param.name}</Text>
-                      <Text style={styles.paramValue} numberOfLines={2}>{param.value}</Text>
+                    <View key={idx} style={s.paramRow}>
+                      <Text style={s.paramName}>{param.name}</Text>
+                      <Text style={s.paramValue} numberOfLines={2}>{param.value}</Text>
                     </View>
                   ))}
 
-                  <Text style={[styles.txPreviewLabel, { marginTop: 12 }]}>Value</Text>
-                  <Text style={styles.txPreviewValue}>{pendingTransaction.preview?.value}</Text>
+                  <Text style={[s.txLabel, { marginTop: 16 }]}>VALUE</Text>
+                  <Text style={s.txValue}>{pendingTransaction.preview?.value}</Text>
 
-                  <Text style={[styles.txPreviewLabel, { marginTop: 12 }]}>Estimated Gas</Text>
-                  <Text style={styles.txPreviewValue}>{pendingTransaction.preview?.estimatedGas} wei</Text>
+                  <Text style={[s.txLabel, { marginTop: 16 }]}>ESTIMATED GAS</Text>
+                  <Text style={s.txValue}>{pendingTransaction.preview?.estimatedGas} wei</Text>
                 </View>
 
-                <Text style={styles.txWarning}>
-                  ⚠️ Please review this transaction carefully before signing. You will be prompted to sign with your wallet.
+                <Text style={s.txWarning}>
+                  Review this transaction carefully before signing. You will be prompted to sign with your wallet.
                 </Text>
 
                 <Pressable
-                  style={({ pressed }) => [styles.txApproveButton, pressed && { opacity: 0.8 }]}
+                  style={({ pressed }) => [s.txCloseBtn, pressed && { opacity: 0.8 }]}
                   onPress={() => {
-                    Alert.alert("Next Steps", "In a real wallet, you would now sign this transaction with your connected wallet. For now, this is a preview.");
+                    Alert.alert("Preview Only", "In production, you would sign this with your connected wallet.");
                     setShowTransactionModal(false);
                   }}
                 >
-                  <Text style={styles.txApproveText}>Understood, Close Preview</Text>
+                  <Text style={s.txCloseBtnText}>Close Preview</Text>
                 </Pressable>
               </ScrollView>
             )}
@@ -779,33 +764,39 @@ function TypingDots() {
   }, []);
 
   return (
-    <View style={styles.dotsContainer}>
+    <View style={s.dotsWrap}>
       {[dot1, dot2, dot3].map((dot, i) => (
-        <Animated.View
-          key={i}
-          style={[styles.dot, { opacity: dot }]}
-        />
+        <Animated.View key={i} style={[s.dot, { opacity: dot }]} />
       ))}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+// ─── Professional Design System ───────────────────────────────────
+// Background: #09090B | Cards: #111113 | Border: rgba(255,255,255,0.03)
+// Text: #FAFAFA primary, #A1A1AA secondary, #52525B tertiary
+// Accent: #F97316 (orange) — used sparingly
+// No gradients, no glows, no decorative effects. Clean and minimal.
+
+const s = StyleSheet.create({
+  // ── Layout ──────────────────────────────────────────────────────
   container: {
     flex: 1,
-    backgroundColor: "#0A0A0F",
+    backgroundColor: "#09090B",
   },
+
+  // ── Header ──────────────────────────────────────────────────────
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#1A1A2E",
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.03)",
   },
-  headerButton: {
-    padding: 4,
+  headerBtn: {
+    padding: 6,
   },
   headerCenter: {
     flexDirection: "row",
@@ -815,30 +806,30 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#FAFAFA",
   },
   headerRight: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 2,
   },
-  walletBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "#1A1A2E",
+  walletChip: {
+    backgroundColor: "#111113",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
-    borderWidth: 0.5,
-    borderColor: "#F97316",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.03)",
   },
-  walletBadgeText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#F97316",
+  walletChipText: {
+    fontSize: 10,
+    fontWeight: "500",
+    color: "#A1A1AA",
     fontFamily: "monospace",
+    letterSpacing: 0.5,
   },
+
+  // ── Chat ────────────────────────────────────────────────────────
   chatArea: {
     flex: 1,
   },
@@ -851,100 +842,107 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
   },
-  userMessageRow: {
+
+  // ── User Messages ───────────────────────────────────────────────
+  userRow: {
     flexDirection: "row",
     justifyContent: "flex-end",
-    marginBottom: 16,
+    marginBottom: 24,
   },
   userBubble: {
-    maxWidth: "80%",
-    backgroundColor: "#1E1E3A",
-    borderRadius: 18,
+    maxWidth: "78%",
+    backgroundColor: "#111113",
+    borderRadius: 16,
     borderTopRightRadius: 4,
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderLeftWidth: 2,
-    borderLeftColor: "#F97316",
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.03)",
   },
-  aiMessageRow: {
+  userText: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: "#FAFAFA",
+    fontWeight: "400",
+  },
+
+  // ── AI Messages (ChatGPT-style: no bubble) ─────────────────────
+  aiRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    marginBottom: 16,
-    gap: 8,
+    marginBottom: 24,
+    gap: 10,
   },
-  avatarContainer: {
+  avatarWrap: {
     marginTop: 2,
   },
-  emberAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#1A1A2E",
+  avatar: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "#111113",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#F97316",
+    borderColor: "rgba(255,255,255,0.06)",
   },
-  aiBubble: {
-    maxWidth: "80%",
-    backgroundColor: "#1A1A2E",
-    borderRadius: 18,
-    borderTopLeftRadius: 4,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+  aiContent: {
+    flex: 1,
+    paddingTop: 3,
   },
-  toolStatusBubble: {
-    backgroundColor: "#1A2E2E",
-    borderLeftWidth: 2,
-    borderLeftColor: "#8B5CF6",
-  },
-  toolStatusContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  toolStatusText: {
+  aiText: {
     fontSize: 14,
-    color: "#8B5CF6",
-    fontWeight: "500",
-  },
-  messageText: {
-    fontSize: 15,
     lineHeight: 22,
-    color: "#FFFFFF",
+    color: "#FAFAFA",
+    fontWeight: "400",
   },
   cursor: {
     color: "#F97316",
-    fontWeight: "700",
+    fontWeight: "600",
   },
-  typingDots: {
-    paddingVertical: 4,
+
+  // ── Tool Status ─────────────────────────────────────────────────
+  toolRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingTop: 4,
   },
-  dotsContainer: {
+  toolText: {
+    fontSize: 13,
+    color: "#A1A1AA",
+    fontWeight: "400",
+  },
+
+  // ── Typing Dots ─────────────────────────────────────────────────
+  dotsWrap: {
     flexDirection: "row",
     gap: 4,
     alignItems: "center",
+    paddingVertical: 4,
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#F97316",
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#A1A1AA",
   },
+
+  // ── Input Bar ───────────────────────────────────────────────────
   inputBar: {
     paddingHorizontal: 16,
     paddingTop: 8,
-    borderTopWidth: 0.5,
-    borderTopColor: "#1A1A2E",
-    backgroundColor: "#0A0A0F",
+    backgroundColor: "#09090B",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.03)",
   },
-  inputContainer: {
+  inputWrap: {
     flexDirection: "row",
     alignItems: "flex-end",
-    backgroundColor: "#1A1A2E",
-    borderRadius: 24,
+    backgroundColor: "#111113",
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#2A2A3E",
+    borderColor: "rgba(255,255,255,0.06)",
     paddingLeft: 16,
     paddingRight: 4,
     paddingVertical: 4,
@@ -952,105 +950,111 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    fontSize: 15,
-    color: "#FFFFFF",
+    fontSize: 14,
+    color: "#FAFAFA",
     maxHeight: 120,
     paddingVertical: 8,
     lineHeight: 20,
   },
-  sendButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+  sendBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 1,
   },
-  sendButtonActive: {
+  sendBtnActive: {
     backgroundColor: "#F97316",
   },
-  sendButtonDisabled: {
-    backgroundColor: "#252540",
+  sendBtnDisabled: {
+    backgroundColor: "transparent",
   },
-  emptyState: {
+
+  // ── Empty State ─────────────────────────────────────────────────
+  empty: {
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 40,
-    gap: 12,
+    paddingHorizontal: 48,
+    gap: 8,
   },
-  emptyLogo: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "#1A1A2E",
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#111113",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "#F97316",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
     marginBottom: 8,
   },
   emptyTitle: {
     fontSize: 28,
-    fontWeight: "700",
-    color: "#FFFFFF",
+    fontWeight: "600",
+    color: "#FAFAFA",
   },
   emptySubtitle: {
-    fontSize: 14,
-    color: "#9CA3AF",
-    textAlign: "center",
+    fontSize: 11,
+    fontWeight: "500",
+    color: "#52525B",
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
   },
   emptyHint: {
-    fontSize: 13,
-    color: "#6B7280",
+    fontSize: 14,
+    color: "#A1A1AA",
     textAlign: "center",
-    marginTop: 8,
-    lineHeight: 18,
+    marginTop: 12,
+    lineHeight: 20,
+    fontWeight: "400",
   },
-  connectedBadge: {
+  connectedPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#064E3B",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
     marginTop: 12,
   },
-  connectedText: {
-    fontSize: 12,
-    color: "#22C55E",
-    fontWeight: "600",
+  connectedPillText: {
+    fontSize: 11,
+    color: "#A1A1AA",
+    fontWeight: "500",
+    fontFamily: "monospace",
   },
+
+  // ── Sidebar Overlay ─────────────────────────────────────────────
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
     zIndex: 10,
   },
+
+  // ── Sidebar ─────────────────────────────────────────────────────
   sidebar: {
     position: "absolute",
     top: 0,
     left: 0,
     bottom: 0,
-    backgroundColor: "#0D0D14",
+    backgroundColor: "#09090B",
     zIndex: 20,
     borderRightWidth: 1,
-    borderRightColor: "#1A1A2E",
+    borderRightColor: "rgba(255,255,255,0.03)",
     paddingHorizontal: 16,
   },
-  newChatButton: {
+  newChatBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
     backgroundColor: "#F97316",
-    borderRadius: 12,
-    paddingVertical: 12,
+    borderRadius: 10,
+    paddingVertical: 11,
     marginBottom: 16,
   },
   newChatText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "600",
-    color: "#0A0A0F",
+    color: "#09090B",
   },
   convoList: {
     paddingBottom: 16,
@@ -1058,34 +1062,34 @@ const styles = StyleSheet.create({
   convoItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 10,
-    marginBottom: 8,
+    borderRadius: 8,
+    marginBottom: 4,
   },
   convoItemActive: {
-    backgroundColor: "#1A1A2E",
+    backgroundColor: "#111113",
   },
   convoContent: {
     flex: 1,
   },
   convoTitle: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#FFFFFF",
+    fontWeight: "500",
+    color: "#FAFAFA",
   },
-  convoPreview: {
-    fontSize: 12,
-    color: "#9CA3AF",
+  convoMeta: {
+    fontSize: 11,
+    color: "#52525B",
     marginTop: 2,
   },
-  deleteButton: {
+  deleteBtn: {
     padding: 4,
   },
   sidebarFooter: {
-    borderTopWidth: 0.5,
-    borderTopColor: "#1A1A2E",
-    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.03)",
+    paddingVertical: 12,
   },
   sidebarBrand: {
     flexDirection: "row",
@@ -1093,201 +1097,215 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sidebarBrandText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#9CA3AF",
+    fontSize: 11,
+    fontWeight: "500",
+    color: "#52525B",
+    textTransform: "uppercase",
+    letterSpacing: 1,
   },
+
+  // ── Wallet Modal ────────────────────────────────────────────────
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.7)",
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: "#0D0D14",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    backgroundColor: "#09090B",
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingHorizontal: 24,
+    paddingTop: 24,
     maxHeight: "80%",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.03)",
   },
   modalHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 20,
+    marginBottom: 24,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "700",
-    color: "#FFFFFF",
-    flex: 1,
-    marginLeft: 12,
+    fontWeight: "600",
+    color: "#FAFAFA",
   },
   modalLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "500",
+    color: "#52525B",
+    textTransform: "uppercase",
+    letterSpacing: 1,
     marginBottom: 8,
   },
   modalInput: {
-    backgroundColor: "#1A1A2E",
+    backgroundColor: "#111113",
     borderWidth: 1,
-    borderColor: "#2A2A3E",
-    borderRadius: 12,
+    borderColor: "rgba(255,255,255,0.06)",
+    borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    color: "#FFFFFF",
-    fontSize: 15,
+    color: "#FAFAFA",
+    fontSize: 14,
     marginBottom: 12,
   },
   modalHint: {
     fontSize: 12,
-    color: "#9CA3AF",
-    marginBottom: 16,
+    color: "#52525B",
+    marginBottom: 20,
+    lineHeight: 16,
   },
-  connectButton: {
+  connectBtn: {
     backgroundColor: "#F97316",
-    borderRadius: 12,
+    borderRadius: 10,
     paddingVertical: 12,
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 24,
   },
-  connectButtonDisabled: {
-    backgroundColor: "#2A2A3E",
+  connectBtnDisabled: {
+    backgroundColor: "#111113",
   },
-  connectButtonText: {
-    fontSize: 16,
+  connectBtnText: {
+    fontSize: 15,
     fontWeight: "600",
-    color: "#0A0A0F",
+    color: "#09090B",
   },
   modalForm: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   modalConnected: {
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 24,
+    gap: 8,
   },
-  connectedIcon: {
-    marginBottom: 12,
-  },
-  connectedTitle: {
+  modalConnectedTitle: {
     fontSize: 18,
-    fontWeight: "700",
-    color: "#FFFFFF",
-    marginBottom: 4,
+    fontWeight: "600",
+    color: "#FAFAFA",
   },
-  connectedAddress: {
-    fontSize: 14,
-    fontFamily: "monospace",
-    color: "#F97316",
-    marginBottom: 12,
-  },
-  connectedSubtext: {
+  modalConnectedAddr: {
     fontSize: 13,
-    color: "#9CA3AF",
-    textAlign: "center",
-    marginBottom: 16,
-    lineHeight: 18,
+    fontFamily: "monospace",
+    color: "#A1A1AA",
   },
-  disconnectButton: {
-    backgroundColor: "#EF4444",
-    borderRadius: 12,
+  modalConnectedHint: {
+    fontSize: 13,
+    color: "#52525B",
+    textAlign: "center",
+    lineHeight: 18,
+    marginTop: 4,
+  },
+  disconnectBtn: {
+    backgroundColor: "#111113",
+    borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 24,
+    borderWidth: 1,
+    borderColor: "rgba(239,68,68,0.3)",
+    marginTop: 8,
   },
-  disconnectButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#FFFFFF",
+  disconnectBtnText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#EF4444",
   },
-  txModalOverlay: {
+
+  // ── Transaction Modal ───────────────────────────────────────────
+  txOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.7)",
     justifyContent: "flex-end",
   },
-  txModalContent: {
-    backgroundColor: "#0D0D14",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingTop: 20,
+  txContent: {
+    backgroundColor: "#09090B",
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingHorizontal: 24,
+    paddingTop: 24,
     maxHeight: "90%",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.03)",
   },
-  txModalHeader: {
+  txHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 20,
+    marginBottom: 24,
   },
-  txModalTitle: {
+  txTitle: {
     fontSize: 18,
-    fontWeight: "700",
-    color: "#FFFFFF",
-    flex: 1,
+    fontWeight: "600",
+    color: "#FAFAFA",
   },
-  txModalBody: {
-    marginBottom: 20,
+  txBody: {
+    marginBottom: 24,
   },
-  txPreviewCard: {
-    backgroundColor: "#1A1A2E",
+  txCard: {
+    backgroundColor: "#111113",
     borderRadius: 12,
-    padding: 16,
+    padding: 20,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#2A2A3E",
+    borderColor: "rgba(255,255,255,0.03)",
   },
-  txPreviewLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#9CA3AF",
-    textTransform: "uppercase",
-  },
-  txPreviewValue: {
-    fontSize: 14,
-    color: "#FFFFFF",
-    marginTop: 4,
+  txLabel: {
+    fontSize: 11,
     fontWeight: "500",
+    color: "#52525B",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  txValue: {
+    fontSize: 14,
+    color: "#FAFAFA",
+    marginTop: 4,
+    fontWeight: "400",
   },
   paramRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
     paddingVertical: 8,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#2A2A3E",
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.03)",
   },
   paramName: {
     fontSize: 12,
-    color: "#9CA3AF",
-    fontWeight: "600",
+    color: "#A1A1AA",
+    fontWeight: "500",
     flex: 0.3,
   },
   paramValue: {
     fontSize: 12,
-    color: "#F97316",
+    color: "#FAFAFA",
     fontFamily: "monospace",
     flex: 0.7,
     textAlign: "right",
   },
   txWarning: {
     fontSize: 13,
-    color: "#F59E0B",
-    backgroundColor: "#1A1A2E",
+    color: "#A1A1AA",
+    backgroundColor: "#111113",
     borderRadius: 8,
-    padding: 12,
+    padding: 16,
     marginBottom: 16,
     lineHeight: 18,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.03)",
   },
-  txApproveButton: {
-    backgroundColor: "#F97316",
-    borderRadius: 12,
+  txCloseBtn: {
+    backgroundColor: "#111113",
+    borderRadius: 10,
     paddingVertical: 12,
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
   },
-  txApproveText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#0A0A0F",
+  txCloseBtnText: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#FAFAFA",
   },
 });

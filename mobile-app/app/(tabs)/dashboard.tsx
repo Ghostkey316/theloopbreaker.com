@@ -75,77 +75,58 @@ export default function DashboardScreen() {
     icon: string,
     subtitle?: string
   ) => (
-    <View style={styles.statCard}>
-      <View style={styles.statIcon}>
-        <MaterialIcons name={icon as any} size={20} color="#F97316" />
+    <View style={s.statCard}>
+      <View style={s.statTop}>
+        <MaterialIcons name={icon as any} size={16} color="#52525B" />
+        <Text style={s.statLabel}>{title}</Text>
       </View>
-      <View style={styles.statContent}>
-        <Text style={styles.statLabel}>{title}</Text>
-        <Text style={styles.statValue}>{value}</Text>
-        {subtitle && <Text style={styles.statSubtitle}>{subtitle}</Text>}
-      </View>
+      <Text style={s.statValue}>{value}</Text>
+      {subtitle && <Text style={s.statSub}>{subtitle}</Text>}
     </View>
   );
 
   if (isLoading) {
     return (
       <ScreenContainer className="items-center justify-center">
-        <ActivityIndicator size="large" color="#F97316" />
+        <ActivityIndicator size="large" color="#A1A1AA" />
       </ScreenContainer>
     );
   }
 
   return (
     <ScreenContainer className="p-0">
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <MaterialIcons name="dashboard" size={24} color="#F97316" />
-            <Text style={styles.headerTitle}>Dashboard</Text>
-          </View>
+      <View style={[s.container, { paddingTop: insets.top }]}>
+        <View style={s.header}>
+          <Text style={s.headerTitle}>Dashboard</Text>
         </View>
 
-        {/* Stats */}
         <ScrollView
-          style={styles.scroll}
+          style={s.scroll}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={handleRefresh}
-              tintColor="#F97316"
+              tintColor="#A1A1AA"
             />
           }
         >
-          <View style={styles.content}>
+          <View style={s.content}>
             {/* Protocol Overview */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Protocol Overview</Text>
-              <View style={styles.statsGrid}>
+            <View style={s.section}>
+              <Text style={s.sectionLabel}>PROTOCOL OVERVIEW</Text>
+              <View style={s.statsGrid}>
                 {renderStatCard("Registered Agents", stats?.identityAgents || 0, "person")}
-                {renderStatCard(
-                  "Partnership Bonds",
-                  stats?.partnershipBonds || 0,
-                  "link"
-                )}
-                {renderStatCard(
-                  "Accountability Bonds",
-                  stats?.accountabilityBonds || 0,
-                  "verified-user"
-                )}
+                {renderStatCard("Partnership Bonds", stats?.partnershipBonds || 0, "link")}
+                {renderStatCard("Accountability Bonds", stats?.accountabilityBonds || 0, "verified-user")}
               </View>
             </View>
 
             {/* Reputation & Governance */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Reputation & Governance</Text>
-              <View style={styles.statsGrid}>
-                {renderStatCard(
-                  "Total Feedbacks",
-                  stats?.reputationFeedbacks || 0,
-                  "star"
-                )}
+            <View style={s.section}>
+              <Text style={s.sectionLabel}>REPUTATION & GOVERNANCE</Text>
+              <View style={s.statsGrid}>
+                {renderStatCard("Total Feedbacks", stats?.reputationFeedbacks || 0, "star")}
                 {renderStatCard(
                   "Governance Signers",
                   stats?.governanceSigners || 0,
@@ -156,32 +137,20 @@ export default function DashboardScreen() {
             </View>
 
             {/* Infrastructure */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Infrastructure</Text>
-              <View style={styles.statsGrid}>
+            <View style={s.section}>
+              <Text style={s.sectionLabel}>INFRASTRUCTURE</Text>
+              <View style={s.statsGrid}>
                 {renderStatCard("Oracle Nodes", stats?.oracleCount || 0, "cloud")}
-                {renderStatCard(
-                  "Bridge Messages",
-                  stats?.bridgeMessages || 0,
-                  "bridge"
-                )}
-                {renderStatCard(
-                  "Attestations",
-                  stats?.attestationCount || 0,
-                  "check-circle"
-                )}
+                {renderStatCard("Bridge Messages", stats?.bridgeMessages || 0, "swap-horiz")}
+                {renderStatCard("Attestations", stats?.attestationCount || 0, "check-circle")}
               </View>
             </View>
 
-            {/* Info Card */}
-            <View style={styles.infoCard}>
-              <MaterialIcons name="info" size={18} color="#F97316" />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoTitle}>Live Data</Text>
-                <Text style={styles.infoText}>
-                  All statistics are fetched directly from Base mainnet contracts. Pull to refresh.
-                </Text>
-              </View>
+            {/* Info */}
+            <View style={s.infoCard}>
+              <Text style={s.infoText}>
+                All statistics fetched directly from Base mainnet contracts. Pull to refresh.
+              </Text>
             </View>
           </View>
         </ScrollView>
@@ -219,7 +188,6 @@ async function fetchDashboardStats(): Promise<DashboardStats> {
       identityAgents,
       partnershipBonds,
       accountabilityBonds,
-      // reputationData,
       governanceSigners,
       governanceThreshold,
       oracleCount,
@@ -229,7 +197,6 @@ async function fetchDashboardStats(): Promise<DashboardStats> {
       identityContract.getTotalAgents(),
       partnershipContract.nextBondId(),
       accountabilityContract.nextBondId(),
-      // reputationContract.nextFeedbackId(),
       governanceContract.getSignerCount(),
       governanceContract.threshold(),
       oracleContract.oracleCount(),
@@ -241,7 +208,7 @@ async function fetchDashboardStats(): Promise<DashboardStats> {
       identityAgents: Number(identityAgents),
       partnershipBonds: Number(partnershipBonds),
       accountabilityBonds: Number(accountabilityBonds),
-      reputationFeedbacks: 0, // Would need event logs to get accurate count
+      reputationFeedbacks: 0,
       governanceSigners: Number(governanceSigners),
       governanceThreshold: Number(governanceThreshold),
       oracleCount: Number(oracleCount),
@@ -254,110 +221,34 @@ async function fetchDashboardStats(): Promise<DashboardStats> {
   }
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#0A0A0F",
-  },
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#09090B" },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#1A1A2E",
+    paddingHorizontal: 16, paddingVertical: 14,
+    borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.03)",
   },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+  headerTitle: { fontSize: 28, fontWeight: "600", color: "#FAFAFA" },
+  scroll: { flex: 1 },
+  content: { paddingHorizontal: 16, paddingVertical: 24, gap: 48 },
+
+  section: { gap: 16 },
+  sectionLabel: {
+    fontSize: 11, fontWeight: "500", color: "#52525B",
+    letterSpacing: 1.5, textTransform: "uppercase",
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#FFFFFF",
-  },
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    gap: 20,
-  },
-  section: {
-    gap: 12,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#9CA3AF",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  statsGrid: {
-    gap: 8,
-  },
+  statsGrid: { gap: 8 },
   statCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#1A1A2E",
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 0.5,
-    borderColor: "#2A2A3E",
-    gap: 12,
+    backgroundColor: "#111113", borderRadius: 12, padding: 20,
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.03)",
   },
-  statIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: "#252540",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  statContent: {
-    flex: 1,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: "#9CA3AF",
-    marginBottom: 2,
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#FFFFFF",
-  },
-  statSubtitle: {
-    fontSize: 11,
-    color: "#6B7280",
-    marginTop: 2,
-  },
+  statTop: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
+  statLabel: { fontSize: 13, color: "#A1A1AA", fontWeight: "400" },
+  statValue: { fontSize: 32, fontWeight: "600", color: "#FAFAFA", fontFamily: "monospace" },
+  statSub: { fontSize: 11, color: "#52525B", marginTop: 4 },
+
   infoCard: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-    backgroundColor: "#1A1A2E",
-    borderRadius: 12,
-    padding: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: "#F97316",
-    marginBottom: 16,
+    backgroundColor: "#111113", borderRadius: 10, padding: 16, marginBottom: 24,
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.03)",
   },
-  infoContent: {
-    flex: 1,
-  },
-  infoTitle: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#FFFFFF",
-    marginBottom: 2,
-  },
-  infoText: {
-    fontSize: 12,
-    color: "#9CA3AF",
-    lineHeight: 16,
-  },
+  infoText: { fontSize: 12, color: "#52525B", lineHeight: 16 },
 });

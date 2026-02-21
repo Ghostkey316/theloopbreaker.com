@@ -332,9 +332,9 @@ export function calculateTotalValue(balances: ChainBalance[]): string {
 }
 
 /**
- * Get a summary string of wallet balances for Ember chat context.
+ * Get a summary string of wallet balances for Embris chat context.
  */
-export async function getWalletContextForEmber(): Promise<string | null> {
+export async function getWalletContextForEmbris(): Promise<string | null> {
   const address = await getWalletAddress();
   if (!address) return null;
 

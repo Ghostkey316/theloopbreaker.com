@@ -1,4 +1,4 @@
-# Ember Mobile App — Deep Infrastructure Audit Report
+# Embris Mobile App — Deep Infrastructure Audit Report
 
 **Date:** February 21, 2026
 **Auditor:** Manus AI
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-This deep audit examines whether the Ember app actually uses the 28 Vaultfire Protocol contracts in a meaningful way, not just listing addresses. The findings show that the app has been significantly upgraded from the initial build:
+This deep audit examines whether the Embris app actually uses the 28 Vaultfire Protocol contracts in a meaningful way, not just listing addresses. The findings show that the app has been significantly upgraded from the initial build:
 
 - **Real On-Chain Contract Reads:** All three screens (Verify, Bridge, Dashboard) now perform live JSON-RPC calls to check contract deployment status and gather metrics.
 - **Wallet Integration:** Users can now connect an Ethereum address via modal, and the wallet address is persisted and passed to the AI chat for context.
@@ -167,7 +167,7 @@ const loadDashboard = useCallback(async () => {
 
 ### User Journey Test
 
-**Scenario:** New user opens the app, connects wallet, chats with Ember, checks contract status.
+**Scenario:** New user opens the app, connects wallet, chats with Embris, checks contract status.
 
 **Step 1: Home Screen (Entry Point)**
 - ✓ Displays Vaultfire Protocol branding with flame icon
@@ -175,7 +175,7 @@ const loadDashboard = useCallback(async () => {
 - ✓ Displays quick stats: 28 contracts, 2 chains, ERC-8004 standard
 - ✓ Quick action buttons to navigate to other screens
 
-**Step 2: Ember Chat Screen**
+**Step 2: Embris Chat Screen**
 - ✓ User taps "Ember" tab
 - ✓ Chat interface loads with welcome context
 - ✓ User sees "Connect" button in header
@@ -258,7 +258,7 @@ export async function getWalletData(address: string): Promise<WalletData> {
 - ✓ Modal with address input field
 - ✓ Address validation with error handling
 - ✓ Disconnect option for connected wallets
-- ✓ Wallet address passed to Ember AI in memory context
+- ✓ Wallet address passed to Embris AI in memory context
 - ✓ Persists across app restarts
 
 ---
@@ -411,6 +411,6 @@ export async function getWalletData(address: string): Promise<WalletData> {
 
 ## Conclusion
 
-The Ember mobile app has been successfully upgraded from a basic template to a production-grade application with real on-chain infrastructure integration. All 28 Vaultfire Protocol contracts are verified live. The app provides meaningful data to users, not just placeholder text. Wallet integration enables future transaction signing. UI polish and animations create a polished, ChatGPT-like experience.
+The Embris mobile app has been successfully upgraded from a basic template to a production-grade application with real on-chain infrastructure integration. All 28 Vaultfire Protocol contracts are verified live. The app provides meaningful data to users, not just placeholder text. Wallet integration enables future transaction signing. UI polish and animations create a polished, ChatGPT-like experience.
 
 **Final Verdict: PASS** — The app is ready for user testing and deployment.

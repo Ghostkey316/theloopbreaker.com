@@ -1,8 +1,8 @@
-# Ember Mobile App — Vaultfire Protocol Comprehensive Audit Report
+# Embris Mobile App — Vaultfire Protocol Comprehensive Audit Report
 
 **Date:** February 21, 2026
 **Auditor:** Manus AI
-**Project:** Ember — Vaultfire Protocol Mobile App
+**Project:** Embris — Vaultfire Protocol Mobile App
 **Platform:** React Native + Expo SDK 54
 **Test Framework:** Vitest (104 unit tests) + Live RPC/Server Tests
 
@@ -10,7 +10,7 @@
 
 ## Executive Summary
 
-This report presents the results of a comprehensive 10-point audit of the Ember mobile application for the Vaultfire Protocol. The audit covers contract address accuracy, AI chat functionality, memory persistence, screen rendering, tab navigation, theme consistency, blockchain connectivity, branding, code quality, and feature completeness.
+This report presents the results of a comprehensive 10-point audit of the Embris mobile application for the Vaultfire Protocol. The audit covers contract address accuracy, AI chat functionality, memory persistence, screen rendering, tab navigation, theme consistency, blockchain connectivity, branding, code quality, and feature completeness.
 
 **Overall Result: PASS** — All 104 automated tests pass. All live blockchain connectivity tests pass. All live server chat tests pass. Every contract address has been verified character-by-character against the specification and confirmed on-chain.
 
@@ -21,11 +21,11 @@ This report presents the results of a comprehensive 10-point audit of the Ember 
 | # | Audit Area | Tests | Result |
 |---|-----------|-------|--------|
 | 1 | Contract Addresses (28 total) | 33 | **PASS** |
-| 2 | Ember AI Chat | 9 | **PASS** |
+| 2 | Embris AI Chat | 9 | **PASS** |
 | 3 | Memory System | 9 | **PASS** |
 | 4 | All 5 Screens | 6 | **PASS** |
 | 5 | Tab Navigation | 8 | **PASS** |
-| 6 | Dark Ember/Fire Theme | 6 | **PASS** |
+| 6 | Dark Embris/Fire Theme | 6 | **PASS** |
 | 7 | Blockchain Connectivity | 10 | **PASS** |
 | 8 | Branding | 9 | **PASS** |
 | 9 | Code Quality | 5 | **PASS** |
@@ -37,7 +37,7 @@ This report presents the results of a comprehensive 10-point audit of the Ember 
 
 ## 1. Contract Addresses Audit — PASS (33/33 tests)
 
-All 28 contract addresses have been verified to match the exact specification provided. Each address was checked both in the source code (`constants/contracts.ts`) and in the Ember AI system prompt (`server/routers.ts`). Additionally, a sample of 8 contracts were verified on-chain via live JSON-RPC calls to confirm deployed bytecode exists.
+All 28 contract addresses have been verified to match the exact specification provided. Each address was checked both in the source code (`constants/contracts.ts`) and in the Embris AI system prompt (`server/routers.ts`). Additionally, a sample of 8 contracts were verified on-chain via live JSON-RPC calls to confirm deployed bytecode exists.
 
 ### Base Contracts (Chain ID 8453, RPC: https://mainnet.base.org) — 14/14 PASS
 
@@ -104,9 +104,9 @@ A sample of contracts were verified to have deployed bytecode on their respectiv
 
 ---
 
-## 2. Ember AI Chat — PASS (9/9 tests)
+## 2. Embris AI Chat — PASS (9/9 tests)
 
-The Ember AI chat system is fully functional. It uses the server-side LLM integration (via `invokeLLM`) with a comprehensive system prompt that includes all Vaultfire Protocol knowledge.
+The Embris AI chat system is fully functional. It uses the server-side LLM integration (via `invokeLLM`) with a comprehensive system prompt that includes all Vaultfire Protocol knowledge.
 
 **System Prompt Verification:**
 
@@ -122,7 +122,7 @@ The system prompt in `server/routers.ts` includes all of the following:
 
 **Live Chat Test Result:**
 
-> When asked "What is the Vaultfire Protocol?", Ember responded with a 2,517-character detailed answer that correctly described the protocol, mentioned ethical AI governance, and referenced Vaultfire by name. Response was coherent, accurate, and aligned with the protocol's values.
+> When asked "What is the Vaultfire Protocol?", Embris responded with a 2,517-character detailed answer that correctly described the protocol, mentioned ethical AI governance, and referenced Vaultfire by name. Response was coherent, accurate, and aligned with the protocol's values.
 
 | Check | Status |
 |-------|--------|
@@ -165,7 +165,7 @@ All five required screens are implemented and render correctly with proper conte
 | Screen | File | Key Content | Status |
 |--------|------|-------------|--------|
 | Home | `app/(tabs)/index.tsx` | Vaultfire Protocol branding, network status, quick stats, quick actions | **PASS** |
-| Ember Chat | `app/(tabs)/chat.tsx` | Chat interface with Ember AI, message history, memory integration | **PASS** |
+| Embris Chat | `app/(tabs)/chat.tsx` | Chat interface with Embris AI, message history, memory integration | **PASS** |
 | Trust Verification | `app/(tabs)/verify.tsx` | Contract listing with on-chain verification, filter by chain | **PASS** |
 | Cross-Chain Bridge | `app/(tabs)/bridge.tsx` | Bridge contract status, chain selector, network connectivity | **PASS** |
 | Dashboard | `app/(tabs)/dashboard.tsx` | Protocol metrics, network health, contract categories, key components | **PASS** |
@@ -181,22 +181,22 @@ The tab bar layout (`app/(tabs)/_layout.tsx`) correctly configures all 5 tabs wi
 | Tab | Name | Title | Icon (SF Symbol) | Material Icon | Status |
 |-----|------|-------|-------------------|---------------|--------|
 | 1 | `index` | Home | `house.fill` | `home` | **PASS** |
-| 2 | `chat` | Ember | `bubble.left.fill` | `chat` | **PASS** |
+| 2 | `chat` | Embris | `bubble.left.fill` | `chat` | **PASS** |
 | 3 | `verify` | Verify | `shield.checkered` | `verified-user` | **PASS** |
 | 4 | `bridge` | Bridge | `arrow.left.arrow.right` | `swap-horiz` | **PASS** |
 | 5 | `dashboard` | Dashboard | `chart.bar.fill` | `dashboard` | **PASS** |
 
-All icon mappings are registered in `components/ui/icon-symbol.tsx` prior to use in the tab layout. The tab bar uses the dark theme background color with the ember/fire primary tint for active tabs.
+All icon mappings are registered in `components/ui/icon-symbol.tsx` prior to use in the tab layout. The tab bar uses the dark theme background color with the embris/fire primary tint for active tabs.
 
 ---
 
-## 6. Dark Ember/Fire Theme — PASS (6/6 tests)
+## 6. Dark Embris/Fire Theme — PASS (6/6 tests)
 
-The theme is configured in `theme.config.js` with a consistent dark ember/fire aesthetic across both light and dark color schemes. There are no white or light backgrounds anywhere in the app.
+The theme is configured in `theme.config.js` with a consistent dark embris/fire aesthetic across both light and dark color schemes. There are no white or light backgrounds anywhere in the app.
 
 | Token | Light Value | Dark Value | Description |
 |-------|------------|------------|-------------|
-| `primary` | `#FF6B35` | `#FF6B35` | Ember orange (accent) |
+| `primary` | `#FF6B35` | `#FF6B35` | Embris orange (accent) |
 | `background` | `#0D0D0D` | `#0D0D0D` | Deep black background |
 | `surface` | `#1A1A2E` | `#1A1A2E` | Dark surface for cards |
 | `foreground` | `#F5F5F5` | `#F5F5F5` | Light text on dark |
@@ -209,7 +209,7 @@ The theme is configured in `theme.config.js` with a consistent dark ember/fire a
 | Check | Status |
 |-------|--------|
 | Background is dark (#0D0D0D) | **PASS** |
-| Primary color is ember/fire orange | **PASS** |
+| Primary color is embris/fire orange | **PASS** |
 | Surface color is dark | **PASS** |
 | Both light and dark modes use dark colors | **PASS** |
 | No white/light backgrounds in theme | **PASS** |
@@ -247,7 +247,7 @@ The app features a custom-generated shield+flame logo that reflects the Vaultfir
 | App name is "Vaultfire" | **PASS** |
 | Logo URL set in `app.config.ts` | **PASS** |
 | Home screen shows "Vaultfire Protocol" | **PASS** |
-| Home screen shows "Powered by Ember AI" | **PASS** |
+| Home screen shows "Powered by Embris AI" | **PASS** |
 | Website `theloopbreaker.com` referenced | **PASS** |
 | Flame icon used in branding | **PASS** |
 
@@ -322,14 +322,14 @@ Server Chat: PASS (200 OK, 2,517 char response)
 | `constants/contracts.ts` | All 28 contract addresses, chain config, core values, system prompt |
 | `lib/blockchain.ts` | JSON-RPC blockchain connectivity service |
 | `lib/memory.ts` | Memory extraction and AsyncStorage persistence |
-| `server/routers.ts` | Server-side chat endpoint with Ember system prompt |
+| `server/routers.ts` | Server-side chat endpoint with Embris system prompt |
 | `app/(tabs)/index.tsx` | Home screen |
-| `app/(tabs)/chat.tsx` | Ember AI Chat screen |
+| `app/(tabs)/chat.tsx` | Embris AI Chat screen |
 | `app/(tabs)/verify.tsx` | Trust Verification screen |
 | `app/(tabs)/bridge.tsx` | Cross-Chain Bridge screen |
 | `app/(tabs)/dashboard.tsx` | Dashboard screen |
 | `app/(tabs)/_layout.tsx` | 5-tab navigation layout |
-| `theme.config.js` | Dark ember/fire theme tokens |
+| `theme.config.js` | Dark embris/fire theme tokens |
 | `components/ui/icon-symbol.tsx` | Icon mappings for all tabs |
 | `app.config.ts` | App branding configuration |
 | `__tests__/audit.test.ts` | 104 comprehensive audit tests |
@@ -338,6 +338,6 @@ Server Chat: PASS (200 OK, 2,517 char response)
 
 ## Conclusion
 
-The Ember mobile app for the Vaultfire Protocol passes all 10 audit areas with a perfect score of 105/105 tests (104 automated + 1 live server chat). Every contract address matches the specification exactly. The AI chat system is functional and knowledgeable. The memory system persists correctly. All screens render with the dark ember theme. Blockchain connectivity to both Base and Avalanche is confirmed live. Branding is complete with a custom shield+flame logo.
+The Embris mobile app for the Vaultfire Protocol passes all 10 audit areas with a perfect score of 105/105 tests (104 automated + 1 live server chat). Every contract address matches the specification exactly. The AI chat system is functional and knowledgeable. The memory system persists correctly. All screens render with the dark embris theme. Blockchain connectivity to both Base and Avalanche is confirmed live. Branding is complete with a custom shield+flame logo.
 
 **Final Verdict: PASS**

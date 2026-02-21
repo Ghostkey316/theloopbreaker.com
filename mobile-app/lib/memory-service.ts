@@ -35,8 +35,8 @@ export interface GrowthMetrics {
 }
 
 // ─── Storage Keys ────────────────────────────────────────────────
-const MEMORY_KEY = "@ember_memory";
-const GROWTH_KEY = "@ember_growth";
+const MEMORY_KEY = "@embris_memory";
+const GROWTH_KEY = "@embris_growth";
 const MAX_MEMORIES = 50;
 
 // ─── MemoryService ───────────────────────────────────────────────
@@ -225,7 +225,7 @@ class MemoryService {
     }
 
     const lines: string[] = [];
-    lines.push("\n--- EMBER'S MEMORY (stored locally on user's device) ---");
+    lines.push("\n--- EMBRIS'S MEMORY (stored locally on user's device) ---");
 
     // User profile
     const profile = this.memories.filter((m) => m.category === "user_profile");
@@ -435,7 +435,7 @@ export function extractMemoriesLocally(
     }
   }
 
-  // Detect if Ember said "I'll remember that"
+  // Detect if Embris said "I'll remember that"
   if (
     assistantMessage.toLowerCase().includes("remember that") ||
     assistantMessage.toLowerCase().includes("i'll keep that in mind") ||

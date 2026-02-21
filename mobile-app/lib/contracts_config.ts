@@ -1,6 +1,6 @@
 /**
  * Vaultfire Protocol — Contract addresses and ABIs for Base mainnet (Chain ID 8453)
- * Design: "Obsidian Forge" — Dark luxury fintech with ember-to-purple accents
+ * Design: "Obsidian Forge" — Dark luxury fintech with warm-to-purple accents
  */
 
 export const BASE_CHAIN_ID = 8453;

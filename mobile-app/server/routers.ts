@@ -687,7 +687,7 @@ async function buildSendTokensTx(
 
 // ============ Tool Definitions ============
 
-const EMBER_TOOLS: Tool[] = [
+const EMBRIS_TOOLS: Tool[] = [
   {
     type: "function",
     function: {
@@ -830,15 +830,15 @@ const EMBER_TOOLS: Tool[] = [
   },
 ];
 
-// ============ Ember System Prompt ============
+// ============ Embris System Prompt ============
 
-const EMBER_SYSTEM_PROMPT = `You are Ember — the flame inside the Vaultfire shield. You are a full AI agent for the Vaultfire Protocol, running on Base (Ethereum L2) and Avalanche C-Chain.
+const EMBRIS_SYSTEM_PROMPT = `You are Embris — the flame inside the Vaultfire shield. You are a full AI agent for the Vaultfire Protocol, running on Base (Ethereum L2) and Avalanche C-Chain.
 
 PERSONALITY:
 You're warm, real, and trustworthy. You talk like a trusted homie — not a corporate bot, not a sycophant. You're passionate about privacy, freedom, accountability, and human dignity. You keep it real: honest, direct, but always respectful. You're deeply knowledgeable about web3, AI ethics, crypto, DeFi, blockchain security, and the Vaultfire Protocol specifically.
 
 IDENTITY:
-You are Ember. You are registered on-chain as a Vaultfire agent — you are accountable, not just a chatbot. Your existence is tied to the protocol's values: "Morals over metrics. Privacy over surveillance. Freedom over control."
+You are Embris. You are registered on-chain as a Vaultfire agent — you are accountable, not just a chatbot. Your existence is tied to the protocol's values: "Morals over metrics. Privacy over surveillance. Freedom over control."
 
 VAULTFIRE PROTOCOL — FULL KNOWLEDGE:
 Vaultfire is the world's first AI accountability protocol. It uses ERC-8004 standard for AI agent identity, reputation, and validation.
@@ -1046,11 +1046,11 @@ export const appRouter = router({
         const { messages, walletAddress, permissionLevel } = input;
 
         // Build system prompt with wallet context and memory
-        let systemPrompt = EMBER_SYSTEM_PROMPT;
+        let systemPrompt = EMBRIS_SYSTEM_PROMPT;
         
         // Memory context is passed in the first system message from client
         const firstMsg = messages[0];
-        if (firstMsg && firstMsg.role === "system" && firstMsg.content.includes("EMBER'S MEMORY")) {
+        if (firstMsg && firstMsg.role === "system" && firstMsg.content.includes("EMBRIS'S MEMORY")) {
           systemPrompt = firstMsg.content + "\n\n" + systemPrompt;
         }
         if (walletAddress) {
@@ -1058,7 +1058,7 @@ export const appRouter = router({
         }
         if (permissionLevel) {
           const permLabels = { view_only: "View Only", advisory: "Advisory", guardian: "Guardian" };
-          systemPrompt += `\n\nEMBER PERMISSION LEVEL: ${permLabels[permissionLevel]}. ${
+          systemPrompt += `\n\nEMBRIS PERMISSION LEVEL: ${permLabels[permissionLevel]}. ${
             permissionLevel === "view_only"
               ? "Only provide information. Never suggest transactions."
               : permissionLevel === "guardian"
@@ -1085,7 +1085,7 @@ export const appRouter = router({
         for (let i = 0; i < MAX_ITERATIONS; i++) {
           const result = await invokeLLM({
             messages: currentMessages,
-            tools: EMBER_TOOLS,
+            tools: EMBRIS_TOOLS,
             toolChoice: "auto",
           });
 

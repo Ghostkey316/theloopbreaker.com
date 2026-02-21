@@ -12,7 +12,7 @@ import * as Notifications from "expo-notifications";
 import { ethers } from "ethers";
 import { getBaseProvider } from "./provider";
 import { fetchTrustProfile, type TrustProfile } from "./on-chain";
-import type { EmberPermission } from "./ember-permissions";
+import type { EmbrisPermission } from "./ember-permissions";
 
 export interface WalletState {
   ethBalance: string;
@@ -54,7 +54,7 @@ export async function getStoredWalletState(address: string): Promise<WalletState
 
 export async function monitorWallet(
   address: string,
-  permission: EmberPermission,
+  permission: EmbrisPermission,
   onUpdate?: (state: WalletState) => void
 ): Promise<() => void> {
   const provider = getBaseProvider();
@@ -148,7 +148,7 @@ export async function notifyNewApproval(
   tokenSymbol: string,
   spender: string,
   amount: string,
-  permission: EmberPermission
+  permission: EmbrisPermission
 ) {
   const isUnlimited = amount === "unlimited";
   const icon = isUnlimited ? "⚠️" : "✅";

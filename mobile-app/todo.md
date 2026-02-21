@@ -19,8 +19,8 @@
 - [x] New Chat button in sidebar
 - [x] Conversation title/preview in sidebar list
 - [x] Auto-scroll to newest message
-- [x] Ember AI persona with gpt-4o model
-- [x] System prompt for Ember persona
+- [x] Embris AI persona with gpt-4o model
+- [x] System prompt for Embris persona
 
 ## Trust Verify Tab
 - [x] Address input with paste button
@@ -65,7 +65,7 @@
 - [x] Store connected wallet address in AsyncStorage
 - [x] Auto-populate Trust Verify tab with connected wallet data
 - [x] Auto-populate Security tab with connected wallet data
-- [x] Pass wallet address to Ember for context in conversations
+- [x] Pass wallet address to Embris for context in conversations
 - [x] Show wallet icon with connection status indicator
 
 ## About Tab
@@ -95,11 +95,11 @@
 - [x] Send ETH/tokens flow with recipient input and amount
 - [x] NEVER display/interact with ASM tokens
 
-## Ember Permission Levels
+## Embris Permission Levels
 - [x] Permission level context (View Only / Advisory / Guardian)
 - [x] Default permission: Advisory
 - [x] Settings gear icon to change permission level
-- [x] Permission level affects Ember's behavior in chat
+- [x] Permission level affects Embris's behavior in chat
 - [x] Permission level shown in wallet connection modal
 
 ## Tab Order Update
@@ -107,12 +107,12 @@
 - [x] Add Wallet tab icon mapping
 - [x] All 6 tabs visible and functional
 
-## Ember Agent Upgrade
+## Embris Agent Upgrade
 - [x] Define OpenAI function calling tools (lookupTrustProfile, checkWalletSecurity, getTokenBalances, getContractInfo, registerAgent, createBond, submitFeedback, revokeApproval, sendTokens)
 - [x] Server-side tool executor that runs ethers.js calls and returns results
 - [x] Multi-turn tool call loop: model calls tool → executor runs → result fed back → model responds
-- [x] Upgrade Ember system prompt with full Vaultfire contract knowledge and agent persona
-- [x] Chat screen handles tool_call messages and shows "Ember is checking the chain..." state
+- [x] Upgrade Embris system prompt with full Vaultfire contract knowledge and agent persona
+- [x] Chat screen handles tool_call messages and shows "Embris is checking the chain..." state
 - [x] Transaction tool calls show preview modal before user signs
 - [x] Wallet monitoring polling service (30s interval when wallet connected)
 - [x] Proactive alert system: new txs, new approvals, trust changes
@@ -120,10 +120,10 @@
 - [x] Advisory mode: suggests revoke for unlimited approvals to unverified contracts
 
 ## Final Competition Features
-- [x] Wire up Ember tool calling with real on-chain ethers.js execution
+- [x] Wire up Embris tool calling with real on-chain ethers.js execution
 - [x] Define OpenAI function calling tools on server
 - [x] Execute tools server-side and return results to model
-- [x] Show "Ember is checking the chain..." status in Chat
+- [x] Show "Embris is checking the chain..." status in Chat
 - [x] One-tap revoke approvals in Security tab
 - [x] Build approve(spender, 0) transaction for revoke
 - [x] Transaction preview for revoke operations
@@ -194,12 +194,12 @@
 - [x] Fix failing tests (tsconfig.json exclude + jest.config.js testPathIgnorePatterns)
 - [x] Push fix and verify CI is green
 
-## Ember Memory System
+## Embris Memory System
 - [ ] Create MemoryService with AsyncStorage persistence
 - [ ] Define memory types: user_profile, preference, context, interaction, trust_cache, milestone
 - [ ] Memory extraction after each conversation exchange
 - [ ] Cap memory at 50 items with oldest-replaced-unless-pinned logic
-- [ ] Integrate memories into Ember system prompt at conversation start
+- [ ] Integrate memories into Embris system prompt at conversation start
 - [ ] Server-side memory extraction endpoint (lightweight LLM call)
 - [ ] "Remembered" toast notification in chat
 - [ ] Memory count in sidebar ("Ember remembers 12 things about you")

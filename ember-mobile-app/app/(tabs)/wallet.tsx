@@ -40,9 +40,9 @@ type WalletPhase =
   | "import"
   | "ready";
 
-interface EmberMessage {
+interface EmbrisMessage {
   text: string;
-  isEmber: boolean;
+  isEmbris: boolean;
 }
 
 // ─── Wallet Screen ──────────────────────────────────────────────────
@@ -60,7 +60,7 @@ export default function WalletScreen() {
   const [importText, setImportText] = useState("");
   const [importError, setImportError] = useState<string | null>(null);
   const [importLoading, setImportLoading] = useState(false);
-  const [emberMessages, setEmberMessages] = useState<EmberMessage[]>([]);
+  const [embrisMessages, setEmbrisMessages] = useState<EmbrisMessage[]>([]);
 
   // ─── Init ──────────────────────────────────────────────────────────
 
@@ -108,15 +108,15 @@ export default function WalletScreen() {
 
   const handleCreate = useCallback(async () => {
     setPhase("creating");
-    setEmberMessages([
-      { text: "Welcome! Let's set up your Vaultfire wallet together. This will be your key to the Vaultfire ecosystem.", isEmber: true },
+    setEmbrisMessages([
+      { text: "Welcome! Let's set up your Vaultfire wallet together. This will be your key to the Vaultfire ecosystem.", isEmbris: true },
     ]);
 
     // Small delay for the conversational feel
     await new Promise((r) => setTimeout(r, 1200));
-    setEmberMessages((prev) => [
+    setEmbrisMessages((prev) => [
       ...prev,
-      { text: "Generating your unique keypair now... This uses cryptographically secure randomness.", isEmber: true },
+      { text: "Generating your unique keypair now... This uses cryptographically secure randomness.", isEmbris: true },
     ]);
 
     try {
@@ -125,10 +125,10 @@ export default function WalletScreen() {
       setMnemonic(wallet.mnemonic);
 
       await new Promise((r) => setTimeout(r, 800));
-      setEmberMessages((prev) => [
+      setEmbrisMessages((prev) => [
         ...prev,
-        { text: `Your wallet is ready! Address: ${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`, isEmber: true },
-        { text: "Now I need you to back up your recovery phrase. This is the ONLY way to recover your wallet. Write these 12 words down somewhere safe.", isEmber: true },
+        { text: `Your wallet is ready! Address: ${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`, isEmbris: true },
+        { text: "Now I need you to back up your recovery phrase. This is the ONLY way to recover your wallet. Write these 12 words down somewhere safe.", isEmbris: true },
       ]);
 
       await new Promise((r) => setTimeout(r, 600));
@@ -142,17 +142,17 @@ export default function WalletScreen() {
       setVerifyIndices(indices.sort((a, b) => a - b));
       setPhase("backup");
     } catch (err: any) {
-      setEmberMessages((prev) => [
+      setEmbrisMessages((prev) => [
         ...prev,
-        { text: `Something went wrong: ${err.message}. Let's try again.`, isEmber: true },
+        { text: `Something went wrong: ${err.message}. Let's try again.`, isEmbris: true },
       ]);
       setPhase("onboarding");
     }
   }, []);
 
   const handleBackupConfirm = useCallback(() => {
-    setEmberMessages([
-      { text: "Great! Now let's verify you wrote them down correctly. Please enter the following words from your recovery phrase:", isEmber: true },
+    setEmbrisMessages([
+      { text: "Great! Now let's verify you wrote them down correctly. Please enter the following words from your recovery phrase:", isEmbris: true },
     ]);
     setPhase("verify");
   }, []);
@@ -165,8 +165,8 @@ export default function WalletScreen() {
     );
 
     if (correct) {
-      setEmberMessages([
-        { text: "Your wallet is secured! I'll always be here to help you manage it. Welcome to the Vaultfire ecosystem. 🔥", isEmber: true },
+      setEmbrisMessages([
+        { text: "Your wallet is secured! I'll always be here to help you manage it. Welcome to the Vaultfire ecosystem. 🔥", isEmbris: true },
       ]);
       setMnemonic(null); // Clear mnemonic from memory
       setPhase("ready");
@@ -288,13 +288,13 @@ export default function WalletScreen() {
               Secured on-device. Private key never leaves your phone.
             </Text>
 
-            {/* Ember intro message */}
+            {/* Embris intro message */}
             <Animated.View
               entering={FadeInDown.delay(200).duration(400)}
-              style={[s.emberBubble, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}
+              style={[s.embrisBubble, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}
             >
-              <Text style={[s.emberLabel, { color: colors.primary }]}>🔥 Ember</Text>
-              <Text style={[s.emberText, { color: colors.foreground }]}>
+              <Text style={[s.embrisLabel, { color: colors.primary }]}>🔥 Embris</Text>
+              <Text style={[s.embrisText, { color: colors.foreground }]}>
                 Welcome! I'll guide you through setting up your wallet. It only takes a minute.
               </Text>
             </Animated.View>
@@ -308,7 +308,7 @@ export default function WalletScreen() {
                   { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
                 ]}
               >
-                <Text style={[s.primaryButtonText, { color: "#FFFFFF" }]}>Create New Wallet</Text>
+                <Text style={[s.primaryButtonText, { color: "#FAFAFA" }]}>Create New Wallet</Text>
               </Pressable>
             </Animated.View>
 
@@ -340,24 +340,24 @@ export default function WalletScreen() {
     );
   }
 
-  // ─── Render: Creating (Ember conversational) ──────────────────────
+  // ─── Render: Creating (Embris conversational) ──────────────────────
 
   if (phase === "creating") {
     return (
       <ScreenContainer>
         <ScrollView contentContainerStyle={s.scrollContent}>
           <View style={s.chatContainer}>
-            {emberMessages.map((msg, idx) => (
+            {embrisMessages.map((msg, idx) => (
               <Animated.View
                 key={idx}
                 entering={FadeInDown.delay(idx * 300).duration(400)}
                 style={[
-                  s.emberBubble,
+                  s.embrisBubble,
                   { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` },
                 ]}
               >
-                <Text style={[s.emberLabel, { color: colors.primary }]}>🔥 Ember</Text>
-                <Text style={[s.emberText, { color: colors.foreground }]}>{msg.text}</Text>
+                <Text style={[s.embrisLabel, { color: colors.primary }]}>🔥 Embris</Text>
+                <Text style={[s.embrisText, { color: colors.foreground }]}>{msg.text}</Text>
               </Animated.View>
             ))}
             <ActivityIndicator size="small" color={colors.primary} style={s.loadingDot} />
@@ -380,11 +380,11 @@ export default function WalletScreen() {
 
             <Animated.View
               entering={FadeInDown.delay(100).duration(400)}
-              style={[s.emberBubble, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}
+              style={[s.embrisBubble, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}
             >
-              <Text style={[s.emberLabel, { color: colors.primary }]}>🔥 Ember</Text>
-              <Text style={[s.emberText, { color: colors.foreground }]}>
-                Write these words down in order. Ember can't recover them for you. This is your only backup.
+              <Text style={[s.embrisLabel, { color: colors.primary }]}>🔥 Embris</Text>
+              <Text style={[s.embrisText, { color: colors.foreground }]}>
+                Write these words down in order. Embris can't recover them for you. This is your only backup.
               </Text>
             </Animated.View>
 
@@ -416,7 +416,7 @@ export default function WalletScreen() {
                 { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
               ]}
             >
-              <Text style={[s.primaryButtonText, { color: "#FFFFFF" }]}>I've Written It Down</Text>
+              <Text style={[s.primaryButtonText, { color: "#FAFAFA" }]}>I've Written It Down</Text>
             </Pressable>
           </Animated.View>
         </ScrollView>
@@ -437,10 +437,10 @@ export default function WalletScreen() {
 
             <Animated.View
               entering={FadeInDown.delay(100).duration(400)}
-              style={[s.emberBubble, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}
+              style={[s.embrisBubble, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}
             >
-              <Text style={[s.emberLabel, { color: colors.primary }]}>🔥 Ember</Text>
-              <Text style={[s.emberText, { color: colors.foreground }]}>
+              <Text style={[s.embrisLabel, { color: colors.primary }]}>🔥 Embris</Text>
+              <Text style={[s.embrisText, { color: colors.foreground }]}>
                 Enter the following words from your recovery phrase to confirm you saved it correctly.
               </Text>
             </Animated.View>
@@ -498,7 +498,7 @@ export default function WalletScreen() {
               ]}
               disabled={!verifyInputs.every((v) => v.trim())}
             >
-              <Text style={[s.primaryButtonText, { color: "#FFFFFF" }]}>Verify & Complete</Text>
+              <Text style={[s.primaryButtonText, { color: "#FAFAFA" }]}>Verify & Complete</Text>
             </Pressable>
           </Animated.View>
         </ScrollView>
@@ -519,10 +519,10 @@ export default function WalletScreen() {
 
             <Animated.View
               entering={FadeInDown.delay(100).duration(400)}
-              style={[s.emberBubble, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}
+              style={[s.embrisBubble, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}
             >
-              <Text style={[s.emberLabel, { color: colors.primary }]}>🔥 Ember</Text>
-              <Text style={[s.emberText, { color: colors.foreground }]}>
+              <Text style={[s.embrisLabel, { color: colors.primary }]}>🔥 Embris</Text>
+              <Text style={[s.embrisText, { color: colors.foreground }]}>
                 Paste your 12-word seed phrase or private key below. Your key will be encrypted and stored only on this device.
               </Text>
             </Animated.View>
@@ -564,9 +564,9 @@ export default function WalletScreen() {
               ]}
             >
               {importLoading ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
+                <ActivityIndicator size="small" color="#FAFAFA" />
               ) : (
-                <Text style={[s.primaryButtonText, { color: "#FFFFFF" }]}>Import Wallet</Text>
+                <Text style={[s.primaryButtonText, { color: "#FAFAFA" }]}>Import Wallet</Text>
               )}
             </Pressable>
 
@@ -778,19 +778,19 @@ const s = StyleSheet.create({
     width: "100%",
   },
   // Ember bubble
-  emberBubble: {
+  embrisBubble: {
     width: "100%",
     borderRadius: 16,
     borderWidth: 1,
     padding: 16,
     marginVertical: 4,
   },
-  emberLabel: {
+  embrisLabel: {
     fontSize: 13,
     fontWeight: "600",
     marginBottom: 6,
   },
-  emberText: {
+  embrisText: {
     fontSize: 15,
     lineHeight: 22,
   },

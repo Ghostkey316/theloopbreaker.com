@@ -17,7 +17,7 @@
 | Surface Elevated | `#252540` | Hover/active states, input fields |
 | Foreground | `#FFFFFF` | Primary text |
 | Muted | `#9CA3AF` | Secondary text, timestamps |
-| Primary (Ember) | `#F97316` | Accent, buttons, active states |
+| Primary (Embris) | `#F97316` | Accent, buttons, active states |
 | Secondary (Purple) | `#8B5CF6` | Gradient end, secondary accents |
 | Border | `#2A2A3E` | Subtle card/section borders |
 | Success | `#22C55E` | Verified, active, healthy |
@@ -29,23 +29,23 @@
 ## Screen List
 
 ### 1. Chat (Tab 1 — Default)
-ChatGPT-style conversational interface with Ember AI.
+ChatGPT-style conversational interface with Embris AI.
 
 **Layout:**
-- **Header bar**: "Ember" title centered, hamburger menu (left) to open sidebar, "New Chat" icon (right)
+- **Header bar**: "Embris" title centered, hamburger menu (left) to open sidebar, "New Chat" icon (right)
 - **Message area**: Full-screen scrollable list
-  - User messages: Right-aligned, ember-tinted bubble (`#1A1A2E` with `#F97316` left border)
+  - User messages: Right-aligned, embris-tinted bubble (`#1A1A2E` with `#F97316` left border)
   - AI messages: Left-aligned, dark surface bubble (`#1A1A2E`)
   - Typing indicator: Animated dots in AI bubble
   - Timestamps below each message cluster
 - **Input bar**: Pinned to bottom, rises with keyboard
   - Dark input field (`#252540`) with rounded corners
-  - Send button (ember orange) on right, disabled when empty
-  - Placeholder: "Ask Ember anything..."
+  - Send button (embris orange) on right, disabled when empty
+  - Placeholder: "Ask Embris anything..."
 
 **Sidebar (Slide-out from left):**
 - Dark overlay + panel from left edge
-- "New Chat" button at top (ember accent)
+- "New Chat" button at top (embris accent)
 - Conversation list: Title preview + timestamp for each
 - Swipe-to-delete on conversations
 - Vaultfire shield logo at bottom of sidebar
@@ -62,7 +62,7 @@ On-chain identity and reputation lookup.
   - Bonds Card: Partnership bonds count, accountability bonds, total staked
   - Validation Card: Request count, response count
   - Bridge Status Card: Synced on Avalanche, recognized status
-- Each card: Surface background, ember accent headers, data in rows
+- Each card: Surface background, embris accent headers, data in rows
 - Empty state: Shield illustration + "Enter an address to verify"
 
 ### 3. Security (Tab 3)
@@ -94,7 +94,7 @@ Live protocol stats from Base contracts.
   - Flourishing Oracle: Oracle count, next round
   - Bridge: Message count, synced agents, paused status
   - Attestation: Attestation count, proof system
-- Each stat card: Surface bg, ember accent number, muted label
+- Each stat card: Surface bg, embris accent number, muted label
 - Pull-to-refresh to reload all stats
 - Loading skeletons while fetching
 
@@ -118,7 +118,7 @@ Vaultfire values, architecture, and contract explorer.
 
 ### Chat Flow
 1. User opens app → Chat tab (default)
-2. Empty state shows "Ask Ember anything..." prompt
+2. Empty state shows "Ask Embris anything..." prompt
 3. User types message → taps send
 4. Message appears in right bubble
 5. AI response streams in word-by-word in left bubble

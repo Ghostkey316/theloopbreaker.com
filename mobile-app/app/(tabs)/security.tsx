@@ -230,11 +230,11 @@ export default function SecurityScreen() {
         {/* Search Bar */}
         <View style={styles.searchSection}>
           <View style={styles.searchContainer}>
-            <MaterialIcons name="search" size={18} color="#6B7280" />
+            <MaterialIcons name="search" size={18} color="#52525B" />
             <TextInput
               style={styles.searchInput}
               placeholder="Enter wallet address..."
-              placeholderTextColor="#6B7280"
+              placeholderTextColor="#52525B"
               value={searchAddress}
               onChangeText={setSearchAddress}
               autoCapitalize="none"
@@ -262,9 +262,9 @@ export default function SecurityScreen() {
             ]}
           >
             {isLoading ? (
-              <ActivityIndicator color="#0A0A0F" size="small" />
+              <ActivityIndicator color="#09090B" size="small" />
             ) : (
-              <MaterialIcons name="security" size={20} color="#0A0A0F" />
+              <MaterialIcons name="security" size={20} color="#09090B" />
             )}
           </Pressable>
         </View>
@@ -327,7 +327,7 @@ export default function SecurityScreen() {
                   onPress={() => Linking.openURL(`${BASESCAN_URL}/address/${searchAddress}`)}
                   style={({ pressed }) => [pressed && { opacity: 0.6 }]}
                 >
-                  <MaterialIcons name="open-in-new" size={16} color="#9CA3AF" />
+                  <MaterialIcons name="open-in-new" size={16} color="#A1A1AA" />
                 </Pressable>
               </View>
 
@@ -426,7 +426,7 @@ export default function SecurityScreen() {
                             ]}
                             onPress={() => handleRevoke(approval)}
                           >
-                            <MaterialIcons name="block" size={14} color="#FFFFFF" />
+                            <MaterialIcons name="block" size={14} color="#FAFAFA" />
                             <Text style={styles.revokeButtonText}>Revoke</Text>
                           </Pressable>
                         </View>
@@ -472,7 +472,7 @@ export default function SecurityScreen() {
                 }}
                 style={({ pressed }) => [styles.scanMyWalletButton, pressed && { opacity: 0.8 }]}
               >
-                <MaterialIcons name="account-balance-wallet" size={18} color="#0A0A0F" />
+                <MaterialIcons name="account-balance-wallet" size={18} color="#09090B" />
                 <Text style={styles.scanMyWalletText}>Scan My Wallet</Text>
               </Pressable>
             )}
@@ -507,7 +507,7 @@ export default function SecurityScreen() {
                   onPress={() => setRevokeState({ status: "idle", approval: null, txHash: null, error: null })}
                   style={({ pressed }) => [pressed && { opacity: 0.6 }]}
                 >
-                  <MaterialIcons name="close" size={24} color="#9CA3AF" />
+                  <MaterialIcons name="close" size={24} color="#A1A1AA" />
                 </Pressable>
               </View>
 
@@ -559,7 +559,7 @@ export default function SecurityScreen() {
                     style={({ pressed }) => [styles.txConfirmButton, pressed && { opacity: 0.8, transform: [{ scale: 0.97 }] }]}
                     onPress={confirmRevoke}
                   >
-                    <MaterialIcons name="block" size={18} color="#FFFFFF" />
+                    <MaterialIcons name="block" size={18} color="#FAFAFA" />
                     <Text style={styles.txConfirmText}>Sign & Revoke</Text>
                   </Pressable>
 
@@ -623,7 +623,7 @@ export default function SecurityScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0A0A0F",
+    backgroundColor: "#09090B",
   },
   header: {
     flexDirection: "row",
@@ -631,8 +631,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#1A1A2E",
+    borderBottomWidth: 1,
+    borderBottomColor: "#111113",
   },
   headerLeft: {
     flexDirection: "row",
@@ -642,7 +642,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#FAFAFA",
   },
   connectedBadge: {
     flexDirection: "row",
@@ -676,10 +676,10 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1A1A2E",
+    backgroundColor: "#111113",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#2A2A3E",
+    borderColor: "rgba(255,255,255,0.06)",
     paddingHorizontal: 12,
     height: 44,
     gap: 8,
@@ -687,7 +687,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 14,
-    color: "#FFFFFF",
+    color: "#FAFAFA",
   },
   pasteButton: {
     padding: 4,
@@ -727,11 +727,11 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#FAFAFA",
   },
   loadingSubtext: {
     fontSize: 13,
-    color: "#9CA3AF",
+    color: "#A1A1AA",
     textAlign: "center",
     paddingHorizontal: 40,
   },
@@ -748,7 +748,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
-    backgroundColor: "#1A1A2E",
+    backgroundColor: "#111113",
     borderRadius: 12,
     padding: 16,
     borderLeftWidth: 3,
@@ -758,11 +758,11 @@ const styles = StyleSheet.create({
     width: 90,
     height: 90,
     borderRadius: 45,
-    backgroundColor: "#252540",
+    backgroundColor: "rgba(255,255,255,0.03)",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
-    borderColor: "#2A2A3E",
+    borderColor: "rgba(255,255,255,0.06)",
   },
   gaugeScore: {
     fontSize: 28,
@@ -770,7 +770,7 @@ const styles = StyleSheet.create({
   },
   gaugeLabel: {
     fontSize: 10,
-    color: "#9CA3AF",
+    color: "#A1A1AA",
     marginTop: 2,
   },
   gaugeInfo: {
@@ -798,32 +798,32 @@ const styles = StyleSheet.create({
   },
   gaugeDescription: {
     fontSize: 11,
-    color: "#6B7280",
+    color: "#52525B",
     lineHeight: 15,
   },
   addressDisplay: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: "#1A1A2E",
+    backgroundColor: "#111113",
     borderRadius: 12,
     padding: 12,
-    borderWidth: 0.5,
-    borderColor: "#2A2A3E",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
   },
   addressValue: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#FAFAFA",
     fontFamily: "monospace",
     flex: 1,
   },
   card: {
-    backgroundColor: "#1A1A2E",
+    backgroundColor: "#111113",
     borderRadius: 12,
     padding: 14,
-    borderWidth: 0.5,
-    borderColor: "#2A2A3E",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
   },
   cardHeader: {
     flexDirection: "row",
@@ -834,12 +834,12 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#FAFAFA",
     flex: 1,
   },
   noThreatsText: {
     fontSize: 13,
-    color: "#9CA3AF",
+    color: "#A1A1AA",
     lineHeight: 18,
   },
   threatsList: {
@@ -850,8 +850,8 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 8,
     paddingVertical: 6,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#252540",
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.03)",
   },
   threatText: {
     fontSize: 13,
@@ -865,7 +865,7 @@ const styles = StyleSheet.create({
   },
   approvalsLoadingText: {
     fontSize: 12,
-    color: "#9CA3AF",
+    color: "#A1A1AA",
     textAlign: "center",
   },
   noApprovals: {
@@ -876,13 +876,13 @@ const styles = StyleSheet.create({
   },
   noApprovalsText: {
     fontSize: 13,
-    color: "#9CA3AF",
+    color: "#A1A1AA",
     flex: 1,
     lineHeight: 18,
   },
   approvalsCount: {
     fontSize: 12,
-    color: "#9CA3AF",
+    color: "#A1A1AA",
     marginBottom: 10,
   },
   approvalsList: {
@@ -892,7 +892,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#252540",
+    backgroundColor: "rgba(255,255,255,0.03)",
     borderRadius: 8,
     padding: 10,
     borderLeftWidth: 2,
@@ -914,7 +914,7 @@ const styles = StyleSheet.create({
   approvalToken: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#FAFAFA",
   },
   unlimitedBadge: {
     flexDirection: "row",
@@ -937,7 +937,7 @@ const styles = StyleSheet.create({
   },
   approvalSpenderAddr: {
     fontSize: 10,
-    color: "#6B7280",
+    color: "#52525B",
     marginTop: 1,
     fontFamily: "monospace",
   },
@@ -962,7 +962,7 @@ const styles = StyleSheet.create({
   revokeButtonText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#FAFAFA",
   },
   revokeLink: {
     marginTop: 10,
@@ -977,7 +977,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 8,
-    backgroundColor: "#1A1A2E",
+    backgroundColor: "#111113",
     borderRadius: 12,
     padding: 12,
     borderLeftWidth: 3,
@@ -985,7 +985,7 @@ const styles = StyleSheet.create({
   },
   privacyText: {
     fontSize: 12,
-    color: "#9CA3AF",
+    color: "#A1A1AA",
     flex: 1,
     lineHeight: 17,
   },
@@ -1000,7 +1000,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "#1A1A2E",
+    backgroundColor: "#111113",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
@@ -1010,12 +1010,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: "#FAFAFA",
     textAlign: "center",
   },
   emptySubtitle: {
     fontSize: 13,
-    color: "#9CA3AF",
+    color: "#A1A1AA",
     textAlign: "center",
     lineHeight: 18,
   },
@@ -1032,7 +1032,7 @@ const styles = StyleSheet.create({
   scanMyWalletText: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#0A0A0F",
+    color: "#09090B",
   },
   // Revoke Modal
   modalOverlay: {
@@ -1041,7 +1041,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: "#0D0D14",
+    backgroundColor: "#09090B",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
@@ -1064,42 +1064,42 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: "#FAFAFA",
   },
   txPreviewCard: {
-    backgroundColor: "#1A1A2E",
+    backgroundColor: "#111113",
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#2A2A3E",
+    borderColor: "rgba(255,255,255,0.06)",
   },
   txLabel: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#9CA3AF",
+    color: "#A1A1AA",
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   txValue: {
     fontSize: 14,
-    color: "#FFFFFF",
+    color: "#FAFAFA",
     marginTop: 4,
     fontWeight: "500",
   },
   txValueMono: {
     fontSize: 12,
-    color: "#9CA3AF",
+    color: "#A1A1AA",
     marginTop: 2,
     fontFamily: "monospace",
   },
   txDivider: {
     height: 1,
-    backgroundColor: "#2A2A3E",
+    backgroundColor: "rgba(255,255,255,0.06)",
     marginVertical: 14,
   },
   txCodeBlock: {
-    backgroundColor: "#252540",
+    backgroundColor: "rgba(255,255,255,0.03)",
     borderRadius: 6,
     padding: 10,
     marginTop: 6,
@@ -1113,7 +1113,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 8,
-    backgroundColor: "#1A1A2E",
+    backgroundColor: "#111113",
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
@@ -1139,7 +1139,7 @@ const styles = StyleSheet.create({
   txConfirmText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#FAFAFA",
   },
   txCancelButton: {
     alignItems: "center",
@@ -1147,7 +1147,7 @@ const styles = StyleSheet.create({
   },
   txCancelText: {
     fontSize: 14,
-    color: "#9CA3AF",
+    color: "#A1A1AA",
   },
   txPendingContainer: {
     alignItems: "center",
@@ -1157,11 +1157,11 @@ const styles = StyleSheet.create({
   txPendingTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#FAFAFA",
   },
   txPendingSubtext: {
     fontSize: 13,
-    color: "#9CA3AF",
+    color: "#A1A1AA",
     textAlign: "center",
   },
   txConfirmedContainer: {
@@ -1179,7 +1179,7 @@ const styles = StyleSheet.create({
   },
   txConfirmedSubtext: {
     fontSize: 13,
-    color: "#9CA3AF",
+    color: "#A1A1AA",
     textAlign: "center",
     lineHeight: 18,
     paddingHorizontal: 20,
@@ -1205,6 +1205,6 @@ const styles = StyleSheet.create({
   txDoneText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#0A0A0F",
+    color: "#09090B",
   },
 });

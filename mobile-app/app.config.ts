@@ -28,7 +28,7 @@ const schemeFromBundleId = `manus${timestamp}`;
 
 const env = {
   // App branding - update these values directly (do not use env vars)
-  appName: "Vaultfire",
+  appName: "Embris",
   appSlug: "vaultfire-ai",
   // S3 URL of the app logo - set this to the URL returned by generate_image when creating custom logo
   // Leave empty to use the default icon from assets/images/icon.png
@@ -125,7 +125,7 @@ const config: ExpoConfig = {
     typedRoutes: true,
     reactCompiler: true,
   },
-  description: "The world's first AI accountability protocol. Privacy-first, read-only wallet integration, on-chain trust verification.",
+  description: "Embris — Your ethical AI companion. Powered by the Vaultfire Protocol. Privacy-first, read-only wallet integration, on-chain trust verification.",
 };
 
 export default config;

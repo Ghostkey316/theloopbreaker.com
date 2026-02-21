@@ -1,5 +1,5 @@
 /**
- * Comprehensive Audit Tests for Ember - Vaultfire Protocol App
+ * Comprehensive Audit Tests for Embris - Vaultfire Protocol App
  * Tests all 10 audit areas with PASS/FAIL for each item.
  */
 
@@ -117,10 +117,10 @@ describe("1. Contract Addresses Audit", () => {
 });
 
 // ============================================================
-// 2. EMBER AI CHAT AUDIT
+// 2. EMBRIS AI CHAT AUDIT
 // ============================================================
 
-describe("2. Ember AI Chat Audit", () => {
+describe("2. Embris AI Chat Audit", () => {
   const serverRouters = fs.readFileSync(
     path.resolve(__dirname, "../server/routers.ts"),
     "utf-8"
@@ -138,7 +138,7 @@ describe("2. Ember AI Chat Audit", () => {
   it("System prompt includes Vaultfire Protocol knowledge", () => {
     // Check either server routers or contracts file for the system prompt
     const hasSystemPrompt =
-      serverRouters.includes("EMBER_SYSTEM_PROMPT") ||
+      serverRouters.includes("EMBRIS_SYSTEM_PROMPT") ||
       serverRouters.includes("Vaultfire Protocol");
     expect(hasSystemPrompt).toBe(true);
   });
@@ -263,7 +263,7 @@ describe("4. All 5 Screens Audit", () => {
     const file = path.join(tabsDir, "chat.tsx");
     expect(fs.existsSync(file)).toBe(true);
     const content = fs.readFileSync(file, "utf-8");
-    expect(content).toContain("Ember");
+    expect(content).toContain("Embris");
     expect(content).toContain("ScreenContainer");
   });
 
@@ -310,7 +310,7 @@ describe("5. Tab Navigation Audit", () => {
     "utf-8"
   );
 
-  it("Tab layout has 6 Tabs.Screen entries (Home, Ember, Wallet, Verify, Bridge, Dashboard)", () => {
+  it("Tab layout has 6 Tabs.Screen entries (Home, Embris, Wallet, Verify, Bridge, Dashboard)", () => {
     const tabScreenMatches = layoutFile.match(/Tabs\.Screen/g);
     expect(tabScreenMatches?.length).toBe(6);
   });
@@ -325,9 +325,9 @@ describe("5. Tab Navigation Audit", () => {
     expect(layoutFile).toContain('title: "Home"');
   });
 
-  it('Has Ember tab (name="chat")', () => {
+  it('Has Embris tab (name="chat")', () => {
     expect(layoutFile).toContain('name="chat"');
-    expect(layoutFile).toContain('title: "Ember"');
+    expect(layoutFile).toContain('title: "Embris"');
   });
 
   it('Has Verify tab (name="verify")', () => {
@@ -370,7 +370,7 @@ describe("5. Tab Navigation Audit", () => {
 // 6. THEME AUDIT
 // ============================================================
 
-describe("6. Dark Ember/Fire Theme Audit", () => {
+describe("6. Dark Embris/Fire Theme Audit", () => {
   const themeConfig = fs.readFileSync(
     path.resolve(__dirname, "../theme.config.js"),
     "utf-8"
@@ -380,7 +380,7 @@ describe("6. Dark Ember/Fire Theme Audit", () => {
     expect(themeConfig).toContain("#0A0A0C");
   });
 
-  it("Primary color is ember/fire orange", () => {
+  it("Primary color is embris/fire orange", () => {
     // Should be an orange-ish color
     expect(themeConfig).toMatch(/#[Ff]{2}[0-9A-Fa-f]{4}/);
   });
@@ -538,7 +538,7 @@ describe("8. Branding Audit", () => {
       "utf-8"
     );
     expect(homeScreen).toContain("Vaultfire Protocol");
-    expect(homeScreen).toContain("Powered by Ember AI");
+    expect(homeScreen).toContain("Powered by Embris AI");
   });
 
   it("Website theloopbreaker.com is referenced", () => {

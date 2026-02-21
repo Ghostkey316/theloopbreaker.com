@@ -1,6 +1,6 @@
-# Ember Mobile App — Design & UX Audit Report
+# Embris Mobile App — Design & UX Audit Report
 
-**Project:** Ember — Vaultfire Protocol Mobile App  
+**Project:** Embris — Vaultfire Protocol Mobile App  
 **Date:** February 20, 2026  
 **Auditor:** Manus AI  
 **Version:** Design Overhaul v2 (commit `8680905`)  
@@ -11,7 +11,7 @@
 
 ## Executive Summary
 
-This report documents a professional-grade design and UX audit of the Ember mobile app for the Vaultfire Protocol. The audit was conducted against App Store submission standards, with the ChatGPT mobile app as the quality benchmark. The app was rebuilt from a basic template to a polished, production-ready experience across all five screens. Every finding was addressed and verified through automated testing.
+This report documents a professional-grade design and UX audit of the Embris mobile app for the Vaultfire Protocol. The audit was conducted against App Store submission standards, with the ChatGPT mobile app as the quality benchmark. The app was rebuilt from a basic template to a polished, production-ready experience across all five screens. Every finding was addressed and verified through automated testing.
 
 **Overall Verdict: PASS — App Store Ready (with noted recommendations)**
 
@@ -23,16 +23,16 @@ The chat screen was completely rebuilt to match ChatGPT's mobile app quality. Th
 
 | Feature | Status | Details |
 |---------|--------|---------|
-| Message bubbles | **PASS** | User messages right-aligned with ember orange accent, Ember responses left-aligned with subtle dark surface background. Proper padding (12px), border radius (16px with directional corners), and max-width (80%) constraints. |
+| Message bubbles | **PASS** | User messages right-aligned with embris orange accent, Embris responses left-aligned with subtle dark surface background. Proper padding (12px), border radius (16px with directional corners), and max-width (80%) constraints. |
 | Typing indicator | **PASS** | Three animated bouncing dots using `react-native-reanimated` with `withRepeat`, `withSequence`, and staggered delays (0ms, 150ms, 300ms). Dots bounce vertically with smooth easing. |
 | Markdown rendering | **PASS** | Custom `MarkdownText` component renders: **bold text**, `inline code`, fenced code blocks with language labels, bullet lists (•), numbered lists, and paragraph spacing. Code blocks use monospace font with dark background. |
-| Welcome screen | **PASS** | When no messages exist, displays branded welcome with flame icon, "Welcome to Ember" heading, description text, and four suggested prompts: "What is ERC-8004?", "Show me the Base contracts", "Explain the core values", "How does the bridge work?". Tapping a prompt sends it as a message. |
+| Welcome screen | **PASS** | When no messages exist, displays branded welcome with flame icon, "Welcome to Embris" heading, description text, and four suggested prompts: "What is ERC-8004?", "Show me the Base contracts", "Explain the core values", "How does the bridge work?". Tapping a prompt sends it as a message. |
 | Clear chat | **PASS** | Header button opens confirmation alert. Clears messages, chat history (AsyncStorage), and memory store. Returns to welcome screen. |
-| Send button | **PASS** | Send button is disabled and transparent when input is empty or loading. Activates with ember orange background when text is present. Uses `hasText && !isLoading` conditional. |
+| Send button | **PASS** | Send button is disabled and transparent when input is empty or loading. Activates with embris orange background when text is present. Uses `hasText && !isLoading` conditional. |
 | Keyboard avoidance | **PASS** | `KeyboardAvoidingView` with platform-specific behavior (`padding` on iOS, `height` on Android) and `keyboardVerticalOffset` of 90. Input bar stays above keyboard. |
 | Auto-scroll | **PASS** | `ScrollView` with `onContentSizeChange` triggers `scrollToEnd({ animated: true })` on new messages. Keeps conversation pinned to bottom. |
 | Wallet integration | **PASS** | Header wallet icon opens modal. Users can enter an Ethereum address (validated with `0x` prefix and 42-char length). Address persists via AsyncStorage. Connected state shows truncated address and disconnect option. |
-| Disclaimer | **PASS** | Footer text: "Ember can make mistakes. Verify important information." — matches ChatGPT's approach to AI transparency. |
+| Disclaimer | **PASS** | Footer text: "Embris can make mistakes. Verify important information." — matches ChatGPT's approach to AI transparency. |
 
 ---
 
@@ -47,7 +47,7 @@ The chat screen was completely rebuilt to match ChatGPT's mobile app quality. Th
 | Safe area handling | **PASS** | All screens wrapped in `ScreenContainer` with `SafeAreaView` edges `["top", "left", "right"]`. Tab bar handles bottom safe area. |
 | Loading states | **PASS** | All data screens (Verify, Bridge, Dashboard) show `ActivityIndicator` with descriptive text while fetching. Individual contract cards show per-item loading spinners. |
 | Error states | **PASS** | Network failures caught with try/catch. Offline contracts show red "Offline" status pills. Bridge shows "currently offline" message. Dashboard shows warning/error health indicators. |
-| Pull-to-refresh | **PASS** | All four data screens (Home, Verify, Bridge, Dashboard) implement `RefreshControl` with ember orange tint color. Refreshing state properly managed. |
+| Pull-to-refresh | **PASS** | All four data screens (Home, Verify, Bridge, Dashboard) implement `RefreshControl` with embris orange tint color. Refreshing state properly managed. |
 | Haptic feedback | **PASS** | `HapticTab` component on all tab presses. Press feedback on interactive elements via `Pressable` with `scale: 0.97` transform and opacity changes. |
 | Animations | **PASS** | All screens use `FadeInDown` from `react-native-reanimated` with staggered delays (50ms-700ms) for progressive content reveal. Duration 250-400ms for smooth feel. |
 
@@ -58,10 +58,10 @@ The chat screen was completely rebuilt to match ChatGPT's mobile app quality. Th
 | Feature | Status | Details |
 |---------|--------|---------|
 | Shield+flame logo | **PASS** | Custom-generated app icon with shield and flame motif. Deployed to `icon.png`, `splash-icon.png`, `favicon.png`, and `android-icon-foreground.png`. |
-| "Powered by Ember AI" | **PASS** | Displayed on Home screen below "Vaultfire Protocol" title. Subtle primary-colored text. |
+| "Powered by Embris AI" | **PASS** | Displayed on Home screen below "Vaultfire Protocol" title. Subtle primary-colored text. |
 | Core values | **PASS** | "Morals over metrics. Privacy over surveillance. Freedom over control." displayed on Home screen (italic, muted) and Dashboard (in dedicated values card with flame icon). Not overwhelming — integrated naturally. |
 | theloopbreaker.com | **PASS** | Linked on Home screen and Dashboard with chevron icon. Opens in system browser via `Linking.openURL`. |
-| Color palette | **PASS** | Premium ember palette: `#FF6B35` (ember orange primary), `#0A0A0C` (near-black background), `#161418` (warm dark surface), `#F0E6D8` (warm cream text), `#7A6B5D` (warm gray muted). No garish colors — warm and premium. |
+| Color palette | **PASS** | Premium ember palette: `#FF6B35` (embris orange primary), `#0A0A0C` (near-black background), `#161418` (warm dark surface), `#F0E6D8` (warm cream text), `#7A6B5D` (warm gray muted). No garish colors — warm and premium. |
 | Dark theme consistency | **PASS** | Both light and dark mode tokens use the same dark values. No white screens anywhere. Splash screen background `#0A0A0C`. |
 
 ---
@@ -69,12 +69,12 @@ The chat screen was completely rebuilt to match ChatGPT's mobile app quality. Th
 ## 4. Screen-by-Screen UX Walkthrough
 
 ### Home Screen
-The Home screen serves as the protocol dashboard entry point. It opens with a flame icon in a subtle circular background, "Vaultfire Protocol" title, and "Powered by Ember AI" subtitle. Below, two network status cards show live connectivity to Base and Avalanche with block numbers, latency, and contract counts. A protocol overview section shows 28 contracts, 2 chains, and ERC-8004 standard. Four quick-action buttons navigate to each major feature. The flow is clear and purposeful.
+The Home screen serves as the protocol dashboard entry point. It opens with a flame icon in a subtle circular background, "Vaultfire Protocol" title, and "Powered by Embris AI" subtitle. Below, two network status cards show live connectivity to Base and Avalanche with block numbers, latency, and contract counts. A protocol overview section shows 28 contracts, 2 chains, and ERC-8004 standard. Four quick-action buttons navigate to each major feature. The flow is clear and purposeful.
 
 **Verdict: PASS** — Clean, informative, and well-organized.
 
-### Ember Chat Screen
-The chat opens with a branded welcome screen showing four suggested prompts. Tapping a prompt sends it immediately. Messages appear with proper bubble styling — user on the right in ember orange, Ember on the left with dark surface background. While Ember is thinking, an animated three-dot typing indicator bounces. Responses render with markdown formatting. The input bar has a clean design with placeholder text and a send button that only activates when text is present. The header shows a wallet icon and a clear-chat button.
+### Embris Chat Screen
+The chat opens with a branded welcome screen showing four suggested prompts. Tapping a prompt sends it immediately. Messages appear with proper bubble styling — user on the right in embris orange, Ember on the left with dark surface background. While Ember is thinking, an animated three-dot typing indicator bounces. Responses render with markdown formatting. The input bar has a clean design with placeholder text and a send button that only activates when text is present. The header shows a wallet icon and a clear-chat button.
 
 **Verdict: PASS** — Comparable to ChatGPT's mobile chat experience.
 
@@ -151,7 +151,7 @@ While the app passes all audit criteria, the following enhancements would furthe
 
 ## Conclusion
 
-The Ember mobile app for the Vaultfire Protocol has been elevated from a basic template to a professionally designed, App Store-quality application. The chat experience matches the polish of leading AI chat apps with markdown rendering, animated typing indicators, and a branded welcome screen. All five screens display real on-chain data fetched via JSON-RPC. The premium ember/fire theme is consistent across every surface. Branding is prominent but tasteful. All 174 automated tests pass, and both GitHub CI workflows are green.
+The Embris mobile app for the Vaultfire Protocol has been elevated from a basic template to a professionally designed, App Store-quality application. The chat experience matches the polish of leading AI chat apps with markdown rendering, animated typing indicators, and a branded welcome screen. All five screens display real on-chain data fetched via JSON-RPC. The premium embris/fire theme is consistent across every surface. Branding is prominent but tasteful. All 174 automated tests pass, and both GitHub CI workflows are green.
 
 ---
 

@@ -44,7 +44,7 @@ describe("Design Audit — Chat Experience", () => {
     expect(chatCode).toContain("What is ERC-8004?");
     expect(chatCode).toContain("Show me the Base contracts");
     expect(chatCode).toContain("showWelcome");
-    expect(chatCode).toContain("Welcome to Ember");
+    expect(chatCode).toContain("Welcome to Embris");
   });
 
   it("has clear chat functionality", () => {
@@ -77,11 +77,11 @@ describe("Design Audit — Chat Experience", () => {
   });
 
   it("has message input with placeholder", () => {
-    expect(chatCode).toContain("Message Ember...");
+    expect(chatCode).toContain("Message Embris...");
   });
 
   it("has disclaimer about AI accuracy", () => {
-    expect(chatCode).toContain("Ember can make mistakes");
+    expect(chatCode).toContain("Embris can make mistakes");
   });
 });
 
@@ -93,7 +93,7 @@ describe("Design Audit — Theme & Branding", () => {
     expect(themeConfig).toContain("0A0A0C"); // near-black
   });
 
-  it("has ember orange primary color", () => {
+  it("has embris orange primary color", () => {
     expect(themeConfig).toContain("FF6B35");
   });
 
@@ -206,8 +206,8 @@ describe("Design Audit — Branding Elements", () => {
     expect(homeCode).toContain("Vaultfire Protocol");
   });
 
-  it("Home: has Powered by Ember AI tagline", () => {
-    expect(homeCode).toContain("Powered by Ember AI");
+  it("Home: has Powered by Embris AI tagline", () => {
+    expect(homeCode).toContain("Powered by Embris AI");
   });
 
   it("Home: has flame icon", () => {
@@ -245,7 +245,7 @@ describe("Design Audit — Tab Navigation", () => {
 
   it("has correct tab titles", () => {
     expect(tabLayout).toContain('title: "Home"');
-    expect(tabLayout).toContain('title: "Ember"');
+    expect(tabLayout).toContain('title: "Embris"');
     expect(tabLayout).toContain('title: "Verify"');
     expect(tabLayout).toContain('title: "Bridge"');
     expect(tabLayout).toContain('title: "Dashboard"');

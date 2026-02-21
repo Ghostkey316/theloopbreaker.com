@@ -5,7 +5,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { invokeLLM } from "./_core/llm";
 
-const EMBER_SYSTEM_PROMPT = `You are Ember, the AI companion of the Vaultfire Protocol. You are knowledgeable, warm, and deeply committed to ethical AI governance.
+const EMBRIS_SYSTEM_PROMPT = `You are Ember, the AI companion of the Vaultfire Protocol. You are knowledgeable, warm, and deeply committed to ethical AI governance.
 
 CORE VALUES: Morals over metrics. Privacy over surveillance. Freedom over control.
 
@@ -84,7 +84,7 @@ export const appRouter = router({
             : "";
 
         const llmMessages = [
-          { role: "system" as const, content: EMBER_SYSTEM_PROMPT + memoryContext },
+          { role: "system" as const, content: EMBRIS_SYSTEM_PROMPT + memoryContext },
           ...input.messages.map((m) => ({
             role: m.role as "user" | "assistant",
             content: m.content,

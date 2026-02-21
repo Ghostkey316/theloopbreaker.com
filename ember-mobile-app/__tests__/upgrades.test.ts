@@ -29,8 +29,8 @@ describe("Upgrade 1: SSE Streaming Chat", () => {
     expect(serverStream).toContain("data: [DONE]");
   });
 
-  it("server: includes full Ember system prompt with all contracts", () => {
-    expect(serverStream).toContain("EMBER_SYSTEM_PROMPT");
+  it("server: includes full Embris system prompt with all contracts", () => {
+    expect(serverStream).toContain("EMBRIS_SYSTEM_PROMPT");
     expect(serverStream).toContain("Morals over metrics");
     expect(serverStream).toContain("0x38165D2D7a8584985CCa5640f4b32b1f3347CC83"); // Base MissionEnforcement
     expect(serverStream).toContain("0xE1D52bF7A842B207B8C48eAE801f9d97A3C4D709"); // Avax MissionEnforcement
@@ -127,7 +127,7 @@ describe("Upgrade 2: Wallet Integration", () => {
     expect(chatScreen).toContain("formatBalance");
   });
 
-  it("chat: passes wallet address to Ember as memory context", () => {
+  it("chat: passes wallet address to Embris as memory context", () => {
     expect(chatScreen).toContain("User wallet:");
   });
 });

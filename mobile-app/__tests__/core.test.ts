@@ -206,9 +206,9 @@ describe("Security Rules", () => {
   });
 });
 
-// ============ Ember Permission Levels ============
+// ============ Embris Permission Levels ============
 
-describe("Ember Permission Levels", () => {
+describe("Embris Permission Levels", () => {
   const PERMISSION_LEVELS = ["view_only", "advisory", "guardian"] as const;
 
   it("should have exactly 3 permission levels", () => {

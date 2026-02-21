@@ -296,7 +296,7 @@ export default function WalletScreen() {
             </View>
           )}
         </View>
-        <MaterialIcons name="open-in-new" size={14} color="#6B7280" style={{ marginLeft: 4 }} />
+        <MaterialIcons name="open-in-new" size={14} color="#52525B" style={{ marginLeft: 4 }} />
       </Pressable>
     );
   };
@@ -391,7 +391,7 @@ export default function WalletScreen() {
             <MaterialIcons
               name="account-balance-wallet"
               size={16}
-              color={activeTab === "tokens" ? "#F97316" : "#6B7280"}
+              color={activeTab === "tokens" ? "#F97316" : "#52525B"}
             />
             <Text style={[styles.tabButtonText, activeTab === "tokens" && styles.tabButtonTextActive]}>
               Tokens
@@ -404,7 +404,7 @@ export default function WalletScreen() {
             <MaterialIcons
               name="history"
               size={16}
-              color={activeTab === "history" ? "#F97316" : "#6B7280"}
+              color={activeTab === "history" ? "#F97316" : "#52525B"}
             />
             <Text style={[styles.tabButtonText, activeTab === "history" && styles.tabButtonTextActive]}>
               History
@@ -430,7 +430,7 @@ export default function WalletScreen() {
               </View>
             ) : (
               <View style={styles.emptyTokens}>
-                <MaterialIcons name="info" size={32} color="#6B7280" />
+                <MaterialIcons name="info" size={32} color="#52525B" />
                 <Text style={styles.emptyTokensText}>
                   No token balances on {activeChain === "base" ? "Base" : "Avalanche"}
                 </Text>
@@ -444,7 +444,7 @@ export default function WalletScreen() {
           <>
             {activeChain !== "base" ? (
               <View style={styles.emptyTokens}>
-                <MaterialIcons name="info" size={32} color="#6B7280" />
+                <MaterialIcons name="info" size={32} color="#52525B" />
                 <Text style={styles.emptyTokensText}>
                   Transaction history is available for Base chain only
                 </Text>
@@ -482,7 +482,7 @@ export default function WalletScreen() {
               </View>
             ) : (
               <View style={styles.emptyTokens}>
-                <MaterialIcons name="receipt-long" size={32} color="#6B7280" />
+                <MaterialIcons name="receipt-long" size={32} color="#52525B" />
                 <Text style={styles.emptyTokensText}>No transactions found</Text>
                 <Pressable
                   onPress={() => Linking.openURL(`${BASESCAN_URL}/address/${connectedAddress}`)}
@@ -512,7 +512,7 @@ export default function WalletScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Send {selectedToken?.symbol}</Text>
               <Pressable onPress={() => setShowSendModal(false)}>
-                <MaterialIcons name="close" size={24} color="#9CA3AF" />
+                <MaterialIcons name="close" size={24} color="#A1A1AA" />
               </Pressable>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
@@ -521,7 +521,7 @@ export default function WalletScreen() {
                 <TextInput
                   style={styles.textInput}
                   placeholder="0x... or name.eth / name.base"
-                  placeholderTextColor="#6B7280"
+                  placeholderTextColor="#52525B"
                   value={resolvedName || sendRecipient}
                   onChangeText={(text) => {
                     if (text.endsWith(".eth") || text.endsWith(".base")) {
@@ -546,7 +546,7 @@ export default function WalletScreen() {
                   <TextInput
                     style={styles.amountField}
                     placeholder="0.0"
-                    placeholderTextColor="#6B7280"
+                    placeholderTextColor="#52525B"
                     value={sendAmount}
                     onChangeText={setSendAmount}
                     keyboardType="decimal-pad"
@@ -584,13 +584,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#1A1A2E",
+    borderBottomWidth: 1,
+    borderBottomColor: "#111113",
     marginBottom: 16,
   },
   headerLabel: {
     fontSize: 12,
-    color: "#9CA3AF",
+    color: "#A1A1AA",
     fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -627,11 +627,11 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#1A1A2E",
+    backgroundColor: "#111113",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 0.5,
-    borderColor: "#2A2A3E",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
   },
   chainSelector: {
     flexDirection: "row",
@@ -644,9 +644,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 10,
-    backgroundColor: "#1A1A2E",
+    backgroundColor: "#111113",
     borderWidth: 1,
-    borderColor: "#2A2A3E",
+    borderColor: "rgba(255,255,255,0.06)",
     alignItems: "center",
   },
   chainButtonActive: {
@@ -656,19 +656,19 @@ const styles = StyleSheet.create({
   chainButtonText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#9CA3AF",
+    color: "#A1A1AA",
   },
   chainButtonTextActive: {
-    color: "#0A0A0F",
+    color: "#09090B",
   },
   balanceCard: {
     marginHorizontal: 16,
     marginBottom: 16,
-    backgroundColor: "#1A1A2E",
+    backgroundColor: "#111113",
     borderRadius: 14,
     padding: 20,
     borderWidth: 1,
-    borderColor: "#2A2A3E",
+    borderColor: "rgba(255,255,255,0.06)",
   },
   balanceCardHeader: {
     flexDirection: "row",
@@ -678,7 +678,7 @@ const styles = StyleSheet.create({
   },
   balanceCardLabel: {
     fontSize: 12,
-    color: "#9CA3AF",
+    color: "#A1A1AA",
     fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -686,22 +686,22 @@ const styles = StyleSheet.create({
   balanceCardAmount: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: "#FAFAFA",
     marginBottom: 4,
   },
   balanceCardSubtext: {
     fontSize: 12,
-    color: "#6B7280",
+    color: "#52525B",
   },
   tabSwitcher: {
     flexDirection: "row",
     marginHorizontal: 16,
     marginBottom: 16,
-    backgroundColor: "#0D0D14",
+    backgroundColor: "#09090B",
     borderRadius: 10,
     padding: 3,
     borderWidth: 1,
-    borderColor: "#1A1A2E",
+    borderColor: "#111113",
   },
   tabButton: {
     flex: 1,
@@ -713,12 +713,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   tabButtonActive: {
-    backgroundColor: "#1A1A2E",
+    backgroundColor: "#111113",
   },
   tabButtonText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#6B7280",
+    color: "#52525B",
   },
   tabButtonTextActive: {
     color: "#F97316",
@@ -729,18 +729,18 @@ const styles = StyleSheet.create({
   tokenItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1A1A2E",
+    backgroundColor: "#111113",
     borderRadius: 12,
     padding: 14,
     marginBottom: 8,
-    borderWidth: 0.5,
-    borderColor: "#2A2A3E",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
   },
   tokenIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#0D0D14",
+    backgroundColor: "#09090B",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -751,11 +751,11 @@ const styles = StyleSheet.create({
   tokenSymbol: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#FAFAFA",
   },
   tokenName: {
     fontSize: 12,
-    color: "#9CA3AF",
+    color: "#A1A1AA",
     marginTop: 2,
   },
   tokenBalance: {
@@ -764,11 +764,11 @@ const styles = StyleSheet.create({
   balanceAmount: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#FAFAFA",
   },
   balanceSymbol: {
     fontSize: 11,
-    color: "#9CA3AF",
+    color: "#A1A1AA",
     marginTop: 2,
   },
   // Transaction History Styles
@@ -784,32 +784,32 @@ const styles = StyleSheet.create({
   txListTitle: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#FAFAFA",
   },
   txListCount: {
     fontSize: 12,
-    color: "#6B7280",
+    color: "#52525B",
   },
   txItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1A1A2E",
+    backgroundColor: "#111113",
     borderRadius: 12,
     padding: 14,
     marginBottom: 8,
-    borderWidth: 0.5,
-    borderColor: "#2A2A3E",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
   },
   txIconContainer: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#0D0D14",
+    backgroundColor: "#09090B",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
     borderWidth: 1,
-    borderColor: "#2A2A3E",
+    borderColor: "rgba(255,255,255,0.06)",
   },
   txIconFailed: {
     borderColor: "#EF4444",
@@ -827,7 +827,7 @@ const styles = StyleSheet.create({
   txType: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#FAFAFA",
     flex: 1,
   },
   txAmount: {
@@ -852,12 +852,12 @@ const styles = StyleSheet.create({
   },
   txAddress: {
     fontSize: 12,
-    color: "#6B7280",
+    color: "#52525B",
     fontFamily: "monospace",
   },
   txTime: {
     fontSize: 11,
-    color: "#6B7280",
+    color: "#52525B",
     marginLeft: 8,
   },
   txFailedBadge: {
@@ -884,9 +884,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     marginTop: 4,
     borderRadius: 10,
-    backgroundColor: "#1A1A2E",
+    backgroundColor: "#111113",
     borderWidth: 1,
-    borderColor: "#2A2A3E",
+    borderColor: "rgba(255,255,255,0.06)",
   },
   viewAllText: {
     fontSize: 14,
@@ -901,9 +901,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
-    backgroundColor: "#1A1A2E",
-    borderWidth: 0.5,
-    borderColor: "#2A2A3E",
+    backgroundColor: "#111113",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
   },
   explorerLinkText: {
     fontSize: 13,
@@ -918,7 +918,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 14,
-    color: "#9CA3AF",
+    color: "#A1A1AA",
   },
   emptyTokens: {
     paddingVertical: 40,
@@ -928,7 +928,7 @@ const styles = StyleSheet.create({
   },
   emptyTokensText: {
     fontSize: 14,
-    color: "#9CA3AF",
+    color: "#A1A1AA",
     textAlign: "center",
   },
   emptyState: {
@@ -940,7 +940,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "#1A1A2E",
+    backgroundColor: "#111113",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
@@ -950,11 +950,11 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: "#FAFAFA",
   },
   emptySubtitle: {
     fontSize: 14,
-    color: "#9CA3AF",
+    color: "#A1A1AA",
     textAlign: "center",
     lineHeight: 20,
   },
@@ -964,7 +964,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: "#0D0D14",
+    backgroundColor: "#09090B",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
@@ -980,7 +980,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: "#FAFAFA",
   },
   modalBody: {
     marginBottom: 20,
@@ -988,32 +988,32 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#FAFAFA",
     marginBottom: 8,
   },
   textInput: {
-    backgroundColor: "#1A1A2E",
+    backgroundColor: "#111113",
     borderWidth: 1,
-    borderColor: "#2A2A3E",
+    borderColor: "rgba(255,255,255,0.06)",
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    color: "#FFFFFF",
+    color: "#FAFAFA",
     fontSize: 15,
   },
   amountInput: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1A1A2E",
+    backgroundColor: "#111113",
     borderWidth: 1,
-    borderColor: "#2A2A3E",
+    borderColor: "rgba(255,255,255,0.06)",
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
   amountField: {
     flex: 1,
-    color: "#FFFFFF",
+    color: "#FAFAFA",
     fontSize: 15,
   },
   amountSymbol: {
@@ -1024,7 +1024,7 @@ const styles = StyleSheet.create({
   },
   balanceHint: {
     fontSize: 12,
-    color: "#9CA3AF",
+    color: "#A1A1AA",
     marginTop: 8,
   },
   maxButton: {
@@ -1049,6 +1049,6 @@ const styles = StyleSheet.create({
   sendButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#0A0A0F",
+    color: "#09090B",
   },
 });
