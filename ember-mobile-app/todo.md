@@ -22,3 +22,22 @@
 - [x] Add UI polish: animations, typing indicators, transitions, loading/error states
 - [x] End-to-end UX walkthrough and fix broken flows
 - [x] Write updated deep audit report
+- [ ] Chat: ChatGPT-quality message bubbles (right-aligned user, left-aligned Ember)
+- [ ] Chat: Animated typing indicator (bouncing dots)
+- [ ] Chat: Markdown rendering in Ember responses (bold, code, lists)
+- [ ] Chat: Welcome screen with suggested prompts when no messages
+- [ ] Chat: Clear chat option
+- [ ] Chat: Polished input bar with active/inactive send button
+- [ ] Chat: Proper keyboard avoidance
+- [ ] Overall: Smooth navigation transitions
+- [ ] Overall: Consistent spacing and typography
+- [ ] Overall: Status bar light text on dark background
+- [ ] Overall: Skeleton/placeholder loading states
+- [ ] Overall: Friendly error states
+- [ ] Overall: Pull-to-refresh animations
+- [ ] Overall: Haptic press feedback
+- [ ] Branding: Premium ember/fire palette refinement
+- [ ] Branding: Shield+flame prominence
+- [ ] Branding: "Powered by Ember AI" tagline
+- [ ] Push updated app to GitHub
+- [ ] Write design audit report

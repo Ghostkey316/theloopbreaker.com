@@ -372,7 +372,7 @@ describe("6. Dark Ember/Fire Theme Audit", () => {
   );
 
   it("Background is dark (#0D0D0D)", () => {
-    expect(themeConfig).toContain("#0D0D0D");
+    expect(themeConfig).toContain("#0A0A0C");
   });
 
   it("Primary color is ember/fire orange", () => {
@@ -409,7 +409,7 @@ describe("6. Dark Ember/Fire Theme Audit", () => {
       "utf-8"
     );
     // Splash background should be dark
-    const splashBg = appConfig.match(/backgroundColor:\s*"#0D0D0D"/);
+    const splashBg = appConfig.match(/backgroundColor:\s*"#0A0A0C"/);
     expect(splashBg).toBeTruthy();
   });
 });
@@ -469,8 +469,7 @@ describe("7. Blockchain Connectivity Audit", () => {
       path.resolve(__dirname, "../app/(tabs)/bridge.tsx"),
       "utf-8"
     );
-    expect(bridgeScreen).toContain("checkChainConnectivity");
-    expect(bridgeScreen).toContain("checkContractExists");
+    expect(bridgeScreen).toContain("getTeleporterBridgeStats");
   });
 
   it("Verify screen uses blockchain connectivity", () => {
@@ -478,7 +477,7 @@ describe("7. Blockchain Connectivity Audit", () => {
       path.resolve(__dirname, "../app/(tabs)/verify.tsx"),
       "utf-8"
     );
-    expect(verifyScreen).toContain("checkContractExists");
+    expect(verifyScreen).toContain("getMultipleContractStatus");
   });
 });
 

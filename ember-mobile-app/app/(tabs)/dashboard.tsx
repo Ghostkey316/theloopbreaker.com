@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   StyleSheet,
   RefreshControl,
+  Linking,
 } from "react-native";
 import { useCallback, useEffect, useState } from "react";
 import { ScreenContainer } from "@/components/screen-container";
@@ -13,9 +14,12 @@ import {
   BASE_CONTRACTS,
   AVALANCHE_CONTRACTS,
   CORE_VALUES,
+  VAULTFIRE_WEBSITE,
 } from "@/constants/contracts";
 import { getMultipleContractStatus } from "@/lib/contract-reader";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import { Pressable } from "react-native";
 
 interface ChainHealth {
   chain: "base" | "avalanche";
@@ -37,54 +41,18 @@ export default function DashboardScreen() {
   const loadDashboard = useCallback(async () => {
     try {
       setLoading(true);
+      setBaseHealth({ chain: "base", chainName: "Base", chainId: 8453, totalContracts: BASE_CONTRACTS.length, aliveContracts: 0, healthPercentage: 0, loading: true });
+      setAvaxHealth({ chain: "avalanche", chainName: "Avalanche", chainId: 43114, totalContracts: AVALANCHE_CONTRACTS.length, aliveContracts: 0, healthPercentage: 0, loading: true });
 
-      // Initialize loading states
-      setBaseHealth({
-        chain: "base",
-        chainName: "Base",
-        chainId: 8453,
-        totalContracts: BASE_CONTRACTS.length,
-        aliveContracts: 0,
-        healthPercentage: 0,
-        loading: true,
-      });
-      setAvaxHealth({
-        chain: "avalanche",
-        chainName: "Avalanche",
-        chainId: 43114,
-        totalContracts: AVALANCHE_CONTRACTS.length,
-        aliveContracts: 0,
-        healthPercentage: 0,
-        loading: true,
-      });
-
-      // Check Base contracts
       const baseAddresses = BASE_CONTRACTS.map((c) => c.address);
       const baseStatus = await getMultipleContractStatus("base", baseAddresses);
       const baseAlive = Object.values(baseStatus).filter(Boolean).length;
-      setBaseHealth({
-        chain: "base",
-        chainName: "Base",
-        chainId: 8453,
-        totalContracts: BASE_CONTRACTS.length,
-        aliveContracts: baseAlive,
-        healthPercentage: Math.round((baseAlive / BASE_CONTRACTS.length) * 100),
-        loading: false,
-      });
+      setBaseHealth({ chain: "base", chainName: "Base", chainId: 8453, totalContracts: BASE_CONTRACTS.length, aliveContracts: baseAlive, healthPercentage: Math.round((baseAlive / BASE_CONTRACTS.length) * 100), loading: false });
 
-      // Check Avalanche contracts
       const avaxAddresses = AVALANCHE_CONTRACTS.map((c) => c.address);
       const avaxStatus = await getMultipleContractStatus("avalanche", avaxAddresses);
       const avaxAlive = Object.values(avaxStatus).filter(Boolean).length;
-      setAvaxHealth({
-        chain: "avalanche",
-        chainName: "Avalanche",
-        chainId: 43114,
-        totalContracts: AVALANCHE_CONTRACTS.length,
-        aliveContracts: avaxAlive,
-        healthPercentage: Math.round((avaxAlive / AVALANCHE_CONTRACTS.length) * 100),
-        loading: false,
-      });
+      setAvaxHealth({ chain: "avalanche", chainName: "Avalanche", chainId: 43114, totalContracts: AVALANCHE_CONTRACTS.length, aliveContracts: avaxAlive, healthPercentage: Math.round((avaxAlive / AVALANCHE_CONTRACTS.length) * 100), loading: false });
     } catch (error) {
       console.error("Dashboard load failed:", error);
     } finally {
@@ -93,229 +61,204 @@ export default function DashboardScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    loadDashboard();
-  }, [loadDashboard]);
+  useEffect(() => { loadDashboard(); }, [loadDashboard]);
 
   const onRefresh = async () => {
     setRefreshing(true);
     await loadDashboard();
   };
 
-  const overallHealth =
-    baseHealth && avaxHealth
-      ? Math.round(
-          ((baseHealth.aliveContracts + avaxHealth.aliveContracts) /
-            (baseHealth.totalContracts + avaxHealth.totalContracts)) *
-            100
-        )
-      : 0;
+  const overallAlive = (baseHealth?.aliveContracts ?? 0) + (avaxHealth?.aliveContracts ?? 0);
+  const overallTotal = (baseHealth?.totalContracts ?? 0) + (avaxHealth?.totalContracts ?? 0);
+  const overallHealth = overallTotal > 0 ? Math.round((overallAlive / overallTotal) * 100) : 0;
 
   return (
-    <ScreenContainer className="p-4">
+    <ScreenContainer>
       <ScrollView
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        <Animated.View entering={FadeInDown.delay(100)}>
-          <View className="mb-6">
-            <Text className="text-3xl font-bold text-foreground mb-2">Dashboard</Text>
-            <Text className="text-sm text-muted">Vaultfire Protocol Network Status</Text>
+        {/* Header */}
+        <Animated.View entering={FadeInDown.delay(50).duration(300)}>
+          <View style={styles.headerSection}>
+            <IconSymbol name="chart.bar.fill" size={28} color={colors.primary} />
+            <Text style={[styles.title, { color: colors.foreground }]}>Dashboard</Text>
+            <Text style={[styles.subtitle, { color: colors.muted }]}>
+              Vaultfire Protocol Network Health
+            </Text>
           </View>
+        </Animated.View>
 
-          {/* Overall Health */}
-          <Animated.View
-            entering={FadeInDown.delay(200)}
-            style={[
-              styles.healthCard,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            <View className="flex-row justify-between items-center">
+        {/* Overall Health Card */}
+        <Animated.View entering={FadeInDown.delay(150).duration(300)}>
+          <View style={[styles.healthCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.healthRow}>
               <View>
-                <Text style={{ color: colors.muted, fontSize: 12 }}>Overall Network Health</Text>
-                <Text style={{ color: colors.primary, fontSize: 32, fontWeight: "bold", marginTop: 8 }}>
+                <Text style={{ color: colors.muted, fontSize: 11, fontWeight: "500", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  Network Health
+                </Text>
+                <Text style={{ color: colors.primary, fontSize: 36, fontWeight: "800", marginTop: 4 }}>
                   {overallHealth}%
                 </Text>
+                <Text style={{ color: colors.muted, fontSize: 12, marginTop: 2 }}>
+                  {overallAlive}/{overallTotal} contracts online
+                </Text>
               </View>
-              <View
-                style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: 40,
-                  backgroundColor: colors.primary,
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <Text style={{ color: colors.background, fontSize: 32, fontWeight: "bold" }}>
+              <View style={[styles.healthCircle, { backgroundColor: overallHealth > 80 ? colors.success : overallHealth > 50 ? colors.warning : colors.error }]}>
+                <Text style={{ color: "#FFFFFF", fontSize: 28, fontWeight: "700" }}>
                   {overallHealth > 80 ? "✓" : overallHealth > 50 ? "⚠" : "✗"}
                 </Text>
               </View>
             </View>
-          </Animated.View>
+            {/* Progress bar */}
+            <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${overallHealth}%`,
+                    backgroundColor: overallHealth > 80 ? colors.success : overallHealth > 50 ? colors.warning : colors.error,
+                  },
+                ]}
+              />
+            </View>
+          </View>
+        </Animated.View>
 
-          {/* Chain Health Cards */}
-          <View className="mt-6 gap-4">
-            {[baseHealth, avaxHealth].map(
-              (health, idx) =>
-                health && (
-                  <Animated.View key={health.chain} entering={FadeInDown.delay(300 + idx * 100)}>
-                    <View
-                      style={[
-                        styles.chainCard,
-                        {
-                          backgroundColor: colors.surface,
-                          borderColor: colors.border,
-                        },
-                      ]}
-                    >
-                      <View className="flex-row justify-between items-start mb-4">
-                        <View>
-                          <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: "bold" }}>
-                            {health.chainName}
-                          </Text>
-                          <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>
-                            Chain ID: {health.chainId}
-                          </Text>
-                        </View>
+        {/* Chain Health Cards */}
+        <View style={styles.chainSection}>
+          {[baseHealth, avaxHealth].map(
+            (health, idx) =>
+              health && (
+                <Animated.View key={health.chain} entering={FadeInDown.delay(250 + idx * 100).duration(300)}>
+                  <View style={[styles.chainCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                    <View style={styles.chainCardHeader}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: "700" }}>
+                          {health.chainName}
+                        </Text>
+                        <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>
+                          Chain ID: {health.chainId}
+                        </Text>
+                      </View>
+                      {health.loading ? (
+                        <ActivityIndicator size="small" color={colors.primary} />
+                      ) : (
                         <View
-                          style={{
-                            paddingHorizontal: 8,
-                            paddingVertical: 4,
-                            borderRadius: 6,
-                            backgroundColor: health.healthPercentage > 80 ? colors.success : colors.warning,
-                          }}
+                          style={[
+                            styles.healthBadge,
+                            { backgroundColor: health.healthPercentage > 80 ? colors.success : colors.warning },
+                          ]}
                         >
-                          <Text
-                            style={{
-                              color: colors.background,
-                              fontSize: 12,
-                              fontWeight: "bold",
-                            }}
-                          >
+                          <Text style={{ color: "#FFFFFF", fontSize: 12, fontWeight: "700" }}>
                             {health.healthPercentage}%
                           </Text>
                         </View>
-                      </View>
+                      )}
+                    </View>
 
-                      {/* Progress Bar */}
+                    {/* Progress Bar */}
+                    <View style={[styles.progressTrack, { backgroundColor: colors.border, marginTop: 12 }]}>
                       <View
-                        style={{
-                          height: 8,
-                          backgroundColor: colors.border,
-                          borderRadius: 4,
-                          overflow: "hidden",
-                          marginBottom: 8,
-                        }}
-                      >
-                        <View
-                          style={{
-                            height: "100%",
+                        style={[
+                          styles.progressFill,
+                          {
                             width: `${health.healthPercentage}%`,
-                            backgroundColor:
-                              health.healthPercentage > 80 ? colors.success : health.healthPercentage > 50 ? colors.warning : colors.error,
-                          }}
-                        />
-                      </View>
+                            backgroundColor: health.healthPercentage > 80 ? colors.success : health.healthPercentage > 50 ? colors.warning : colors.error,
+                          },
+                        ]}
+                      />
+                    </View>
 
-                      {/* Stats */}
-                      <View className="flex-row justify-between">
-                        <View>
-                          <Text style={{ color: colors.muted, fontSize: 11 }}>Contracts Alive</Text>
-                          <Text style={{ color: colors.primary, fontSize: 16, fontWeight: "bold", marginTop: 2 }}>
-                            {health.aliveContracts}/{health.totalContracts}
-                          </Text>
-                        </View>
-                        {health.loading ? (
-                          <ActivityIndicator size="small" color={colors.primary} />
-                        ) : (
-                          <View
-                            style={{
-                              width: 40,
-                              height: 40,
-                              borderRadius: 20,
-                              backgroundColor: colors.primary,
-                              justifyContent: "center",
-                              alignItems: "center",
-                            }}
-                          >
-                            <Text style={{ color: colors.background, fontSize: 20 }}>
-                              {health.healthPercentage === 100 ? "✓" : "⚠"}
-                            </Text>
-                          </View>
-                        )}
+                    {/* Stats */}
+                    <View style={[styles.chainStats, { borderTopColor: colors.border }]}>
+                      <View style={styles.chainStatItem}>
+                        <Text style={{ color: colors.primary, fontSize: 18, fontWeight: "800" }}>
+                          {health.aliveContracts}
+                        </Text>
+                        <Text style={{ color: colors.muted, fontSize: 10 }}>Online</Text>
+                      </View>
+                      <View style={[styles.chainStatDivider, { backgroundColor: colors.border }]} />
+                      <View style={styles.chainStatItem}>
+                        <Text style={{ color: colors.error, fontSize: 18, fontWeight: "800" }}>
+                          {health.totalContracts - health.aliveContracts}
+                        </Text>
+                        <Text style={{ color: colors.muted, fontSize: 10 }}>Offline</Text>
+                      </View>
+                      <View style={[styles.chainStatDivider, { backgroundColor: colors.border }]} />
+                      <View style={styles.chainStatItem}>
+                        <Text style={{ color: colors.foreground, fontSize: 18, fontWeight: "800" }}>
+                          {health.totalContracts}
+                        </Text>
+                        <Text style={{ color: colors.muted, fontSize: 10 }}>Total</Text>
                       </View>
                     </View>
-                  </Animated.View>
-                )
-            )}
-          </View>
+                  </View>
+                </Animated.View>
+              )
+          )}
+        </View>
 
-          {/* Core Values */}
-          <Animated.View entering={FadeInDown.delay(500)} className="mt-8">
-            <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: "600", marginBottom: 4 }}>
-              Core Values
+        {/* Core Values */}
+        <Animated.View entering={FadeInDown.delay(500).duration(300)} style={{ marginTop: 20 }}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Core Values</Text>
+          <View style={[styles.valuesCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[styles.valuesIconBg, { backgroundColor: `${colors.primary}15` }]}>
+              <IconSymbol name="flame.fill" size={20} color={colors.primary} />
+            </View>
+            <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: "600", lineHeight: 21, flex: 1 }}>
+              {CORE_VALUES}
             </Text>
-            <View
-              style={[
-                styles.valuesCard,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                },
-              ]}
-            >
-              <Text style={{ color: colors.foreground, fontSize: 13, lineHeight: 20, fontWeight: "500" }}>
-                {CORE_VALUES}
-              </Text>
-            </View>
-          </Animated.View>
-
-          {/* Protocol Info */}
-          <Animated.View entering={FadeInDown.delay(600)} className="mt-6 mb-4">
-            <View
-              style={[
-                styles.infoCard,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                },
-              ]}
-            >
-              <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 18 }}>
-                The Vaultfire Protocol is deployed across {BASE_CONTRACTS.length} contracts on Base and {AVALANCHE_CONTRACTS.length} contracts on Avalanche, implementing ERC-8004 standards for ethical AI governance.
-              </Text>
-            </View>
-          </Animated.View>
+          </View>
         </Animated.View>
+
+        {/* Protocol Info */}
+        <Animated.View entering={FadeInDown.delay(600).duration(300)} style={{ marginTop: 16 }}>
+          <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={{ color: colors.muted, fontSize: 11, lineHeight: 17 }}>
+              The Vaultfire Protocol is deployed across {BASE_CONTRACTS.length} contracts on Base and {AVALANCHE_CONTRACTS.length} contracts on Avalanche, implementing the ERC-8004 standard for ethical AI governance. All contract health data is fetched live via JSON-RPC.
+            </Text>
+          </View>
+        </Animated.View>
+
+        {/* Website */}
+        <Animated.View entering={FadeInDown.delay(700).duration(300)}>
+          <Pressable
+            onPress={() => Linking.openURL(VAULTFIRE_WEBSITE)}
+            style={({ pressed }) => [styles.websiteLink, { opacity: pressed ? 0.6 : 1 }]}
+          >
+            <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "600" }}>theloopbreaker.com</Text>
+            <IconSymbol name="chevron.right" size={12} color={colors.primary} />
+          </Pressable>
+        </Animated.View>
+
+        <View style={{ height: 40 }} />
       </ScrollView>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  healthCard: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  chainCard: {
-    padding: 14,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  valuesCard: {
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  infoCard: {
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 12 },
+  headerSection: { alignItems: "center", gap: 6, paddingVertical: 16 },
+  title: { fontSize: 22, fontWeight: "800", letterSpacing: -0.3 },
+  subtitle: { fontSize: 13 },
+  healthCard: { padding: 16, borderRadius: 14, borderWidth: 1 },
+  healthRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
+  healthCircle: { width: 64, height: 64, borderRadius: 32, justifyContent: "center", alignItems: "center" },
+  progressTrack: { height: 6, borderRadius: 3, overflow: "hidden" },
+  progressFill: { height: "100%", borderRadius: 3 },
+  chainSection: { marginTop: 20, gap: 12 },
+  chainCard: { padding: 14, borderRadius: 12, borderWidth: 1 },
+  chainCardHeader: { flexDirection: "row", alignItems: "center" },
+  healthBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  chainStats: { flexDirection: "row", marginTop: 12, paddingTop: 12, borderTopWidth: 0.5 },
+  chainStatItem: { flex: 1, alignItems: "center" },
+  chainStatDivider: { width: 0.5, height: "100%" },
+  sectionTitle: { fontSize: 16, fontWeight: "700", marginBottom: 10, letterSpacing: -0.2 },
+  valuesCard: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: 12, borderWidth: 1 },
+  valuesIconBg: { width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center" },
+  infoCard: { padding: 12, borderRadius: 10, borderWidth: 1 },
+  websiteLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, marginTop: 16, paddingVertical: 12 },
 });

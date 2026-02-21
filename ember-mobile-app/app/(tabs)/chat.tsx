@@ -10,6 +10,7 @@ import {
   StyleSheet,
   Modal,
   Keyboard,
+  Alert,
 } from "react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ScreenContainer } from "@/components/screen-container";
@@ -23,13 +24,27 @@ import {
   getMemories,
   saveChatHistory,
   getChatHistory,
+  clearChatHistory,
+  clearMemories,
 } from "@/lib/memory";
-import { getWalletAddress, saveWalletAddress, getWalletData, validateAddress } from "@/lib/wallet";
-import Animated, { FadeInDown, FadeOutUp } from "react-native-reanimated";
+import { getWalletAddress, saveWalletAddress, validateAddress } from "@/lib/wallet";
+import Animated, { FadeIn, FadeInDown, FadeInUp, SlideInRight, SlideInLeft } from "react-native-reanimated";
+import { TypingIndicator } from "@/components/typing-indicator";
+import { MarkdownText } from "@/components/markdown-text";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 
 interface ChatMessageWithStatus extends ChatMessage {
   isTyping?: boolean;
 }
+
+const SUGGESTED_PROMPTS = [
+  "What is ERC-8004?",
+  "Show me the Base contracts",
+  "Explain the Vaultfire Protocol",
+  "What are the core values?",
+  "How does the bridge work?",
+  "Tell me about AI governance",
+];
 
 export default function ChatScreen() {
   const colors = useColors();
@@ -41,8 +56,10 @@ export default function ChatScreen() {
   const [walletModalVisible, setWalletModalVisible] = useState(false);
   const [walletInput, setWalletInput] = useState("");
   const [walletLoading, setWalletLoading] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const chatMutation = trpc.chat.send.useMutation();
+  const inputRef = useRef<TextInput>(null);
 
   // Load chat history, memories, and wallet on mount
   useEffect(() => {
@@ -52,211 +69,199 @@ export default function ChatScreen() {
         getMemories(),
         getWalletAddress(),
       ]);
-      if (history.length > 0) {
-        setMessages(history);
-      }
+      if (history.length > 0) setMessages(history);
       setMemoriesState(mems);
-      if (addr) {
-        setWalletAddress(addr);
-      }
+      if (addr) setWalletAddress(addr);
     };
     loadData();
   }, []);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom
   useEffect(() => {
     if (messages.length > 0) {
-      flatListRef.current?.scrollToEnd({ animated: true });
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     }
   }, [messages]);
 
   const connectWallet = useCallback(async () => {
     const trimmed = walletInput.trim();
     if (!trimmed) return;
-
     setWalletLoading(true);
     try {
       const isValid = await validateAddress(trimmed);
       if (!isValid) {
-        alert("Invalid Ethereum address format");
+        Alert.alert("Invalid Address", "Please enter a valid Ethereum address (0x...)");
         setWalletLoading(false);
         return;
       }
-
       await saveWalletAddress(trimmed);
       setWalletAddress(trimmed);
       setWalletInput("");
       setWalletModalVisible(false);
-
-      // Add system message about wallet connection
-      const systemMsg: ChatMessageWithStatus = {
-        id: `msg_${Date.now()}_system`,
-        role: "assistant",
-        content: `Wallet connected: ${trimmed.slice(0, 6)}...${trimmed.slice(-4)}. You can now ask me about your on-chain data!`,
-        timestamp: Date.now(),
-      };
-      setMessages((prev) => [...prev, systemMsg]);
-      await saveChatHistory([...messages, systemMsg]);
-    } catch (error) {
-      alert("Failed to connect wallet");
+    } catch {
+      Alert.alert("Error", "Failed to connect wallet. Please try again.");
     } finally {
       setWalletLoading(false);
     }
-  }, [walletInput, messages]);
+  }, [walletInput]);
 
-  const sendMessage = useCallback(async () => {
-    const text = inputText.trim();
-    if (!text || isLoading) return;
+  const handleClearChat = useCallback(async () => {
+    Alert.alert(
+      "Clear Conversation",
+      "This will delete all messages and memories. This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Clear",
+          style: "destructive",
+          onPress: async () => {
+            setMessages([]);
+            setMemoriesState([]);
+            await clearChatHistory();
+            await clearMemories();
+            setMenuVisible(false);
+          },
+        },
+      ]
+    );
+  }, []);
 
-    Keyboard.dismiss();
+  const sendMessage = useCallback(
+    async (text?: string) => {
+      const msgText = (text || inputText).trim();
+      if (!msgText || isLoading) return;
+      Keyboard.dismiss();
 
-    const userMsg: ChatMessage = {
-      id: `msg_${Date.now()}_user`,
-      role: "user",
-      content: text,
-      timestamp: Date.now(),
-    };
-
-    const updatedMessages = [...messages, userMsg];
-    setMessages(updatedMessages);
-    setInputText("");
-    setIsLoading(true);
-
-    // Add typing indicator
-    const typingMsg: ChatMessageWithStatus = {
-      id: `msg_${Date.now()}_typing`,
-      role: "assistant",
-      content: "",
-      timestamp: Date.now(),
-      isTyping: true,
-    };
-    setMessages((prev) => [...prev, typingMsg]);
-
-    try {
-      // Send recent messages for context (last 20)
-      const recentMessages = updatedMessages.slice(-20).map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
-
-      // Include memory context and wallet info
-      const memoryStrings = memories.map((m) => m.content);
-      if (walletAddress) {
-        memoryStrings.push(`User wallet: ${walletAddress}`);
-      }
-
-      const result = await chatMutation.mutateAsync({
-        messages: recentMessages,
-        memories: memoryStrings,
-      });
-
-      // Remove typing indicator
-      setMessages((prev) => prev.filter((m) => !m.isTyping));
-
-      const assistantMsg: ChatMessage = {
-        id: `msg_${Date.now()}_assistant`,
-        role: "assistant",
-        content: result.response,
+      const userMsg: ChatMessageWithStatus = {
+        id: `msg_${Date.now()}_user`,
+        role: "user",
+        content: msgText,
         timestamp: Date.now(),
       };
 
-      const finalMessages = [...updatedMessages, assistantMsg];
-      setMessages(finalMessages);
+      const updatedMessages = [...messages, userMsg];
+      setMessages(updatedMessages);
+      setInputText("");
+      setIsLoading(true);
 
-      // Extract and save memories
-      const newMemories = extractMemories(text, result.response);
-      if (newMemories.length > 0) {
-        await saveMemories(newMemories);
-        setMemoriesState((prev) => [...prev, ...newMemories]);
-      }
-
-      // Save chat history
-      await saveChatHistory(finalMessages);
-    } catch (error) {
-      // Remove typing indicator on error
-      setMessages((prev) => prev.filter((m) => !m.isTyping));
-      console.error("Chat error:", error);
-
-      const errorMsg: ChatMessage = {
-        id: `msg_${Date.now()}_error`,
+      // Add typing indicator
+      const typingMsg: ChatMessageWithStatus = {
+        id: `msg_${Date.now()}_typing`,
         role: "assistant",
-        content: "Sorry, I encountered an error. Please try again.",
+        content: "",
         timestamp: Date.now(),
+        isTyping: true,
       };
-      setMessages((prev) => [...prev, errorMsg]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [inputText, isLoading, messages, memories, walletAddress, chatMutation]);
+      setMessages((prev) => [...prev, typingMsg]);
+
+      try {
+        const recentMessages = updatedMessages.slice(-20).map((m) => ({
+          role: m.role,
+          content: m.content,
+        }));
+
+        const memoryStrings = memories.map((m) => m.content);
+        if (walletAddress) memoryStrings.push(`User wallet: ${walletAddress}`);
+
+        const result = await chatMutation.mutateAsync({
+          messages: recentMessages,
+          memories: memoryStrings,
+        });
+
+        // Remove typing indicator
+        setMessages((prev) => prev.filter((m) => !m.isTyping));
+
+        const assistantMsg: ChatMessageWithStatus = {
+          id: `msg_${Date.now()}_assistant`,
+          role: "assistant",
+          content: result.response,
+          timestamp: Date.now(),
+        };
+
+        const finalMessages = [...updatedMessages, assistantMsg];
+        setMessages(finalMessages);
+
+        // Extract and save memories
+        const newMemories = extractMemories(msgText, result.response);
+        if (newMemories.length > 0) {
+          await saveMemories(newMemories);
+          setMemoriesState((prev) => [...prev, ...newMemories]);
+        }
+        await saveChatHistory(finalMessages);
+      } catch {
+        setMessages((prev) => prev.filter((m) => !m.isTyping));
+        const errorMsg: ChatMessageWithStatus = {
+          id: `msg_${Date.now()}_error`,
+          role: "assistant",
+          content: "I'm having trouble connecting right now. Please check your connection and try again.",
+          timestamp: Date.now(),
+        };
+        setMessages((prev) => [...prev, errorMsg]);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [inputText, isLoading, messages, memories, walletAddress, chatMutation]
+  );
 
   const renderMessage = useCallback(
-    ({ item }: { item: ChatMessageWithStatus }) => {
+    ({ item, index }: { item: ChatMessageWithStatus; index: number }) => {
       const isUser = item.role === "user";
 
-      return (
-        <Animated.View
-          entering={FadeInDown}
-          style={{
-            marginVertical: 4,
-            marginHorizontal: 12,
-            flexDirection: isUser ? "row-reverse" : "row",
-            justifyContent: isUser ? "flex-end" : "flex-start",
-          }}
-        >
-          <View
-            style={[
-              styles.messageBubble,
-              {
-                backgroundColor: isUser ? colors.primary : colors.surface,
-                maxWidth: "85%",
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            {item.isTyping ? (
-              <View style={{ flexDirection: "row", gap: 4, alignItems: "center" }}>
-                <View
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: 4,
-                    backgroundColor: colors.muted,
-                  }}
-                />
-                <View
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: 4,
-                    backgroundColor: colors.muted,
-                  }}
-                />
-                <View
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: 4,
-                    backgroundColor: colors.muted,
-                  }}
-                />
-              </View>
-            ) : (
-              <Text
-                style={{
-                  color: isUser ? colors.background : colors.foreground,
-                  fontSize: 14,
-                  lineHeight: 20,
-                }}
-              >
+      if (item.isTyping) {
+        return (
+          <Animated.View entering={FadeIn.duration(200)} style={styles.assistantRow}>
+            <View style={[styles.avatarSmall, { backgroundColor: colors.primary }]}>
+              <Text style={{ fontSize: 12 }}>🔥</Text>
+            </View>
+            <TypingIndicator
+              dotColor={colors.muted}
+              backgroundColor={colors.surface}
+            />
+          </Animated.View>
+        );
+      }
+
+      if (isUser) {
+        return (
+          <Animated.View entering={SlideInRight.duration(250).delay(50)} style={styles.userRow}>
+            <View
+              style={[
+                styles.userBubble,
+                { backgroundColor: colors.primary },
+              ]}
+            >
+              <Text style={{ color: "#FFFFFF", fontSize: 15, lineHeight: 22 }}>
                 {item.content}
               </Text>
-            )}
+            </View>
+          </Animated.View>
+        );
+      }
+
+      // Assistant message
+      return (
+        <Animated.View entering={SlideInLeft.duration(250).delay(50)} style={styles.assistantRow}>
+          <View style={[styles.avatarSmall, { backgroundColor: colors.primary }]}>
+            <Text style={{ fontSize: 12 }}>🔥</Text>
+          </View>
+          <View style={[styles.assistantBubble, { backgroundColor: colors.surface }]}>
+            <MarkdownText
+              text={item.content}
+              baseColor={colors.foreground}
+              codeBackground={`${colors.background}`}
+              codeBorderColor={colors.border}
+              accentColor={colors.primary}
+            />
           </View>
         </Animated.View>
       );
     },
     [colors]
   );
+
+  const hasText = inputText.trim().length > 0;
+  const showWelcome = messages.length === 0;
 
   return (
     <KeyboardAvoidingView
@@ -266,225 +271,280 @@ export default function ChatScreen() {
     >
       <ScreenContainer className="p-0">
         {/* Header */}
-        <View
-          style={{
-            paddingHorizontal: 16,
-            paddingVertical: 12,
-            borderBottomWidth: 1,
-            borderBottomColor: colors.border,
-          }}
-        >
-          <View className="flex-row justify-between items-center">
-            <View>
-              <Text className="text-2xl font-bold text-foreground">Ember AI</Text>
-              <Text className="text-xs text-muted mt-1">Vaultfire Protocol Assistant</Text>
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <View style={styles.headerLeft}>
+            <View style={[styles.headerAvatar, { backgroundColor: colors.primary }]}>
+              <Text style={{ fontSize: 18 }}>🔥</Text>
             </View>
+            <View>
+              <Text style={[styles.headerTitle, { color: colors.foreground }]}>Ember</Text>
+              <Text style={[styles.headerSubtitle, { color: colors.muted }]}>
+                {isLoading ? "Thinking..." : "Vaultfire Protocol"}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.headerRight}>
             <Pressable
               onPress={() => setWalletModalVisible(true)}
               style={({ pressed }) => [
+                styles.headerBtn,
                 {
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
-                  borderRadius: 6,
-                  backgroundColor: walletAddress ? colors.success : colors.surface,
-                  opacity: pressed ? 0.8 : 1,
+                  backgroundColor: walletAddress
+                    ? `${colors.success}20`
+                    : colors.surface,
+                  borderColor: walletAddress ? colors.success : colors.border,
+                  opacity: pressed ? 0.7 : 1,
                 },
               ]}
             >
-              <Text
-                style={{
-                  color: walletAddress ? colors.background : colors.foreground,
-                  fontSize: 11,
-                  fontWeight: "600",
-                }}
-              >
-                {walletAddress ? `${walletAddress.slice(0, 6)}...` : "Connect"}
-              </Text>
+              <IconSymbol name="person.fill" size={14} color={walletAddress ? colors.success : colors.muted} />
+            </Pressable>
+            <Pressable
+              onPress={() => setMenuVisible(true)}
+              style={({ pressed }) => [
+                styles.headerBtn,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              <Text style={{ color: colors.muted, fontSize: 16, fontWeight: "bold" }}>⋯</Text>
             </Pressable>
           </View>
         </View>
 
-        {/* Messages List */}
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={(item) => item.id}
-          renderItem={renderMessage}
-          contentContainerStyle={{ paddingVertical: 12, flexGrow: 1 }}
-          scrollEnabled={true}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-        />
+        {/* Welcome Screen or Messages */}
+        {showWelcome ? (
+          <View style={styles.welcomeContainer}>
+            <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.welcomeContent}>
+              <View style={[styles.welcomeIcon, { backgroundColor: `${colors.primary}15` }]}>
+                <Text style={{ fontSize: 48 }}>🔥</Text>
+              </View>
+              <Text style={[styles.welcomeTitle, { color: colors.foreground }]}>
+                Welcome to Ember
+              </Text>
+              <Text style={[styles.welcomeSubtitle, { color: colors.muted }]}>
+                Your AI companion for the Vaultfire Protocol. Ask me anything about contracts, ERC-8004, governance, or the bridge.
+              </Text>
+            </Animated.View>
 
-        {/* Input Area */}
-        <View
-          style={{
-            paddingHorizontal: 12,
-            paddingVertical: 12,
-            borderTopWidth: 1,
-            borderTopColor: colors.border,
-            backgroundColor: colors.background,
-          }}
-        >
+            <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.promptsContainer}>
+              <Text style={[styles.promptsLabel, { color: colors.muted }]}>Try asking</Text>
+              <View style={styles.promptsGrid}>
+                {SUGGESTED_PROMPTS.map((prompt, idx) => (
+                  <Pressable
+                    key={idx}
+                    onPress={() => sendMessage(prompt)}
+                    style={({ pressed }) => [
+                      styles.promptChip,
+                      {
+                        backgroundColor: colors.surface,
+                        borderColor: colors.border,
+                        opacity: pressed ? 0.7 : 1,
+                      },
+                    ]}
+                  >
+                    <Text style={{ color: colors.foreground, fontSize: 13, lineHeight: 18 }}>
+                      {prompt}
+                    </Text>
+                    <IconSymbol name="chevron.right" size={12} color={colors.muted} />
+                  </Pressable>
+                ))}
+              </View>
+            </Animated.View>
+          </View>
+        ) : (
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            keyExtractor={(item) => item.id}
+            renderItem={renderMessage}
+            contentContainerStyle={styles.messagesList}
+            onContentSizeChange={() =>
+              setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50)
+            }
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+
+        {/* Input Bar */}
+        <View style={[styles.inputContainer, { borderTopColor: colors.border, backgroundColor: colors.background }]}>
           <View
-            style={{
-              flexDirection: "row",
-              gap: 8,
-              alignItems: "flex-end",
-            }}
+            style={[
+              styles.inputWrapper,
+              {
+                backgroundColor: colors.surface,
+                borderColor: hasText ? colors.primary : colors.border,
+              },
+            ]}
           >
             <TextInput
+              ref={inputRef}
               value={inputText}
               onChangeText={setInputText}
-              placeholder="Ask Ember about Vaultfire..."
+              placeholder="Message Ember..."
               placeholderTextColor={colors.muted}
-              style={[
-                styles.input,
-                {
-                  backgroundColor: colors.surface,
-                  color: colors.foreground,
-                  borderColor: colors.border,
-                },
-              ]}
+              style={[styles.input, { color: colors.foreground }]}
               multiline
-              maxLength={500}
+              maxLength={1000}
               editable={!isLoading}
+              returnKeyType="default"
+              onSubmitEditing={() => {
+                if (hasText && !isLoading) sendMessage();
+              }}
             />
             <Pressable
-              onPress={sendMessage}
-              disabled={isLoading || !inputText.trim()}
+              onPress={() => sendMessage()}
+              disabled={isLoading || !hasText}
               style={({ pressed }) => [
+                styles.sendButton,
                 {
-                  width: 40,
-                  height: 40,
-                  borderRadius: 8,
-                  backgroundColor: isLoading || !inputText.trim() ? colors.muted : colors.primary,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  opacity: pressed ? 0.8 : 1,
+                  backgroundColor: hasText && !isLoading ? colors.primary : "transparent",
+                  opacity: pressed && hasText ? 0.8 : 1,
                 },
               ]}
             >
               {isLoading ? (
-                <ActivityIndicator size="small" color={colors.background} />
+                <ActivityIndicator size="small" color={colors.primary} />
               ) : (
-                <Text style={{ fontSize: 18 }}>➤</Text>
+                <IconSymbol
+                  name="paperplane.fill"
+                  size={16}
+                  color={hasText ? "#FFFFFF" : colors.muted}
+                />
               )}
             </Pressable>
           </View>
+          <Text style={[styles.inputDisclaimer, { color: colors.muted }]}>
+            Ember can make mistakes. Verify contract data on-chain.
+          </Text>
         </View>
 
-        {/* Wallet Connection Modal */}
-        <Modal
-          visible={walletModalVisible}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setWalletModalVisible(false)}
-        >
-          <View
-            style={{
-              flex: 1,
-              backgroundColor: "rgba(0,0,0,0.5)",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <View
-              style={{
-                backgroundColor: colors.surface,
-                borderRadius: 12,
-                padding: 20,
-                width: "85%",
-                borderColor: colors.border,
-                borderWidth: 1,
-              }}
-            >
-              <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: "bold", marginBottom: 12 }}>
-                {walletAddress ? "Connected Wallet" : "Connect Wallet"}
-              </Text>
-
-              {walletAddress ? (
-                <View>
-                  <Text style={{ color: colors.muted, fontSize: 12, marginBottom: 8 }}>Current Address:</Text>
-                  <Text style={{ color: colors.primary, fontSize: 13, fontFamily: "monospace", marginBottom: 16 }}>
-                    {walletAddress}
-                  </Text>
-                  <Pressable
-                    onPress={() => {
-                      setWalletAddress(null);
-                      setWalletModalVisible(false);
-                    }}
-                    style={({ pressed }) => [
-                      {
-                        paddingVertical: 10,
-                        borderRadius: 6,
-                        backgroundColor: colors.error,
-                        opacity: pressed ? 0.8 : 1,
-                      },
-                    ]}
-                  >
-                    <Text style={{ color: colors.background, textAlign: "center", fontWeight: "600" }}>
-                      Disconnect
-                    </Text>
-                  </Pressable>
-                </View>
-              ) : (
-                <View>
-                  <TextInput
-                    value={walletInput}
-                    onChangeText={setWalletInput}
-                    placeholder="0x..."
-                    placeholderTextColor={colors.muted}
-                    style={[
-                      styles.walletInput,
-                      {
-                        backgroundColor: colors.background,
-                        color: colors.foreground,
-                        borderColor: colors.border,
-                      },
-                    ]}
-                    editable={!walletLoading}
-                  />
-                  <Pressable
-                    onPress={connectWallet}
-                    disabled={walletLoading || !walletInput.trim()}
-                    style={({ pressed }) => [
-                      {
-                        paddingVertical: 10,
-                        borderRadius: 6,
-                        backgroundColor: walletLoading || !walletInput.trim() ? colors.muted : colors.primary,
-                        marginTop: 12,
-                        opacity: pressed ? 0.8 : 1,
-                      },
-                    ]}
-                  >
-                    {walletLoading ? (
-                      <ActivityIndicator size="small" color={colors.background} />
-                    ) : (
-                      <Text style={{ color: colors.background, textAlign: "center", fontWeight: "600" }}>
-                        Connect
-                      </Text>
-                    )}
-                  </Pressable>
-                </View>
-              )}
-
+        {/* Menu Modal */}
+        <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={() => setMenuVisible(false)}>
+          <Pressable style={styles.modalOverlay} onPress={() => setMenuVisible(false)}>
+            <Animated.View entering={FadeInDown.duration(200)} style={[styles.menuCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Pressable
-                onPress={() => setWalletModalVisible(false)}
+                onPress={handleClearChat}
                 style={({ pressed }) => [
-                  {
-                    paddingVertical: 10,
-                    borderRadius: 6,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    marginTop: 12,
-                    opacity: pressed ? 0.8 : 1,
-                  },
+                  styles.menuItem,
+                  { opacity: pressed ? 0.6 : 1 },
                 ]}
               >
-                <Text style={{ color: colors.foreground, textAlign: "center", fontWeight: "600" }}>Close</Text>
+                <IconSymbol name="flame.fill" size={18} color={colors.error} />
+                <Text style={{ color: colors.error, fontSize: 15, fontWeight: "500" }}>Clear Conversation</Text>
               </Pressable>
-            </View>
-          </View>
+              <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.menuItem}>
+                <IconSymbol name="person.fill" size={18} color={colors.muted} />
+                <Text style={{ color: colors.muted, fontSize: 13 }}>
+                  {memories.length} memories stored
+                </Text>
+              </View>
+              <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
+              <Pressable
+                onPress={() => setMenuVisible(false)}
+                style={({ pressed }) => [
+                  styles.menuItem,
+                  { opacity: pressed ? 0.6 : 1 },
+                ]}
+              >
+                <Text style={{ color: colors.foreground, fontSize: 15, fontWeight: "500", textAlign: "center", flex: 1 }}>
+                  Cancel
+                </Text>
+              </Pressable>
+            </Animated.View>
+          </Pressable>
+        </Modal>
+
+        {/* Wallet Modal */}
+        <Modal visible={walletModalVisible} transparent animationType="fade" onRequestClose={() => setWalletModalVisible(false)}>
+          <Pressable style={styles.modalOverlay} onPress={() => setWalletModalVisible(false)}>
+            <Pressable onPress={() => {}}>
+              <Animated.View entering={FadeInDown.duration(250)} style={[styles.walletCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <View style={styles.walletHeader}>
+                  <IconSymbol name="person.fill" size={20} color={colors.primary} />
+                  <Text style={[styles.walletTitle, { color: colors.foreground }]}>
+                    {walletAddress ? "Wallet Connected" : "Connect Wallet"}
+                  </Text>
+                </View>
+
+                {walletAddress ? (
+                  <View style={{ gap: 12 }}>
+                    <View style={[styles.addressBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                      <Text style={{ color: colors.primary, fontSize: 12, fontFamily: "monospace", lineHeight: 18 }}>
+                        {walletAddress}
+                      </Text>
+                    </View>
+                    <Pressable
+                      onPress={() => {
+                        setWalletAddress(null);
+                        setWalletModalVisible(false);
+                      }}
+                      style={({ pressed }) => [
+                        styles.walletBtn,
+                        { backgroundColor: `${colors.error}15`, borderColor: colors.error, opacity: pressed ? 0.7 : 1 },
+                      ]}
+                    >
+                      <Text style={{ color: colors.error, fontWeight: "600", fontSize: 14 }}>Disconnect</Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <View style={{ gap: 12 }}>
+                    <Text style={{ color: colors.muted, fontSize: 13, lineHeight: 19 }}>
+                      Enter your Ethereum address to personalize Ember's responses with your on-chain data.
+                    </Text>
+                    <TextInput
+                      value={walletInput}
+                      onChangeText={setWalletInput}
+                      placeholder="0x..."
+                      placeholderTextColor={colors.muted}
+                      style={[
+                        styles.walletInputField,
+                        {
+                          backgroundColor: colors.background,
+                          color: colors.foreground,
+                          borderColor: walletInput ? colors.primary : colors.border,
+                        },
+                      ]}
+                      editable={!walletLoading}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                    <Pressable
+                      onPress={connectWallet}
+                      disabled={walletLoading || !walletInput.trim()}
+                      style={({ pressed }) => [
+                        styles.walletBtn,
+                        {
+                          backgroundColor: walletInput.trim() ? colors.primary : colors.surface,
+                          borderColor: walletInput.trim() ? colors.primary : colors.border,
+                          opacity: pressed ? 0.8 : 1,
+                        },
+                      ]}
+                    >
+                      {walletLoading ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <Text style={{ color: walletInput.trim() ? "#FFFFFF" : colors.muted, fontWeight: "600", fontSize: 14 }}>
+                          Connect
+                        </Text>
+                      )}
+                    </Pressable>
+                  </View>
+                )}
+
+                <Pressable
+                  onPress={() => setWalletModalVisible(false)}
+                  style={({ pressed }) => [{ marginTop: 8, opacity: pressed ? 0.6 : 1 }]}
+                >
+                  <Text style={{ color: colors.muted, textAlign: "center", fontSize: 14 }}>Cancel</Text>
+                </Pressable>
+              </Animated.View>
+            </Pressable>
+          </Pressable>
         </Modal>
       </ScreenContainer>
     </KeyboardAvoidingView>
@@ -492,27 +552,178 @@ export default function ChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  messageBubble: {
-    paddingHorizontal: 12,
+  // Header
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
     paddingVertical: 10,
+    borderBottomWidth: 0.5,
+  },
+  headerLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
+  headerAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerTitle: { fontSize: 17, fontWeight: "700" },
+  headerSubtitle: { fontSize: 12, marginTop: 1 },
+  headerRight: { flexDirection: "row", gap: 8 },
+  headerBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+  },
+
+  // Welcome
+  welcomeContainer: { flex: 1, justifyContent: "center", paddingHorizontal: 24 },
+  welcomeContent: { alignItems: "center", gap: 12, marginBottom: 32 },
+  welcomeIcon: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  welcomeTitle: { fontSize: 24, fontWeight: "700" },
+  welcomeSubtitle: { fontSize: 14, textAlign: "center", lineHeight: 21, paddingHorizontal: 16 },
+  promptsContainer: { gap: 12 },
+  promptsLabel: { fontSize: 12, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 },
+  promptsGrid: { gap: 8 },
+  promptChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
   },
+
+  // Messages
+  messagesList: { paddingHorizontal: 12, paddingTop: 12, paddingBottom: 8 },
+  userRow: { flexDirection: "row", justifyContent: "flex-end", marginBottom: 12, paddingLeft: 48 },
+  assistantRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 12, paddingRight: 32, gap: 8 },
+  avatarSmall: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 2,
+  },
+  userBubble: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderBottomRightRadius: 6,
+    maxWidth: "100%",
+  },
+  assistantBubble: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderTopLeftRadius: 6,
+    maxWidth: "100%",
+    flex: 1,
+  },
+
+  // Input
+  inputContainer: {
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 6,
+    borderTopWidth: 0.5,
+  },
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    borderRadius: 24,
+    borderWidth: 1,
+    paddingLeft: 16,
+    paddingRight: 4,
+    paddingVertical: 4,
+  },
   input: {
     flex: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    maxHeight: 100,
-    fontSize: 14,
+    fontSize: 15,
+    maxHeight: 120,
+    paddingVertical: 8,
+    lineHeight: 20,
   },
-  walletInput: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 8,
+  sendButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 1,
+  },
+  inputDisclaimer: {
+    fontSize: 10,
+    textAlign: "center",
+    marginTop: 6,
+    marginBottom: 2,
+  },
+
+  // Modals
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  menuCard: {
+    width: 280,
+    borderRadius: 14,
     borderWidth: 1,
-    fontSize: 13,
+    overflow: "hidden",
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  menuDivider: { height: 0.5 },
+
+  // Wallet
+  walletCard: {
+    width: "85%",
+    maxWidth: 340,
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    gap: 16,
+  },
+  walletHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
+  walletTitle: { fontSize: 17, fontWeight: "700" },
+  addressBox: {
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  walletInputField: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    fontSize: 14,
     fontFamily: "monospace",
+  },
+  walletBtn: {
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
