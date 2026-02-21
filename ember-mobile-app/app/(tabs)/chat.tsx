@@ -40,6 +40,15 @@ import {
   getWalletContextForEmber,
 } from "@/lib/wallet-core";
 import { streamChat } from "@/lib/stream-chat";
+import {
+  syncAuth,
+  createSyncConversation,
+  updateSyncConversation,
+  pushMemories,
+  fetchConversations,
+  fetchMemories as fetchSyncMemories,
+  type SyncConversation,
+} from "@/lib/sync-service";
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -76,6 +85,8 @@ export default function ChatScreen() {
   const [walletInput, setWalletInput] = useState("");
   const [walletLoading, setWalletLoading] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [syncEnabled, setSyncEnabled] = useState(false);
+  const [syncConvoId, setSyncConvoId] = useState<number | null>(null);
   const flatListRef = useRef<FlatList>(null);
   const chatMutation = trpc.chat.send.useMutation();
   const inputRef = useRef<TextInput>(null);
@@ -99,6 +110,26 @@ export default function ChatScreen() {
         // Load wallet data in background
         getWalletData(addr)
           .then(setWalletDataState)
+          .catch(() => {});
+        // Initialize sync
+        syncAuth(addr)
+          .then((profile) => {
+            if (profile?.dbAvailable) {
+              setSyncEnabled(true);
+              // Load server-side memories
+              fetchSyncMemories(addr).then((serverMems) => {
+                if (serverMems.length > 0) {
+                  const merged = [...mems];
+                  serverMems.forEach((sm) => {
+                    if (!merged.some((m) => m.content === sm.content)) {
+                      merged.push({ id: `sync_${sm.id}`, type: "fact" as const, content: sm.content, timestamp: new Date(sm.createdAt).getTime() });
+                    }
+                  });
+                  setMemoriesState(merged);
+                }
+              }).catch(() => {});
+            }
+          })
           .catch(() => {});
       }
     };
@@ -253,6 +284,27 @@ export default function ChatScreen() {
               },
             ];
             await saveChatHistory(finalMessages);
+
+            // Sync to server if wallet connected
+            if (walletAddress && syncEnabled) {
+              const syncMsgs = finalMessages.map((m) => ({
+                role: m.role,
+                content: m.content,
+                timestamp: m.timestamp,
+              }));
+              if (syncConvoId) {
+                updateSyncConversation(walletAddress, syncConvoId, syncMsgs).catch(() => {});
+              } else {
+                createSyncConversation(walletAddress, msgText.slice(0, 50), syncMsgs)
+                  .then((result) => { if (result) setSyncConvoId(result.id); })
+                  .catch(() => {});
+              }
+              // Push new memories to server
+              if (newMemories.length > 0) {
+                pushMemories(walletAddress, newMemories.map((m) => ({ content: m.content }))).catch(() => {});
+              }
+            }
+
             setIsLoading(false);
           },
           onError: async (error) => {
@@ -417,7 +469,7 @@ export default function ChatScreen() {
             <View>
               <Text style={[styles.headerTitle, { color: colors.foreground }]}>Ember</Text>
               <Text style={[styles.headerSubtitle, { color: colors.muted }]}>
-                {isLoading ? "Thinking..." : "Vaultfire Protocol"}
+                {isLoading ? "Thinking..." : syncEnabled ? "Synced ✓" : "Vaultfire Protocol"}
               </Text>
             </View>
           </View>

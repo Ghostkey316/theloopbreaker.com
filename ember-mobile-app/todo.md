@@ -70,3 +70,15 @@
 - [x] Wallet: Dark ember theme, animations, pull-to-refresh
 - [x] Wallet: Push to GitHub and verify CI
 - [x] Wallet: Write wallet feature report
+- [x] Final verification: All 6 tabs render correctly
+- [x] Final verification: Wallet creation flow is smooth and polished
+- [x] Final verification: Chat streaming works like ChatGPT
+- [x] Final verification: All 28 contract addresses verified
+- [x] Final verification: Dark ember theme consistent everywhere
+- [x] Final verification: Animations smooth, no janky transitions
+- [x] Sync layer: Wallet-based auth (address as user ID)
+- [x] Sync layer: Server-side conversation storage (keyed by wallet address)
+- [x] Sync layer: Server-side memory storage (keyed by wallet address)
+- [x] Sync layer: REST endpoints for sync (GET/POST conversations, memories, wallet)
+- [x] Sync layer: Mobile app integration (auto-sync on load, save after changes)
+- [x] Sync layer: Push to GitHub and verify CI

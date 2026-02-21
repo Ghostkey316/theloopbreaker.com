@@ -7,6 +7,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { registerStreamChatRoute } from "../stream-chat";
+import { registerSyncRoutes } from "../sync-routes";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -57,6 +58,7 @@ async function startServer() {
 
   registerOAuthRoutes(app);
   registerStreamChatRoute(app);
+  registerSyncRoutes(app);
 
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true, timestamp: Date.now() });
