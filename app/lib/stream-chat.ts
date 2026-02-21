@@ -1,11 +1,13 @@
 /**
  * SSE Streaming Chat Client for the web app.
- * Calls the Forge/Manus LLM API directly from the browser.
+ * Calls the OpenAI-compatible LLM API directly from the browser.
+ * Uses text/plain Content-Type to avoid CORS preflight issues.
  * Works on static hosting (GitHub Pages, Vercel static, etc.)
  */
 import { EMBER_SYSTEM_PROMPT } from './contracts';
 
-const FORGE_API_URL = 'https://forge.manus.im/v1/chat/completions';
+const API_URL = 'https://api.manus.im/api/llm-proxy/v1/chat/completions';
+const API_KEY = process.env.NEXT_PUBLIC_OPENAI_API_KEY || 'sk-ADn9FUEGSQtAJYdaQiEjYF';
 
 export interface StreamChatParams {
   messages: Array<{ role: string; content: string }>;
@@ -37,11 +39,14 @@ export async function streamChat({
   ];
 
   try {
-    const response = await fetch(FORGE_API_URL, {
+    const response = await fetch(API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'text/plain',
+        'Authorization': `Bearer ${API_KEY}`,
+      },
       body: JSON.stringify({
-        model: 'gemini-2.5-flash',
+        model: 'gpt-4.1-mini',
         messages: llmMessages,
         max_tokens: 32768,
         stream: true,
@@ -50,7 +55,8 @@ export async function streamChat({
     });
 
     if (!response.ok) {
-      onError(`Chat service unavailable (${response.status})`);
+      const errorText = await response.text().catch(() => '');
+      onError(`Chat service unavailable (${response.status}): ${errorText}`);
       return;
     }
 
