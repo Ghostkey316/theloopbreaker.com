@@ -310,9 +310,14 @@ describe("5. Tab Navigation Audit", () => {
     "utf-8"
   );
 
-  it("Tab layout has 5 Tabs.Screen entries", () => {
+  it("Tab layout has 6 Tabs.Screen entries (Home, Ember, Wallet, Verify, Bridge, Dashboard)", () => {
     const tabScreenMatches = layoutFile.match(/Tabs\.Screen/g);
-    expect(tabScreenMatches?.length).toBe(5);
+    expect(tabScreenMatches?.length).toBe(6);
+  });
+
+  it('Has Wallet tab (name="wallet")', () => {
+    expect(layoutFile).toContain('name="wallet"');
+    expect(layoutFile).toContain('title: "Wallet"');
   });
 
   it('Has Home tab (name="index")', () => {

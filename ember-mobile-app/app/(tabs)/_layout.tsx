@@ -19,8 +19,11 @@ export default function TabLayout() {
         tabBarInactiveTintColor: colors.muted,
         headerShown: false,
         tabBarButton: HapticTab,
+        tabBarLabelStyle: {
+          fontSize: 10,
+        },
         tabBarStyle: {
-          paddingTop: 8,
+          paddingTop: 6,
           paddingBottom: bottomPadding,
           height: tabBarHeight,
           backgroundColor: colors.background,
@@ -33,35 +36,42 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="house.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={22} name="house.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="chat"
         options={{
           title: "Ember",
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="bubble.left.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={22} name="bubble.left.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="wallet"
+        options={{
+          title: "Wallet",
+          tabBarIcon: ({ color }) => <IconSymbol size={22} name="wallet.pass.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="verify"
         options={{
           title: "Verify",
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="shield.checkered" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={22} name="shield.checkered" color={color} />,
         }}
       />
       <Tabs.Screen
         name="bridge"
         options={{
           title: "Bridge",
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="arrow.left.arrow.right" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={22} name="arrow.left.arrow.right" color={color} />,
         }}
       />
       <Tabs.Screen
         name="dashboard"
         options={{
           title: "Dashboard",
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="chart.bar.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={22} name="chart.bar.fill" color={color} />,
         }}
       />
     </Tabs>

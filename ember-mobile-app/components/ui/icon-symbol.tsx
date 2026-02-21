@@ -24,6 +24,7 @@ const MAPPING = {
   "lock.shield.fill": "security",
   "link": "link",
   "person.fill": "person",
+  "wallet.pass.fill": "account-balance-wallet",
 } as IconMapping;
 
 /**

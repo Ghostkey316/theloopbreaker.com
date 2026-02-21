@@ -28,13 +28,17 @@ import {
   clearMemories,
 } from "@/lib/memory";
 import {
-  getWalletAddress,
+  getWalletAddress as getLegacyWalletAddress,
   saveWalletAddress,
   clearWalletAddress,
   validateAddress,
   getWalletData,
   type WalletData,
 } from "@/lib/wallet";
+import {
+  getWalletAddress as getNativeWalletAddress,
+  getWalletContextForEmber,
+} from "@/lib/wallet-core";
 import { streamChat } from "@/lib/stream-chat";
 import Animated, {
   FadeIn,
@@ -80,13 +84,16 @@ export default function ChatScreen() {
   // Load chat history, memories, and wallet on mount
   useEffect(() => {
     const loadData = async () => {
-      const [history, mems, addr] = await Promise.all([
+      const [history, mems, legacyAddr, nativeAddr] = await Promise.all([
         getChatHistory(),
         getMemories(),
-        getWalletAddress(),
+        getLegacyWalletAddress(),
+        getNativeWalletAddress(),
       ]);
       if (history.length > 0) setMessages(history);
       setMemoriesState(mems);
+      // Prefer native wallet address, fall back to legacy
+      const addr = nativeAddr || legacyAddr;
       if (addr) {
         setWalletAddress(addr);
         // Load wallet data in background
@@ -195,7 +202,13 @@ export default function ChatScreen() {
       }));
 
       const memoryStrings = memories.map((m) => m.content);
-      if (walletAddress) memoryStrings.push(`User wallet: ${walletAddress}`);
+      // Add wallet context from native wallet if available
+      const walletCtx = await getWalletContextForEmber();
+      if (walletCtx) {
+        memoryStrings.push(walletCtx);
+      } else if (walletAddress) {
+        memoryStrings.push(`User wallet: ${walletAddress}`);
+      }
 
       try {
         await streamChat({

@@ -53,3 +53,20 @@
 - [x] Contract reads: Graceful fallback when function doesn't exist
 - [x] Push final version to GitHub
 - [x] Write final upgrade report
+- [x] Wallet: lib/wallet-core.ts — keypair generation (ethers.js Wallet.createRandom)
+- [x] Wallet: Seed phrase import and private key import
+- [x] Wallet: Secure storage via Expo SecureStore (encrypted on-device)
+- [x] Wallet: Multi-chain balance fetching (ETH mainnet, Base, Avalanche)
+- [x] Wallet: Modular chain config array (easy to add Solana, Arbitrum, Polygon)
+- [x] Wallet: Onboarding screen with Ember conversational guidance
+- [x] Wallet: Seed phrase backup flow with 3-word verification
+- [x] Wallet: Main wallet view with total portfolio and chain balance cards
+- [x] Wallet: Receive button with address copy-to-clipboard
+- [x] Wallet: Send button placeholder (Coming soon)
+- [x] Wallet: Transaction history placeholder
+- [x] Wallet: 6-tab navigation (add Wallet tab)
+- [x] Wallet: Ember integration — pass wallet address and balances to chat context
+- [x] Wallet: Import wallet option on onboarding
+- [x] Wallet: Dark ember theme, animations, pull-to-refresh
+- [x] Wallet: Push to GitHub and verify CI
+- [x] Wallet: Write wallet feature report
