@@ -20,8 +20,9 @@ interface BridgeStatus {
   chainName: string;
   chainId: number;
   isAlive: boolean;
-  messageCount: number;
-  relayerCount: number;
+  messageCount: number | null;
+  nonce: number | null;
+  paused: boolean | null;
   loading: boolean;
 }
 
@@ -39,8 +40,8 @@ export default function BridgeScreen() {
   const loadBridgeStatus = useCallback(async () => {
     try {
       setLoading(true);
-      const initBase: BridgeStatus = { chain: "base", chainName: "Base", chainId: 8453, isAlive: false, messageCount: 0, relayerCount: 0, loading: true };
-      const initAvax: BridgeStatus = { chain: "avalanche", chainName: "Avalanche", chainId: 43114, isAlive: false, messageCount: 0, relayerCount: 0, loading: true };
+      const initBase: BridgeStatus = { chain: "base", chainName: "Base", chainId: 8453, isAlive: false, messageCount: null, nonce: null, paused: null, loading: true };
+      const initAvax: BridgeStatus = { chain: "avalanche", chainName: "Avalanche", chainId: 43114, isAlive: false, messageCount: null, nonce: null, paused: null, loading: true };
       setBaseStatus(initBase);
       setAvaxStatus(initAvax);
 
@@ -49,8 +50,8 @@ export default function BridgeScreen() {
           getTeleporterBridgeStats("base", baseBridge.address),
           getTeleporterBridgeStats("avalanche", avaxBridge.address),
         ]);
-        setBaseStatus({ ...initBase, isAlive: baseStats.isAlive, messageCount: baseStats.messageCount, relayerCount: baseStats.relayerCount, loading: false });
-        setAvaxStatus({ ...initAvax, isAlive: avaxStats.isAlive, messageCount: avaxStats.messageCount, relayerCount: avaxStats.relayerCount, loading: false });
+        setBaseStatus({ ...initBase, isAlive: baseStats.isAlive, messageCount: baseStats.messageCount, nonce: baseStats.nonce, paused: baseStats.paused, loading: false });
+        setAvaxStatus({ ...initAvax, isAlive: avaxStats.isAlive, messageCount: avaxStats.messageCount, nonce: avaxStats.nonce, paused: avaxStats.paused, loading: false });
       }
     } catch (error) {
       console.error("Bridge status check failed:", error);
@@ -161,16 +162,16 @@ export default function BridgeScreen() {
               <View style={[styles.statsRow, { borderTopColor: colors.border }]}>
                 <View style={styles.statItem}>
                   <Text style={{ color: colors.primary, fontSize: 22, fontWeight: "800" }}>
-                    {currentStatus.messageCount.toLocaleString()}
+                    {currentStatus.messageCount !== null ? currentStatus.messageCount.toLocaleString() : "—"}
                   </Text>
                   <Text style={{ color: colors.muted, fontSize: 10, marginTop: 2 }}>Messages</Text>
                 </View>
                 <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
                 <View style={styles.statItem}>
                   <Text style={{ color: colors.primary, fontSize: 22, fontWeight: "800" }}>
-                    {currentStatus.relayerCount}
+                    {currentStatus.paused !== null ? (currentStatus.paused ? "Paused" : "Active") : "—"}
                   </Text>
-                  <Text style={{ color: colors.muted, fontSize: 10, marginTop: 2 }}>Relayers</Text>
+                  <Text style={{ color: colors.muted, fontSize: 10, marginTop: 2 }}>Status</Text>
                 </View>
                 <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
                 <View style={styles.statItem}>
@@ -218,7 +219,7 @@ export default function BridgeScreen() {
                         {status.chainName}
                       </Text>
                       <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>
-                        {status.loading ? "Checking..." : `${status.messageCount.toLocaleString()} messages relayed`}
+                        {status.loading ? "Checking..." : status.messageCount !== null ? `${status.messageCount.toLocaleString()} messages relayed` : status.isAlive ? "Deployed & operational" : "Offline"}
                       </Text>
                     </View>
                     {status.loading ? (

@@ -22,22 +22,34 @@
 - [x] Add UI polish: animations, typing indicators, transitions, loading/error states
 - [x] End-to-end UX walkthrough and fix broken flows
 - [x] Write updated deep audit report
-- [ ] Chat: ChatGPT-quality message bubbles (right-aligned user, left-aligned Ember)
-- [ ] Chat: Animated typing indicator (bouncing dots)
-- [ ] Chat: Markdown rendering in Ember responses (bold, code, lists)
-- [ ] Chat: Welcome screen with suggested prompts when no messages
-- [ ] Chat: Clear chat option
-- [ ] Chat: Polished input bar with active/inactive send button
-- [ ] Chat: Proper keyboard avoidance
-- [ ] Overall: Smooth navigation transitions
-- [ ] Overall: Consistent spacing and typography
-- [ ] Overall: Status bar light text on dark background
-- [ ] Overall: Skeleton/placeholder loading states
-- [ ] Overall: Friendly error states
-- [ ] Overall: Pull-to-refresh animations
-- [ ] Overall: Haptic press feedback
-- [ ] Branding: Premium ember/fire palette refinement
-- [ ] Branding: Shield+flame prominence
-- [ ] Branding: "Powered by Ember AI" tagline
-- [ ] Push updated app to GitHub
-- [ ] Write design audit report
+- [x] Chat: ChatGPT-quality message bubbles (right-aligned user, left-aligned Ember)
+- [x] Chat: Animated typing indicator (bouncing dots)
+- [x] Chat: Markdown rendering in Ember responses (bold, code, lists)
+- [x] Chat: Welcome screen with suggested prompts when no messages
+- [x] Chat: Clear chat option
+- [x] Chat: Polished input bar with active/inactive send button
+- [x] Chat: Proper keyboard avoidance
+- [x] Overall: Smooth navigation transitions
+- [x] Overall: Consistent spacing and typography
+- [x] Overall: Status bar light text on dark background
+- [x] Overall: Skeleton/placeholder loading states
+- [x] Overall: Friendly error states
+- [x] Overall: Pull-to-refresh animations
+- [x] Overall: Haptic press feedback
+- [x] Branding: Premium ember/fire palette refinement
+- [x] Branding: Shield+flame prominence
+- [x] Branding: "Powered by Ember AI" tagline
+- [x] Push updated app to GitHub
+- [x] Write design audit report
+- [x] Streaming chat: SSE endpoint on server for word-by-word token streaming
+- [x] Streaming chat: Client reads SSE stream and appends tokens in real-time
+- [x] Streaming chat: Typing indicator shows during stream, disappears when done
+- [x] Wallet: ethers.js BrowserProvider connection (wallet address input + balance reads)
+- [x] Wallet: Show connected address and ETH balance on Base + Avalanche
+- [x] Wallet: Persistent address storage and disconnect flow
+- [x] Contract reads: ABI-encoded eth_call for bridge messageCount/nonce/paused
+- [x] Contract reads: ABI-encoded eth_call for governance proposalCount/threshold/ownerCount
+- [x] Contract reads: ABI-encoded eth_call for registry entry counts
+- [x] Contract reads: Graceful fallback when function doesn't exist
+- [x] Push final version to GitHub
+- [x] Write final upgrade report

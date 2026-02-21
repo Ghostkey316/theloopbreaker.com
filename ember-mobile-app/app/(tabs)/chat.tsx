@@ -27,23 +27,37 @@ import {
   clearChatHistory,
   clearMemories,
 } from "@/lib/memory";
-import { getWalletAddress, saveWalletAddress, validateAddress } from "@/lib/wallet";
-import Animated, { FadeIn, FadeInDown, FadeInUp, SlideInRight, SlideInLeft } from "react-native-reanimated";
+import {
+  getWalletAddress,
+  saveWalletAddress,
+  clearWalletAddress,
+  validateAddress,
+  getWalletData,
+  type WalletData,
+} from "@/lib/wallet";
+import { streamChat } from "@/lib/stream-chat";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  SlideInRight,
+  SlideInLeft,
+} from "react-native-reanimated";
 import { TypingIndicator } from "@/components/typing-indicator";
 import { MarkdownText } from "@/components/markdown-text";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 
 interface ChatMessageWithStatus extends ChatMessage {
   isTyping?: boolean;
+  isStreaming?: boolean;
 }
 
 const SUGGESTED_PROMPTS = [
   "What is ERC-8004?",
   "Show me the Base contracts",
-  "Explain the Vaultfire Protocol",
-  "What are the core values?",
+  "Explain the core values",
   "How does the bridge work?",
   "Tell me about AI governance",
+  "What contracts are on Avalanche?",
 ];
 
 export default function ChatScreen() {
@@ -53,6 +67,7 @@ export default function ChatScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [memories, setMemoriesState] = useState<Memory[]>([]);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [walletData, setWalletDataState] = useState<WalletData | null>(null);
   const [walletModalVisible, setWalletModalVisible] = useState(false);
   const [walletInput, setWalletInput] = useState("");
   const [walletLoading, setWalletLoading] = useState(false);
@@ -60,6 +75,7 @@ export default function ChatScreen() {
   const flatListRef = useRef<FlatList>(null);
   const chatMutation = trpc.chat.send.useMutation();
   const inputRef = useRef<TextInput>(null);
+  const streamingRef = useRef<string>("");
 
   // Load chat history, memories, and wallet on mount
   useEffect(() => {
@@ -71,7 +87,13 @@ export default function ChatScreen() {
       ]);
       if (history.length > 0) setMessages(history);
       setMemoriesState(mems);
-      if (addr) setWalletAddress(addr);
+      if (addr) {
+        setWalletAddress(addr);
+        // Load wallet data in background
+        getWalletData(addr)
+          .then(setWalletDataState)
+          .catch(() => {});
+      }
     };
     loadData();
   }, []);
@@ -97,6 +119,9 @@ export default function ChatScreen() {
       await saveWalletAddress(trimmed);
       setWalletAddress(trimmed);
       setWalletInput("");
+      // Fetch wallet data
+      const data = await getWalletData(trimmed);
+      setWalletDataState(data);
       setWalletModalVisible(false);
     } catch {
       Alert.alert("Error", "Failed to connect wallet. Please try again.");
@@ -104,6 +129,13 @@ export default function ChatScreen() {
       setWalletLoading(false);
     }
   }, [walletInput]);
+
+  const disconnectWallet = useCallback(async () => {
+    await clearWalletAddress();
+    setWalletAddress(null);
+    setWalletDataState(null);
+    setWalletModalVisible(false);
+  }, []);
 
   const handleClearChat = useCallback(async () => {
     Alert.alert(
@@ -143,61 +175,143 @@ export default function ChatScreen() {
       setMessages(updatedMessages);
       setInputText("");
       setIsLoading(true);
+      streamingRef.current = "";
 
-      // Add typing indicator
-      const typingMsg: ChatMessageWithStatus = {
-        id: `msg_${Date.now()}_typing`,
+      // Add streaming placeholder
+      const streamMsgId = `msg_${Date.now()}_stream`;
+      const streamingMsg: ChatMessageWithStatus = {
+        id: streamMsgId,
         role: "assistant",
         content: "",
         timestamp: Date.now(),
         isTyping: true,
+        isStreaming: true,
       };
-      setMessages((prev) => [...prev, typingMsg]);
+      setMessages((prev) => [...prev, streamingMsg]);
+
+      const recentMessages = updatedMessages.slice(-20).map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+      const memoryStrings = memories.map((m) => m.content);
+      if (walletAddress) memoryStrings.push(`User wallet: ${walletAddress}`);
 
       try {
-        const recentMessages = updatedMessages.slice(-20).map((m) => ({
-          role: m.role,
-          content: m.content,
-        }));
-
-        const memoryStrings = memories.map((m) => m.content);
-        if (walletAddress) memoryStrings.push(`User wallet: ${walletAddress}`);
-
-        const result = await chatMutation.mutateAsync({
+        await streamChat({
           messages: recentMessages,
           memories: memoryStrings,
+          onToken: (token) => {
+            streamingRef.current += token;
+            const currentText = streamingRef.current;
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === streamMsgId
+                  ? { ...m, content: currentText, isTyping: false, isStreaming: true }
+                  : m
+              )
+            );
+          },
+          onDone: async (fullText) => {
+            // Finalize the message
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === streamMsgId
+                  ? { ...m, content: fullText, isStreaming: false, isTyping: false }
+                  : m
+              )
+            );
+
+            // Extract and save memories
+            const newMemories = extractMemories(msgText, fullText);
+            if (newMemories.length > 0) {
+              await saveMemories(newMemories);
+              setMemoriesState((prev) => [...prev, ...newMemories]);
+            }
+
+            // Save chat history
+            const finalMessages = [
+              ...updatedMessages,
+              {
+                id: streamMsgId,
+                role: "assistant" as const,
+                content: fullText,
+                timestamp: Date.now(),
+              },
+            ];
+            await saveChatHistory(finalMessages);
+            setIsLoading(false);
+          },
+          onError: async (error) => {
+            console.error("Stream error:", error);
+            // Fall back to non-streaming tRPC call
+            try {
+              const result = await chatMutation.mutateAsync({
+                messages: recentMessages,
+                memories: memoryStrings,
+              });
+
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === streamMsgId
+                    ? {
+                        ...m,
+                        content: result.response,
+                        isStreaming: false,
+                        isTyping: false,
+                      }
+                    : m
+                )
+              );
+
+              const newMemories = extractMemories(msgText, result.response);
+              if (newMemories.length > 0) {
+                await saveMemories(newMemories);
+                setMemoriesState((prev) => [...prev, ...newMemories]);
+              }
+
+              const finalMessages = [
+                ...updatedMessages,
+                {
+                  id: streamMsgId,
+                  role: "assistant" as const,
+                  content: result.response,
+                  timestamp: Date.now(),
+                },
+              ];
+              await saveChatHistory(finalMessages);
+            } catch {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === streamMsgId
+                    ? {
+                        ...m,
+                        content:
+                          "I'm having trouble connecting right now. Please check your connection and try again.",
+                        isStreaming: false,
+                        isTyping: false,
+                      }
+                    : m
+                )
+              );
+            }
+            setIsLoading(false);
+          },
         });
-
-        // Remove typing indicator
-        setMessages((prev) => prev.filter((m) => !m.isTyping));
-
-        const assistantMsg: ChatMessageWithStatus = {
-          id: `msg_${Date.now()}_assistant`,
-          role: "assistant",
-          content: result.response,
-          timestamp: Date.now(),
-        };
-
-        const finalMessages = [...updatedMessages, assistantMsg];
-        setMessages(finalMessages);
-
-        // Extract and save memories
-        const newMemories = extractMemories(msgText, result.response);
-        if (newMemories.length > 0) {
-          await saveMemories(newMemories);
-          setMemoriesState((prev) => [...prev, ...newMemories]);
-        }
-        await saveChatHistory(finalMessages);
       } catch {
-        setMessages((prev) => prev.filter((m) => !m.isTyping));
-        const errorMsg: ChatMessageWithStatus = {
-          id: `msg_${Date.now()}_error`,
-          role: "assistant",
-          content: "I'm having trouble connecting right now. Please check your connection and try again.",
-          timestamp: Date.now(),
-        };
-        setMessages((prev) => [...prev, errorMsg]);
-      } finally {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === streamMsgId
+              ? {
+                  ...m,
+                  content:
+                    "I'm having trouble connecting right now. Please check your connection and try again.",
+                  isStreaming: false,
+                  isTyping: false,
+                }
+              : m
+          )
+        );
         setIsLoading(false);
       }
     },
@@ -205,10 +319,10 @@ export default function ChatScreen() {
   );
 
   const renderMessage = useCallback(
-    ({ item, index }: { item: ChatMessageWithStatus; index: number }) => {
+    ({ item }: { item: ChatMessageWithStatus }) => {
       const isUser = item.role === "user";
 
-      if (item.isTyping) {
+      if (item.isTyping && !item.content) {
         return (
           <Animated.View entering={FadeIn.duration(200)} style={styles.assistantRow}>
             <View style={[styles.avatarSmall, { backgroundColor: colors.primary }]}>
@@ -225,12 +339,7 @@ export default function ChatScreen() {
       if (isUser) {
         return (
           <Animated.View entering={SlideInRight.duration(250).delay(50)} style={styles.userRow}>
-            <View
-              style={[
-                styles.userBubble,
-                { backgroundColor: colors.primary },
-              ]}
-            >
+            <View style={[styles.userBubble, { backgroundColor: colors.primary }]}>
               <Text style={{ color: "#FFFFFF", fontSize: 15, lineHeight: 22 }}>
                 {item.content}
               </Text>
@@ -239,7 +348,7 @@ export default function ChatScreen() {
         );
       }
 
-      // Assistant message
+      // Assistant message (streaming or complete)
       return (
         <Animated.View entering={SlideInLeft.duration(250).delay(50)} style={styles.assistantRow}>
           <View style={[styles.avatarSmall, { backgroundColor: colors.primary }]}>
@@ -249,10 +358,15 @@ export default function ChatScreen() {
             <MarkdownText
               text={item.content}
               baseColor={colors.foreground}
-              codeBackground={`${colors.background}`}
+              codeBackground={colors.background}
               codeBorderColor={colors.border}
               accentColor={colors.primary}
             />
+            {item.isStreaming && (
+              <Animated.View entering={FadeIn.duration(100)} style={styles.streamCursor}>
+                <View style={[styles.cursorDot, { backgroundColor: colors.primary }]} />
+              </Animated.View>
+            )}
           </View>
         </Animated.View>
       );
@@ -262,6 +376,17 @@ export default function ChatScreen() {
 
   const hasText = inputText.trim().length > 0;
   const showWelcome = messages.length === 0;
+
+  const truncateAddr = (addr: string) =>
+    `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+
+  const formatBalance = (val: string) => {
+    const num = parseFloat(val);
+    if (isNaN(num)) return "0";
+    if (num === 0) return "0";
+    if (num < 0.0001) return "<0.0001";
+    return num.toFixed(4);
+  };
 
   return (
     <KeyboardAvoidingView
@@ -289,15 +414,17 @@ export default function ChatScreen() {
               style={({ pressed }) => [
                 styles.headerBtn,
                 {
-                  backgroundColor: walletAddress
-                    ? `${colors.success}20`
-                    : colors.surface,
+                  backgroundColor: walletAddress ? `${colors.success}20` : colors.surface,
                   borderColor: walletAddress ? colors.success : colors.border,
                   opacity: pressed ? 0.7 : 1,
                 },
               ]}
             >
-              <IconSymbol name="person.fill" size={14} color={walletAddress ? colors.success : colors.muted} />
+              <IconSymbol
+                name="person.fill"
+                size={14}
+                color={walletAddress ? colors.success : colors.muted}
+              />
             </Pressable>
             <Pressable
               onPress={() => setMenuVisible(true)}
@@ -310,46 +437,47 @@ export default function ChatScreen() {
                 },
               ]}
             >
-              <Text style={{ color: colors.muted, fontSize: 16, fontWeight: "bold" }}>⋯</Text>
+              <IconSymbol name="ellipsis" size={16} color={colors.muted} />
             </Pressable>
           </View>
         </View>
 
-        {/* Welcome Screen or Messages */}
+        {/* Welcome or Messages */}
         {showWelcome ? (
           <View style={styles.welcomeContainer}>
-            <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.welcomeContent}>
+            <Animated.View entering={FadeInDown.duration(400)} style={styles.welcomeContent}>
               <View style={[styles.welcomeIcon, { backgroundColor: `${colors.primary}15` }]}>
-                <Text style={{ fontSize: 48 }}>🔥</Text>
+                <Text style={{ fontSize: 40 }}>🔥</Text>
               </View>
               <Text style={[styles.welcomeTitle, { color: colors.foreground }]}>
                 Welcome to Ember
               </Text>
               <Text style={[styles.welcomeSubtitle, { color: colors.muted }]}>
-                Your AI companion for the Vaultfire Protocol. Ask me anything about contracts, ERC-8004, governance, or the bridge.
+                Your AI companion for the Vaultfire Protocol. Ask about contracts, ERC-8004,
+                governance, or anything about ethical AI.
               </Text>
             </Animated.View>
 
-            <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.promptsContainer}>
+            <Animated.View entering={FadeInDown.duration(400).delay(200)} style={styles.promptsContainer}>
               <Text style={[styles.promptsLabel, { color: colors.muted }]}>Try asking</Text>
               <View style={styles.promptsGrid}>
-                {SUGGESTED_PROMPTS.map((prompt, idx) => (
+                {SUGGESTED_PROMPTS.map((prompt, i) => (
                   <Pressable
-                    key={idx}
+                    key={i}
                     onPress={() => sendMessage(prompt)}
                     style={({ pressed }) => [
                       styles.promptChip,
                       {
                         backgroundColor: colors.surface,
-                        borderColor: colors.border,
-                        opacity: pressed ? 0.7 : 1,
+                        borderColor: pressed ? colors.primary : colors.border,
+                        opacity: pressed ? 0.8 : 1,
                       },
                     ]}
                   >
-                    <Text style={{ color: colors.foreground, fontSize: 13, lineHeight: 18 }}>
+                    <Text style={{ color: colors.foreground, fontSize: 14, flex: 1 }}>
                       {prompt}
                     </Text>
-                    <IconSymbol name="chevron.right" size={12} color={colors.muted} />
+                    <IconSymbol name="chevron.right" size={14} color={colors.muted} />
                   </Pressable>
                 ))}
               </View>
@@ -359,13 +487,13 @@ export default function ChatScreen() {
           <FlatList
             ref={flatListRef}
             data={messages}
-            keyExtractor={(item) => item.id}
             renderItem={renderMessage}
+            keyExtractor={(item) => item.id}
             contentContainerStyle={styles.messagesList}
-            onContentSizeChange={() =>
-              setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50)
-            }
             showsVerticalScrollIndicator={false}
+            onContentSizeChange={() =>
+              flatListRef.current?.scrollToEnd({ animated: true })
+            }
           />
         )}
 
@@ -388,26 +516,24 @@ export default function ChatScreen() {
               placeholderTextColor={colors.muted}
               style={[styles.input, { color: colors.foreground }]}
               multiline
-              maxLength={1000}
+              maxLength={4000}
               editable={!isLoading}
               returnKeyType="default"
-              onSubmitEditing={() => {
-                if (hasText && !isLoading) sendMessage();
-              }}
+              blurOnSubmit={false}
             />
             <Pressable
               onPress={() => sendMessage()}
-              disabled={isLoading || !hasText}
+              disabled={!hasText || isLoading}
               style={({ pressed }) => [
                 styles.sendButton,
                 {
                   backgroundColor: hasText && !isLoading ? colors.primary : "transparent",
-                  opacity: pressed && hasText ? 0.8 : 1,
+                  opacity: pressed ? 0.7 : hasText && !isLoading ? 1 : 0.3,
                 },
               ]}
             >
               {isLoading ? (
-                <ActivityIndicator size="small" color={colors.primary} />
+                <ActivityIndicator size="small" color={colors.muted} />
               ) : (
                 <IconSymbol
                   name="paperplane.fill"
@@ -418,14 +544,17 @@ export default function ChatScreen() {
             </Pressable>
           </View>
           <Text style={[styles.inputDisclaimer, { color: colors.muted }]}>
-            Ember can make mistakes. Verify contract data on-chain.
+            Ember can make mistakes. Verify important information.
           </Text>
         </View>
 
         {/* Menu Modal */}
-        <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={() => setMenuVisible(false)}>
+        <Modal visible={menuVisible} transparent animationType="fade">
           <Pressable style={styles.modalOverlay} onPress={() => setMenuVisible(false)}>
-            <Animated.View entering={FadeInDown.duration(200)} style={[styles.menuCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Animated.View
+              entering={FadeIn.duration(150)}
+              style={[styles.menuCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            >
               <Pressable
                 onPress={handleClearChat}
                 style={({ pressed }) => [
@@ -433,16 +562,11 @@ export default function ChatScreen() {
                   { opacity: pressed ? 0.6 : 1 },
                 ]}
               >
-                <IconSymbol name="flame.fill" size={18} color={colors.error} />
-                <Text style={{ color: colors.error, fontSize: 15, fontWeight: "500" }}>Clear Conversation</Text>
-              </Pressable>
-              <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
-              <View style={styles.menuItem}>
-                <IconSymbol name="person.fill" size={18} color={colors.muted} />
-                <Text style={{ color: colors.muted, fontSize: 13 }}>
-                  {memories.length} memories stored
+                <IconSymbol name="trash.fill" size={18} color={colors.error} />
+                <Text style={{ color: colors.error, fontSize: 15, fontWeight: "500" }}>
+                  Clear Conversation
                 </Text>
-              </View>
+              </Pressable>
               <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
               <Pressable
                 onPress={() => setMenuVisible(false)}
@@ -451,19 +575,27 @@ export default function ChatScreen() {
                   { opacity: pressed ? 0.6 : 1 },
                 ]}
               >
-                <Text style={{ color: colors.foreground, fontSize: 15, fontWeight: "500", textAlign: "center", flex: 1 }}>
-                  Cancel
-                </Text>
+                <IconSymbol name="xmark" size={18} color={colors.muted} />
+                <Text style={{ color: colors.muted, fontSize: 15 }}>Cancel</Text>
               </Pressable>
             </Animated.View>
           </Pressable>
         </Modal>
 
         {/* Wallet Modal */}
-        <Modal visible={walletModalVisible} transparent animationType="fade" onRequestClose={() => setWalletModalVisible(false)}>
-          <Pressable style={styles.modalOverlay} onPress={() => setWalletModalVisible(false)}>
+        <Modal visible={walletModalVisible} transparent animationType="fade">
+          <Pressable
+            style={styles.modalOverlay}
+            onPress={() => setWalletModalVisible(false)}
+          >
             <Pressable onPress={() => {}}>
-              <Animated.View entering={FadeInDown.duration(250)} style={[styles.walletCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Animated.View
+                entering={FadeInDown.duration(250)}
+                style={[
+                  styles.walletCard,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                ]}
+              >
                 <View style={styles.walletHeader}>
                   <IconSymbol name="person.fill" size={20} color={colors.primary} />
                   <Text style={[styles.walletTitle, { color: colors.foreground }]}>
@@ -474,27 +606,98 @@ export default function ChatScreen() {
                 {walletAddress ? (
                   <View style={{ gap: 12 }}>
                     <View style={[styles.addressBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                      <Text style={{ color: colors.primary, fontSize: 12, fontFamily: "monospace", lineHeight: 18 }}>
-                        {walletAddress}
+                      <Text style={{ color: colors.muted, fontSize: 11, marginBottom: 4 }}>
+                        ADDRESS
+                      </Text>
+                      <Text
+                        style={{
+                          color: colors.foreground,
+                          fontSize: 13,
+                          fontFamily: "monospace",
+                        }}
+                      >
+                        {truncateAddr(walletAddress)}
                       </Text>
                     </View>
+
+                    {/* Balance display */}
+                    {walletData && (
+                      <View style={{ gap: 8 }}>
+                        <View
+                          style={[
+                            styles.balanceRow,
+                            { backgroundColor: colors.background, borderColor: colors.border },
+                          ]}
+                        >
+                          <View>
+                            <Text style={{ color: colors.muted, fontSize: 10, marginBottom: 2 }}>
+                              BASE (ETH)
+                            </Text>
+                            <Text
+                              style={{
+                                color: colors.foreground,
+                                fontSize: 16,
+                                fontWeight: "700",
+                              }}
+                            >
+                              {formatBalance(walletData.balanceBase)}
+                            </Text>
+                          </View>
+                          <View style={[styles.chainBadge, { backgroundColor: `${colors.primary}20` }]}>
+                            <Text style={{ color: colors.primary, fontSize: 10, fontWeight: "600" }}>
+                              Base
+                            </Text>
+                          </View>
+                        </View>
+                        <View
+                          style={[
+                            styles.balanceRow,
+                            { backgroundColor: colors.background, borderColor: colors.border },
+                          ]}
+                        >
+                          <View>
+                            <Text style={{ color: colors.muted, fontSize: 10, marginBottom: 2 }}>
+                              AVALANCHE (AVAX)
+                            </Text>
+                            <Text
+                              style={{
+                                color: colors.foreground,
+                                fontSize: 16,
+                                fontWeight: "700",
+                              }}
+                            >
+                              {formatBalance(walletData.balanceAvalanche)}
+                            </Text>
+                          </View>
+                          <View style={[styles.chainBadge, { backgroundColor: `${colors.error}20` }]}>
+                            <Text style={{ color: colors.error, fontSize: 10, fontWeight: "600" }}>
+                              Avax
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    )}
+
                     <Pressable
-                      onPress={() => {
-                        setWalletAddress(null);
-                        setWalletModalVisible(false);
-                      }}
+                      onPress={disconnectWallet}
                       style={({ pressed }) => [
                         styles.walletBtn,
-                        { backgroundColor: `${colors.error}15`, borderColor: colors.error, opacity: pressed ? 0.7 : 1 },
+                        {
+                          backgroundColor: `${colors.error}15`,
+                          borderColor: colors.error,
+                          opacity: pressed ? 0.7 : 1,
+                        },
                       ]}
                     >
-                      <Text style={{ color: colors.error, fontWeight: "600", fontSize: 14 }}>Disconnect</Text>
+                      <Text style={{ color: colors.error, fontWeight: "600", fontSize: 14 }}>
+                        Disconnect
+                      </Text>
                     </Pressable>
                   </View>
                 ) : (
                   <View style={{ gap: 12 }}>
                     <Text style={{ color: colors.muted, fontSize: 13, lineHeight: 19 }}>
-                      Enter your Ethereum address to personalize Ember's responses with your on-chain data.
+                      Enter your Ethereum address to view balances on Base and Avalanche.
                     </Text>
                     <TextInput
                       value={walletInput}
@@ -519,8 +722,12 @@ export default function ChatScreen() {
                       style={({ pressed }) => [
                         styles.walletBtn,
                         {
-                          backgroundColor: walletInput.trim() ? colors.primary : colors.surface,
-                          borderColor: walletInput.trim() ? colors.primary : colors.border,
+                          backgroundColor: walletInput.trim()
+                            ? colors.primary
+                            : colors.surface,
+                          borderColor: walletInput.trim()
+                            ? colors.primary
+                            : colors.border,
                           opacity: pressed ? 0.8 : 1,
                         },
                       ]}
@@ -528,7 +735,13 @@ export default function ChatScreen() {
                       {walletLoading ? (
                         <ActivityIndicator size="small" color="#FFFFFF" />
                       ) : (
-                        <Text style={{ color: walletInput.trim() ? "#FFFFFF" : colors.muted, fontWeight: "600", fontSize: 14 }}>
+                        <Text
+                          style={{
+                            color: walletInput.trim() ? "#FFFFFF" : colors.muted,
+                            fontWeight: "600",
+                            fontSize: 14,
+                          }}
+                        >
                           Connect
                         </Text>
                       )}
@@ -538,9 +751,11 @@ export default function ChatScreen() {
 
                 <Pressable
                   onPress={() => setWalletModalVisible(false)}
-                  style={({ pressed }) => [{ marginTop: 8, opacity: pressed ? 0.6 : 1 }]}
+                  style={({ pressed }) => [{ marginTop: 4, opacity: pressed ? 0.6 : 1 }]}
                 >
-                  <Text style={{ color: colors.muted, textAlign: "center", fontSize: 14 }}>Cancel</Text>
+                  <Text style={{ color: colors.muted, textAlign: "center", fontSize: 14 }}>
+                    Cancel
+                  </Text>
                 </Pressable>
               </Animated.View>
             </Pressable>
@@ -552,7 +767,6 @@ export default function ChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  // Header
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -580,8 +794,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
   },
-
-  // Welcome
   welcomeContainer: { flex: 1, justifyContent: "center", paddingHorizontal: 24 },
   welcomeContent: { alignItems: "center", gap: 12, marginBottom: 32 },
   welcomeIcon: {
@@ -593,9 +805,19 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   welcomeTitle: { fontSize: 24, fontWeight: "700" },
-  welcomeSubtitle: { fontSize: 14, textAlign: "center", lineHeight: 21, paddingHorizontal: 16 },
+  welcomeSubtitle: {
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 21,
+    paddingHorizontal: 16,
+  },
   promptsContainer: { gap: 12 },
-  promptsLabel: { fontSize: 12, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 },
+  promptsLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
   promptsGrid: { gap: 8 },
   promptChip: {
     flexDirection: "row",
@@ -606,11 +828,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
   },
-
-  // Messages
   messagesList: { paddingHorizontal: 12, paddingTop: 12, paddingBottom: 8 },
-  userRow: { flexDirection: "row", justifyContent: "flex-end", marginBottom: 12, paddingLeft: 48 },
-  assistantRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 12, paddingRight: 32, gap: 8 },
+  userRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginBottom: 12,
+    paddingLeft: 48,
+  },
+  assistantRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 12,
+    paddingRight: 32,
+    gap: 8,
+  },
   avatarSmall: {
     width: 28,
     height: 28,
@@ -634,8 +865,15 @@ const styles = StyleSheet.create({
     maxWidth: "100%",
     flex: 1,
   },
-
-  // Input
+  streamCursor: {
+    marginTop: 4,
+  },
+  cursorDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    opacity: 0.6,
+  },
   inputContainer: {
     paddingHorizontal: 12,
     paddingTop: 8,
@@ -672,8 +910,6 @@ const styles = StyleSheet.create({
     marginTop: 6,
     marginBottom: 2,
   },
-
-  // Modals
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.6)",
@@ -694,8 +930,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   menuDivider: { height: 0.5 },
-
-  // Wallet
   walletCard: {
     width: "85%",
     maxWidth: 340,
@@ -710,6 +944,19 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 10,
     borderWidth: 1,
+  },
+  balanceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  chainBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
   walletInputField: {
     paddingHorizontal: 14,

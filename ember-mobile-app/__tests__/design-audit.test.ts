@@ -55,7 +55,7 @@ describe("Design Audit — Chat Experience", () => {
   });
 
   it("has send button that activates only with text", () => {
-    expect(chatCode).toContain("disabled={isLoading || !hasText}");
+    expect(chatCode).toContain("disabled={!hasText || isLoading}");
     expect(chatCode).toContain("hasText && !isLoading ? colors.primary : \"transparent\"");
   });
 
