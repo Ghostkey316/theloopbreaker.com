@@ -25,22 +25,14 @@ export default function Page() {
 
   const renderSection = () => {
     switch (activeSection) {
-      case 'home':
-        return <Home />;
-      case 'chat':
-        return <Chat />;
-      case 'wallet':
-        return <Wallet />;
-      case 'verify':
-        return <Verify />;
-      case 'bridge':
-        return <Bridge />;
-      case 'dashboard':
-        return <Dashboard />;
-      case 'sync':
-        return <Sync />;
-      default:
-        return <Home />;
+      case 'home': return <Home />;
+      case 'chat': return <Chat />;
+      case 'wallet': return <Wallet />;
+      case 'verify': return <Verify />;
+      case 'bridge': return <Bridge />;
+      case 'dashboard': return <Dashboard />;
+      case 'sync': return <Sync />;
+      default: return <Home />;
     }
   };
 
@@ -52,7 +44,7 @@ export default function Page() {
         overflowY: 'auto',
         overflowX: 'hidden',
         backgroundColor: '#0A0A0C',
-        paddingTop: isMobile ? 64 : 0,
+        paddingTop: isMobile ? 56 : 0,
         width: '100%',
         minWidth: 0,
       }}>

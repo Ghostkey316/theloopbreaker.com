@@ -3,12 +3,10 @@ import { useState, useEffect } from "react";
 
 type Section = "home" | "chat" | "wallet" | "verify" | "bridge" | "dashboard" | "sync";
 
-// Clean SVG icons as React components
 const Icons: Record<string, (props: { size?: number; color?: string }) => React.ReactElement> = {
   home: ({ size = 18, color = "currentColor" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-      <polyline points="9 22 9 12 15 12 15 22" />
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
     </svg>
   ),
   chat: ({ size = 18, color = "currentColor" }) => (
@@ -18,54 +16,37 @@ const Icons: Record<string, (props: { size?: number; color?: string }) => React.
   ),
   wallet: ({ size = 18, color = "currentColor" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
-      <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
-      <path d="M18 12a2 2 0 0 0 0 4h4v-4h-4z" />
+      <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4h-4z" />
     </svg>
   ),
   verify: ({ size = 18, color = "currentColor" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      <polyline points="9 12 11 14 15 10" />
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><polyline points="9 12 11 14 15 10" />
     </svg>
   ),
   bridge: ({ size = 18, color = "currentColor" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M8 3v3a2 2 0 0 1-2 2H3" />
-      <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
-      <path d="M3 16h3a2 2 0 0 1 2 2v3" />
-      <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
-      <line x1="7" y1="12" x2="17" y2="12" />
-      <polyline points="14 9 17 12 14 15" />
+      <path d="M8 3v3a2 2 0 0 1-2 2H3" /><path d="M21 8h-3a2 2 0 0 1-2-2V3" /><path d="M3 16h3a2 2 0 0 1 2 2v3" /><path d="M16 21v-3a2 2 0 0 1 2-2h3" /><line x1="7" y1="12" x2="17" y2="12" /><polyline points="14 9 17 12 14 15" />
     </svg>
   ),
   dashboard: ({ size = 18, color = "currentColor" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="7" height="7" rx="1" />
-      <rect x="14" y="3" width="7" height="7" rx="1" />
-      <rect x="3" y="14" width="7" height="7" rx="1" />
-      <rect x="14" y="14" width="7" height="7" rx="1" />
+      <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
     </svg>
   ),
   sync: ({ size = 18, color = "currentColor" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="23 4 23 10 17 10" />
-      <polyline points="1 20 1 14 7 14" />
-      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10" />
-      <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14" />
+      <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" /><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10" /><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14" />
     </svg>
   ),
   menu: ({ size = 18, color = "currentColor" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="3" y1="6" x2="21" y2="6" />
-      <line x1="3" y1="12" x2="21" y2="12" />
-      <line x1="3" y1="18" x2="21" y2="18" />
+      <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
     </svg>
   ),
   close: ({ size = 18, color = "currentColor" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
+      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
     </svg>
   ),
 };
@@ -80,19 +61,14 @@ const NAV_ITEMS: { id: Section; label: string; iconKey: string }[] = [
   { id: "sync", label: "Sync", iconKey: "sync" },
 ];
 
-// Vaultfire logo as SVG
 function VaultfireLogo({ size = 32 }: { size?: number }) {
   return (
     <div style={{
-      width: size,
-      height: size,
-      borderRadius: 10,
+      width: size, height: size, borderRadius: 9,
       background: 'linear-gradient(135deg, rgba(249,115,22,0.15), rgba(249,115,22,0.05))',
       border: '1px solid rgba(249,115,22,0.25)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexShrink: 0,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+      boxShadow: '0 2px 8px rgba(249,115,22,0.08)',
     }}>
       <svg width={size * 0.55} height={size * 0.55} viewBox="0 0 24 24" fill="none">
         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="none" stroke="#F97316" strokeWidth="1.5" />
@@ -137,45 +113,28 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
         onMouseEnter={() => setHoveredItem(item.id)}
         onMouseLeave={() => setHoveredItem(null)}
         style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          padding: mobile ? "11px 14px" : "9px 12px",
-          borderRadius: 8,
-          border: "none",
-          cursor: "pointer",
-          textAlign: "left",
-          width: "100%",
-          backgroundColor: isActive
-            ? "rgba(249,115,22,0.1)"
-            : isHovered
-            ? "rgba(255,255,255,0.04)"
-            : "transparent",
+          display: "flex", alignItems: "center", gap: 9,
+          padding: mobile ? "10px 12px" : "8px 11px",
+          borderRadius: 8, border: "none", cursor: "pointer",
+          textAlign: "left", width: "100%",
+          backgroundColor: isActive ? "rgba(249,115,22,0.08)" : isHovered ? "rgba(255,255,255,0.03)" : "transparent",
           color: isActive ? "#F97316" : isHovered ? "#FFFFFF" : "#A0A0A8",
-          transition: "all 0.15s ease",
+          transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
           position: "relative",
         }}
       >
         {isActive && (
           <div style={{
-            position: "absolute",
-            left: 0,
-            top: "50%",
-            transform: "translateY(-50%)",
-            width: 3,
-            height: 16,
-            borderRadius: 2,
-            backgroundColor: "#F97316",
+            position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)",
+            width: 2.5, height: 14, borderRadius: 2, backgroundColor: "#F97316",
           }} />
         )}
         <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
-          <IconComponent size={mobile ? 19 : 17} color={isActive ? "#F97316" : isHovered ? "#FFFFFF" : "#A0A0A8"} />
+          <IconComponent size={mobile ? 18 : 16} color={isActive ? "#F97316" : isHovered ? "#FFFFFF" : "#A0A0A8"} />
         </span>
         <span style={{
-          fontSize: mobile ? 14 : 13,
-          fontWeight: isActive ? 600 : 400,
-          whiteSpace: "nowrap",
-          letterSpacing: "-0.01em",
+          fontSize: mobile ? 13 : 12, fontWeight: isActive ? 600 : 400,
+          whiteSpace: "nowrap", letterSpacing: "-0.01em",
         }}>
           {item.label}
         </span>
@@ -187,112 +146,77 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
   if (isMobile) {
     return (
       <>
-        {/* Hamburger button */}
         <button
           onClick={() => setMobileOpen(true)}
           style={{
-            position: "fixed",
-            top: 12,
-            left: 12,
-            zIndex: 1000,
-            width: 42,
-            height: 42,
-            borderRadius: 10,
-            backgroundColor: "rgba(17,17,20,0.9)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
+            position: "fixed", top: 10, left: 10, zIndex: 1000,
+            width: 40, height: 40, borderRadius: 10,
+            background: "rgba(17,17,20,0.85)",
+            backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
             border: "1px solid rgba(255,255,255,0.08)",
-            color: "#F97316",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+            color: "#F97316", display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer", boxShadow: "0 2px 12px rgba(0,0,0,0.3)",
           }}
           aria-label="Open menu"
         >
-          <Icons.menu size={18} color="#F97316" />
+          <Icons.menu size={17} color="#F97316" />
         </button>
 
-        {/* Overlay backdrop */}
         {mobileOpen && (
           <div
             onClick={() => setMobileOpen(false)}
             style={{
-              position: "fixed",
-              inset: 0,
-              backgroundColor: "rgba(0,0,0,0.6)",
-              backdropFilter: "blur(4px)",
-              WebkitBackdropFilter: "blur(4px)",
-              zIndex: 1001,
-              transition: "opacity 0.25s",
+              position: "fixed", inset: 0,
+              backgroundColor: "rgba(0,0,0,0.5)",
+              backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)",
+              zIndex: 1001, transition: "opacity 0.25s",
             }}
           />
         )}
 
-        {/* Slide-in sidebar */}
         <aside
           style={{
-            position: "fixed",
-            top: 0,
-            left: mobileOpen ? 0 : -280,
-            width: 270,
-            height: "100vh",
-            backgroundColor: "#0E0E11",
+            position: "fixed", top: 0, left: mobileOpen ? 0 : -270,
+            width: 260, height: "100vh",
+            background: "rgba(14,14,17,0.95)",
+            backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
             borderRight: "1px solid rgba(255,255,255,0.06)",
-            zIndex: 1002,
-            display: "flex",
-            flexDirection: "column",
+            zIndex: 1002, display: "flex", flexDirection: "column",
             transition: "left 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-            boxShadow: mobileOpen ? "8px 0 32px rgba(0,0,0,0.5)" : "none",
+            boxShadow: mobileOpen ? "8px 0 32px rgba(0,0,0,0.4)" : "none",
           }}
         >
-          {/* Header */}
           <div style={{
-            padding: "16px",
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
+            padding: "14px 14px", borderBottom: "1px solid rgba(255,255,255,0.05)",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
           }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <VaultfireLogo size={34} />
+            <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+              <VaultfireLogo size={30} />
               <div>
-                <h1 style={{ fontSize: 15, fontWeight: 700, color: "#FFFFFF", margin: 0, letterSpacing: "-0.02em" }}>Vaultfire</h1>
-                <p style={{ fontSize: 11, color: "#A0A0A8", margin: 0, fontWeight: 400 }}>Protocol</p>
+                <h1 style={{ fontSize: 14, fontWeight: 700, color: "#FFFFFF", margin: 0, letterSpacing: "-0.02em" }}>Vaultfire</h1>
+                <p style={{ fontSize: 10, color: "#666670", margin: 0, fontWeight: 400 }}>Protocol</p>
               </div>
             </div>
             <button
               onClick={() => setMobileOpen(false)}
               style={{
-                background: "none",
-                border: "none",
-                color: "#666670",
-                cursor: "pointer",
-                padding: 6,
-                borderRadius: 6,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                background: "none", border: "none", color: "#666670",
+                cursor: "pointer", padding: 4, borderRadius: 6,
+                display: "flex", alignItems: "center", justifyContent: "center",
               }}
             >
-              <Icons.close size={18} color="#666670" />
+              <Icons.close size={17} color="#666670" />
             </button>
           </div>
 
-          {/* Nav items */}
-          <nav style={{ flex: 1, padding: "12px 8px", display: "flex", flexDirection: "column", gap: 2, overflowY: "auto" }}>
+          <nav style={{ flex: 1, padding: "10px 6px", display: "flex", flexDirection: "column", gap: 1, overflowY: "auto" }}>
             {NAV_ITEMS.map((item) => (
               <NavButton key={item.id} item={item} mobile />
             ))}
           </nav>
 
-          {/* Footer */}
-          <div style={{
-            padding: "12px 16px",
-            borderTop: "1px solid rgba(255,255,255,0.06)",
-          }}>
-            <p style={{ fontSize: 11, color: "#666670", textAlign: "center" }}>Vaultfire Protocol v1.0</p>
+          <div style={{ padding: "10px 14px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+            <p style={{ fontSize: 10, color: "#666670", textAlign: "center" }}>Vaultfire Protocol v1.0</p>
           </div>
         </aside>
       </>
@@ -303,40 +227,32 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
   return (
     <aside
       style={{
-        width: 240,
-        minWidth: 240,
-        backgroundColor: "#0E0E11",
-        borderRight: "1px solid rgba(255,255,255,0.06)",
-        display: "flex",
-        flexDirection: "column",
+        width: 220, minWidth: 220,
+        background: "rgba(14,14,17,0.95)",
+        backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+        borderRight: "1px solid rgba(255,255,255,0.05)",
+        display: "flex", flexDirection: "column",
       }}
     >
       <div style={{
-        padding: "16px 14px",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
+        padding: "14px 12px", borderBottom: "1px solid rgba(255,255,255,0.05)",
+        display: "flex", alignItems: "center", gap: 9,
       }}>
-        <VaultfireLogo size={34} />
+        <VaultfireLogo size={30} />
         <div style={{ overflow: "hidden" }}>
-          <h1 style={{ fontSize: 14, fontWeight: 700, color: "#FFFFFF", whiteSpace: "nowrap", margin: 0, letterSpacing: "-0.02em" }}>Vaultfire</h1>
-          <p style={{ fontSize: 11, color: "#A0A0A8", whiteSpace: "nowrap", margin: 0, fontWeight: 400 }}>Protocol</p>
+          <h1 style={{ fontSize: 13, fontWeight: 700, color: "#FFFFFF", whiteSpace: "nowrap", margin: 0, letterSpacing: "-0.02em" }}>Vaultfire</h1>
+          <p style={{ fontSize: 10, color: "#666670", whiteSpace: "nowrap", margin: 0, fontWeight: 400 }}>Protocol</p>
         </div>
       </div>
 
-      <nav style={{ flex: 1, padding: "10px 8px", display: "flex", flexDirection: "column", gap: 2, overflowY: "auto" }}>
+      <nav style={{ flex: 1, padding: "8px 6px", display: "flex", flexDirection: "column", gap: 1, overflowY: "auto" }}>
         {NAV_ITEMS.map((item) => (
           <NavButton key={item.id} item={item} />
         ))}
       </nav>
 
-      {/* Footer */}
-      <div style={{
-        padding: "12px 14px",
-        borderTop: "1px solid rgba(255,255,255,0.06)",
-      }}>
-        <p style={{ fontSize: 11, color: "#666670" }}>v1.0 · theloopbreaker.com</p>
+      <div style={{ padding: "10px 12px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+        <p style={{ fontSize: 10, color: "#666670" }}>v1.0 · theloopbreaker.com</p>
       </div>
     </aside>
   );

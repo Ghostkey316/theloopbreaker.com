@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { checkAllChains, type RPCResult } from '../lib/blockchain';
-import { BASE_CONTRACTS, AVALANCHE_CONTRACTS, CORE_VALUES } from '../lib/contracts';
+import { BASE_CONTRACTS, AVALANCHE_CONTRACTS } from '../lib/contracts';
 
 interface ChainStatus {
   name: string;
@@ -12,16 +12,10 @@ interface ChainStatus {
   contractCount: number;
 }
 
-// SVG Icons for core values
 function ScaleIcon({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 3v18" />
-      <path d="M5 7l7-4 7 4" />
-      <path d="M2 14l3-7 3 7" />
-      <path d="M16 14l3-7 3 7" />
-      <path d="M2 14h6" />
-      <path d="M16 14h6" />
+      <path d="M12 3v18" /><path d="M5 7l7-4 7 4" /><path d="M2 14l3-7 3 7" /><path d="M16 14l3-7 3 7" /><path d="M2 14h6" /><path d="M16 14h6" />
     </svg>
   );
 }
@@ -29,9 +23,7 @@ function ScaleIcon({ size = 20 }: { size?: number }) {
 function ShieldIcon({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      <path d="M12 8v4" />
-      <circle cx="12" cy="15" r="0.5" fill="#F97316" />
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M12 8v4" /><circle cx="12" cy="15" r="0.5" fill="#F97316" />
     </svg>
   );
 }
@@ -39,9 +31,7 @@ function ShieldIcon({ size = 20 }: { size?: number }) {
 function FreedomIcon({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-      <line x1="12" y1="2" x2="12" y2="4" />
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /><line x1="12" y1="2" x2="12" y2="4" />
     </svg>
   );
 }
@@ -49,10 +39,7 @@ function FreedomIcon({ size = 20 }: { size?: number }) {
 function ContractIcon({ size = 18 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-      <line x1="16" y1="13" x2="8" y2="13" />
-      <line x1="16" y1="17" x2="8" y2="17" />
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" />
     </svg>
   );
 }
@@ -60,8 +47,7 @@ function ContractIcon({ size = 18 }: { size?: number }) {
 function ChainIcon({ size = 18 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
     </svg>
   );
 }
@@ -69,16 +55,7 @@ function ChainIcon({ size = 18 }: { size?: number }) {
 function CpuIcon({ size = 18 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="4" y="4" width="16" height="16" rx="2" ry="2" />
-      <rect x="9" y="9" width="6" height="6" />
-      <line x1="9" y1="1" x2="9" y2="4" />
-      <line x1="15" y1="1" x2="15" y2="4" />
-      <line x1="9" y1="20" x2="9" y2="23" />
-      <line x1="15" y1="20" x2="15" y2="23" />
-      <line x1="20" y1="9" x2="23" y2="9" />
-      <line x1="20" y1="14" x2="23" y2="14" />
-      <line x1="1" y1="9" x2="4" y2="9" />
-      <line x1="1" y1="14" x2="4" y2="14" />
+      <rect x="4" y="4" width="16" height="16" rx="2" ry="2" /><rect x="9" y="9" width="6" height="6" /><line x1="9" y1="1" x2="9" y2="4" /><line x1="15" y1="1" x2="15" y2="4" /><line x1="9" y1="20" x2="9" y2="23" /><line x1="15" y1="20" x2="15" y2="23" /><line x1="20" y1="9" x2="23" y2="9" /><line x1="20" y1="14" x2="23" y2="14" /><line x1="1" y1="9" x2="4" y2="9" /><line x1="1" y1="14" x2="4" y2="14" />
     </svg>
   );
 }
@@ -86,12 +63,7 @@ function CpuIcon({ size = 18 }: { size?: number }) {
 function BridgeIcon({ size = 18 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M8 3v3a2 2 0 0 1-2 2H3" />
-      <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
-      <path d="M3 16h3a2 2 0 0 1 2 2v3" />
-      <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
-      <line x1="7" y1="12" x2="17" y2="12" />
-      <polyline points="14 9 17 12 14 15" />
+      <path d="M8 3v3a2 2 0 0 1-2 2H3" /><path d="M21 8h-3a2 2 0 0 1-2-2V3" /><path d="M3 16h3a2 2 0 0 1 2 2v3" /><path d="M16 21v-3a2 2 0 0 1 2-2h3" /><line x1="7" y1="12" x2="17" y2="12" /><polyline points="14 9 17 12 14 15" />
     </svg>
   );
 }
@@ -119,53 +91,31 @@ export default function Home() {
     });
   }, []);
 
-  const coreValues = CORE_VALUES.split('. ').filter(Boolean);
   const coreValueIcons = [ScaleIcon, ShieldIcon, FreedomIcon];
   const coreValueTitles = ['Morals', 'Privacy', 'Freedom'];
-  const coreValueDescriptions = [
-    'Morals over metrics',
-    'Privacy over surveillance',
-    'Freedom over control',
-  ];
+  const coreValueDescriptions = ['Morals over metrics', 'Privacy over surveillance', 'Freedom over control'];
 
   return (
-    <div style={{
-      padding: isMobile ? '20px 16px 40px' : '40px 32px',
-      maxWidth: '52rem',
-      margin: '0 auto',
-    }}>
+    <div style={{ padding: isMobile ? '20px 16px 40px' : '32px 32px', maxWidth: '52rem', margin: '0 auto' }}>
       {/* Hero Section */}
-      <div style={{
-        textAlign: 'center',
-        marginBottom: isMobile ? 40 : 56,
-        position: 'relative',
-      }}>
-        {/* Subtle glow behind hero */}
+      <div style={{ textAlign: 'center', marginBottom: isMobile ? 32 : 44, position: 'relative' }}>
         <div style={{
-          position: 'absolute',
-          top: '-40px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: isMobile ? 200 : 300,
-          height: isMobile ? 200 : 300,
-          background: 'radial-gradient(circle, rgba(249,115,22,0.06) 0%, transparent 70%)',
+          position: 'absolute', top: '-30px', left: '50%', transform: 'translateX(-50%)',
+          width: isMobile ? 180 : 260, height: isMobile ? 180 : 260,
+          background: 'radial-gradient(circle, rgba(249,115,22,0.05) 0%, transparent 70%)',
           pointerEvents: 'none',
         }} />
 
-        {/* Logo mark */}
         <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: isMobile ? 56 : 68,
-          height: isMobile ? 56 : 68,
-          borderRadius: 18,
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          width: isMobile ? 48 : 56, height: isMobile ? 48 : 56,
+          borderRadius: 16,
           background: 'linear-gradient(135deg, rgba(249,115,22,0.12), rgba(249,115,22,0.04))',
           border: '1px solid rgba(249,115,22,0.2)',
-          marginBottom: isMobile ? 16 : 20,
-          position: 'relative',
+          marginBottom: isMobile ? 12 : 16, position: 'relative',
+          boxShadow: '0 4px 20px rgba(249,115,22,0.08)',
         }}>
-          <svg width={isMobile ? 28 : 34} height={isMobile ? 28 : 34} viewBox="0 0 24 24" fill="none">
+          <svg width={isMobile ? 24 : 28} height={isMobile ? 24 : 28} viewBox="0 0 24 24" fill="none">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="none" stroke="#F97316" strokeWidth="1.2" />
             <path d="M12 5c-2 2.5-4 5.5-4 8 0 2.21 1.79 4 4 4s4-1.79 4-4c0-2.5-2-5.5-4-8z" fill="#F97316" opacity="0.7" />
             <path d="M12 8c-1 1.5-2 3.2-2 4.5 0 1.1.9 2 2 2s2-.9 2-2c0-1.3-1-3-2-4.5z" fill="#FB923C" />
@@ -173,119 +123,64 @@ export default function Home() {
         </div>
 
         <h1 style={{
-          fontSize: isMobile ? 28 : 40,
-          fontWeight: 700,
-          color: '#FFFFFF',
-          marginBottom: isMobile ? 8 : 10,
-          lineHeight: 1.15,
-          letterSpacing: '-0.03em',
+          fontSize: isMobile ? 26 : 36, fontWeight: 700, color: '#FFFFFF',
+          marginBottom: isMobile ? 6 : 8, lineHeight: 1.15, letterSpacing: '-0.03em',
         }}>Vaultfire Protocol</h1>
 
         <p style={{
-          fontSize: isMobile ? 15 : 17,
-          color: '#A0A0A8',
-          maxWidth: '28rem',
-          margin: '0 auto',
-          lineHeight: 1.6,
-          fontWeight: 400,
-          letterSpacing: '-0.01em',
+          fontSize: isMobile ? 14 : 16, color: '#A0A0A8',
+          maxWidth: '26rem', margin: '0 auto', lineHeight: 1.6,
+          fontWeight: 400, letterSpacing: '-0.01em',
         }}>
           Ethical AI governance on-chain.{' '}
-          <span style={{ color: '#F97316' }}>Powered by Ember AI.</span>
+          <span style={{ color: '#F97316', fontWeight: 500 }}>Powered by Ember AI.</span>
         </p>
 
-        <a
-          href="https://theloopbreaker.com"
-          target="_blank"
-          rel="noopener noreferrer"
+        <a href="https://theloopbreaker.com" target="_blank" rel="noopener noreferrer"
           style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            marginTop: isMobile ? 16 : 20,
-            padding: '8px 16px',
-            borderRadius: 8,
-            backgroundColor: 'transparent',
-            border: '1px solid rgba(249,115,22,0.25)',
-            color: '#F97316',
-            fontSize: 13,
-            fontWeight: 500,
-            textDecoration: 'none',
-            transition: 'all 0.2s ease',
-            letterSpacing: '-0.01em',
-          }}
-        >
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            marginTop: isMobile ? 12 : 16, padding: '7px 14px',
+            borderRadius: 8, backgroundColor: 'transparent',
+            border: '1px solid rgba(249,115,22,0.2)',
+            color: '#F97316', fontSize: 12, fontWeight: 500,
+            textDecoration: 'none', transition: 'all 0.2s ease', letterSpacing: '-0.01em',
+          }}>
           <span>theloopbreaker.com</span>
-          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-            <polyline points="15 3 21 3 21 9" />
-            <line x1="10" y1="14" x2="21" y2="3" />
+          <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
           </svg>
         </a>
       </div>
 
       {/* Core Values */}
-      <div style={{ marginBottom: isMobile ? 32 : 48 }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          marginBottom: 16,
-        }}>
-          <h2 style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: '#666670',
-            textTransform: 'uppercase',
-            letterSpacing: '0.12em',
-          }}>Core Values</h2>
-          <div style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.06)' }} />
+      <div style={{ marginBottom: isMobile ? 24 : 36 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+          <h2 style={{ fontSize: 10, fontWeight: 600, color: '#666670', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Core Values</h2>
+          <div style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.05)' }} />
         </div>
 
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 8,
-        }}>
-          {coreValues.map((_value, i) => {
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {coreValueDescriptions.map((desc, i) => {
             const IconComp = coreValueIcons[i];
             return (
-              <div key={i} style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: isMobile ? 12 : 14,
-                backgroundColor: '#111114',
-                border: '1px solid rgba(255,255,255,0.06)',
+              <div key={i} className="card-hover-effect" style={{
+                display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 12,
+                background: 'rgba(17,17,20,0.6)',
+                backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+                border: '1px solid rgba(255,255,255,0.05)',
                 borderLeft: '2px solid #F97316',
-                borderRadius: 10,
-                padding: isMobile ? '12px 14px' : '14px 16px',
-                transition: 'all 0.2s ease',
+                borderRadius: 10, padding: isMobile ? '10px 12px' : '12px 14px',
               }}>
                 <div style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 8,
-                  background: 'rgba(249,115,22,0.08)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
+                  width: 32, height: 32, borderRadius: 8,
+                  background: 'rgba(249,115,22,0.06)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                 }}>
-                  <IconComp size={18} />
+                  <IconComp size={16} />
                 </div>
                 <div>
-                  <p style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: '#FFFFFF',
-                    marginBottom: 1,
-                    letterSpacing: '-0.01em',
-                  }}>{coreValueTitles[i]}</p>
-                  <p style={{
-                    fontSize: 12,
-                    color: '#A0A0A8',
-                    fontWeight: 400,
-                  }}>{coreValueDescriptions[i]}</p>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: '#FFFFFF', marginBottom: 1, letterSpacing: '-0.01em' }}>{coreValueTitles[i]}</p>
+                  <p style={{ fontSize: 11, color: '#A0A0A8', fontWeight: 400 }}>{desc}</p>
                 </div>
               </div>
             );
@@ -294,89 +189,56 @@ export default function Home() {
       </div>
 
       {/* Network Status */}
-      <div style={{ marginBottom: isMobile ? 32 : 48 }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          marginBottom: 16,
-        }}>
-          <h2 style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: '#666670',
-            textTransform: 'uppercase',
-            letterSpacing: '0.12em',
-          }}>Network Status</h2>
-          <div style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.06)' }} />
+      <div style={{ marginBottom: isMobile ? 24 : 36 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+          <h2 style={{ fontSize: 10, fontWeight: 600, color: '#666670', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Network Status</h2>
+          <div style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.05)' }} />
         </div>
 
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
-          gap: 12,
-        }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 8 }}>
           {chains.map((chain) => (
-            <div key={chain.name} style={{
-              backgroundColor: '#111114',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: 12,
-              padding: isMobile ? '14px 16px' : '16px 18px',
-              transition: 'all 0.2s ease',
+            <div key={chain.name} className="card-hover-effect" style={{
+              background: 'rgba(17,17,20,0.6)',
+              backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+              border: '1px solid rgba(255,255,255,0.05)',
+              borderRadius: 12, padding: isMobile ? '12px 14px' : '14px 16px',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: '50%',
-                    backgroundColor: chain.color,
-                    boxShadow: `0 0 8px ${chain.color}40`,
+                    width: 7, height: 7, borderRadius: '50%',
+                    backgroundColor: chain.color, boxShadow: `0 0 6px ${chain.color}40`,
                   }} />
                   <div>
-                    <h3 style={{ fontWeight: 600, color: '#FFFFFF', fontSize: 14, letterSpacing: '-0.01em' }}>{chain.name}</h3>
-                    <p style={{ fontSize: 11, color: '#666670' }}>Chain {chain.chainId}</p>
+                    <h3 style={{ fontWeight: 600, color: '#FFFFFF', fontSize: 13, letterSpacing: '-0.01em' }}>{chain.name}</h3>
+                    <p style={{ fontSize: 10, color: '#666670' }}>Chain {chain.chainId}</p>
                   </div>
                 </div>
                 <span style={{
-                  fontSize: 11,
-                  fontWeight: 500,
-                  padding: '3px 10px',
-                  borderRadius: 20,
-                  backgroundColor: chain.loading ? 'rgba(245,158,11,0.1)' : chain.result?.success ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+                  fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 20,
+                  backgroundColor: chain.loading ? 'rgba(245,158,11,0.08)' : chain.result?.success ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
                   color: chain.loading ? '#F59E0B' : chain.result?.success ? '#22C55E' : '#EF4444',
                   flexShrink: 0,
-                  letterSpacing: '0.01em',
                 }}>
                   {chain.loading ? 'Checking' : chain.result?.success ? 'Connected' : 'Offline'}
                 </span>
               </div>
               {!chain.loading && chain.result?.success && (
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
-                  gap: 8,
-                }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
                   {[
                     { label: 'Block', value: chain.result.blockNumber?.toLocaleString(), color: '#FFFFFF' },
                     { label: 'Latency', value: `${chain.result.latency}ms`, color: '#FFFFFF' },
                     { label: 'Contracts', value: String(chain.contractCount), color: '#F97316' },
                   ].map((stat) => (
                     <div key={stat.label} style={{
-                      backgroundColor: 'rgba(255,255,255,0.03)',
-                      borderRadius: 8,
-                      padding: isMobile ? '8px 6px' : '8px 10px',
-                      textAlign: 'center',
+                      backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 8,
+                      padding: isMobile ? '6px 4px' : '7px 8px', textAlign: 'center',
                     }}>
-                      <p style={{ fontSize: 10, color: '#666670', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</p>
+                      <p style={{ fontSize: 9, color: '#666670', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</p>
                       <p style={{
-                        fontSize: isMobile ? 11 : 12,
-                        fontFamily: "'SF Mono', 'Fira Code', monospace",
-                        color: stat.color,
-                        fontWeight: 600,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
+                        fontSize: isMobile ? 10 : 11, fontFamily: "'SF Mono', monospace",
+                        color: stat.color, fontWeight: 600,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                       }}>{stat.value}</p>
                     </div>
                   ))}
@@ -389,63 +251,38 @@ export default function Home() {
 
       {/* Protocol Overview */}
       <div>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          marginBottom: 16,
-        }}>
-          <h2 style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: '#666670',
-            textTransform: 'uppercase',
-            letterSpacing: '0.12em',
-          }}>Protocol Overview</h2>
-          <div style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.06)' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+          <h2 style={{ fontSize: 10, fontWeight: 600, color: '#666670', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Protocol Overview</h2>
+          <div style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.05)' }} />
         </div>
 
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-          gap: isMobile ? 8 : 10,
-        }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? 6 : 8 }}>
           {[
             { Icon: ContractIcon, label: 'Contracts', value: '28', sub: '14 per chain', color: '#F97316' },
             { Icon: ChainIcon, label: 'Chains', value: '2', sub: 'Base + Avalanche', color: '#F97316' },
             { Icon: CpuIcon, label: 'Standard', value: 'ERC-8004', sub: 'AI Identity', color: '#F97316' },
             { Icon: BridgeIcon, label: 'Bridge', value: 'Teleporter', sub: 'Cross-chain', color: '#F97316' },
           ].map((item) => (
-            <div key={item.label} style={{
-              backgroundColor: '#111114',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: 10,
-              padding: isMobile ? '14px 10px' : '16px 14px',
+            <div key={item.label} className="card-hover-effect" style={{
+              background: 'rgba(17,17,20,0.6)',
+              backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+              border: '1px solid rgba(255,255,255,0.05)',
+              borderRadius: 10, padding: isMobile ? '12px 8px' : '14px 12px',
               textAlign: 'center',
-              transition: 'all 0.2s ease',
             }}>
               <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                background: 'rgba(249,115,22,0.08)',
-                marginBottom: 8,
-                color: '#F97316',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: 28, height: 28, borderRadius: 7,
+                background: 'rgba(249,115,22,0.06)', marginBottom: 6, color: '#F97316',
               }}>
-                <item.Icon size={16} />
+                <item.Icon size={14} />
               </div>
               <p style={{
-                fontSize: isMobile ? 16 : 18,
-                fontWeight: 700,
-                color: '#F97316',
-                letterSpacing: '-0.02em',
-                marginBottom: 2,
+                fontSize: isMobile ? 15 : 16, fontWeight: 700, color: '#F97316',
+                letterSpacing: '-0.02em', marginBottom: 1,
               }}>{item.value}</p>
-              <p style={{ fontSize: isMobile ? 11 : 12, fontWeight: 500, color: '#FFFFFF', letterSpacing: '-0.01em' }}>{item.label}</p>
-              <p style={{ fontSize: isMobile ? 10 : 11, color: '#666670', marginTop: 1 }}>{item.sub}</p>
+              <p style={{ fontSize: isMobile ? 10 : 11, fontWeight: 500, color: '#FFFFFF', letterSpacing: '-0.01em' }}>{item.label}</p>
+              <p style={{ fontSize: isMobile ? 9 : 10, color: '#666670', marginTop: 1 }}>{item.sub}</p>
             </div>
           ))}
         </div>
