@@ -1,0 +1,24 @@
+# Project TODO
+
+- [x] Dark ember/fire theme configuration
+- [x] All 28 contract addresses (14 Base + 14 Avalanche) in constants
+- [x] Home screen with Vaultfire branding and network status
+- [x] Ember AI Chat screen with system prompt and protocol knowledge
+- [x] Memory system with AsyncStorage persistence
+- [x] Trust Verification screen with contract listing
+- [x] Cross-Chain Bridge screen
+- [x] Dashboard screen with protocol metrics
+- [x] 5-tab navigation with proper icons
+- [x] Blockchain RPC connectivity (Base + Avalanche)
+- [x] Shield+flame logo generation and branding
+- [x] Website reference (theloopbreaker.com)
+- [x] Code quality check (no TS errors, no hardcoded API keys)
+- [x] Comprehensive audit report
+- [x] Push app to GitHub (Ghostkey316/ghostkey-316-vaultfire-init) in ember-mobile-app/ folder
+- [x] Add real on-chain contract reads to Verify screen (ERC8004 registries)
+- [x] Add real on-chain contract reads to Bridge screen (message counts, relayer info)
+- [x] Add real on-chain contract reads to Dashboard (ping all contracts alive check)
+- [x] Add wallet integration (address input + on-chain data lookup)
+- [x] Add UI polish: animations, typing indicators, transitions, loading/error states
+- [x] End-to-end UX walkthrough and fix broken flows
+- [x] Write updated deep audit report
