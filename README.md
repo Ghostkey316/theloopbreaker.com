@@ -1,13 +1,13 @@
-# Vaultfire Ember Web App
+# Vaultfire Embris Web App
 
-A Next.js web application that provides a ChatGPT-like interface for the Vaultfire Protocol. This is the web counterpart to the mobile app, sharing the same features, data, and Ember AI experience.
+A Next.js web application that provides a ChatGPT-like interface for the Vaultfire Protocol. This is the web counterpart to the mobile app, sharing the same features, data, and Embris AI experience.
 
 ## Features
 
-- **6 Main Sections**: Home, Ember Chat, Wallet, Trust Verification, Cross-Chain Bridge, Dashboard
+- **6 Main Sections**: Home, Embris Chat, Wallet, Trust Verification, Cross-Chain Bridge, Dashboard
 - **Sidebar Navigation**: ChatGPT-style left sidebar for section navigation
-- **Dark Ember Theme**: Premium dark interface with #FF6B35 accent on #0A0A0C background
-- **SSE Streaming Chat**: Real-time word-by-word responses from Ember AI
+- **Dark Embris Theme**: Premium dark interface with #FF6B35 accent on #0A0A0C background
+- **SSE Streaming Chat**: Real-time word-by-word responses from Embris AI
 - **Native Wallet**: Create, import, and manage wallets with seed phrase backup
 - **Multi-Chain Support**: ETH mainnet, Base, and Avalanche with real balance reads
 - **28 Contract Addresses**: All Vaultfire Protocol contracts with on-chain verification
@@ -62,7 +62,7 @@ app/
     Sidebar.tsx          # Left navigation sidebar
   sections/
     Home.tsx             # Home screen
-    Chat.tsx             # Ember AI chat
+    Chat.tsx             # Embris AI chat
     Wallet.tsx           # Wallet management
     Verify.tsx           # Trust verification
     Bridge.tsx           # Cross-chain bridge
@@ -151,7 +151,7 @@ The web app shares data with the mobile app through the sync layer:
 
 1. **User Identity**: Wallet address (no email/password)
 2. **Conversations**: Stored server-side, synced across platforms
-3. **Memories**: Ember's knowledge of the user, synced automatically
+3. **Memories**: Embris's knowledge of the user, synced automatically
 4. **Wallet Data**: Preferences and cached balances
 
 To sync:
@@ -178,7 +178,7 @@ To sync:
    export default function NewSection() {
      return (
        <div className="p-8">
-         <h1 className="text-3xl font-bold text-ember-accent">New Section</h1>
+         <h1 className="text-3xl font-bold text-embris-accent">New Section</h1>
        </div>
      );
    }
@@ -190,7 +190,7 @@ To sync:
 
 ### Styling
 
-- Use Tailwind classes with `ember-*` color names
+- Use Tailwind classes with `embris-*` color names
 - Dark theme is always active (no light mode toggle)
 - Responsive design: mobile-first approach
 - Custom colors defined in `tailwind.config.js`
