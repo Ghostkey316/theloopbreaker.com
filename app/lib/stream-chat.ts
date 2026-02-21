@@ -1,8 +1,8 @@
 /**
- * SSE Streaming Chat Client for the web app.
+ * Chat Client for the web app.
  * Calls the OpenAI-compatible LLM API directly from the browser.
+ * Uses non-streaming mode with simulated typing for smooth UX.
  * Uses text/plain Content-Type to avoid CORS preflight issues.
- * Works on static hosting (GitHub Pages, Vercel static, etc.)
  */
 import { EMBER_SYSTEM_PROMPT } from './contracts';
 
@@ -18,6 +18,23 @@ export interface StreamChatParams {
   signal?: AbortSignal;
 }
 
+/**
+ * Simulates streaming by revealing text word-by-word with a small delay.
+ * Gives the ChatGPT-like typing effect even though the API response is non-streaming.
+ */
+async function simulateStreaming(
+  text: string,
+  onToken: (token: string) => void,
+  signal?: AbortSignal
+): Promise<void> {
+  const words = text.split(/(\s+)/);
+  for (const word of words) {
+    if (signal?.aborted) return;
+    onToken(word);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+}
+
 export async function streamChat({
   messages,
   memories,
@@ -26,8 +43,6 @@ export async function streamChat({
   onError,
   signal,
 }: StreamChatParams): Promise<void> {
-  let fullText = '';
-
   const memoryContext =
     memories && memories.length > 0
       ? `\n\nREMEMBERED CONTEXT FROM PREVIOUS CONVERSATIONS:\n${memories.join('\n')}`
@@ -49,7 +64,7 @@ export async function streamChat({
         model: 'gpt-4.1-mini',
         messages: llmMessages,
         max_tokens: 32768,
-        stream: true,
+        stream: false,
       }),
       signal,
     });
@@ -60,55 +75,20 @@ export async function streamChat({
       return;
     }
 
-    if (!response.body) {
-      const text = await response.text();
-      onToken(text);
-      onDone(text);
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+
+    if (!content) {
+      onError('No response from Ember');
       return;
     }
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
-        if (trimmed === 'data: [DONE]') {
-          onDone(fullText);
-          return;
-        }
-        if (trimmed.startsWith('data: ')) {
-          try {
-            const json = JSON.parse(trimmed.slice(6));
-            if (json.error) {
-              onError(json.error?.message || json.error);
-              return;
-            }
-            const delta = json.choices?.[0]?.delta;
-            if (delta?.content) {
-              fullText += delta.content;
-              onToken(delta.content);
-            }
-          } catch {
-            // Skip malformed JSON
-          }
-        }
-      }
-    }
-
-    if (fullText) onDone(fullText);
+    // Simulate streaming typing effect
+    await simulateStreaming(content, onToken, signal);
+    onDone(content);
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') return;
-    const msg = error instanceof Error ? error.message : 'Stream connection failed';
+    const msg = error instanceof Error ? error.message : 'Connection failed';
     onError(msg);
   }
 }
