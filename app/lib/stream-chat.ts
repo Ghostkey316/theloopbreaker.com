@@ -1,7 +1,11 @@
 /**
  * SSE Streaming Chat Client for the web app.
- * Connects to /api/chat/stream and streams tokens word-by-word.
+ * Calls the Forge/Manus LLM API directly from the browser.
+ * Works on static hosting (GitHub Pages, Vercel static, etc.)
  */
+import { EMBER_SYSTEM_PROMPT } from './contracts';
+
+const FORGE_API_URL = 'https://forge.manus.im/v1/chat/completions';
 
 export interface StreamChatParams {
   messages: Array<{ role: string; content: string }>;
@@ -21,16 +25,32 @@ export async function streamChat({
   signal,
 }: StreamChatParams): Promise<void> {
   let fullText = '';
+
+  const memoryContext =
+    memories && memories.length > 0
+      ? `\n\nREMEMBERED CONTEXT FROM PREVIOUS CONVERSATIONS:\n${memories.join('\n')}`
+      : '';
+
+  const llmMessages = [
+    { role: 'system', content: EMBER_SYSTEM_PROMPT + memoryContext },
+    ...messages.map((m) => ({ role: m.role, content: m.content })),
+  ];
+
   try {
-    const response = await fetch('/api/chat/stream', {
+    const response = await fetch(FORGE_API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, memories }),
+      body: JSON.stringify({
+        model: 'gemini-2.5-flash',
+        messages: llmMessages,
+        max_tokens: 32768,
+        stream: true,
+      }),
       signal,
     });
 
     if (!response.ok) {
-      onError(`Server error: ${response.status}`);
+      onError(`Chat service unavailable (${response.status})`);
       return;
     }
 
@@ -64,12 +84,13 @@ export async function streamChat({
           try {
             const json = JSON.parse(trimmed.slice(6));
             if (json.error) {
-              onError(json.error);
+              onError(json.error?.message || json.error);
               return;
             }
-            if (json.token) {
-              fullText += json.token;
-              onToken(json.token);
+            const delta = json.choices?.[0]?.delta;
+            if (delta?.content) {
+              fullText += delta.content;
+              onToken(delta.content);
             }
           } catch {
             // Skip malformed JSON
