@@ -21,6 +21,31 @@ import {
 } from '../lib/self-learning';
 import { getWalletAddress } from '../lib/wallet';
 
+// New enhancement imports
+import {
+  analyzeMood,
+  clearEmotionalData,
+  type EmotionalState,
+} from '../lib/emotional-intelligence';
+import {
+  incrementMessageCount,
+} from '../lib/proactive-suggestions';
+import {
+  updateCurrentSession,
+  generateSessionSummary,
+  clearSessionData,
+} from '../lib/conversation-summaries';
+import {
+  getGoals,
+  extractGoalsFromMessage,
+  processGoalExtraction,
+  clearGoalData,
+} from '../lib/goal-tracking';
+import {
+  applyPersonalityFeedback,
+  clearPersonalityData,
+} from '../lib/personality-tuning';
+
 interface ChatMessageWithStatus extends ChatMessage {
   isStreaming?: boolean;
 }
@@ -28,10 +53,10 @@ interface ChatMessageWithStatus extends ChatMessage {
 const SUGGESTED_PROMPTS = [
   'What is ERC-8004?',
   'Show me the Base contracts',
-  'Explain the core values',
-  'How does the bridge work?',
-  'Tell me about AI governance',
+  'What are my goals?',
   'What do you remember about me?',
+  'How have you grown?',
+  'Show me previous sessions',
 ];
 
 /* ── SVG Icons ── */
@@ -60,6 +85,33 @@ function EmbrisFlame() {
       <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9" />
       <path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C" />
     </svg>
+  );
+}
+
+/* Mood indicator dot */
+function MoodDot({ mood }: { mood: string }) {
+  const moodColors: Record<string, string> = {
+    excited: '#F59E0B',
+    happy: '#22C55E',
+    neutral: '#71717A',
+    confused: '#A78BFA',
+    frustrated: '#EF4444',
+    stressed: '#F97316',
+    sad: '#6366F1',
+    curious: '#06B6D4',
+    determined: '#F97316',
+  };
+  const color = moodColors[mood] || '#71717A';
+  return (
+    <span style={{
+      display: 'inline-block',
+      width: 6,
+      height: 6,
+      borderRadius: '50%',
+      backgroundColor: color,
+      marginRight: 4,
+      opacity: 0.8,
+    }} title={`Mood: ${mood}`} />
   );
 }
 
@@ -132,6 +184,8 @@ export default function Chat() {
   const [isMobile, setIsMobile] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
   const [growthStats, setGrowthStats] = useState({ conversations: 0, memories: 0 });
+  const [currentMood, setCurrentMood] = useState<EmotionalState | null>(null);
+  const [activeGoalCount, setActiveGoalCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -144,16 +198,18 @@ export default function Chat() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Load chat history, memories, and growth stats on mount
+  // Load chat history, memories, goals, and growth stats on mount
   useEffect(() => {
     const history = getChatHistory();
     const mems = getMemories();
     const addr = getWalletAddress();
     const stats = getGrowthStats();
+    const goals = getGoals();
     setMessages(history);
     setMemoriesState(mems);
     setWalletAddress(addr);
     setGrowthStats({ conversations: stats.totalConversations, memories: mems.length });
+    setActiveGoalCount(goals.filter(g => g.status === 'active').length);
     if (history.length > 0) setShowSuggestions(false);
   }, []);
 
@@ -216,11 +272,49 @@ export default function Chat() {
     [],
   );
 
+  /**
+   * Background goal extraction — detects goals and updates from messages.
+   */
+  const runBackgroundGoalExtraction = useCallback(
+    async (userText: string) => {
+      try {
+        const existingGoals = getGoals();
+        const result = await extractGoalsFromMessage(userText, existingGoals, API_KEY);
+        if (result.newGoals.length > 0 || result.updates.length > 0) {
+          processGoalExtraction(result);
+          const updatedGoals = getGoals();
+          setActiveGoalCount(updatedGoals.filter(g => g.status === 'active').length);
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[Embris Goals] New:', result.newGoals, 'Updates:', result.updates);
+          }
+        }
+      } catch {
+        // Silent fail
+      }
+    },
+    [],
+  );
+
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || isLoading) return;
     setShowSuggestions(false);
 
-    // Reload memories fresh from storage each time to ensure we have the latest
+    // ── PRE-RESPONSE PROCESSING ──
+
+    // 1. Analyze emotional tone (fast, local, no LLM)
+    const mood = analyzeMood(text.trim());
+    setCurrentMood(mood);
+
+    // 2. Detect personality feedback (fast, local)
+    applyPersonalityFeedback(text.trim());
+
+    // 3. Track message for proactive suggestions
+    incrementMessageCount();
+
+    // 4. Update current session tracking
+    updateCurrentSession();
+
+    // Reload memories fresh from storage each time
     const currentMemories = getMemories();
 
     const userMsg: ChatMessageWithStatus = {
@@ -254,8 +348,8 @@ export default function Chat() {
 
     await streamChat({
       messages: llmMessages,
-      // Pass FULL Memory objects — stream-chat.ts now formats them properly
       memories: currentMemories,
+      userMessage: text.trim(), // Pass current message for context-aware prompt building
       signal: controller.signal,
       onToken: (token) => {
         streamingRef.current += token;
@@ -283,10 +377,14 @@ export default function Chat() {
         runBackgroundMemoryExtraction(text, fullText, allMems);
 
         // Step 3: Self-learning (background, non-blocking)
-        // Runs after a short delay to let memory extraction finish first
         setTimeout(() => {
           runBackgroundSelfLearning(text, fullText);
         }, 1500);
+
+        // Step 4: Goal extraction (background, non-blocking)
+        setTimeout(() => {
+          runBackgroundGoalExtraction(text);
+        }, 2000);
 
         setMessages((prev) =>
           prev.map((m) => m.id === assistantMsg.id ? { ...m, content: fullText, isStreaming: false } : m)
@@ -304,7 +402,7 @@ export default function Chat() {
         setIsLoading(false);
       },
     });
-  }, [isLoading, runBackgroundMemoryExtraction, runBackgroundSelfLearning]);
+  }, [isLoading, runBackgroundMemoryExtraction, runBackgroundSelfLearning, runBackgroundGoalExtraction]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -313,13 +411,29 @@ export default function Chat() {
     }
   };
 
-  const handleClear = () => {
+  const handleClear = async () => {
+    // Generate session summary before clearing (if there are messages)
+    if (messages.length >= 4) {
+      try {
+        const chatMessages = messages.map(m => ({ role: m.role, content: m.content }));
+        await generateSessionSummary(chatMessages, API_KEY);
+      } catch {
+        // Silent fail — don't block clear
+      }
+    }
+
     clearChatHistory();
     clearMemories();
     clearSelfLearningData();
+    clearEmotionalData();
+    clearSessionData();
+    clearGoalData();
+    clearPersonalityData();
     setMessages([]);
     setMemoriesState([]);
     setGrowthStats({ conversations: 0, memories: 0 });
+    setActiveGoalCount(0);
+    setCurrentMood(null);
     setShowSuggestions(true);
   };
 
@@ -336,6 +450,9 @@ export default function Chat() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 14, fontWeight: 500, color: '#A1A1AA', letterSpacing: '-0.01em' }}>Embris</span>
+          {currentMood && currentMood.confidence > 0.3 && (
+            <MoodDot mood={currentMood.mood} />
+          )}
           {growthStats.conversations > 0 && (
             <span style={{
               fontSize: 10, color: '#F97316', fontWeight: 400, opacity: 0.6,
@@ -352,6 +469,14 @@ export default function Chat() {
               fontFamily: "'JetBrains Mono', monospace",
             }}>
               {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+            </span>
+          )}
+          {activeGoalCount > 0 && (
+            <span style={{
+              fontSize: 11, color: '#F59E0B', fontWeight: 400,
+              fontFamily: "'JetBrains Mono', monospace",
+            }}>
+              {activeGoalCount} {isMobile ? 'goal' : activeGoalCount === 1 ? 'goal' : 'goals'}
             </span>
           )}
           {memories.length > 0 && (
@@ -393,7 +518,7 @@ export default function Chat() {
                 marginBottom: 8, letterSpacing: '-0.03em',
               }}>Ask Embris anything</h3>
               <p style={{ fontSize: 14, color: '#3F3F46' }}>
-                Your self-learning companion — I remember, reflect, and grow
+                Your self-learning companion — I remember, reflect, grow, and track your goals
               </p>
             </div>
             <div style={{

@@ -417,8 +417,10 @@ export function clearAllMemories(): void {
 
 /* ── Sync / Export / Import ── */
 
-import { exportSelfLearningData, importSelfLearningData, type Reflection, type Pattern, type Insight, type GrowthStats } from './self-learning';
+import type { Reflection, Pattern, Insight, GrowthStats } from './self-learning';
+import { exportAllData, importAllData, type EnhancedSyncData } from './enhanced-export';
 
+// Legacy SyncData type for backward compatibility
 export interface SyncData {
   version: number;
   exportedAt: string;
@@ -433,22 +435,13 @@ export interface SyncData {
   };
 }
 
-export function exportData(): SyncData {
-  return {
-    version: 3,
-    exportedAt: new Date().toISOString(),
-    chatHistory: getChatHistory(),
-    memories: getMemories(),
-    walletAddress: typeof window !== 'undefined' ? (localStorage.getItem('vaultfire_wallet_address') ?? undefined) : undefined,
-    selfLearning: exportSelfLearningData(),
-  };
+// Enhanced export — includes all new data types
+export function exportData(): EnhancedSyncData {
+  return exportAllData();
 }
 
-export function importData(data: SyncData): void {
-  if (data.chatHistory) saveChatHistory(data.chatHistory);
-  if (data.memories) saveMemories(data.memories as Memory[]);
-  if (data.walletAddress && typeof window !== 'undefined') {
-    localStorage.setItem('vaultfire_wallet_address', data.walletAddress);
-  }
-  if (data.selfLearning) importSelfLearningData(data.selfLearning);
+// Enhanced import — handles both legacy and new formats
+export function importData(data: SyncData | EnhancedSyncData): void {
+  // Use enhanced import which handles all data types
+  importAllData(data as EnhancedSyncData);
 }
