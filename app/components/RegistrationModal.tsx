@@ -1,8 +1,16 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { registerWallet, isRegistered, getRegistration } from '../lib/registration';
+import {
+  registerWallet,
+  isRegistered,
+  getRegistration,
+  getChainConfig,
+  isRegisteredOnChain,
+  type SupportedChain,
+  type RegistrationResult,
+  type ChainTxResult,
+} from '../lib/registration';
 import { getWalletAddress, isWalletCreated } from '../lib/wallet';
-import type { RegistrationResult } from '../lib/registration';
 
 interface RegistrationModalProps {
   isOpen: boolean;
@@ -10,7 +18,7 @@ interface RegistrationModalProps {
   onRegistered: () => void;
 }
 
-/* ── Icons — matching existing SVG style ── */
+/* ── Icons ── */
 
 function CloseIcon() {
   return (
@@ -48,7 +56,7 @@ function ExternalLinkIcon() {
   );
 }
 
-/* ── Feature list items ── */
+/* ── Feature list ── */
 const FEATURES = [
   'Persistent memory across sessions',
   'Self-learning — reflections, patterns, insights',
@@ -58,18 +66,21 @@ const FEATURES = [
   'Full profile export and import',
 ];
 
-type Step = 'intro' | 'connect' | 'manual' | 'registering' | 'confirming' | 'success' | 'error';
+type Step = 'intro' | 'chain-select' | 'connect' | 'manual' | 'registering' | 'success' | 'error';
 
 export default function RegistrationModal({ isOpen, onClose, onRegistered }: RegistrationModalProps) {
   const [step, setStep] = useState<Step>('intro');
   const [manualAddress, setManualAddress] = useState('');
   const [error, setError] = useState('');
   const [resultMessage, setResultMessage] = useState('');
-  const [txHash, setTxHash] = useState<string | null>(null);
-  const [basescanUrl, setBasescanUrl] = useState<string | null>(null);
+  const [chainResults, setChainResults] = useState<ChainTxResult[]>([]);
   const [hasWallet, setHasWallet] = useState(false);
   const [walletAddr, setWalletAddr] = useState<string | null>(null);
   const [statusText, setStatusText] = useState('');
+  const [selectedChains, setSelectedChains] = useState<SupportedChain[]>(['base']);
+  const [useManual, setUseManual] = useState(false);
+  const [baseAlreadyDone, setBaseAlreadyDone] = useState(false);
+  const [avaxAlreadyDone, setAvaxAlreadyDone] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -80,87 +91,76 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
       setStep('intro');
       setError('');
       setManualAddress('');
-      setTxHash(null);
-      setBasescanUrl(null);
+      setChainResults([]);
       setStatusText('');
+      setUseManual(false);
 
-      if (isRegistered()) {
+      const bDone = isRegisteredOnChain('base');
+      const aDone = isRegisteredOnChain('avalanche');
+      setBaseAlreadyDone(bDone);
+      setAvaxAlreadyDone(aDone);
+
+      // Default selection: whatever isn't done yet
+      if (bDone && !aDone) setSelectedChains(['avalanche']);
+      else if (!bDone && aDone) setSelectedChains(['base']);
+      else if (!bDone && !aDone) setSelectedChains(['base']);
+      else setSelectedChains([]);
+
+      if (isRegistered() && bDone && aDone) {
         const reg = getRegistration();
-        const short = reg?.walletAddress
-          ? `${reg.walletAddress.slice(0, 6)}...${reg.walletAddress.slice(-4)}`
-          : '';
-        setResultMessage(`Already registered${short ? ` with ${short}` : ''}.`);
-        if (reg?.registrationTxHash && reg.registrationTxHash !== 'pre-existing') {
-          setTxHash(reg.registrationTxHash);
-          setBasescanUrl(reg.basescanUrl || null);
-        }
+        setResultMessage('Registered on both Base and Avalanche.');
+        setChainResults(reg?.chains.map(c => ({
+          chain: c.chain,
+          success: true,
+          txHash: c.txHash || undefined,
+          explorerUrl: c.explorerUrl || undefined,
+          message: `Registered on ${getChainConfig(c.chain).name}`,
+        })) || []);
         setStep('success');
       }
     }
   }, [isOpen]);
 
-  const handleResult = (result: RegistrationResult) => {
+  const toggleChain = (chain: SupportedChain) => {
+    setSelectedChains(prev => {
+      if (prev.includes(chain)) return prev.filter(c => c !== chain);
+      return [...prev, chain];
+    });
+  };
+
+  const handleRegister = async () => {
+    const addr = useManual ? manualAddress.trim() : walletAddr;
+    if (!addr) {
+      setError(useManual ? 'Please enter a wallet address.' : 'No wallet found.');
+      return;
+    }
+    if (selectedChains.length === 0) {
+      setError('Select at least one chain.');
+      return;
+    }
+
+    setStep('registering');
+    setError('');
+    setChainResults([]);
+
+    const chainNames = selectedChains.map(c => getChainConfig(c).name).join(' and ');
+    setStatusText(`Registering on ${chainNames}...`);
+
+    const result: RegistrationResult = await registerWallet(addr, {
+      useVaultfireWallet: true,
+      chains: selectedChains,
+    });
+
+    if (result.chainResults) setChainResults(result.chainResults);
+
     if (result.success) {
       setResultMessage(result.message);
-      setTxHash(result.txHash || null);
-      setBasescanUrl(result.basescanUrl || null);
       setStep('success');
     } else {
       setError(result.message);
+      if (result.chainResults) setChainResults(result.chainResults);
       setStep('error');
     }
-  };
-
-  const handleConnectWallet = async () => {
-    if (!walletAddr) {
-      setError('No wallet found. Please create a wallet first in the Wallet section.');
-      return;
-    }
-    setStep('registering');
-    setStatusText('Checking wallet balance...');
-    setError('');
-
-    // Small delay so the user sees the status
-    await new Promise(r => setTimeout(r, 400));
-    setStatusText('Sending registration transaction to Base...');
-
-    const result = await registerWallet(walletAddr, { useVaultfireWallet: true });
-
-    if (!result.success && result.errorType === 'no_gas') {
-      setError(result.message);
-      setStep('error');
-      return;
-    }
-
-    if (result.success && result.txHash) {
-      setTxHash(result.txHash);
-      setBasescanUrl(result.basescanUrl || null);
-      // If the receipt was already confirmed, go straight to success
-      if (result.registration?.verified) {
-        handleResult(result);
-      } else {
-        setStep('confirming');
-        setStatusText('Transaction sent! Waiting for confirmation...');
-        // The registration is already saved — features are unlocked
-        handleResult(result);
-      }
-    } else {
-      handleResult(result);
-    }
-  };
-
-  const handleManualRegister = async () => {
-    const addr = manualAddress.trim();
-    if (!addr) { setError('Please enter a wallet address.'); return; }
-    setStep('registering');
-    setStatusText('Preparing registration transaction...');
-    setError('');
-
-    await new Promise(r => setTimeout(r, 400));
-    setStatusText('Sending transaction to Base...');
-
-    const result = await registerWallet(addr, { useVaultfireWallet: true });
-    handleResult(result);
   };
 
   const handleSuccess = () => {
@@ -170,17 +170,30 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
 
   const handleRetry = () => {
     setError('');
-    setStep('intro');
+    setStep('chain-select');
   };
 
   if (!isOpen) return null;
 
-  const shortTxHash = txHash
-    ? `${txHash.slice(0, 10)}...${txHash.slice(-8)}`
-    : null;
+  const headerTitle = (() => {
+    switch (step) {
+      case 'success': return 'Registration complete';
+      case 'error': return 'Registration issue';
+      case 'registering': return 'Registering on-chain';
+      default: return 'Register with Embris';
+    }
+  })();
+
+  const headerSub = (() => {
+    switch (step) {
+      case 'success': return 'Full companion mode active';
+      case 'error': return 'Something needs attention';
+      case 'registering': return 'Transaction in progress';
+      default: return 'Unlock the full AI companion experience';
+    }
+  })();
 
   return (
-    /* Backdrop */
     <div
       onClick={onClose}
       style={{
@@ -193,7 +206,6 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
         padding: '16px',
       }}
     >
-      {/* Modal panel */}
       <div
         className="modal-in"
         onClick={(e) => e.stopPropagation()}
@@ -201,12 +213,14 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
           backgroundColor: '#111113',
           borderRadius: 14,
           border: '1px solid rgba(255,255,255,0.05)',
-          maxWidth: 420,
+          maxWidth: 440,
           width: '100%',
           overflow: 'hidden',
+          maxHeight: '90vh',
+          overflowY: 'auto',
         }}
       >
-        {/* ── Header ── */}
+        {/* Header */}
         <div style={{
           padding: '20px 20px 0',
           display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
@@ -217,28 +231,17 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
               <h2 style={{
                 fontSize: 15, fontWeight: 600, color: '#F4F4F5',
                 margin: 0, letterSpacing: '-0.025em', lineHeight: 1.2,
-              }}>
-                {step === 'success' ? 'Registration complete' :
-                 step === 'error' ? 'Registration issue' :
-                 step === 'registering' || step === 'confirming' ? 'Registering on-chain' :
-                 'Register with Embris'}
-              </h2>
-              <p style={{ fontSize: 11.5, color: '#52525B', margin: 0, marginTop: 2 }}>
-                {step === 'success' ? 'Full companion mode active' :
-                 step === 'error' ? 'Something needs attention' :
-                 step === 'registering' || step === 'confirming' ? 'Transaction in progress' :
-                 'Unlock the full AI companion experience'}
-              </p>
+              }}>{headerTitle}</h2>
+              <p style={{ fontSize: 11.5, color: '#52525B', margin: 0, marginTop: 2 }}>{headerSub}</p>
             </div>
           </div>
-          {step !== 'registering' && step !== 'confirming' && (
+          {step !== 'registering' && (
             <button
               onClick={onClose}
               style={{
                 background: 'none', border: 'none', color: '#3F3F46',
                 cursor: 'pointer', padding: 4, borderRadius: 6,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'color 0.15s',
               }}
               onMouseEnter={(e) => { e.currentTarget.style.color = '#71717A'; }}
               onMouseLeave={(e) => { e.currentTarget.style.color = '#3F3F46'; }}
@@ -248,17 +251,14 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
           )}
         </div>
 
-        {/* ── Body ── */}
         <div style={{ padding: '18px 20px 20px' }}>
 
-          {/* INTRO */}
+          {/* ── INTRO ── */}
           {step === 'intro' && (
             <div>
               <p style={{ fontSize: 13, color: '#71717A', lineHeight: 1.65, marginBottom: 16 }}>
-                Register your wallet on-chain to unlock everything Embris can do. This sends a real transaction to the Vaultfire Identity Registry on Base.
+                Register your wallet on-chain to unlock everything Embris can do. Vaultfire is deployed on Base and Avalanche — you can register on one or both.
               </p>
-
-              {/* Feature list */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 20 }}>
                 {FEATURES.map((f) => (
                   <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
@@ -267,102 +267,181 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
                       backgroundColor: 'rgba(249,115,22,0.1)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       flexShrink: 0, color: '#F97316',
-                    }}>
-                      <CheckIcon />
-                    </span>
+                    }}><CheckIcon /></span>
                     <span style={{ fontSize: 12.5, color: '#A1A1AA', lineHeight: 1.4 }}>{f}</span>
                   </div>
                 ))}
               </div>
-
-              {/* Gas notice */}
               <div style={{
                 padding: '10px 12px',
                 backgroundColor: 'rgba(249,115,22,0.04)',
                 border: '1px solid rgba(249,115,22,0.08)',
-                borderRadius: 8,
-                marginBottom: 16,
+                borderRadius: 8, marginBottom: 16,
               }}>
                 <p style={{ fontSize: 11.5, color: '#A1A1AA', margin: 0, lineHeight: 1.55 }}>
-                  Requires a small amount of ETH on Base for gas (less than $0.01). The transaction is written permanently to the blockchain.
+                  Requires a small amount of ETH (Base) or AVAX (Avalanche) for gas — less than $0.01 per chain. Transactions are permanent on-chain records.
                 </p>
               </div>
-
-              {/* Divider */}
               <div style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.04)', marginBottom: 16 }} />
-
-              {/* Actions */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {hasWallet && walletAddr && (
                   <button
-                    onClick={() => setStep('connect')}
+                    onClick={() => { setUseManual(false); setStep('chain-select'); }}
                     style={{
                       width: '100%', padding: '11px 16px',
-                      backgroundColor: '#F97316',
-                      color: '#09090B',
+                      backgroundColor: '#F97316', color: '#09090B',
                       border: 'none', borderRadius: 10,
-                      fontSize: 13, fontWeight: 600,
-                      cursor: 'pointer',
-                      letterSpacing: '-0.01em',
+                      fontSize: 13, fontWeight: 600, cursor: 'pointer',
                     }}
                     onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#FB923C'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#F97316'; }}
-                  >
-                    Connect Vaultfire Wallet
-                  </button>
+                  >Connect Vaultfire Wallet</button>
                 )}
                 <button
-                  onClick={() => setStep('manual')}
+                  onClick={() => { setUseManual(true); setStep('chain-select'); }}
                   style={{
                     width: '100%', padding: '11px 16px',
-                    backgroundColor: 'transparent',
-                    color: '#71717A',
+                    backgroundColor: 'transparent', color: '#71717A',
                     border: '1px solid rgba(255,255,255,0.06)',
-                    borderRadius: 10,
-                    fontSize: 13, fontWeight: 500,
-                    cursor: 'pointer',
-                    letterSpacing: '-0.01em',
+                    borderRadius: 10, fontSize: 13, fontWeight: 500, cursor: 'pointer',
                   }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-                    e.currentTarget.style.color = '#A1A1AA';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
-                    e.currentTarget.style.color = '#71717A';
-                  }}
-                >
-                  {hasWallet ? 'Use a different address' : 'Enter wallet address'}
-                </button>
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#A1A1AA'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#71717A'; }}
+                >{hasWallet ? 'Use a different address' : 'Enter wallet address'}</button>
               </div>
             </div>
           )}
 
-          {/* CONNECT WALLET */}
-          {step === 'connect' && (
+          {/* ── CHAIN SELECT ── */}
+          {step === 'chain-select' && (
             <div>
-              <div style={{
-                padding: '12px 14px',
-                backgroundColor: 'rgba(255,255,255,0.02)',
-                borderRadius: 10,
-                border: '1px solid rgba(255,255,255,0.05)',
-                marginBottom: 14,
-              }}>
-                <p style={{ fontSize: 11, color: '#52525B', margin: 0, marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 500 }}>
-                  Vaultfire Wallet
-                </p>
-                <p style={{
-                  fontSize: 12.5, color: '#D4D4D8', margin: 0,
-                  fontFamily: "'JetBrains Mono', monospace",
-                  wordBreak: 'break-all', lineHeight: 1.5,
+              {/* Wallet display */}
+              {!useManual && walletAddr && (
+                <div style={{
+                  padding: '12px 14px',
+                  backgroundColor: 'rgba(255,255,255,0.02)',
+                  borderRadius: 10, border: '1px solid rgba(255,255,255,0.05)',
+                  marginBottom: 14,
                 }}>
-                  {walletAddr}
-                </p>
-              </div>
+                  <p style={{ fontSize: 11, color: '#52525B', margin: 0, marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 500 }}>
+                    Vaultfire Wallet
+                  </p>
+                  <p style={{
+                    fontSize: 12.5, color: '#D4D4D8', margin: 0,
+                    fontFamily: "'JetBrains Mono', monospace",
+                    wordBreak: 'break-all', lineHeight: 1.5,
+                  }}>{walletAddr}</p>
+                </div>
+              )}
 
-              <p style={{ fontSize: 12.5, color: '#52525B', lineHeight: 1.65, marginBottom: 16 }}>
-                This sends a <strong style={{ color: '#71717A', fontWeight: 600 }}>registerAgent</strong> transaction to the ERC-8004 Identity Registry on Base. Your wallet signs the transaction and pays a tiny gas fee.
+              {/* Manual address input */}
+              {useManual && (
+                <div style={{ marginBottom: 14 }}>
+                  <p style={{ fontSize: 12.5, color: '#52525B', lineHeight: 1.65, marginBottom: 8 }}>
+                    Enter your Ethereum wallet address:
+                  </p>
+                  <input
+                    type="text"
+                    value={manualAddress}
+                    onChange={(e) => { setManualAddress(e.target.value); setError(''); }}
+                    placeholder="0x..."
+                    autoFocus
+                    style={{
+                      width: '100%', padding: '10px 13px',
+                      backgroundColor: '#09090B',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                      borderRadius: 10, color: '#F4F4F5', fontSize: 13,
+                      fontFamily: "'JetBrains Mono', monospace",
+                      outline: 'none', boxSizing: 'border-box', lineHeight: 1.5,
+                    }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(249,115,22,0.35)'; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}
+                  />
+                </div>
+              )}
+
+              <p style={{ fontSize: 13, color: '#71717A', lineHeight: 1.65, marginBottom: 12 }}>
+                Choose which chain(s) to register on:
               </p>
+
+              {/* Chain selection cards */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+                {(['base', 'avalanche'] as SupportedChain[]).map((chain) => {
+                  const cfg = getChainConfig(chain);
+                  const selected = selectedChains.includes(chain);
+                  const alreadyDone = chain === 'base' ? baseAlreadyDone : avaxAlreadyDone;
+
+                  return (
+                    <button
+                      key={chain}
+                      onClick={() => !alreadyDone && toggleChain(chain)}
+                      disabled={alreadyDone}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '12px 14px',
+                        backgroundColor: alreadyDone
+                          ? 'rgba(34,197,94,0.03)'
+                          : selected
+                            ? 'rgba(249,115,22,0.05)'
+                            : 'rgba(255,255,255,0.02)',
+                        border: `1px solid ${
+                          alreadyDone
+                            ? 'rgba(34,197,94,0.15)'
+                            : selected
+                              ? 'rgba(249,115,22,0.2)'
+                              : 'rgba(255,255,255,0.05)'
+                        }`,
+                        borderRadius: 10,
+                        cursor: alreadyDone ? 'default' : 'pointer',
+                        width: '100%',
+                        textAlign: 'left',
+                        transition: 'border-color 0.15s, background-color 0.15s',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        {/* Chain color dot */}
+                        <div style={{
+                          width: 8, height: 8, borderRadius: '50%',
+                          backgroundColor: cfg.color,
+                          flexShrink: 0,
+                        }} />
+                        <div>
+                          <p style={{
+                            fontSize: 13, fontWeight: 600, color: '#E4E4E7',
+                            margin: 0, lineHeight: 1.2,
+                          }}>{cfg.name}</p>
+                          <p style={{ fontSize: 11, color: '#52525B', margin: 0, marginTop: 2 }}>
+                            {alreadyDone ? 'Already registered' : `Gas paid in ${cfg.gasSymbol}`}
+                          </p>
+                        </div>
+                      </div>
+                      {/* Status indicator */}
+                      {alreadyDone ? (
+                        <div style={{
+                          width: 20, height: 20, borderRadius: 6,
+                          backgroundColor: 'rgba(34,197,94,0.1)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: '#22C55E',
+                        }}><CheckIcon /></div>
+                      ) : (
+                        <div style={{
+                          width: 20, height: 20, borderRadius: 6,
+                          border: `2px solid ${selected ? '#F97316' : 'rgba(255,255,255,0.1)'}`,
+                          backgroundColor: selected ? '#F97316' : 'transparent',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          transition: 'all 0.15s',
+                        }}>
+                          {selected && (
+                            <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="#09090B" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
 
               {error && (
                 <p style={{ fontSize: 12, color: '#EF4444', marginBottom: 12, lineHeight: 1.5 }}>{error}</p>
@@ -373,104 +452,37 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
                   onClick={() => setStep('intro')}
                   style={{
                     flex: 1, padding: '10px 14px',
-                    backgroundColor: 'transparent',
-                    color: '#52525B',
+                    backgroundColor: 'transparent', color: '#52525B',
                     border: '1px solid rgba(255,255,255,0.05)',
                     borderRadius: 10, fontSize: 13, fontWeight: 500, cursor: 'pointer',
                   }}
                   onMouseEnter={(e) => { e.currentTarget.style.color = '#71717A'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.color = '#52525B'; }}
-                >
-                  Back
-                </button>
+                >Back</button>
                 <button
-                  onClick={handleConnectWallet}
+                  onClick={handleRegister}
+                  disabled={selectedChains.length === 0}
                   style={{
                     flex: 2, padding: '10px 14px',
-                    backgroundColor: '#F97316',
-                    color: '#09090B',
-                    border: 'none', borderRadius: 10,
-                    fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                    letterSpacing: '-0.01em',
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#FB923C'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#F97316'; }}
-                >
-                  Register On-Chain
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* MANUAL ADDRESS */}
-          {step === 'manual' && (
-            <div>
-              <p style={{ fontSize: 12.5, color: '#52525B', lineHeight: 1.65, marginBottom: 14 }}>
-                Enter your Ethereum wallet address. The registration transaction will be signed by your Vaultfire wallet on behalf of this address.
-              </p>
-
-              <input
-                type="text"
-                value={manualAddress}
-                onChange={(e) => { setManualAddress(e.target.value); setError(''); }}
-                placeholder="0x..."
-                autoFocus
-                style={{
-                  width: '100%', padding: '10px 13px',
-                  backgroundColor: '#09090B',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                  borderRadius: 10,
-                  color: '#F4F4F5', fontSize: 13,
-                  fontFamily: "'JetBrains Mono', monospace",
-                  outline: 'none', marginBottom: 12,
-                  boxSizing: 'border-box', lineHeight: 1.5,
-                  transition: 'border-color 0.15s',
-                }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(249,115,22,0.35)'; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}
-              />
-
-              {error && (
-                <p style={{ fontSize: 12, color: '#EF4444', marginBottom: 12, lineHeight: 1.5 }}>{error}</p>
-              )}
-
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  onClick={() => setStep('intro')}
-                  style={{
-                    flex: 1, padding: '10px 14px',
-                    backgroundColor: 'transparent',
-                    color: '#52525B',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                    borderRadius: 10, fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.color = '#71717A'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.color = '#52525B'; }}
-                >
-                  Back
-                </button>
-                <button
-                  onClick={handleManualRegister}
-                  disabled={!manualAddress.trim()}
-                  style={{
-                    flex: 2, padding: '10px 14px',
-                    backgroundColor: manualAddress.trim() ? '#F97316' : 'rgba(255,255,255,0.04)',
-                    color: manualAddress.trim() ? '#09090B' : '#3F3F46',
+                    backgroundColor: selectedChains.length > 0 ? '#F97316' : 'rgba(255,255,255,0.04)',
+                    color: selectedChains.length > 0 ? '#09090B' : '#3F3F46',
                     border: 'none', borderRadius: 10,
                     fontSize: 13, fontWeight: 600,
-                    cursor: manualAddress.trim() ? 'pointer' : 'default',
-                    letterSpacing: '-0.01em',
-                    transition: 'background-color 0.15s, color 0.15s',
+                    cursor: selectedChains.length > 0 ? 'pointer' : 'default',
                   }}
+                  onMouseEnter={(e) => { if (selectedChains.length > 0) e.currentTarget.style.backgroundColor = '#FB923C'; }}
+                  onMouseLeave={(e) => { if (selectedChains.length > 0) e.currentTarget.style.backgroundColor = '#F97316'; }}
                 >
-                  Register On-Chain
+                  {selectedChains.length === 2 ? 'Register on Both Chains' :
+                   selectedChains.length === 1 ? `Register on ${getChainConfig(selectedChains[0]).name}` :
+                   'Select a Chain'}
                 </button>
               </div>
             </div>
           )}
 
-          {/* REGISTERING — transaction in progress */}
-          {(step === 'registering' || step === 'confirming') && (
+          {/* ── REGISTERING ── */}
+          {step === 'registering' && (
             <div style={{ textAlign: 'center', padding: '24px 0 8px' }}>
               <div style={{
                 width: 28, height: 28, margin: '0 auto 16px',
@@ -479,150 +491,123 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
                 borderRadius: '50%',
                 animation: 'spin 0.8s linear infinite',
               }} />
-              <p style={{ fontSize: 13.5, color: '#A1A1AA', margin: 0, letterSpacing: '-0.01em' }}>
-                {statusText || 'Sending transaction to Base...'}
+              <p style={{ fontSize: 13.5, color: '#A1A1AA', margin: 0 }}>
+                {statusText || 'Sending transaction...'}
               </p>
               <p style={{ fontSize: 12, color: '#3F3F46', margin: '6px 0 0' }}>
-                {step === 'confirming' ? 'Waiting for block confirmation...' : 'Do not close this window'}
+                Do not close this window
               </p>
-              {txHash && (
-                <a
-                  href={`https://basescan.org/tx/${txHash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 4,
-                    fontSize: 11.5, color: '#F97316', marginTop: 12,
-                    textDecoration: 'none',
-                  }}
-                >
-                  View on BaseScan <ExternalLinkIcon />
-                </a>
-              )}
             </div>
           )}
 
-          {/* ERROR */}
+          {/* ── ERROR ── */}
           {step === 'error' && (
             <div>
               <div style={{
                 padding: '12px 14px',
                 backgroundColor: 'rgba(239,68,68,0.04)',
                 border: '1px solid rgba(239,68,68,0.1)',
-                borderRadius: 10,
-                marginBottom: 16,
+                borderRadius: 10, marginBottom: 14,
               }}>
-                <p style={{ fontSize: 12.5, color: '#F87171', margin: 0, lineHeight: 1.55 }}>
-                  {error}
-                </p>
+                <p style={{ fontSize: 12.5, color: '#F87171', margin: 0, lineHeight: 1.55 }}>{error}</p>
               </div>
 
-              {txHash && (
-                <div style={{
-                  padding: '10px 12px',
-                  backgroundColor: 'rgba(255,255,255,0.02)',
-                  borderRadius: 8,
-                  border: '1px solid rgba(255,255,255,0.04)',
-                  marginBottom: 16,
-                }}>
-                  <p style={{ fontSize: 11, color: '#52525B', margin: 0, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 500 }}>
-                    Transaction Hash
-                  </p>
-                  <a
-                    href={basescanUrl || `https://basescan.org/tx/${txHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      fontSize: 12, color: '#F97316', textDecoration: 'none',
-                      fontFamily: "'JetBrains Mono', monospace",
-                      display: 'inline-flex', alignItems: 'center', gap: 4,
-                    }}
-                  >
-                    {shortTxHash} <ExternalLinkIcon />
-                  </a>
+              {/* Per-chain results if any */}
+              {chainResults.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
+                  {chainResults.map((cr) => {
+                    const cfg = getChainConfig(cr.chain);
+                    return (
+                      <div key={cr.chain} style={{
+                        padding: '8px 12px',
+                        backgroundColor: 'rgba(255,255,255,0.02)',
+                        borderRadius: 8, border: '1px solid rgba(255,255,255,0.04)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: cr.success ? '#22C55E' : '#EF4444' }} />
+                          <span style={{ fontSize: 12, color: '#A1A1AA' }}>{cfg.name}</span>
+                        </div>
+                        {cr.txHash && cr.explorerUrl && (
+                          <a href={cr.explorerUrl} target="_blank" rel="noopener noreferrer"
+                            style={{ fontSize: 11, color: '#F97316', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                            {cfg.explorerName} <ExternalLinkIcon />
+                          </a>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
               <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  onClick={onClose}
-                  style={{
-                    flex: 1, padding: '10px 14px',
-                    backgroundColor: 'transparent',
-                    color: '#52525B',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                    borderRadius: 10, fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                  }}
+                <button onClick={onClose} style={{
+                  flex: 1, padding: '10px 14px', backgroundColor: 'transparent', color: '#52525B',
+                  border: '1px solid rgba(255,255,255,0.05)', borderRadius: 10, fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                }}
                   onMouseEnter={(e) => { e.currentTarget.style.color = '#71717A'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.color = '#52525B'; }}
-                >
-                  Close
-                </button>
-                <button
-                  onClick={handleRetry}
-                  style={{
-                    flex: 2, padding: '10px 14px',
-                    backgroundColor: '#F97316',
-                    color: '#09090B',
-                    border: 'none', borderRadius: 10,
-                    fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                    letterSpacing: '-0.01em',
-                  }}
+                >Close</button>
+                <button onClick={handleRetry} style={{
+                  flex: 2, padding: '10px 14px', backgroundColor: '#F97316', color: '#09090B',
+                  border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                }}
                   onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#FB923C'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#F97316'; }}
-                >
-                  Try Again
-                </button>
+                >Try Again</button>
               </div>
             </div>
           )}
 
-          {/* SUCCESS */}
+          {/* ── SUCCESS ── */}
           {step === 'success' && (
             <div>
-              {/* Success indicator */}
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 8,
                 padding: '12px 14px',
                 backgroundColor: 'rgba(34,197,94,0.04)',
                 border: '1px solid rgba(34,197,94,0.1)',
-                borderRadius: 10,
-                marginBottom: 14,
+                borderRadius: 10, marginBottom: 14,
               }}>
-                <div style={{
-                  width: 6, height: 6, borderRadius: '50%',
-                  backgroundColor: '#22C55E', flexShrink: 0,
-                }} />
-                <p style={{ fontSize: 12.5, color: '#A1A1AA', margin: 0, lineHeight: 1.5 }}>
-                  {resultMessage}
-                </p>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#22C55E', flexShrink: 0 }} />
+                <p style={{ fontSize: 12.5, color: '#A1A1AA', margin: 0, lineHeight: 1.5 }}>{resultMessage}</p>
               </div>
 
-              {/* Transaction hash display */}
-              {txHash && (
-                <div style={{
-                  padding: '10px 12px',
-                  backgroundColor: 'rgba(255,255,255,0.02)',
-                  borderRadius: 8,
-                  border: '1px solid rgba(255,255,255,0.04)',
-                  marginBottom: 14,
-                }}>
-                  <p style={{ fontSize: 11, color: '#52525B', margin: 0, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 500 }}>
-                    Transaction Hash
-                  </p>
-                  <a
-                    href={basescanUrl || `https://basescan.org/tx/${txHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      fontSize: 12, color: '#F97316', textDecoration: 'none',
-                      fontFamily: "'JetBrains Mono', monospace",
-                      display: 'inline-flex', alignItems: 'center', gap: 4,
-                      wordBreak: 'break-all',
-                    }}
-                  >
-                    {shortTxHash} <ExternalLinkIcon />
-                  </a>
+              {/* Per-chain transaction details */}
+              {chainResults.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
+                  {chainResults.filter(cr => cr.success).map((cr) => {
+                    const cfg = getChainConfig(cr.chain);
+                    const shortHash = cr.txHash ? `${cr.txHash.slice(0, 10)}...${cr.txHash.slice(-8)}` : null;
+                    return (
+                      <div key={cr.chain} style={{
+                        padding: '10px 12px',
+                        backgroundColor: 'rgba(255,255,255,0.02)',
+                        borderRadius: 8, border: '1px solid rgba(255,255,255,0.04)',
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: shortHash ? 6 : 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: cfg.color }} />
+                            <span style={{ fontSize: 12, color: '#A1A1AA', fontWeight: 500 }}>{cfg.name}</span>
+                          </div>
+                          <div style={{
+                            fontSize: 10.5, color: '#22C55E', backgroundColor: 'rgba(34,197,94,0.08)',
+                            padding: '2px 7px', borderRadius: 4, fontWeight: 500,
+                          }}>Confirmed</div>
+                        </div>
+                        {shortHash && cr.explorerUrl && (
+                          <a href={cr.explorerUrl} target="_blank" rel="noopener noreferrer"
+                            style={{
+                              fontSize: 11.5, color: '#F97316', textDecoration: 'none',
+                              fontFamily: "'JetBrains Mono', monospace",
+                              display: 'inline-flex', alignItems: 'center', gap: 4,
+                            }}>
+                            {shortHash} <ExternalLinkIcon />
+                          </a>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
@@ -634,17 +619,13 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
                 onClick={handleSuccess}
                 style={{
                   width: '100%', padding: '11px 16px',
-                  backgroundColor: '#F97316',
-                  color: '#09090B',
+                  backgroundColor: '#F97316', color: '#09090B',
                   border: 'none', borderRadius: 10,
                   fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                  letterSpacing: '-0.01em',
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#FB923C'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#F97316'; }}
-              >
-                Start full experience
-              </button>
+              >Start full experience</button>
             </div>
           )}
         </div>

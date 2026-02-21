@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { checkAllChains, type RPCResult } from '../lib/blockchain';
 import { BASE_CONTRACTS, AVALANCHE_CONTRACTS } from '../lib/contracts';
-import { isRegistered, getRegistration } from '../lib/registration';
+import { isRegistered, getRegistration, getRegisteredChains, getChainConfig, type SupportedChain } from '../lib/registration';
 
 interface ChainStatus {
   name: string;
@@ -20,6 +20,7 @@ export default function Home() {
   const [isMobile, setIsMobile] = useState(false);
   const [registered, setRegistered] = useState(false);
   const [registrationAddress, setRegistrationAddress] = useState<string | null>(null);
+  const [regChains, setRegChains] = useState<SupportedChain[]>([]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -35,6 +36,7 @@ export default function Home() {
     if (reg) {
       const data = getRegistration();
       setRegistrationAddress(data?.walletAddress || null);
+      setRegChains(getRegisteredChains());
     }
 
     // Check chain connectivity
@@ -119,6 +121,7 @@ export default function Home() {
             backgroundColor: 'rgba(34,197,94,0.05)',
             border: '1px solid rgba(34,197,94,0.1)',
             borderRadius: 8,
+            flexWrap: 'wrap',
           }}>
             <div style={{
               width: 5, height: 5, borderRadius: '50%',
@@ -131,15 +134,22 @@ export default function Home() {
             }}>
               {registrationAddress.slice(0, 6)}...{registrationAddress.slice(-4)}
             </span>
-            <span style={{
-              fontSize: 11,
-              color: '#3F3F46',
-              fontWeight: 500,
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase',
-            }}>
-              registered
-            </span>
+            {regChains.length > 0 && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                {regChains.map((c) => {
+                  const cfg = getChainConfig(c);
+                  return (
+                    <span key={c} style={{
+                      fontSize: 10, color: cfg.color,
+                      backgroundColor: `${cfg.color}10`,
+                      padding: '1px 5px', borderRadius: 3,
+                      fontWeight: 500, letterSpacing: '0.03em',
+                      textTransform: 'uppercase',
+                    }}>{cfg.name}</span>
+                  );
+                })}
+              </span>
+            )}
           </div>
         )}
       </div>

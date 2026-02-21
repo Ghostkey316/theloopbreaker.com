@@ -59,9 +59,9 @@ export interface EnhancedSyncData {
 
 export function exportAllData(): EnhancedSyncData {
   return {
-    version: 5, // Bumped from 4 to 5 for registration data
+    version: 6, // Bumped for multi-chain registration data
     exportedAt: new Date().toISOString(),
-    exportSource: 'embris-enhanced-v5',
+    exportSource: 'embris-enhanced-v6',
 
     // Core
     chatHistory: getChatHistory(),
