@@ -13,14 +13,13 @@ export default function FooterDisclaimer() {
 
   return (
     <footer style={{
-      borderTop: "1px solid rgba(255,255,255,0.03)",
       backgroundColor: "#09090B",
       padding: isMobile ? "8px 16px" : "8px 24px",
       flexShrink: 0,
     }}>
       <p style={{
         fontSize: 9,
-        color: "#3F3F46",
+        color: "#27272A",
         textAlign: "center",
         lineHeight: 1.6,
         letterSpacing: "0.01em",

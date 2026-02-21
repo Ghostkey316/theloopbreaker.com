@@ -50,6 +50,8 @@ export default function Wallet() {
   const [creating, setCreating] = useState(false);
   const [importing, setImporting] = useState(false);
 
+  const monoStyle: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
+
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
@@ -139,39 +141,36 @@ export default function Wallet() {
   if (view === "none") {
     return (
       <div style={{ padding: isMobile ? "24px 20px 48px" : "48px 40px", maxWidth: 440, margin: "0 auto" }}>
-        {/* Alpha banner — subtle top bar */}
+        {/* Alpha banner — minimal inline notice */}
         <div style={{
-          padding: "8px 14px", marginBottom: 32,
+          padding: "8px 0", marginBottom: 40,
           display: "flex", alignItems: "center", gap: 8,
-          backgroundColor: "rgba(249,115,22,0.04)",
-          border: "1px solid rgba(249,115,22,0.08)",
-          borderRadius: 8,
         }}>
-          <span style={{ fontSize: 11, color: "#F97316", fontWeight: 500 }}>Alpha</span>
-          <span style={{ fontSize: 11, color: "#71717A" }}>Store funds at your own risk</span>
+          <span style={{ fontSize: 10, color: "#F97316", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" }}>Alpha</span>
+          <span style={{ fontSize: 12, color: "#3F3F46" }}>Store funds at your own risk</span>
         </div>
 
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
+        <div style={{ marginBottom: 40 }}>
           <h1 style={{
-            fontSize: isMobile ? 24 : 28, fontWeight: 700, color: "#F4F4F5",
+            fontSize: 28, fontWeight: 600, color: "#F4F4F5",
             marginBottom: 8, letterSpacing: "-0.03em",
           }}>Wallet</h1>
-          <p style={{ fontSize: 14, color: "#71717A", lineHeight: 1.6 }}>
+          <p style={{ fontSize: 14, color: "#52525B", lineHeight: 1.7 }}>
             Create or import an Ethereum-compatible wallet. Keys are stored locally in your browser.
           </p>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <button onClick={handleCreate} disabled={creating} style={{
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             padding: "12px", width: "100%",
-            background: creating ? "rgba(255,255,255,0.04)" : "#F97316",
+            background: creating ? "rgba(255,255,255,0.03)" : "#F97316",
             border: "none", borderRadius: 10,
-            color: creating ? "#52525B" : "#09090B",
+            color: creating ? "#3F3F46" : "#09090B",
             fontSize: 14, fontWeight: 600, cursor: creating ? "default" : "pointer",
           }}>
             {creating ? (
-              <div style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.1)", borderTopColor: "#52525B", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+              <div style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.06)", borderTopColor: "#3F3F46", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
             ) : (
               <PlusIcon size={15} />
             )}
@@ -181,8 +180,8 @@ export default function Wallet() {
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             padding: "12px", width: "100%",
             background: "transparent",
-            border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10,
-            color: "#F4F4F5", fontSize: 14, fontWeight: 500, cursor: "pointer",
+            border: "1px solid rgba(255,255,255,0.04)", borderRadius: 10,
+            color: "#A1A1AA", fontSize: 14, fontWeight: 500, cursor: "pointer",
           }}>
             <FileTextIcon size={14} /> Import Seed Phrase
           </button>
@@ -190,16 +189,15 @@ export default function Wallet() {
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             padding: "12px", width: "100%",
             background: "transparent",
-            border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10,
-            color: "#F4F4F5", fontSize: 14, fontWeight: 500, cursor: "pointer",
+            border: "1px solid rgba(255,255,255,0.04)", borderRadius: 10,
+            color: "#A1A1AA", fontSize: 14, fontWeight: 500, cursor: "pointer",
           }}>
             <KeyIcon size={14} /> Import Private Key
           </button>
         </div>
 
-        {/* Minimal disclaimer */}
-        <div style={{ marginTop: 24, padding: "12px 0" }}>
-          <p style={{ fontSize: 11, color: "#3F3F46", lineHeight: 1.7, textAlign: "center" }}>
+        <div style={{ marginTop: 32 }}>
+          <p style={{ fontSize: 11, color: "#27272A", lineHeight: 1.8, textAlign: "center" }}>
             No recovery possible. You are solely responsible for your seed phrase and private keys.
             Embris and Vaultfire Protocol are not liable for any losses.
           </p>
@@ -215,33 +213,30 @@ export default function Wallet() {
       <div style={{ padding: isMobile ? "24px 20px 48px" : "48px 40px", maxWidth: 440, margin: "0 auto" }}>
         {/* Alpha banner */}
         <div style={{
-          padding: "8px 14px", marginBottom: 24,
+          padding: "8px 0", marginBottom: 32,
           display: "flex", alignItems: "center", gap: 8,
-          backgroundColor: "rgba(249,115,22,0.04)",
-          border: "1px solid rgba(249,115,22,0.08)",
-          borderRadius: 8,
         }}>
-          <span style={{ fontSize: 11, color: "#F97316", fontWeight: 500 }}>Alpha</span>
-          <span style={{ fontSize: 11, color: "#71717A" }}>Only import keys on a trusted device</span>
+          <span style={{ fontSize: 10, color: "#F97316", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" }}>Alpha</span>
+          <span style={{ fontSize: 12, color: "#3F3F46" }}>Only import keys on a trusted device</span>
         </div>
 
         <button onClick={() => { setView("none"); setImportInput(""); setImportError(""); }}
           style={{
             display: "inline-flex", alignItems: "center", gap: 5,
-            background: "none", border: "none", color: "#71717A",
-            cursor: "pointer", marginBottom: 20, fontSize: 13, padding: 0,
-            fontWeight: 500,
+            background: "none", border: "none", color: "#52525B",
+            cursor: "pointer", marginBottom: 24, fontSize: 13, padding: 0,
+            fontWeight: 400,
           }}>
           <ArrowLeftIcon size={13} /> Back
         </button>
 
         <h2 style={{
-          fontSize: isMobile ? 22 : 24, fontWeight: 700, color: "#F4F4F5",
+          fontSize: 24, fontWeight: 600, color: "#F4F4F5",
           marginBottom: 6, letterSpacing: "-0.03em",
         }}>
           {isMnemonicView ? "Import Seed Phrase" : "Import Private Key"}
         </h2>
-        <p style={{ fontSize: 14, color: "#71717A", marginBottom: 20, lineHeight: 1.6 }}>
+        <p style={{ fontSize: 14, color: "#52525B", marginBottom: 24, lineHeight: 1.7 }}>
           {isMnemonicView ? "Enter your 12 or 24 word seed phrase." : "Enter your private key (with or without 0x prefix)."}
         </p>
 
@@ -250,10 +245,10 @@ export default function Wallet() {
           rows={isMnemonicView ? 3 : 2}
           style={{
             width: "100%", padding: "12px 14px",
-            background: "#111113",
-            border: "1px solid rgba(255,255,255,0.06)",
+            background: "rgba(255,255,255,0.02)",
+            border: "none",
             borderRadius: 10, color: "#F4F4F5", fontSize: 13,
-            resize: "none", fontFamily: "'JetBrains Mono', monospace",
+            resize: "none", ...monoStyle,
             outline: "none", boxSizing: "border-box",
             lineHeight: 1.6,
           }}
@@ -265,16 +260,16 @@ export default function Wallet() {
           style={{
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             padding: "12px", width: "100%", marginTop: 12,
-            background: importInput.trim().length === 0 || importing ? "rgba(255,255,255,0.04)" : "#F97316",
+            background: importInput.trim().length === 0 || importing ? "rgba(255,255,255,0.03)" : "#F97316",
             border: "none", borderRadius: 10,
-            color: importInput.trim().length === 0 || importing ? "#52525B" : "#09090B",
+            color: importInput.trim().length === 0 || importing ? "#3F3F46" : "#09090B",
             fontSize: 14, fontWeight: 600,
             cursor: importInput.trim().length === 0 || importing ? "default" : "pointer",
           }}>
           {importing ? "Importing..." : "Import Wallet"}
         </button>
 
-        <p style={{ fontSize: 11, color: "#3F3F46", lineHeight: 1.7, textAlign: "center", marginTop: 20 }}>
+        <p style={{ fontSize: 11, color: "#27272A", lineHeight: 1.8, textAlign: "center", marginTop: 24 }}>
           Never share your seed phrase or private key with anyone.
         </p>
       </div>
@@ -286,22 +281,19 @@ export default function Wallet() {
     <div style={{ padding: isMobile ? "24px 20px 48px" : "48px 40px", maxWidth: 520, margin: "0 auto" }}>
       {/* Alpha banner */}
       <div style={{
-        padding: "8px 14px", marginBottom: 24,
+        padding: "8px 0", marginBottom: 32,
         display: "flex", alignItems: "center", gap: 8,
-        backgroundColor: "rgba(249,115,22,0.04)",
-        border: "1px solid rgba(249,115,22,0.08)",
-        borderRadius: 8,
       }}>
-        <span style={{ fontSize: 11, color: "#F97316", fontWeight: 500 }}>Alpha</span>
-        <span style={{ fontSize: 11, color: "#71717A" }}>Store funds at your own risk</span>
+        <span style={{ fontSize: 10, color: "#F97316", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" }}>Alpha</span>
+        <span style={{ fontSize: 12, color: "#3F3F46" }}>Store funds at your own risk</span>
       </div>
 
       {/* Header */}
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        marginBottom: 32,
+        marginBottom: 40,
       }}>
-        <h1 style={{ fontSize: isMobile ? 24 : 28, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.03em" }}>Wallet</h1>
+        <h1 style={{ fontSize: 28, fontWeight: 600, color: "#F4F4F5", letterSpacing: "-0.03em" }}>Wallet</h1>
         <button onClick={handleDelete} style={{
           display: "inline-flex", alignItems: "center", gap: 5,
           fontSize: 12, color: "#EF4444", background: "none",
@@ -312,22 +304,22 @@ export default function Wallet() {
       </div>
 
       {/* Address */}
-      <div style={{ marginBottom: 32 }}>
-        <p style={{ fontSize: 10, color: "#52525B", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8, fontWeight: 500 }}>Address</p>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <div style={{ marginBottom: 40 }}>
+        <p style={{ fontSize: 11, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8, fontWeight: 500 }}>Address</p>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <code style={{
             flex: 1, fontSize: isMobile ? 11 : 12, color: "#F4F4F5",
-            wordBreak: "break-all", fontFamily: "'JetBrains Mono', monospace",
-            lineHeight: 1.5,
+            wordBreak: "break-all", ...monoStyle,
+            lineHeight: 1.6,
           }}>{walletData?.address}</code>
           <button onClick={() => copyToClipboard(walletData?.address || "", "address")}
             style={{
               flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 4,
               padding: "5px 10px",
-              backgroundColor: copied === "address" ? "rgba(34,197,94,0.06)" : "rgba(255,255,255,0.03)",
-              border: "1px solid " + (copied === "address" ? "rgba(34,197,94,0.1)" : "rgba(255,255,255,0.04)"),
+              backgroundColor: "transparent",
+              border: "none",
               borderRadius: 6,
-              color: copied === "address" ? "#22C55E" : "#71717A",
+              color: copied === "address" ? "#22C55E" : "#52525B",
               fontSize: 11, cursor: "pointer", fontWeight: 500,
             }}>
             {copied === "address" ? <><CheckIcon size={10} /> Copied</> : <><CopyIcon size={10} /> Copy</>}
@@ -335,10 +327,10 @@ export default function Wallet() {
         </div>
       </div>
 
-      {/* Balance — large number, Phantom-style */}
-      <div style={{ marginBottom: 32 }}>
+      {/* Balance — large numbers like Coinbase */}
+      <div style={{ marginBottom: 40 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <p style={{ fontSize: 10, color: "#52525B", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 500 }}>Balances</p>
+          <p style={{ fontSize: 11, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500 }}>Balances</p>
           <button onClick={() => walletData && loadBalances(walletData.address)} style={{
             display: "inline-flex", alignItems: "center", gap: 4,
             fontSize: 11, color: "#F97316", background: "none",
@@ -350,38 +342,35 @@ export default function Wallet() {
         </div>
 
         {loadingBals ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            {[0, 1, 2].map(i => <div key={i} className="shimmer" style={{ height: 48, borderRadius: i === 0 ? "10px 10px 0 0" : i === 2 ? "0 0 10px 10px" : 0 }} />)}
+          <div style={{ padding: "20px 0" }}>
+            <p style={{ fontSize: 13, color: "#3F3F46" }}>Loading balances...</p>
           </div>
         ) : (
-          <div style={{
-            borderRadius: 10, overflow: "hidden",
-            border: "1px solid rgba(255,255,255,0.04)",
-          }}>
+          <div>
             {balances.map((bal, idx) => (
               <div key={bal.chain} style={{
                 display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "12px 16px",
-                backgroundColor: "#111113",
-                borderBottom: idx < balances.length - 1 ? "1px solid rgba(255,255,255,0.03)" : "none",
+                padding: "14px 0",
+                backgroundColor: idx % 2 === 1 ? "rgba(255,255,255,0.015)" : "transparent",
+                borderBottom: idx < balances.length - 1 ? "1px solid rgba(255,255,255,0.02)" : "none",
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <div style={{
-                    width: 7, height: 7, borderRadius: "50%",
+                    width: 5, height: 5, borderRadius: "50%",
                     backgroundColor: bal.color,
                   }} />
                   <div>
                     <p style={{ fontSize: 13, fontWeight: 500, color: "#F4F4F5" }}>{bal.chain}</p>
-                    <p style={{ fontSize: 11, color: "#3F3F46" }}>{bal.chainId}</p>
+                    <p style={{ fontSize: 10, color: "#3F3F46", ...monoStyle }}>{bal.chainId}</p>
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <p style={{
-                    fontSize: 15, fontWeight: 600, color: "#F4F4F5",
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: 18, fontWeight: 600, color: "#F4F4F5",
+                    ...monoStyle,
                     letterSpacing: "-0.02em",
                   }}>{bal.balanceFormatted}</p>
-                  <p style={{ fontSize: 11, color: "#52525B" }}>{bal.symbol}</p>
+                  <p style={{ fontSize: 11, color: "#3F3F46" }}>{bal.symbol}</p>
                 </div>
               </div>
             ))}
@@ -391,9 +380,9 @@ export default function Wallet() {
 
       {/* Seed Phrase */}
       {walletData?.mnemonic && (
-        <div style={{ marginBottom: 24 }}>
+        <div style={{ marginBottom: 32 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <p style={{ fontSize: 10, color: "#52525B", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 500 }}>Recovery Phrase</p>
+            <p style={{ fontSize: 11, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500 }}>Recovery Phrase</p>
             <button onClick={() => setShowMnemonic(!showMnemonic)} style={{
               display: "inline-flex", alignItems: "center", gap: 4,
               fontSize: 11, color: "#F97316", background: "none",
@@ -407,16 +396,16 @@ export default function Wallet() {
               <div style={{
                 display: "grid",
                 gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(3, 1fr)",
-                gap: 3, marginBottom: 8,
+                gap: isMobile ? "6px 8px" : "6px 10px", marginBottom: 12,
               }}>
                 {walletData.mnemonic.split(" ").map((word, i) => (
                   <div key={i} style={{
                     padding: "6px 10px",
-                    backgroundColor: "#111113",
+                    backgroundColor: "rgba(255,255,255,0.02)",
                     borderRadius: 6, fontSize: 12,
-                    color: "#F4F4F5", fontFamily: "'JetBrains Mono', monospace",
+                    color: "#E4E4E7", ...monoStyle,
                   }}>
-                    <span style={{ color: "#3F3F46", marginRight: 4, fontSize: 10 }}>{i + 1}.</span>{word}
+                    <span style={{ color: "#3F3F46", marginRight: 6, fontSize: 10 }}>{i + 1}.</span>{word}
                   </div>
                 ))}
               </div>
@@ -424,25 +413,25 @@ export default function Wallet() {
                 style={{
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
                   width: "100%", padding: "8px",
-                  backgroundColor: copied === "mnemonic" ? "rgba(34,197,94,0.06)" : "rgba(255,255,255,0.03)",
-                  border: "1px solid " + (copied === "mnemonic" ? "rgba(34,197,94,0.08)" : "rgba(255,255,255,0.04)"),
+                  backgroundColor: "transparent",
+                  border: "none",
                   borderRadius: 8,
-                  color: copied === "mnemonic" ? "#22C55E" : "#71717A",
+                  color: copied === "mnemonic" ? "#22C55E" : "#52525B",
                   fontSize: 11, cursor: "pointer", fontWeight: 500,
                 }}>
                 {copied === "mnemonic" ? <><CheckIcon size={10} /> Copied</> : <><CopyIcon size={10} /> Copy Seed Phrase</>}
               </button>
             </div>
           ) : (
-            <div style={{ padding: "12px 14px", backgroundColor: "#111113", borderRadius: 8 }}>
-              <p style={{ fontSize: 13, color: "#3F3F46", fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.2em" }}>---- ---- ---- ---- ---- ----</p>
+            <div style={{ padding: "12px 0" }}>
+              <p style={{ fontSize: 13, color: "#27272A", ...monoStyle, letterSpacing: "0.2em" }}>---- ---- ---- ---- ---- ----</p>
             </div>
           )}
         </div>
       )}
 
       {/* Minimal disclaimer */}
-      <p style={{ fontSize: 11, color: "#3F3F46", lineHeight: 1.7, textAlign: "center" }}>
+      <p style={{ fontSize: 11, color: "#27272A", lineHeight: 1.8, textAlign: "center" }}>
         No recovery possible. You are solely responsible for your keys.
         Embris and Vaultfire Protocol are not liable for any losses.
       </p>

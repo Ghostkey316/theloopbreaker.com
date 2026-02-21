@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Embris | Powered by Vaultfire Protocol',
-  description: 'Embris — your ethical AI companion, powered by Vaultfire Protocol\'s decentralized trust infrastructure. Morals over metrics. Privacy over surveillance. Freedom over control.',
+  title: 'Embris — Powered by Vaultfire Protocol',
+  description: 'Your ethical AI companion. Decentralized trust infrastructure across Base and Avalanche.',
   icons: {
     icon: '/favicon.ico',
   },

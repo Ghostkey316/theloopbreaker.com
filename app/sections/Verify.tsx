@@ -89,43 +89,53 @@ export default function Verify() {
   const verifiedCount = contracts.filter((c) => c.alive === true).length;
   const failedCount = contracts.filter((c) => c.alive === false).length;
 
+  const monoStyle: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
+
   return (
     <div style={{ padding: isMobile ? "24px 16px 48px" : "48px 40px", maxWidth: 720, margin: "0 auto" }}>
       {/* Header */}
-      <div style={{ marginBottom: isMobile ? 24 : 32 }}>
-        <h1 style={{ fontSize: isMobile ? 24 : 28, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.03em" }}>Verification</h1>
-        <p style={{ fontSize: 14, color: "#71717A", marginTop: 4 }}>Verify all {contracts.length} deployed smart contracts on-chain</p>
+      <div style={{ marginBottom: isMobile ? 32 : 40 }}>
+        <h1 style={{ fontSize: 28, fontWeight: 600, color: "#F4F4F5", letterSpacing: "-0.03em" }}>Verification</h1>
+        <p style={{ fontSize: 14, color: "#52525B", marginTop: 6 }}>Verify all {contracts.length} deployed smart contracts on-chain</p>
       </div>
 
-      {/* Stats */}
+      {/* Stats — inline, monospace numbers */}
       <div style={{
-        display: "flex", gap: 24, marginBottom: 20,
+        display: "flex", gap: 32, marginBottom: 24,
         fontSize: 13,
       }}>
-        <span style={{ color: "#71717A" }}>Total <span style={{ color: "#F4F4F5", fontWeight: 600, fontFamily: "'JetBrains Mono', monospace" }}>{contracts.length}</span></span>
-        <span style={{ color: "#71717A" }}>Verified <span style={{ color: "#22C55E", fontWeight: 600, fontFamily: "'JetBrains Mono', monospace" }}>{verifiedCount}</span></span>
-        <span style={{ color: "#71717A" }}>Failed <span style={{ color: "#EF4444", fontWeight: 600, fontFamily: "'JetBrains Mono', monospace" }}>{failedCount}</span></span>
+        <div>
+          <span style={{ color: "#71717A", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500 }}>Total</span>
+          <span style={{ color: "#F4F4F5", fontWeight: 600, ...monoStyle, marginLeft: 8, fontSize: 14 }}>{contracts.length}</span>
+        </div>
+        <div>
+          <span style={{ color: "#71717A", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500 }}>Verified</span>
+          <span style={{ color: "#22C55E", fontWeight: 600, ...monoStyle, marginLeft: 8, fontSize: 14 }}>{verifiedCount}</span>
+        </div>
+        <div>
+          <span style={{ color: "#71717A", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500 }}>Failed</span>
+          <span style={{ color: failedCount > 0 ? "#EF4444" : "#3F3F46", fontWeight: 600, ...monoStyle, marginLeft: 8, fontSize: 14 }}>{failedCount}</span>
+        </div>
       </div>
 
-      {/* Controls */}
+      {/* Controls — clean, minimal */}
       <div style={{
         display: "flex", flexDirection: isMobile ? "column" : "row",
-        gap: 8, marginBottom: 16, alignItems: isMobile ? "stretch" : "center",
+        gap: 8, marginBottom: 24, alignItems: isMobile ? "stretch" : "center",
       }}>
-        {/* Chain filter */}
+        {/* Chain filter — segmented control */}
         <div style={{
-          display: "flex", gap: 1,
-          backgroundColor: "#111113",
+          display: "flex", gap: 0,
+          backgroundColor: "rgba(255,255,255,0.02)",
           borderRadius: 8, padding: 2,
-          border: "1px solid rgba(255,255,255,0.04)",
         }}>
           {(["all", "base", "avalanche"] as ChainFilter[]).map((f) => (
             <button key={f} onClick={() => setFilter(f)} style={{
-              padding: "5px 12px", borderRadius: 6, border: "none",
+              padding: "6px 14px", borderRadius: 6, border: "none",
               fontSize: 12, fontWeight: 500, cursor: "pointer", flex: isMobile ? 1 : "none",
               backgroundColor: filter === f ? "rgba(255,255,255,0.06)" : "transparent",
               color: filter === f ? "#F4F4F5" : "#52525B",
-              transition: "all 0.15s ease",
+              transition: "all 0.12s ease",
             }}>
               {f === "all" ? "All" : f === "base" ? "Base" : "Avax"}
             </button>
@@ -136,8 +146,8 @@ export default function Verify() {
         <div style={{
           flex: 1, display: "flex", alignItems: "center", gap: 8,
           padding: "0 12px",
-          backgroundColor: "#111113",
-          border: "1px solid rgba(255,255,255,0.04)", borderRadius: 8,
+          backgroundColor: "rgba(255,255,255,0.02)",
+          borderRadius: 8,
         }}>
           <SearchIcon size={13} />
           <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search..."
@@ -147,12 +157,12 @@ export default function Verify() {
             }} />
         </div>
 
-        {/* Verify All */}
+        {/* Verify All — primary CTA */}
         <button onClick={verifyAll} disabled={verifyingAll} style={{
           display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
           padding: "8px 16px", borderRadius: 8,
           background: verifyingAll ? "rgba(255,255,255,0.03)" : "#F97316",
-          border: "none", color: verifyingAll ? "#52525B" : "#09090B",
+          border: "none", color: verifyingAll ? "#3F3F46" : "#09090B",
           fontSize: 12, fontWeight: 600, cursor: verifyingAll ? "default" : "pointer",
           flexShrink: 0,
         }}>
@@ -161,91 +171,101 @@ export default function Verify() {
         </button>
       </div>
 
-      {/* Contract List — clean table */}
+      {/* Table header */}
       <div style={{
-        borderRadius: 10, overflow: "hidden",
-        border: "1px solid rgba(255,255,255,0.04)",
+        display: "flex",
+        alignItems: "center",
+        padding: "0 0 8px",
+        borderBottom: "1px solid rgba(255,255,255,0.03)",
+        gap: 8,
       }}>
-        {filtered.map((contract, idx) => {
-          const chainColor = contract.chain === "base" ? "#0EA5E9" : "#E84142";
-          return (
-            <div key={`${contract.chain}-${contract.address}`} style={{
-              display: "flex",
-              alignItems: isMobile ? "flex-start" : "center",
-              flexDirection: isMobile ? "column" : "row",
-              gap: isMobile ? 6 : 8,
-              padding: isMobile ? "12px 14px" : "9px 16px",
-              backgroundColor: "#111113",
-              borderBottom: idx < filtered.length - 1 ? "1px solid rgba(255,255,255,0.03)" : "none",
-            }}>
-              {/* Status + Name + Chain */}
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0, width: "100%" }}>
-                <div style={{
-                  width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
-                  backgroundColor: contract.checking ? "#EAB308" : contract.alive === true ? "#22C55E" : contract.alive === false ? "#EF4444" : "#3F3F46",
-                  animation: contract.checking ? "statusPulse 1.5s infinite" : "none",
-                }} />
-                <span style={{
-                  fontSize: 13, fontWeight: 500, color: "#F4F4F5",
-                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                  flex: 1, minWidth: 0,
-                }}>{contract.name}</span>
-                <span style={{
-                  fontSize: 10, fontWeight: 500, padding: "1px 6px", borderRadius: 4,
-                  backgroundColor: `${chainColor}10`, color: chainColor,
-                  flexShrink: 0,
-                }}>
-                  {contract.chain === "base" ? "Base" : "Avax"}
-                </span>
-              </div>
-
-              {/* Address + Actions */}
-              <div style={{
-                display: "flex", alignItems: "center", gap: 6,
-                paddingLeft: isMobile ? 14 : 0,
-                width: isMobile ? "100%" : "auto",
-              }}>
-                <code style={{
-                  fontSize: 11, color: "#52525B",
-                  fontFamily: "'JetBrains Mono', monospace",
-                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                }}>
-                  {isMobile ? `${contract.address.slice(0, 10)}...${contract.address.slice(-6)}` : `${contract.address.slice(0, 14)}...${contract.address.slice(-8)}`}
-                </code>
-
-                <button onClick={() => verifySingle(contract.address, contract.chain)}
-                  disabled={contract.checking}
-                  style={{
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    padding: 4, borderRadius: 4, border: "none",
-                    backgroundColor: "transparent", color: "#52525B",
-                    cursor: contract.checking ? "default" : "pointer", flexShrink: 0,
-                  }}>
-                  <RefreshIcon size={11} />
-                </button>
-                <button onClick={() => copyAddress(contract.address)}
-                  style={{
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    padding: 4, borderRadius: 4, border: "none",
-                    backgroundColor: "transparent",
-                    color: copied === contract.address ? "#22C55E" : "#52525B",
-                    cursor: "pointer", flexShrink: 0,
-                  }}>
-                  {copied === contract.address ? <CheckIcon size={11} /> : <CopyIcon size={11} />}
-                </button>
-                <a href={`${CHAINS[contract.chain].explorerUrl}/address/${contract.address}`}
-                  target="_blank" rel="noopener noreferrer"
-                  style={{
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    padding: 4, color: "#52525B", textDecoration: "none", flexShrink: 0,
-                  }}>
-                  <ExternalLinkIcon size={11} />
-                </a>
-              </div>
-            </div>
-          );
-        })}
+        <span style={{ width: 12 }} />
+        <span style={{ flex: 1, fontSize: 10, color: "#52525B", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500 }}>Contract</span>
+        {!isMobile && <span style={{ width: 60, fontSize: 10, color: "#52525B", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500, textAlign: "center" }}>Chain</span>}
+        <span style={{ width: isMobile ? 100 : 160, fontSize: 10, color: "#52525B", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500 }}>Address</span>
+        <span style={{ width: 72 }} />
       </div>
+
+      {/* Contract rows — alternating backgrounds, monospace data */}
+      {filtered.map((contract, idx) => (
+        <div key={`${contract.chain}-${contract.address}`} style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: isMobile ? "10px 0" : "8px 0",
+          backgroundColor: idx % 2 === 1 ? "rgba(255,255,255,0.015)" : "transparent",
+          borderBottom: "1px solid rgba(255,255,255,0.02)",
+        }}>
+          {/* Status dot */}
+          <div style={{ width: 12, display: "flex", justifyContent: "center" }}>
+            <div style={{
+              width: 5, height: 5, borderRadius: "50%",
+              backgroundColor: contract.checking ? "#52525B" : contract.alive === true ? "#22C55E" : contract.alive === false ? "#EF4444" : "#3F3F46",
+              animation: contract.checking ? "statusPulse 1.5s infinite" : "none",
+            }} />
+          </div>
+
+          {/* Name */}
+          <span style={{
+            flex: 1, minWidth: 0,
+            fontSize: 13, fontWeight: 400, color: "#E4E4E7",
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          }}>{contract.name}</span>
+
+          {/* Chain tag — tiny, subtle */}
+          {!isMobile && (
+            <span style={{
+              width: 60, textAlign: "center",
+              fontSize: 10, fontWeight: 500, color: "#52525B",
+              ...monoStyle,
+            }}>
+              {contract.chain === "base" ? "Base" : "Avax"}
+            </span>
+          )}
+
+          {/* Address — monospace */}
+          <code style={{
+            width: isMobile ? 100 : 160,
+            fontSize: 11, color: "#3F3F46",
+            ...monoStyle,
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          }}>
+            {isMobile ? `${contract.address.slice(0, 8)}...${contract.address.slice(-4)}` : `${contract.address.slice(0, 14)}...${contract.address.slice(-8)}`}
+          </code>
+
+          {/* Actions — tiny, subtle */}
+          <div style={{ display: "flex", alignItems: "center", gap: 2, width: 72, justifyContent: "flex-end" }}>
+            <button onClick={() => verifySingle(contract.address, contract.chain)}
+              disabled={contract.checking}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                padding: 4, borderRadius: 4, border: "none",
+                backgroundColor: "transparent", color: "#3F3F46",
+                cursor: contract.checking ? "default" : "pointer", flexShrink: 0,
+              }}>
+              <RefreshIcon size={10} />
+            </button>
+            <button onClick={() => copyAddress(contract.address)}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                padding: 4, borderRadius: 4, border: "none",
+                backgroundColor: "transparent",
+                color: copied === contract.address ? "#22C55E" : "#3F3F46",
+                cursor: "pointer", flexShrink: 0,
+              }}>
+              {copied === contract.address ? <CheckIcon size={10} /> : <CopyIcon size={10} />}
+            </button>
+            <a href={`${CHAINS[contract.chain].explorerUrl}/address/${contract.address}`}
+              target="_blank" rel="noopener noreferrer"
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                padding: 4, color: "#3F3F46", textDecoration: "none", flexShrink: 0,
+              }}>
+              <ExternalLinkIcon size={10} />
+            </a>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

@@ -33,6 +33,8 @@ export default function Sync() {
   const [clearing, setClearing] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
+  const monoStyle: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
+
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
@@ -70,7 +72,7 @@ export default function Sync() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `ember-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `embris-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
     localStorage.setItem("vaultfire_last_sync", new Date().toISOString());
@@ -116,18 +118,17 @@ export default function Sync() {
   return (
     <div style={{ padding: isMobile ? "24px 16px 48px" : "48px 40px", maxWidth: 560, margin: "0 auto" }}>
       {/* Header */}
-      <div style={{ marginBottom: isMobile ? 32 : 40 }}>
-        <h1 style={{ fontSize: isMobile ? 24 : 28, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.03em" }}>Data</h1>
-        <p style={{ fontSize: 14, color: "#71717A", marginTop: 4 }}>Export, import, and manage your local data</p>
+      <div style={{ marginBottom: isMobile ? 40 : 48 }}>
+        <h1 style={{ fontSize: 28, fontWeight: 600, color: "#F4F4F5", letterSpacing: "-0.03em" }}>Data</h1>
+        <p style={{ fontSize: 14, color: "#52525B", marginTop: 6 }}>Export, import, and manage your local data</p>
       </div>
 
-      {/* Stats */}
+      {/* Stats — large numbers, whitespace separated */}
       <div style={{
         display: "grid",
         gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)",
-        gap: 1, marginBottom: 32,
-        borderRadius: 10, overflow: "hidden",
-        border: "1px solid rgba(255,255,255,0.04)",
+        gap: isMobile ? "24px 16px" : "24px 32px",
+        marginBottom: 40,
       }}>
         {[
           { label: "Messages", value: String(stats.chatMessages) },
@@ -135,14 +136,11 @@ export default function Sync() {
           { label: "Wallet", value: stats.walletConnected ? "Connected" : "None" },
           { label: "Size", value: stats.dataSize },
         ].map((stat) => (
-          <div key={stat.label} style={{
-            padding: "14px 14px",
-            backgroundColor: "#111113",
-          }}>
-            <p style={{ fontSize: 10, color: "#52525B", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4, fontWeight: 500 }}>{stat.label}</p>
+          <div key={stat.label}>
+            <p style={{ fontSize: 11, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8, fontWeight: 500 }}>{stat.label}</p>
             <p style={{
-              fontSize: 16, fontWeight: 600, color: "#F4F4F5",
-              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 20, fontWeight: 600, color: "#F4F4F5",
+              ...monoStyle,
               letterSpacing: "-0.02em",
             }}>{stat.value}</p>
           </div>
@@ -150,86 +148,81 @@ export default function Sync() {
       </div>
 
       {stats.lastSync && (
-        <p style={{ fontSize: 12, color: "#52525B", marginBottom: 20 }}>
+        <p style={{ fontSize: 12, color: "#3F3F46", marginBottom: 24 }}>
           Last export: {new Date(stats.lastSync).toLocaleString()}
         </p>
       )}
 
-      {/* Actions */}
-      <div style={{
-        display: "flex", flexDirection: "column", gap: 1,
-        borderRadius: 10, overflow: "hidden",
-        border: "1px solid rgba(255,255,255,0.04)",
-        marginBottom: 24,
-      }}>
+      {/* Actions — clean list, no card borders */}
+      <div style={{ marginBottom: 32 }}>
         {/* Export */}
         <button onClick={handleExport} style={{
-          display: "flex", alignItems: "center", gap: 12,
-          padding: "14px 18px", width: "100%",
-          backgroundColor: "#111113", border: "none",
+          display: "flex", alignItems: "center", gap: 14,
+          padding: "16px 0", width: "100%",
+          backgroundColor: "transparent", border: "none",
           cursor: "pointer", textAlign: "left",
+          borderBottom: "1px solid rgba(255,255,255,0.03)",
         }}>
           <span style={{
-            width: 32, height: 32, borderRadius: 8,
-            backgroundColor: "rgba(249,115,22,0.08)",
+            width: 28, height: 28, borderRadius: 7,
+            backgroundColor: "rgba(249,115,22,0.06)",
             display: "flex", alignItems: "center", justifyContent: "center",
             color: "#F97316", flexShrink: 0,
           }}>
-            {exportSuccess ? <CheckIcon size={14} /> : <DownloadIcon size={14} />}
+            {exportSuccess ? <CheckIcon size={13} /> : <DownloadIcon size={13} />}
           </span>
           <div>
             <p style={{ fontSize: 14, fontWeight: 500, color: "#F4F4F5" }}>
               {exportSuccess ? "Exported!" : "Export Backup"}
             </p>
-            <p style={{ fontSize: 12, color: "#52525B" }}>Download JSON backup of all data</p>
+            <p style={{ fontSize: 12, color: "#3F3F46" }}>Download JSON backup of all data</p>
           </div>
         </button>
 
         {/* Import */}
         <label style={{
-          display: "flex", alignItems: "center", gap: 12,
-          padding: "14px 18px", cursor: "pointer",
-          backgroundColor: "#111113",
-          borderTop: "1px solid rgba(255,255,255,0.03)",
+          display: "flex", alignItems: "center", gap: 14,
+          padding: "16px 0", cursor: "pointer",
+          backgroundColor: "transparent",
+          borderBottom: "1px solid rgba(255,255,255,0.03)",
         }}>
           <span style={{
-            width: 32, height: 32, borderRadius: 8,
-            backgroundColor: "rgba(255,255,255,0.03)",
+            width: 28, height: 28, borderRadius: 7,
+            backgroundColor: "rgba(255,255,255,0.02)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            color: "#71717A", flexShrink: 0,
+            color: "#52525B", flexShrink: 0,
           }}>
-            {importSuccess ? <CheckIcon size={14} /> : <UploadIcon size={14} />}
+            {importSuccess ? <CheckIcon size={13} /> : <UploadIcon size={13} />}
           </span>
           <div>
             <p style={{ fontSize: 14, fontWeight: 500, color: "#F4F4F5" }}>
               {importSuccess ? "Imported!" : "Import Backup"}
             </p>
-            <p style={{ fontSize: 12, color: "#52525B" }}>Restore from a backup file</p>
+            <p style={{ fontSize: 12, color: "#3F3F46" }}>Restore from a backup file</p>
           </div>
           <input type="file" accept=".json" onChange={handleImport} style={{ display: "none" }} />
         </label>
 
         {/* Clear */}
         <button onClick={handleClearAll} disabled={clearing} style={{
-          display: "flex", alignItems: "center", gap: 12,
-          padding: "14px 18px", width: "100%",
-          backgroundColor: "#111113", border: "none",
+          display: "flex", alignItems: "center", gap: 14,
+          padding: "16px 0", width: "100%",
+          backgroundColor: "transparent", border: "none",
           cursor: clearing ? "default" : "pointer", textAlign: "left",
-          borderTop: "1px solid rgba(255,255,255,0.03)",
         }}>
           <span style={{
-            width: 32, height: 32, borderRadius: 8,
-            backgroundColor: "rgba(239,68,68,0.06)",
+            width: 28, height: 28, borderRadius: 7,
+            backgroundColor: "rgba(239,68,68,0.04)",
             display: "flex", alignItems: "center", justifyContent: "center",
             color: "#EF4444", flexShrink: 0,
           }}>
-            <TrashIcon size={14} />
+            <TrashIcon size={13} />
           </span>
           <div>
             <p style={{ fontSize: 14, fontWeight: 500, color: "#EF4444" }}>
               {clearing ? "Clearing..." : "Clear All Data"}
             </p>
-            <p style={{ fontSize: 12, color: "#52525B" }}>Delete all local data permanently</p>
+            <p style={{ fontSize: 12, color: "#3F3F46" }}>Delete all local data permanently</p>
           </div>
         </button>
       </div>
@@ -238,7 +231,7 @@ export default function Sync() {
         <p style={{ fontSize: 12, color: "#EF4444", marginBottom: 16 }}>{importError}</p>
       )}
 
-      <p style={{ fontSize: 11, color: "#3F3F46", lineHeight: 1.7 }}>
+      <p style={{ fontSize: 11, color: "#27272A", lineHeight: 1.8 }}>
         All data is stored locally in your browser. Exporting creates a backup you can restore later.
         Clearing data is permanent and cannot be undone.
       </p>

@@ -48,23 +48,25 @@ export default function Bridge() {
     setLoading(false);
   };
 
+  const monoStyle: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
+
   return (
-    <div style={{ padding: isMobile ? "24px 16px 48px" : "48px 40px", maxWidth: 680, margin: "0 auto" }}>
+    <div style={{ padding: isMobile ? "24px 16px 48px" : "48px 40px", maxWidth: 640, margin: "0 auto" }}>
       {/* Header */}
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        marginBottom: isMobile ? 32 : 40, gap: 12, flexWrap: "wrap",
+        marginBottom: isMobile ? 40 : 48, gap: 12, flexWrap: "wrap",
       }}>
         <div>
-          <h1 style={{ fontSize: isMobile ? 24 : 28, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.03em" }}>Bridge</h1>
-          <p style={{ fontSize: 14, color: "#71717A", marginTop: 4 }}>Cross-chain communication via Teleporter</p>
+          <h1 style={{ fontSize: 28, fontWeight: 600, color: "#F4F4F5", letterSpacing: "-0.03em" }}>Bridge</h1>
+          <p style={{ fontSize: 14, color: "#52525B", marginTop: 4 }}>Cross-chain communication via Teleporter</p>
         </div>
         <button onClick={loadData} disabled={loading} style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           padding: "8px 16px", borderRadius: 8,
           background: loading ? "rgba(255,255,255,0.03)" : "#F97316",
           border: "none",
-          color: loading ? "#52525B" : "#09090B",
+          color: loading ? "#3F3F46" : "#09090B",
           fontSize: 12, fontWeight: 600, cursor: loading ? "default" : "pointer",
         }}>
           <RefreshIcon size={12} />
@@ -72,70 +74,73 @@ export default function Bridge() {
         </button>
       </div>
 
-      {/* Bridge Architecture — minimal */}
+      {/* Bridge Architecture — minimal, typography-driven */}
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "center",
-        gap: isMobile ? 16 : 32,
-        marginBottom: isMobile ? 32 : 40,
-        padding: "24px 0",
+        gap: isMobile ? 20 : 40,
+        marginBottom: isMobile ? 40 : 48,
+        padding: "20px 0",
       }}>
         <div style={{ textAlign: "center" }}>
           <div style={{
-            width: 8, height: 8, borderRadius: "50%",
-            backgroundColor: "#0EA5E9", margin: "0 auto 8px",
+            width: 6, height: 6, borderRadius: "50%",
+            backgroundColor: baseChain?.success ? "#22C55E" : "#3F3F46",
+            margin: "0 auto 10px",
           }} />
-          <p style={{ fontSize: 14, fontWeight: 600, color: "#F4F4F5" }}>Base</p>
-          <p style={{ fontSize: 11, color: "#52525B", fontFamily: "'JetBrains Mono', monospace" }}>8453</p>
+          <p style={{ fontSize: 15, fontWeight: 600, color: "#F4F4F5" }}>Base</p>
+          <p style={{ fontSize: 11, color: "#3F3F46", ...monoStyle }}>8453</p>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 4, color: "#52525B" }}>
-            <div style={{ width: isMobile ? 32 : 56, height: 1, backgroundColor: "rgba(255,255,255,0.08)" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 4, color: "#3F3F46" }}>
+            <div style={{ width: isMobile ? 32 : 56, height: 1, backgroundColor: "rgba(255,255,255,0.06)" }} />
             <ArrowRightIcon size={12} />
           </div>
-          <span style={{ fontSize: 9, color: "#52525B", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 500 }}>Teleporter</span>
-          <div style={{ display: "flex", alignItems: "center", gap: 4, color: "#52525B", transform: "rotate(180deg)" }}>
-            <div style={{ width: isMobile ? 32 : 56, height: 1, backgroundColor: "rgba(255,255,255,0.08)" }} />
+          <span style={{ fontSize: 9, color: "#3F3F46", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500 }}>Teleporter</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, color: "#3F3F46", transform: "rotate(180deg)" }}>
+            <div style={{ width: isMobile ? 32 : 56, height: 1, backgroundColor: "rgba(255,255,255,0.06)" }} />
             <ArrowRightIcon size={12} />
           </div>
         </div>
 
         <div style={{ textAlign: "center" }}>
           <div style={{
-            width: 8, height: 8, borderRadius: "50%",
-            backgroundColor: "#E84142", margin: "0 auto 8px",
+            width: 6, height: 6, borderRadius: "50%",
+            backgroundColor: avaxChain?.success ? "#22C55E" : "#3F3F46",
+            margin: "0 auto 10px",
           }} />
-          <p style={{ fontSize: 14, fontWeight: 600, color: "#F4F4F5" }}>Avalanche</p>
-          <p style={{ fontSize: 11, color: "#52525B", fontFamily: "'JetBrains Mono', monospace" }}>43114</p>
+          <p style={{ fontSize: 15, fontWeight: 600, color: "#F4F4F5" }}>Avalanche</p>
+          <p style={{ fontSize: 11, color: "#3F3F46", ...monoStyle }}>43114</p>
         </div>
       </div>
 
-      {/* Bridge Status — table rows */}
-      <div style={{
-        borderRadius: 12, overflow: "hidden",
-        border: "1px solid rgba(255,255,255,0.04)",
-        marginBottom: 24,
-      }}>
+      {/* Bridge Status — clean rows, no card borders */}
+      <div style={{ marginBottom: 48 }}>
+        <h2 style={{
+          fontSize: 11, fontWeight: 500, color: "#71717A",
+          textTransform: "uppercase", letterSpacing: "0.1em",
+          marginBottom: 16,
+        }}>Bridge Status</h2>
+
         {[
-          { label: "Base Bridge", stats: baseBridge, chainResult: baseChain, address: BASE_BRIDGE.address, chain: "base" as const, color: "#0EA5E9" },
-          { label: "Avalanche Bridge", stats: avaxBridge, chainResult: avaxChain, address: AVAX_BRIDGE.address, chain: "avalanche" as const, color: "#E84142" },
+          { label: "Base Bridge", stats: baseBridge, chainResult: baseChain, address: BASE_BRIDGE.address, chain: "base" as const },
+          { label: "Avalanche Bridge", stats: avaxBridge, chainResult: avaxChain, address: AVAX_BRIDGE.address, chain: "avalanche" as const },
         ].map((item, i) => (
           <div key={item.label} style={{
-            padding: isMobile ? "16px" : "18px 20px",
-            backgroundColor: "#111113",
+            padding: "20px 0",
             borderBottom: i === 0 ? "1px solid rgba(255,255,255,0.03)" : "none",
           }}>
             <div style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
-              marginBottom: 12,
+              marginBottom: 16,
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 7, height: 7, borderRadius: "50%", backgroundColor: item.color }} />
-                <span style={{ fontSize: 14, fontWeight: 600, color: "#F4F4F5" }}>{item.label}</span>
+                <div style={{ width: 5, height: 5, borderRadius: "50%", backgroundColor: item.chainResult?.success ? "#22C55E" : "#3F3F46" }} />
+                <span style={{ fontSize: 14, fontWeight: 500, color: "#F4F4F5" }}>{item.label}</span>
               </div>
               <span style={{
                 fontSize: 11, fontWeight: 500,
-                color: item.chainResult?.success ? "#22C55E" : "#EF4444",
+                color: item.chainResult?.success ? "#22C55E" : "#3F3F46",
               }}>
                 {loading ? "..." : item.chainResult?.success ? "Online" : "Offline"}
               </span>
@@ -144,32 +149,32 @@ export default function Bridge() {
             <div style={{
               display: "grid",
               gridTemplateColumns: "repeat(3, 1fr)",
-              gap: isMobile ? 8 : 12,
+              gap: isMobile ? 12 : 24,
             }}>
               <div>
-                <p style={{ fontSize: 10, color: "#52525B", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4, fontWeight: 500 }}>Messages</p>
-                <p style={{ fontSize: 16, fontWeight: 600, color: "#F4F4F5", fontFamily: "'JetBrains Mono', monospace" }}>
+                <p style={{ fontSize: 11, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8, fontWeight: 500 }}>Messages</p>
+                <p style={{ fontSize: 20, fontWeight: 600, color: "#F4F4F5", ...monoStyle }}>
                   {loading ? "\u2014" : item.stats?.messageCount?.toLocaleString() ?? "N/A"}
                 </p>
               </div>
               <div>
-                <p style={{ fontSize: 10, color: "#52525B", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4, fontWeight: 500 }}>Status</p>
+                <p style={{ fontSize: 11, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8, fontWeight: 500 }}>Status</p>
                 <p style={{ fontSize: 14, fontWeight: 500, color: item.stats?.paused ? "#EF4444" : "#22C55E" }}>
                   {loading ? "\u2014" : item.stats?.isAlive ? (item.stats.paused ? "Paused" : "Active") : "N/A"}
                 </p>
               </div>
               <div>
-                <p style={{ fontSize: 10, color: "#52525B", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4, fontWeight: 500 }}>Nonce</p>
-                <p style={{ fontSize: 14, fontWeight: 500, color: "#A1A1AA", fontFamily: "'JetBrains Mono', monospace" }}>
+                <p style={{ fontSize: 11, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8, fontWeight: 500 }}>Nonce</p>
+                <p style={{ fontSize: 14, fontWeight: 500, color: "#A1A1AA", ...monoStyle }}>
                   {loading ? "\u2014" : item.stats?.nonce ?? "N/A"}
                 </p>
               </div>
             </div>
 
-            {/* Contract address */}
-            <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8 }}>
+            {/* Contract address — monospace, subtle */}
+            <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 8 }}>
               <code style={{
-                fontSize: 11, color: "#3F3F46", fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 11, color: "#3F3F46", ...monoStyle,
                 overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                 flex: 1,
               }}>
@@ -178,7 +183,7 @@ export default function Bridge() {
               <a href={`${CHAINS[item.chain].explorerUrl}/address/${item.address}`} target="_blank" rel="noopener noreferrer"
                 style={{
                   display: "flex", alignItems: "center", gap: 4,
-                  color: "#52525B", textDecoration: "none", fontSize: 11, flexShrink: 0,
+                  color: "#3F3F46", textDecoration: "none", fontSize: 11, flexShrink: 0,
                 }}>
                 <ExternalIcon size={10} />
               </a>
@@ -189,7 +194,7 @@ export default function Bridge() {
 
       {/* Info text */}
       <p style={{
-        fontSize: 13, color: "#52525B", lineHeight: 1.7,
+        fontSize: 13, color: "#3F3F46", lineHeight: 1.8,
       }}>
         The Teleporter Bridge enables cross-chain communication between Base and Avalanche
         using Avalanche Warp Messaging (AWM) for trustless message relay.

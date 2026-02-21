@@ -36,6 +36,16 @@ function TrashIcon({ size = 13 }: { size?: number }) {
   );
 }
 
+/* Small Embris flame icon for chat responses — 16px */
+function EmbrisFlame() {
+  return (
+    <svg width={16} height={16} viewBox="0 0 32 32" fill="none" style={{ flexShrink: 0, marginTop: 3 }}>
+      <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9" />
+      <path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C" />
+    </svg>
+  );
+}
+
 function MarkdownText({ text }: { text: string }) {
   const lines = text.split('\n');
   const elements: React.ReactNode[] = [];
@@ -53,24 +63,24 @@ function MarkdownText({ text }: { text: string }) {
     } else if (line.match(/^\d+\. /)) {
       elements.push(<li key={i} style={{ marginLeft: '1.25rem', margin: '0.2rem 0', listStyleType: 'decimal' }}>{renderInline(line.replace(/^\d+\. /, ''))}</li>);
     } else if (line.startsWith('> ')) {
-      elements.push(<blockquote key={i} style={{ borderLeft: '2px solid rgba(255,255,255,0.1)', paddingLeft: '0.75rem', color: '#A1A1AA', fontStyle: 'italic', margin: '0.5rem 0' }}>{line.slice(2)}</blockquote>);
+      elements.push(<blockquote key={i} style={{ borderLeft: '2px solid rgba(255,255,255,0.06)', paddingLeft: '0.75rem', color: '#A1A1AA', fontStyle: 'italic', margin: '0.5rem 0' }}>{line.slice(2)}</blockquote>);
     } else if (line === '---' || line === '***') {
-      elements.push(<hr key={i} style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.05)', margin: '1rem 0' }} />);
+      elements.push(<hr key={i} style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.03)', margin: '1rem 0' }} />);
     } else if (line === '') {
       elements.push(<br key={i} />);
     } else {
-      elements.push(<p key={i} style={{ margin: '0.3rem 0', lineHeight: 1.7 }}>{renderInline(line)}</p>);
+      elements.push(<p key={i} style={{ margin: '0.3rem 0', lineHeight: 1.75 }}>{renderInline(line)}</p>);
     }
     i++;
   }
-  return <div className="prose-ember">{elements}</div>;
+  return <div className="prose-embris">{elements}</div>;
 }
 
 function renderInline(text: string): React.ReactNode {
   const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*)/g);
   return parts.map((part, i) => {
     if (part.startsWith('`') && part.endsWith('`')) {
-      return <code key={i} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, padding: '0.1rem 0.35rem', fontSize: '0.85em', color: '#FB923C', fontFamily: "'JetBrains Mono', monospace" }}>{part.slice(1, -1)}</code>;
+      return <code key={i} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 4, padding: '0.1rem 0.35rem', fontSize: '0.85em', color: '#E4E4E7', fontFamily: "'JetBrains Mono', monospace" }}>{part.slice(1, -1)}</code>;
     }
     if (part.startsWith('**') && part.endsWith('**')) {
       return <strong key={i} style={{ color: '#F4F4F5', fontWeight: 600 }}>{part.slice(2, -2)}</strong>;
@@ -87,25 +97,10 @@ function TypingIndicator() {
     <div style={{ display: 'flex', gap: 5, alignItems: 'center', padding: '8px 0' }}>
       {[0, 1, 2].map((i) => (
         <div key={i} className="typing-dot" style={{
-          width: 5, height: 5, borderRadius: '50%', backgroundColor: '#F97316',
+          width: 4, height: 4, borderRadius: '50%', backgroundColor: '#71717A',
           animationDelay: `${i * 0.2}s`,
         }} />
       ))}
-    </div>
-  );
-}
-
-function EmbrisAvatar({ size = 28 }: { size?: number }) {
-  return (
-    <div style={{
-      width: size, height: size, borderRadius: '50%',
-      background: 'rgba(249,115,22,0.1)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-    }}>
-      <svg width={size * 0.5} height={size * 0.5} viewBox="0 0 24 24" fill="none">
-        <path d="M12 5c-2 2.5-4 5.5-4 8 0 2.21 1.79 4 4 4s4-1.79 4-4c0-2.5-2-5.5-4-8z" fill="#F97316" opacity="0.85" />
-        <path d="M12 8c-1 1.5-2 3.2-2 4.5 0 1.1.9 2 2 2s2-.9 2-2c0-1.3-1-3-2-4.5z" fill="#FB923C" />
-      </svg>
     </div>
   );
 }
@@ -118,6 +113,7 @@ export default function Chat() {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -234,26 +230,24 @@ export default function Chat() {
     setShowSuggestions(true);
   };
 
+  const hasText = inputText.trim().length > 0;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#09090B' }}>
 
-      {/* ── Header — minimal ── */}
+      {/* ── Header — barely there, like ChatGPT ── */}
       <div style={{
-        padding: isMobile ? '10px 16px' : '12px 32px',
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
+        padding: isMobile ? '10px 16px' : '10px 32px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         backgroundColor: '#09090B',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <EmbrisAvatar size={isMobile ? 28 : 30} />
-          <div>
-            <h2 style={{ fontSize: 15, fontWeight: 600, color: '#F4F4F5', letterSpacing: '-0.02em' }}>Embris</h2>
-          </div>
-        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 14, fontWeight: 500, color: '#A1A1AA', letterSpacing: '-0.01em' }}>Embris</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {walletAddress && !isMobile && (
             <span style={{
-              fontSize: 11, color: '#52525B',
+              fontSize: 11, color: '#3F3F46',
               fontFamily: "'JetBrains Mono', monospace",
             }}>
               {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
@@ -261,14 +255,14 @@ export default function Chat() {
           )}
           {memories.length > 0 && (
             <span style={{
-              fontSize: 11, color: '#71717A', fontWeight: 500,
+              fontSize: 11, color: '#3F3F46', fontWeight: 400,
             }}>
               {memories.length} {isMobile ? 'mem' : 'memories'}
             </span>
           )}
           <button onClick={handleClear} style={{
             display: 'flex', alignItems: 'center', gap: 5,
-            fontSize: 12, color: '#52525B', background: 'none',
+            fontSize: 12, color: '#3F3F46', background: 'none',
             border: 'none', cursor: 'pointer', padding: '6px 8px',
             borderRadius: 6,
           }}>
@@ -286,41 +280,40 @@ export default function Chat() {
         {messages.length === 0 && showSuggestions && (
           <div className="fade-in" style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
-            justifyContent: 'center', flex: 1, gap: isMobile ? 28 : 36,
+            justifyContent: 'center', flex: 1, gap: isMobile ? 32 : 40,
             padding: isMobile ? '40px 20px' : '60px 32px',
           }}>
             <div style={{ textAlign: 'center' }}>
-              <svg width={isMobile ? 36 : 40} height={isMobile ? 36 : 40} viewBox="0 0 32 32" fill="none" style={{ marginBottom: 20 }}>
-                <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.85" />
+              <svg width={28} height={28} viewBox="0 0 32 32" fill="none" style={{ marginBottom: 20, opacity: 0.7 }}>
+                <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9" />
                 <path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C" />
-                <path d="M16 14c-.7 1-1.4 2.2-1.4 3.2 0 .77.63 1.4 1.4 1.4s1.4-.63 1.4-1.4c0-1-.7-2.2-1.4-3.2z" fill="#FDE68A" opacity="0.7" />
               </svg>
               <h3 style={{
-                fontSize: isMobile ? 22 : 26, fontWeight: 600, color: '#F4F4F5',
-                marginBottom: 6, letterSpacing: '-0.03em',
+                fontSize: isMobile ? 20 : 24, fontWeight: 600, color: '#F4F4F5',
+                marginBottom: 8, letterSpacing: '-0.03em',
               }}>Ask Embris anything</h3>
-              <p style={{ fontSize: 14, color: '#52525B' }}>
+              <p style={{ fontSize: 14, color: '#3F3F46' }}>
                 Your guide to the Vaultfire Protocol
               </p>
             </div>
             <div style={{
               display: 'grid',
               gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
-              gap: 6, maxWidth: 480, width: '100%',
+              gap: 8, maxWidth: 480, width: '100%',
             }}>
               {SUGGESTED_PROMPTS.map((prompt) => (
                 <button key={prompt} onClick={() => sendMessage(prompt)}
                   style={{
                     padding: '12px 16px',
                     backgroundColor: 'transparent',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                    borderRadius: 10, color: '#71717A',
+                    border: '1px solid rgba(255,255,255,0.04)',
+                    borderRadius: 12, color: '#52525B',
                     fontSize: 13, cursor: 'pointer', textAlign: 'left',
                     transition: 'all 0.15s ease',
                     fontWeight: 400, lineHeight: 1.4,
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#A1A1AA'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#71717A'; }}>
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#A1A1AA'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#52525B'; }}>
                   {prompt}
                 </button>
               ))}
@@ -332,23 +325,26 @@ export default function Chat() {
         <div style={{
           maxWidth: 680, width: '100%', margin: '0 auto',
           padding: isMobile ? '20px 16px' : '28px 24px',
-          display: 'flex', flexDirection: 'column', gap: isMobile ? 20 : 24,
+          display: 'flex', flexDirection: 'column', gap: isMobile ? 24 : 28,
         }}>
           {messages.map((msg) => (
             <div key={msg.id} className="fade-in" style={{
               display: 'flex',
               flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
-              gap: 12, alignItems: 'flex-start',
+              gap: 10, alignItems: 'flex-start',
             }}>
-              {msg.role === 'assistant' && <EmbrisAvatar size={28} />}
+              {/* Small flame icon for Embris — 16px, like ChatGPT's avatar */}
+              {msg.role === 'assistant' && <EmbrisFlame />}
+
               <div style={{
                 maxWidth: '85%',
+                /* User: subtle dark bg, rounded. Embris: NO background, just text */
                 padding: msg.role === 'user' ? '10px 16px' : '0',
-                borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '0',
-                backgroundColor: msg.role === 'user' ? '#F97316' : 'transparent',
-                color: msg.role === 'user' ? '#09090B' : '#E4E4E7',
+                borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '0',
+                backgroundColor: msg.role === 'user' ? '#1A1A1E' : 'transparent',
+                color: msg.role === 'user' ? '#E4E4E7' : '#D4D4D8',
                 fontSize: 14,
-                lineHeight: 1.7,
+                lineHeight: 1.75,
                 overflow: 'hidden', wordBreak: 'break-word',
                 letterSpacing: '-0.01em',
               }}>
@@ -366,9 +362,9 @@ export default function Chat() {
         </div>
       </div>
 
-      {/* ── Input ── */}
+      {/* ── Input — clean, rounded, subtle shadow, like ChatGPT ── */}
       <div style={{
-        padding: isMobile ? '12px 16px 16px' : '16px 24px 20px',
+        padding: isMobile ? '12px 16px 16px' : '16px 24px 24px',
         backgroundColor: '#09090B',
       }}>
         <div style={{
@@ -377,17 +373,18 @@ export default function Chat() {
           <div style={{
             display: 'flex', gap: 10, alignItems: 'flex-end',
             backgroundColor: '#111113',
-            border: '1px solid rgba(255,255,255,0.06)',
-            borderRadius: 14, padding: isMobile ? '10px 12px' : '12px 16px',
-            transition: 'border-color 0.15s ease',
-          }}
-            onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(249,115,22,0.25)'; }}
-            onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}>
+            borderRadius: 16,
+            padding: isMobile ? '10px 12px' : '12px 16px',
+            boxShadow: inputFocused ? '0 0 0 1px rgba(255,255,255,0.06)' : '0 0 0 1px rgba(255,255,255,0.03)',
+            transition: 'box-shadow 0.15s ease',
+          }}>
             <textarea
               ref={inputRef}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDown}
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
               placeholder="Message Embris..."
               disabled={isLoading}
               rows={1}
@@ -406,24 +403,25 @@ export default function Chat() {
             />
             <button
               onClick={() => sendMessage(inputText)}
-              disabled={isLoading || !inputText.trim()}
+              disabled={isLoading || !hasText}
               style={{
-                width: 36, height: 36, borderRadius: 10, border: 'none',
-                cursor: isLoading || !inputText.trim() ? 'default' : 'pointer',
-                backgroundColor: isLoading || !inputText.trim() ? 'rgba(255,255,255,0.03)' : '#F97316',
-                color: isLoading || !inputText.trim() ? '#52525B' : '#09090B',
+                width: 32, height: 32, borderRadius: 8, border: 'none',
+                cursor: isLoading || !hasText ? 'default' : 'pointer',
+                /* Subtle until text is entered — then orange */
+                backgroundColor: hasText ? '#F97316' : 'transparent',
+                color: hasText ? '#09090B' : '#3F3F46',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'all 0.15s ease', flexShrink: 0,
               }}>
               {isLoading ? (
-                <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.08)', borderTopColor: '#52525B', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.06)', borderTopColor: '#52525B', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
               ) : (
-                <SendIcon size={15} />
+                <SendIcon size={14} />
               )}
             </button>
           </div>
           {!isMobile && (
-            <p style={{ fontSize: 11, color: '#3F3F46', marginTop: 8, textAlign: 'center' }}>
+            <p style={{ fontSize: 11, color: '#27272A', marginTop: 8, textAlign: 'center' }}>
               Enter to send · Shift+Enter for new line
             </p>
           )}
