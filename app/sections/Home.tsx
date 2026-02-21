@@ -12,6 +12,90 @@ interface ChainStatus {
   contractCount: number;
 }
 
+// SVG Icons for core values
+function ScaleIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3v18" />
+      <path d="M5 7l7-4 7 4" />
+      <path d="M2 14l3-7 3 7" />
+      <path d="M16 14l3-7 3 7" />
+      <path d="M2 14h6" />
+      <path d="M16 14h6" />
+    </svg>
+  );
+}
+
+function ShieldIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <path d="M12 8v4" />
+      <circle cx="12" cy="15" r="0.5" fill="#F97316" />
+    </svg>
+  );
+}
+
+function FreedomIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+      <line x1="12" y1="2" x2="12" y2="4" />
+    </svg>
+  );
+}
+
+function ContractIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+    </svg>
+  );
+}
+
+function ChainIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  );
+}
+
+function CpuIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="4" width="16" height="16" rx="2" ry="2" />
+      <rect x="9" y="9" width="6" height="6" />
+      <line x1="9" y1="1" x2="9" y2="4" />
+      <line x1="15" y1="1" x2="15" y2="4" />
+      <line x1="9" y1="20" x2="9" y2="23" />
+      <line x1="15" y1="20" x2="15" y2="23" />
+      <line x1="20" y1="9" x2="23" y2="9" />
+      <line x1="20" y1="14" x2="23" y2="14" />
+      <line x1="1" y1="9" x2="4" y2="9" />
+      <line x1="1" y1="14" x2="4" y2="14" />
+    </svg>
+  );
+}
+
+function BridgeIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 3v3a2 2 0 0 1-2 2H3" />
+      <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
+      <path d="M3 16h3a2 2 0 0 1 2 2v3" />
+      <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
+      <line x1="7" y1="12" x2="17" y2="12" />
+      <polyline points="14 9 17 12 14 15" />
+    </svg>
+  );
+}
+
 export default function Home() {
   const [chains, setChains] = useState<ChainStatus[]>([
     { name: 'Base', chainId: 8453, color: '#00D9FF', result: null, loading: true, contractCount: BASE_CONTRACTS.length },
@@ -36,101 +120,235 @@ export default function Home() {
   }, []);
 
   const coreValues = CORE_VALUES.split('. ').filter(Boolean);
+  const coreValueIcons = [ScaleIcon, ShieldIcon, FreedomIcon];
+  const coreValueTitles = ['Morals', 'Privacy', 'Freedom'];
+  const coreValueDescriptions = [
+    'Morals over metrics',
+    'Privacy over surveillance',
+    'Freedom over control',
+  ];
 
   return (
     <div style={{
-      padding: isMobile ? '16px 16px 32px' : '32px',
-      maxWidth: '56rem',
+      padding: isMobile ? '20px 16px 40px' : '40px 32px',
+      maxWidth: '52rem',
       margin: '0 auto',
     }}>
-      {/* Hero */}
-      <div style={{ textAlign: 'center', marginBottom: isMobile ? 32 : 48 }}>
-        <div style={{ fontSize: isMobile ? 40 : 60, marginBottom: isMobile ? 8 : 16 }}>🛡️🔥</div>
-        <h1 style={{
-          fontSize: isMobile ? 26 : 36,
-          fontWeight: 700,
-          color: '#ECEDEE',
-          marginBottom: isMobile ? 8 : 12,
-          lineHeight: 1.2,
-        }}>Vaultfire Protocol</h1>
-        <p style={{
-          fontSize: isMobile ? 14 : 18,
-          color: '#9BA1A6',
-          maxWidth: '36rem',
-          margin: '0 auto',
-          lineHeight: 1.6,
-        }}>
-          Ethical AI governance on-chain. Powered by Ember AI.
-        </p>
+      {/* Hero Section */}
+      <div style={{
+        textAlign: 'center',
+        marginBottom: isMobile ? 40 : 56,
+        position: 'relative',
+      }}>
+        {/* Subtle glow behind hero */}
         <div style={{
-          marginTop: isMobile ? 12 : 16,
+          position: 'absolute',
+          top: '-40px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: isMobile ? 200 : 300,
+          height: isMobile ? 200 : 300,
+          background: 'radial-gradient(circle, rgba(249,115,22,0.06) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }} />
+
+        {/* Logo mark */}
+        <div style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: 8,
-          padding: '8px 16px',
-          borderRadius: 999,
-          backgroundColor: '#1A1A1E',
-          border: '1px solid #2A2A2E',
+          justifyContent: 'center',
+          width: isMobile ? 56 : 68,
+          height: isMobile ? 56 : 68,
+          borderRadius: 18,
+          background: 'linear-gradient(135deg, rgba(249,115,22,0.12), rgba(249,115,22,0.04))',
+          border: '1px solid rgba(249,115,22,0.2)',
+          marginBottom: isMobile ? 16 : 20,
+          position: 'relative',
         }}>
-          <span style={{ fontSize: isMobile ? 13 : 14, color: '#FF6B35', fontWeight: 500 }}>theloopbreaker.com</span>
+          <svg width={isMobile ? 28 : 34} height={isMobile ? 28 : 34} viewBox="0 0 24 24" fill="none">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="none" stroke="#F97316" strokeWidth="1.2" />
+            <path d="M12 5c-2 2.5-4 5.5-4 8 0 2.21 1.79 4 4 4s4-1.79 4-4c0-2.5-2-5.5-4-8z" fill="#F97316" opacity="0.7" />
+            <path d="M12 8c-1 1.5-2 3.2-2 4.5 0 1.1.9 2 2 2s2-.9 2-2c0-1.3-1-3-2-4.5z" fill="#FB923C" />
+          </svg>
         </div>
+
+        <h1 style={{
+          fontSize: isMobile ? 28 : 40,
+          fontWeight: 700,
+          color: '#FFFFFF',
+          marginBottom: isMobile ? 8 : 10,
+          lineHeight: 1.15,
+          letterSpacing: '-0.03em',
+        }}>Vaultfire Protocol</h1>
+
+        <p style={{
+          fontSize: isMobile ? 15 : 17,
+          color: '#A0A0A8',
+          maxWidth: '28rem',
+          margin: '0 auto',
+          lineHeight: 1.6,
+          fontWeight: 400,
+          letterSpacing: '-0.01em',
+        }}>
+          Ethical AI governance on-chain.{' '}
+          <span style={{ color: '#F97316' }}>Powered by Ember AI.</span>
+        </p>
+
+        <a
+          href="https://theloopbreaker.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            marginTop: isMobile ? 16 : 20,
+            padding: '8px 16px',
+            borderRadius: 8,
+            backgroundColor: 'transparent',
+            border: '1px solid rgba(249,115,22,0.25)',
+            color: '#F97316',
+            fontSize: 13,
+            fontWeight: 500,
+            textDecoration: 'none',
+            transition: 'all 0.2s ease',
+            letterSpacing: '-0.01em',
+          }}
+        >
+          <span>theloopbreaker.com</span>
+          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+            <polyline points="15 3 21 3 21 9" />
+            <line x1="10" y1="14" x2="21" y2="3" />
+          </svg>
+        </a>
       </div>
 
       {/* Core Values */}
-      <div style={{ marginBottom: isMobile ? 28 : 40 }}>
-        <h2 style={{ fontSize: isMobile ? 11 : 12, fontWeight: 600, color: '#9BA1A6', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>Core Values</h2>
+      <div style={{ marginBottom: isMobile ? 32 : 48 }}>
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+          display: 'flex',
+          alignItems: 'center',
           gap: 12,
+          marginBottom: 16,
         }}>
-          {coreValues.map((value, i) => (
-            <div key={i} style={{
-              backgroundColor: '#1A1A1E',
-              border: '1px solid #2A2A2E',
-              borderRadius: 12,
-              padding: isMobile ? '14px 16px' : 16,
-              textAlign: 'center',
-            }}>
-              <div style={{ fontSize: isMobile ? 20 : 24, marginBottom: 8 }}>{['⚖️', '🔒', '🗽'][i]}</div>
-              <p style={{ fontSize: isMobile ? 13 : 14, fontWeight: 500, color: '#ECEDEE' }}>{value}</p>
-            </div>
-          ))}
+          <h2 style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: '#666670',
+            textTransform: 'uppercase',
+            letterSpacing: '0.12em',
+          }}>Core Values</h2>
+          <div style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.06)' }} />
+        </div>
+
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8,
+        }}>
+          {coreValues.map((_value, i) => {
+            const IconComp = coreValueIcons[i];
+            return (
+              <div key={i} style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: isMobile ? 12 : 14,
+                backgroundColor: '#111114',
+                border: '1px solid rgba(255,255,255,0.06)',
+                borderLeft: '2px solid #F97316',
+                borderRadius: 10,
+                padding: isMobile ? '12px 14px' : '14px 16px',
+                transition: 'all 0.2s ease',
+              }}>
+                <div style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 8,
+                  background: 'rgba(249,115,22,0.08)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <IconComp size={18} />
+                </div>
+                <div>
+                  <p style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: '#FFFFFF',
+                    marginBottom: 1,
+                    letterSpacing: '-0.01em',
+                  }}>{coreValueTitles[i]}</p>
+                  <p style={{
+                    fontSize: 12,
+                    color: '#A0A0A8',
+                    fontWeight: 400,
+                  }}>{coreValueDescriptions[i]}</p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
       {/* Network Status */}
-      <div style={{ marginBottom: isMobile ? 28 : 40 }}>
-        <h2 style={{ fontSize: isMobile ? 11 : 12, fontWeight: 600, color: '#9BA1A6', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>Network Status</h2>
+      <div style={{ marginBottom: isMobile ? 32 : 48 }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          marginBottom: 16,
+        }}>
+          <h2 style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: '#666670',
+            textTransform: 'uppercase',
+            letterSpacing: '0.12em',
+          }}>Network Status</h2>
+          <div style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.06)' }} />
+        </div>
+
         <div style={{
           display: 'grid',
           gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
-          gap: isMobile ? 12 : 16,
+          gap: 12,
         }}>
           {chains.map((chain) => (
             <div key={chain.name} style={{
-              backgroundColor: '#1A1A1E',
-              border: '1px solid #2A2A2E',
+              backgroundColor: '#111114',
+              border: '1px solid rgba(255,255,255,0.06)',
               borderRadius: 12,
-              padding: isMobile ? 16 : 20,
-              borderLeftColor: chain.color,
-              borderLeftWidth: 3,
+              padding: isMobile ? '14px 16px' : '16px 18px',
+              transition: 'all 0.2s ease',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <div>
-                  <h3 style={{ fontWeight: 600, color: '#ECEDEE', fontSize: isMobile ? 15 : 16 }}>{chain.name}</h3>
-                  <p style={{ fontSize: 12, color: '#9BA1A6' }}>Chain ID: {chain.chainId}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    backgroundColor: chain.color,
+                    boxShadow: `0 0 8px ${chain.color}40`,
+                  }} />
+                  <div>
+                    <h3 style={{ fontWeight: 600, color: '#FFFFFF', fontSize: 14, letterSpacing: '-0.01em' }}>{chain.name}</h3>
+                    <p style={{ fontSize: 11, color: '#666670' }}>Chain {chain.chainId}</p>
+                  </div>
                 </div>
                 <span style={{
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: 500,
-                  padding: '4px 10px',
-                  borderRadius: 999,
-                  backgroundColor: chain.loading ? '#F59E0B20' : chain.result?.success ? '#22C55E20' : '#EF444420',
+                  padding: '3px 10px',
+                  borderRadius: 20,
+                  backgroundColor: chain.loading ? 'rgba(245,158,11,0.1)' : chain.result?.success ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
                   color: chain.loading ? '#F59E0B' : chain.result?.success ? '#22C55E' : '#EF4444',
                   flexShrink: 0,
+                  letterSpacing: '0.01em',
                 }}>
-                  {chain.loading ? 'Checking...' : chain.result?.success ? 'Connected' : 'Offline'}
+                  {chain.loading ? 'Checking' : chain.result?.success ? 'Connected' : 'Offline'}
                 </span>
               </div>
               {!chain.loading && chain.result?.success && (
@@ -138,20 +356,30 @@ export default function Home() {
                   display: 'grid',
                   gridTemplateColumns: 'repeat(3, 1fr)',
                   gap: 8,
-                  textAlign: 'center',
                 }}>
-                  <div style={{ backgroundColor: '#2A2A2E', borderRadius: 8, padding: isMobile ? '8px 4px' : '8px' }}>
-                    <p style={{ fontSize: 10, color: '#9BA1A6', marginBottom: 2 }}>Block</p>
-                    <p style={{ fontSize: isMobile ? 11 : 13, fontFamily: 'monospace', color: '#ECEDEE', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{chain.result.blockNumber?.toLocaleString()}</p>
-                  </div>
-                  <div style={{ backgroundColor: '#2A2A2E', borderRadius: 8, padding: isMobile ? '8px 4px' : '8px' }}>
-                    <p style={{ fontSize: 10, color: '#9BA1A6', marginBottom: 2 }}>Latency</p>
-                    <p style={{ fontSize: isMobile ? 11 : 13, fontFamily: 'monospace', color: '#ECEDEE' }}>{chain.result.latency}ms</p>
-                  </div>
-                  <div style={{ backgroundColor: '#2A2A2E', borderRadius: 8, padding: isMobile ? '8px 4px' : '8px' }}>
-                    <p style={{ fontSize: 10, color: '#9BA1A6', marginBottom: 2 }}>Contracts</p>
-                    <p style={{ fontSize: isMobile ? 11 : 13, fontFamily: 'monospace', color: '#FF6B35' }}>{chain.contractCount}</p>
-                  </div>
+                  {[
+                    { label: 'Block', value: chain.result.blockNumber?.toLocaleString(), color: '#FFFFFF' },
+                    { label: 'Latency', value: `${chain.result.latency}ms`, color: '#FFFFFF' },
+                    { label: 'Contracts', value: String(chain.contractCount), color: '#F97316' },
+                  ].map((stat) => (
+                    <div key={stat.label} style={{
+                      backgroundColor: 'rgba(255,255,255,0.03)',
+                      borderRadius: 8,
+                      padding: isMobile ? '8px 6px' : '8px 10px',
+                      textAlign: 'center',
+                    }}>
+                      <p style={{ fontSize: 10, color: '#666670', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</p>
+                      <p style={{
+                        fontSize: isMobile ? 11 : 12,
+                        fontFamily: "'SF Mono', 'Fira Code', monospace",
+                        color: stat.color,
+                        fontWeight: 600,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}>{stat.value}</p>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -161,29 +389,63 @@ export default function Home() {
 
       {/* Protocol Overview */}
       <div>
-        <h2 style={{ fontSize: isMobile ? 11 : 12, fontWeight: 600, color: '#9BA1A6', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>Protocol Overview</h2>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          marginBottom: 16,
+        }}>
+          <h2 style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: '#666670',
+            textTransform: 'uppercase',
+            letterSpacing: '0.12em',
+          }}>Protocol Overview</h2>
+          <div style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.06)' }} />
+        </div>
+
         <div style={{
           display: 'grid',
           gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-          gap: isMobile ? 8 : 12,
+          gap: isMobile ? 8 : 10,
         }}>
           {[
-            { icon: '🔗', label: 'Contracts', value: '28', sub: '14 per chain' },
-            { icon: '⛓️', label: 'Chains', value: '2', sub: 'Base + Avalanche' },
-            { icon: '🤖', label: 'Standard', value: 'ERC-8004', sub: 'AI Identity' },
-            { icon: '🌉', label: 'Bridge', value: 'Teleporter', sub: 'Cross-chain' },
+            { Icon: ContractIcon, label: 'Contracts', value: '28', sub: '14 per chain', color: '#F97316' },
+            { Icon: ChainIcon, label: 'Chains', value: '2', sub: 'Base + Avalanche', color: '#F97316' },
+            { Icon: CpuIcon, label: 'Standard', value: 'ERC-8004', sub: 'AI Identity', color: '#F97316' },
+            { Icon: BridgeIcon, label: 'Bridge', value: 'Teleporter', sub: 'Cross-chain', color: '#F97316' },
           ].map((item) => (
             <div key={item.label} style={{
-              backgroundColor: '#1A1A1E',
-              border: '1px solid #2A2A2E',
-              borderRadius: 12,
-              padding: isMobile ? '14px 10px' : 16,
+              backgroundColor: '#111114',
+              border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: 10,
+              padding: isMobile ? '14px 10px' : '16px 14px',
               textAlign: 'center',
+              transition: 'all 0.2s ease',
             }}>
-              <div style={{ fontSize: isMobile ? 20 : 24, marginBottom: 4 }}>{item.icon}</div>
-              <p style={{ fontSize: isMobile ? 16 : 18, fontWeight: 700, color: '#FF6B35' }}>{item.value}</p>
-              <p style={{ fontSize: isMobile ? 11 : 12, fontWeight: 500, color: '#ECEDEE' }}>{item.label}</p>
-              <p style={{ fontSize: isMobile ? 10 : 11, color: '#9BA1A6' }}>{item.sub}</p>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 32,
+                height: 32,
+                borderRadius: 8,
+                background: 'rgba(249,115,22,0.08)',
+                marginBottom: 8,
+                color: '#F97316',
+              }}>
+                <item.Icon size={16} />
+              </div>
+              <p style={{
+                fontSize: isMobile ? 16 : 18,
+                fontWeight: 700,
+                color: '#F97316',
+                letterSpacing: '-0.02em',
+                marginBottom: 2,
+              }}>{item.value}</p>
+              <p style={{ fontSize: isMobile ? 11 : 12, fontWeight: 500, color: '#FFFFFF', letterSpacing: '-0.01em' }}>{item.label}</p>
+              <p style={{ fontSize: isMobile ? 10 : 11, color: '#666670', marginTop: 1 }}>{item.sub}</p>
             </div>
           ))}
         </div>
