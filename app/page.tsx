@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Home from './sections/Home';
 import Chat from './sections/Chat';
@@ -14,6 +14,14 @@ type Section = 'home' | 'chat' | 'wallet' | 'verify' | 'bridge' | 'dashboard' | 
 
 export default function Page() {
   const [activeSection, setActiveSection] = useState<Section>('home');
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   const renderSection = () => {
     switch (activeSection) {
@@ -39,7 +47,12 @@ export default function Page() {
   return (
     <div style={{ display: 'flex', height: '100vh', backgroundColor: '#0A0A0C', overflow: 'hidden' }}>
       <Sidebar activeSection={activeSection} onSectionChange={(s) => setActiveSection(s as Section)} />
-      <main style={{ flex: 1, overflowY: 'auto', backgroundColor: '#0A0A0C' }}>
+      <main style={{
+        flex: 1,
+        overflowY: 'auto',
+        backgroundColor: '#0A0A0C',
+        paddingTop: isMobile ? 60 : 0,
+      }}>
         {renderSection()}
       </main>
     </div>
