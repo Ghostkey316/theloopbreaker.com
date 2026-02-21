@@ -12,25 +12,38 @@ export const AVAX_RPC_URL = "https://api.avax.network/ext/bc/C/rpc";
 export const SNOWTRACE_URL = "https://snowscan.xyz";
 
 export const CONTRACTS = {
-  PrivacyGuarantees: "0x1dCbeD76E05Eaf829c8BDf10a9511504cDa8EB1e",
-  MissionEnforcement: "0x6EC0440e1601558024f285903F0F4577B109B609",
-  AntiSurveillance: "0x2baE308ddCfc6a270d6dFCeeF947bd8B77b9d3Ac",
-  ERC8004IdentityRegistry: "0x206265EAbDE04E15ebeb6E27Cad64D9BfDB470DD",
-  BeliefAttestationVerifier: "0x5657DA7E68CBbA1B529F74e2137CBA7bf3663B4a",
-  ERC8004ReputationRegistry: "0x1043A9fBeAEDD401735c46Aa17B4a2FA1193B06C",
-  ERC8004ValidationRegistry: "0x50E4609991691D5104016c4a2F6D2875234d4B06",
-  AIPartnershipBondsV2: "0xd167A4F5eb428766Fc14C074e9f0C979c5CB4855",
-  AIAccountabilityBondsV2: "0x956a99C8f50bAc8b8b69dA934AEaBFEaCF41B140",
-  VaultfireERC8004Adapter: "0x02Cb2bFBeC479Cb1EA109E4C92744e08d5A5B361",
-  MultisigGovernance: "0xd979025D0384Ea4F1b2562b9855d8Be7Eb89856D",
-  FlourishingMetricsOracle: "0xb751abb1158908114662b254567b8135C460932C",
-  ProductionBeliefAttestationVerifier: "0xBDB5d85B3a84C773113779be89A166Ed515A7fE2",
-  VaultfireTeleporterBridge: "0xaD8D7aE60805B6e5d4BF6b70248AD8B46DEE9528",
+  PrivacyGuarantees: "0xBdB6c89f5cb86f4d44F7E01d9393b29D83e3DB55",
+  MissionEnforcement: "0x38165D2D7a8584985CCa5640f4b32b1f3347CC83",
+  AntiSurveillance: "0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C",
+  ERC8004IdentityRegistry: "0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5",
+  BeliefAttestationVerifier: "0x10180c8430cfD61d27F1d7a548Cff0C4D143bFEF",
+  ERC8004ReputationRegistry: "0x544B575431ECD927bA83E85008446fA1e100204a",
+  ERC8004ValidationRegistry: "0x501fE0f960c1e061C4d295Af241f9F1512775556",
+  AIPartnershipBondsV2: "0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1",
+  AIAccountabilityBondsV2: "0xDfc66395A4742b5168712a04942C90B99394aEEb",
+  VaultfireERC8004Adapter: "0x5470d8189849675C043fFA7fc451e5F2f4e5532c",
+  MultisigGovernance: "0xea0A6750642AA294658dC9f1eDf36b95D21e7B22",
+  FlourishingMetricsOracle: "0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1",
+  ProductionBeliefAttestationVerifier: "0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B",
+  VaultfireTeleporterBridge: "0xFe122605364f428570c4C0EB2CCAEBb68dD22d05",
 } as const;
 
 /** Avalanche C-Chain contract addresses (chain ID 43114) */
 export const AVAX_CONTRACTS = {
-  VaultfireTeleporterBridge: "0x75de435Acc5dec0f612408f02Ae169528ce3a91b",
+  MissionEnforcement: "0xE1D52bF7A842B207B8C48eAE801f9d97A3C4D709",
+  AntiSurveillance: "0xaCB59e0f0eA47B25b24390B71b877928E5842630",
+  ERC8004IdentityRegistry: "0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5",
+  AIPartnershipBondsV2: "0x37679B1dCfabE6eA6b8408626815A1426bE2D717",
+  FlourishingMetricsOracle: "0x83b2D1a8e383c4239dE66b6614176636618c1c0A",
+  AIAccountabilityBondsV2: "0xEF022Bdf55940491d4efeBDE61Ffa3f3fF81b192",
+  ProductionBeliefAttestationVerifier: "0x20E8CDFae485F0E8E90D24c9E071957A53eE0cB1",
+  VaultfireTeleporterBridge: "0x964562f712c5690465B0AA2F8fA16d9dDAc6eCdf",
+  PrivacyGuarantees: "0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C",
+  BeliefAttestationVerifier: "0xBdB6c89f5cb86f4d44F7E01d9393b29D83e3DB55",
+  ERC8004ReputationRegistry: "0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5",
+  ERC8004ValidationRegistry: "0x10180c8430cfD61d27F1d7a548Cff0C4D143bFEF",
+  VaultfireERC8004Adapter: "0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1",
+  MultisigGovernance: "0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1",
 } as const;
 
 export function snowtraceAddress(addr: string) {

@@ -17,7 +17,7 @@ interface SecurityContract {
 const securityContracts: SecurityContract[] = [
   {
     name: 'MultisigGovernance',
-    address: '0xd979025D0384Ea4F1b2562b9855d8Be7Eb89856D',
+    address: '0xea0A6750642AA294658dC9f1eDf36b95D21e7B22',
     icon: <Users className="w-6 h-6" />,
     title: 'Multisig Governance',
     description:
@@ -26,7 +26,7 @@ const securityContracts: SecurityContract[] = [
   },
   {
     name: 'FlourishingMetricsOracle',
-    address: '0xb751abb1158908114662b254567b8135C460932C',
+    address: '0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1',
     icon: <Eye className="w-6 h-6" />,
     title: 'Multi-Oracle Consensus',
     description:
@@ -35,7 +35,7 @@ const securityContracts: SecurityContract[] = [
   },
   {
     name: 'ProductionBeliefAttestationVerifier',
-    address: '0xBDB5d85B3a84C773113779be89A166Ed515A7fE2',
+    address: '0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B',
     icon: <Clock className="w-6 h-6" />,
     title: '48-Hour Timelock Verification',
     description:
