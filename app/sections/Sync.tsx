@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { exportData, importData, clearAllMemories, type SyncData } from "../lib/memory";
+import { clearSelfLearningData } from "../lib/self-learning";
 
 interface SyncStats {
   chatMessages: number;
@@ -57,7 +58,7 @@ export default function Sync() {
     let totalBytes = 0;
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith("vaultfire_")) {
+      if (key && (key.startsWith("vaultfire_") || key.startsWith("embris_") || key.startsWith("ember_"))) {
         totalBytes += (localStorage.getItem(key) || "").length * 2;
       }
     }
@@ -103,13 +104,14 @@ export default function Sync() {
   };
 
   const handleClearAll = () => {
-    if (!confirm("Clear ALL local data? This will delete your chat history, memories, and wallet. This cannot be undone.")) return;
+    if (!confirm("Clear ALL local data? This will delete your chat history, memories, wallet, and self-learning data. This cannot be undone.")) return;
     setClearing(true);
     clearAllMemories();
+    clearSelfLearningData();
     const keys: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith("vaultfire_")) keys.push(key);
+      if (key && (key.startsWith("vaultfire_") || key.startsWith("embris_"))) keys.push(key);
     }
     keys.forEach((k) => localStorage.removeItem(k));
     setTimeout(() => { setClearing(false); loadStats(); }, 500);

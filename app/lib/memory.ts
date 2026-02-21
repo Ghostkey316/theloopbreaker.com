@@ -417,21 +417,30 @@ export function clearAllMemories(): void {
 
 /* ── Sync / Export / Import ── */
 
+import { exportSelfLearningData, importSelfLearningData, type Reflection, type Pattern, type Insight, type GrowthStats } from './self-learning';
+
 export interface SyncData {
   version: number;
   exportedAt: string;
   chatHistory?: ChatMessage[];
   memories?: Memory[];
   walletAddress?: string;
+  selfLearning?: {
+    reflections?: Reflection[];
+    patterns?: Pattern[];
+    insights?: Insight[];
+    growth?: GrowthStats;
+  };
 }
 
 export function exportData(): SyncData {
   return {
-    version: 2,
+    version: 3,
     exportedAt: new Date().toISOString(),
     chatHistory: getChatHistory(),
     memories: getMemories(),
     walletAddress: typeof window !== 'undefined' ? (localStorage.getItem('vaultfire_wallet_address') ?? undefined) : undefined,
+    selfLearning: exportSelfLearningData(),
   };
 }
 
@@ -441,4 +450,5 @@ export function importData(data: SyncData): void {
   if (data.walletAddress && typeof window !== 'undefined') {
     localStorage.setItem('vaultfire_wallet_address', data.walletAddress);
   }
+  if (data.selfLearning) importSelfLearningData(data.selfLearning);
 }

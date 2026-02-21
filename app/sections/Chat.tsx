@@ -14,6 +14,11 @@ import {
   type ChatMessage,
   type Memory,
 } from '../lib/memory';
+import {
+  runSelfLearning,
+  clearSelfLearningData,
+  getGrowthStats,
+} from '../lib/self-learning';
 import { getWalletAddress } from '../lib/wallet';
 
 interface ChatMessageWithStatus extends ChatMessage {
@@ -126,6 +131,7 @@ export default function Chat() {
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
+  const [growthStats, setGrowthStats] = useState({ conversations: 0, memories: 0 });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -138,14 +144,16 @@ export default function Chat() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Load chat history and memories on mount
+  // Load chat history, memories, and growth stats on mount
   useEffect(() => {
     const history = getChatHistory();
     const mems = getMemories();
     const addr = getWalletAddress();
+    const stats = getGrowthStats();
     setMessages(history);
     setMemoriesState(mems);
     setWalletAddress(addr);
+    setGrowthStats({ conversations: stats.totalConversations, memories: mems.length });
     if (history.length > 0) setShowSuggestions(false);
   }, []);
 
@@ -173,6 +181,36 @@ export default function Chat() {
         }
       } catch {
         // Silent fail — background extraction should never disrupt UX
+      }
+    },
+    [],
+  );
+
+  /**
+   * Background self-learning — runs after memory extraction.
+   * Generates reflections, checks for contradictions, and
+   * periodically synthesizes patterns and insights.
+   */
+  const runBackgroundSelfLearning = useCallback(
+    async (userText: string, assistantText: string) => {
+      try {
+        const result = await runSelfLearning(userText, assistantText, API_KEY);
+
+        // Update growth stats display
+        const stats = getGrowthStats();
+        const mems = getMemories();
+        setGrowthStats({ conversations: stats.totalConversations, memories: mems.length });
+        setMemoriesState(mems);
+
+        // Log self-learning activity (dev only, silent in production)
+        if (process.env.NODE_ENV === 'development') {
+          if (result.reflection) console.log('[Embris Self-Learning] Reflection:', result.reflection.content);
+          if (result.corrected) console.log('[Embris Self-Learning] Self-corrections:', result.corrections);
+          if (result.patternsSynthesized) console.log('[Embris Self-Learning] Patterns synthesized');
+          if (result.insightsGenerated) console.log('[Embris Self-Learning] Insights generated');
+        }
+      } catch {
+        // Silent fail — self-learning should never disrupt UX
       }
     },
     [],
@@ -244,6 +282,12 @@ export default function Chat() {
         // Step 2: AI-powered extraction (background, non-blocking)
         runBackgroundMemoryExtraction(text, fullText, allMems);
 
+        // Step 3: Self-learning (background, non-blocking)
+        // Runs after a short delay to let memory extraction finish first
+        setTimeout(() => {
+          runBackgroundSelfLearning(text, fullText);
+        }, 1500);
+
         setMessages((prev) =>
           prev.map((m) => m.id === assistantMsg.id ? { ...m, content: fullText, isStreaming: false } : m)
         );
@@ -260,7 +304,7 @@ export default function Chat() {
         setIsLoading(false);
       },
     });
-  }, [isLoading, runBackgroundMemoryExtraction]);
+  }, [isLoading, runBackgroundMemoryExtraction, runBackgroundSelfLearning]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -272,8 +316,10 @@ export default function Chat() {
   const handleClear = () => {
     clearChatHistory();
     clearMemories();
+    clearSelfLearningData();
     setMessages([]);
     setMemoriesState([]);
+    setGrowthStats({ conversations: 0, memories: 0 });
     setShowSuggestions(true);
   };
 
@@ -290,6 +336,14 @@ export default function Chat() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 14, fontWeight: 500, color: '#A1A1AA', letterSpacing: '-0.01em' }}>Embris</span>
+          {growthStats.conversations > 0 && (
+            <span style={{
+              fontSize: 10, color: '#F97316', fontWeight: 400, opacity: 0.6,
+              fontFamily: "'JetBrains Mono', monospace",
+            }}>
+              {isMobile ? `×${growthStats.conversations}` : `${growthStats.conversations} conversations`}
+            </span>
+          )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {walletAddress && !isMobile && (
@@ -339,7 +393,7 @@ export default function Chat() {
                 marginBottom: 8, letterSpacing: '-0.03em',
               }}>Ask Embris anything</h3>
               <p style={{ fontSize: 14, color: '#3F3F46' }}>
-                Your companion for the Vaultfire Protocol — I remember everything
+                Your self-learning companion — I remember, reflect, and grow
               </p>
             </div>
             <div style={{
