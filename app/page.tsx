@@ -8,8 +8,9 @@ import Wallet from './sections/Wallet';
 import Verify from './sections/Verify';
 import Bridge from './sections/Bridge';
 import Dashboard from './sections/Dashboard';
+import Sync from './sections/Sync';
 
-type Section = 'home' | 'chat' | 'wallet' | 'verify' | 'bridge' | 'dashboard';
+type Section = 'home' | 'chat' | 'wallet' | 'verify' | 'bridge' | 'dashboard' | 'sync';
 
 export default function Page() {
   const [activeSection, setActiveSection] = useState<Section>('home');
@@ -28,15 +29,17 @@ export default function Page() {
         return <Bridge />;
       case 'dashboard':
         return <Dashboard />;
+      case 'sync':
+        return <Sync />;
       default:
         return <Home />;
     }
   };
 
   return (
-    <div className="flex h-screen bg-ember-bg">
-      <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} />
-      <main className="flex-1 overflow-auto">
+    <div style={{ display: 'flex', height: '100vh', backgroundColor: '#0A0A0C', overflow: 'hidden' }}>
+      <Sidebar activeSection={activeSection} onSectionChange={(s) => setActiveSection(s as Section)} />
+      <main style={{ flex: 1, overflowY: 'auto', backgroundColor: '#0A0A0C' }}>
         {renderSection()}
       </main>
     </div>
