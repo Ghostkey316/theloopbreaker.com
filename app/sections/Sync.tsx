@@ -10,10 +10,6 @@ interface SyncStats {
   dataSize: string;
 }
 
-/* ── SVG Icons ── */
-function SyncIcon({ size = 18 }: { size?: number }) {
-  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" /><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10" /><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14" /></svg>);
-}
 function DownloadIcon({ size = 14 }: { size?: number }) {
   return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>);
 }
@@ -23,8 +19,8 @@ function UploadIcon({ size = 14 }: { size?: number }) {
 function TrashIcon({ size = 14 }: { size?: number }) {
   return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>);
 }
-function CheckCircleIcon({ size = 14 }: { size?: number }) {
-  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>);
+function CheckIcon({ size = 14 }: { size?: number }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>);
 }
 
 export default function Sync() {
@@ -74,7 +70,7 @@ export default function Sync() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `vaultfire-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `ember-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
     localStorage.setItem("vaultfire_last_sync", new Date().toISOString());
@@ -97,7 +93,7 @@ export default function Sync() {
         setTimeout(() => setImportSuccess(false), 3000);
         loadStats();
       } catch {
-        setImportError("Invalid backup file. Please use a valid Vaultfire export.");
+        setImportError("Invalid backup file. Please use a valid Embris export.");
       }
     };
     reader.readAsText(file);
@@ -117,50 +113,36 @@ export default function Sync() {
     setTimeout(() => { setClearing(false); loadStats(); }, 500);
   };
 
-  const statItems = [
-    { label: "Chat Messages", value: String(stats.chatMessages), color: "#F97316" },
-    { label: "Memories", value: String(stats.memories), color: "#A855F7" },
-    { label: "Wallet", value: stats.walletConnected ? "Connected" : "None", color: stats.walletConnected ? "#22C55E" : "#52525B" },
-    { label: "Data Size", value: stats.dataSize, color: "#A1A1AA" },
-  ];
-
   return (
-    <div style={{ padding: isMobile ? "24px 16px 48px" : "48px 40px", maxWidth: 640, margin: "0 auto" }}>
+    <div style={{ padding: isMobile ? "24px 16px 48px" : "48px 40px", maxWidth: 560, margin: "0 auto" }}>
       {/* Header */}
-      <div style={{ marginBottom: isMobile ? 24 : 32 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-          <div style={{
-            width: isMobile ? 40 : 44, height: isMobile ? 40 : 44, borderRadius: 14,
-            background: "linear-gradient(135deg, rgba(249,115,22,0.12), rgba(249,115,22,0.04))",
-            border: "1px solid rgba(249,115,22,0.15)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 4px 16px rgba(249,115,22,0.06)", color: "#F97316",
-          }}>
-            <SyncIcon size={20} />
-          </div>
-          <div>
-            <h1 style={{ fontSize: isMobile ? 24 : 28, fontWeight: 700, color: "#FAFAFA", letterSpacing: "-0.03em" }}>Data Sync</h1>
-            <p style={{ fontSize: 14, color: "#A1A1AA", letterSpacing: "-0.01em" }}>Export and import your Vaultfire data</p>
-          </div>
-        </div>
+      <div style={{ marginBottom: isMobile ? 32 : 40 }}>
+        <h1 style={{ fontSize: isMobile ? 24 : 28, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.03em" }}>Data</h1>
+        <p style={{ fontSize: 14, color: "#71717A", marginTop: 4 }}>Export, import, and manage your local data</p>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats */}
       <div style={{
-        display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)",
-        gap: 8, marginBottom: 16,
+        display: "grid",
+        gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)",
+        gap: 1, marginBottom: 32,
+        borderRadius: 10, overflow: "hidden",
+        border: "1px solid rgba(255,255,255,0.04)",
       }}>
-        {statItems.map((stat) => (
+        {[
+          { label: "Messages", value: String(stats.chatMessages) },
+          { label: "Memories", value: String(stats.memories) },
+          { label: "Wallet", value: stats.walletConnected ? "Connected" : "None" },
+          { label: "Size", value: stats.dataSize },
+        ].map((stat) => (
           <div key={stat.label} style={{
-            background: "#0F0F12",
-            border: "1px solid rgba(255,255,255,0.04)",
-            borderRadius: 10, padding: isMobile ? "10px" : "12px 14px",
+            padding: "14px 14px",
+            backgroundColor: "#111113",
           }}>
             <p style={{ fontSize: 10, color: "#52525B", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4, fontWeight: 500 }}>{stat.label}</p>
             <p style={{
-              fontSize: isMobile ? 16 : 18, fontWeight: 700, color: stat.color,
+              fontSize: 16, fontWeight: 600, color: "#F4F4F5",
               fontFamily: "'JetBrains Mono', monospace",
-              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
               letterSpacing: "-0.02em",
             }}>{stat.value}</p>
           </div>
@@ -168,154 +150,98 @@ export default function Sync() {
       </div>
 
       {stats.lastSync && (
-        <div style={{
-          marginBottom: 12, padding: "10px 14px",
-          backgroundColor: "rgba(34,197,94,0.04)", border: "1px solid rgba(34,197,94,0.1)",
-          borderRadius: 10, display: "flex", alignItems: "center", gap: 8,
-        }}>
-          <CheckCircleIcon size={13} />
-          <p style={{ fontSize: 12, color: "#22C55E", fontWeight: 500 }}>Last export: {new Date(stats.lastSync).toLocaleString()}</p>
-        </div>
+        <p style={{ fontSize: 12, color: "#52525B", marginBottom: 20 }}>
+          Last export: {new Date(stats.lastSync).toLocaleString()}
+        </p>
       )}
 
-      {/* Export Card */}
+      {/* Actions */}
       <div style={{
-        background: "#0F0F12",
+        display: "flex", flexDirection: "column", gap: 1,
+        borderRadius: 10, overflow: "hidden",
         border: "1px solid rgba(255,255,255,0.04)",
-        borderRadius: 14, padding: isMobile ? "18px" : "20px 22px",
-        marginBottom: 10,
+        marginBottom: 24,
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-          <div style={{
-            width: 34, height: 34, borderRadius: 9,
-            background: "rgba(249,115,22,0.06)",
-            display: "flex", alignItems: "center", justifyContent: "center", color: "#F97316",
+        {/* Export */}
+        <button onClick={handleExport} style={{
+          display: "flex", alignItems: "center", gap: 12,
+          padding: "14px 18px", width: "100%",
+          backgroundColor: "#111113", border: "none",
+          cursor: "pointer", textAlign: "left",
+        }}>
+          <span style={{
+            width: 32, height: 32, borderRadius: 8,
+            backgroundColor: "rgba(249,115,22,0.08)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            color: "#F97316", flexShrink: 0,
           }}>
-            <DownloadIcon size={15} />
-          </div>
+            {exportSuccess ? <CheckIcon size={14} /> : <DownloadIcon size={14} />}
+          </span>
           <div>
-            <h2 style={{ fontSize: 14, fontWeight: 600, color: "#FAFAFA", letterSpacing: "-0.015em" }}>Export Data</h2>
-            <p style={{ fontSize: 12, color: "#52525B" }}>Download a JSON backup</p>
+            <p style={{ fontSize: 14, fontWeight: 500, color: "#F4F4F5" }}>
+              {exportSuccess ? "Exported!" : "Export Backup"}
+            </p>
+            <p style={{ fontSize: 12, color: "#52525B" }}>Download JSON backup of all data</p>
           </div>
-        </div>
-        <p style={{ fontSize: 13, color: "#A1A1AA", marginBottom: 14, lineHeight: 1.6, letterSpacing: "-0.01em" }}>
-          Download a JSON backup of all your chat history, memories, and wallet address.
-        </p>
-        <button onClick={handleExport}
-          style={{
-            display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7,
-            padding: "10px 20px",
-            background: exportSuccess ? "#22C55E" : "linear-gradient(135deg, #F97316, #EA580C)",
-            border: "none", borderRadius: 10, color: "#09090B",
-            fontSize: 13, fontWeight: 600, cursor: "pointer",
-            width: isMobile ? "100%" : "auto",
-            transition: "all 0.2s ease", letterSpacing: "-0.01em",
-            boxShadow: "0 4px 16px rgba(249,115,22,0.2)",
-          }}>
-          {exportSuccess ? <><CheckCircleIcon size={13} /> Exported!</> : <><DownloadIcon size={13} /> Export Backup</>}
         </button>
-      </div>
 
-      {/* Import Card */}
-      <div style={{
-        background: "#0F0F12",
-        border: "1px solid rgba(255,255,255,0.04)",
-        borderRadius: 14, padding: isMobile ? "18px" : "20px 22px",
-        marginBottom: 10,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-          <div style={{
-            width: 34, height: 34, borderRadius: 9,
-            background: "rgba(255,255,255,0.03)",
-            display: "flex", alignItems: "center", justifyContent: "center", color: "#A1A1AA",
+        {/* Import */}
+        <label style={{
+          display: "flex", alignItems: "center", gap: 12,
+          padding: "14px 18px", cursor: "pointer",
+          backgroundColor: "#111113",
+          borderTop: "1px solid rgba(255,255,255,0.03)",
+        }}>
+          <span style={{
+            width: 32, height: 32, borderRadius: 8,
+            backgroundColor: "rgba(255,255,255,0.03)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            color: "#71717A", flexShrink: 0,
           }}>
-            <UploadIcon size={15} />
-          </div>
+            {importSuccess ? <CheckIcon size={14} /> : <UploadIcon size={14} />}
+          </span>
           <div>
-            <h2 style={{ fontSize: 14, fontWeight: 600, color: "#FAFAFA", letterSpacing: "-0.015em" }}>Import Data</h2>
+            <p style={{ fontSize: 14, fontWeight: 500, color: "#F4F4F5" }}>
+              {importSuccess ? "Imported!" : "Import Backup"}
+            </p>
             <p style={{ fontSize: 12, color: "#52525B" }}>Restore from a backup file</p>
           </div>
-        </div>
-        <p style={{ fontSize: 13, color: "#A1A1AA", marginBottom: 14, lineHeight: 1.6, letterSpacing: "-0.01em" }}>
-          Restore from a previously exported backup file. This will merge with your existing data.
-        </p>
-        {importError && (
-          <div style={{ marginBottom: 12, padding: "8px 12px", backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.12)", borderRadius: 8 }}>
-            <p style={{ fontSize: 12, color: "#EF4444" }}>{importError}</p>
-          </div>
-        )}
-        {importSuccess && (
-          <div style={{ marginBottom: 12, padding: "8px 12px", backgroundColor: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.12)", borderRadius: 8, display: "flex", alignItems: "center", gap: 7 }}>
-            <CheckCircleIcon size={12} />
-            <p style={{ fontSize: 12, color: "#22C55E" }}>Data imported successfully!</p>
-          </div>
-        )}
-        <label style={{
-          display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7,
-          padding: "10px 20px", backgroundColor: "rgba(255,255,255,0.03)",
-          border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10,
-          color: "#FAFAFA", fontSize: 13, cursor: "pointer", textAlign: "center",
-          width: isMobile ? "100%" : "auto",
-          transition: "all 0.15s ease", fontWeight: 500, letterSpacing: "-0.01em",
-        }}>
-          <UploadIcon size={13} />
-          Choose Backup File
           <input type="file" accept=".json" onChange={handleImport} style={{ display: "none" }} />
         </label>
-      </div>
 
-      {/* Clear Data Card */}
-      <div style={{
-        background: "#0F0F12",
-        border: "1px solid rgba(239,68,68,0.08)",
-        borderRadius: 14, padding: isMobile ? "18px" : "20px 22px",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-          <div style={{
-            width: 34, height: 34, borderRadius: 9,
-            background: "rgba(239,68,68,0.06)",
-            display: "flex", alignItems: "center", justifyContent: "center", color: "#EF4444",
+        {/* Clear */}
+        <button onClick={handleClearAll} disabled={clearing} style={{
+          display: "flex", alignItems: "center", gap: 12,
+          padding: "14px 18px", width: "100%",
+          backgroundColor: "#111113", border: "none",
+          cursor: clearing ? "default" : "pointer", textAlign: "left",
+          borderTop: "1px solid rgba(255,255,255,0.03)",
+        }}>
+          <span style={{
+            width: 32, height: 32, borderRadius: 8,
+            backgroundColor: "rgba(239,68,68,0.06)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            color: "#EF4444", flexShrink: 0,
           }}>
-            <TrashIcon size={15} />
-          </div>
+            <TrashIcon size={14} />
+          </span>
           <div>
-            <h2 style={{ fontSize: 14, fontWeight: 600, color: "#EF4444", letterSpacing: "-0.015em" }}>Clear All Data</h2>
-            <p style={{ fontSize: 12, color: "#52525B" }}>Permanently delete everything</p>
+            <p style={{ fontSize: 14, fontWeight: 500, color: "#EF4444" }}>
+              {clearing ? "Clearing..." : "Clear All Data"}
+            </p>
+            <p style={{ fontSize: 12, color: "#52525B" }}>Delete all local data permanently</p>
           </div>
-        </div>
-        <p style={{ fontSize: 13, color: "#A1A1AA", marginBottom: 14, lineHeight: 1.6, letterSpacing: "-0.01em" }}>
-          Permanently delete all local data including chat history, memories, and wallet. Export a backup first.
-        </p>
-        <button onClick={handleClearAll} disabled={clearing}
-          style={{
-            display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7,
-            padding: "10px 20px", backgroundColor: "transparent",
-            border: "1px solid rgba(239,68,68,0.25)", borderRadius: 10,
-            color: "#EF4444", fontSize: 13, fontWeight: 500,
-            cursor: clearing ? "default" : "pointer",
-            width: isMobile ? "100%" : "auto",
-            transition: "all 0.15s ease", letterSpacing: "-0.01em",
-          }}>
-          <TrashIcon size={13} />
-          {clearing ? "Clearing..." : "Clear All Local Data"}
         </button>
       </div>
 
-      {/* Info */}
-      <div style={{
-        marginTop: 16,
-        display: "flex", alignItems: "flex-start", gap: 10,
-        padding: "12px 16px",
-        backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)",
-        borderRadius: 10,
-      }}>
-        <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#52525B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
-          <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
-        </svg>
-        <p style={{ fontSize: 12, color: "#52525B", lineHeight: 1.6, letterSpacing: "-0.01em" }}>
-          All data is stored locally in your browser. Exporting creates a portable backup. Importing merges with existing local data.
-        </p>
-      </div>
+      {importError && (
+        <p style={{ fontSize: 12, color: "#EF4444", marginBottom: 16 }}>{importError}</p>
+      )}
+
+      <p style={{ fontSize: 11, color: "#3F3F46", lineHeight: 1.7 }}>
+        All data is stored locally in your browser. Exporting creates a backup you can restore later.
+        Clearing data is permanent and cannot be undone.
+      </p>
     </div>
   );
 }

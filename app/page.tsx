@@ -38,6 +38,8 @@ export default function Page() {
     }
   };
 
+  const isChat = activeSection === 'chat';
+
   return (
     <>
       <DisclaimerModal />
@@ -56,19 +58,20 @@ export default function Page() {
           />
           <main style={{
             flex: 1,
-            overflowY: 'auto',
+            overflowY: isChat ? 'hidden' : 'auto',
             overflowX: 'hidden',
             backgroundColor: '#09090B',
-            paddingTop: isMobile ? 56 : 0,
-            paddingBottom: isMobile ? 44 : 0,
+            paddingTop: isMobile ? 52 : 0,
             width: '100%',
             minWidth: 0,
+            display: isChat ? 'flex' : 'block',
+            flexDirection: 'column',
           }}>
             {renderSection()}
           </main>
         </div>
 
-        <FooterDisclaimer />
+        {!isChat && <FooterDisclaimer />}
       </div>
     </>
   );

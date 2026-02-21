@@ -1,5 +1,5 @@
 /**
- * Ember Memory System — Browser localStorage-based persistence.
+ * Embris Memory System — Browser localStorage-based persistence.
  */
 
 const MEMORY_KEY = 'ember_memories';

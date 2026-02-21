@@ -79,7 +79,7 @@ export async function streamChat({
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
-      onError('No response from Ember');
+      onError('No response from Embris');
       return;
     }
 

@@ -53,29 +53,21 @@ const Icons: Record<string, (props: { size?: number; color?: string }) => React.
 
 const NAV_ITEMS: { id: Section; label: string; iconKey: string }[] = [
   { id: "home", label: "Home", iconKey: "home" },
-  { id: "chat", label: "Ember Chat", iconKey: "chat" },
+  { id: "chat", label: "Chat", iconKey: "chat" },
   { id: "wallet", label: "Wallet", iconKey: "wallet" },
-  { id: "verify", label: "Verification", iconKey: "verify" },
+  { id: "verify", label: "Verify", iconKey: "verify" },
   { id: "bridge", label: "Bridge", iconKey: "bridge" },
   { id: "dashboard", label: "Dashboard", iconKey: "dashboard" },
-  { id: "sync", label: "Sync", iconKey: "sync" },
+  { id: "sync", label: "Data", iconKey: "sync" },
 ];
 
-function VaultfireLogo({ size = 32 }: { size?: number }) {
+function EmbrisLogo({ size = 28 }: { size?: number }) {
   return (
-    <div style={{
-      width: size, height: size, borderRadius: 10,
-      background: 'linear-gradient(135deg, rgba(249,115,22,0.15), rgba(249,115,22,0.05))',
-      border: '1px solid rgba(249,115,22,0.2)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-      boxShadow: '0 2px 12px rgba(249,115,22,0.08)',
-    }}>
-      <svg width={size * 0.55} height={size * 0.55} viewBox="0 0 24 24" fill="none">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="none" stroke="#F97316" strokeWidth="1.5" />
-        <path d="M12 6c-1.5 2-3 4-3 6 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4-3-6z" fill="#F97316" opacity="0.8" />
-        <path d="M12 8c-.8 1.2-1.5 2.4-1.5 3.5 0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5c0-1.1-.7-2.3-1.5-3.5z" fill="#FB923C" />
-      </svg>
-    </div>
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.85" />
+      <path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C" />
+      <path d="M16 14c-.7 1-1.4 2.2-1.4 3.2 0 .77.63 1.4 1.4 1.4s1.4-.63 1.4-1.4c0-1-.7-2.2-1.4-3.2z" fill="#FDE68A" opacity="0.7" />
+    </svg>
   );
 }
 
@@ -87,7 +79,6 @@ interface SidebarProps {
 export default function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -101,41 +92,30 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
     if (isMobile) setMobileOpen(false);
   };
 
-  const NavButton = ({ item, mobile = false }: { item: typeof NAV_ITEMS[0]; mobile?: boolean }) => {
+  const NavButton = ({ item }: { item: typeof NAV_ITEMS[0] }) => {
     const isActive = activeSection === item.id;
-    const isHovered = hoveredItem === item.id;
     const IconComponent = Icons[item.iconKey];
 
     return (
       <button
         key={item.id}
         onClick={() => handleNav(item.id)}
-        onMouseEnter={() => setHoveredItem(item.id)}
-        onMouseLeave={() => setHoveredItem(null)}
         style={{
           display: "flex", alignItems: "center", gap: 10,
-          padding: mobile ? "10px 14px" : "9px 12px",
+          padding: "8px 12px",
           borderRadius: 8, border: "none", cursor: "pointer",
           textAlign: "left", width: "100%",
-          backgroundColor: isActive ? "rgba(249,115,22,0.08)" : isHovered ? "rgba(255,255,255,0.03)" : "transparent",
-          color: isActive ? "#F97316" : isHovered ? "#FAFAFA" : "#71717A",
-          transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-          position: "relative",
+          backgroundColor: isActive ? "rgba(255,255,255,0.04)" : "transparent",
+          color: isActive ? "#F97316" : "#71717A",
+          transition: "all 0.15s ease",
         }}
       >
-        {isActive && (
-          <div style={{
-            position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)",
-            width: 3, height: 16, borderRadius: 2, backgroundColor: "#F97316",
-          }} />
-        )}
         <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
-          <IconComponent size={mobile ? 18 : 17} color={isActive ? "#F97316" : isHovered ? "#FAFAFA" : "#71717A"} />
+          <IconComponent size={17} color={isActive ? "#F97316" : "#71717A"} />
         </span>
         <span style={{
           fontSize: 13, fontWeight: isActive ? 500 : 400,
           whiteSpace: "nowrap", letterSpacing: "-0.01em",
-          lineHeight: 1.5,
         }}>
           {item.label}
         </span>
@@ -143,7 +123,48 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
     );
   };
 
-  // Mobile: hamburger button + overlay sidebar
+  const SidebarContent = () => (
+    <>
+      {/* Embris brand header */}
+      <div style={{
+        padding: "20px 16px 16px",
+        display: "flex", alignItems: "center", gap: 10,
+      }}>
+        <EmbrisLogo size={28} />
+        <div>
+          <h1 style={{
+            fontSize: 17, fontWeight: 700, color: "#F4F4F5",
+            margin: 0, letterSpacing: "-0.03em", lineHeight: 1.2,
+          }}>Embris</h1>
+          <p style={{
+            fontSize: 10, color: "#52525B", margin: 0,
+            fontWeight: 400, letterSpacing: "0.01em",
+          }}>Powered by Vaultfire</p>
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div style={{ height: 1, backgroundColor: "rgba(255,255,255,0.04)", margin: "0 16px" }} />
+
+      {/* Nav */}
+      <nav style={{
+        flex: 1, padding: "12px 8px",
+        display: "flex", flexDirection: "column", gap: 1,
+        overflowY: "auto",
+      }}>
+        {NAV_ITEMS.map((item) => (
+          <NavButton key={item.id} item={item} />
+        ))}
+      </nav>
+
+      {/* Footer */}
+      <div style={{ padding: "12px 16px" }}>
+        <p style={{ fontSize: 10, color: "#3F3F46", fontWeight: 400 }}>v1.0 · theloopbreaker.com</p>
+      </div>
+    </>
+  );
+
+  // Mobile: hamburger + overlay
   if (isMobile) {
     return (
       <>
@@ -152,11 +173,11 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
           style={{
             position: "fixed", top: 12, left: 12, zIndex: 1000,
             width: 40, height: 40, borderRadius: 10,
-            background: "rgba(15,15,18,0.9)",
+            background: "rgba(17,17,19,0.95)",
             backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-            border: "1px solid rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.05)",
             color: "#F97316", display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
+            cursor: "pointer",
           }}
           aria-label="Open menu"
         >
@@ -168,56 +189,38 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
             onClick={() => setMobileOpen(false)}
             style={{
               position: "fixed", inset: 0,
-              backgroundColor: "rgba(0,0,0,0.6)",
+              backgroundColor: "rgba(0,0,0,0.5)",
               backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)",
-              zIndex: 1001, transition: "opacity 0.3s",
+              zIndex: 1001,
             }}
           />
         )}
 
         <aside
           style={{
-            position: "fixed", top: 0, left: mobileOpen ? 0 : -280,
-            width: 268, height: "100vh",
-            background: "#0F0F12",
-            borderRight: "1px solid rgba(255,255,255,0.06)",
+            position: "fixed", top: 0, left: mobileOpen ? 0 : -260,
+            width: 248, height: "100vh",
+            background: "#111113",
+            borderRight: "1px solid rgba(255,255,255,0.05)",
             zIndex: 1002, display: "flex", flexDirection: "column",
-            transition: "left 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-            boxShadow: mobileOpen ? "12px 0 40px rgba(0,0,0,0.5)" : "none",
+            transition: "left 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         >
           <div style={{
-            padding: "16px 16px", borderBottom: "1px solid rgba(255,255,255,0.04)",
-            display: "flex", alignItems: "center", justifyContent: "space-between",
+            position: "absolute", top: 14, right: 12,
           }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <VaultfireLogo size={32} />
-              <div>
-                <h1 style={{ fontSize: 15, fontWeight: 600, color: "#FAFAFA", margin: 0, letterSpacing: "-0.02em" }}>Vaultfire</h1>
-                <p style={{ fontSize: 11, color: "#52525B", margin: 0, fontWeight: 400, letterSpacing: "0.02em" }}>Protocol</p>
-              </div>
-            </div>
             <button
               onClick={() => setMobileOpen(false)}
               style={{
                 background: "none", border: "none", color: "#52525B",
-                cursor: "pointer", padding: 6, borderRadius: 6,
+                cursor: "pointer", padding: 4, borderRadius: 6,
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}
             >
-              <Icons.close size={17} color="#52525B" />
+              <Icons.close size={16} color="#52525B" />
             </button>
           </div>
-
-          <nav style={{ flex: 1, padding: "12px 8px", display: "flex", flexDirection: "column", gap: 2, overflowY: "auto" }}>
-            {NAV_ITEMS.map((item) => (
-              <NavButton key={item.id} item={item} mobile />
-            ))}
-          </nav>
-
-          <div style={{ padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-            <p style={{ fontSize: 11, color: "#52525B", textAlign: "center", fontWeight: 400 }}>Vaultfire Protocol v1.0</p>
-          </div>
+          <SidebarContent />
         </aside>
       </>
     );
@@ -227,32 +230,13 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
   return (
     <aside
       style={{
-        width: 232, minWidth: 232,
-        background: "#0F0F12",
+        width: 200, minWidth: 200,
+        background: "#111113",
         borderRight: "1px solid rgba(255,255,255,0.04)",
         display: "flex", flexDirection: "column",
       }}
     >
-      <div style={{
-        padding: "20px 16px 16px", borderBottom: "1px solid rgba(255,255,255,0.04)",
-        display: "flex", alignItems: "center", gap: 10,
-      }}>
-        <VaultfireLogo size={32} />
-        <div style={{ overflow: "hidden" }}>
-          <h1 style={{ fontSize: 15, fontWeight: 600, color: "#FAFAFA", whiteSpace: "nowrap", margin: 0, letterSpacing: "-0.02em" }}>Vaultfire</h1>
-          <p style={{ fontSize: 11, color: "#52525B", whiteSpace: "nowrap", margin: 0, fontWeight: 400, letterSpacing: "0.02em" }}>Protocol</p>
-        </div>
-      </div>
-
-      <nav style={{ flex: 1, padding: "12px 8px", display: "flex", flexDirection: "column", gap: 2, overflowY: "auto" }}>
-        {NAV_ITEMS.map((item) => (
-          <NavButton key={item.id} item={item} />
-        ))}
-      </nav>
-
-      <div style={{ padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-        <p style={{ fontSize: 11, color: "#3F3F46", fontWeight: 400 }}>v1.0 · theloopbreaker.com</p>
-      </div>
+      <SidebarContent />
     </aside>
   );
 }
