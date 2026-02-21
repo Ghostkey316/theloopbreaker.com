@@ -9,8 +9,7 @@ type WalletView = "none" | "created" | "import-mnemonic" | "import-pk";
 function PlusIcon({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
+      <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
     </svg>
   );
 }
@@ -26,10 +25,7 @@ function KeyIcon({ size = 16 }: { size?: number }) {
 function FileTextIcon({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-      <line x1="16" y1="13" x2="8" y2="13" />
-      <line x1="16" y1="17" x2="8" y2="17" />
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" />
     </svg>
   );
 }
@@ -37,8 +33,7 @@ function FileTextIcon({ size = 16 }: { size?: number }) {
 function CopyIcon({ size = 12 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
     </svg>
   );
 }
@@ -54,8 +49,7 @@ function CheckIcon({ size = 12 }: { size?: number }) {
 function ArrowLeftIcon({ size = 14 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="19" y1="12" x2="5" y2="12" />
-      <polyline points="12 19 5 12 12 5" />
+      <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
     </svg>
   );
 }
@@ -63,8 +57,7 @@ function ArrowLeftIcon({ size = 14 }: { size?: number }) {
 function RefreshIcon({ size = 12 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="23 4 23 10 17 10" />
-      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+      <polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
     </svg>
   );
 }
@@ -72,8 +65,7 @@ function RefreshIcon({ size = 12 }: { size?: number }) {
 function EyeIcon({ size = 12 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-      <circle cx="12" cy="12" r="3" />
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
     </svg>
   );
 }
@@ -81,8 +73,7 @@ function EyeIcon({ size = 12 }: { size?: number }) {
 function EyeOffIcon({ size = 12 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-      <line x1="1" y1="1" x2="23" y2="23" />
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" />
     </svg>
   );
 }
@@ -90,36 +81,104 @@ function EyeOffIcon({ size = 12 }: { size?: number }) {
 function TrashIcon({ size = 12 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="3 6 5 6 21 6" />
-      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
     </svg>
   );
 }
 
-function AlertTriangleIcon({ size = 14 }: { size?: number }) {
+function AlertIcon({ size = 13 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-      <line x1="12" y1="9" x2="12" y2="13" />
-      <line x1="12" y1="17" x2="12.01" y2="17" />
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
     </svg>
   );
 }
 
-// Alpha warning banner component
+function ShieldOffIcon({ size = 13 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19.69 14a6.9 6.9 0 0 0 .31-2V5l-8-3-3.16 1.18" /><path d="M4.73 4.73L4 5v7c0 6 8 10 8 10a20.29 20.29 0 0 0 5.62-4.38" /><line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  );
+}
+
+// ─── Enhanced Alpha Warning Banner ────────────────────────────────────────────
 function AlphaWarningBanner() {
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: 8,
-      padding: '8px 12px', marginBottom: 16,
-      background: 'linear-gradient(135deg, rgba(249,115,22,0.06), rgba(249,115,22,0.02))',
-      border: '1px solid rgba(249,115,22,0.15)',
+      padding: '10px 12px', marginBottom: 14,
+      background: 'linear-gradient(135deg, rgba(249,115,22,0.07), rgba(249,115,22,0.02))',
+      border: '1px solid rgba(249,115,22,0.18)',
       borderRadius: 8,
     }}>
-      <AlertTriangleIcon size={13} />
-      <p style={{ fontSize: 11, color: '#F97316', letterSpacing: '-0.01em', lineHeight: 1.5 }}>
-        <span style={{ fontWeight: 600 }}>Alpha</span> — Vaultfire Wallet is currently in alpha. Do not store significant funds.
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
+        <AlertIcon size={13} />
+        <p style={{ fontSize: 11, fontWeight: 700, color: '#F97316', letterSpacing: '-0.01em' }}>
+          Alpha Software — Store Funds at Your Own Risk
+        </p>
+      </div>
+      <p style={{ fontSize: 10, color: '#FB923C', lineHeight: 1.55, letterSpacing: '-0.01em', paddingLeft: 20 }}>
+        Vaultfire Wallet is in alpha. Vaultfire Protocol is not responsible for lost, stolen, or inaccessible funds.
+        You are solely responsible for securing your seed phrase and private keys.
       </p>
+    </div>
+  );
+}
+
+// ─── Full Wallet Disclaimer Block ─────────────────────────────────────────────
+function WalletDisclaimerBlock() {
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', gap: 5,
+      marginTop: 12,
+    }}>
+      {/* Self-custody warning */}
+      <div style={{
+        display: 'flex', alignItems: 'flex-start', gap: 8,
+        padding: '8px 10px',
+        backgroundColor: 'rgba(239,68,68,0.04)',
+        border: '1px solid rgba(239,68,68,0.1)',
+        borderRadius: 8,
+      }}>
+        <ShieldOffIcon size={12} />
+        <p style={{ fontSize: 10, color: '#FCA5A5', lineHeight: 1.55, letterSpacing: '-0.01em' }}>
+          <span style={{ fontWeight: 600 }}>No recovery possible.</span>{' '}
+          Vaultfire Protocol cannot recover lost or stolen funds. You are solely responsible for securing your seed phrase and private keys.
+        </p>
+      </div>
+
+      {/* No liability */}
+      <div style={{
+        display: 'flex', alignItems: 'flex-start', gap: 8,
+        padding: '8px 10px',
+        backgroundColor: 'rgba(245,158,11,0.03)',
+        border: '1px solid rgba(245,158,11,0.08)',
+        borderRadius: 8,
+      }}>
+        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+          <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <p style={{ fontSize: 10, color: '#FCD34D', lineHeight: 1.55, letterSpacing: '-0.01em' }}>
+          <span style={{ fontWeight: 600 }}>No liability.</span>{' '}
+          Vaultfire Protocol and its contributors are not liable for any losses, damages, or harms arising from use of this wallet.
+        </p>
+      </div>
+
+      {/* Security reminder */}
+      <div style={{
+        display: 'flex', alignItems: 'flex-start', gap: 8,
+        padding: '8px 10px',
+        backgroundColor: 'rgba(255,255,255,0.02)',
+        border: '1px solid rgba(255,255,255,0.05)',
+        borderRadius: 8,
+      }}>
+        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#666670" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
+        <p style={{ fontSize: 10, color: '#A0A0A8', lineHeight: 1.55, letterSpacing: '-0.01em' }}>
+          Never share your seed phrase or private key with anyone. Store them securely offline, away from internet-connected devices.
+        </p>
+      </div>
     </div>
   );
 }
@@ -208,7 +267,7 @@ export default function Wallet() {
   };
 
   const handleDelete = () => {
-    if (confirm("Delete this wallet? Make sure you have your seed phrase backed up.")) {
+    if (confirm("Delete this wallet? Make sure you have your seed phrase backed up. Vaultfire Protocol cannot recover deleted wallets.")) {
       deleteWallet();
       setWalletData(null);
       setBalances([]);
@@ -222,13 +281,13 @@ export default function Wallet() {
     setTimeout(() => setCopied(""), 2000);
   };
 
-  // No wallet view
+  // ─── No wallet view ──────────────────────────────────────────────────────────
   if (view === "none") {
     return (
       <div style={{ padding: isMobile ? '20px 16px 40px' : '32px 32px', maxWidth: 460, margin: "0 auto" }}>
         <AlphaWarningBanner />
 
-        <div style={{ textAlign: "center", marginBottom: isMobile ? 24 : 28 }}>
+        <div style={{ textAlign: "center", marginBottom: isMobile ? 20 : 24 }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             width: isMobile ? 52 : 56, height: isMobile ? 52 : 56,
@@ -238,18 +297,16 @@ export default function Wallet() {
             marginBottom: 14,
           }}>
             <svg width={isMobile ? 22 : 24} height={isMobile ? 22 : 24} viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
-              <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
-              <path d="M18 12a2 2 0 0 0 0 4h4v-4h-4z" />
+              <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4h-4z" />
             </svg>
           </div>
           <h1 style={{ fontSize: isMobile ? 20 : 24, fontWeight: 700, color: "#FFFFFF", marginBottom: 6, letterSpacing: '-0.03em' }}>Vaultfire Wallet</h1>
           <p style={{ fontSize: isMobile ? 12 : 13, color: "#A0A0A8", lineHeight: 1.6, letterSpacing: '-0.01em' }}>
-            Create or import an Ethereum-compatible wallet. Keys are generated locally and stored in your browser.
+            Create or import an Ethereum-compatible wallet. Keys are generated locally and stored in your browser only.
           </p>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 0 }}>
           <button onClick={handleCreate} disabled={creating} style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             padding: "12px 24px",
@@ -294,11 +351,13 @@ export default function Wallet() {
             Import Private Key
           </button>
         </div>
+
+        <WalletDisclaimerBlock />
       </div>
     );
   }
 
-  // Import views
+  // ─── Import views ────────────────────────────────────────────────────────────
   if (view === "import-mnemonic" || view === "import-pk") {
     const isMnemonicView = view === "import-mnemonic";
     return (
@@ -315,12 +374,28 @@ export default function Wallet() {
           <ArrowLeftIcon size={13} />
           Back
         </button>
+
         <h2 style={{ fontSize: isMobile ? 18 : 20, fontWeight: 700, color: "#FFFFFF", marginBottom: 4, letterSpacing: '-0.03em' }}>
           {isMnemonicView ? "Import Seed Phrase" : "Import Private Key"}
         </h2>
-        <p style={{ fontSize: 12, color: "#A0A0A8", marginBottom: 16, letterSpacing: '-0.01em' }}>
+        <p style={{ fontSize: 12, color: "#A0A0A8", marginBottom: 12, letterSpacing: '-0.01em' }}>
           {isMnemonicView ? "Enter your 12 or 24 word seed phrase." : "Enter your private key (with or without 0x prefix)."}
         </p>
+
+        {/* Import-specific security warning */}
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: 7,
+          padding: '8px 10px', marginBottom: 12,
+          backgroundColor: 'rgba(239,68,68,0.05)',
+          border: '1px solid rgba(239,68,68,0.12)',
+          borderRadius: 8,
+        }}>
+          <AlertIcon size={11} />
+          <p style={{ fontSize: 10, color: '#FCA5A5', lineHeight: 1.55, letterSpacing: '-0.01em' }}>
+            Only import keys on a device you trust. Vaultfire Protocol is not responsible for funds lost due to compromised keys.
+          </p>
+        </div>
+
         <textarea value={importInput} onChange={(e) => setImportInput(e.target.value)}
           placeholder={isMnemonicView ? "word1 word2 word3 ..." : "0x..."}
           rows={isMnemonicView ? 3 : 2}
@@ -342,7 +417,7 @@ export default function Wallet() {
           onClick={isMnemonicView ? handleImportMnemonic : handleImportPK}
           disabled={importInput.trim().length === 0 || importing}
           style={{
-            marginTop: 12, width: "100%", padding: "12px",
+            marginTop: 10, width: "100%", padding: "12px",
             background: importInput.trim() && !importing ? 'linear-gradient(135deg, #F97316, #EA6C0A)' : 'rgba(255,255,255,0.04)',
             border: "none", borderRadius: 10,
             color: importInput.trim() && !importing ? "#0A0A0C" : "#666670",
@@ -353,11 +428,13 @@ export default function Wallet() {
           }}>
           {importing ? 'Importing...' : 'Import Wallet'}
         </button>
+
+        <WalletDisclaimerBlock />
       </div>
     );
   }
 
-  // Wallet created view
+  // ─── Wallet created view ─────────────────────────────────────────────────────
   return (
     <div style={{ padding: isMobile ? '20px 16px 40px' : '32px 32px', maxWidth: 560, margin: "0 auto" }}>
       <AlphaWarningBanner />
@@ -365,7 +442,7 @@ export default function Wallet() {
       {/* Header */}
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        marginBottom: 16, gap: 8,
+        marginBottom: 12, gap: 8,
       }}>
         <h1 style={{ fontSize: isMobile ? 20 : 22, fontWeight: 700, color: "#FFFFFF", letterSpacing: '-0.03em' }}>My Wallet</h1>
         <button onClick={handleDelete} style={{
@@ -386,7 +463,7 @@ export default function Wallet() {
         backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
         border: "1px solid rgba(255,255,255,0.06)",
         borderRadius: 12, padding: isMobile ? '12px 14px' : '14px 16px',
-        marginBottom: 8,
+        marginBottom: 6,
       }}>
         <p style={{ fontSize: 9, color: "#666670", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 500 }}>Wallet Address</p>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -416,7 +493,7 @@ export default function Wallet() {
         backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
         border: "1px solid rgba(255,255,255,0.06)",
         borderRadius: 12, padding: isMobile ? '12px 14px' : '14px 16px',
-        marginBottom: 8,
+        marginBottom: 6,
       }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
           <p style={{ fontSize: 9, color: "#666670", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 500 }}>Balances</p>
@@ -474,7 +551,7 @@ export default function Wallet() {
           backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
           border: "1px solid rgba(255,255,255,0.06)",
           borderRadius: 12, padding: isMobile ? '12px 14px' : '14px 16px',
-          marginBottom: 8,
+          marginBottom: 6,
         }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
             <p style={{ fontSize: 9, color: "#666670", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 500 }}>Recovery Phrase</p>
@@ -527,23 +604,8 @@ export default function Wallet() {
         </div>
       )}
 
-      {/* Security Warning */}
-      <div style={{
-        padding: '10px 12px',
-        backgroundColor: 'rgba(245,158,11,0.04)',
-        border: '1px solid rgba(245,158,11,0.1)',
-        borderRadius: 8,
-        display: 'flex', alignItems: 'flex-start', gap: 8,
-      }}>
-        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
-          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-          <line x1="12" y1="9" x2="12" y2="13" />
-          <line x1="12" y1="17" x2="12.01" y2="17" />
-        </svg>
-        <p style={{ fontSize: 11, color: "#F59E0B", lineHeight: 1.5, letterSpacing: '-0.01em' }}>
-          Never share your seed phrase or private key. Store them securely offline.
-        </p>
-      </div>
+      {/* Full disclaimer block */}
+      <WalletDisclaimerBlock />
     </div>
   );
 }

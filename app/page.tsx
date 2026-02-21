@@ -9,6 +9,8 @@ import Verify from './sections/Verify';
 import Bridge from './sections/Bridge';
 import Dashboard from './sections/Dashboard';
 import Sync from './sections/Sync';
+import DisclaimerModal from './components/DisclaimerModal';
+import FooterDisclaimer from './components/FooterDisclaimer';
 
 type Section = 'home' | 'chat' | 'wallet' | 'verify' | 'bridge' | 'dashboard' | 'sync';
 
@@ -37,19 +39,42 @@ export default function Page() {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', backgroundColor: '#0A0A0C', overflow: 'hidden' }}>
-      <Sidebar activeSection={activeSection} onSectionChange={(s) => setActiveSection(s as Section)} />
-      <main style={{
-        flex: 1,
-        overflowY: 'auto',
-        overflowX: 'hidden',
+    <>
+      {/* First-visit disclaimer modal — renders on top of everything */}
+      <DisclaimerModal />
+
+      {/* App shell: sidebar + scrollable content + footer */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
         backgroundColor: '#0A0A0C',
-        paddingTop: isMobile ? 56 : 0,
-        width: '100%',
-        minWidth: 0,
+        overflow: 'hidden',
       }}>
-        {renderSection()}
-      </main>
-    </div>
+        {/* Main row: sidebar + content */}
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+          <Sidebar
+            activeSection={activeSection}
+            onSectionChange={(s) => setActiveSection(s as Section)}
+          />
+          <main style={{
+            flex: 1,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            backgroundColor: '#0A0A0C',
+            // On mobile, top padding for the fixed hamburger bar; bottom padding for the footer
+            paddingTop: isMobile ? 56 : 0,
+            paddingBottom: isMobile ? 44 : 0,
+            width: '100%',
+            minWidth: 0,
+          }}>
+            {renderSection()}
+          </main>
+        </div>
+
+        {/* Footer — always visible at the bottom of the viewport */}
+        <FooterDisclaimer />
+      </div>
+    </>
   );
 }
