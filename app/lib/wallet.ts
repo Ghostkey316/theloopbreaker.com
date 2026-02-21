@@ -100,6 +100,10 @@ export function getWalletAddress(): string | null {
   return storageGet(STORAGE_KEYS.ADDRESS);
 }
 
+export function getWalletPrivateKey(): string | null {
+  return storageGet(STORAGE_KEYS.PRIVATE_KEY);
+}
+
 export function getWalletMnemonic(): string | null {
   return storageGet(STORAGE_KEYS.MNEMONIC);
 }

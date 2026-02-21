@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { registerWallet, isRegistered, getRegistration } from '../lib/registration';
 import { getWalletAddress, isWalletCreated } from '../lib/wallet';
+import type { RegistrationResult } from '../lib/registration';
 
 interface RegistrationModalProps {
   isOpen: boolean;
@@ -9,7 +10,7 @@ interface RegistrationModalProps {
   onRegistered: () => void;
 }
 
-/* ── Icons — matching existing SVG style (stroke, 1.7 weight) ── */
+/* ── Icons — matching existing SVG style ── */
 
 function CloseIcon() {
   return (
@@ -37,6 +38,16 @@ function FlameIcon({ size = 24 }: { size?: number }) {
   );
 }
 
+function ExternalLinkIcon() {
+  return (
+    <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      <polyline points="15 3 21 3 21 9" />
+      <line x1="10" y1="14" x2="21" y2="3" />
+    </svg>
+  );
+}
+
 /* ── Feature list items ── */
 const FEATURES = [
   'Persistent memory across sessions',
@@ -47,13 +58,18 @@ const FEATURES = [
   'Full profile export and import',
 ];
 
+type Step = 'intro' | 'connect' | 'manual' | 'registering' | 'confirming' | 'success' | 'error';
+
 export default function RegistrationModal({ isOpen, onClose, onRegistered }: RegistrationModalProps) {
-  const [step, setStep] = useState<'intro' | 'connect' | 'manual' | 'registering' | 'success'>('intro');
+  const [step, setStep] = useState<Step>('intro');
   const [manualAddress, setManualAddress] = useState('');
   const [error, setError] = useState('');
   const [resultMessage, setResultMessage] = useState('');
+  const [txHash, setTxHash] = useState<string | null>(null);
+  const [basescanUrl, setBasescanUrl] = useState<string | null>(null);
   const [hasWallet, setHasWallet] = useState(false);
   const [walletAddr, setWalletAddr] = useState<string | null>(null);
+  const [statusText, setStatusText] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -64,6 +80,9 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
       setStep('intro');
       setError('');
       setManualAddress('');
+      setTxHash(null);
+      setBasescanUrl(null);
+      setStatusText('');
 
       if (isRegistered()) {
         const reg = getRegistration();
@@ -71,10 +90,26 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
           ? `${reg.walletAddress.slice(0, 6)}...${reg.walletAddress.slice(-4)}`
           : '';
         setResultMessage(`Already registered${short ? ` with ${short}` : ''}.`);
+        if (reg?.registrationTxHash && reg.registrationTxHash !== 'pre-existing') {
+          setTxHash(reg.registrationTxHash);
+          setBasescanUrl(reg.basescanUrl || null);
+        }
         setStep('success');
       }
     }
   }, [isOpen]);
+
+  const handleResult = (result: RegistrationResult) => {
+    if (result.success) {
+      setResultMessage(result.message);
+      setTxHash(result.txHash || null);
+      setBasescanUrl(result.basescanUrl || null);
+      setStep('success');
+    } else {
+      setError(result.message);
+      setStep('error');
+    }
+  };
 
   const handleConnectWallet = async () => {
     if (!walletAddr) {
@@ -82,14 +117,35 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
       return;
     }
     setStep('registering');
+    setStatusText('Checking wallet balance...');
     setError('');
-    const result = await registerWallet(walletAddr);
-    if (result.success) {
-      setResultMessage(result.message);
-      setStep('success');
-    } else {
+
+    // Small delay so the user sees the status
+    await new Promise(r => setTimeout(r, 400));
+    setStatusText('Sending registration transaction to Base...');
+
+    const result = await registerWallet(walletAddr, { useVaultfireWallet: true });
+
+    if (!result.success && result.errorType === 'no_gas') {
       setError(result.message);
-      setStep('connect');
+      setStep('error');
+      return;
+    }
+
+    if (result.success && result.txHash) {
+      setTxHash(result.txHash);
+      setBasescanUrl(result.basescanUrl || null);
+      // If the receipt was already confirmed, go straight to success
+      if (result.registration?.verified) {
+        handleResult(result);
+      } else {
+        setStep('confirming');
+        setStatusText('Transaction sent! Waiting for confirmation...');
+        // The registration is already saved — features are unlocked
+        handleResult(result);
+      }
+    } else {
+      handleResult(result);
     }
   };
 
@@ -97,15 +153,14 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
     const addr = manualAddress.trim();
     if (!addr) { setError('Please enter a wallet address.'); return; }
     setStep('registering');
+    setStatusText('Preparing registration transaction...');
     setError('');
-    const result = await registerWallet(addr);
-    if (result.success) {
-      setResultMessage(result.message);
-      setStep('success');
-    } else {
-      setError(result.message);
-      setStep('manual');
-    }
+
+    await new Promise(r => setTimeout(r, 400));
+    setStatusText('Sending transaction to Base...');
+
+    const result = await registerWallet(addr, { useVaultfireWallet: true });
+    handleResult(result);
   };
 
   const handleSuccess = () => {
@@ -113,7 +168,16 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
     onClose();
   };
 
+  const handleRetry = () => {
+    setError('');
+    setStep('intro');
+  };
+
   if (!isOpen) return null;
+
+  const shortTxHash = txHash
+    ? `${txHash.slice(0, 10)}...${txHash.slice(-8)}`
+    : null;
 
   return (
     /* Backdrop */
@@ -154,26 +218,34 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
                 fontSize: 15, fontWeight: 600, color: '#F4F4F5',
                 margin: 0, letterSpacing: '-0.025em', lineHeight: 1.2,
               }}>
-                {step === 'success' ? 'Registration complete' : 'Register with Embris'}
+                {step === 'success' ? 'Registration complete' :
+                 step === 'error' ? 'Registration issue' :
+                 step === 'registering' || step === 'confirming' ? 'Registering on-chain' :
+                 'Register with Embris'}
               </h2>
               <p style={{ fontSize: 11.5, color: '#52525B', margin: 0, marginTop: 2 }}>
-                {step === 'success' ? 'Full companion mode active' : 'Unlock the full AI companion experience'}
+                {step === 'success' ? 'Full companion mode active' :
+                 step === 'error' ? 'Something needs attention' :
+                 step === 'registering' || step === 'confirming' ? 'Transaction in progress' :
+                 'Unlock the full AI companion experience'}
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'none', border: 'none', color: '#3F3F46',
-              cursor: 'pointer', padding: 4, borderRadius: 6,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'color 0.15s',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = '#71717A'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = '#3F3F46'; }}
-          >
-            <CloseIcon />
-          </button>
+          {step !== 'registering' && step !== 'confirming' && (
+            <button
+              onClick={onClose}
+              style={{
+                background: 'none', border: 'none', color: '#3F3F46',
+                cursor: 'pointer', padding: 4, borderRadius: 6,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'color 0.15s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = '#71717A'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = '#3F3F46'; }}
+            >
+              <CloseIcon />
+            </button>
+          )}
         </div>
 
         {/* ── Body ── */}
@@ -183,7 +255,7 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
           {step === 'intro' && (
             <div>
               <p style={{ fontSize: 13, color: '#71717A', lineHeight: 1.65, marginBottom: 16 }}>
-                Register your wallet on-chain to unlock everything Embris can do.
+                Register your wallet on-chain to unlock everything Embris can do. This sends a real transaction to the Vaultfire Identity Registry on Base.
               </p>
 
               {/* Feature list */}
@@ -201,6 +273,19 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
                     <span style={{ fontSize: 12.5, color: '#A1A1AA', lineHeight: 1.4 }}>{f}</span>
                   </div>
                 ))}
+              </div>
+
+              {/* Gas notice */}
+              <div style={{
+                padding: '10px 12px',
+                backgroundColor: 'rgba(249,115,22,0.04)',
+                border: '1px solid rgba(249,115,22,0.08)',
+                borderRadius: 8,
+                marginBottom: 16,
+              }}>
+                <p style={{ fontSize: 11.5, color: '#A1A1AA', margin: 0, lineHeight: 1.55 }}>
+                  Requires a small amount of ETH on Base for gas (less than $0.01). The transaction is written permanently to the blockchain.
+                </p>
               </div>
 
               {/* Divider */}
@@ -276,7 +361,7 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
               </div>
 
               <p style={{ fontSize: 12.5, color: '#52525B', lineHeight: 1.65, marginBottom: 16 }}>
-                This will register your wallet with the Vaultfire Protocol and verify it against the ERC-8004 Identity Registry on Base.
+                This sends a <strong style={{ color: '#71717A', fontWeight: 600 }}>registerAgent</strong> transaction to the ERC-8004 Identity Registry on Base. Your wallet signs the transaction and pays a tiny gas fee.
               </p>
 
               {error && (
@@ -321,7 +406,7 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
           {step === 'manual' && (
             <div>
               <p style={{ fontSize: 12.5, color: '#52525B', lineHeight: 1.65, marginBottom: 14 }}>
-                Enter your Ethereum wallet address to register with the Vaultfire Protocol.
+                Enter your Ethereum wallet address. The registration transaction will be signed by your Vaultfire wallet on behalf of this address.
               </p>
 
               <input
@@ -378,14 +463,14 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
                     transition: 'background-color 0.15s, color 0.15s',
                   }}
                 >
-                  Register
+                  Register On-Chain
                 </button>
               </div>
             </div>
           )}
 
-          {/* REGISTERING */}
-          {step === 'registering' && (
+          {/* REGISTERING — transaction in progress */}
+          {(step === 'registering' || step === 'confirming') && (
             <div style={{ textAlign: 'center', padding: '24px 0 8px' }}>
               <div style={{
                 width: 28, height: 28, margin: '0 auto 16px',
@@ -395,25 +480,114 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
                 animation: 'spin 0.8s linear infinite',
               }} />
               <p style={{ fontSize: 13.5, color: '#A1A1AA', margin: 0, letterSpacing: '-0.01em' }}>
-                Registering with the Vaultfire Protocol...
+                {statusText || 'Sending transaction to Base...'}
               </p>
               <p style={{ fontSize: 12, color: '#3F3F46', margin: '6px 0 0' }}>
-                Verifying on-chain identity registry
+                {step === 'confirming' ? 'Waiting for block confirmation...' : 'Do not close this window'}
               </p>
+              {txHash && (
+                <a
+                  href={`https://basescan.org/tx/${txHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                    fontSize: 11.5, color: '#F97316', marginTop: 12,
+                    textDecoration: 'none',
+                  }}
+                >
+                  View on BaseScan <ExternalLinkIcon />
+                </a>
+              )}
+            </div>
+          )}
+
+          {/* ERROR */}
+          {step === 'error' && (
+            <div>
+              <div style={{
+                padding: '12px 14px',
+                backgroundColor: 'rgba(239,68,68,0.04)',
+                border: '1px solid rgba(239,68,68,0.1)',
+                borderRadius: 10,
+                marginBottom: 16,
+              }}>
+                <p style={{ fontSize: 12.5, color: '#F87171', margin: 0, lineHeight: 1.55 }}>
+                  {error}
+                </p>
+              </div>
+
+              {txHash && (
+                <div style={{
+                  padding: '10px 12px',
+                  backgroundColor: 'rgba(255,255,255,0.02)',
+                  borderRadius: 8,
+                  border: '1px solid rgba(255,255,255,0.04)',
+                  marginBottom: 16,
+                }}>
+                  <p style={{ fontSize: 11, color: '#52525B', margin: 0, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 500 }}>
+                    Transaction Hash
+                  </p>
+                  <a
+                    href={basescanUrl || `https://basescan.org/tx/${txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      fontSize: 12, color: '#F97316', textDecoration: 'none',
+                      fontFamily: "'JetBrains Mono', monospace",
+                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                    }}
+                  >
+                    {shortTxHash} <ExternalLinkIcon />
+                  </a>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={onClose}
+                  style={{
+                    flex: 1, padding: '10px 14px',
+                    backgroundColor: 'transparent',
+                    color: '#52525B',
+                    border: '1px solid rgba(255,255,255,0.05)',
+                    borderRadius: 10, fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = '#71717A'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = '#52525B'; }}
+                >
+                  Close
+                </button>
+                <button
+                  onClick={handleRetry}
+                  style={{
+                    flex: 2, padding: '10px 14px',
+                    backgroundColor: '#F97316',
+                    color: '#09090B',
+                    border: 'none', borderRadius: 10,
+                    fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                    letterSpacing: '-0.01em',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#FB923C'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#F97316'; }}
+                >
+                  Try Again
+                </button>
+              </div>
             </div>
           )}
 
           {/* SUCCESS */}
           {step === 'success' && (
             <div>
-              {/* Success indicator — minimal dot, not a big checkmark */}
+              {/* Success indicator */}
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 8,
                 padding: '12px 14px',
                 backgroundColor: 'rgba(34,197,94,0.04)',
                 border: '1px solid rgba(34,197,94,0.1)',
                 borderRadius: 10,
-                marginBottom: 16,
+                marginBottom: 14,
               }}>
                 <div style={{
                   width: 6, height: 6, borderRadius: '50%',
@@ -423,6 +597,34 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
                   {resultMessage}
                 </p>
               </div>
+
+              {/* Transaction hash display */}
+              {txHash && (
+                <div style={{
+                  padding: '10px 12px',
+                  backgroundColor: 'rgba(255,255,255,0.02)',
+                  borderRadius: 8,
+                  border: '1px solid rgba(255,255,255,0.04)',
+                  marginBottom: 14,
+                }}>
+                  <p style={{ fontSize: 11, color: '#52525B', margin: 0, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 500 }}>
+                    Transaction Hash
+                  </p>
+                  <a
+                    href={basescanUrl || `https://basescan.org/tx/${txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      fontSize: 12, color: '#F97316', textDecoration: 'none',
+                      fontFamily: "'JetBrains Mono', monospace",
+                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                      wordBreak: 'break-all',
+                    }}
+                  >
+                    {shortTxHash} <ExternalLinkIcon />
+                  </a>
+                </div>
+              )}
 
               <p style={{ fontSize: 12.5, color: '#52525B', lineHeight: 1.65, marginBottom: 18 }}>
                 Embris now has full access to memory, self-learning, goal tracking, personality tuning, and more. Your companion will grow with you from here.
