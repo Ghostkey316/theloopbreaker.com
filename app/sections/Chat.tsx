@@ -17,7 +17,7 @@ const SUGGESTED_PROMPTS = [
   'What contracts are on Avalanche?',
 ];
 
-// SVG Icons
+/* ── SVG Icons ── */
 function SendIcon({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -53,9 +53,9 @@ function MarkdownText({ text }: { text: string }) {
     } else if (line.match(/^\d+\. /)) {
       elements.push(<li key={i} style={{ marginLeft: '1.25rem', margin: '0.2rem 0', listStyleType: 'decimal' }}>{renderInline(line.replace(/^\d+\. /, ''))}</li>);
     } else if (line.startsWith('> ')) {
-      elements.push(<blockquote key={i} style={{ borderLeft: '2px solid #F97316', paddingLeft: '0.75rem', color: '#A0A0A8', fontStyle: 'italic', margin: '0.5rem 0' }}>{line.slice(2)}</blockquote>);
+      elements.push(<blockquote key={i} style={{ borderLeft: '2px solid rgba(249,115,22,0.4)', paddingLeft: '0.75rem', color: '#A1A1AA', fontStyle: 'italic', margin: '0.5rem 0' }}>{line.slice(2)}</blockquote>);
     } else if (line === '---' || line === '***') {
-      elements.push(<hr key={i} style={{ borderColor: 'rgba(255,255,255,0.06)', margin: '1rem 0' }} />);
+      elements.push(<hr key={i} style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.06)', margin: '1rem 0' }} />);
     } else if (line === '') {
       elements.push(<br key={i} />);
     } else {
@@ -70,13 +70,13 @@ function renderInline(text: string): React.ReactNode {
   const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*)/g);
   return parts.map((part, i) => {
     if (part.startsWith('`') && part.endsWith('`')) {
-      return <code key={i} style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.15)', borderRadius: 5, padding: '0.1rem 0.35rem', fontSize: '0.85em', color: '#FB923C', fontFamily: "'SF Mono', monospace" }}>{part.slice(1, -1)}</code>;
+      return <code key={i} style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.12)', borderRadius: 5, padding: '0.1rem 0.35rem', fontSize: '0.85em', color: '#FB923C', fontFamily: "'JetBrains Mono', monospace" }}>{part.slice(1, -1)}</code>;
     }
     if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={i} style={{ color: '#FFFFFF', fontWeight: 600 }}>{part.slice(2, -2)}</strong>;
+      return <strong key={i} style={{ color: '#FAFAFA', fontWeight: 600 }}>{part.slice(2, -2)}</strong>;
     }
     if (part.startsWith('*') && part.endsWith('*')) {
-      return <em key={i} style={{ color: '#A0A0A8' }}>{part.slice(1, -1)}</em>;
+      return <em key={i} style={{ color: '#A1A1AA' }}>{part.slice(1, -1)}</em>;
     }
     return part;
   });
@@ -84,7 +84,7 @@ function renderInline(text: string): React.ReactNode {
 
 function TypingIndicator() {
   return (
-    <div style={{ display: 'flex', gap: 4, alignItems: 'center', padding: '8px 0' }}>
+    <div style={{ display: 'flex', gap: 5, alignItems: 'center', padding: '8px 0' }}>
       {[0, 1, 2].map((i) => (
         <div key={i} className="typing-dot" style={{
           width: 6, height: 6, borderRadius: '50%', backgroundColor: '#F97316',
@@ -95,19 +95,13 @@ function TypingIndicator() {
   );
 }
 
-// Ember avatar SVG
 function EmberAvatar({ size = 30 }: { size?: number }) {
   return (
     <div style={{
-      width: size,
-      height: size,
-      borderRadius: '50%',
+      width: size, height: size, borderRadius: '50%',
       background: 'linear-gradient(135deg, rgba(249,115,22,0.15), rgba(249,115,22,0.05))',
-      border: '1px solid rgba(249,115,22,0.25)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexShrink: 0,
+      border: '1px solid rgba(249,115,22,0.2)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
     }}>
       <svg width={size * 0.5} height={size * 0.5} viewBox="0 0 24 24" fill="none">
         <path d="M12 5c-2 2.5-4 5.5-4 8 0 2.21 1.79 4 4 4s4-1.79 4-4c0-2.5-2-5.5-4-8z" fill="#F97316" opacity="0.8" />
@@ -242,121 +236,99 @@ export default function Chat() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#0A0A0C' }}>
-      {/* Header */}
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#09090B' }}>
+      {/* ── Header ── */}
       <div style={{
-        padding: isMobile ? '10px 14px' : '12px 24px',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: '#0E0E11',
+        padding: isMobile ? '12px 16px' : '14px 28px',
+        borderBottom: '1px solid rgba(255,255,255,0.04)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        backgroundColor: '#0F0F12',
         gap: 8,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 10, minWidth: 0 }}>
-          <EmberAvatar size={isMobile ? 30 : 34} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 12, minWidth: 0 }}>
+          <EmberAvatar size={isMobile ? 32 : 36} />
           <div style={{ minWidth: 0 }}>
-            <h2 style={{ fontSize: isMobile ? 14 : 15, fontWeight: 600, color: '#FFFFFF', letterSpacing: '-0.02em' }}>Ember AI</h2>
-            {!isMobile && <p style={{ fontSize: 11, color: '#666670' }}>Vaultfire Protocol companion</p>}
+            <h2 style={{ fontSize: isMobile ? 15 : 16, fontWeight: 600, color: '#FAFAFA', letterSpacing: '-0.02em' }}>Ember AI</h2>
+            {!isMobile && <p style={{ fontSize: 12, color: '#52525B', fontWeight: 400 }}>Vaultfire Protocol companion</p>}
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 10, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 12, flexShrink: 0 }}>
           {walletAddress && !isMobile && (
             <span style={{
-              fontSize: 10,
-              color: '#666670',
-              fontFamily: "'SF Mono', monospace",
-              backgroundColor: 'rgba(255,255,255,0.04)',
-              padding: '3px 8px',
-              borderRadius: 20,
+              fontSize: 11, color: '#52525B',
+              fontFamily: "'JetBrains Mono', monospace",
+              backgroundColor: 'rgba(255,255,255,0.03)',
+              padding: '4px 10px', borderRadius: 100,
+              border: '1px solid rgba(255,255,255,0.04)',
             }}>
               {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
             </span>
           )}
           {memories.length > 0 && (
             <span style={{
-              fontSize: 10,
-              color: '#F97316',
-              backgroundColor: 'rgba(249,115,22,0.08)',
-              padding: '3px 8px',
-              borderRadius: 20,
+              fontSize: 11, color: '#F97316', fontWeight: 500,
+              backgroundColor: 'rgba(249,115,22,0.06)',
+              padding: '4px 10px', borderRadius: 100,
               whiteSpace: 'nowrap',
-              fontWeight: 500,
+              border: '1px solid rgba(249,115,22,0.1)',
             }}>
               {memories.length} {isMobile ? 'mem' : 'memories'}
             </span>
           )}
           <button onClick={handleClear} style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-            fontSize: 11,
-            color: '#666670',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '4px 8px',
-            borderRadius: 6,
-            transition: 'color 0.15s ease',
+            display: 'flex', alignItems: 'center', gap: 5,
+            fontSize: 12, color: '#52525B', background: 'none',
+            border: 'none', cursor: 'pointer', padding: '6px 10px',
+            borderRadius: 8, transition: 'all 0.2s ease', fontWeight: 500,
           }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = '#FFFFFF')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = '#666670')}>
-            <TrashIcon size={12} />
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#FAFAFA'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = '#52525B'; e.currentTarget.style.backgroundColor = 'transparent'; }}>
+            <TrashIcon size={13} />
             {!isMobile && 'Clear'}
           </button>
         </div>
       </div>
 
-      {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '16px 14px' : '24px', display: 'flex', flexDirection: 'column', gap: isMobile ? 12 : 16 }}>
+      {/* ── Messages ── */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '20px 16px' : '28px 32px', display: 'flex', flexDirection: 'column', gap: isMobile ? 16 : 20 }}>
         {messages.length === 0 && showSuggestions && (
-          <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: isMobile ? 20 : 28 }}>
+          <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: isMobile ? 24 : 32 }}>
             <div style={{ textAlign: 'center' }}>
-              {/* Ember glow logo */}
               <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: isMobile ? 56 : 64,
-                height: isMobile ? 56 : 64,
-                borderRadius: 18,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: isMobile ? 60 : 68, height: isMobile ? 60 : 68, borderRadius: 20,
                 background: 'linear-gradient(135deg, rgba(249,115,22,0.12), rgba(249,115,22,0.04))',
-                border: '1px solid rgba(249,115,22,0.2)',
-                marginBottom: 16,
+                border: '1px solid rgba(249,115,22,0.15)',
+                marginBottom: 20,
+                boxShadow: '0 8px 32px rgba(249,115,22,0.06)',
               }}>
-                <svg width={isMobile ? 26 : 30} height={isMobile ? 26 : 30} viewBox="0 0 24 24" fill="none">
+                <svg width={isMobile ? 28 : 32} height={isMobile ? 28 : 32} viewBox="0 0 24 24" fill="none">
                   <path d="M12 5c-2 2.5-4 5.5-4 8 0 2.21 1.79 4 4 4s4-1.79 4-4c0-2.5-2-5.5-4-8z" fill="#F97316" opacity="0.7" />
                   <path d="M12 8c-1 1.5-2 3.2-2 4.5 0 1.1.9 2 2 2s2-.9 2-2c0-1.3-1-3-2-4.5z" fill="#FB923C" />
                 </svg>
               </div>
-              <h3 style={{ fontSize: isMobile ? 18 : 20, fontWeight: 600, color: '#FFFFFF', marginBottom: 6, letterSpacing: '-0.02em' }}>Ask Ember anything</h3>
-              <p style={{ fontSize: isMobile ? 13 : 14, color: '#666670' }}>Your guide to the Vaultfire Protocol</p>
+              <h3 style={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: '#FAFAFA', marginBottom: 8, letterSpacing: '-0.025em' }}>Ask Ember anything</h3>
+              <p style={{ fontSize: isMobile ? 14 : 15, color: '#52525B', fontWeight: 400 }}>Your guide to the Vaultfire Protocol</p>
             </div>
             <div style={{
               display: 'grid',
               gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
-              gap: 6,
-              maxWidth: 480,
-              width: '100%',
+              gap: 8, maxWidth: 500, width: '100%',
               padding: isMobile ? '0 4px' : 0,
             }}>
               {SUGGESTED_PROMPTS.map((prompt) => (
                 <button key={prompt} onClick={() => sendMessage(prompt)}
                   style={{
-                    padding: isMobile ? '11px 14px' : '10px 14px',
-                    backgroundColor: '#111114',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    borderRadius: 8,
-                    color: '#A0A0A8',
-                    fontSize: 12,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'all 0.15s ease',
-                    letterSpacing: '-0.01em',
-                    fontWeight: 400,
+                    padding: isMobile ? '12px 16px' : '12px 16px',
+                    backgroundColor: '#0F0F12',
+                    border: '1px solid rgba(255,255,255,0.04)',
+                    borderRadius: 10, color: '#A1A1AA',
+                    fontSize: 13, cursor: 'pointer', textAlign: 'left',
+                    transition: 'all 0.2s ease', letterSpacing: '-0.01em',
+                    fontWeight: 400, lineHeight: 1.5,
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(249,115,22,0.3)'; e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.backgroundColor = 'rgba(249,115,22,0.05)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#A0A0A8'; e.currentTarget.style.backgroundColor = '#111114'; }}>
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(249,115,22,0.2)'; e.currentTarget.style.color = '#FAFAFA'; e.currentTarget.style.backgroundColor = 'rgba(249,115,22,0.04)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#A1A1AA'; e.currentTarget.style.backgroundColor = '#0F0F12'; }}>
                   {prompt}
                 </button>
               ))}
@@ -365,20 +337,20 @@ export default function Chat() {
         )}
 
         {messages.map((msg) => (
-          <div key={msg.id} className="fade-in" style={{ display: 'flex', flexDirection: msg.role === 'user' ? 'row-reverse' : 'row', gap: isMobile ? 8 : 10, alignItems: 'flex-start' }}>
-            {msg.role === 'assistant' && <EmberAvatar size={isMobile ? 26 : 30} />}
+          <div key={msg.id} className="fade-in" style={{ display: 'flex', flexDirection: msg.role === 'user' ? 'row-reverse' : 'row', gap: isMobile ? 10 : 12, alignItems: 'flex-start' }}>
+            {msg.role === 'assistant' && <EmberAvatar size={isMobile ? 28 : 32} />}
             <div style={{
-              maxWidth: isMobile ? '85%' : '75%',
-              padding: isMobile ? '10px 14px' : '12px 16px',
-              borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-              backgroundColor: msg.role === 'user' ? '#F97316' : '#111114',
-              color: msg.role === 'user' ? '#0A0A0C' : '#FFFFFF',
-              fontSize: isMobile ? 13 : 14,
+              maxWidth: isMobile ? '85%' : '72%',
+              padding: isMobile ? '12px 16px' : '14px 18px',
+              borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+              backgroundColor: msg.role === 'user' ? '#F97316' : '#0F0F12',
+              color: msg.role === 'user' ? '#09090B' : '#FAFAFA',
+              fontSize: isMobile ? 14 : 14,
               lineHeight: 1.65,
-              border: msg.role === 'assistant' ? '1px solid rgba(255,255,255,0.06)' : 'none',
-              overflow: 'hidden',
-              wordBreak: 'break-word',
+              border: msg.role === 'assistant' ? '1px solid rgba(255,255,255,0.04)' : 'none',
+              overflow: 'hidden', wordBreak: 'break-word',
               letterSpacing: '-0.01em',
+              boxShadow: msg.role === 'user' ? '0 2px 8px rgba(249,115,22,0.15)' : 'none',
             }}>
               {msg.isStreaming && msg.content === '' ? (
                 <TypingIndicator />
@@ -393,20 +365,17 @@ export default function Chat() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div style={{ padding: isMobile ? '10px 14px' : '14px 24px', borderTop: '1px solid rgba(255,255,255,0.06)', backgroundColor: '#0E0E11' }}>
+      {/* ── Input ── */}
+      <div style={{ padding: isMobile ? '12px 16px' : '16px 28px', borderTop: '1px solid rgba(255,255,255,0.04)', backgroundColor: '#0F0F12' }}>
         <div style={{
-          display: 'flex',
-          gap: isMobile ? 8 : 10,
-          alignItems: 'flex-end',
-          backgroundColor: '#111114',
+          display: 'flex', gap: isMobile ? 10 : 12, alignItems: 'flex-end',
+          backgroundColor: '#16161A',
           border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: 12,
-          padding: isMobile ? '6px 10px' : '8px 12px',
-          transition: 'border-color 0.2s ease',
+          borderRadius: 14, padding: isMobile ? '8px 12px' : '10px 14px',
+          transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
         }}
-          onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(249,115,22,0.3)')}
-          onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')}>
+          onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(249,115,22,0.3)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.06)'; }}
+          onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.boxShadow = 'none'; }}>
           <textarea
             ref={inputRef}
             value={inputText}
@@ -416,18 +385,11 @@ export default function Chat() {
             disabled={isLoading}
             rows={1}
             style={{
-              flex: 1,
-              background: 'none',
-              border: 'none',
-              outline: 'none',
-              color: '#FFFFFF',
-              fontSize: isMobile ? 14 : 14,
-              resize: 'none',
-              maxHeight: 120,
-              overflowY: 'auto',
-              lineHeight: 1.5,
-              fontFamily: 'inherit',
-              letterSpacing: '-0.01em',
+              flex: 1, background: 'none', border: 'none', outline: 'none',
+              color: '#FAFAFA', fontSize: isMobile ? 14 : 15, resize: 'none',
+              maxHeight: 120, overflowY: 'auto', lineHeight: 1.5,
+              fontFamily: "'Inter', sans-serif", letterSpacing: '-0.01em',
+              fontWeight: 400,
             }}
             onInput={(e) => {
               const el = e.currentTarget;
@@ -439,28 +401,22 @@ export default function Chat() {
             onClick={() => sendMessage(inputText)}
             disabled={isLoading || !inputText.trim()}
             style={{
-              width: 34,
-              height: 34,
-              borderRadius: 8,
-              border: 'none',
+              width: 36, height: 36, borderRadius: 10, border: 'none',
               cursor: isLoading || !inputText.trim() ? 'default' : 'pointer',
               backgroundColor: isLoading || !inputText.trim() ? 'rgba(255,255,255,0.04)' : '#F97316',
-              color: isLoading || !inputText.trim() ? '#666670' : '#0A0A0C',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.15s ease',
-              flexShrink: 0,
+              color: isLoading || !inputText.trim() ? '#52525B' : '#09090B',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.2s ease', flexShrink: 0,
             }}>
             {isLoading ? (
-              <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.1)', borderTopColor: '#666670', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+              <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.1)', borderTopColor: '#52525B', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
             ) : (
-              <SendIcon size={14} />
+              <SendIcon size={15} />
             )}
           </button>
         </div>
         {!isMobile && (
-          <p style={{ fontSize: 11, color: '#666670', marginTop: 6, textAlign: 'center', letterSpacing: '-0.01em' }}>
+          <p style={{ fontSize: 12, color: '#3F3F46', marginTop: 8, textAlign: 'center', letterSpacing: '-0.01em', fontWeight: 400 }}>
             Press Enter to send · Shift+Enter for new line
           </p>
         )}

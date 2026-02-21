@@ -21,6 +21,23 @@ function CheckIcon() {
   );
 }
 
+/* ── Disclaimer item icons as SVG ── */
+function AlertTriangleIcon({ size = 13 }: { size?: number }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#EAB308" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>);
+}
+function DollarIcon({ size = 13 }: { size?: number }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>);
+}
+function KeyIcon({ size = 13 }: { size?: number }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#A855F7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" /></svg>);
+}
+function FileTextIcon({ size = 13 }: { size?: number }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#0EA5E9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>);
+}
+function ScaleIcon({ size = 13 }: { size?: number }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="3" x2="12" y2="21" /><polyline points="1 14 12 3 23 14" /></svg>);
+}
+
 export default function DisclaimerModal() {
   const [visible, setVisible] = useState(false);
   const [checked, setChecked] = useState(false);
@@ -30,7 +47,6 @@ export default function DisclaimerModal() {
     setMounted(true);
     const accepted = localStorage.getItem(STORAGE_KEY);
     if (!accepted) {
-      // Small delay so the page renders first
       const t = setTimeout(() => setVisible(true), 400);
       return () => clearTimeout(t);
     }
@@ -44,6 +60,34 @@ export default function DisclaimerModal() {
   };
 
   if (!mounted || !visible) return null;
+
+  const disclaimerItems = [
+    {
+      icon: <AlertTriangleIcon />,
+      title: "Alpha Software",
+      text: "Vaultfire Protocol is currently in alpha. Features may be incomplete, unstable, or change without notice. Use at your own risk.",
+    },
+    {
+      icon: <DollarIcon />,
+      title: "Not Financial Advice",
+      text: "Nothing on this platform constitutes financial, investment, or legal advice. Do not invest more than you can afford to lose.",
+    },
+    {
+      icon: <KeyIcon />,
+      title: "Self-Custody Responsibility",
+      text: "You are solely responsible for securing your seed phrase and private keys. Vaultfire Protocol cannot recover lost or stolen funds.",
+    },
+    {
+      icon: <FileTextIcon />,
+      title: "Unaudited Contracts",
+      text: "Smart contracts deployed by this protocol have not been formally audited. Interact with them at your own risk.",
+    },
+    {
+      icon: <ScaleIcon />,
+      title: "No Liability",
+      text: "Vaultfire Protocol and its contributors are not liable for any losses, damages, or harms arising from use of this software.",
+    },
+  ];
 
   return (
     <>
@@ -62,41 +106,39 @@ export default function DisclaimerModal() {
         display: "flex", alignItems: "center", justifyContent: "center",
         padding: "16px",
       }}>
-        <div style={{
+        <div className="fade-in" style={{
           width: "100%", maxWidth: 480,
-          background: "rgba(17,17,20,0.98)",
-          backdropFilter: "blur(24px)",
-          WebkitBackdropFilter: "blur(24px)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          borderRadius: 16,
-          boxShadow: "0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(249,115,22,0.06)",
+          background: "#0F0F12",
+          border: "1px solid rgba(255,255,255,0.06)",
+          borderRadius: 18,
+          boxShadow: "0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(249,115,22,0.06)",
           overflow: "hidden",
-          animation: "fadeInUp 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
         }}>
           {/* Header stripe */}
           <div style={{
             height: 3,
-            background: "linear-gradient(90deg, #F97316, #EA6C0A, transparent)",
+            background: "linear-gradient(90deg, #F97316, #EA580C, transparent)",
           }} />
 
           {/* Content */}
           <div style={{ padding: "24px 24px 20px" }}>
             {/* Icon + Title */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
               <div style={{
-                width: 42, height: 42, borderRadius: 11,
+                width: 44, height: 44, borderRadius: 13,
                 background: "linear-gradient(135deg, rgba(249,115,22,0.12), rgba(249,115,22,0.04))",
-                border: "1px solid rgba(249,115,22,0.2)",
+                border: "1px solid rgba(249,115,22,0.15)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 flexShrink: 0,
+                boxShadow: "0 4px 16px rgba(249,115,22,0.06)",
               }}>
                 <ShieldIcon />
               </div>
               <div>
-                <h2 style={{ fontSize: 16, fontWeight: 700, color: "#FFFFFF", letterSpacing: "-0.02em", marginBottom: 2 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: "#FAFAFA", letterSpacing: "-0.03em", marginBottom: 2 }}>
                   Important Disclaimers
                 </h2>
-                <p style={{ fontSize: 11, color: "#666670", letterSpacing: "-0.01em" }}>
+                <p style={{ fontSize: 12, color: "#52525B", letterSpacing: "-0.01em" }}>
                   Please read before continuing
                 </p>
               </div>
@@ -104,46 +146,20 @@ export default function DisclaimerModal() {
 
             {/* Disclaimer items */}
             <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 18 }}>
-              {[
-                {
-                  icon: "⚠️",
-                  title: "Alpha Software",
-                  text: "Vaultfire Protocol is currently in alpha. Features may be incomplete, unstable, or change without notice. Use at your own risk.",
-                },
-                {
-                  icon: "💸",
-                  title: "Not Financial Advice",
-                  text: "Nothing on this platform constitutes financial, investment, or legal advice. Do not invest more than you can afford to lose.",
-                },
-                {
-                  icon: "🔐",
-                  title: "Self-Custody Responsibility",
-                  text: "You are solely responsible for securing your seed phrase and private keys. Vaultfire Protocol cannot recover lost or stolen funds.",
-                },
-                {
-                  icon: "📋",
-                  title: "Unaudited Contracts",
-                  text: "Smart contracts deployed by this protocol have not been formally audited. Interact with them at your own risk.",
-                },
-                {
-                  icon: "⚖️",
-                  title: "No Liability",
-                  text: "Vaultfire Protocol and its contributors are not liable for any losses, damages, or harms arising from use of this software.",
-                },
-              ].map((item, i) => (
+              {disclaimerItems.map((item, i) => (
                 <div key={i} style={{
                   display: "flex", gap: 10, alignItems: "flex-start",
-                  padding: "9px 11px",
+                  padding: "10px 12px",
                   background: "rgba(255,255,255,0.02)",
                   border: "1px solid rgba(255,255,255,0.04)",
-                  borderRadius: 8,
+                  borderRadius: 10,
                 }}>
-                  <span style={{ fontSize: 13, flexShrink: 0, marginTop: 1 }}>{item.icon}</span>
+                  <span style={{ flexShrink: 0, marginTop: 1 }}>{item.icon}</span>
                   <div>
-                    <p style={{ fontSize: 11, fontWeight: 600, color: "#FFFFFF", marginBottom: 2, letterSpacing: "-0.01em" }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: "#FAFAFA", marginBottom: 2, letterSpacing: "-0.01em" }}>
                       {item.title}
                     </p>
-                    <p style={{ fontSize: 11, color: "#A0A0A8", lineHeight: 1.55, letterSpacing: "-0.01em" }}>
+                    <p style={{ fontSize: 12, color: "#A1A1AA", lineHeight: 1.6, letterSpacing: "-0.01em" }}>
                       {item.text}
                     </p>
                   </div>
@@ -154,13 +170,13 @@ export default function DisclaimerModal() {
             {/* Checkbox */}
             <label style={{
               display: "flex", alignItems: "flex-start", gap: 10,
-              cursor: "pointer", marginBottom: 14, userSelect: "none",
+              cursor: "pointer", marginBottom: 16, userSelect: "none",
             }}>
               <div
                 onClick={() => setChecked(!checked)}
                 style={{
                   width: 18, height: 18, borderRadius: 5, flexShrink: 0, marginTop: 1,
-                  border: `1.5px solid ${checked ? "#F97316" : "rgba(255,255,255,0.15)"}`,
+                  border: `1.5px solid ${checked ? "#F97316" : "rgba(255,255,255,0.12)"}`,
                   backgroundColor: checked ? "rgba(249,115,22,0.12)" : "transparent",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   transition: "all 0.15s ease",
@@ -169,7 +185,7 @@ export default function DisclaimerModal() {
               >
                 {checked && <CheckIcon />}
               </div>
-              <span style={{ fontSize: 12, color: "#A0A0A8", lineHeight: 1.55, letterSpacing: "-0.01em" }}>
+              <span style={{ fontSize: 12, color: "#A1A1AA", lineHeight: 1.6, letterSpacing: "-0.01em" }}>
                 I have read and understood the disclaimers above. I accept full responsibility for my use of Vaultfire Protocol.
               </span>
             </label>
@@ -179,19 +195,19 @@ export default function DisclaimerModal() {
               onClick={handleAccept}
               disabled={!checked}
               style={{
-                width: "100%", padding: "11px",
+                width: "100%", padding: "12px",
                 background: checked
-                  ? "linear-gradient(135deg, #F97316, #EA6C0A)"
+                  ? "linear-gradient(135deg, #F97316, #EA580C)"
                   : "rgba(255,255,255,0.04)",
                 border: "none", borderRadius: 10,
-                color: checked ? "#0A0A0C" : "#666670",
-                fontSize: 13, fontWeight: 600,
+                color: checked ? "#09090B" : "#52525B",
+                fontSize: 14, fontWeight: 600,
                 cursor: checked ? "pointer" : "default",
                 transition: "all 0.2s ease", letterSpacing: "-0.01em",
-                boxShadow: checked ? "0 2px 16px rgba(249,115,22,0.25)" : "none",
+                boxShadow: checked ? "0 4px 16px rgba(249,115,22,0.25)" : "none",
               }}
             >
-              I Understand the Risks — Continue
+              I Understand the Risks \u2014 Continue
             </button>
           </div>
         </div>

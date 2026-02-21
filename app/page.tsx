@@ -40,18 +40,15 @@ export default function Page() {
 
   return (
     <>
-      {/* First-visit disclaimer modal — renders on top of everything */}
       <DisclaimerModal />
 
-      {/* App shell: sidebar + scrollable content + footer */}
       <div style={{
         display: 'flex',
         flexDirection: 'column',
         height: '100vh',
-        backgroundColor: '#0A0A0C',
+        backgroundColor: '#09090B',
         overflow: 'hidden',
       }}>
-        {/* Main row: sidebar + content */}
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
           <Sidebar
             activeSection={activeSection}
@@ -61,8 +58,7 @@ export default function Page() {
             flex: 1,
             overflowY: 'auto',
             overflowX: 'hidden',
-            backgroundColor: '#0A0A0C',
-            // On mobile, top padding for the fixed hamburger bar; bottom padding for the footer
+            backgroundColor: '#09090B',
             paddingTop: isMobile ? 56 : 0,
             paddingBottom: isMobile ? 44 : 0,
             width: '100%',
@@ -72,7 +68,6 @@ export default function Page() {
           </main>
         </div>
 
-        {/* Footer — always visible at the bottom of the viewport */}
         <FooterDisclaimer />
       </div>
     </>

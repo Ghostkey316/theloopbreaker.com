@@ -12,6 +12,7 @@ interface ChainStatus {
   contractCount: number;
 }
 
+/* ── SVG Icons ── */
 function ScaleIcon({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -70,7 +71,7 @@ function BridgeIcon({ size = 18 }: { size?: number }) {
 
 export default function Home() {
   const [chains, setChains] = useState<ChainStatus[]>([
-    { name: 'Base', chainId: 8453, color: '#00D9FF', result: null, loading: true, contractCount: BASE_CONTRACTS.length },
+    { name: 'Base', chainId: 8453, color: '#0EA5E9', result: null, loading: true, contractCount: BASE_CONTRACTS.length },
     { name: 'Avalanche', chainId: 43114, color: '#E84142', result: null, loading: true, contractCount: AVALANCHE_CONTRACTS.length },
   ]);
   const [isMobile, setIsMobile] = useState(false);
@@ -85,7 +86,7 @@ export default function Home() {
   useEffect(() => {
     checkAllChains().then((results) => {
       setChains([
-        { name: 'Base', chainId: 8453, color: '#00D9FF', result: results.base, loading: false, contractCount: BASE_CONTRACTS.length },
+        { name: 'Base', chainId: 8453, color: '#0EA5E9', result: results.base, loading: false, contractCount: BASE_CONTRACTS.length },
         { name: 'Avalanche', chainId: 43114, color: '#E84142', result: results.avalanche, loading: false, contractCount: AVALANCHE_CONTRACTS.length },
       ]);
     });
@@ -96,26 +97,26 @@ export default function Home() {
   const coreValueDescriptions = ['Morals over metrics', 'Privacy over surveillance', 'Freedom over control'];
 
   return (
-    <div style={{ padding: isMobile ? '20px 16px 40px' : '32px 32px', maxWidth: '52rem', margin: '0 auto' }}>
-      {/* Hero Section */}
-      <div style={{ textAlign: 'center', marginBottom: isMobile ? 32 : 44, position: 'relative' }}>
+    <div style={{ padding: isMobile ? '24px 20px 48px' : '48px 40px', maxWidth: '54rem', margin: '0 auto' }}>
+      {/* ── Hero Section ── */}
+      <div style={{ textAlign: 'center', marginBottom: isMobile ? 40 : 56, position: 'relative' }}>
         <div style={{
-          position: 'absolute', top: '-30px', left: '50%', transform: 'translateX(-50%)',
-          width: isMobile ? 180 : 260, height: isMobile ? 180 : 260,
-          background: 'radial-gradient(circle, rgba(249,115,22,0.05) 0%, transparent 70%)',
+          position: 'absolute', top: '-40px', left: '50%', transform: 'translateX(-50%)',
+          width: isMobile ? 200 : 300, height: isMobile ? 200 : 300,
+          background: 'radial-gradient(circle, rgba(249,115,22,0.04) 0%, transparent 70%)',
           pointerEvents: 'none',
         }} />
 
         <div style={{
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          width: isMobile ? 48 : 56, height: isMobile ? 48 : 56,
-          borderRadius: 16,
+          width: isMobile ? 56 : 64, height: isMobile ? 56 : 64,
+          borderRadius: 18,
           background: 'linear-gradient(135deg, rgba(249,115,22,0.12), rgba(249,115,22,0.04))',
-          border: '1px solid rgba(249,115,22,0.2)',
-          marginBottom: isMobile ? 12 : 16, position: 'relative',
-          boxShadow: '0 4px 20px rgba(249,115,22,0.08)',
+          border: '1px solid rgba(249,115,22,0.15)',
+          marginBottom: isMobile ? 16 : 20, position: 'relative',
+          boxShadow: '0 8px 32px rgba(249,115,22,0.06)',
         }}>
-          <svg width={isMobile ? 24 : 28} height={isMobile ? 24 : 28} viewBox="0 0 24 24" fill="none">
+          <svg width={isMobile ? 26 : 30} height={isMobile ? 26 : 30} viewBox="0 0 24 24" fill="none">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="none" stroke="#F97316" strokeWidth="1.2" />
             <path d="M12 5c-2 2.5-4 5.5-4 8 0 2.21 1.79 4 4 4s4-1.79 4-4c0-2.5-2-5.5-4-8z" fill="#F97316" opacity="0.7" />
             <path d="M12 8c-1 1.5-2 3.2-2 4.5 0 1.1.9 2 2 2s2-.9 2-2c0-1.3-1-3-2-4.5z" fill="#FB923C" />
@@ -123,13 +124,13 @@ export default function Home() {
         </div>
 
         <h1 style={{
-          fontSize: isMobile ? 26 : 36, fontWeight: 700, color: '#FFFFFF',
-          marginBottom: isMobile ? 6 : 8, lineHeight: 1.15, letterSpacing: '-0.03em',
+          fontSize: isMobile ? 30 : 40, fontWeight: 700, color: '#FAFAFA',
+          marginBottom: isMobile ? 8 : 12, lineHeight: 1.1, letterSpacing: '-0.035em',
         }}>Vaultfire Protocol</h1>
 
         <p style={{
-          fontSize: isMobile ? 14 : 16, color: '#A0A0A8',
-          maxWidth: '26rem', margin: '0 auto', lineHeight: 1.6,
+          fontSize: isMobile ? 15 : 17, color: '#A1A1AA',
+          maxWidth: '28rem', margin: '0 auto', lineHeight: 1.6,
           fontWeight: 400, letterSpacing: '-0.01em',
         }}>
           Ethical AI governance on-chain.{' '}
@@ -139,48 +140,47 @@ export default function Home() {
         <a href="https://theloopbreaker.com" target="_blank" rel="noopener noreferrer"
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
-            marginTop: isMobile ? 12 : 16, padding: '7px 14px',
+            marginTop: isMobile ? 16 : 20, padding: '8px 16px',
             borderRadius: 8, backgroundColor: 'transparent',
-            border: '1px solid rgba(249,115,22,0.2)',
-            color: '#F97316', fontSize: 12, fontWeight: 500,
+            border: '1px solid rgba(249,115,22,0.15)',
+            color: '#F97316', fontSize: 13, fontWeight: 500,
             textDecoration: 'none', transition: 'all 0.2s ease', letterSpacing: '-0.01em',
           }}>
           <span>theloopbreaker.com</span>
-          <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
           </svg>
         </a>
       </div>
 
-      {/* Core Values */}
-      <div style={{ marginBottom: isMobile ? 24 : 36 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-          <h2 style={{ fontSize: 10, fontWeight: 600, color: '#666670', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Core Values</h2>
-          <div style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.05)' }} />
+      {/* ── Core Values ── */}
+      <div style={{ marginBottom: isMobile ? 32 : 48 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+          <h2 style={{ fontSize: 11, fontWeight: 600, color: '#52525B', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Core Values</h2>
+          <div style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.04)' }} />
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {coreValueDescriptions.map((desc, i) => {
             const IconComp = coreValueIcons[i];
             return (
               <div key={i} className="card-hover-effect" style={{
-                display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 12,
-                background: 'rgba(17,17,20,0.6)',
-                backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-                border: '1px solid rgba(255,255,255,0.05)',
-                borderLeft: '2px solid #F97316',
-                borderRadius: 10, padding: isMobile ? '10px 12px' : '12px 14px',
+                display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 16,
+                background: '#0F0F12',
+                border: '1px solid rgba(255,255,255,0.04)',
+                borderLeft: '3px solid #F97316',
+                borderRadius: 12, padding: isMobile ? '14px 16px' : '16px 20px',
               }}>
                 <div style={{
-                  width: 32, height: 32, borderRadius: 8,
+                  width: 36, height: 36, borderRadius: 10,
                   background: 'rgba(249,115,22,0.06)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                 }}>
-                  <IconComp size={16} />
+                  <IconComp size={18} />
                 </div>
                 <div>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: '#FFFFFF', marginBottom: 1, letterSpacing: '-0.01em' }}>{coreValueTitles[i]}</p>
-                  <p style={{ fontSize: 11, color: '#A0A0A8', fontWeight: 400 }}>{desc}</p>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: '#FAFAFA', marginBottom: 2, letterSpacing: '-0.01em' }}>{coreValueTitles[i]}</p>
+                  <p style={{ fontSize: 13, color: '#A1A1AA', fontWeight: 400, lineHeight: 1.5 }}>{desc}</p>
                 </div>
               </div>
             );
@@ -188,55 +188,54 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Network Status */}
-      <div style={{ marginBottom: isMobile ? 24 : 36 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-          <h2 style={{ fontSize: 10, fontWeight: 600, color: '#666670', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Network Status</h2>
-          <div style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.05)' }} />
+      {/* ── Network Status ── */}
+      <div style={{ marginBottom: isMobile ? 32 : 48 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+          <h2 style={{ fontSize: 11, fontWeight: 600, color: '#52525B', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Network Status</h2>
+          <div style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.04)' }} />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 12 }}>
           {chains.map((chain) => (
             <div key={chain.name} className="card-hover-effect" style={{
-              background: 'rgba(17,17,20,0.6)',
-              backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-              border: '1px solid rgba(255,255,255,0.05)',
-              borderRadius: 12, padding: isMobile ? '12px 14px' : '14px 16px',
+              background: '#0F0F12',
+              border: '1px solid rgba(255,255,255,0.04)',
+              borderRadius: 12, padding: isMobile ? '16px' : '20px',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{
-                    width: 7, height: 7, borderRadius: '50%',
-                    backgroundColor: chain.color, boxShadow: `0 0 6px ${chain.color}40`,
+                    width: 8, height: 8, borderRadius: '50%',
+                    backgroundColor: chain.color, boxShadow: `0 0 8px ${chain.color}40`,
                   }} />
                   <div>
-                    <h3 style={{ fontWeight: 600, color: '#FFFFFF', fontSize: 13, letterSpacing: '-0.01em' }}>{chain.name}</h3>
-                    <p style={{ fontSize: 10, color: '#666670' }}>Chain {chain.chainId}</p>
+                    <h3 style={{ fontWeight: 600, color: '#FAFAFA', fontSize: 15, letterSpacing: '-0.015em' }}>{chain.name}</h3>
+                    <p style={{ fontSize: 11, color: '#52525B', fontWeight: 400 }}>Chain {chain.chainId}</p>
                   </div>
                 </div>
                 <span style={{
-                  fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 20,
-                  backgroundColor: chain.loading ? 'rgba(245,158,11,0.08)' : chain.result?.success ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
-                  color: chain.loading ? '#F59E0B' : chain.result?.success ? '#22C55E' : '#EF4444',
+                  fontSize: 11, fontWeight: 500, padding: '3px 10px', borderRadius: 100,
+                  backgroundColor: chain.loading ? 'rgba(234,179,8,0.08)' : chain.result?.success ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
+                  color: chain.loading ? '#EAB308' : chain.result?.success ? '#22C55E' : '#EF4444',
                   flexShrink: 0,
                 }}>
                   {chain.loading ? 'Checking' : chain.result?.success ? 'Connected' : 'Offline'}
                 </span>
               </div>
               {!chain.loading && chain.result?.success && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                   {[
-                    { label: 'Block', value: chain.result.blockNumber?.toLocaleString(), color: '#FFFFFF' },
-                    { label: 'Latency', value: `${chain.result.latency}ms`, color: '#FFFFFF' },
+                    { label: 'Block', value: chain.result.blockNumber?.toLocaleString(), color: '#FAFAFA' },
+                    { label: 'Latency', value: `${chain.result.latency}ms`, color: '#FAFAFA' },
                     { label: 'Contracts', value: String(chain.contractCount), color: '#F97316' },
                   ].map((stat) => (
                     <div key={stat.label} style={{
-                      backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 8,
-                      padding: isMobile ? '6px 4px' : '7px 8px', textAlign: 'center',
+                      backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 8,
+                      padding: isMobile ? '8px 6px' : '10px 12px', textAlign: 'center',
                     }}>
-                      <p style={{ fontSize: 9, color: '#666670', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</p>
+                      <p style={{ fontSize: 10, color: '#52525B', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 500 }}>{stat.label}</p>
                       <p style={{
-                        fontSize: isMobile ? 10 : 11, fontFamily: "'SF Mono', monospace",
+                        fontSize: isMobile ? 12 : 13, fontFamily: "'JetBrains Mono', monospace",
                         color: stat.color, fontWeight: 600,
                         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                       }}>{stat.value}</p>
@@ -249,14 +248,14 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Protocol Overview */}
+      {/* ── Protocol Overview ── */}
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-          <h2 style={{ fontSize: 10, fontWeight: 600, color: '#666670', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Protocol Overview</h2>
-          <div style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.05)' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+          <h2 style={{ fontSize: 11, fontWeight: 600, color: '#52525B', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Protocol Overview</h2>
+          <div style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.04)' }} />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? 6 : 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? 8 : 12 }}>
           {[
             { Icon: ContractIcon, label: 'Contracts', value: '28', sub: '14 per chain', color: '#F97316' },
             { Icon: ChainIcon, label: 'Chains', value: '2', sub: 'Base + Avalanche', color: '#F97316' },
@@ -264,25 +263,24 @@ export default function Home() {
             { Icon: BridgeIcon, label: 'Bridge', value: 'Teleporter', sub: 'Cross-chain', color: '#F97316' },
           ].map((item) => (
             <div key={item.label} className="card-hover-effect" style={{
-              background: 'rgba(17,17,20,0.6)',
-              backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-              border: '1px solid rgba(255,255,255,0.05)',
-              borderRadius: 10, padding: isMobile ? '12px 8px' : '14px 12px',
+              background: '#0F0F12',
+              border: '1px solid rgba(255,255,255,0.04)',
+              borderRadius: 12, padding: isMobile ? '16px 12px' : '20px 16px',
               textAlign: 'center',
             }}>
               <div style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                width: 28, height: 28, borderRadius: 7,
-                background: 'rgba(249,115,22,0.06)', marginBottom: 6, color: '#F97316',
+                width: 32, height: 32, borderRadius: 8,
+                background: 'rgba(249,115,22,0.06)', marginBottom: 8, color: '#F97316',
               }}>
-                <item.Icon size={14} />
+                <item.Icon size={16} />
               </div>
               <p style={{
-                fontSize: isMobile ? 15 : 16, fontWeight: 700, color: '#F97316',
-                letterSpacing: '-0.02em', marginBottom: 1,
+                fontSize: isMobile ? 18 : 20, fontWeight: 700, color: '#F97316',
+                letterSpacing: '-0.025em', marginBottom: 2, lineHeight: 1.2,
               }}>{item.value}</p>
-              <p style={{ fontSize: isMobile ? 10 : 11, fontWeight: 500, color: '#FFFFFF', letterSpacing: '-0.01em' }}>{item.label}</p>
-              <p style={{ fontSize: isMobile ? 9 : 10, color: '#666670', marginTop: 1 }}>{item.sub}</p>
+              <p style={{ fontSize: isMobile ? 12 : 13, fontWeight: 500, color: '#FAFAFA', letterSpacing: '-0.01em' }}>{item.label}</p>
+              <p style={{ fontSize: isMobile ? 11 : 12, color: '#52525B', marginTop: 2, fontWeight: 400 }}>{item.sub}</p>
             </div>
           ))}
         </div>
