@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { checkAllChains, type RPCResult } from '../lib/blockchain';
 import { BASE_CONTRACTS, AVALANCHE_CONTRACTS } from '../lib/contracts';
+import { isRegistered, getRegistration } from '../lib/registration';
 
 interface ChainStatus {
   name: string;
@@ -17,6 +18,8 @@ export default function Home() {
     { name: 'Avalanche', chainId: 43114, result: null, loading: true, contractCount: AVALANCHE_CONTRACTS.length },
   ]);
   const [isMobile, setIsMobile] = useState(false);
+  const [registered, setRegistered] = useState(false);
+  const [registrationAddress, setRegistrationAddress] = useState<string | null>(null);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -26,6 +29,15 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    // Check registration status
+    const reg = isRegistered();
+    setRegistered(reg);
+    if (reg) {
+      const data = getRegistration();
+      setRegistrationAddress(data?.walletAddress || null);
+    }
+
+    // Check chain connectivity
     checkAllChains().then((results) => {
       setChains([
         { name: 'Base', chainId: 8453, result: results.base, loading: false, contractCount: BASE_CONTRACTS.length },
@@ -41,9 +53,9 @@ export default function Home() {
   return (
     <div style={{ padding: isMobile ? '32px 20px 48px' : '56px 48px', maxWidth: 640, margin: '0 auto' }}>
 
-      {/* ── Hero — Typography only, no decorative elements ── */}
+      {/* ── Hero ── */}
       <div style={{ marginBottom: isMobile ? 56 : 72 }}>
-        {/* Small flame — functional brand mark only */}
+        {/* Flame brand mark */}
         <div style={{ marginBottom: 24 }}>
           <svg width={32} height={32} viewBox="0 0 32 32" fill="none">
             <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9" />
@@ -62,13 +74,26 @@ export default function Home() {
           Embris
         </h1>
 
+        {/* ── Mission Statement — front and center ── */}
         <p style={{
-          fontSize: isMobile ? 16 : 17,
-          color: '#71717A',
+          fontSize: isMobile ? 18 : 21,
+          color: '#E4E4E7',
+          fontWeight: 500,
+          letterSpacing: '-0.025em',
+          lineHeight: 1.35,
+          marginBottom: 16,
+          maxWidth: 480,
+        }}>
+          Making human thriving more profitable than extraction.
+        </p>
+
+        <p style={{
+          fontSize: isMobile ? 14 : 15,
+          color: '#52525B',
           fontWeight: 400,
           letterSpacing: '-0.01em',
           lineHeight: 1.5,
-          marginBottom: 8,
+          marginBottom: 12,
         }}>
           Your ethical AI companion
         </p>
@@ -82,9 +107,44 @@ export default function Home() {
         }}>
           Powered by Vaultfire Protocol
         </p>
+
+        {/* Registration status — inline, minimal */}
+        {registered && registrationAddress && (
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            marginTop: 20,
+            padding: '5px 10px',
+            backgroundColor: 'rgba(34,197,94,0.05)',
+            border: '1px solid rgba(34,197,94,0.1)',
+            borderRadius: 8,
+          }}>
+            <div style={{
+              width: 5, height: 5, borderRadius: '50%',
+              backgroundColor: '#22C55E',
+            }} />
+            <span style={{
+              fontSize: 11,
+              color: '#52525B',
+              fontFamily: "'JetBrains Mono', monospace",
+            }}>
+              {registrationAddress.slice(0, 6)}...{registrationAddress.slice(-4)}
+            </span>
+            <span style={{
+              fontSize: 11,
+              color: '#3F3F46',
+              fontWeight: 500,
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+            }}>
+              registered
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* ── Network Status — separated by whitespace, no card borders ── */}
+      {/* ── Network Status ── */}
       <div style={{ marginBottom: isMobile ? 48 : 56 }}>
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -154,7 +214,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── Protocol Overview — Large numbers, monospace, minimal ── */}
+      {/* ── Protocol Overview ── */}
       <div style={{ marginBottom: isMobile ? 48 : 56 }}>
         <h2 style={{
           fontSize: 11, fontWeight: 500, color: '#71717A',
@@ -190,7 +250,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── About — Clean prose ── */}
+      {/* ── About ── */}
       <div>
         <h2 style={{
           fontSize: 11, fontWeight: 500, color: '#71717A',

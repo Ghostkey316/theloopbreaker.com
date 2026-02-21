@@ -4,17 +4,10 @@
  * Uses non-streaming mode with simulated typing for smooth UX.
  * Uses text/plain Content-Type to avoid CORS preflight issues.
  *
- * Enhanced v2: Integrates ALL Embris enhancement systems into the prompt pipeline:
- * - Memory system (existing)
- * - Self-learning (existing)
- * - Emotional intelligence (new)
- * - Proactive suggestions context (new)
- * - Knowledge base / contract data (new)
- * - Conversation summaries (new)
- * - Goal tracking (new)
- * - Personality tuning (new)
- *
- * Smart context management: only injects what's relevant to keep prompt efficient.
+ * Enhanced v3: Registration-aware prompt building.
+ * - Unregistered users get basic chat with registration nudges
+ * - Registered users get the full Embris companion experience
+ * - Smart prompt size management to stay within model limits
  */
 import { EMBER_SYSTEM_PROMPT } from './contracts';
 import { formatMemoriesForPrompt } from './memory';
@@ -25,6 +18,7 @@ import { formatContractDataForPrompt } from './knowledge-base';
 import { formatSessionSummariesForPrompt } from './conversation-summaries';
 import { formatGoalsForPrompt } from './goal-tracking';
 import { formatPersonalityForPrompt } from './personality-tuning';
+import { isRegistered, shouldNudgeRegistration, getRegisteredWalletAddress } from './registration';
 import type { Memory } from './memory';
 
 const API_URL = 'https://api.manus.im/api/llm-proxy/v1/chat/completions';
@@ -60,10 +54,92 @@ async function simulateStreaming(
 }
 
 /**
+ * Rough character count estimator for prompt size management.
+ * ~4 chars per token is a reasonable estimate.
+ */
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
+}
+
+/**
+ * Truncate a block of text to fit within a token budget.
+ */
+function truncateBlock(text: string, maxTokens: number): string {
+  const maxChars = maxTokens * 4;
+  if (text.length <= maxChars) return text;
+  return text.slice(0, maxChars) + '\n... (truncated for context limit)';
+}
+
+/**
  * Build the full system prompt with ALL enhancement data injected.
- * Smart context management — only includes what's relevant.
+ * Registration-aware: unregistered users get a stripped-down prompt.
+ * Smart context management — only includes what's relevant and fits.
  */
 function buildSystemPrompt(memories: Memory[], userMessage?: string): string {
+  const registered = isRegistered();
+
+  // ── UNREGISTERED MODE ──
+  if (!registered) {
+    return buildUnregisteredPrompt(userMessage);
+  }
+
+  // ── REGISTERED MODE — Full Embris ──
+  return buildRegisteredPrompt(memories, userMessage);
+}
+
+/**
+ * Build prompt for unregistered users — basic chat with registration nudges.
+ */
+function buildUnregisteredPrompt(userMessage?: string): string {
+  const shouldNudge = shouldNudgeRegistration();
+
+  // Contract knowledge is always available
+  const contractBlock = userMessage ? formatContractDataForPrompt(userMessage) : '';
+
+  let prompt = EMBER_SYSTEM_PROMPT;
+
+  prompt += `
+
+═══════════════════════════════════════════════════════
+REGISTRATION STATUS: UNREGISTERED — BASIC MODE
+═══════════════════════════════════════════════════════
+
+This user has NOT registered on-chain yet. You are operating in BASIC MODE.
+
+In basic mode:
+- You can have normal conversations and answer questions
+- You have full knowledge of Vaultfire contracts and the protocol
+- You do NOT have access to long-term memory (you won't remember this conversation next time)
+- You do NOT have self-learning, goal tracking, personality tuning, or session continuity
+- You are still warm, friendly, and helpful — just without your full capabilities
+
+IMPORTANT BEHAVIOR:
+- Be your normal friendly self — don't make basic mode feel punishing
+- You can still discuss Vaultfire, blockchain, crypto, AI ethics, or anything else
+- When the user asks about features that require registration (memory, goals, personality, etc.), let them know those features unlock with registration
+- Do NOT constantly nag about registration — only mention it when naturally relevant`;
+
+  if (shouldNudge) {
+    prompt += `
+
+REGISTRATION NUDGE (include naturally in your response):
+Mention that you have more to offer if they register on-chain. Something like:
+"By the way, if you register your wallet on-chain, I'll be able to remember everything about you, track your goals, learn your preferences, and grow with you over time. It's like upgrading from a chatbot to a real companion."
+Keep it natural — weave it into the conversation, don't make it feel like a popup ad.`;
+  }
+
+  if (contractBlock) {
+    prompt += contractBlock;
+  }
+
+  return prompt;
+}
+
+/**
+ * Build prompt for registered users — full Embris companion experience.
+ */
+function buildRegisteredPrompt(memories: Memory[], userMessage?: string): string {
+  const walletAddress = getRegisteredWalletAddress();
   const memoryBlock = formatMemoriesForPrompt(memories);
   const selfLearningBlock = formatSelfLearningForPrompt();
   const emotionalBlock = formatEmotionalContextForPrompt();
@@ -75,57 +151,103 @@ function buildSystemPrompt(memories: Memory[], userMessage?: string): string {
   // Only inject contract data when the user is asking about contracts
   const contractBlock = userMessage ? formatContractDataForPrompt(userMessage) : '';
 
-  const hasAnyContext = memoryBlock || selfLearningBlock || emotionalBlock ||
-    personalityBlock || goalsBlock || sessionsBlock || suggestionsBlock || contractBlock;
-
-  if (!hasAnyContext) {
-    return EMBER_SYSTEM_PROMPT + MEMORY_AWARENESS_PROMPT_EMPTY;
-  }
+  // ── Prompt size management ──
+  // Target: keep total system prompt under ~12K tokens (~48K chars)
+  // to leave room for conversation history and response
+  const MAX_PROMPT_TOKENS = 12000;
+  const basePromptTokens = estimateTokens(EMBER_SYSTEM_PROMPT);
+  let remainingBudget = MAX_PROMPT_TOKENS - basePromptTokens - 500; // 500 token buffer
 
   let prompt = EMBER_SYSTEM_PROMPT;
 
-  // 1. Personality tuning (affects overall response style)
+  // Registration status
+  prompt += `
+
+═══ REGISTRATION STATUS ═══
+User is REGISTERED on-chain. Wallet: ${walletAddress || 'linked'}
+All features are ACTIVE. You are operating at full capacity as their personal AI companion.`;
+  remainingBudget -= 50;
+
+  // 1. Personality tuning (affects overall response style) — small, always include
   if (personalityBlock) {
-    prompt += personalityBlock;
+    const tokens = estimateTokens(personalityBlock);
+    if (tokens < remainingBudget) {
+      prompt += personalityBlock;
+      remainingBudget -= tokens;
+    }
   }
 
-  // 2. Emotional context (affects current response tone)
+  // 2. Emotional context (affects current response tone) — small, always include
   if (emotionalBlock) {
-    prompt += emotionalBlock;
+    const tokens = estimateTokens(emotionalBlock);
+    if (tokens < remainingBudget) {
+      prompt += emotionalBlock;
+      remainingBudget -= tokens;
+    }
   }
 
-  // 3. Memory block
+  // 3. Memory block — high priority, truncate if needed
   if (memoryBlock) {
-    prompt += MEMORY_AWARENESS_PROMPT_PREFIX + memoryBlock;
+    const maxMemoryTokens = Math.min(estimateTokens(memoryBlock), Math.floor(remainingBudget * 0.35));
+    const truncated = truncateBlock(memoryBlock, maxMemoryTokens);
+    prompt += MEMORY_AWARENESS_PROMPT_PREFIX + truncated;
+    remainingBudget -= estimateTokens(MEMORY_AWARENESS_PROMPT_PREFIX + truncated);
+  } else {
+    prompt += MEMORY_AWARENESS_PROMPT_EMPTY;
+    remainingBudget -= estimateTokens(MEMORY_AWARENESS_PROMPT_EMPTY);
   }
 
-  // 4. Self-learning block (reflections, patterns, insights)
+  // 4. Self-learning block (reflections, patterns, insights) — high priority
   if (selfLearningBlock) {
-    prompt += selfLearningBlock;
+    const maxSLTokens = Math.min(estimateTokens(selfLearningBlock), Math.floor(remainingBudget * 0.3));
+    const truncated = truncateBlock(selfLearningBlock, maxSLTokens);
+    prompt += truncated;
+    remainingBudget -= estimateTokens(truncated);
   }
 
-  // 5. Goals
-  if (goalsBlock) {
-    prompt += goalsBlock;
+  // 5. Goals — medium priority
+  if (goalsBlock && remainingBudget > 200) {
+    const tokens = estimateTokens(goalsBlock);
+    if (tokens < remainingBudget) {
+      prompt += goalsBlock;
+      remainingBudget -= tokens;
+    } else {
+      prompt += truncateBlock(goalsBlock, Math.floor(remainingBudget * 0.25));
+      remainingBudget -= Math.floor(remainingBudget * 0.25);
+    }
   }
 
-  // 6. Session summaries (for continuity)
-  if (sessionsBlock) {
-    prompt += sessionsBlock;
+  // 6. Session summaries (for continuity) — medium priority
+  if (sessionsBlock && remainingBudget > 200) {
+    const tokens = estimateTokens(sessionsBlock);
+    if (tokens < remainingBudget) {
+      prompt += sessionsBlock;
+      remainingBudget -= tokens;
+    }
   }
 
-  // 7. Proactive suggestions context
-  if (suggestionsBlock) {
-    prompt += suggestionsBlock;
+  // 7. Proactive suggestions context — lower priority
+  if (suggestionsBlock && remainingBudget > 200) {
+    const tokens = estimateTokens(suggestionsBlock);
+    if (tokens < remainingBudget) {
+      prompt += suggestionsBlock;
+      remainingBudget -= tokens;
+    }
   }
 
-  // 8. Contract knowledge base (only when relevant)
-  if (contractBlock) {
-    prompt += contractBlock;
+  // 8. Contract knowledge base (only when relevant) — dynamic
+  if (contractBlock && remainingBudget > 300) {
+    const tokens = estimateTokens(contractBlock);
+    if (tokens < remainingBudget) {
+      prompt += contractBlock;
+      remainingBudget -= tokens;
+    }
   }
 
   // Closing instructions
-  prompt += SELF_LEARNING_INSTRUCTIONS;
+  if (remainingBudget > 500) {
+    prompt += SELF_LEARNING_INSTRUCTIONS;
+  }
 
   if (memoryBlock) {
     prompt += MEMORY_AWARENESS_PROMPT_SUFFIX;

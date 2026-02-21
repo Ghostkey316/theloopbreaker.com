@@ -188,6 +188,15 @@ input:focus, textarea:focus {
 a { transition: color 0.15s ease; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   MODAL ANIMATION
+   ═══════════════════════════════════════════════════════════════════════════ */
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.modal-in { animation: modalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
    UTILITY
    ═══════════════════════════════════════════════════════════════════════════ */
 .mono {

@@ -9,6 +9,7 @@
  * - Conversation summaries (new)
  * - Goals (new)
  * - Personality settings (new)
+ * - Registration data (new v5)
  *
  * Users can export their entire Embris profile as JSON and import on another device.
  */
@@ -19,6 +20,7 @@ import { exportEmotionalData, importEmotionalData, type EmotionalState, type Emo
 import { exportSessionData, importSessionData, type SessionSummary } from './conversation-summaries';
 import { exportGoalData, importGoalData, type Goal } from './goal-tracking';
 import { exportPersonalityData, importPersonalityData, type PersonalitySettings } from './personality-tuning';
+import { exportRegistrationData, importRegistrationData, type RegistrationData } from './registration';
 
 /* ── Types ── */
 
@@ -40,7 +42,7 @@ export interface EnhancedSyncData {
     growth?: GrowthStats;
   };
 
-  // New enhancement data
+  // Enhancement data
   emotional?: {
     currentState?: EmotionalState | null;
     history?: EmotionalHistoryEntry[];
@@ -48,15 +50,18 @@ export interface EnhancedSyncData {
   sessionSummaries?: SessionSummary[];
   goals?: Goal[];
   personality?: PersonalitySettings;
+
+  // Registration data (v5)
+  registration?: RegistrationData | null;
 }
 
 /* ── Enhanced Export ── */
 
 export function exportAllData(): EnhancedSyncData {
   return {
-    version: 4, // Bumped from 3 to 4 for enhanced data
+    version: 5, // Bumped from 4 to 5 for registration data
     exportedAt: new Date().toISOString(),
-    exportSource: 'embris-enhanced-v4',
+    exportSource: 'embris-enhanced-v5',
 
     // Core
     chatHistory: getChatHistory(),
@@ -68,11 +73,14 @@ export function exportAllData(): EnhancedSyncData {
     // Self-learning
     selfLearning: exportSelfLearningData(),
 
-    // New enhancements
+    // Enhancements
     emotional: exportEmotionalData(),
     sessionSummaries: exportSessionData(),
     goals: exportGoalData(),
     personality: exportPersonalityData(),
+
+    // Registration
+    registration: exportRegistrationData(),
   };
 }
 
@@ -183,6 +191,18 @@ export function importAllData(data: EnhancedSyncData): {
     errors.push(`Personality: ${e instanceof Error ? e.message : 'unknown error'}`);
   }
 
+  // Registration
+  try {
+    if (data.registration) {
+      importRegistrationData(data.registration);
+      imported.push('Registration data');
+    } else {
+      skipped.push('Registration data (not found in backup)');
+    }
+  } catch (e) {
+    errors.push(`Registration: ${e instanceof Error ? e.message : 'unknown error'}`);
+  }
+
   return { imported, skipped, errors };
 }
 
@@ -198,6 +218,7 @@ export function getEnhancedDataStats(): {
   sessionSummaries: number;
   goals: number;
   hasPersonality: boolean;
+  isRegistered: boolean;
   totalDataSize: string;
 } {
   const selfLearning = exportSelfLearningData();
@@ -221,6 +242,7 @@ export function getEnhancedDataStats(): {
 
   const personality = exportPersonalityData();
   const hasPersonality = personality.adjustmentCount > 0 || personality.customInstructions.length > 0;
+  const registration = exportRegistrationData();
 
   return {
     chatMessages: getChatHistory().length,
@@ -232,6 +254,7 @@ export function getEnhancedDataStats(): {
     sessionSummaries: exportSessionData().length,
     goals: exportGoalData().length,
     hasPersonality,
+    isRegistered: registration !== null && registration.embrisLevel === 'full',
     totalDataSize: dataSize,
   };
 }
@@ -242,3 +265,4 @@ export { clearEmotionalData } from './emotional-intelligence';
 export { clearSessionData } from './conversation-summaries';
 export { clearGoalData } from './goal-tracking';
 export { clearPersonalityData } from './personality-tuning';
+export { clearRegistrationData } from './registration';

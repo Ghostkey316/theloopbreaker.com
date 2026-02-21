@@ -9,22 +9,19 @@ import {
   saveChatHistory,
   saveMemories,
   clearChatHistory,
-  clearMemories,
   deduplicateMemories,
   type ChatMessage,
   type Memory,
 } from '../lib/memory';
 import {
   runSelfLearning,
-  clearSelfLearningData,
   getGrowthStats,
 } from '../lib/self-learning';
 import { getWalletAddress } from '../lib/wallet';
 
-// New enhancement imports
+// Enhancement imports
 import {
   analyzeMood,
-  clearEmotionalData,
   type EmotionalState,
 } from '../lib/emotional-intelligence';
 import {
@@ -33,30 +30,45 @@ import {
 import {
   updateCurrentSession,
   generateSessionSummary,
-  clearSessionData,
 } from '../lib/conversation-summaries';
 import {
   getGoals,
   extractGoalsFromMessage,
   processGoalExtraction,
-  clearGoalData,
 } from '../lib/goal-tracking';
 import {
   applyPersonalityFeedback,
-  clearPersonalityData,
 } from '../lib/personality-tuning';
+
+// Registration imports
+import {
+  isRegistered,
+  getAvailableFeatures,
+  resetNudgeCounter,
+} from '../lib/registration';
+import RegistrationModal from '../components/RegistrationModal';
+import RegistrationBanner from '../components/RegistrationBanner';
 
 interface ChatMessageWithStatus extends ChatMessage {
   isStreaming?: boolean;
 }
 
-const SUGGESTED_PROMPTS = [
+const SUGGESTED_PROMPTS_REGISTERED = [
   'What is ERC-8004?',
   'Show me the Base contracts',
   'What are my goals?',
   'What do you remember about me?',
   'How have you grown?',
   'Show me previous sessions',
+];
+
+const SUGGESTED_PROMPTS_UNREGISTERED = [
+  'What is ERC-8004?',
+  'Tell me about Vaultfire',
+  'Show me the Base contracts',
+  'What can you do?',
+  'How does the protocol work?',
+  'What is Embris?',
 ];
 
 /* ── SVG Icons ── */
@@ -74,6 +86,15 @@ function TrashIcon({ size = 13 }: { size?: number }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="3 6 5 6 21 6" />
       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </svg>
+  );
+}
+
+function ShieldCheckIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <polyline points="9 12 11 14 15 10" />
     </svg>
   );
 }
@@ -186,6 +207,11 @@ export default function Chat() {
   const [growthStats, setGrowthStats] = useState({ conversations: 0, memories: 0 });
   const [currentMood, setCurrentMood] = useState<EmotionalState | null>(null);
   const [activeGoalCount, setActiveGoalCount] = useState(0);
+
+  // Registration state
+  const [registered, setRegistered] = useState(false);
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -198,18 +224,32 @@ export default function Chat() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Load chat history, memories, goals, and growth stats on mount
+  // Load chat history, memories, goals, growth stats, and registration status on mount
   useEffect(() => {
+    const reg = isRegistered();
+    setRegistered(reg);
+
     const history = getChatHistory();
-    const mems = getMemories();
     const addr = getWalletAddress();
-    const stats = getGrowthStats();
-    const goals = getGoals();
-    setMessages(history);
-    setMemoriesState(mems);
     setWalletAddress(addr);
-    setGrowthStats({ conversations: stats.totalConversations, memories: mems.length });
-    setActiveGoalCount(goals.filter(g => g.status === 'active').length);
+
+    if (reg) {
+      // Full mode — load everything
+      const mems = getMemories();
+      const stats = getGrowthStats();
+      const goals = getGoals();
+      setMessages(history);
+      setMemoriesState(mems);
+      setGrowthStats({ conversations: stats.totalConversations, memories: mems.length });
+      setActiveGoalCount(goals.filter(g => g.status === 'active').length);
+    } else {
+      // Basic mode — load chat history only (no persistence across sessions for unregistered)
+      setMessages(history);
+      setMemoriesState([]);
+      setGrowthStats({ conversations: 0, memories: 0 });
+      setActiveGoalCount(0);
+    }
+
     if (history.length > 0) setShowSuggestions(false);
   }, []);
 
@@ -217,12 +257,28 @@ export default function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Handle registration completion
+  const handleRegistered = useCallback(() => {
+    setRegistered(true);
+    resetNudgeCounter();
+
+    // Load all data now that features are unlocked
+    const mems = getMemories();
+    const stats = getGrowthStats();
+    const goals = getGoals();
+    setMemoriesState(mems);
+    setGrowthStats({ conversations: stats.totalConversations, memories: mems.length });
+    setActiveGoalCount(goals.filter(g => g.status === 'active').length);
+  }, []);
+
   /**
    * Background AI memory extraction — runs after each exchange
    * without blocking the UI or the conversation flow.
+   * Only runs for registered users.
    */
   const runBackgroundMemoryExtraction = useCallback(
     async (userText: string, assistantText: string, currentMemories: Memory[]) => {
+      if (!isRegistered()) return;
       try {
         const aiMemories = await extractMemoriesWithAI(
           userText,
@@ -244,11 +300,11 @@ export default function Chat() {
 
   /**
    * Background self-learning — runs after memory extraction.
-   * Generates reflections, checks for contradictions, and
-   * periodically synthesizes patterns and insights.
+   * Only runs for registered users.
    */
   const runBackgroundSelfLearning = useCallback(
     async (userText: string, assistantText: string) => {
+      if (!isRegistered()) return;
       try {
         const result = await runSelfLearning(userText, assistantText, API_KEY);
 
@@ -258,7 +314,7 @@ export default function Chat() {
         setGrowthStats({ conversations: stats.totalConversations, memories: mems.length });
         setMemoriesState(mems);
 
-        // Log self-learning activity (dev only, silent in production)
+        // Log self-learning activity (dev only)
         if (process.env.NODE_ENV === 'development') {
           if (result.reflection) console.log('[Embris Self-Learning] Reflection:', result.reflection.content);
           if (result.corrected) console.log('[Embris Self-Learning] Self-corrections:', result.corrections);
@@ -266,7 +322,7 @@ export default function Chat() {
           if (result.insightsGenerated) console.log('[Embris Self-Learning] Insights generated');
         }
       } catch {
-        // Silent fail — self-learning should never disrupt UX
+        // Silent fail
       }
     },
     [],
@@ -274,9 +330,11 @@ export default function Chat() {
 
   /**
    * Background goal extraction — detects goals and updates from messages.
+   * Only runs for registered users.
    */
   const runBackgroundGoalExtraction = useCallback(
     async (userText: string) => {
+      if (!isRegistered()) return;
       try {
         const existingGoals = getGoals();
         const result = await extractGoalsFromMessage(userText, existingGoals, API_KEY);
@@ -299,23 +357,33 @@ export default function Chat() {
     if (!text.trim() || isLoading) return;
     setShowSuggestions(false);
 
-    // ── PRE-RESPONSE PROCESSING ──
+    const features = getAvailableFeatures();
 
-    // 1. Analyze emotional tone (fast, local, no LLM)
-    const mood = analyzeMood(text.trim());
-    setCurrentMood(mood);
+    // ── PRE-RESPONSE PROCESSING (only for registered users) ──
 
-    // 2. Detect personality feedback (fast, local)
-    applyPersonalityFeedback(text.trim());
+    if (features.emotionalIntelligence) {
+      // 1. Analyze emotional tone (fast, local, no LLM)
+      const mood = analyzeMood(text.trim());
+      setCurrentMood(mood);
+    }
 
-    // 3. Track message for proactive suggestions
-    incrementMessageCount();
+    if (features.personality) {
+      // 2. Detect personality feedback (fast, local)
+      applyPersonalityFeedback(text.trim());
+    }
 
-    // 4. Update current session tracking
-    updateCurrentSession();
+    if (features.proactiveSuggestions) {
+      // 3. Track message for proactive suggestions
+      incrementMessageCount();
+    }
 
-    // Reload memories fresh from storage each time
-    const currentMemories = getMemories();
+    if (features.sessionSummaries) {
+      // 4. Update current session tracking
+      updateCurrentSession();
+    }
+
+    // Reload memories fresh from storage each time (only for registered)
+    const currentMemories = features.memory ? getMemories() : [];
 
     const userMsg: ChatMessageWithStatus = {
       id: `user_${Date.now()}`,
@@ -349,7 +417,7 @@ export default function Chat() {
     await streamChat({
       messages: llmMessages,
       memories: currentMemories,
-      userMessage: text.trim(), // Pass current message for context-aware prompt building
+      userMessage: text.trim(),
       signal: controller.signal,
       onToken: (token) => {
         streamingRef.current += token;
@@ -364,27 +432,35 @@ export default function Chat() {
         const updatedHistory = [...history, { ...userMsg, isStreaming: undefined }, finalAsst];
         saveChatHistory(updatedHistory);
 
-        // Step 1: Fast regex extraction (immediate)
-        const regexMems = extractMemories(text, fullText);
-        let allMems = currentMemories;
-        if (regexMems.length > 0) {
-          allMems = deduplicateMemories([...currentMemories, ...regexMems]);
-          saveMemories(allMems);
-          setMemoriesState(allMems);
+        // ── POST-RESPONSE PROCESSING (only for registered users) ──
+
+        if (features.memory) {
+          // Step 1: Fast regex extraction (immediate)
+          const regexMems = extractMemories(text, fullText);
+          let allMems = currentMemories;
+          if (regexMems.length > 0) {
+            allMems = deduplicateMemories([...currentMemories, ...regexMems]);
+            saveMemories(allMems);
+            setMemoriesState(allMems);
+          }
+
+          // Step 2: AI-powered extraction (background, non-blocking)
+          runBackgroundMemoryExtraction(text, fullText, allMems);
         }
 
-        // Step 2: AI-powered extraction (background, non-blocking)
-        runBackgroundMemoryExtraction(text, fullText, allMems);
+        if (features.selfLearning) {
+          // Step 3: Self-learning (background, non-blocking)
+          setTimeout(() => {
+            runBackgroundSelfLearning(text, fullText);
+          }, 1500);
+        }
 
-        // Step 3: Self-learning (background, non-blocking)
-        setTimeout(() => {
-          runBackgroundSelfLearning(text, fullText);
-        }, 1500);
-
-        // Step 4: Goal extraction (background, non-blocking)
-        setTimeout(() => {
-          runBackgroundGoalExtraction(text);
-        }, 2000);
+        if (features.goals) {
+          // Step 4: Goal extraction (background, non-blocking)
+          setTimeout(() => {
+            runBackgroundGoalExtraction(text);
+          }, 2000);
+        }
 
         setMessages((prev) =>
           prev.map((m) => m.id === assistantMsg.id ? { ...m, content: fullText, isStreaming: false } : m)
@@ -412,8 +488,8 @@ export default function Chat() {
   };
 
   const handleClear = async () => {
-    // Generate session summary before clearing (if there are messages)
-    if (messages.length >= 4) {
+    // Generate session summary before clearing (if registered and there are messages)
+    if (registered && messages.length >= 4) {
       try {
         const chatMessages = messages.map(m => ({ role: m.role, content: m.content }));
         await generateSessionSummary(chatMessages, API_KEY);
@@ -422,27 +498,22 @@ export default function Chat() {
       }
     }
 
+    // Only clear chat history — preserve the brain (memories, learning, goals, personality)
     clearChatHistory();
-    clearMemories();
-    clearSelfLearningData();
-    clearEmotionalData();
-    clearSessionData();
-    clearGoalData();
-    clearPersonalityData();
     setMessages([]);
-    setMemoriesState([]);
-    setGrowthStats({ conversations: 0, memories: 0 });
-    setActiveGoalCount(0);
-    setCurrentMood(null);
     setShowSuggestions(true);
+
+    // Reset current mood since chat is cleared
+    setCurrentMood(null);
   };
 
   const hasText = inputText.trim().length > 0;
+  const suggestedPrompts = registered ? SUGGESTED_PROMPTS_REGISTERED : SUGGESTED_PROMPTS_UNREGISTERED;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#09090B' }}>
 
-      {/* ── Header — barely there, like ChatGPT ── */}
+      {/* ── Header ── */}
       <div style={{
         padding: isMobile ? '10px 16px' : '10px 32px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -450,10 +521,42 @@ export default function Chat() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 14, fontWeight: 500, color: '#A1A1AA', letterSpacing: '-0.01em' }}>Embris</span>
-          {currentMood && currentMood.confidence > 0.3 && (
+          {registered && currentMood && currentMood.confidence > 0.3 && (
             <MoodDot mood={currentMood.mood} />
           )}
-          {growthStats.conversations > 0 && (
+          {/* Registration status badge */}
+          {registered ? (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 3,
+              fontSize: 10, color: '#22C55E', fontWeight: 500,
+              padding: '2px 6px',
+              backgroundColor: 'rgba(34,197,94,0.08)',
+              borderRadius: 6,
+            }}>
+              <ShieldCheckIcon size={10} />
+              {isMobile ? '' : 'Registered'}
+            </span>
+          ) : (
+            <button
+              onClick={() => setShowRegistrationModal(true)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 3,
+                fontSize: 10, color: '#F97316', fontWeight: 500,
+                padding: '2px 8px',
+                backgroundColor: 'rgba(249,115,22,0.08)',
+                borderRadius: 6,
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'background-color 0.15s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(249,115,22,0.15)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(249,115,22,0.08)'; }}
+            >
+              <ShieldCheckIcon size={10} />
+              {isMobile ? 'Register' : 'Register On-Chain'}
+            </button>
+          )}
+          {registered && growthStats.conversations > 0 && (
             <span style={{
               fontSize: 10, color: '#F97316', fontWeight: 400, opacity: 0.6,
               fontFamily: "'JetBrains Mono', monospace",
@@ -471,7 +574,7 @@ export default function Chat() {
               {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
             </span>
           )}
-          {activeGoalCount > 0 && (
+          {registered && activeGoalCount > 0 && (
             <span style={{
               fontSize: 11, color: '#F59E0B', fontWeight: 400,
               fontFamily: "'JetBrains Mono', monospace",
@@ -479,7 +582,7 @@ export default function Chat() {
               {activeGoalCount} {isMobile ? 'goal' : activeGoalCount === 1 ? 'goal' : 'goals'}
             </span>
           )}
-          {memories.length > 0 && (
+          {registered && memories.length > 0 && (
             <span style={{
               fontSize: 11, color: '#3F3F46', fontWeight: 400,
             }}>
@@ -497,6 +600,11 @@ export default function Chat() {
           </button>
         </div>
       </div>
+
+      {/* ── Registration Banner (shown when unregistered) ── */}
+      {!registered && messages.length > 0 && (
+        <RegistrationBanner onRegisterClick={() => setShowRegistrationModal(true)} />
+      )}
 
       {/* ── Messages ── */}
       <div style={{
@@ -518,15 +626,48 @@ export default function Chat() {
                 marginBottom: 8, letterSpacing: '-0.03em',
               }}>Ask Embris anything</h3>
               <p style={{ fontSize: 14, color: '#3F3F46' }}>
-                Your self-learning companion — I remember, reflect, grow, and track your goals
+                {registered
+                  ? 'Your self-learning companion — I remember, reflect, grow, and track your goals'
+                  : 'Your AI companion for the Vaultfire Protocol — register on-chain to unlock my full potential'
+                }
               </p>
             </div>
+
+            {/* Registration CTA for unregistered users */}
+            {!registered && (
+              <button
+                onClick={() => setShowRegistrationModal(true)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '12px 24px',
+                  backgroundColor: 'rgba(249,115,22,0.1)',
+                  color: '#F97316',
+                  border: '1px solid rgba(249,115,22,0.2)',
+                  borderRadius: 12,
+                  fontSize: 13.5, fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(249,115,22,0.15)';
+                  e.currentTarget.style.borderColor = 'rgba(249,115,22,0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(249,115,22,0.1)';
+                  e.currentTarget.style.borderColor = 'rgba(249,115,22,0.2)';
+                }}
+              >
+                <ShieldCheckIcon size={15} />
+                Register On-Chain to Unlock Full Experience
+              </button>
+            )}
+
             <div style={{
               display: 'grid',
               gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
               gap: 8, maxWidth: 480, width: '100%',
             }}>
-              {SUGGESTED_PROMPTS.map((prompt) => (
+              {suggestedPrompts.map((prompt) => (
                 <button key={prompt} onClick={() => sendMessage(prompt)}
                   style={{
                     padding: '12px 16px',
@@ -563,7 +704,6 @@ export default function Chat() {
 
               <div style={{
                 maxWidth: '85%',
-                /* User: subtle dark bg, rounded. Embris: NO background, just text */
                 padding: msg.role === 'user' ? '10px 16px' : '0',
                 borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '0',
                 backgroundColor: msg.role === 'user' ? '#1A1A1E' : 'transparent',
@@ -587,7 +727,7 @@ export default function Chat() {
         </div>
       </div>
 
-      {/* ── Input — clean, rounded, subtle shadow, like ChatGPT ── */}
+      {/* ── Input ── */}
       <div style={{
         padding: isMobile ? '12px 16px 16px' : '16px 24px 24px',
         backgroundColor: '#09090B',
@@ -632,7 +772,6 @@ export default function Chat() {
               style={{
                 width: 32, height: 32, borderRadius: 8, border: 'none',
                 cursor: isLoading || !hasText ? 'default' : 'pointer',
-                /* Subtle until text is entered — then orange */
                 backgroundColor: hasText ? '#F97316' : 'transparent',
                 color: hasText ? '#09090B' : '#3F3F46',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -652,6 +791,13 @@ export default function Chat() {
           )}
         </div>
       </div>
+
+      {/* ── Registration Modal ── */}
+      <RegistrationModal
+        isOpen={showRegistrationModal}
+        onClose={() => setShowRegistrationModal(false)}
+        onRegistered={handleRegistered}
+      />
     </div>
   );
 }

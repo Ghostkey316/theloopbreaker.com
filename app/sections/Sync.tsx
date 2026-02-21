@@ -26,6 +26,7 @@ interface EnhancedStats {
   sessionSummaries: number;
   goals: number;
   hasPersonality: boolean;
+  isRegistered: boolean;
   totalDataSize: string;
   walletConnected: boolean;
   lastSync: string | null;
@@ -56,6 +57,7 @@ export default function Sync() {
   const [stats, setStats] = useState<EnhancedStats>({
     chatMessages: 0, memories: 0, reflections: 0, patterns: 0, insights: 0,
     emotionalEntries: 0, sessionSummaries: 0, goals: 0, hasPersonality: false,
+    isRegistered: false,
     totalDataSize: "0 KB", walletConnected: false, lastSync: null,
   });
   const [exportSuccess, setExportSuccess] = useState(false);
@@ -90,6 +92,7 @@ export default function Sync() {
 
     setStats({
       ...enhanced,
+      isRegistered: enhanced.isRegistered ?? false,
       walletConnected: !!walletAddr,
       lastSync,
     });
