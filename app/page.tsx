@@ -50,8 +50,11 @@ export default function Page() {
       <main style={{
         flex: 1,
         overflowY: 'auto',
+        overflowX: 'hidden',
         backgroundColor: '#0A0A0C',
-        paddingTop: isMobile ? 60 : 0,
+        paddingTop: isMobile ? 64 : 0,
+        width: '100%',
+        minWidth: 0,
       }}>
         {renderSection()}
       </main>

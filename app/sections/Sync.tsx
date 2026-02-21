@@ -22,6 +22,14 @@ export default function Sync() {
   const [importError, setImportError] = useState('');
   const [importSuccess, setImportSuccess] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   useEffect(() => {
     loadStats();
@@ -107,25 +115,39 @@ export default function Sync() {
   };
 
   return (
-    <div style={{ padding: 32, maxWidth: 700, margin: '0 auto' }}>
+    <div style={{ padding: isMobile ? '16px 16px 32px' : 32, maxWidth: 700, margin: '0 auto' }}>
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#ECEDEE', marginBottom: 8 }}>Data Sync</h1>
-        <p style={{ fontSize: 14, color: '#9BA1A6' }}>Export and import your Vaultfire data. All data is stored locally in your browser.</p>
+        <h1 style={{ fontSize: isMobile ? 20 : 24, fontWeight: 700, color: '#ECEDEE', marginBottom: 8 }}>Data Sync</h1>
+        <p style={{ fontSize: isMobile ? 13 : 14, color: '#9BA1A6', lineHeight: 1.6 }}>Export and import your Vaultfire data. All data is stored locally in your browser.</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 24 }}>
+      {/* Stats Grid */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(140px, 1fr))',
+        gap: isMobile ? 8 : 12,
+        marginBottom: 24,
+      }}>
         {[
           { label: 'Chat Messages', value: stats.chatMessages, icon: '💬', color: '#FF6B35' },
           { label: 'Memories', value: stats.memories, icon: '🧠', color: '#9B59B6' },
           { label: 'Wallet', value: stats.walletConnected ? 'Connected' : 'None', icon: '💼', color: stats.walletConnected ? '#22C55E' : '#9BA1A6' },
           { label: 'Data Size', value: stats.dataSize, icon: '💾', color: '#9BA1A6' },
         ].map((stat) => (
-          <div key={stat.label} style={{ backgroundColor: '#1A1A1E', border: '1px solid #2A2A2E', borderRadius: 12, padding: '14px 16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <span style={{ fontSize: 16 }}>{stat.icon}</span>
-              <p style={{ fontSize: 11, color: '#9BA1A6', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</p>
+          <div key={stat.label} style={{ backgroundColor: '#1A1A1E', border: '1px solid #2A2A2E', borderRadius: 12, padding: isMobile ? '12px 12px' : '14px 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              <span style={{ fontSize: isMobile ? 14 : 16 }}>{stat.icon}</span>
+              <p style={{ fontSize: isMobile ? 10 : 11, color: '#9BA1A6', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</p>
             </div>
-            <p style={{ fontSize: 18, fontWeight: 700, color: stat.color, fontFamily: 'monospace' }}>{stat.value}</p>
+            <p style={{
+              fontSize: isMobile ? 15 : 18,
+              fontWeight: 700,
+              color: stat.color,
+              fontFamily: 'monospace',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}>{stat.value}</p>
           </div>
         ))}
       </div>
@@ -136,18 +158,30 @@ export default function Sync() {
         </div>
       )}
 
-      <div style={{ backgroundColor: '#1A1A1E', border: '1px solid #2A2A2E', borderRadius: 14, padding: 20, marginBottom: 16 }}>
+      {/* Export Card */}
+      <div style={{ backgroundColor: '#1A1A1E', border: '1px solid #2A2A2E', borderRadius: 14, padding: isMobile ? 16 : 20, marginBottom: 16 }}>
         <h2 style={{ fontSize: 15, fontWeight: 600, color: '#ECEDEE', marginBottom: 6 }}>Export Data</h2>
         <p style={{ fontSize: 13, color: '#9BA1A6', marginBottom: 14, lineHeight: 1.6 }}>
           Download a JSON backup of all your chat history, memories, and wallet address.
         </p>
         <button onClick={handleExport}
-          style={{ padding: '10px 20px', backgroundColor: exportSuccess ? '#22C55E' : '#FF6B35', border: 'none', borderRadius: 10, color: '#0A0A0C', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+          style={{
+            padding: '10px 20px',
+            backgroundColor: exportSuccess ? '#22C55E' : '#FF6B35',
+            border: 'none',
+            borderRadius: 10,
+            color: '#0A0A0C',
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: 'pointer',
+            width: isMobile ? '100%' : 'auto',
+          }}>
           {exportSuccess ? 'Exported!' : 'Export Backup'}
         </button>
       </div>
 
-      <div style={{ backgroundColor: '#1A1A1E', border: '1px solid #2A2A2E', borderRadius: 14, padding: 20, marginBottom: 16 }}>
+      {/* Import Card */}
+      <div style={{ backgroundColor: '#1A1A1E', border: '1px solid #2A2A2E', borderRadius: 14, padding: isMobile ? 16 : 20, marginBottom: 16 }}>
         <h2 style={{ fontSize: 15, fontWeight: 600, color: '#ECEDEE', marginBottom: 6 }}>Import Data</h2>
         <p style={{ fontSize: 13, color: '#9BA1A6', marginBottom: 14, lineHeight: 1.6 }}>
           Restore from a previously exported backup file. This will merge with your existing data.
@@ -162,19 +196,39 @@ export default function Sync() {
             <p style={{ fontSize: 12, color: '#22C55E' }}>Data imported successfully!</p>
           </div>
         )}
-        <label style={{ display: 'inline-block', padding: '10px 20px', backgroundColor: '#2A2A2E', border: '1px solid #3A3A3E', borderRadius: 10, color: '#ECEDEE', fontSize: 14, cursor: 'pointer' }}>
+        <label style={{
+          display: isMobile ? 'block' : 'inline-block',
+          padding: '10px 20px',
+          backgroundColor: '#2A2A2E',
+          border: '1px solid #3A3A3E',
+          borderRadius: 10,
+          color: '#ECEDEE',
+          fontSize: 14,
+          cursor: 'pointer',
+          textAlign: 'center',
+        }}>
           Choose Backup File
           <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
         </label>
       </div>
 
-      <div style={{ backgroundColor: '#1A1A1E', border: '1px solid #EF444430', borderRadius: 14, padding: 20 }}>
+      {/* Clear Data Card */}
+      <div style={{ backgroundColor: '#1A1A1E', border: '1px solid #EF444430', borderRadius: 14, padding: isMobile ? 16 : 20 }}>
         <h2 style={{ fontSize: 15, fontWeight: 600, color: '#EF4444', marginBottom: 6 }}>Clear All Data</h2>
         <p style={{ fontSize: 13, color: '#9BA1A6', marginBottom: 14, lineHeight: 1.6 }}>
           Permanently delete all local data including chat history, memories, and wallet. Export a backup first.
         </p>
         <button onClick={handleClearAll} disabled={clearing}
-          style={{ padding: '10px 20px', backgroundColor: 'transparent', border: '1px solid #EF4444', borderRadius: 10, color: '#EF4444', fontSize: 14, cursor: clearing ? 'default' : 'pointer' }}>
+          style={{
+            padding: '10px 20px',
+            backgroundColor: 'transparent',
+            border: '1px solid #EF4444',
+            borderRadius: 10,
+            color: '#EF4444',
+            fontSize: 14,
+            cursor: clearing ? 'default' : 'pointer',
+            width: isMobile ? '100%' : 'auto',
+          }}>
           {clearing ? 'Clearing...' : 'Clear All Local Data'}
         </button>
       </div>
