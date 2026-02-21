@@ -21,6 +21,7 @@
     "apps/verified-dm-demo",
     "base-mini-app",
     "mobile-app",
+    "ember-mobile-app",
     "sdk/examples",
     "dashboard",
     "agent",
