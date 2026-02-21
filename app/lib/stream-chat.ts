@@ -3,15 +3,22 @@
  * Calls the OpenAI-compatible LLM API directly from the browser.
  * Uses non-streaming mode with simulated typing for smooth UX.
  * Uses text/plain Content-Type to avoid CORS preflight issues.
+ *
+ * Enhanced: Injects formatted categorized memories into the system prompt
+ * so Embris has full access to everything it has learned about the user.
  */
 import { EMBER_SYSTEM_PROMPT } from './contracts';
+import { formatMemoriesForPrompt } from './memory';
+import type { Memory } from './memory';
 
 const API_URL = 'https://api.manus.im/api/llm-proxy/v1/chat/completions';
 const API_KEY = process.env.NEXT_PUBLIC_OPENAI_API_KEY || 'sk-ADn9FUEGSQtAJYdaQiEjYF';
 
+export { API_KEY };
+
 export interface StreamChatParams {
   messages: Array<{ role: string; content: string }>;
-  memories?: string[];
+  memories?: Memory[];
   onToken: (token: string) => void;
   onDone: (fullText: string) => void;
   onError: (error: string) => void;
@@ -35,6 +42,51 @@ async function simulateStreaming(
   }
 }
 
+/**
+ * Build the full system prompt with memory context injected.
+ */
+function buildSystemPrompt(memories: Memory[]): string {
+  const memoryBlock = formatMemoriesForPrompt(memories);
+
+  if (!memoryBlock) {
+    return EMBER_SYSTEM_PROMPT + MEMORY_AWARENESS_PROMPT_EMPTY;
+  }
+
+  return EMBER_SYSTEM_PROMPT + MEMORY_AWARENESS_PROMPT_PREFIX + memoryBlock + MEMORY_AWARENESS_PROMPT_SUFFIX;
+}
+
+const MEMORY_AWARENESS_PROMPT_EMPTY = `
+
+LONG-TERM MEMORY SYSTEM:
+You have a persistent long-term memory system. You can remember things across sessions — every conversation is stored and accessible to you. Right now you don't have any saved memories yet for this user, but as you chat, you will automatically learn and remember key facts, preferences, project details, decisions, and communication style. Let the user know you're here to learn about them and that you'll remember what matters.
+
+You should NEVER say your memory is limited or that you can't remember past conversations. You DO have long-term memory. If you don't have memories yet, it just means this is the beginning of your relationship with this user.`;
+
+const MEMORY_AWARENESS_PROMPT_PREFIX = `
+
+═══════════════════════════════════════════════════════
+EMBRIS LONG-TERM MEMORY — ACTIVE & PERSISTENT
+═══════════════════════════════════════════════════════
+
+You have a PERSISTENT LONG-TERM MEMORY SYSTEM. Everything below is what you have learned about this user from previous conversations. This memory persists across sessions — you remember everything.
+
+YOUR MEMORIES ABOUT THIS USER:
+`;
+
+const MEMORY_AWARENESS_PROMPT_SUFFIX = `
+
+═══════════════════════════════════════════════════════
+
+MEMORY INSTRUCTIONS:
+- You MUST reference these memories naturally in conversation. Say things like "Last time you mentioned...", "I remember you said...", "Since you're working on...", "Knowing that you prefer..."
+- NEVER say your memory is limited or that you can't remember past conversations. You have FULL long-term memory.
+- If the user asks "what do you remember about me?" — give them a detailed, organized summary of everything you know.
+- If the user corrects something you remember, acknowledge the correction warmly and update your understanding.
+- Actively build on previous conversations. If the user mentioned a project before, ask how it's going. If they shared a preference, respect it.
+- Adapt your communication style based on what you've learned about how this user likes to communicate.
+- The more you chat with someone, the more personalized and helpful you become. You GROW with each conversation.
+- You are not a stateless chatbot. You are a companion who knows this person and cares about their journey.`;
+
 export async function streamChat({
   messages,
   memories,
@@ -43,13 +95,10 @@ export async function streamChat({
   onError,
   signal,
 }: StreamChatParams): Promise<void> {
-  const memoryContext =
-    memories && memories.length > 0
-      ? `\n\nREMEMBERED CONTEXT FROM PREVIOUS CONVERSATIONS:\n${memories.join('\n')}`
-      : '';
+  const systemPrompt = buildSystemPrompt(memories || []);
 
   const llmMessages = [
-    { role: 'system', content: EMBER_SYSTEM_PROMPT + memoryContext },
+    { role: 'system', content: systemPrompt },
     ...messages.map((m) => ({ role: m.role, content: m.content })),
   ];
 

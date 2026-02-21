@@ -1,7 +1,19 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { streamChat } from '../lib/stream-chat';
-import { extractMemories, getMemories, getChatHistory, saveChatHistory, saveMemories, clearChatHistory, clearMemories, type ChatMessage, type Memory } from '../lib/memory';
+import { streamChat, API_KEY } from '../lib/stream-chat';
+import {
+  extractMemories,
+  extractMemoriesWithAI,
+  getMemories,
+  getChatHistory,
+  saveChatHistory,
+  saveMemories,
+  clearChatHistory,
+  clearMemories,
+  deduplicateMemories,
+  type ChatMessage,
+  type Memory,
+} from '../lib/memory';
 import { getWalletAddress } from '../lib/wallet';
 
 interface ChatMessageWithStatus extends ChatMessage {
@@ -14,7 +26,7 @@ const SUGGESTED_PROMPTS = [
   'Explain the core values',
   'How does the bridge work?',
   'Tell me about AI governance',
-  'What contracts are on Avalanche?',
+  'What do you remember about me?',
 ];
 
 /* ── SVG Icons ── */
@@ -126,6 +138,7 @@ export default function Chat() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
+  // Load chat history and memories on mount
   useEffect(() => {
     const history = getChatHistory();
     const mems = getMemories();
@@ -140,9 +153,37 @@ export default function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  /**
+   * Background AI memory extraction — runs after each exchange
+   * without blocking the UI or the conversation flow.
+   */
+  const runBackgroundMemoryExtraction = useCallback(
+    async (userText: string, assistantText: string, currentMemories: Memory[]) => {
+      try {
+        const aiMemories = await extractMemoriesWithAI(
+          userText,
+          assistantText,
+          currentMemories,
+          API_KEY,
+        );
+        if (aiMemories.length > 0) {
+          const merged = deduplicateMemories([...currentMemories, ...aiMemories]);
+          saveMemories(merged);
+          setMemoriesState(merged);
+        }
+      } catch {
+        // Silent fail — background extraction should never disrupt UX
+      }
+    },
+    [],
+  );
+
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || isLoading) return;
     setShowSuggestions(false);
+
+    // Reload memories fresh from storage each time to ensure we have the latest
+    const currentMemories = getMemories();
 
     const userMsg: ChatMessageWithStatus = {
       id: `user_${Date.now()}`,
@@ -175,7 +216,8 @@ export default function Chat() {
 
     await streamChat({
       messages: llmMessages,
-      memories: memories.slice(-10).map((m) => m.content),
+      // Pass FULL Memory objects — stream-chat.ts now formats them properly
+      memories: currentMemories,
       signal: controller.signal,
       onToken: (token) => {
         streamingRef.current += token;
@@ -190,12 +232,17 @@ export default function Chat() {
         const updatedHistory = [...history, { ...userMsg, isStreaming: undefined }, finalAsst];
         saveChatHistory(updatedHistory);
 
-        const newMems = extractMemories(text, fullText);
-        if (newMems.length > 0) {
-          const allMems = [...memories, ...newMems].slice(-50);
+        // Step 1: Fast regex extraction (immediate)
+        const regexMems = extractMemories(text, fullText);
+        let allMems = currentMemories;
+        if (regexMems.length > 0) {
+          allMems = deduplicateMemories([...currentMemories, ...regexMems]);
           saveMemories(allMems);
           setMemoriesState(allMems);
         }
+
+        // Step 2: AI-powered extraction (background, non-blocking)
+        runBackgroundMemoryExtraction(text, fullText, allMems);
 
         setMessages((prev) =>
           prev.map((m) => m.id === assistantMsg.id ? { ...m, content: fullText, isStreaming: false } : m)
@@ -213,7 +260,7 @@ export default function Chat() {
         setIsLoading(false);
       },
     });
-  }, [isLoading, memories]);
+  }, [isLoading, runBackgroundMemoryExtraction]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -281,7 +328,6 @@ export default function Chat() {
           <div className="fade-in" style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
             justifyContent: 'center', flex: 1, gap: isMobile ? 32 : 40,
-            padding: isMobile ? '40px 20px' : '60px 32px',
           }}>
             <div style={{ textAlign: 'center' }}>
               <svg width={28} height={28} viewBox="0 0 32 32" fill="none" style={{ marginBottom: 20, opacity: 0.7 }}>
@@ -293,7 +339,7 @@ export default function Chat() {
                 marginBottom: 8, letterSpacing: '-0.03em',
               }}>Ask Embris anything</h3>
               <p style={{ fontSize: 14, color: '#3F3F46' }}>
-                Your guide to the Vaultfire Protocol
+                Your companion for the Vaultfire Protocol — I remember everything
               </p>
             </div>
             <div style={{
