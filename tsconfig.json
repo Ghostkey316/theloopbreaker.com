@@ -22,6 +22,7 @@
     "base-mini-app",
     "mobile-app",
     "ember-mobile-app",
+    "ember-web-app",
     "sdk/examples",
     "dashboard",
     "agent",
