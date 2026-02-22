@@ -74,6 +74,7 @@ export default function Analytics() {
         display: "flex", alignItems: isMobile ? "flex-start" : "center",
         justifyContent: "space-between", marginBottom: isMobile ? 40 : 48,
         flexDirection: isMobile ? "column" : "row", gap: isMobile ? 16 : 0,
+        paddingLeft: isMobile ? 48 : 0,
       }}>
         <div>
           <h1 style={{ fontSize: 28, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.04em", lineHeight: 1.25 }}>Analytics</h1>

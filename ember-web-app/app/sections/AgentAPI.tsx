@@ -335,7 +335,7 @@ print(f"Type: {agent[4]}")`,
   return (
     <div style={{ padding: isMobile ? 16 : 32, maxWidth: 900, margin: "0 auto" }}>
       {/* Header */}
-      <div style={{ marginBottom: 24 }}>
+      <div style={{ marginBottom: 24, paddingLeft: isMobile ? 48 : 0 }}>
         <h2 style={{ fontSize: isMobile ? 22 : 26, fontWeight: 800, color: "#F4F4F5", margin: 0, letterSpacing: -0.5 }}>
           Agent API / SDK
         </h2>

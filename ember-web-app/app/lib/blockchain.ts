@@ -110,11 +110,12 @@ export async function checkChainConnectivity(chain: 'base' | 'avalanche' | 'ethe
 }
 
 export async function checkAllChains(): Promise<Record<string, RPCResult>> {
-  const [base, avalanche] = await Promise.all([
+  const [ethereum, base, avalanche] = await Promise.all([
+    checkChainConnectivity('ethereum'),
     checkChainConnectivity('base'),
     checkChainConnectivity('avalanche'),
   ]);
-  return { base, avalanche };
+  return { ethereum, base, avalanche };
 }
 
 // ─── Contract existence check ─────────────────────────────────────────────────

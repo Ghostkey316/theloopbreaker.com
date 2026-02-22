@@ -335,7 +335,7 @@ export default function VNS() {
   return (
     <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 16px 80px" }}>
       {/* Header */}
-      <div style={{ marginBottom: 28 }}>
+      <div className="pl-12 sm:pl-0" style={{ marginBottom: 28 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
           <div style={{
             width: 40, height: 40, borderRadius: 12,

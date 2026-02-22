@@ -13,7 +13,7 @@ export default function AgentMarketplace() {
 
   return (
     <div className="page-enter p-4 sm:p-6 max-w-4xl mx-auto pb-24">
-      <div className="mb-6">
+      <div className="mb-6 pl-12 sm:pl-0">
         <h1 className="text-2xl sm:text-3xl font-bold text-white">Marketplace</h1>
         <p className="text-sm text-zinc-400 mt-1">Browse AI agents and human contributors. Humans and agents are equals.</p>
       </div>
