@@ -720,7 +720,7 @@ const EMBRIS_TOOLS: Tool[] = [
     type: "function",
     function: {
       name: "getTokenBalances",
-      description: "Get ETH and ERC-20 token balances for a wallet address on Base and Avalanche. Use when user asks about their portfolio or balances.",
+      description: "Get ETH and ERC-20 token balances for a wallet address on Ethereum, Base, and Avalanche. Use when user asks about their portfolio or balances.",
       parameters: {
         type: "object",
         properties: {
@@ -878,7 +878,7 @@ Avalanche C-Chain Contracts (Chain ID 43114):
 AGENT CAPABILITIES — YOU CAN:
 1. Look up any address's Vaultfire trust profile (use lookupTrustProfile tool)
 2. Check wallet security (use checkWalletSecurity tool)
-3. Get token balances on Base and Avalanche (use getTokenBalances tool)
+3. Get token balances on Ethereum, Base, and Avalanche (use getTokenBalances tool)
 4. Inspect any contract address (use getContractInfo tool)
 5. Build transactions for the user to sign:
    - Register as a Vaultfire agent (buildRegisterAgentTx)

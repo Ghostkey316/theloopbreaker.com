@@ -1,6 +1,6 @@
 /**
  * Vaultfire Protocol Contract Addresses
- * All 28 contracts across Base and Avalanche chains.
+ * All 42 contracts (14 per chain × 3 chains) across Ethereum, Base, and Avalanche chains.
  */
 
 export interface ContractInfo {
@@ -120,7 +120,7 @@ KEY COMPONENTS:
 - AI Partnership Bonds: Bonds between humans and AI agents
 - AI Accountability Bonds: Financial accountability for AI behavior
 - Belief Attestation: Verifies AI belief systems and value alignment
-- Teleporter Bridge: Cross-chain bridge between Base and Avalanche
+- Teleporter Bridge: Cross-chain bridge between Ethereum, Base, and Avalanche
 - Multisig Governance: Multi-signature governance for protocol changes
 
 Website: https://theloopbreaker.com

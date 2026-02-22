@@ -119,7 +119,7 @@ These two contracts connect Vaultfire to external standards and other blockchain
 
 **`VaultfireERC8004Adapter`** (`0x02Cb2bFBeC479Cb1EA109E4C92744e08d5A5B361` on Base) is the glue between Vaultfire's bond systems and the ERC-8004 standard. It allows agents to register for partnerships, syncs partnership reputation to the ERC-8004 registry, requests validation of partnership claims, and provides cross-platform reputation queries.
 
-**`VaultfireTeleporterBridge`** (`0xaD8D7aE60805B6e5d4BF6b70248AD8B46DEE9528` on Base) is the cross-chain bridge that synchronizes an agent's trust state between Base and Avalanche using Avalanche's native **Teleporter (ICM)** protocol. It supports five message types: agent registration sync, partnership bond sync, accountability bond sync, reputation sync, and validation sync. It includes nonce-based replay protection, source-chain verification, message hash deduplication, and an emergency pause function.
+**`VaultfireTeleporterBridge`** (`0xaD8D7aE60805B6e5d4BF6b70248AD8B46DEE9528` on Base) is the cross-chain bridge that synchronizes an agent's trust state between Ethereum, Base, and Avalanche using Avalanche's native **Teleporter (ICM)** protocol. It supports five message types: agent registration sync, partnership bond sync, accountability bond sync, reputation sync, and validation sync. It includes nonce-based replay protection, source-chain verification, message hash deduplication, and an emergency pause function.
 
 ---
 

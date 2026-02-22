@@ -43,7 +43,7 @@ export default function Home() {
           <Flame className="h-10 w-10 text-orange-500" />
         </div>
         <h1 className="text-4xl md:text-5xl font-bold mb-4">Vaultfire Protocol</h1>
-        <p className="text-gray-500 max-w-lg mb-8">Web3 trust, identity, and AI accountability — built on Base and Avalanche. Powered by Ember AI.</p>
+        <p className="text-gray-500 max-w-lg mb-8">Web3 trust, identity, and AI accountability — built on Ethereum, Base, and Avalanche. Powered by Ember AI.</p>
         <div className="flex gap-3">
           <Button onClick={() => setLocation("/ember")} className="bg-orange-600 hover:bg-orange-700 text-white gap-2"><Sparkles className="h-4 w-4" />Talk to Ember</Button>
           <Button variant="outline" onClick={() => setLocation("/subscription")} className="border-white/20 text-gray-300 hover:text-white">View Plans</Button>
@@ -54,7 +54,7 @@ export default function Home() {
       <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto px-6 pb-24">
         {[
           { icon: Shield, title: "Trust Verification", desc: "On-chain identity verification with ERC-8004" },
-          { icon: ArrowRightLeft, title: "Cross-Chain Bridge", desc: "Teleporter bridge between Base and Avalanche" },
+          { icon: ArrowRightLeft, title: "Cross-Chain Bridge", desc: "Teleporter bridge between Ethereum, Base, and Avalanche" },
           { icon: Users, title: "AI Partnership Bonds", desc: "Smart contracts binding AI agents to accountability" },
         ].map(f => (
           <div key={f.title} className="rounded-xl border border-white/10 bg-[#111] p-6 space-y-3">

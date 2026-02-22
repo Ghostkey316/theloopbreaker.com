@@ -4,7 +4,7 @@
 
 This agent is a core piece of infrastructure for the Vaultfire ecosystem. It performs several critical functions:
 
-1.  **Comprehensive Monitoring**: Watches all 14 core Vaultfire contracts on both Base and Avalanche C-Chain for key events.
+1.  **Comprehensive Monitoring**: Watches all 14 core Vaultfire contracts on both Ethereum, Base, and Avalanche C-Chain for key events.
 2.  **Autonomous Bridge Relay**: Automatically picks up `MessageSent` events from the `VaultfireTeleporterBridge` on one chain and relays the message to the corresponding bridge contract on the other chain.
 3.  **Self-Registration**: On startup, the agent registers itself as an AI agent within the `ERC8004IdentityRegistry` and creates a partnership bond with its designated human partner (the deployer wallet).
 4.  **Persistent Operation**: Designed to run 24/7 as a persistent Node.js process with graceful error handling, auto-reconnecting RPCs, and detailed logging.
@@ -89,7 +89,7 @@ The agent will start, connect to both chains, perform its self-registration, and
 
 ### Event Monitoring
 
-The agent polls both Base and Avalanche at a regular interval (`POLL_INTERVAL_MS`). It uses `provider.getLogs()` to fetch batches of logs between the last seen block and the current block. For each log, it uses a pre-computed map of event topics to identify the contract and event name, then parses the log and passes it to a central `onEvent` handler.
+The agent polls both Ethereum, Base, and Avalanche at a regular interval (`POLL_INTERVAL_MS`). It uses `provider.getLogs()` to fetch batches of logs between the last seen block and the current block. For each log, it uses a pre-computed map of event topics to identify the contract and event name, then parses the log and passes it to a central `onEvent` handler.
 
 ### Bridge Relay Logic
 

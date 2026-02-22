@@ -653,7 +653,7 @@ export async function registerWallet(
     if (targetChains.length === 1) {
       message = `Registration confirmed on ${CHAIN_REGISTRY[targetChains[0]].name}!`;
     } else {
-      message = `Registration confirmed on both Base and Avalanche!`;
+      message = `Registration confirmed on both Ethereum, Base, and Avalanche!`;
     }
   } else {
     const successNames = successChains.map(r => CHAIN_REGISTRY[r.chain].name).join(' and ');

@@ -146,7 +146,7 @@ export default function AboutScreen() {
               <View style={s.archCard}>
                 <Text style={s.archTitle}>ERC-8004 Standard</Text>
                 <Text style={s.archText}>
-                  AI agent identity, reputation, and validation across Base and Avalanche.
+                  AI agent identity, reputation, and validation across Ethereum, Base, and Avalanche.
                 </Text>
                 <View style={s.archFeatures}>
                   <ArchFeature icon="person" label="Identity" />

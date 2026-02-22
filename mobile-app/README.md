@@ -2,7 +2,7 @@
 
 **The ethical AI wallet and agent for the Vaultfire Protocol.**
 
-Vaultfire AI is a ChatGPT-style mobile wallet with an on-chain AI agent called **Embris** — the flame inside the Vaultfire shield. Embris uses OpenAI function calling with gpt-4o to execute live blockchain reads, analyze smart contracts, monitor wallets, and help users interact with the Vaultfire Protocol across Base and Avalanche.
+Vaultfire AI is a ChatGPT-style mobile wallet with an on-chain AI agent called **Embris** — the flame inside the Vaultfire shield. Embris uses OpenAI function calling with gpt-4o to execute live blockchain reads, analyze smart contracts, monitor wallets, and help users interact with the Vaultfire Protocol across Ethereum, Base, and Avalanche.
 
 Built for the **Avalanche Build Games** competition.
 
@@ -27,7 +27,7 @@ Embris is a full on-chain AI agent, not just a chatbot. Embris can:
 - Transaction preview modals before signing
 
 ### Multi-Chain Wallet
-- ETH/AVAX balance display on Base and Avalanche
+- ETH/AVAX balance display on Ethereum, Base, and Avalanche
 - ERC-20 token detection and balances
 - Transaction history via BaseScan API
 - Send tokens with Vaultfire trust verification
@@ -115,7 +115,7 @@ Open the URL shown in the terminal (typically `http://localhost:8081`).
 
 ## On-Chain Integration
 
-The app integrates with **28 deployed Vaultfire Protocol contracts** across Base and Avalanche:
+The app integrates with **28 deployed Vaultfire Protocol contracts** across Ethereum, Base, and Avalanche:
 
 ### Base Contracts (14)
 - ERC8004IdentityRegistry

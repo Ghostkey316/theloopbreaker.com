@@ -106,7 +106,7 @@ Vaultfire values, architecture, and contract explorer.
 - **Mission Statement**: Privacy, freedom, accountability, human dignity
 - **Values Cards**: 4 cards for core values with icons
 - **Architecture Section**: Brief protocol overview
-- **Contract Explorer**: Expandable list of all 28 contracts
+- **Contract Explorer**: Expandable list of all 42 contracts (14 per chain × 3 chains)
   - Each shows: Name, short address, chain badge (Base/Avalanche)
   - Tap to open on Basescan/Snowtrace
 - **Links**: Website, docs, social

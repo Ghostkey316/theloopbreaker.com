@@ -31,7 +31,7 @@
 
 The "HTTPS for AI" analogy is the most powerful framing for the pitch. HTTPS did not ask for permission; it became the standard for secure communication. Vaultfire aims to do the same for AI-human trust. It is infrastructure, not a product. Emphasize that this is a foundational layer that any AI developer, company, or ecosystem can build on top of. It is not about competing with other AI agents; it is about providing the rails for all of them to run on safely.
 
-The future of AI will not be confined to one blockchain or one platform. Vaultfire is built for this future, with native deployments on both Base and Avalanche and a cross-chain bridge connecting them. The protocol is designed to be the universal trust layer, not a single-chain solution.
+The future of AI will not be confined to one blockchain or one platform. Vaultfire is built for this future, with native deployments on both Ethereum, Base, and Avalanche and a cross-chain bridge connecting them. The protocol is designed to be the universal trust layer, not a single-chain solution.
 
 ## 4. Competition Angle: Avalanche Build Games
 
@@ -61,7 +61,7 @@ This is Vaultfire's strongest angle for the competition. The protocol is not jus
 
 **(25-45s) How It Works and the Avalanche Advantage**
 
-> **(Visual: Simple diagram showing the Base and Avalanche logos connected by the Teleporter bridge. An "AI Agent" icon with a trust score moves seamlessly between them.)**
+> **(Visual: Simple diagram showing the Ethereum, Base, and Avalanche logos connected by the Teleporter bridge. An "AI Agent" icon with a trust score moves seamlessly between them.)**
 >
 > **VOICEOVER:** "We do this with on-chain accountability bonds and a revolutionary cross-chain bridge built on Avalanche Teleporter. An AI's reputation is now portable. Trust built on Base is instantly recognized on Avalanche. This is the future of interoperable, verifiable trust."
 

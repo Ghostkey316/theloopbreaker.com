@@ -12,14 +12,14 @@ The Vaultfire Protocol is designed with a primary/secondary chain architecture t
 
 ### Secondary Chain: Avalanche C-Chain
 
-**Avalanche C-Chain (Chain ID 43114) is a supported secondary chain.** This deployment was established to participate in the Avalanche Build Games program and expand the protocol's reach. While it mirrors the full functionality of the Base deployment, it is considered a secondary instance. In the future, cross-chain communication mechanisms may be implemented to link the state between Base and Avalanche.
+**Avalanche C-Chain (Chain ID 43114) is a supported secondary chain.** This deployment was established to participate in the Avalanche Build Games program and expand the protocol's reach. While it mirrors the full functionality of the Base deployment, it is considered a secondary instance. In the future, cross-chain communication mechanisms may be implemented to link the state between Ethereum, Base, and Avalanche.
 
 ### Key Architectural Decisions
 
 - **Canonical Truth on Base:** All contracts are deployed to both chains, but the Base deployment is the ultimate source of truth.
 - **Independent Deployments:** Each chain has a full, independent deployment of all 13 core protocol contracts.
 - **Configuration-driven Deployment:** A master deployment script (`scripts/deploy-multichain.js`) handles deployments to any supported network, reading network-specific parameters from `hardhat.config.js`.
-- **EVM Compatibility:** The protocol leverages the Cancun EVM version, which is supported on both Base and Avalanche (since the Etna/Avalanche9000 upgrade, activated December 16, 2024) [1]. This allows for a unified Solidity codebase (`v0.8.25`) without requiring different EVM versions per chain.
+- **EVM Compatibility:** The protocol leverages the Cancun EVM version, which is supported on both Ethereum, Base, and Avalanche (since the Etna/Avalanche9000 upgrade, activated December 16, 2024) [1]. This allows for a unified Solidity codebase (`v0.8.25`) without requiring different EVM versions per chain.
 - **Agent Chain Switching:** The Vaultfire Sentinel agent is designed to be chain-aware. It determines the target chain via the `VAULTFIRE_CHAIN` environment variable, defaulting to `base` if unset.
 
 ## Deployment Procedure

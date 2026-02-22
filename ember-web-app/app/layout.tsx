@@ -4,7 +4,7 @@ import { WalletAuthProvider } from './lib/WalletAuthContext';
 
 export const metadata: Metadata = {
   title: 'Embris — Powered by Vaultfire Protocol',
-  description: 'Your ethical AI companion. Decentralized trust infrastructure across Base and Avalanche.',
+  description: 'Your ethical AI companion. Decentralized trust infrastructure across Ethereum, Base, and Avalanche.',
   icons: {
     icon: '/favicon.ico',
   },

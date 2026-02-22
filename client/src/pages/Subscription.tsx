@@ -65,7 +65,7 @@ export default function Subscription() {
               {[
                 { text: "Ember AI Assistant", sub: "Unlimited messages" },
                 { text: "Trust Verification", sub: "On-chain identity" },
-                { text: "Cross-Chain Bridge", sub: "Base & Avalanche" },
+                { text: "Cross-Chain Bridge", sub: "Ethereum, Base & Avalanche" },
                 { text: "Wallet Integration", sub: "MetaMask, Coinbase, Brave" },
                 { text: "Conversation History", sub: "Full persistence" },
                 { text: "Dashboard Access", sub: "All features" },

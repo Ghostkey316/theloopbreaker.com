@@ -277,7 +277,7 @@ export default function BridgeScreen() {
               </View>
             </View>
             <Text style={{ color: colors.muted, fontSize: 11, textAlign: "center", marginTop: 12, lineHeight: 16 }}>
-              Teleporter Bridge enables secure cross-chain messaging between Base and Avalanche networks.
+              Teleporter Bridge enables secure cross-chain messaging between Ethereum, Base, and Avalanche networks.
             </Text>
           </View>
         </Animated.View>

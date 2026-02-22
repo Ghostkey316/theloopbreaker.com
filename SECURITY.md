@@ -91,7 +91,7 @@ The `ProductionBeliefAttestationVerifier` contract includes a **48-hour timelock
 
 ## 7. Cross-Chain Security
 
-The `VaultfireTeleporterBridge` enables trust portability between Base and Avalanche. Security measures include:
+The `VaultfireTeleporterBridge` enables trust portability between Ethereum, Base, and Avalanche. Security measures include:
 
 *   **Authorized Relayers:** Only whitelisted relayer addresses can submit cross-chain messages.
 *   **Gas Limit Enforcement:** A minimum gas limit is enforced for cross-chain message execution.

@@ -219,7 +219,7 @@ The theme is configured in `theme.config.js` with a consistent dark embris/fire 
 
 ## 7. Blockchain Connectivity — PASS (10/10 tests + 3 live tests)
 
-The blockchain service (`lib/blockchain.ts`) provides raw JSON-RPC connectivity to both Base and Avalanche chains without requiring external libraries like ethers.js.
+The blockchain service (`lib/blockchain.ts`) provides raw JSON-RPC connectivity to both Ethereum, Base, and Avalanche chains without requiring external libraries like ethers.js.
 
 **Implemented Functions:**
 
@@ -338,6 +338,6 @@ Server Chat: PASS (200 OK, 2,517 char response)
 
 ## Conclusion
 
-The Embris mobile app for the Vaultfire Protocol passes all 10 audit areas with a perfect score of 105/105 tests (104 automated + 1 live server chat). Every contract address matches the specification exactly. The AI chat system is functional and knowledgeable. The memory system persists correctly. All screens render with the dark embris theme. Blockchain connectivity to both Base and Avalanche is confirmed live. Branding is complete with a custom shield+flame logo.
+The Embris mobile app for the Vaultfire Protocol passes all 10 audit areas with a perfect score of 105/105 tests (104 automated + 1 live server chat). Every contract address matches the specification exactly. The AI chat system is functional and knowledgeable. The memory system persists correctly. All screens render with the dark embris theme. Blockchain connectivity to both Ethereum, Base, and Avalanche is confirmed live. Branding is complete with a custom shield+flame logo.
 
 **Final Verdict: PASS**

@@ -2,7 +2,7 @@
  * Vaultfire Name System (VNS)
  *
  * VNS maps human-readable names (e.g. ghostkey316.vns) to wallet addresses
- * using the ERC8004IdentityRegistry deployed on Base and Avalanche.
+ * using the ERC8004IdentityRegistry deployed on Ethereum, Base, and Avalanche.
  *
  * Format: [name].vns — lowercase alphanumeric + hyphens, 3–32 chars.
  * Free to register — users only pay gas.

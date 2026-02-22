@@ -6,7 +6,7 @@ Vaultfire is on-chain trust infrastructure for AI agents. It provides a complete
 
 The core innovation is a dual-bond architecture. Partnership Bonds lock value between a human and an AI agent, enforcing a distribution model where the AI cannot profit unless the human thrives (AI profit capped at 30%). Accountability Bonds require AI companies to stake capital proportional to their revenue, creating a direct economic cost for misalignment. Together, these bonds form a trust loop: register identity, stake accountability, partner with humans, earn reputation.
 
-Vaultfire is not a prototype. It is a fully deployed, audited, production-grade protocol with 14 verified smart contracts on Base mainnet, an autonomous Sentinel Agent, a live dashboard, and a professional audit. **Vaultfire is also the first protocol to implement cross-chain trust portability using Avalanche Teleporter**, enabling seamless identity and reputation sync between Base and Avalanche C-Chain. The entire protocol was designed, built, tested, and deployed by a single architect for under $0.20 in total deployment costs.
+Vaultfire is not a prototype. It is a fully deployed, audited, production-grade protocol with 14 verified smart contracts on Base mainnet, an autonomous Sentinel Agent, a live dashboard, and a professional audit. **Vaultfire is also the first protocol to implement cross-chain trust portability using Avalanche Teleporter**, enabling seamless identity and reputation sync between Ethereum, Base, and Avalanche C-Chain. The entire protocol was designed, built, tested, and deployed by a single architect for under $0.20 in total deployment costs.
 
 ## Architecture
 

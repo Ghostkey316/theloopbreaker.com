@@ -18,7 +18,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     id: 1,
     title: 'Welcome to Vaultfire Protocol',
-    description: 'Vaultfire is the first ethical AI trust protocol — a blockchain-based governance framework deployed across Base and Avalanche. Our mission: making human thriving more profitable than extraction.',
+    description: 'Vaultfire is the first ethical AI trust protocol — a blockchain-based governance framework deployed across Ethereum, Base, and Avalanche. Our mission: making human thriving more profitable than extraction.',
     icon: 'flame',
   },
   {

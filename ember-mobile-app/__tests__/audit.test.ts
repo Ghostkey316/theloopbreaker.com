@@ -109,7 +109,7 @@ describe("1. Contract Addresses Audit", () => {
       );
     });
 
-    it("Total of 28 contracts across both chains", () => {
+    it("Total of 42 contracts (14 per chain × 3 chains) across both chains", () => {
       const allMatches = contractsFile.match(/chain:\s*"(base|avalanche)"/g);
       expect(allMatches?.length).toBe(28);
     });

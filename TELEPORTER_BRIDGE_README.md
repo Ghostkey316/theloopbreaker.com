@@ -8,7 +8,7 @@ When an AI agent is registered, bonded, or reviewed on one chain, this bridge re
 
 ## Key Features
 
-*   **Seamless Trust Sync:** Synchronizes key trust state across Base and Avalanche for AI agents, including identity, bonds, reputation, and validation status.
+*   **Seamless Trust Sync:** Synchronizes key trust state across Ethereum, Base, and Avalanche for AI agents, including identity, bonds, reputation, and validation status.
 *   **Hybrid Architecture:** Combines native Avalanche Teleporter (ICM) for inter-Avalanche communication with a secure, authorized relayer pattern for Base ↔ Avalanche communication.
 *   **Production-Ready:** Includes comprehensive security features, extensive testing (84+ tests), and robust deployment scripts.
 *   **Gas Efficient:** Optimized for low gas usage on both chains.
@@ -82,7 +82,7 @@ npx hardhat test test/VaultfireTeleporterBridge.test.js
 
 ### Deployment
 
-The `deploy-teleporter-bridge.js` script handles deploying and configuring the bridge on both Base and Avalanche.
+The `deploy-teleporter-bridge.js` script handles deploying and configuring the bridge on both Ethereum, Base, and Avalanche.
 
 1.  Set the `PRIVATE_KEY` environment variable with the deployer's private key.
     ```bash
@@ -98,7 +98,7 @@ The script will deploy the bridge to both chains and configure each to point to 
 
 ### Running the Relayer
 
-The off-chain relayer is responsible for bridging messages between Base and Avalanche.
+The off-chain relayer is responsible for bridging messages between Ethereum, Base, and Avalanche.
 
 1.  Ensure the `teleporter-bridge-deployment.json` file exists (it's created by the deployment script).
 

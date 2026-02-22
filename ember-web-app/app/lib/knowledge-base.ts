@@ -46,7 +46,7 @@ const CONTRACT_PURPOSES: Record<string, string> = {
   VaultfireERC8004Adapter: 'Adapter connecting Vaultfire protocol to the ERC-8004 standard. Integration bridge.',
   MultisigGovernance: 'Multi-signature governance for protocol changes. Ensures decentralized decision-making.',
   ProductionBeliefAttestationVerifier: 'Production-grade belief attestation. Deployed version of the belief verification system.',
-  VaultfireTeleporterBridge: 'Cross-chain bridge between Base and Avalanche. Enables asset and data teleportation.',
+  VaultfireTeleporterBridge: 'Cross-chain bridge between Ethereum, Base, and Avalanche. Enables asset and data teleportation.',
 };
 
 /* ── Query Functions ── */
@@ -128,7 +128,7 @@ export function formatContractDataForPrompt(userMessage: string): string {
   const sections: string[] = [];
 
   sections.push(`═══ VAULTFIRE CONTRACT KNOWLEDGE BASE ═══
-Total deployed: ${ALL_CONTRACTS.length} contracts across 2 chains
+Total deployed: ${ALL_CONTRACTS.length} contracts across 3 chains
 Base: ${BASE_CONTRACTS.length} contracts | Avalanche: ${AVALANCHE_CONTRACTS.length} contracts`);
 
   if (wantsSpecific) {

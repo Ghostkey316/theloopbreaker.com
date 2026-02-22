@@ -72,7 +72,7 @@
 - [x] Vaultfire mission statement
 - [x] Core values cards
 - [x] Protocol architecture overview
-- [x] Contract explorer (all 28 contracts)
+- [x] Contract explorer (all 42 contracts (14 per chain × 3 chains))
 - [x] Explorer links (Basescan/Snowtrace)
 - [x] Version info
 
@@ -85,7 +85,7 @@
 - [x] Ensure competition readiness
 
 ## Wallet Tab
-- [x] ETH balance on Base and Avalanche
+- [x] ETH balance on Ethereum, Base, and Avalanche
 - [x] ERC-20 token balances (common tokens via balanceOf)
 - [x] Total portfolio value estimate (ETH price from public API)
 - [x] Multi-chain support (Base + Avalanche)

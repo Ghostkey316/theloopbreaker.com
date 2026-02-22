@@ -73,7 +73,7 @@ export async function validateAddress(address: string): Promise<boolean> {
 }
 
 /**
- * Fetch real on-chain balances for a wallet address on both Base and Avalanche.
+ * Fetch real on-chain balances for a wallet address on both Ethereum, Base, and Avalanche.
  */
 export async function getWalletData(address: string): Promise<WalletData> {
   const [baseBalanceHex, avaxBalanceHex] = await Promise.allSettled([

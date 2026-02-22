@@ -1,7 +1,7 @@
 # Ember - Vaultfire Protocol Mobile App Design
 
 ## Overview
-Ember is the AI companion mobile app for the Vaultfire Protocol — a blockchain-based ethical AI governance framework deployed on Base and Avalanche. The app provides trust verification, cross-chain bridging, contract monitoring, and an AI chat companion named Ember.
+Ember is the AI companion mobile app for the Vaultfire Protocol — a blockchain-based ethical AI governance framework deployed on Ethereum, Base, and Avalanche. The app provides trust verification, cross-chain bridging, contract monitoring, and an AI chat companion named Ember.
 
 ## Color Palette (Dark Ember/Fire Theme)
 - **Background**: `#0D0D0D` (near-black)
@@ -21,14 +21,14 @@ Ember is the AI companion mobile app for the Vaultfire Protocol — a blockchain
 - Shield+flame Vaultfire logo at top
 - "Vaultfire Protocol" title with tagline
 - Core values: "Morals over metrics. Privacy over surveillance. Freedom over control."
-- Network status cards for Base and Avalanche (live connectivity indicators)
+- Network status cards for Ethereum, Base, and Avalanche (live connectivity indicators)
 - Quick stats: total contracts monitored, active chains
 - Link to theloopbreaker.com
 - Quick action buttons to navigate to other screens
 
 ### 2. Ember Chat Screen
 - AI chat interface with Ember (the AI companion)
-- Ember has deep knowledge of Vaultfire Protocol, all 28 contracts, ERC-8004 standard
+- Ember has deep knowledge of Vaultfire Protocol, all 42 contracts (14 per chain × 3 chains), ERC-8004 standard
 - System prompt includes core values and protocol knowledge
 - Message bubbles with ember-themed styling
 - Memory extraction from conversations persisted via AsyncStorage
@@ -38,12 +38,12 @@ Ember is the AI companion mobile app for the Vaultfire Protocol — a blockchain
 - Contract verification interface
 - Dropdown/selector for choosing a contract by name
 - Displays contract address, chain, and verification status
-- Can verify contracts on both Base and Avalanche
+- Can verify contracts on both Ethereum, Base, and Avalanche
 - Shows ERC-8004 compliance status
-- Lists all 28 contracts organized by chain
+- Lists all 42 contracts (14 per chain × 3 chains) organized by chain
 
 ### 4. Cross-Chain Bridge Screen
-- Bridge interface between Base and Avalanche
+- Bridge interface between Ethereum, Base, and Avalanche
 - Shows VaultfireTeleporterBridge contract addresses on both chains
 - Chain selector (Base ↔ Avalanche)
 - Bridge status and connectivity

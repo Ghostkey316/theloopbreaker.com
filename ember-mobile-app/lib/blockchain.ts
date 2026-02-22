@@ -1,5 +1,5 @@
 /**
- * Blockchain connectivity service for Base and Avalanche RPCs.
+ * Blockchain connectivity service for Ethereum, Base, and Avalanche RPCs.
  * Uses raw JSON-RPC calls (no ethers.js dependency needed).
  */
 

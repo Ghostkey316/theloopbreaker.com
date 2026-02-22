@@ -108,7 +108,7 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
 
       if (isRegistered() && bDone && aDone) {
         const reg = getRegistration();
-        setResultMessage('Registered on both Base and Avalanche.');
+        setResultMessage('Registered on both Ethereum, Base, and Avalanche.');
         setChainResults(reg?.chains.map(c => ({
           chain: c.chain,
           success: true,
@@ -257,7 +257,7 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
           {step === 'intro' && (
             <div>
               <p style={{ fontSize: 13, color: '#71717A', lineHeight: 1.65, marginBottom: 16 }}>
-                Register your wallet on-chain to unlock everything Embris can do. Vaultfire is deployed on Base and Avalanche — you can register on one or both.
+                Register your wallet on-chain to unlock everything Embris can do. Vaultfire is deployed on Ethereum, Base, and Avalanche — you can register on one or both.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 20 }}>
                 {FEATURES.map((f) => (

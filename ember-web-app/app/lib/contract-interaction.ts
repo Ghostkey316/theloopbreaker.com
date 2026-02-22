@@ -6,7 +6,7 @@
  * - "What's my trust score?"
  * - "How many agents are registered?"
  *
- * Uses raw JSON-RPC calls to Base and Avalanche RPCs.
+ * Uses raw JSON-RPC calls to Ethereum, Base, and Avalanche RPCs.
  */
 
 import { CHAINS, BASE_CONTRACTS, AVALANCHE_CONTRACTS, ETHEREUM_CONTRACTS } from './contracts';

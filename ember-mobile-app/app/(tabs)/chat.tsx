@@ -1352,7 +1352,7 @@ export default function ChatScreen() {
                 ) : (
                   <View style={{ gap: 12 }}>
                     <Text style={{ color: colors.muted, fontSize: 13, lineHeight: 19 }}>
-                      Enter your Ethereum address to view balances on Base and Avalanche.
+                      Enter your Ethereum address to view balances on Ethereum, Base, and Avalanche.
                     </Text>
                     <TextInput
                       value={walletInput}

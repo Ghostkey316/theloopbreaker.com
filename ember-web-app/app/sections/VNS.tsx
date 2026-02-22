@@ -148,7 +148,7 @@ function IdentityTypeCard({
 /* ── Anti-Gaming Rules Panel ── */
 function AntiGamingRules() {
   const rules = [
-    { icon: "lock", title: "One Human Per Wallet", desc: "Each wallet can register exactly one human .vns identity." },
+    { icon: "lock", title: "One Identity Per Wallet", desc: "Each wallet can register exactly one human or agent .vns identity." },
     { icon: "handshake", title: "One Companion Per Human", desc: "Each human gets one AI companion, tied to their identity." },
     { icon: "cpu", title: "Unlimited AI Agents", desc: "Developers can register unlimited agents — each requires a bond." },
     { icon: "link", title: "On-Chain Registration", desc: "Every name backed by a real transaction. Gas = anti-bot." },

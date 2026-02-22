@@ -2,7 +2,7 @@
  * Token List Service
  *
  * Fetches token metadata (logos, prices, symbols) from CoinGecko API
- * Supports Base and Avalanche C-Chain
+ * Supports Ethereum, Base, and Avalanche C-Chain
  */
 
 import { ethers } from "ethers";

@@ -69,7 +69,7 @@ The chat screen was completely rebuilt to match ChatGPT's mobile app quality. Th
 ## 4. Screen-by-Screen UX Walkthrough
 
 ### Home Screen
-The Home screen serves as the protocol dashboard entry point. It opens with a flame icon in a subtle circular background, "Vaultfire Protocol" title, and "Powered by Embris AI" subtitle. Below, two network status cards show live connectivity to Base and Avalanche with block numbers, latency, and contract counts. A protocol overview section shows 28 contracts, 2 chains, and ERC-8004 standard. Four quick-action buttons navigate to each major feature. The flow is clear and purposeful.
+The Home screen serves as the protocol dashboard entry point. It opens with a flame icon in a subtle circular background, "Vaultfire Protocol" title, and "Powered by Embris AI" subtitle. Below, two network status cards show live connectivity to Ethereum, Base, and Avalanche with block numbers, latency, and contract counts. A protocol overview section shows 42 contracts (14 per chain × 3 chains), 2 chains, and ERC-8004 standard. Four quick-action buttons navigate to each major feature. The flow is clear and purposeful.
 
 **Verdict: PASS** — Clean, informative, and well-organized.
 
@@ -101,7 +101,7 @@ Displays overall network health as a large percentage with color-coded indicator
 |-----------|--------|---------|
 | Contract reads (Verify) | **PASS** | Uses `getMultipleContractStatus()` which calls `eth_getCode` on all 14 contracts per chain. Real on-chain verification. |
 | Contract reads (Bridge) | **PASS** | Uses `getTeleporterBridgeStats()` which queries the VaultfireTeleporterBridge contract address for bytecode and simulated storage reads. |
-| Contract reads (Dashboard) | **PASS** | Uses `getMultipleContractStatus()` on all 28 contracts across both chains. Calculates health percentages from live data. |
+| Contract reads (Dashboard) | **PASS** | Uses `getMultipleContractStatus()` on all 42 contracts (14 per chain × 3 chains) across both chains. Calculates health percentages from live data. |
 | Contract reads (Home) | **PASS** | Uses `checkChainConnectivity()` which calls `eth_blockNumber` and `eth_chainId` on both RPCs. |
 | Server-side AI | **PASS** | Chat uses tRPC `chat.send` mutation → server-side `invokeLLM()` with full Vaultfire system prompt including all 28 contract addresses, ERC-8004 knowledge, and core values. |
 | Memory persistence | **PASS** | `extractMemories()` parses assistant responses for facts/preferences/context. `saveMemories()` and `getChatHistory()` persist to AsyncStorage. |

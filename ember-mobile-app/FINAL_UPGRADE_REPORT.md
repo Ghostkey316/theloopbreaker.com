@@ -64,7 +64,7 @@ Tokens arrive word-by-word with sub-100ms latency between chunks, creating a nat
 
 ### Status: **PASS** ✅
 
-The wallet system enables users to connect their Ethereum address and view real-time balances on both Base and Avalanche networks.
+The wallet system enables users to connect their Ethereum address and view real-time balances on both Ethereum, Base, and Avalanche networks.
 
 ### Architecture
 

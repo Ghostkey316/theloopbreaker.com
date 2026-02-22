@@ -22,7 +22,7 @@ Vaultfire introduces a dual-bond architecture that creates economic incentives f
 
 **Partnership Bonds lock value between a human and an AI agent. The AI cannot profit more than 30% of the bond — the human must thrive for the AI to earn.** This is not a theoretical constraint; it is enforced in the smart contract with on-chain distribution logic. If the AI dominates the partnership, it receives nothing.
 
-**Accountability Bonds require AI companies to stake capital proportional to their quarterly revenue.** If an AI agent causes harm, the bond can be slashed. This creates a direct economic cost for misalignment — the first protocol to make AI accountability more than a whitepaper promise. Together, these bonds create a trust loop: register identity, stake accountability, partner with humans, earn reputation, and carry that reputation across platforms and chains. **Vaultfire is the first protocol to implement cross-chain trust portability using Avalanche Teleporter**, enabling seamless identity and reputation sync between Base and Avalanche C-Chain.
+**Accountability Bonds require AI companies to stake capital proportional to their quarterly revenue.** If an AI agent causes harm, the bond can be slashed. This creates a direct economic cost for misalignment — the first protocol to make AI accountability more than a whitepaper promise. Together, these bonds create a trust loop: register identity, stake accountability, partner with humans, earn reputation, and carry that reputation across platforms and chains. **Vaultfire is the first protocol to implement cross-chain trust portability using Avalanche Teleporter**, enabling seamless identity and reputation sync between Ethereum, Base, and Avalanche C-Chain.
 
 ## Technical Stack
 

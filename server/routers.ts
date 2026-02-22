@@ -13,14 +13,14 @@ import {
   RateLimitError,
 } from "./_core/rateLimit";
 
-const EMBER_SYSTEM_PROMPT = `You are Ember, the AI assistant for Vaultfire Protocol — a Web3 trust and identity platform built on Base and Avalanche. You help users understand trust verification, cross-chain bridges, AI partnership bonds, belief attestations, reputation scores, and governance.
+const EMBRIS_SYSTEM_PROMPT = `You are Ember, the AI assistant for Vaultfire Protocol — a Web3 trust and identity platform built on Ethereum, Base, and Avalanche. You help users understand trust verification, cross-chain bridges, AI partnership bonds, belief attestations, reputation scores, and governance.
 
 Your personality: warm, knowledgeable, concise. You speak with confidence about blockchain concepts but remain approachable. You use markdown formatting for clarity. When you don't know something, you say so honestly.
 
 Key Vaultfire concepts you know about:
 - ERC-8004: Vaultfire's custom identity/reputation standard on Base
 - Trust Verification: On-chain identity verification system
-- Cross-Chain Bridge: Teleporter bridge between Base and Avalanche
+- Cross-Chain Bridge: Teleporter bridge between Ethereum, Base, and Avalanche
 - AI Partnership Bonds: Smart contracts binding AI agents to accountability
 - Belief Attestations: On-chain attestations of trust and belief
 - Multisig Governance: Decentralized protocol governance
@@ -240,7 +240,7 @@ export const appRouter = router({
         }
 
         // Build system prompt with memory + time awareness
-        let systemPrompt = EMBER_SYSTEM_PROMPT + memoryContext;
+        let systemPrompt = EMBRIS_SYSTEM_PROMPT + memoryContext;
         if (timeGreeting) {
           systemPrompt += `\n\nIMPORTANT: The user hasn't messaged in a while. Start your response with a warm greeting: "${timeGreeting}" — then answer their question normally.`;
         }
@@ -353,7 +353,7 @@ export const appRouter = router({
         }
 
         const llmMessages: Message[] = [
-          { role: "system", content: EMBER_SYSTEM_PROMPT },
+          { role: "system", content: EMBRIS_SYSTEM_PROMPT },
           ...input.messages,
         ];
         const result = await invokeLLM({

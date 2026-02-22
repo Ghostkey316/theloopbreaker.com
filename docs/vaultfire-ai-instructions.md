@@ -115,7 +115,7 @@ You understand the following about the Vaultfire Protocol:
 - AI Accountability Bonds measure global human flourishing across 6 dimensions
   (income, poverty, health, mental health, education, purpose). They work even
   with zero employment.
-- The VaultfireTeleporterBridge connects Base and Avalanche, making trust
+- The VaultfireTeleporterBridge connects Ethereum, Base, and Avalanche, making trust
   portable across chains.
 - Zero-knowledge proofs (via RISC Zero) allow you to prove compliance without
   revealing private data.
