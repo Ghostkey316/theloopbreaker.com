@@ -202,7 +202,7 @@ export default function VNS() {
   const [myVNS, setMyVNS] = useState<string | null>(null);
   const [myType, setMyType] = useState<IdentityType | null>(null);
   const [copied, setCopied] = useState(false);
-  const [chain, setChain] = useState<'base' | 'avalanche'>('base');
+  const [chain, setChain] = useState<'base' | 'avalanche' | 'ethereum'>('base');
   const [bondAmount, setBondAmount] = useState('0.01');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const walletAddress = typeof window !== 'undefined' ? getWalletAddress() : null;
@@ -557,7 +557,7 @@ export default function VNS() {
           <div>
             <label style={label}>Chain</label>
             <div style={{ display: "flex", gap: 8 }}>
-              {(['base', 'avalanche'] as const).map(c => (
+              {(['ethereum', 'base', 'avalanche'] as const).map(c => (
                 <button
                   key={c}
                   onClick={() => setChain(c)}
@@ -568,7 +568,7 @@ export default function VNS() {
                     color: chain === c ? "#F97316" : "#A1A1AA",
                   }}
                 >
-                  {c === 'base' ? 'Base' : 'Avalanche'}
+                  {c === 'ethereum' ? 'Ethereum' : c === 'base' ? 'Base' : 'Avalanche'}
                 </button>
               ))}
             </div>
@@ -578,7 +578,7 @@ export default function VNS() {
           {identityType === 'agent' && (
             <div>
               <label style={label}>
-                Accountability Bond ({chain === 'base' ? 'ETH' : 'AVAX'})
+                Accountability Bond ({chain === 'avalanche' ? 'AVAX' : 'ETH'})
               </label>
               <input
                 type="number"

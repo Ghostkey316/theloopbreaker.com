@@ -101,7 +101,7 @@ export default function Verify() {
       </div>
 
       {/* Contract Verification Disclaimer */}
-      <SectionDisclaimer text="Smart contracts are deployed on Base and Avalanche. Vaultfire Protocol has not been formally audited. Verify contract addresses independently before interacting. All on-chain transactions are irreversible." type="warning" />
+      <SectionDisclaimer text="Smart contracts are deployed on Ethereum, Base, and Avalanche. Vaultfire Protocol has not been formally audited. Verify contract addresses independently before interacting. All on-chain transactions are irreversible." type="warning" />
 
       {/* Stats — inline, monospace numbers */}
       <div style={{
