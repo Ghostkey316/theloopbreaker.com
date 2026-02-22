@@ -556,6 +556,10 @@ export default function Chat() {
   const [voiceRate, setVoiceRateState] = useState(1.0);
   const [voicePitchVal, setVoicePitchState] = useState(1.0);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  // Refs for voice auto-send (avoids stale closure issues)
+  const transcriptRef = useRef('');
+  const sendMessageRef = useRef<((text: string) => void) | null>(null);
+  const voiceEnabledRef = useRef(false);
 
   // Multi-conversation state
   const [conversations, setConversations] = useState<ConversationMeta[]>([]);
@@ -583,7 +587,9 @@ export default function Chat() {
   useEffect(() => {
     setSttSupported(isSpeechRecognitionSupported());
     setTtsSupported(isSpeechSynthesisSupported());
-    setVoiceEnabled(getVoiceModeEnabled());
+    const savedVoice = getVoiceModeEnabled();
+    setVoiceEnabled(savedVoice);
+    voiceEnabledRef.current = savedVoice;
     setVoiceRateState(getVoiceRate());
     setVoicePitchState(getVoicePitch());
     preloadVoices();
@@ -775,22 +781,49 @@ export default function Chat() {
     const recognition = createSpeechRecognition();
     if (!recognition) return;
     recognitionRef.current = recognition;
+    transcriptRef.current = '';
     setIsListening(true);
+
     recognition.onresult = (event) => {
+      // Collect all results (including interim) into transcript
       let transcript = '';
       for (let i = 0; i < event.results.length; i++) {
         transcript += event.results[i][0].transcript;
       }
+      // Store in ref synchronously (available in onend closure)
+      transcriptRef.current = transcript;
+      // Also update input text for visual feedback
       setInputText(transcript);
     };
-    recognition.onend = () => setIsListening(false);
-    recognition.onerror = () => setIsListening(false);
+
+    recognition.onend = () => {
+      setIsListening(false);
+      // AUTO-SEND: when voice mode is active and we have a transcript, send it
+      const transcript = transcriptRef.current.trim();
+      if (voiceEnabledRef.current && transcript && sendMessageRef.current) {
+        // Small delay to ensure state is settled
+        setTimeout(() => {
+          if (transcript && sendMessageRef.current) {
+            setInputText('');
+            transcriptRef.current = '';
+            sendMessageRef.current(transcript);
+          }
+        }, 200);
+      }
+    };
+
+    recognition.onerror = () => {
+      setIsListening(false);
+      transcriptRef.current = '';
+    };
+
     recognition.start();
   }, [isListening, embrisSpeaking]);
 
   const handleToggleVoice = useCallback(() => {
     const next = !voiceEnabled;
     setVoiceEnabled(next);
+    voiceEnabledRef.current = next;
     setVoiceModeEnabled(next);
     if (!next) {
       stopSpeaking();
@@ -967,6 +1000,12 @@ export default function Chat() {
       },
     });
   }, [isLoading, isListening, voiceEnabled, ttsSupported, embrisSpeaking, activeConvId, runBackgroundMemoryExtraction, runBackgroundSelfLearning, runBackgroundGoalExtraction]);
+
+  // Keep sendMessageRef always pointing to the latest sendMessage function
+  // This allows the voice recognition onend closure to call it without stale refs
+  useEffect(() => {
+    sendMessageRef.current = sendMessage;
+  }, [sendMessage]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
   createWallet, importFromMnemonic, importFromPrivateKey,
@@ -23,7 +23,7 @@ import {
 type TokenPrices = Record<string, number>;
 interface PriceCache { prices: TokenPrices; fetchedAt: number }
 type WalletView = "none" | "created" | "import-mnemonic" | "import-pk";
-type ModalView = "none" | "send" | "receive" | "add-token" | "send-confirm" | "send-success" | "security";
+type ModalView = "none" | "send" | "receive" | "add-token" | "send-success" | "security";
 
 interface SendState {
   token: AssetItem | null;
@@ -56,15 +56,13 @@ interface AssetItem {
   error?: string;
 }
 
-// ─── VNS (Vaultfire Name System) ─────────────────────────────────────────────
+// ─── VNS ─────────────────────────────────────────────────────────────────────
 
 const VNS_KEY = "vaultfire_vns_name";
-
 function getVNSName(): string {
   if (typeof window === "undefined") return "";
   return localStorage.getItem(VNS_KEY) || "";
 }
-
 function setVNSName(name: string): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(VNS_KEY, name);
@@ -73,47 +71,48 @@ function setVNSName(name: string): void {
 // ─── Companion Name ───────────────────────────────────────────────────────────
 
 const COMPANION_NAME_KEY = "vaultfire_companion_name";
-
 function getCompanionName(): string {
   if (typeof window === "undefined") return "Embris";
   return localStorage.getItem(COMPANION_NAME_KEY) || "Embris";
 }
-
 function setCompanionNameStorage(name: string): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(COMPANION_NAME_KEY, name || "Embris");
 }
 
-// ─── Price Fetching ───────────────────────────────────────────────────────────
+// ─── Price Fetching (module-level cache — never re-fetches within TTL) ────────
 
 const PRICE_TTL = 60_000;
 let _priceCache: PriceCache | null = null;
+let _priceFetchPromise: Promise<TokenPrices> | null = null;
 
 const NATIVE_PRICE_IDS = ["ethereum", "avalanche-2"];
 
 async function fetchPrices(): Promise<TokenPrices> {
   const now = Date.now();
   if (_priceCache && now - _priceCache.fetchedAt < PRICE_TTL) return _priceCache.prices;
-  try {
-    const allIds = [...new Set([...NATIVE_PRICE_IDS, ...ALL_COINGECKO_IDS])];
-    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${allIds.join(",")}&vs_currencies=usd`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
-    if (!res.ok) throw new Error("API error");
-    const data = await res.json() as Record<string, { usd: number }>;
-    const prices: TokenPrices = {};
-    for (const [id, val] of Object.entries(data)) {
-      if (val?.usd) prices[id] = val.usd;
+  // Deduplicate concurrent calls
+  if (_priceFetchPromise) return _priceFetchPromise;
+  _priceFetchPromise = (async () => {
+    try {
+      const allIds = [...new Set([...NATIVE_PRICE_IDS, ...ALL_COINGECKO_IDS])];
+      const url = `https://api.coingecko.com/api/v3/simple/price?ids=${allIds.join(",")}&vs_currencies=usd`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      if (!res.ok) throw new Error("API error");
+      const data = await res.json() as Record<string, { usd: number }>;
+      const prices: TokenPrices = {};
+      for (const [id, val] of Object.entries(data)) {
+        if (val?.usd) prices[id] = val.usd;
+      }
+      _priceCache = { prices, fetchedAt: Date.now() };
+      return prices;
+    } catch {
+      return _priceCache?.prices || {};
+    } finally {
+      _priceFetchPromise = null;
     }
-    _priceCache = { prices, fetchedAt: now };
-    return prices;
-  } catch {
-    return _priceCache?.prices || {};
-  }
-}
-
-function getTokenPrice(prices: TokenPrices, coingeckoId?: string): number {
-  if (!coingeckoId) return 0;
-  return prices[coingeckoId] || 0;
+  })();
+  return _priceFetchPromise;
 }
 
 function formatUsd(n: number): string {
@@ -135,14 +134,11 @@ function formatPrice(n: number): string {
 // ─── Custom Token Storage ─────────────────────────────────────────────────────
 
 const CUSTOM_TOKENS_KEY = "vaultfire_custom_tokens";
-
 function loadCustomTokens(): TokenInfo[] {
   if (typeof window === "undefined") return [];
-  try {
-    return JSON.parse(localStorage.getItem(CUSTOM_TOKENS_KEY) || "[]");
-  } catch { return []; }
+  try { return JSON.parse(localStorage.getItem(CUSTOM_TOKENS_KEY) || "[]"); }
+  catch { return []; }
 }
-
 function saveCustomTokens(tokens: TokenInfo[]): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(CUSTOM_TOKENS_KEY, JSON.stringify(tokens));
@@ -229,10 +225,8 @@ function TokenLetter({ symbol, color, size = 40 }: { symbol: string; color: stri
   return (
     <div style={{
       width: size, height: size, borderRadius: "50%",
-      backgroundColor: color + "18",
-      border: `1.5px solid ${color}35`,
-      display: "flex", alignItems: "center", justifyContent: "center",
-      flexShrink: 0,
+      backgroundColor: color + "18", border: `1.5px solid ${color}35`,
+      display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
     }}>
       <span style={{ fontSize: size * 0.32, fontWeight: 800, color, fontFamily: "'Inter', system-ui, sans-serif", letterSpacing: "-0.02em" }}>
         {symbol.slice(0, 3)}
@@ -267,8 +261,7 @@ function ChainBadge({ chain }: { chain: SupportedChain }) {
     <div style={{
       position: "absolute", bottom: -2, right: -2,
       width: 16, height: 16, borderRadius: "50%",
-      backgroundColor: colors[chain],
-      border: "2px solid #0A0A0A",
+      backgroundColor: colors[chain], border: "2px solid #0A0A0A",
       display: "flex", alignItems: "center", justifyContent: "center",
     }}>
       <span style={{ fontSize: 7, color: "#fff", fontWeight: 800 }}>{labels[chain]}</span>
@@ -277,22 +270,17 @@ function ChainBadge({ chain }: { chain: SupportedChain }) {
 }
 
 // ─── Portal Modal Shell ───────────────────────────────────────────────────────
-// Uses createPortal to render OUTSIDE any parent stacking context.
-// This is the definitive fix for the "buttons don't work" issue.
 
-function Modal({ onClose, children, title }: { onClose: () => void; children: React.ReactNode; title?: string }) {
+function WalletModal({ onClose, children, title }: { onClose: () => void; children: React.ReactNode; title?: string }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    // Prevent body scroll when modal is open
+    const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
+    return () => { document.body.style.overflow = prev; };
   }, []);
 
-  // Handle ESC key
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", handler);
@@ -301,59 +289,45 @@ function Modal({ onClose, children, title }: { onClose: () => void; children: Re
 
   if (!mounted) return null;
 
-  const modalContent = (
+  const content = (
     <div
       style={{
-        position: "fixed",
-        top: 0, left: 0, right: 0, bottom: 0,
-        zIndex: 99999,
-        backgroundColor: "rgba(0,0,0,0.85)",
-        display: "flex",
-        alignItems: "flex-end",
-        justifyContent: "center",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
+        position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+        zIndex: 99999, backgroundColor: "rgba(0,0,0,0.85)",
+        display: "flex", alignItems: "flex-end", justifyContent: "center",
+        backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
       }}
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onTouchEnd={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
         style={{
-          width: "100%",
-          maxWidth: 520,
+          width: "100%", maxWidth: 520,
           backgroundColor: "#111113",
           borderRadius: "24px 24px 0 0",
-          border: "1px solid rgba(255,255,255,0.08)",
-          borderBottom: "none",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          overflowX: "hidden",
+          border: "1px solid rgba(255,255,255,0.08)", borderBottom: "none",
+          maxHeight: "92dvh", overflowY: "auto", overflowX: "hidden",
           animation: "slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+          WebkitOverflowScrolling: "touch",
         }}
         onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
       >
-        {/* Drag handle */}
         <div style={{ display: "flex", justifyContent: "center", paddingTop: 12, paddingBottom: 4 }}>
           <div style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.1)" }} />
         </div>
-
         {title && (
-          <div style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "12px 24px 0",
-          }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 24px 0" }}>
             <h3 style={{ fontSize: 18, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.03em" }}>{title}</h3>
             <button
               onClick={onClose}
               style={{
                 width: 32, height: 32, borderRadius: "50%",
-                backgroundColor: "rgba(255,255,255,0.06)",
-                border: "none", cursor: "pointer", color: "#71717A",
+                backgroundColor: "rgba(255,255,255,0.06)", border: "none",
+                cursor: "pointer", color: "#71717A",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                transition: "all 0.15s ease",
                 flexShrink: 0,
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.1)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.06)"; }}
             >
               <XIcon size={14} />
             </button>
@@ -364,7 +338,7 @@ function Modal({ onClose, children, title }: { onClose: () => void; children: Re
     </div>
   );
 
-  return createPortal(modalContent, document.body);
+  return createPortal(content, document.body);
 }
 
 // ─── QR Code Component ────────────────────────────────────────────────────────
@@ -381,13 +355,7 @@ function QRCodeDisplay({ value }: { value: string }) {
     });
   }, [value]);
   return (
-    <div style={{
-      padding: 16,
-      backgroundColor: "#111113",
-      border: "1px solid rgba(255,255,255,0.06)",
-      borderRadius: 16,
-      display: "inline-flex",
-    }}>
+    <div style={{ padding: 16, backgroundColor: "#111113", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, display: "inline-flex" }}>
       <canvas ref={canvasRef} />
     </div>
   );
@@ -396,39 +364,29 @@ function QRCodeDisplay({ value }: { value: string }) {
 // ─── Action Button ────────────────────────────────────────────────────────────
 
 function ActionBtn({ icon, label, onClick, color }: { icon: React.ReactNode; label: string; onClick: () => void; color: string }) {
+  const [pressed, setPressed] = useState(false);
   return (
     <button
       type="button"
       onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClick(); }}
+      onTouchStart={() => setPressed(true)}
+      onTouchEnd={() => { setPressed(false); }}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      onMouseLeave={() => setPressed(false)}
       style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 6,
-        width: 76,
-        height: 76,
-        borderRadius: 22,
-        backgroundColor: `${color}18`,
-        border: `1.5px solid ${color}28`,
-        cursor: "pointer",
-        transition: "all 0.15s ease",
-        padding: 0,
-        userSelect: "none",
-        WebkitUserSelect: "none",
+        display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center",
+        gap: 6, width: 76, height: 76, borderRadius: 22,
+        backgroundColor: pressed ? `${color}28` : `${color}18`,
+        border: `1.5px solid ${pressed ? color + "45" : color + "28"}`,
+        cursor: "pointer", padding: 0,
+        userSelect: "none", WebkitUserSelect: "none",
+        transform: pressed ? "scale(0.94)" : "scale(1)",
+        transition: "transform 0.1s ease, background-color 0.1s ease",
+        WebkitTapHighlightColor: "transparent",
+        touchAction: "manipulation",
       }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = `${color}28`;
-        e.currentTarget.style.borderColor = `${color}45`;
-        e.currentTarget.style.transform = "translateY(-1px)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = `${color}18`;
-        e.currentTarget.style.borderColor = `${color}28`;
-        e.currentTarget.style.transform = "translateY(0)";
-      }}
-      onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.95)"; }}
-      onMouseUp={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; }}
     >
       <div style={{ color, display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</div>
       <span style={{ fontSize: 11, fontWeight: 600, color, letterSpacing: "0.01em" }}>{label}</span>
@@ -447,6 +405,7 @@ function isValidAddress(addr: string): boolean {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function Wallet() {
+  // ── Core state ──────────────────────────────────────────────────────────────
   const [view, setView] = useState<WalletView>("none");
   const [walletData, setWalletData] = useState<WalletData | null>(null);
   const [nativeBalances, setNativeBalances] = useState<ChainBalance[]>([]);
@@ -463,44 +422,56 @@ export default function Wallet() {
   const [pricesLoading, setPricesLoading] = useState(false);
   const [modalView, setModalView] = useState<ModalView>("none");
   const [customTokens, setCustomTokens] = useState<TokenInfo[]>([]);
-  const [tokenLogos, setTokenLogos] = useState<Record<string, string | null>>({});
-  const priceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // VNS state
+  // ── CRITICAL FIX: Logo cache stored in useRef (NOT useState) ──────────────
+  // This means logo updates do NOT trigger re-renders.
+  // We use a separate counter to trigger ONE re-render when all logos are done.
+  const logoCache = useRef<Record<string, string | null>>({});
+  const [logoVersion, setLogoVersion] = useState(0);
+  const logoFetchInProgress = useRef(false);
+
+  // ── VNS state ────────────────────────────────────────────────────────────────
   const [vnsName, setVnsName] = useState("");
   const [vnsInput, setVnsInput] = useState("");
   const [vnsEditing, setVnsEditing] = useState(false);
 
-  // Companion name state
+  // ── Companion name state ─────────────────────────────────────────────────────
   const [companionName, setCompanionName] = useState("Embris");
   const [companionNameInput, setCompanionNameInput] = useState("");
   const [companionNameEditing, setCompanionNameEditing] = useState(false);
 
-  // Send state
+  // ── Send state ───────────────────────────────────────────────────────────────
   const [sendState, setSendState] = useState<SendState>({
     token: null, toAddress: "", amount: "", gas: null,
     gasLoading: false, sending: false, error: "", txHash: "", txExplorerUrl: "",
   });
 
-  // Security state
+  // ── Security state ───────────────────────────────────────────────────────────
   const [securityRevealInput, setSecurityRevealInput] = useState("");
   const [securityRevealed, setSecurityRevealed] = useState(false);
 
-  // Add custom token state
+  // ── Add token state ──────────────────────────────────────────────────────────
   const [addTokenChain, setAddTokenChain] = useState<SupportedChain>("base");
   const [addTokenAddress, setAddTokenAddress] = useState("");
   const [addTokenInfo, setAddTokenInfo] = useState<TokenInfo | null>(null);
   const [addTokenLoading, setAddTokenLoading] = useState(false);
   const [addTokenError, setAddTokenError] = useState("");
 
+  // ── Refs ─────────────────────────────────────────────────────────────────────
+  const priceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mountedRef = useRef(true);
+
+  // ── Resize listener ──────────────────────────────────────────────────────────
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
-    window.addEventListener("resize", check);
+    window.addEventListener("resize", check, { passive: true });
     return () => window.removeEventListener("resize", check);
   }, []);
 
+  // ── Init: load wallet, VNS, companion name ───────────────────────────────────
   useEffect(() => {
+    mountedRef.current = true;
     setCustomTokens(loadCustomTokens());
     setVnsName(getVNSName());
     setCompanionName(getCompanionName());
@@ -513,71 +484,76 @@ export default function Wallet() {
         loadAllBalances(addr);
       }
     }
+    return () => { mountedRef.current = false; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Price loading: fires once on wallet ready, then every 60s ────────────────
   useEffect(() => {
-    if (view === "created") {
-      const load = async () => {
-        setPricesLoading(true);
-        const p = await fetchPrices();
+    if (view !== "created") return;
+    let cancelled = false;
+    const load = async () => {
+      if (cancelled) return;
+      setPricesLoading(true);
+      const p = await fetchPrices();
+      if (!cancelled && mountedRef.current) {
         setPrices(p);
         setPricesLoading(false);
-      };
-      load();
-      priceIntervalRef.current = setInterval(load, PRICE_TTL);
-    }
-    return () => { if (priceIntervalRef.current) clearInterval(priceIntervalRef.current); };
-  }, [view]);
-
-  useEffect(() => {
-    const fetchLogos = async () => {
-      const logos: Record<string, string | null> = {};
-      for (const token of tokenBalances) {
-        if (token.coingeckoId && !tokenLogos[token.coingeckoId]) {
-          const url = await fetchTokenLogo(token.coingeckoId);
-          logos[token.coingeckoId] = url;
-        }
-      }
-      if (Object.keys(logos).length > 0) {
-        setTokenLogos((prev) => ({ ...prev, ...logos }));
       }
     };
-    fetchLogos();
+    load();
+    priceIntervalRef.current = setInterval(load, PRICE_TTL);
+    return () => {
+      cancelled = true;
+      if (priceIntervalRef.current) {
+        clearInterval(priceIntervalRef.current);
+        priceIntervalRef.current = null;
+      }
+    };
+  }, [view]);
+
+  // ── CRITICAL FIX: Logo fetching — batched, single state update, no cascade ───
+  // Uses useRef for cache so no re-renders during fetching.
+  // Only triggers ONE re-render (via logoVersion) when ALL logos are fetched.
+  useEffect(() => {
+    if (tokenBalances.length === 0) return;
+    if (logoFetchInProgress.current) return;
+
+    const idsToFetch = tokenBalances
+      .filter(t => t.coingeckoId && logoCache.current[t.coingeckoId] === undefined)
+      .map(t => t.coingeckoId!);
+
+    if (idsToFetch.length === 0) return;
+
+    logoFetchInProgress.current = true;
+    let cancelled = false;
+
+    const fetchAll = async () => {
+      // Fetch all logos in parallel (not sequential)
+      const results = await Promise.allSettled(
+        idsToFetch.map(id => fetchTokenLogo(id).then(url => ({ id, url })))
+      );
+      if (cancelled || !mountedRef.current) return;
+
+      let changed = false;
+      for (const r of results) {
+        if (r.status === "fulfilled") {
+          logoCache.current[r.value.id] = r.value.url;
+          changed = true;
+        }
+      }
+      // ONE state update to trigger re-render — not one per logo
+      if (changed) setLogoVersion(v => v + 1);
+      logoFetchInProgress.current = false;
+    };
+
+    fetchAll();
+    return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tokenBalances]);
 
-  const loadAllBalances = async (address: string) => {
-    setLoadingBals(true);
-    const customs = loadCustomTokens();
-    const [native, tokens] = await Promise.all([
-      getAllBalances(address),
-      fetchAllTokenBalances(address, customs),
-    ]);
-    setNativeBalances(native);
-    setTokenBalances(tokens);
-    setLoadingBals(false);
-  };
-
-  const handleRefresh = useCallback(async () => {
-    if (!walletData) return;
-    setLoadingBals(true);
-    setPricesLoading(true);
-    const customs = loadCustomTokens();
-    const [native, tokens, p] = await Promise.all([
-      getAllBalances(walletData.address),
-      fetchAllTokenBalances(walletData.address, customs),
-      fetchPrices(),
-    ]);
-    setNativeBalances(native);
-    setTokenBalances(tokens);
-    setPrices(p);
-    setLoadingBals(false);
-    setPricesLoading(false);
-  }, [walletData]);
-
-  // Build unified asset list — ONLY SHOW OWNED TOKENS (balance > 0)
-  const buildAssets = useCallback((): AssetItem[] => {
+  // ── CRITICAL FIX: Assets computed with useMemo — only recalculates when deps change ──
+  const assets = useMemo((): AssetItem[] => {
     const items: AssetItem[] = [];
 
     for (const bal of nativeBalances) {
@@ -587,7 +563,7 @@ export default function Wallet() {
         : bal.chain.toLowerCase().includes("base") ? "base" : "ethereum";
       const chainCfg = TX_CHAINS[chain];
       const priceId = chain === "avalanche" ? "avalanche-2" : "ethereum";
-      const pricePerToken = getTokenPrice(prices, priceId);
+      const pricePerToken = prices[priceId] || 0;
       items.push({
         type: "native", chain, chainConfig: chainCfg,
         symbol: bal.symbol, name: `${bal.symbol} on ${bal.chain}`,
@@ -600,9 +576,10 @@ export default function Wallet() {
     for (const tb of tokenBalances) {
       const amount = parseFloat(tb.balanceFormatted);
       if (amount <= 0) continue;
-      const pricePerToken = getTokenPrice(prices, tb.coingeckoId);
+      const pricePerToken = prices[tb.coingeckoId || ""] || 0;
       const chainLabel = { ethereum: "Ethereum", base: "Base", avalanche: "Avalanche" }[tb.chain];
-      const logoUrl = tb.coingeckoId ? tokenLogos[tb.coingeckoId] : undefined;
+      // Read from ref cache (no state dependency = no extra re-renders)
+      const logoUrl = tb.coingeckoId ? logoCache.current[tb.coingeckoId] : undefined;
       items.push({
         type: "erc20", chain: tb.chain, chainConfig: TX_CHAINS[tb.chain],
         symbol: tb.symbol, name: tb.name, chainName: chainLabel,
@@ -613,13 +590,59 @@ export default function Wallet() {
       });
     }
 
-    const nativeItems = items.filter((a) => a.type === "native");
-    const erc20Items = items.filter((a) => a.type === "erc20").sort((a, b) => b.usdValue - a.usdValue);
+    const nativeItems = items.filter(a => a.type === "native");
+    const erc20Items = items.filter(a => a.type === "erc20").sort((a, b) => b.usdValue - a.usdValue);
     return [...nativeItems, ...erc20Items];
-  }, [nativeBalances, tokenBalances, prices, tokenLogos]);
+  // logoVersion is intentionally included to re-render when logos arrive
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nativeBalances, tokenBalances, prices, logoVersion]);
 
-  const assets = buildAssets();
-  const totalUsd = assets.reduce((sum, a) => sum + a.usdValue, 0);
+  const totalUsd = useMemo(() => assets.reduce((s, a) => s + a.usdValue, 0), [assets]);
+
+  // ── Balance loading ───────────────────────────────────────────────────────────
+
+  const loadAllBalances = useCallback(async (address: string) => {
+    setLoadingBals(true);
+    try {
+      const customs = loadCustomTokens();
+      const [native, tokens] = await Promise.all([
+        getAllBalances(address),
+        fetchAllTokenBalances(address, customs),
+      ]);
+      if (mountedRef.current) {
+        setNativeBalances(native);
+        setTokenBalances(tokens);
+      }
+    } finally {
+      if (mountedRef.current) setLoadingBals(false);
+    }
+  }, []);
+
+  const handleRefresh = useCallback(async () => {
+    if (!walletData) return;
+    setLoadingBals(true);
+    setPricesLoading(true);
+    try {
+      const customs = loadCustomTokens();
+      const [native, tokens, p] = await Promise.all([
+        getAllBalances(walletData.address),
+        fetchAllTokenBalances(walletData.address, customs),
+        fetchPrices(),
+      ]);
+      if (mountedRef.current) {
+        setNativeBalances(native);
+        setTokenBalances(tokens);
+        setPrices(p);
+      }
+    } finally {
+      if (mountedRef.current) {
+        setLoadingBals(false);
+        setPricesLoading(false);
+      }
+    }
+  }, [walletData]);
+
+  // ── Wallet creation / import ──────────────────────────────────────────────────
 
   const handleCreate = async () => {
     setCreating(true);
@@ -659,41 +682,37 @@ export default function Wallet() {
     }
   };
 
-  const copyToClipboard = async (text: string, label: string) => {
+  const copyToClipboard = useCallback(async (text: string, label: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      setCopied(label);
-      setTimeout(() => setCopied(""), 2000);
     } catch {
-      // Fallback
       const el = document.createElement("textarea");
       el.value = text;
       document.body.appendChild(el);
       el.select();
       document.execCommand("copy");
       document.body.removeChild(el);
-      setCopied(label);
-      setTimeout(() => setCopied(""), 2000);
     }
-  };
+    setCopied(label);
+    setTimeout(() => setCopied(""), 2000);
+  }, []);
 
-  // ── Send flow ────────────────────────────────────────────────────────────────
+  // ── Send flow ─────────────────────────────────────────────────────────────────
 
-  const openSend = (token?: AssetItem) => {
+  const openSend = useCallback((token?: AssetItem) => {
     setSendState({
       token: token || null, toAddress: "", amount: "",
       gas: null, gasLoading: false, sending: false,
       error: "", txHash: "", txExplorerUrl: "",
     });
     setModalView("send");
-  };
+  }, []);
 
   const estimateGasForSend = useCallback(async (state: SendState) => {
     if (!state.token || !isValidAddress(state.toAddress) || !state.amount || !walletData) return;
     const amount = parseFloat(state.amount);
     if (isNaN(amount) || amount <= 0) return;
-
-    setSendState((s) => ({ ...s, gasLoading: true, gas: null }));
+    setSendState(s => ({ ...s, gasLoading: true, gas: null }));
     try {
       let gas: GasEstimate;
       if (state.token.type === "native") {
@@ -702,18 +721,17 @@ export default function Wallet() {
         const rawAmount = parseTokenAmount(state.amount, state.token.decimals);
         gas = await estimateERC20SendGas(state.token.chainConfig, walletData.address, state.token.tokenAddress!, state.toAddress, rawAmount);
       }
-      setSendState((s) => ({ ...s, gas, gasLoading: false }));
+      setSendState(s => ({ ...s, gas, gasLoading: false }));
     } catch {
-      setSendState((s) => ({ ...s, gasLoading: false }));
+      setSendState(s => ({ ...s, gasLoading: false }));
     }
   }, [walletData]);
 
   const handleSendConfirm = async () => {
     if (!sendState.token || !walletData) return;
     const pk = getWalletPrivateKey();
-    if (!pk) { setSendState((s) => ({ ...s, error: "Private key not found." })); return; }
-
-    setSendState((s) => ({ ...s, sending: true, error: "" }));
+    if (!pk) { setSendState(s => ({ ...s, error: "Private key not found." })); return; }
+    setSendState(s => ({ ...s, sending: true, error: "" }));
     try {
       let result;
       if (sendState.token.type === "native") {
@@ -722,21 +740,19 @@ export default function Wallet() {
         const rawAmount = parseTokenAmount(sendState.amount, sendState.token.decimals);
         result = await sendERC20Token(sendState.token.chainConfig, pk, walletData.address, sendState.token.tokenAddress!, sendState.toAddress, rawAmount);
       }
-      setSendState((s) => ({ ...s, sending: false, txHash: result.hash, txExplorerUrl: result.explorerUrl }));
+      setSendState(s => ({ ...s, sending: false, txHash: result.hash, txExplorerUrl: result.explorerUrl }));
       setModalView("send-success");
       setTimeout(() => loadAllBalances(walletData.address), 3000);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Transaction failed";
-      setSendState((s) => ({ ...s, sending: false, error: msg }));
+      setSendState(s => ({ ...s, sending: false, error: msg }));
     }
   };
 
-  // ── Add custom token ─────────────────────────────────────────────────────────
+  // ── Add custom token ──────────────────────────────────────────────────────────
 
   const handleLookupToken = async () => {
-    if (!isValidAddress(addTokenAddress)) {
-      setAddTokenError("Invalid contract address"); return;
-    }
+    if (!isValidAddress(addTokenAddress)) { setAddTokenError("Invalid contract address"); return; }
     setAddTokenLoading(true); setAddTokenError(""); setAddTokenInfo(null);
     const cgResult = await lookupTokenOnCoinGecko(addTokenChain, addTokenAddress);
     if (cgResult) {
@@ -748,11 +764,8 @@ export default function Wallet() {
       }
     }
     const info = await fetchTokenInfo(addTokenChain, addTokenAddress);
-    if (!info) {
-      setAddTokenError("Token not found on this chain. Check the address and network.");
-    } else {
-      setAddTokenInfo(info);
-    }
+    if (!info) { setAddTokenError("Token not found on this chain. Check the address and network."); }
+    else { setAddTokenInfo(info); }
     setAddTokenLoading(false);
   };
 
@@ -762,32 +775,32 @@ export default function Wallet() {
     setCustomTokens(updated);
     saveCustomTokens(updated);
     const bal = await fetchTokenBalance(addTokenInfo, walletData.address);
-    setTokenBalances((prev) => [...prev, bal]);
+    setTokenBalances(prev => [...prev, bal]);
     setAddTokenAddress(""); setAddTokenInfo(null); setAddTokenError("");
     setModalView("none");
   };
 
-  // ── VNS ──────────────────────────────────────────────────────────────────────
+  // ── VNS ───────────────────────────────────────────────────────────────────────
 
-  const saveVNS = () => {
+  const saveVNS = useCallback(() => {
     const name = vnsInput.trim().toLowerCase().replace(/[^a-z0-9.]/g, "");
     setVNSName(name);
     setVnsName(name);
     setVnsEditing(false);
     setVnsInput("");
-  };
+  }, [vnsInput]);
 
   // ── Companion Name ────────────────────────────────────────────────────────────
 
-  const saveCompanionName = () => {
+  const saveCompanionName = useCallback(() => {
     const name = companionNameInput.trim() || "Embris";
     setCompanionNameStorage(name);
     setCompanionName(name);
     setCompanionNameEditing(false);
     setCompanionNameInput("");
-  };
+  }, [companionNameInput]);
 
-  // ── Onboarding ────────────────────────────────────────────────────────────────
+  // ── Onboarding view ───────────────────────────────────────────────────────────
 
   if (view === "none") {
     return (
@@ -822,17 +835,13 @@ export default function Wallet() {
               display: "flex", alignItems: "center", gap: 14,
               padding: "16px 18px", borderRadius: 16,
               backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)",
-              color: "#F4F4F5", cursor: "pointer", transition: "all 0.15s ease",
-              textAlign: "left",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.06)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.03)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)"; }}
-            >
+              color: "#F4F4F5", cursor: "pointer", transition: "all 0.15s ease", textAlign: "left",
+              WebkitTapHighlightColor: "transparent", touchAction: "manipulation",
+            }}>
               <div style={{
                 width: 44, height: 44, borderRadius: 14, flexShrink: 0,
                 backgroundColor: `${item.color}12`, border: `1px solid ${item.color}25`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: item.color,
+                display: "flex", alignItems: "center", justifyContent: "center", color: item.color,
               }}>{item.icon}</div>
               <div>
                 <div style={{ fontWeight: 600, fontSize: 15 }}>{creating && item.label === "Create New Wallet" ? "Creating..." : item.label}</div>
@@ -862,8 +871,7 @@ export default function Wallet() {
     return (
       <div className="page-enter" style={{ padding: isMobile ? "24px 20px 48px" : "48px 40px", maxWidth: 480, margin: "0 auto" }}>
         <button type="button" onClick={() => { setView("none"); setImportInput(""); setImportError(""); }}
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "#71717A", cursor: "pointer", marginBottom: 32, fontSize: 13, padding: 0, fontWeight: 500 }}
-        >
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "#71717A", cursor: "pointer", marginBottom: 32, fontSize: 13, padding: 0, fontWeight: 500, WebkitTapHighlightColor: "transparent" }}>
           <ArrowLeftIcon size={14} /> Back
         </button>
         <h2 style={{ fontSize: 24, fontWeight: 800, color: "#F4F4F5", marginBottom: 8, letterSpacing: "-0.04em" }}>
@@ -896,6 +904,7 @@ export default function Wallet() {
             fontSize: 15, fontWeight: 600,
             cursor: importInput.trim().length === 0 || importing ? "default" : "pointer",
             boxShadow: importInput.trim().length === 0 || importing ? "none" : "0 4px 20px rgba(249,115,22,0.2)",
+            WebkitTapHighlightColor: "transparent", touchAction: "manipulation",
           }}>
           {importing && <div style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,0.1)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />}
           {importing ? "Importing..." : "Import Wallet"}
@@ -909,6 +918,7 @@ export default function Wallet() {
   const addr = walletData?.address || "";
   const truncAddr = `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   const px = isMobile ? "20px" : "32px";
+
   return (
     <div className="page-enter" style={{ paddingBottom: 48 }}>
 
@@ -930,18 +940,17 @@ export default function Wallet() {
                 border: "1px solid rgba(255,255,255,0.06)",
                 color: "#A1A1AA", fontSize: 12, fontWeight: 500,
                 cursor: "pointer", ...mono, transition: "all 0.15s ease",
+                WebkitTapHighlightColor: "transparent", touchAction: "manipulation",
               }}
             >
               <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#22C55E", flexShrink: 0 }} />
-              {vnsName ? (
-                <span style={{ color: "#F97316", fontWeight: 600 }}>{vnsName}</span>
-              ) : null}
-              {showFullAddress ? addr : (vnsName ? truncAddr : truncAddr)}
+              {vnsName ? <span style={{ color: "#F97316", fontWeight: 600 }}>{vnsName}</span> : null}
+              {showFullAddress ? addr : truncAddr}
             </button>
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); copyToClipboard(addr, "addr"); }}
-              style={{ background: "none", border: "none", cursor: "pointer", color: copied === "addr" ? "#22C55E" : "#52525B", padding: "4px", display: "flex", alignItems: "center" }}
+              style={{ background: "none", border: "none", cursor: "pointer", color: copied === "addr" ? "#22C55E" : "#52525B", padding: "4px", display: "flex", alignItems: "center", WebkitTapHighlightColor: "transparent" }}
             >
               {copied === "addr" ? <CheckIcon size={11} /> : <CopyIcon size={11} />}
             </button>
@@ -979,30 +988,10 @@ export default function Wallet() {
 
         {/* Action Buttons — Coinbase-style */}
         <div style={{ display: "flex", justifyContent: "center", gap: isMobile ? 20 : 28 }}>
-          <ActionBtn
-            icon={<SendIcon size={22} />}
-            label="Send"
-            onClick={() => openSend()}
-            color="#F97316"
-          />
-          <ActionBtn
-            icon={<ReceiveIcon size={22} />}
-            label="Receive"
-            onClick={() => setModalView("receive")}
-            color="#22C55E"
-          />
-          <ActionBtn
-            icon={<RefreshIcon size={18} />}
-            label="Refresh"
-            onClick={handleRefresh}
-            color="#71717A"
-          />
-          <ActionBtn
-            icon={<ShieldIcon size={18} />}
-            label="Settings"
-            onClick={() => { setSecurityRevealInput(""); setSecurityRevealed(false); setModalView("security"); }}
-            color="#A78BFA"
-          />
+          <ActionBtn icon={<SendIcon size={22} />} label="Send" onClick={() => openSend()} color="#F97316" />
+          <ActionBtn icon={<ReceiveIcon size={22} />} label="Receive" onClick={() => setModalView("receive")} color="#22C55E" />
+          <ActionBtn icon={<RefreshIcon size={18} />} label="Refresh" onClick={handleRefresh} color="#71717A" />
+          <ActionBtn icon={<ShieldIcon size={18} />} label="Settings" onClick={() => { setSecurityRevealInput(""); setSecurityRevealed(false); setModalView("security"); }} color="#A78BFA" />
         </div>
       </div>
 
@@ -1018,9 +1007,8 @@ export default function Wallet() {
               fontSize: 12, color: "#F97316", background: "none",
               border: "1px solid rgba(249,115,22,0.2)", cursor: "pointer", fontWeight: 600,
               padding: "5px 12px", borderRadius: 8, transition: "all 0.15s ease",
+              WebkitTapHighlightColor: "transparent", touchAction: "manipulation",
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(249,115,22,0.06)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
           >
             <PlusIcon size={10} /> Add Token
           </button>
@@ -1061,11 +1049,11 @@ export default function Wallet() {
                   backgroundColor: "rgba(255,255,255,0.02)",
                   border: "1px solid rgba(255,255,255,0.04)",
                   borderRadius: 16,
-                  transition: "all 0.15s ease",
+                  transition: "background-color 0.15s ease",
                   cursor: "pointer",
+                  WebkitTapHighlightColor: "transparent",
+                  touchAction: "manipulation",
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.04)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.02)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.04)"; }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                   <div style={{ position: "relative", flexShrink: 0 }}>
@@ -1073,14 +1061,10 @@ export default function Wallet() {
                     {asset.type === "erc20" && <ChainBadge chain={asset.chain} />}
                   </div>
                   <div>
-                    <p style={{ fontSize: 15, fontWeight: 600, color: "#F4F4F5", marginBottom: 2, letterSpacing: "-0.01em" }}>
-                      {asset.symbol}
-                    </p>
+                    <p style={{ fontSize: 15, fontWeight: 600, color: "#F4F4F5", marginBottom: 2, letterSpacing: "-0.01em" }}>{asset.symbol}</p>
                     <p style={{ fontSize: 11, color: "#52525B" }}>
                       {asset.type === "native" ? asset.chainName : `${asset.name} · ${asset.chainName}`}
-                      {asset.pricePerToken > 0 && (
-                        <span style={{ color: "#3F3F46" }}> · {formatPrice(asset.pricePerToken)}</span>
-                      )}
+                      {asset.pricePerToken > 0 && <span style={{ color: "#3F3F46" }}> · {formatPrice(asset.pricePerToken)}</span>}
                     </p>
                   </div>
                 </div>
@@ -1108,11 +1092,11 @@ export default function Wallet() {
         </div>
       </div>
 
-      {/* ── MODALS (rendered via Portal — no stacking context issues) ── */}
+      {/* ── MODALS (rendered via Portal — outside any stacking context) ── */}
 
       {/* Security Modal */}
       {modalView === "security" && (
-        <Modal onClose={() => { setModalView("none"); setSecurityRevealed(false); setSecurityRevealInput(""); }} title="Security & Settings">
+        <WalletModal onClose={() => { setModalView("none"); setSecurityRevealed(false); setSecurityRevealInput(""); }} title="Security & Settings">
           <div style={{ padding: "20px 24px 32px", display: "flex", flexDirection: "column", gap: 20 }}>
 
             {/* VNS Section */}
@@ -1134,13 +1118,7 @@ export default function Wallet() {
                     onChange={(e) => setVnsInput(e.target.value)}
                     placeholder="ghostkey.vault"
                     autoFocus
-                    style={{
-                      flex: 1, padding: "10px 14px",
-                      backgroundColor: "rgba(255,255,255,0.04)",
-                      border: "1px solid rgba(249,115,22,0.3)",
-                      borderRadius: 10, color: "#F4F4F5", fontSize: 14,
-                      outline: "none", ...mono,
-                    }}
+                    style={{ flex: 1, padding: "10px 14px", backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(249,115,22,0.3)", borderRadius: 10, color: "#F4F4F5", fontSize: 14, outline: "none", ...mono }}
                     onKeyDown={(e) => { if (e.key === "Enter") saveVNS(); if (e.key === "Escape") { setVnsEditing(false); setVnsInput(""); } }}
                   />
                   <button type="button" onClick={saveVNS} style={{ padding: "10px 16px", backgroundColor: "rgba(249,115,22,0.15)", border: "1px solid rgba(249,115,22,0.3)", borderRadius: 10, color: "#F97316", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Save</button>
@@ -1148,9 +1126,7 @@ export default function Wallet() {
                 </div>
               ) : (
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: 14, color: vnsName ? "#F97316" : "#52525B", ...mono, fontWeight: vnsName ? 600 : 400 }}>
-                    {vnsName || "Not set"}
-                  </span>
+                  <span style={{ fontSize: 14, color: vnsName ? "#F97316" : "#52525B", ...mono, fontWeight: vnsName ? 600 : 400 }}>{vnsName || "Not set"}</span>
                   <button type="button" onClick={() => { setVnsEditing(true); setVnsInput(vnsName); }} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, color: "#A1A1AA", fontSize: 12, cursor: "pointer" }}>
                     <EditIcon size={11} /> {vnsName ? "Edit" : "Set Name"}
                   </button>
@@ -1177,12 +1153,7 @@ export default function Wallet() {
                     onChange={(e) => setCompanionNameInput(e.target.value)}
                     placeholder="Embris, Phoenix, Nova..."
                     autoFocus
-                    style={{
-                      flex: 1, padding: "10px 14px",
-                      backgroundColor: "rgba(255,255,255,0.04)",
-                      border: "1px solid rgba(167,139,250,0.3)",
-                      borderRadius: 10, color: "#F4F4F5", fontSize: 14, outline: "none",
-                    }}
+                    style={{ flex: 1, padding: "10px 14px", backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(167,139,250,0.3)", borderRadius: 10, color: "#F4F4F5", fontSize: 14, outline: "none" }}
                     onKeyDown={(e) => { if (e.key === "Enter") saveCompanionName(); if (e.key === "Escape") { setCompanionNameEditing(false); setCompanionNameInput(""); } }}
                   />
                   <button type="button" onClick={saveCompanionName} style={{ padding: "10px 16px", backgroundColor: "rgba(167,139,250,0.15)", border: "1px solid rgba(167,139,250,0.3)", borderRadius: 10, color: "#A78BFA", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Save</button>
@@ -1226,8 +1197,7 @@ export default function Wallet() {
                       width: "100%", padding: "12px 14px",
                       backgroundColor: "rgba(255,255,255,0.03)",
                       border: securityRevealInput === "reveal" ? "1px solid rgba(167,139,250,0.4)" : "1px solid rgba(255,255,255,0.07)",
-                      borderRadius: 10, color: "#F4F4F5", fontSize: 14,
-                      outline: "none", boxSizing: "border-box", marginBottom: 10,
+                      borderRadius: 10, color: "#F4F4F5", fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 10,
                     }}
                     onKeyDown={(e) => { if (e.key === "Enter" && securityRevealInput === "reveal") setSecurityRevealed(true); }}
                   />
@@ -1282,20 +1252,17 @@ export default function Wallet() {
                 padding: "12px", width: "100%",
                 backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)",
                 borderRadius: 10, color: "#EF4444", fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.15s ease",
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.12)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.06)"; }}
-              >
+              }}>
                 <TrashIcon size={12} /> Delete Wallet
               </button>
             </div>
           </div>
-        </Modal>
+        </WalletModal>
       )}
 
       {/* Receive Modal */}
       {modalView === "receive" && (
-        <Modal onClose={() => setModalView("none")} title="Receive">
+        <WalletModal onClose={() => setModalView("none")} title="Receive">
           <div style={{ padding: "24px 24px 32px", display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
             <p style={{ fontSize: 13, color: "#71717A", textAlign: "center", lineHeight: 1.6 }}>
               Share your address to receive ETH, AVAX, or any ERC-20 token. Make sure the sender uses the correct network.
@@ -1312,6 +1279,7 @@ export default function Wallet() {
               border: copied === "receive-addr" ? "1px solid rgba(34,197,94,0.2)" : "none",
               borderRadius: 14, color: copied === "receive-addr" ? "#22C55E" : "#fff",
               fontSize: 15, fontWeight: 600, cursor: "pointer", transition: "all 0.2s ease",
+              WebkitTapHighlightColor: "transparent", touchAction: "manipulation",
             }}>
               {copied === "receive-addr" ? <><CheckIcon size={14} /> Address Copied!</> : <><CopyIcon size={14} /> Copy Address</>}
             </button>
@@ -1322,12 +1290,12 @@ export default function Wallet() {
               </p>
             </div>
           </div>
-        </Modal>
+        </WalletModal>
       )}
 
       {/* Send Modal */}
       {modalView === "send" && (
-        <Modal onClose={() => setModalView("none")} title="Send">
+        <WalletModal onClose={() => setModalView("none")} title="Send">
           <div style={{ padding: "20px 24px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
             {/* Token selector */}
             <div>
@@ -1339,12 +1307,12 @@ export default function Wallet() {
                   </div>
                 )}
                 {assets.map((a, i) => (
-                  <button key={i} type="button" onClick={() => setSendState((s) => ({ ...s, token: a, gas: null }))} style={{
+                  <button key={i} type="button" onClick={() => setSendState(s => ({ ...s, token: a, gas: null }))} style={{
                     display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
                     backgroundColor: sendState.token === a ? "rgba(249,115,22,0.08)" : "transparent",
                     border: sendState.token === a ? "1px solid rgba(249,115,22,0.2)" : "1px solid transparent",
                     borderRadius: 12, cursor: "pointer", width: "100%", textAlign: "left",
-                    transition: "all 0.1s ease",
+                    transition: "all 0.1s ease", WebkitTapHighlightColor: "transparent",
                   }}>
                     <div style={{ position: "relative", flexShrink: 0 }}>
                       <TokenAvatar item={a} size={32} />
@@ -1366,7 +1334,7 @@ export default function Wallet() {
               <input
                 type="text"
                 value={sendState.toAddress}
-                onChange={(e) => setSendState((s) => ({ ...s, toAddress: e.target.value, gas: null }))}
+                onChange={(e) => setSendState(s => ({ ...s, toAddress: e.target.value, gas: null }))}
                 placeholder="0x..."
                 style={{
                   width: "100%", padding: "14px 16px", boxSizing: "border-box",
@@ -1385,7 +1353,7 @@ export default function Wallet() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                 <label style={{ fontSize: 12, color: "#71717A", fontWeight: 500 }}>Amount</label>
                 {sendState.token && (
-                  <button type="button" onClick={() => setSendState((s) => ({ ...s, amount: s.token?.balanceFormatted || "", gas: null }))}
+                  <button type="button" onClick={() => setSendState(s => ({ ...s, amount: s.token?.balanceFormatted || "", gas: null }))}
                     style={{ fontSize: 11, color: "#F97316", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>
                     Max
                   </button>
@@ -1396,7 +1364,7 @@ export default function Wallet() {
                   type="text"
                   inputMode="decimal"
                   value={sendState.amount}
-                  onChange={(e) => setSendState((s) => ({ ...s, amount: e.target.value, gas: null }))}
+                  onChange={(e) => setSendState(s => ({ ...s, amount: e.target.value, gas: null }))}
                   placeholder="0.0"
                   style={{
                     width: "100%", padding: "14px 70px 14px 16px", boxSizing: "border-box",
@@ -1427,7 +1395,7 @@ export default function Wallet() {
                 backgroundColor: "rgba(255,255,255,0.03)",
                 border: "1px solid rgba(255,255,255,0.06)",
                 borderRadius: 12, color: "#A1A1AA", fontSize: 13, fontWeight: 500, cursor: "pointer",
-                transition: "all 0.15s ease",
+                transition: "all 0.15s ease", WebkitTapHighlightColor: "transparent",
               }}
             >
               {sendState.gasLoading ? (
@@ -1455,16 +1423,13 @@ export default function Wallet() {
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                 padding: "15px", width: "100%",
                 background: (!sendState.token || !isValidAddress(sendState.toAddress) || !sendState.amount || sendState.sending)
-                  ? "rgba(255,255,255,0.03)"
-                  : "linear-gradient(135deg, #F97316, #EA580C)",
+                  ? "rgba(255,255,255,0.03)" : "linear-gradient(135deg, #F97316, #EA580C)",
                 border: "none", borderRadius: 14,
-                color: (!sendState.token || !isValidAddress(sendState.toAddress) || !sendState.amount || sendState.sending)
-                  ? "#3F3F46" : "#fff",
+                color: (!sendState.token || !isValidAddress(sendState.toAddress) || !sendState.amount || sendState.sending) ? "#3F3F46" : "#fff",
                 fontSize: 15, fontWeight: 600,
                 cursor: (!sendState.token || !isValidAddress(sendState.toAddress) || !sendState.amount || sendState.sending) ? "default" : "pointer",
-                boxShadow: (!sendState.token || !isValidAddress(sendState.toAddress) || !sendState.amount || sendState.sending)
-                  ? "none" : "0 4px 20px rgba(249,115,22,0.25)",
-                transition: "all 0.15s ease",
+                boxShadow: (!sendState.token || !isValidAddress(sendState.toAddress) || !sendState.amount || sendState.sending) ? "none" : "0 4px 20px rgba(249,115,22,0.25)",
+                transition: "all 0.15s ease", WebkitTapHighlightColor: "transparent", touchAction: "manipulation",
               }}
             >
               {sendState.sending ? (
@@ -1474,17 +1439,16 @@ export default function Wallet() {
               )}
             </button>
           </div>
-        </Modal>
+        </WalletModal>
       )}
 
       {/* Send Success Modal */}
       {modalView === "send-success" && (
-        <Modal onClose={() => setModalView("none")} title="Transaction Sent">
+        <WalletModal onClose={() => setModalView("none")} title="Transaction Sent">
           <div style={{ padding: "24px 24px 32px", display: "flex", flexDirection: "column", alignItems: "center", gap: 20, textAlign: "center" }}>
             <div style={{
               width: 72, height: 72, borderRadius: "50%",
-              backgroundColor: "rgba(34,197,94,0.1)",
-              border: "2px solid rgba(34,197,94,0.3)",
+              backgroundColor: "rgba(34,197,94,0.1)", border: "2px solid rgba(34,197,94,0.3)",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
               <CheckIcon size={32} />
@@ -1521,17 +1485,18 @@ export default function Wallet() {
                 flex: 1, padding: "12px",
                 backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
                 borderRadius: 12, color: "#A1A1AA", fontSize: 13, fontWeight: 600, cursor: "pointer",
+                WebkitTapHighlightColor: "transparent",
               }}>
                 Done
               </button>
             </div>
           </div>
-        </Modal>
+        </WalletModal>
       )}
 
       {/* Add Token Modal */}
       {modalView === "add-token" && (
-        <Modal onClose={() => { setModalView("none"); setAddTokenAddress(""); setAddTokenInfo(null); setAddTokenError(""); }} title="Add Token">
+        <WalletModal onClose={() => { setModalView("none"); setAddTokenAddress(""); setAddTokenInfo(null); setAddTokenError(""); }} title="Add Token">
           <div style={{ padding: "20px 24px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
             <div>
               <label style={{ fontSize: 12, color: "#71717A", fontWeight: 500, display: "block", marginBottom: 8 }}>Network</label>
@@ -1543,7 +1508,7 @@ export default function Wallet() {
                     border: addTokenChain === chain ? "1px solid rgba(249,115,22,0.3)" : "1px solid rgba(255,255,255,0.06)",
                     borderRadius: 10, color: addTokenChain === chain ? "#F97316" : "#71717A",
                     fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 0.15s ease",
-                    textTransform: "capitalize",
+                    textTransform: "capitalize", WebkitTapHighlightColor: "transparent",
                   }}>
                     {chain === "avalanche" ? "Avalanche" : chain === "base" ? "Base" : "Ethereum"}
                   </button>
@@ -1559,12 +1524,7 @@ export default function Wallet() {
                   value={addTokenAddress}
                   onChange={(e) => { setAddTokenAddress(e.target.value); setAddTokenInfo(null); setAddTokenError(""); }}
                   placeholder="0x..."
-                  style={{
-                    flex: 1, padding: "12px 14px",
-                    backgroundColor: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(255,255,255,0.07)",
-                    borderRadius: 12, color: "#F4F4F5", fontSize: 14, ...mono, outline: "none",
-                  }}
+                  style={{ flex: 1, padding: "12px 14px", backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, color: "#F4F4F5", fontSize: 14, ...mono, outline: "none" }}
                   onKeyDown={(e) => { if (e.key === "Enter") handleLookupToken(); }}
                 />
                 <button type="button" onClick={handleLookupToken} disabled={addTokenLoading || !addTokenAddress}
@@ -1574,7 +1534,7 @@ export default function Wallet() {
                     border: addTokenLoading || !addTokenAddress ? "1px solid rgba(255,255,255,0.05)" : "1px solid rgba(249,115,22,0.25)",
                     borderRadius: 12, color: addTokenLoading || !addTokenAddress ? "#3F3F46" : "#F97316",
                     fontSize: 13, fontWeight: 600, cursor: addTokenLoading || !addTokenAddress ? "default" : "pointer",
-                    whiteSpace: "nowrap",
+                    whiteSpace: "nowrap", WebkitTapHighlightColor: "transparent",
                   }}>
                   {addTokenLoading ? "..." : "Lookup"}
                 </button>
@@ -1611,13 +1571,14 @@ export default function Wallet() {
                   border: "none", borderRadius: 12, color: "#fff",
                   fontSize: 14, fontWeight: 600, cursor: "pointer",
                   boxShadow: "0 4px 16px rgba(34,197,94,0.2)",
+                  WebkitTapHighlightColor: "transparent",
                 }}>
                   <PlusIcon size={14} /> Add {addTokenInfo.symbol}
                 </button>
               </div>
             )}
           </div>
-        </Modal>
+        </WalletModal>
       )}
     </div>
   );
