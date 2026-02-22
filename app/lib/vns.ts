@@ -55,22 +55,26 @@ export const BOND_TIERS = [
 export type IdentityType = 'human' | 'companion' | 'agent';
 export type BondTier = 'bronze' | 'silver' | 'gold' | 'platinum';
 
-const REGISTRY_ADDRESSES: Record<'base' | 'avalanche', string> = {
+const REGISTRY_ADDRESSES: Record<'base' | 'avalanche' | 'ethereum', string> = {
+  ethereum: '0xaCB59e0f0eA47B25b24390B71b877928E5842630',
   base: '0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5',
   avalanche: '0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5',
 };
 
-const BOND_CONTRACT_ADDRESSES: Record<'base' | 'avalanche', string> = {
+const BOND_CONTRACT_ADDRESSES: Record<'base' | 'avalanche' | 'ethereum', string> = {
+  ethereum: '0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5',
   base: '0xDfc66395A4742b5168712a04942C90B99394aEEb',
   avalanche: '0xEF022Bdf55940491d4efeBDE61Ffa3f3fF81b192',
 };
 
-const PRIVACY_CONTRACT_ADDRESSES: Record<'base' | 'avalanche', string> = {
+const PRIVACY_CONTRACT_ADDRESSES: Record<'base' | 'avalanche' | 'ethereum', string> = {
+  ethereum: '0xE1D52bF7A842B207B8C48eAE801f9d97A3C4D709',
   base: '0xBdB6c89f5cb86f4d44F7E01d9393b29D83e3DB55',
   avalanche: '0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C',
 };
 
-const RPC_URLS: Record<'base' | 'avalanche', string> = {
+const RPC_URLS: Record<'base' | 'avalanche' | 'ethereum', string> = {
+  ethereum: CHAINS.ethereum.rpc,
   base: CHAINS.base.rpc,
   avalanche: CHAINS.avalanche.rpc,
 };
@@ -84,7 +88,7 @@ export interface VNSProfile {
   name: string;           // e.g. "ghostkey316"
   fullName: string;       // e.g. "ghostkey316.vns"
   address: string;        // 0x...
-  chain: 'base' | 'avalanche' | 'both';
+  chain: 'base' | 'avalanche' | 'ethereum' | 'both';
   identityType: IdentityType;
   registeredAt?: number;  // unix timestamp
   description?: string;
@@ -109,7 +113,7 @@ export interface VNSAvailability {
   name: string;
   available: boolean;
   takenBy?: string;       // address if taken
-  takenOn?: 'base' | 'avalanche' | 'both';
+  takenOn?: 'base' | 'avalanche' | 'ethereum' | 'both';
   checking: boolean;
   error?: string;
 }
@@ -118,7 +122,7 @@ export interface VNSRegistrationResult {
   success: boolean;
   txHash?: string;
   explorerUrl?: string;
-  chain?: 'base' | 'avalanche';
+  chain?: 'base' | 'avalanche' | 'ethereum';
   message: string;
   errorType?: 'no_wallet' | 'no_gas' | 'name_taken' | 'invalid_name' | 'tx_failed' | 'rpc_error' | 'already_registered' | 'bond_required' | 'companion_exists';
 }
@@ -128,7 +132,7 @@ export interface VNSGasEstimate {
   gasPriceWei: bigint;
   totalFeeWei: bigint;
   totalFeeFormatted: string;
-  chain: 'base' | 'avalanche';
+  chain: 'base' | 'avalanche' | 'ethereum';
   chainName: string;
   gasSymbol: string;
 }
@@ -139,7 +143,7 @@ export interface AgentRegistrationParams {
   specializations: string[];
   capabilities: string[];
   bondAmountEth: number;
-  chain: 'base' | 'avalanche';
+  chain: 'base' | 'avalanche' | 'ethereum';
 }
 
 export interface AgentLaunchResult {
@@ -385,7 +389,7 @@ function encodeRegisterAgent(name: string, description: string): string {
 
 export async function lookupAddressByAddress(
   address: string,
-  chain: 'base' | 'avalanche' = 'base',
+  chain: 'base' | 'avalanche' | 'ethereum' = 'base',
 ): Promise<string | null> {
   try {
     const data = GET_AGENT_SELECTOR + encodeAddress(address);
@@ -421,7 +425,7 @@ export async function getProfileByAddress(address: string): Promise<VNSProfile |
       return null;
     }
 
-    const chain: 'base' | 'avalanche' | 'both' =
+    const chain: 'base' | 'avalanche' | 'ethereum' | 'both' =
       baseResult && avaxResult ? 'both' : baseResult ? 'base' : 'avalanche';
 
     // Check local registry for identity type
@@ -456,13 +460,13 @@ export async function resolveVNSName(fullName: string): Promise<VNSProfile | nul
   const localEntry = localRegistry[name];
 
   if (localEntry) {
-    const onChainName = await lookupAddressByAddress(localEntry.address, localEntry.chain as 'base' | 'avalanche');
+    const onChainName = await lookupAddressByAddress(localEntry.address, localEntry.chain as 'base' | 'avalanche' | 'ethereum');
     if (onChainName && onChainName.toLowerCase() === name.toLowerCase()) {
       const profile: VNSProfile = {
         name,
         fullName: `${name}.vns`,
         address: localEntry.address,
-        chain: localEntry.chain as 'base' | 'avalanche' | 'both',
+        chain: localEntry.chain as 'base' | 'avalanche' | 'ethereum' | 'ethereum' | 'both',
         identityType: localEntry.identityType || 'agent',
         registeredAt: localEntry.registeredAt,
         explorerUrl: `https://basescan.org/address/${localEntry.address}`,
@@ -494,7 +498,7 @@ export async function checkVNSAvailability(name: string): Promise<VNSAvailabilit
       name: normalized,
       available: false,
       takenBy: localEntry.address,
-      takenOn: localEntry.chain as 'base' | 'avalanche' | 'both',
+      takenOn: localEntry.chain as 'base' | 'avalanche' | 'ethereum' | 'ethereum' | 'both',
       checking: false,
     };
   }
@@ -648,7 +652,7 @@ export async function estimateVNSRegistrationGas(
   walletAddress: string,
   vnsName: string,
   identityType: IdentityType,
-  chain: 'base' | 'avalanche' = 'base',
+  chain: 'base' | 'avalanche' | 'ethereum' = 'base',
 ): Promise<VNSGasEstimate | null> {
   try {
     const description = buildRegistrationDescription(identityType);
@@ -689,7 +693,7 @@ export async function registerVNSName(
   privateKey: string,
   vnsName: string,
   identityType: IdentityType,
-  chain: 'base' | 'avalanche' = 'base',
+  chain: 'base' | 'avalanche' | 'ethereum' = 'base',
   options: {
     description?: string;
     specializations?: string[];
@@ -724,7 +728,7 @@ export async function registerVNSName(
 
   const rpc = RPC_URLS[chain];
   const registry = REGISTRY_ADDRESSES[chain];
-  const explorerBase = chain === 'base' ? 'https://basescan.org' : 'https://snowtrace.io';
+  const explorerBase = chain === 'ethereum' ? 'https://etherscan.io' : chain === 'base' ? 'https://basescan.org' : 'https://snowtrace.io';
 
   try {
     // Check balance
@@ -836,7 +840,7 @@ export async function stakeAgentBond(
   privateKey: string,
   agentVNSName: string,
   bondAmountEth: number,
-  chain: 'base' | 'avalanche' = 'base',
+  chain: 'base' | 'avalanche' | 'ethereum' = 'base',
 ): Promise<VNSRegistrationResult> {
   if (bondAmountEth < 0.01) {
     return {
@@ -848,7 +852,7 @@ export async function stakeAgentBond(
 
   const rpc = RPC_URLS[chain];
   const bondContract = BOND_CONTRACT_ADDRESSES[chain];
-  const explorerBase = chain === 'base' ? 'https://basescan.org' : 'https://snowtrace.io';
+  const explorerBase = chain === 'ethereum' ? 'https://etherscan.io' : chain === 'base' ? 'https://basescan.org' : 'https://snowtrace.io';
 
   try {
     const bondWei = BigInt(Math.floor(bondAmountEth * 1e18));
@@ -932,11 +936,11 @@ export async function invokeAgentPrivacy(
   walletAddress: string,
   privateKey: string,
   sessionId: string,
-  chain: 'base' | 'avalanche' = 'base',
+  chain: 'base' | 'avalanche' | 'ethereum' = 'base',
 ): Promise<VNSRegistrationResult> {
   const rpc = RPC_URLS[chain];
   const privacyContract = PRIVACY_CONTRACT_ADDRESSES[chain];
-  const explorerBase = chain === 'base' ? 'https://basescan.org' : 'https://snowtrace.io';
+  const explorerBase = chain === 'ethereum' ? 'https://etherscan.io' : chain === 'base' ? 'https://basescan.org' : 'https://snowtrace.io';
 
   try {
     // grantConsent(bytes32 sessionId, bool private) — simplified encoding
@@ -1034,7 +1038,7 @@ export interface RegisteredAgent {
   name: string;
   fullName: string;
   address: string;
-  chain: 'base' | 'avalanche' | 'both';
+  chain: 'base' | 'avalanche' | 'ethereum' | 'both';
   identityType: IdentityType;
   description?: string;
   bondAmount?: string;
@@ -1092,7 +1096,7 @@ export function getKnownAgents(): RegisteredAgent[] {
       name,
       fullName: `${name}.vns`,
       address: entry.address,
-      chain: entry.chain as 'base' | 'avalanche' | 'both',
+      chain: entry.chain as 'base' | 'avalanche' | 'ethereum' | 'ethereum' | 'both',
       identityType: 'agent' as IdentityType,
       bondTier: entry.bondTier,
       hasBond: entry.hasBond,

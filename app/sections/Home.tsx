@@ -93,7 +93,7 @@ export default function Home() {
   const [registered, setRegistered] = useState(false);
   const [registrationAddress, setRegistrationAddress] = useState<string | null>(null);
   const [regChains, setRegChains] = useState<SupportedChain[]>([]);
-  const [agentCounts, setAgentCounts] = useState<{ base: number | null; avalanche: number | null }>({ base: null, avalanche: null });
+  const [agentCounts, setAgentCounts] = useState<{ base: number | null; avalanche: number | null; ethereum: number | null }>({ base: null, avalanche: null, ethereum: null });
   const [agentCountLoading, setAgentCountLoading] = useState(true);
 
   useEffect(() => {
@@ -123,8 +123,9 @@ export default function Home() {
     Promise.all([
       getAgentCount('base'),
       getAgentCount('avalanche'),
-    ]).then(([baseCount, avaxCount]) => {
-      setAgentCounts({ base: baseCount, avalanche: avaxCount });
+      getAgentCount('ethereum'),
+    ]).then(([baseCount, avaxCount, ethCount]) => {
+      setAgentCounts({ base: baseCount, avalanche: avaxCount, ethereum: ethCount });
       setAgentCountLoading(false);
     }).catch(() => {
       setAgentCountLoading(false);
@@ -134,7 +135,7 @@ export default function Home() {
   const totalContracts = BASE_CONTRACTS.length + AVALANCHE_CONTRACTS.length + ETHEREUM_CONTRACTS.length;
   const allConnected = chains.every(c => !c.loading && c.result?.success);
   const anyLoading = chains.some(c => c.loading);
-  const totalAgents = (agentCounts.base ?? 0) + (agentCounts.avalanche ?? 0);
+  const totalAgents = (agentCounts.base ?? 0) + (agentCounts.avalanche ?? 0) + (agentCounts.ethereum ?? 0);
 
   const features = [
     {
@@ -164,7 +165,7 @@ export default function Home() {
     {
       icon: <GlobeIcon />,
       title: 'Cross-Chain Bridge',
-      desc: 'Teleporter bridge connects Base and Avalanche for seamless asset movement.',
+      desc: 'Trust data bridges sync identity and reputation across Ethereum, Base, and Avalanche.',
       color: '#38BDF8',
     },
     {
@@ -372,7 +373,7 @@ export default function Home() {
         </div>
         <div style={{
           display: 'grid',
-          gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(3, 1fr)',
+          gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
           gap: 12,
         }}>
           {/* Total Agents */}
@@ -388,7 +389,22 @@ export default function Home() {
               <p style={{ fontSize: 11, color: '#71717A', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Total Registered Agents</p>
             </div>
             <AnimatedCounter value={agentCountLoading ? null : totalAgents} loading={agentCountLoading} />
-            <p style={{ fontSize: 11, color: '#52525B', marginTop: 6 }}>Across Base + Avalanche</p>
+            <p style={{ fontSize: 11, color: '#52525B', marginTop: 6 }}>Across Ethereum + Base + Avalanche</p>
+          </div>
+
+          {/* Ethereum count */}
+          <div style={{
+            padding: isMobile ? '16px 14px' : '20px 16px',
+            backgroundColor: 'rgba(98,126,234,0.04)',
+            border: '1px solid rgba(98,126,234,0.12)',
+            borderRadius: 16,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#627EEA' }} />
+              <p style={{ fontSize: 10, color: '#71717A', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Ethereum</p>
+            </div>
+            <AnimatedCounter value={agentCountLoading ? null : agentCounts.ethereum} loading={agentCountLoading} />
+            <p style={{ fontSize: 10, color: '#52525B', marginTop: 4 }}>Chain ID 1</p>
           </div>
 
           {/* Base count */}
@@ -424,6 +440,25 @@ export default function Home() {
 
         {/* ERC8004IdentityRegistry link */}
         <div style={{ marginTop: 10, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <a
+            href="https://etherscan.io/address/0xaCB59e0f0eA47B25b24390B71b877928E5842630"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              fontSize: 11, color: '#52525B',
+              textDecoration: 'none',
+              padding: '4px 10px',
+              backgroundColor: 'rgba(255,255,255,0.02)',
+              border: '1px solid rgba(255,255,255,0.05)',
+              borderRadius: 6,
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#A1A1AA'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = '#52525B'; }}
+          >
+            <ExternalLinkIcon size={10} /> ERC8004IdentityRegistry on Ethereum
+          </a>
           <a
             href="https://basescan.org/address/0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5"
             target="_blank"

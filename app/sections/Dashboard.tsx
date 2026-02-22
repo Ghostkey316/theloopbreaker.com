@@ -169,7 +169,7 @@ export default function Dashboard() {
       </div>
 
       {/* Dashboard Disclaimer */}
-      <SectionDisclaimer text="Dashboard data is fetched live from Base and Avalanche RPCs. On-chain data may be delayed. All transactions are irreversible. This is not financial advice." />
+      <SectionDisclaimer text="Dashboard data is fetched live from Ethereum, Base, and Avalanche RPCs. On-chain data may be delayed. All transactions are irreversible. This is not financial advice." />
 
       {/* Stats — skeleton while loading */}
       <div style={{

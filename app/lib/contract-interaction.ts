@@ -9,7 +9,7 @@
  * Uses raw JSON-RPC calls to Base and Avalanche RPCs.
  */
 
-import { CHAINS, BASE_CONTRACTS, AVALANCHE_CONTRACTS } from './contracts';
+import { CHAINS, BASE_CONTRACTS, AVALANCHE_CONTRACTS, ETHEREUM_CONTRACTS } from './contracts';
 import { getWalletAddress } from './wallet';
 import { isRegistered, getRegistration, getRegisteredChains } from './registration';
 
@@ -114,8 +114,8 @@ export async function checkRegistrationOnChain(
 /**
  * Get the total number of registered agents on a chain
  */
-export async function getAgentCount(chain: 'base' | 'avalanche'): Promise<number | null> {
-  const contracts = chain === 'base' ? BASE_CONTRACTS : AVALANCHE_CONTRACTS;
+export async function getAgentCount(chain: 'base' | 'avalanche' | 'ethereum'): Promise<number | null> {
+  const contracts = chain === 'base' ? BASE_CONTRACTS : chain === 'avalanche' ? AVALANCHE_CONTRACTS : ETHEREUM_CONTRACTS;
   const registry = contracts.find(c => c.name === 'ERC8004IdentityRegistry');
   if (!registry) return null;
 
@@ -221,7 +221,7 @@ export async function executeContractQuery(query: EmbrisContractQuery): Promise<
 
       case 'agent_count': {
         const results: string[] = ['\n\n[ON-CHAIN DATA — Agent Registry Counts]'];
-        for (const chain of ['base', 'avalanche'] as const) {
+        for (const chain of ['base', 'avalanche', 'ethereum'] as const) {
           const count = await getAgentCount(chain);
           results.push(`${chain}: ${count !== null ? `${count} registered agents` : 'Unable to read count'}`);
         }

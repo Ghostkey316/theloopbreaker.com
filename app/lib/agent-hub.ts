@@ -791,7 +791,7 @@ export interface MarketplaceAgent {
   vnsName: string;
   fullVNSName: string;
   address: string;
-  chain: 'base' | 'avalanche' | 'both';
+  chain: 'base' | 'avalanche' | 'ethereum' | 'both';
   description: string;
   specializations: string[];
   capabilities: string[];
