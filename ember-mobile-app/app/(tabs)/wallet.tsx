@@ -240,10 +240,21 @@ export default function WalletScreen() {
   const [securityRevealed, setSecurityRevealed] = useState(false);
   const [securityConfirmText, setSecurityConfirmText] = useState("");
 
+  // ─── VNS & Companion Name State ────────────────────────────────────
+  const [vnsName, setVnsName] = useState("");
+  const [vnsInput, setVnsInput] = useState("");
+  const [vnsEditing, setVnsEditing] = useState(false);
+  const [companionName, setCompanionName] = useState("Embris");
+  const [companionInput, setCompanionInput] = useState("");
+  const [companionEditing, setCompanionEditing] = useState(false);
+
   // ─── Init ──────────────────────────────────────────────────────────
 
   useEffect(() => {
     checkWalletStatus();
+    // Load VNS and companion name
+    AsyncStorage.getItem('vaultfire_vns_name').then(v => { if (v) { setVnsName(v); setVnsInput(v); } });
+    AsyncStorage.getItem('vaultfire_companion_name').then(v => { if (v) { setCompanionName(v); setCompanionInput(v); } });
   }, []);
 
   const checkWalletStatus = useCallback(async () => {
@@ -1436,6 +1447,115 @@ export default function WalletScreen() {
                 <Text style={{ color: colors.muted, fontSize: 14 }}>
                   No recovery phrase available. This wallet may have been imported via private key.
                 </Text>
+              )}
+            </View>
+
+            {/* VNS Name */}
+            <View style={[s.securitySection, { backgroundColor: colors.surface, borderColor: `${colors.foreground}06`, marginTop: 16 }]}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <IconSymbol name="person.text.rectangle" size={20} color={colors.primary} />
+                <Text style={{ color: colors.foreground, fontSize: 17, fontWeight: "600" }}>Vaultfire Name (VNS)</Text>
+              </View>
+              <Text style={{ color: colors.muted, fontSize: 13, lineHeight: 19, marginBottom: 12 }}>
+                Register a human-readable name for your wallet. Instead of 0x742d... you can be "ghostkey.vault".
+              </Text>
+              {vnsEditing ? (
+                <View style={{ gap: 10 }}>
+                  <TextInput
+                    value={vnsInput}
+                    onChangeText={setVnsInput}
+                    placeholder="yourname.vault"
+                    placeholderTextColor={`${colors.muted}60`}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    style={[s.textInput, { color: colors.foreground, backgroundColor: `${colors.foreground}04`, borderColor: `${colors.foreground}08` }]}
+                  />
+                  <View style={{ flexDirection: "row", gap: 10 }}>
+                    <Pressable
+                      onPress={async () => {
+                        const name = vnsInput.trim();
+                        if (name) {
+                          const finalName = name.endsWith('.vault') ? name : `${name}.vault`;
+                          await AsyncStorage.setItem('vaultfire_vns_name', finalName);
+                          setVnsName(finalName);
+                          setVnsInput(finalName);
+                        }
+                        setVnsEditing(false);
+                      }}
+                      style={({ pressed }) => [s.primaryButton, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1, flex: 1 }]}
+                    >
+                      <Text style={[s.primaryButtonText, { color: "#FAFAFA" }]}>Save</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => { setVnsEditing(false); setVnsInput(vnsName); }}
+                      style={({ pressed }) => [s.primaryButton, { backgroundColor: `${colors.foreground}08`, opacity: pressed ? 0.85 : 1, flex: 1 }]}
+                    >
+                      <Text style={[s.primaryButtonText, { color: colors.muted }]}>Cancel</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : (
+                <Pressable
+                  onPress={() => setVnsEditing(true)}
+                  style={({ pressed }) => [s.primaryButton, { backgroundColor: `${colors.primary}15`, opacity: pressed ? 0.85 : 1 }]}
+                >
+                  <Text style={[s.primaryButtonText, { color: colors.primary }]}>
+                    {vnsName ? `${vnsName} — Edit` : "Register VNS Name"}
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+
+            {/* Companion Name */}
+            <View style={[s.securitySection, { backgroundColor: colors.surface, borderColor: `${colors.foreground}06`, marginTop: 16 }]}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <IconSymbol name="flame.fill" size={20} color="#F97316" />
+                <Text style={{ color: colors.foreground, fontSize: 17, fontWeight: "600" }}>Companion Name</Text>
+              </View>
+              <Text style={{ color: colors.muted, fontSize: 13, lineHeight: 19, marginBottom: 12 }}>
+                Give your AI companion a custom name. Instead of "Embris", call it whatever you like.
+              </Text>
+              {companionEditing ? (
+                <View style={{ gap: 10 }}>
+                  <TextInput
+                    value={companionInput}
+                    onChangeText={setCompanionInput}
+                    placeholder="Phoenix, Nova, etc."
+                    placeholderTextColor={`${colors.muted}60`}
+                    autoCapitalize="words"
+                    autoCorrect={false}
+                    style={[s.textInput, { color: colors.foreground, backgroundColor: `${colors.foreground}04`, borderColor: `${colors.foreground}08` }]}
+                  />
+                  <View style={{ flexDirection: "row", gap: 10 }}>
+                    <Pressable
+                      onPress={async () => {
+                        const name = companionInput.trim() || 'Embris';
+                        await AsyncStorage.setItem('vaultfire_companion_name', name);
+                        setCompanionName(name);
+                        setCompanionInput(name);
+                        setCompanionEditing(false);
+                      }}
+                      style={({ pressed }) => [s.primaryButton, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1, flex: 1 }]}
+                    >
+                      <Text style={[s.primaryButtonText, { color: "#FAFAFA" }]}>Save</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => { setCompanionEditing(false); setCompanionInput(companionName); }}
+                      style={({ pressed }) => [s.primaryButton, { backgroundColor: `${colors.foreground}08`, opacity: pressed ? 0.85 : 1, flex: 1 }]}
+                    >
+                      <Text style={[s.primaryButtonText, { color: colors.muted }]}>Cancel</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : (
+                <Pressable
+                  onPress={() => setCompanionEditing(true)}
+                  style={({ pressed }) => [s.primaryButton, { backgroundColor: `${colors.primary}15`, opacity: pressed ? 0.85 : 1 }]}
+                >
+                  <Text style={[s.primaryButtonText, { color: colors.primary }]}>
+                    {companionName !== 'Embris' ? `${companionName} — Edit` : "Name Your Companion"}
+                  </Text>
+                </Pressable>
               )}
             </View>
 

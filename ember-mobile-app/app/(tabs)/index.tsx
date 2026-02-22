@@ -21,7 +21,9 @@ import {
   VAULTFIRE_WEBSITE,
 } from "@/constants/contracts";
 import { checkChainConnectivity, type RPCResult } from "@/lib/blockchain";
+import { getRegistryData } from "@/lib/contract-reader";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 function NetworkCard({
   label,
@@ -115,6 +117,8 @@ export default function HomeScreen() {
   const [avaxResult, setAvaxResult] = useState<RPCResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [registrationCount, setRegistrationCount] = useState<number | null>(null);
+  const [companionDisplayName, setCompanionDisplayName] = useState('Embris');
 
   const checkNetworks = useCallback(async () => {
     setLoading(true);
@@ -125,6 +129,12 @@ export default function HomeScreen() {
       ]);
       setBaseResult(base);
       setAvaxResult(avax);
+      // Fetch live registration count from ERC8004IdentityRegistry
+      const registryAddr = BASE_CONTRACTS.find(c => c.name === 'ERC8004IdentityRegistry');
+      if (registryAddr) {
+        const regData = await getRegistryData('base', registryAddr.address);
+        if (regData.entryCount !== null) setRegistrationCount(regData.entryCount);
+      }
     } catch (error) {
       console.error("Network check failed:", error);
     } finally {
@@ -135,6 +145,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     checkNetworks();
+    AsyncStorage.getItem('vaultfire_companion_name').then(v => { if (v) setCompanionDisplayName(v); });
   }, [checkNetworks]);
 
   const onRefresh = useCallback(() => {
@@ -143,7 +154,7 @@ export default function HomeScreen() {
   }, [checkNetworks]);
 
   const quickActions = [
-    { icon: "bubble.left.fill" as const, label: "Chat with Embris", route: "/chat" as const },
+    { icon: "bubble.left.fill" as const, label: `Chat with ${companionDisplayName}`, route: "/chat" as const },
     { icon: "shield.checkered" as const, label: "Trust Verification", route: "/verify" as const },
     { icon: "arrow.left.arrow.right" as const, label: "Cross-Chain Bridge", route: "/bridge" as const },
     { icon: "chart.bar.fill" as const, label: "Dashboard", route: "/dashboard" as const },
@@ -164,7 +175,7 @@ export default function HomeScreen() {
             <IconSymbol name="flame.fill" size={44} color={colors.primary} />
           </View>
           <Text style={[styles.title, { color: colors.foreground }]}>Vaultfire Protocol</Text>
-          <Text style={[styles.subtitle, { color: colors.primary }]}>Powered by Embris AI</Text>
+          <Text style={[styles.subtitle, { color: colors.primary }]}>Powered by {companionDisplayName} AI</Text>
           <Text style={[styles.coreValues, { color: colors.muted }]}>{CORE_VALUES}</Text>
         </Animated.View>
 
@@ -195,9 +206,9 @@ export default function HomeScreen() {
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Protocol Overview</Text>
           <View style={styles.statsRow}>
             {[
-              { value: "28", label: "Contracts" },
+              { value: registrationCount !== null ? registrationCount.toString() : "—", label: "Registered" },
+              { value: (BASE_CONTRACTS.length + AVALANCHE_CONTRACTS.length).toString(), label: "Contracts" },
               { value: "2", label: "Chains" },
-              { value: "ERC-8004", label: "Standard" },
             ].map((stat, idx) => (
               <View
                 key={idx}

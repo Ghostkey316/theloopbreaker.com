@@ -58,6 +58,7 @@ import Animated, {
 import { TypingIndicator } from "@/components/typing-indicator";
 import { MarkdownText } from "@/components/markdown-text";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Intelligence modules
 import { generateReflection, updatePatterns, recordConversation } from "@/lib/self-learning";
@@ -65,7 +66,7 @@ import { detectEmotion, recordEmotion } from "@/lib/emotional-intelligence";
 import { trackMessage, trackSession } from "@/lib/analytics";
 import { addNotification, checkMilestones } from "@/lib/notifications";
 import { detectContractQuery, executeContractQuery } from "@/lib/contract-interaction";
-import { speakText, stopSpeaking, isTTSSupported, isSTTSupported, getVoiceModeEnabled, setVoiceModeEnabled, getVoiceRate, setVoiceRate as saveVoiceRate, getVoicePitch, setVoicePitch as saveVoicePitch } from "@/lib/voice-mode";
+import { speakText, stopSpeaking, isTTSSupported, isSTTSupported, getVoiceModeEnabled, setVoiceModeEnabled, getVoiceRate, setVoiceRate as saveVoiceRate, getVoicePitch, setVoicePitch as saveVoicePitch, createWebSpeechRecognition } from "@/lib/voice-mode";
 import {
   type ConversationMeta,
   getConversationIndex,
@@ -117,12 +118,20 @@ export default function ChatScreen() {
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [showConversations, setShowConversations] = useState(false);
   const [confirmDeleteConvId, setConfirmDeleteConvId] = useState<string | null>(null);
+  const [companionDisplayName, setCompanionDisplayName] = useState('Embris');
   const titleSetRef = useRef(false);
   const flatListRef = useRef<FlatList>(null);
   const chatMutation = trpc.chat.send.useMutation();
   const inputRef = useRef<TextInput>(null);
   const streamingRef = useRef<string>("");
   const messageCountRef = useRef(0);
+  // Voice auto-send refs (avoid stale closures)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
+  const transcriptRef = useRef('');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sendMessageRef = useRef<((text: string) => void) | null>(null);
+  const voiceEnabledRef = useRef(false);
 
   // Load data on mount
   // Refresh conversation list
@@ -140,6 +149,10 @@ export default function ChatScreen() {
       const convMessages = await getConversationMessages(convId);
       await refreshConversationList();
 
+      // Load companion name
+      const storedCompanionName = await AsyncStorage.getItem('vaultfire_companion_name');
+      if (storedCompanionName) setCompanionDisplayName(storedCompanionName);
+
       const [mems, legacyAddr, nativeAddr, voiceMode, rate, pitch] = await Promise.all([
         getMemories(),
         getLegacyWalletAddress(),
@@ -151,6 +164,7 @@ export default function ChatScreen() {
       if (convMessages.length > 0) setMessages(convMessages);
       setMemoriesState(mems);
       setVoiceEnabled(voiceMode);
+      voiceEnabledRef.current = voiceMode;
       setVoiceRateState(rate);
       setVoicePitchState(pitch);
       messageCountRef.current = convMessages.length;
@@ -200,10 +214,16 @@ export default function ChatScreen() {
   const toggleVoiceMode = useCallback(async () => {
     const newValue = !voiceEnabled;
     setVoiceEnabled(newValue);
+    voiceEnabledRef.current = newValue;
     await setVoiceModeEnabled(newValue);
     if (!newValue) {
       await stopSpeaking();
       setIsSpeakingNow(false);
+      setIsListening(false);
+      if (recognitionRef.current) {
+        try { recognitionRef.current.abort(); } catch { /* ignore */ }
+        recognitionRef.current = null;
+      }
       setShowVoiceSettings(false);
     }
   }, [voiceEnabled]);
@@ -222,6 +242,63 @@ export default function ChatScreen() {
       });
     }
   }, [isSpeakingNow, voiceRate, voicePitch]);
+
+  // Push-to-talk: start/stop STT and auto-send on speech end
+  const toggleListening = useCallback(() => {
+    if (isListening) {
+      // Stop listening
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch { /* ignore */ }
+      }
+      setIsListening(false);
+      return;
+    }
+
+    const recognition = createWebSpeechRecognition();
+    if (!recognition) {
+      // STT not available on this platform — show alert
+      Alert.alert('Voice Input', 'Speech recognition is not available on this device. Please type your message.');
+      return;
+    }
+
+    recognitionRef.current = recognition;
+    transcriptRef.current = '';
+    setIsListening(true);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (recognition as any).onresult = (event: any) => {
+      let transcript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      transcriptRef.current = transcript;
+      setInputText(transcript);
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (recognition as any).onend = () => {
+      setIsListening(false);
+      const transcript = transcriptRef.current.trim();
+      if (voiceEnabledRef.current && transcript && sendMessageRef.current) {
+        setTimeout(() => {
+          if (transcript && sendMessageRef.current) {
+            setInputText('');
+            transcriptRef.current = '';
+            sendMessageRef.current(transcript);
+          }
+        }, 200);
+      }
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (recognition as any).onerror = () => {
+      setIsListening(false);
+      transcriptRef.current = '';
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (recognition as any).start();
+  }, [isListening]);
 
   const handleRateChange = useCallback(async (newRate: number) => {
     const clamped = Math.max(0.5, Math.min(2.0, newRate));
@@ -612,6 +689,14 @@ export default function ChatScreen() {
     [inputText, isLoading, messages, memories, walletAddress, chatMutation, voiceEnabled, voiceRate, voicePitch, syncEnabled, syncConvoId, activeConvId, refreshConversationList]
   );
 
+  // Keep sendMessageRef always pointing to the latest sendMessage
+  // sendMessage accepts an optional text param, so we can call it directly
+  useEffect(() => {
+    sendMessageRef.current = (text: string) => {
+      sendMessage(text);
+    };
+  }, [sendMessage]);
+
   const renderMessage = useCallback(
     ({ item }: { item: ChatMessageWithStatus }) => {
       const isUser = item.role === "user";
@@ -712,7 +797,7 @@ export default function ChatScreen() {
               <Text style={{ fontSize: 18 }}>🔥</Text>
             </View>
             <View>
-              <Text style={[styles.headerTitle, { color: colors.foreground }]}>Embris</Text>
+              <Text style={[styles.headerTitle, { color: colors.foreground }]}>{companionDisplayName}</Text>
               <Text style={[styles.headerSubtitle, { color: isSpeakingNow ? colors.primary : colors.muted }]}>
                 {isSpeakingNow ? "Speaking..." : isLoading ? "Thinking..." : voiceEnabled ? "Voice Mode ✓" : syncEnabled ? "Synced ✓" : "Vaultfire Protocol"}
               </Text>
@@ -809,7 +894,7 @@ export default function ChatScreen() {
                 <Text style={{ fontSize: 40 }}>🔥</Text>
               </View>
               <Text style={[styles.welcomeTitle, { color: colors.foreground }]}>
-                Welcome to Embris
+                Welcome to {companionDisplayName}
               </Text>
               <Text style={[styles.welcomeSubtitle, { color: colors.muted }]}>
                 Your AI companion for the Vaultfire Protocol. Ask about contracts, ERC-8004,
@@ -879,7 +964,7 @@ export default function ChatScreen() {
               ref={inputRef}
               value={inputText}
               onChangeText={setInputText}
-              placeholder={voiceEnabled ? "Speak or type..." : "Message Embris..."}
+              placeholder={voiceEnabled ? "Speak or type..." : `Message ${companionDisplayName}...`}
               placeholderTextColor={colors.muted}
               style={[styles.input, { color: colors.foreground }]}
               multiline
@@ -888,6 +973,30 @@ export default function ChatScreen() {
               returnKeyType="default"
               blurOnSubmit={false}
             />
+            {/* Mic push-to-talk button (visible when voice mode is on and no text) */}
+            {voiceEnabled && !hasText && !isLoading && (
+              <Pressable
+                onPress={toggleListening}
+                style={({ pressed }) => ({
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  alignItems: 'center' as const,
+                  justifyContent: 'center' as const,
+                  marginRight: 4,
+                  backgroundColor: isListening ? colors.primary : `${colors.primary}20`,
+                  borderWidth: 1,
+                  borderColor: isListening ? colors.primary : `${colors.primary}40`,
+                  opacity: pressed ? 0.7 : 1,
+                })}
+              >
+                <IconSymbol
+                  name={isListening ? "stop.fill" : "mic.fill"}
+                  size={16}
+                  color={isListening ? "#FAFAFA" : colors.primary}
+                />
+              </Pressable>
+            )}
             <Pressable
               onPress={() => sendMessage()}
               disabled={!hasText || isLoading}
@@ -911,7 +1020,7 @@ export default function ChatScreen() {
             </Pressable>
           </View>
           <Text style={[styles.inputDisclaimer, { color: colors.muted }]}>
-            Embris can make mistakes. Verify important information.
+            {companionDisplayName} can make mistakes. Verify important information.
           </Text>
         </View>
 

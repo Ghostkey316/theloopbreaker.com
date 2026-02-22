@@ -13,6 +13,15 @@ import { formatPersonalityForPromptAsync } from "./personality-tuning";
 import { formatSessionSummariesForPromptAsync } from "./conversation-summaries";
 import { formatSuggestionsContextAsync } from "./proactive-suggestions";
 import { isRegistered, getRegisteredWalletAddress, shouldNudgeRegistration } from "./registration";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+async function getVNSName(): Promise<string> {
+  return (await AsyncStorage.getItem('vaultfire_vns_name')) || '';
+}
+
+async function getCompanionName(): Promise<string> {
+  return (await AsyncStorage.getItem('vaultfire_companion_name')) || 'Embris';
+}
 
 const API_URL = "https://api.manus.im/api/llm-proxy/v1/chat/completions";
 const API_KEY = "sk-ADn9FUEGSQtAJYdaQiEjYF";
@@ -90,6 +99,8 @@ async function buildRegisteredPrompt(
   userMessage?: string
 ): Promise<string> {
   const walletAddress = await getRegisteredWalletAddress();
+  const vnsName = await getVNSName();
+  const companionName = await getCompanionName();
 
   // Fetch all enhancement data in parallel
   const [selfLearning, emotional, goals, personality, sessions, suggestions] =
@@ -109,8 +120,9 @@ async function buildRegisteredPrompt(
   prompt += `
 
 ═══ REGISTRATION STATUS ═══
-User is REGISTERED on-chain. Wallet: ${walletAddress || "linked"}
-All features are ACTIVE. You are operating at full capacity as their personal AI companion.`;
+User is REGISTERED on-chain. Wallet: ${walletAddress || "linked"}${vnsName ? ` · VNS Name: ${vnsName}` : ''}
+All features are ACTIVE. You are operating at full capacity as their personal AI companion.
+${companionName !== 'Embris' ? `IMPORTANT: The user has named you "${companionName}". Always respond to this name. When they say "Hey ${companionName}" or refer to you as ${companionName}, that's you. You ARE ${companionName}. Your personality and capabilities are unchanged — only your name is different.` : ''}`;
 
   // Memory block
   if (memories.length > 0) {

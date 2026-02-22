@@ -25,6 +25,7 @@ const KNOWN_SELECTORS: Record<string, string> = {
   "symbol()": "0x95d89b41",
   "decimals()": "0x313ce567",
   "getAgentCount()": "0x0f755a56",
+  "getTotalAgents()": "0x3731a16f",
   "getEntryCount()": "0x6f3c25fb",
   "getRegistryCount()": "0x4a6c9db6",
   "getValidatorCount()": "0x79e5a123",
@@ -313,6 +314,7 @@ export async function getRegistryData(
 
   // Try to read entry count
   const countResult = await tryReadUint256(rpc, registryAddress, [
+    "getTotalAgents()",
     "getAgentCount()",
     "getEntryCount()",
     "getRegistryCount()",
