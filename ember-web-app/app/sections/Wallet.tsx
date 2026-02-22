@@ -20,6 +20,7 @@ import {
 } from "../lib/transactions";
 import { DisclaimerModal, FooterDisclaimer } from "../components/DisclaimerBanner";
 import { isDisclaimerAcknowledged } from "../lib/disclaimers";
+import { useWalletAuth } from "../lib/WalletAuthContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -411,6 +412,9 @@ function isValidAddress(addr: string): boolean {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function Wallet() {
+  // ── Auth context ─────────────────────────────────────────────────────────────
+  const { unlock: ctxUnlock, logout: ctxLogout } = useWalletAuth();
+
   // ── Core state ──────────────────────────────────────────────────────────────
   const [view, setView] = useState<WalletView>("none");
   const [showWalletDisclaimer, setShowWalletDisclaimer] = useState(false);
@@ -677,6 +681,7 @@ export default function Wallet() {
       setWalletData(data);
       setView("created");
       setPasswordInput(""); setPasswordConfirm("");
+      await ctxUnlock(data.privateKey, data.mnemonic, data.address);
       loadAllBalances(data.address);
     } catch (err) {
       setPasswordError(err instanceof Error ? err.message : "Failed to create wallet.");
@@ -692,6 +697,7 @@ export default function Wallet() {
       const data = await importFromMnemonic(importInput, passwordInput);
       setWalletData(data); setView("created"); setImportInput("");
       setPasswordInput(""); setPasswordConfirm("");
+      await ctxUnlock(data.privateKey, data.mnemonic, data.address);
       loadAllBalances(data.address);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Invalid mnemonic phrase.";
@@ -708,6 +714,7 @@ export default function Wallet() {
       const data = await importFromPrivateKey(importInput, passwordInput);
       setWalletData(data); setView("created"); setImportInput("");
       setPasswordInput(""); setPasswordConfirm("");
+      await ctxUnlock(data.privateKey, data.mnemonic, data.address);
       loadAllBalances(data.address);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Invalid private key.";
@@ -723,6 +730,7 @@ export default function Wallet() {
       setWalletData(data);
       setView("created");
       setPasswordInput("");
+      await ctxUnlock(data.privateKey, data.mnemonic, data.address);
       loadAllBalances(data.address);
     } catch {
       setPasswordError("Incorrect password. Please try again.");
@@ -737,9 +745,12 @@ export default function Wallet() {
     try {
       await migrateLegacyWallet(passwordInput);
       const addr = getWalletAddress() || "";
-      setWalletData({ address: addr, mnemonic: getWalletMnemonic() || "", privateKey: getWalletPrivateKey() || "" });
+      const pk = getWalletPrivateKey() || "";
+      const mn = getWalletMnemonic() || "";
+      setWalletData({ address: addr, mnemonic: mn, privateKey: pk });
       setView("created");
       setPasswordInput(""); setPasswordConfirm("");
+      await ctxUnlock(pk, mn, addr);
       loadAllBalances(addr);
     } catch (err) {
       setPasswordError(err instanceof Error ? err.message : "Migration failed.");
@@ -749,6 +760,7 @@ export default function Wallet() {
   const handleDelete = () => {
     if (confirm("Delete this wallet? Make sure you have your seed phrase backed up.")) {
       deleteWallet();
+      ctxLogout();
       setWalletData(null); setNativeBalances([]); setTokenBalances([]);
       setView("none"); setModalView("none");
     }

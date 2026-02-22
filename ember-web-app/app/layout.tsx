@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { WalletAuthProvider } from './lib/WalletAuthContext';
 
 export const metadata: Metadata = {
-  title: 'Vaultfire Protocol — Powered by Ember AI',
-  description: 'Decentralized blockchain protocol management with Ember AI guidance. Morals over metrics. Privacy over surveillance. Freedom over control.',
+  title: 'Embris — Powered by Vaultfire Protocol',
+  description: 'Your ethical AI companion. Decentralized trust infrastructure across Base and Avalanche.',
   icons: {
     icon: '/favicon.ico',
   },
@@ -16,8 +17,18 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="bg-ember-bg text-ember-text">
-        {children}
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body style={{ background: '#09090B', color: '#F4F4F5' }}>
+        <WalletAuthProvider>
+          {children}
+        </WalletAuthProvider>
       </body>
     </html>
   );

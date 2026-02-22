@@ -2,6 +2,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { getThemePreference, toggleTheme, type ThemeMode } from "../lib/theme";
 import { getUnreadCount } from "../lib/notifications";
+import { useWalletAuth } from "../lib/WalletAuthContext";
+import { isWalletCreated } from "../lib/wallet";
 
 type Section = "home" | "chat" | "wallet" | "verify" | "bridge" | "dashboard" | "sync" | "trust" | "analytics" | "vns" | "agent-hub" | "marketplace" | "zk-proofs" | "trust-badges" | "earnings" | "agent-api";
 
@@ -261,6 +263,9 @@ export default function Sidebar({ activeSection, onSectionChange, mobileForceOpe
     );
   };
 
+  const { isUnlocked, address, logout } = useWalletAuth();
+  const walletExists = typeof window !== 'undefined' ? isWalletCreated() : false;
+
   const SidebarContent = () => {
     let lastGroup: string | undefined = undefined;
     return (
@@ -281,6 +286,79 @@ export default function Sidebar({ activeSection, onSectionChange, mobileForceOpe
               fontWeight: 400, letterSpacing: "0.02em",
             }}>Powered by Vaultfire</p>
           </div>
+        </div>
+
+        {/* Connect Wallet / Wallet Status button */}
+        <div style={{ padding: "0 10px 8px" }}>
+          {isUnlocked && address ? (
+            <div style={{
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "8px 12px", borderRadius: 10,
+              backgroundColor: "rgba(249,115,22,0.06)",
+              border: "1px solid rgba(249,115,22,0.12)",
+            }}>
+              <div style={{
+                width: 8, height: 8, borderRadius: "50%",
+                backgroundColor: "#22C55E", flexShrink: 0,
+                boxShadow: "0 0 6px rgba(34,197,94,0.5)",
+              }} />
+              <button
+                onClick={() => handleNav("wallet")}
+                style={{
+                  flex: 1, background: "none", border: "none", cursor: "pointer",
+                  textAlign: "left", padding: 0,
+                }}
+              >
+                <div style={{ fontSize: 11, color: "#F97316", fontWeight: 600, lineHeight: 1.2 }}>Connected</div>
+                <div style={{ fontSize: 10, color: "#71717A", fontFamily: "'JetBrains Mono', monospace", marginTop: 1 }}>
+                  {address.slice(0, 6)}...{address.slice(-4)}
+                </div>
+              </button>
+              <button
+                onClick={logout}
+                title="Lock wallet"
+                style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  color: "#52525B", padding: 2, borderRadius: 4,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  transition: "color 0.15s ease",
+                  flexShrink: 0,
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = '#A1A1AA'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = '#52525B'; }}
+              >
+                <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => handleNav("wallet")}
+              style={{
+                width: "100%", padding: "9px 12px", borderRadius: 10,
+                backgroundColor: "rgba(249,115,22,0.08)",
+                border: "1px solid rgba(249,115,22,0.18)",
+                cursor: "pointer", display: "flex", alignItems: "center", gap: 8,
+                transition: "background-color 0.15s ease, border-color 0.15s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(249,115,22,0.14)';
+                e.currentTarget.style.borderColor = 'rgba(249,115,22,0.28)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(249,115,22,0.08)';
+                e.currentTarget.style.borderColor = 'rgba(249,115,22,0.18)';
+              }}
+            >
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round">
+                <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4h-4z" />
+              </svg>
+              <span style={{ fontSize: 12.5, fontWeight: 600, color: "#F97316", letterSpacing: "-0.01em" }}>
+                {walletExists ? "Unlock Wallet" : "Connect Wallet"}
+              </span>
+            </button>
+          )}
         </div>
 
         {/* Nav */}
