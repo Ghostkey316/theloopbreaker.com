@@ -20,6 +20,8 @@ Vaultfire principle: external call sites are part of the attack surface and shou
 - contracts/MultisigGovernance.sol:235 [call{value:}] (bool success, ) = txn.target.call{value: txn.value}(txn.data);
 - contracts/ProductionBeliefAttestationVerifier.sol:256 [try-call] try riscZeroVerifier.verify(seal, imageId, journalDigest) returns (bool) {
 - contracts/ProductionBeliefAttestationVerifier.sol:305 [try-call] try riscZeroVerifier.verify(seal, imageId, journalDigest) returns (bool) {
+- contracts/VaultfireBridge.sol:257 [call{value:}] (bool success, ) = recipient.call{value: amount}("");
+- contracts/VaultfireBridge.sol:292 [call{value:}] (bool success, ) = payable(pt.user).call{value: pt.amount}("");
 
 ---
 
