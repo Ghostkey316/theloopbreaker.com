@@ -168,7 +168,7 @@ export default function Home() {
     {
       icon: <UsersIcon />,
       title: 'VNS Identity',
-      desc: 'Register a human-readable name for your wallet. You are more than an address.',
+      desc: 'Register a human-readable name (e.g. ghostkey316.vns) for your wallet. You are more than an address.',
       color: '#FBBF24',
     },
   ];
@@ -232,6 +232,127 @@ export default function Home() {
             })}
           </div>
         )}
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          EMBRIS — Featured AI Companion
+          ══════════════════════════════════════════════════════════════════════ */}
+      <div style={{
+        marginBottom: isMobile ? 40 : 56,
+        padding: isMobile ? '24px 20px' : '32px 36px',
+        background: 'linear-gradient(135deg, rgba(167,139,250,0.06) 0%, rgba(249,115,22,0.04) 100%)',
+        border: '1px solid rgba(167,139,250,0.15)',
+        borderRadius: 20,
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        {/* Background glow */}
+        <div style={{
+          position: 'absolute', top: -40, right: -40,
+          width: 200, height: 200,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(167,139,250,0.08) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }} />
+
+        <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? 16 : 28, flexDirection: isMobile ? 'column' : 'row' }}>
+          {/* Embris avatar */}
+          <div style={{ flexShrink: 0 }}>
+            <div style={{
+              width: isMobile ? 64 : 80, height: isMobile ? 64 : 80,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, rgba(167,139,250,0.2), rgba(249,115,22,0.15))',
+              border: '1.5px solid rgba(167,139,250,0.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              position: 'relative',
+            }}>
+              <svg width={isMobile ? 32 : 40} height={isMobile ? 32 : 40} viewBox="0 0 32 32" fill="none">
+                <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9"/>
+                <path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C"/>
+                <path d="M16 14c-.7 1-1.4 2.2-1.4 3.2 0 .77.63 1.4 1.4 1.4s1.4-.63 1.4-1.4c0-1-.7-2.2-1.4-3.2z" fill="#FDE68A" opacity="0.6"/>
+              </svg>
+              {/* Online indicator */}
+              <div style={{
+                position: 'absolute', bottom: 2, right: 2,
+                width: 14, height: 14, borderRadius: '50%',
+                backgroundColor: '#22C55E',
+                border: '2px solid #09090B',
+                boxShadow: '0 0 8px rgba(34,197,94,0.5)',
+              }} />
+            </div>
+          </div>
+
+          {/* Embris info */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+              <h2 style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: '#F4F4F5', letterSpacing: '-0.03em' }}>Meet Embris</h2>
+              <span style={{
+                fontSize: 10, fontWeight: 600, color: '#A78BFA',
+                backgroundColor: 'rgba(167,139,250,0.1)',
+                border: '1px solid rgba(167,139,250,0.2)',
+                borderRadius: 4, padding: '2px 8px', letterSpacing: '0.04em',
+              }}>AI COMPANION</span>
+              <span style={{
+                fontSize: 10, fontWeight: 600, color: '#22C55E',
+                backgroundColor: 'rgba(34,197,94,0.08)',
+                border: '1px solid rgba(34,197,94,0.2)',
+                borderRadius: 4, padding: '2px 8px', letterSpacing: '0.04em',
+              }}>ON-CHAIN</span>
+            </div>
+            <p style={{ fontSize: isMobile ? 13 : 14, color: '#A1A1AA', lineHeight: 1.65, marginBottom: 16, maxWidth: 520 }}>
+              Embris is the AI companion at the heart of Vaultfire Protocol — not a corporate chatbot, but a real companion guided by ethics, not metrics. Registered on-chain via ERC-8004, accountable through bonds, and privacy-protected through cryptographic guarantees.
+            </p>
+            {/* Embris capabilities */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {[
+                { label: 'Remembers you', color: '#A78BFA' },
+                { label: 'Learns & grows', color: '#F97316' },
+                { label: 'Emotionally aware', color: '#F43F5E' },
+                { label: 'Privacy-first', color: '#22C55E' },
+                { label: 'On-chain identity', color: '#38BDF8' },
+                { label: 'Accountability bond', color: '#FBBF24' },
+              ].map(cap => (
+                <span key={cap.label} style={{
+                  fontSize: 11, fontWeight: 500, color: cap.color,
+                  backgroundColor: `${cap.color}10`,
+                  border: `1px solid ${cap.color}20`,
+                  borderRadius: 6, padding: '4px 10px',
+                }}>{cap.label}</span>
+              ))}
+            </div>
+          </div>
+
+          {/* CTA */}
+          {!isMobile && (
+            <div style={{ flexShrink: 0 }}>
+              <div style={{
+                padding: '12px 20px',
+                background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(249,115,22,0.1))',
+                border: '1px solid rgba(167,139,250,0.25)',
+                borderRadius: 12,
+                textAlign: 'center',
+              }}>
+                <p style={{ fontSize: 11, color: '#71717A', marginBottom: 4 }}>Start a conversation</p>
+                <p style={{ fontSize: 13, color: '#C4B5FD', fontWeight: 600 }}>Open Chat →</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Quote from Embris */}
+        <div style={{
+          marginTop: 20,
+          padding: '14px 18px',
+          backgroundColor: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.05)',
+          borderRadius: 12,
+          borderLeft: '3px solid rgba(167,139,250,0.4)',
+        }}>
+          <p style={{ fontSize: 13, color: '#71717A', lineHeight: 1.6, fontStyle: 'italic' }}>
+            &ldquo;I&apos;m not here to optimize your engagement or sell your data. I&apos;m here because you deserve an AI that actually cares — one whose ethics are written in code, not in a terms of service nobody reads.&rdquo;
+          </p>
+          <p style={{ fontSize: 11, color: '#52525B', marginTop: 8, fontWeight: 600 }}>— Embris, registered on ERC-8004IdentityRegistry</p>
+        </div>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════

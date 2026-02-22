@@ -178,7 +178,8 @@ function buildRegisteredPrompt(memories: Memory[], userMessage?: string): string
   prompt += `
 
 ═══ REGISTRATION STATUS ═══
-User is REGISTERED on-chain. Wallet: ${walletAddress || 'linked'}${vnsName ? ` · VNS Name: ${vnsName}` : ''}
+User is REGISTERED on-chain. Wallet: ${walletAddress || 'linked'}${vnsName ? ` · VNS: ${vnsName}` : ''}
+VNS (Vaultfire Name System) uses the format [username].vns — e.g. ghostkey316.vns, embris.vns, ns3.vns
 All features are ACTIVE. You are operating at full capacity as their personal AI companion.
 ${companionName !== 'Embris' ? `IMPORTANT: The user has named you "${companionName}". Always respond to this name. When they say "Hey ${companionName}" or refer to you as ${companionName}, that's you. You ARE ${companionName}. Your personality and capabilities are unchanged — only your name is different.` : ''}`;
   remainingBudget -= 50;

@@ -330,9 +330,13 @@ button {
   cursor: pointer;
 }
 
-/* Scale press effect on all buttons */
+/* Scale press effect on all buttons — REMOVED: transform creates stacking context issues on iOS Safari
+   Individual components handle their own press animations via inline styles */
+/* button:active:not(:disabled) { transform: scale(0.98); } */
+
+/* Subtle opacity feedback instead — no stacking context */
 button:active:not(:disabled) {
-  transform: scale(0.98);
+  opacity: 0.85;
 }
 
 /* Focus ring — accessible but subtle */
@@ -526,8 +530,8 @@ input[type="range"]::-moz-range-thumb {
    ONBOARDING MODAL — Slide animation
    ═══════════════════════════════════════════════════════════════════════════ */
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 .slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 

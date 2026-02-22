@@ -5,6 +5,7 @@ import {
   createWallet, importFromMnemonic, importFromPrivateKey,
   deleteWallet, isWalletCreated, getWalletAddress,
   getWalletMnemonic, getWalletPrivateKey, type WalletData,
+  unlockWallet, isWalletUnlocked, hasLegacyUnencryptedWallet, migrateLegacyWallet,
 } from "../lib/wallet";
 import { getAllBalances, type ChainBalance } from "../lib/blockchain";
 import {
@@ -22,7 +23,7 @@ import {
 
 type TokenPrices = Record<string, number>;
 interface PriceCache { prices: TokenPrices; fetchedAt: number }
-type WalletView = "none" | "created" | "import-mnemonic" | "import-pk";
+type WalletView = "none" | "created" | "locked" | "migrate-legacy" | "create-password" | "import-mnemonic" | "import-pk";
 type ModalView = "none" | "send" | "receive" | "add-token" | "send-success" | "security";
 
 interface SendState {
@@ -203,6 +204,9 @@ function UserIcon({ size = 16 }: { size?: number }) {
 function EditIcon({ size = 12 }: { size?: number }) {
   return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>);
 }
+function LockIcon({ size = 16, style }: { size?: number; style?: React.CSSProperties }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={style}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>);
+}
 function FireIcon({ size = 16 }: { size?: number }) {
   return (<svg width={size} height={size} viewBox="0 0 32 32" fill="none"><path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9"/><path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C"/><path d="M16 14c-.7 1-1.4 2.2-1.4 3.2 0 .77.63 1.4 1.4 1.4s1.4-.63 1.4-1.4c0-1-.7-2.2-1.4-3.2z" fill="#FDE68A" opacity="0.6"/></svg>);
 }
@@ -307,7 +311,7 @@ function WalletModal({ onClose, children, title }: { onClose: () => void; childr
           borderRadius: "24px 24px 0 0",
           border: "1px solid rgba(255,255,255,0.08)", borderBottom: "none",
           maxHeight: "92dvh", overflowY: "auto", overflowX: "hidden",
-          animation: "slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+          animation: "fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards",
           WebkitOverflowScrolling: "touch",
         }}
         onMouseDown={(e) => e.stopPropagation()}
@@ -450,6 +454,14 @@ export default function Wallet() {
   const [securityRevealInput, setSecurityRevealInput] = useState("");
   const [securityRevealed, setSecurityRevealed] = useState(false);
 
+  // ── Password / unlock state ─────────────────────────────────────────────────
+  const [passwordInput, setPasswordInput] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [unlocking, setUnlocking] = useState(false);
+  // showPassword reserved for future show/hide toggle
+  const [_showPassword, _setShowPassword] = useState(false); // eslint-disable-line @typescript-eslint/no-unused-vars
+
   // ── Add token state ──────────────────────────────────────────────────────────
   const [addTokenChain, setAddTokenChain] = useState<SupportedChain>("base");
   const [addTokenAddress, setAddTokenAddress] = useState("");
@@ -469,7 +481,7 @@ export default function Wallet() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // ── Init: load wallet, VNS, companion name ───────────────────────────────────
+  // ── Init: load wallet, VNS, companion name ─────────────────────────────────────────────────
   useEffect(() => {
     mountedRef.current = true;
     setCustomTokens(loadCustomTokens());
@@ -477,11 +489,19 @@ export default function Wallet() {
     setCompanionName(getCompanionName());
     if (isWalletCreated()) {
       const addr = getWalletAddress();
-      const mnemonic = getWalletMnemonic();
       if (addr) {
-        setWalletData({ address: addr, mnemonic: mnemonic || "", privateKey: getWalletPrivateKey() || "" });
-        setView("created");
-        loadAllBalances(addr);
+        // Check if wallet is already unlocked in this session
+        if (isWalletUnlocked()) {
+          setWalletData({ address: addr, mnemonic: getWalletMnemonic() || "", privateKey: getWalletPrivateKey() || "" });
+          setView("created");
+          loadAllBalances(addr);
+        } else if (hasLegacyUnencryptedWallet()) {
+          // Legacy unencrypted wallet — needs migration
+          setView("migrate-legacy");
+        } else {
+          // Encrypted wallet exists but session is locked — show unlock screen
+          setView("locked");
+        }
       }
     }
     return () => { mountedRef.current = false; };
@@ -645,33 +665,82 @@ export default function Wallet() {
   // ── Wallet creation / import ──────────────────────────────────────────────────
 
   const handleCreate = async () => {
-    setCreating(true);
+    if (!passwordInput) { setPasswordError("Please set a wallet password."); return; }
+    if (passwordInput.length < 8) { setPasswordError("Password must be at least 8 characters."); return; }
+    if (passwordInput !== passwordConfirm) { setPasswordError("Passwords do not match."); return; }
+    setCreating(true); setPasswordError("");
     try {
-      const data = await createWallet();
+      const data = await createWallet(passwordInput);
       setWalletData(data);
       setView("created");
+      setPasswordInput(""); setPasswordConfirm("");
       loadAllBalances(data.address);
+    } catch (err) {
+      setPasswordError(err instanceof Error ? err.message : "Failed to create wallet.");
     } finally { setCreating(false); }
   };
 
   const handleImportMnemonic = async () => {
-    setImportError(""); setImporting(true);
+    if (!passwordInput) { setPasswordError("Please set a wallet password."); return; }
+    if (passwordInput.length < 8) { setPasswordError("Password must be at least 8 characters."); return; }
+    if (passwordInput !== passwordConfirm) { setPasswordError("Passwords do not match."); return; }
+    setImportError(""); setImporting(true); setPasswordError("");
     try {
-      const data = await importFromMnemonic(importInput);
+      const data = await importFromMnemonic(importInput, passwordInput);
       setWalletData(data); setView("created"); setImportInput("");
+      setPasswordInput(""); setPasswordConfirm("");
       loadAllBalances(data.address);
-    } catch { setImportError("Invalid mnemonic phrase. Please check and try again."); }
-    finally { setImporting(false); }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Invalid mnemonic phrase.";
+      setImportError(msg);
+    } finally { setImporting(false); }
   };
 
   const handleImportPK = async () => {
-    setImportError(""); setImporting(true);
+    if (!passwordInput) { setPasswordError("Please set a wallet password."); return; }
+    if (passwordInput.length < 8) { setPasswordError("Password must be at least 8 characters."); return; }
+    if (passwordInput !== passwordConfirm) { setPasswordError("Passwords do not match."); return; }
+    setImportError(""); setImporting(true); setPasswordError("");
     try {
-      const data = await importFromPrivateKey(importInput);
+      const data = await importFromPrivateKey(importInput, passwordInput);
       setWalletData(data); setView("created"); setImportInput("");
+      setPasswordInput(""); setPasswordConfirm("");
       loadAllBalances(data.address);
-    } catch { setImportError("Invalid private key. Please check and try again."); }
-    finally { setImporting(false); }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Invalid private key.";
+      setImportError(msg);
+    } finally { setImporting(false); }
+  };
+
+  const handleUnlock = async () => {
+    if (!passwordInput) { setPasswordError("Enter your wallet password."); return; }
+    setUnlocking(true); setPasswordError("");
+    try {
+      const data = await unlockWallet(passwordInput);
+      setWalletData(data);
+      setView("created");
+      setPasswordInput("");
+      loadAllBalances(data.address);
+    } catch {
+      setPasswordError("Incorrect password. Please try again.");
+    } finally { setUnlocking(false); }
+  };
+
+  const handleMigrateLegacy = async () => {
+    if (!passwordInput) { setPasswordError("Set a password to encrypt your wallet."); return; }
+    if (passwordInput.length < 8) { setPasswordError("Password must be at least 8 characters."); return; }
+    if (passwordInput !== passwordConfirm) { setPasswordError("Passwords do not match."); return; }
+    setUnlocking(true); setPasswordError("");
+    try {
+      await migrateLegacyWallet(passwordInput);
+      const addr = getWalletAddress() || "";
+      setWalletData({ address: addr, mnemonic: getWalletMnemonic() || "", privateKey: getWalletPrivateKey() || "" });
+      setView("created");
+      setPasswordInput(""); setPasswordConfirm("");
+      loadAllBalances(addr);
+    } catch (err) {
+      setPasswordError(err instanceof Error ? err.message : "Migration failed.");
+    } finally { setUnlocking(false); }
   };
 
   const handleDelete = () => {
@@ -783,7 +852,12 @@ export default function Wallet() {
   // ── VNS ───────────────────────────────────────────────────────────────────────
 
   const saveVNS = useCallback(() => {
-    const name = vnsInput.trim().toLowerCase().replace(/[^a-z0-9.]/g, "");
+    // Enforce [username].vns format
+    let raw = vnsInput.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
+    if (!raw) { setVnsEditing(false); return; }
+    // Strip any existing .vns suffix the user may have typed
+    raw = raw.replace(/\.vns$/i, "").replace(/\.vault$/i, "");
+    const name = `${raw}.vns`;
     setVNSName(name);
     setVnsName(name);
     setVnsEditing(false);
@@ -827,7 +901,7 @@ export default function Wallet() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 32 }}>
           {[
-            { icon: <PlusIcon size={20} />, label: "Create New Wallet", sub: "Generate a new seed phrase", onClick: handleCreate, color: "#F97316" },
+            { icon: <PlusIcon size={20} />, label: "Create New Wallet", sub: "Generate a new seed phrase", onClick: () => setView("create-password"), color: "#F97316" },
             { icon: <FileTextIcon size={20} />, label: "Import Seed Phrase", sub: "12 or 24 word recovery phrase", onClick: () => setView("import-mnemonic"), color: "#22C55E" },
             { icon: <KeyIcon size={20} />, label: "Import Private Key", sub: "Direct private key import", onClick: () => setView("import-pk"), color: "#A78BFA" },
           ].map((item) => (
@@ -864,7 +938,136 @@ export default function Wallet() {
     );
   }
 
-  // ── Import views ──────────────────────────────────────────────────────────────
+  // ── Create Password view ─────────────────────────────────────────────────
+
+  if (view === "create-password") {
+    return (
+      <div className="page-enter" style={{ padding: isMobile ? "24px 20px 48px" : "48px 40px", maxWidth: 480, margin: "0 auto" }}>
+        <button type="button" onClick={() => { setView("none"); setPasswordInput(""); setPasswordConfirm(""); setPasswordError(""); }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "#71717A", cursor: "pointer", marginBottom: 32, fontSize: 13, padding: 0, fontWeight: 500, WebkitTapHighlightColor: "transparent" }}>
+          <ArrowLeftIcon size={14} /> Back
+        </button>
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <div style={{ width: 64, height: 64, borderRadius: 20, background: "rgba(249,115,22,0.1)", border: "1px solid rgba(249,115,22,0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, marginLeft: "auto", marginRight: "auto" }}>
+            <LockIcon size={28} style={{ color: "#F97316" }} />
+          </div>
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: "#F4F4F5", marginBottom: 8, letterSpacing: "-0.04em" }}>Secure Your Wallet</h2>
+          <p style={{ fontSize: 13, color: "#71717A", lineHeight: 1.6 }}>Set a password to encrypt your wallet. You\'ll need it to unlock the app each session.</p>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+          <input type="password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)}
+            placeholder="Password (min 8 characters)"
+            style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, color: "#F4F4F5", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+          />
+          <input type="password" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)}
+            placeholder="Confirm password"
+            onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+            style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, color: "#F4F4F5", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+          />
+        </div>
+        {passwordError && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12, padding: "10px 14px", backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.12)", borderRadius: 10 }}>
+            <span style={{ color: "#EF4444", flexShrink: 0, display: "flex" }}><AlertTriangleIcon size={12} /></span>
+            <p style={{ color: "#EF4444", fontSize: 12 }}>{passwordError}</p>
+          </div>
+        )}
+        <button type="button" onClick={handleCreate} disabled={creating}
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "15px", width: "100%", background: creating ? "rgba(255,255,255,0.03)" : "linear-gradient(135deg, #F97316, #EA580C)", border: "none", borderRadius: 14, color: creating ? "#3F3F46" : "#FFFFFF", fontSize: 15, fontWeight: 600, cursor: creating ? "default" : "pointer", boxShadow: creating ? "none" : "0 4px 20px rgba(249,115,22,0.2)", WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }}>
+          {creating && <div style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,0.1)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />}
+          {creating ? "Creating Wallet..." : "Create Wallet"}
+        </button>
+      </div>
+    );
+  }
+
+  // ── Locked view ─────────────────────────────────────────────────────
+
+  if (view === "locked") {
+    return (
+      <div className="page-enter" style={{ padding: isMobile ? "24px 20px 48px" : "48px 40px", maxWidth: 480, margin: "0 auto" }}>
+        <div style={{ textAlign: "center", paddingTop: isMobile ? 20 : 40, marginBottom: 40 }}>
+          <div style={{ width: 72, height: 72, borderRadius: 24, background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.15)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, marginLeft: "auto", marginRight: "auto" }}>
+            <LockIcon size={32} style={{ color: "#F97316" }} />
+          </div>
+          <h2 style={{ fontSize: 28, fontWeight: 800, color: "#F4F4F5", marginBottom: 8, letterSpacing: "-0.04em" }}>Wallet Locked</h2>
+          <p style={{ fontSize: 13, color: "#71717A", lineHeight: 1.6 }}>Enter your password to unlock your wallet.</p>
+        </div>
+        <div style={{ marginBottom: 12 }}>
+          <input type="password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)}
+            placeholder="Enter password"
+            onKeyDown={(e) => e.key === "Enter" && handleUnlock()}
+            autoFocus
+            style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, color: "#F4F4F5", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+          />
+        </div>
+        {passwordError && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12, padding: "10px 14px", backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.12)", borderRadius: 10 }}>
+            <span style={{ color: "#EF4444", flexShrink: 0, display: "flex" }}><AlertTriangleIcon size={12} /></span>
+            <p style={{ color: "#EF4444", fontSize: 12 }}>{passwordError}</p>
+          </div>
+        )}
+        <button type="button" onClick={handleUnlock} disabled={unlocking}
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "15px", width: "100%", background: unlocking ? "rgba(255,255,255,0.03)" : "linear-gradient(135deg, #F97316, #EA580C)", border: "none", borderRadius: 14, color: unlocking ? "#3F3F46" : "#FFFFFF", fontSize: 15, fontWeight: 600, cursor: unlocking ? "default" : "pointer", boxShadow: unlocking ? "none" : "0 4px 20px rgba(249,115,22,0.2)", WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }}>
+          {unlocking && <div style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,0.1)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />}
+          {unlocking ? "Unlocking..." : "Unlock Wallet"}
+        </button>
+        <button type="button" onClick={() => { deleteWallet(); setView("none"); }}
+          style={{ display: "block", width: "100%", marginTop: 16, padding: "12px", background: "none", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 12, color: "#EF4444", fontSize: 13, fontWeight: 500, cursor: "pointer", WebkitTapHighlightColor: "transparent" }}>
+          Forgot password? Delete wallet
+        </button>
+      </div>
+    );
+  }
+
+  // ── Migrate Legacy view ─────────────────────────────────────────────────
+
+  if (view === "migrate-legacy") {
+    return (
+      <div className="page-enter" style={{ padding: isMobile ? "24px 20px 48px" : "48px 40px", maxWidth: 480, margin: "0 auto" }}>
+        <div style={{ textAlign: "center", paddingTop: isMobile ? 20 : 40, marginBottom: 32 }}>
+          <div style={{ width: 64, height: 64, borderRadius: 20, background: "rgba(234,179,8,0.1)", border: "1px solid rgba(234,179,8,0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, marginLeft: "auto", marginRight: "auto" }}>
+            <span style={{ color: "#EAB308", display: "flex" }}><AlertTriangleIcon size={28} /></span>
+          </div>
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: "#F4F4F5", marginBottom: 8, letterSpacing: "-0.04em" }}>Encrypt Your Wallet</h2>
+          <p style={{ fontSize: 13, color: "#71717A", lineHeight: 1.6 }}>Your wallet is stored unencrypted. Set a password to protect it with AES-256 encryption.</p>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+          <input type="password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)}
+            placeholder="New password (min 8 characters)"
+            style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, color: "#F4F4F5", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+          />
+          <input type="password" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)}
+            placeholder="Confirm password"
+            onKeyDown={(e) => e.key === "Enter" && handleMigrateLegacy()}
+            style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, color: "#F4F4F5", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+          />
+        </div>
+        {passwordError && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12, padding: "10px 14px", backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.12)", borderRadius: 10 }}>
+            <span style={{ color: "#EF4444", flexShrink: 0, display: "flex" }}><AlertTriangleIcon size={12} /></span>
+            <p style={{ color: "#EF4444", fontSize: 12 }}>{passwordError}</p>
+          </div>
+        )}
+        <button type="button" onClick={handleMigrateLegacy} disabled={unlocking}
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "15px", width: "100%", background: unlocking ? "rgba(255,255,255,0.03)" : "linear-gradient(135deg, #EAB308, #CA8A04)", border: "none", borderRadius: 14, color: unlocking ? "#3F3F46" : "#FFFFFF", fontSize: 15, fontWeight: 600, cursor: unlocking ? "default" : "pointer", boxShadow: unlocking ? "none" : "0 4px 20px rgba(234,179,8,0.15)", WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }}>
+          {unlocking && <div style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,0.1)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />}
+          {unlocking ? "Encrypting..." : "Encrypt & Continue"}
+        </button>
+        <button type="button" onClick={() => {
+          // Skip encryption — use legacy mode (not recommended)
+          const addr = getWalletAddress() || "";
+          setWalletData({ address: addr, mnemonic: getWalletMnemonic() || "", privateKey: getWalletPrivateKey() || "" });
+          setView("created");
+          loadAllBalances(addr);
+        }}
+          style={{ display: "block", width: "100%", marginTop: 12, padding: "12px", background: "none", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, color: "#71717A", fontSize: 13, fontWeight: 500, cursor: "pointer", WebkitTapHighlightColor: "transparent" }}>
+          Skip for now (not recommended)
+        </button>
+      </div>
+    );
+  }
+
+  // ── Import views ──────────────────────────────────────────────────
 
   if (view === "import-mnemonic" || view === "import-pk") {
     const isMnemonicView = view === "import-mnemonic";
@@ -887,10 +1090,20 @@ export default function Wallet() {
             style={{ width: "100%", padding: "14px 16px", background: "transparent", border: "none", borderRadius: 12, color: "#F4F4F5", fontSize: 14, resize: "none", ...mono, outline: "none", boxSizing: "border-box", lineHeight: 1.7 }}
           />
         </div>
-        {importError && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+          <input type="password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)}
+            placeholder="Set wallet password (min 8 characters)"
+            style={{ width: "100%", padding: "13px 16px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, color: "#F4F4F5", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+          />
+          <input type="password" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)}
+            placeholder="Confirm password"
+            style={{ width: "100%", padding: "13px 16px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, color: "#F4F4F5", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+          />
+        </div>
+        {(importError || passwordError) && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, padding: "10px 14px", backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.12)", borderRadius: 10 }}>
             <div style={{ color: "#EF4444", flexShrink: 0 }}><AlertTriangleIcon size={12} /></div>
-            <p style={{ color: "#EF4444", fontSize: 12 }}>{importError}</p>
+            <p style={{ color: "#EF4444", fontSize: 12 }}>{importError || passwordError}</p>
           </div>
         )}
         <button type="button" onClick={isMnemonicView ? handleImportMnemonic : handleImportPK}
@@ -1101,13 +1314,16 @@ export default function Wallet() {
 
             {/* VNS Section */}
             <div style={{ padding: "18px", backgroundColor: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.1)", borderRadius: 16 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                 <div style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(249,115,22,0.1)", border: "1px solid rgba(249,115,22,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#F97316" }}>
                   <UserIcon size={16} />
                 </div>
-                <div>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.01em" }}>Vaultfire Name (VNS)</p>
-                  <p style={{ fontSize: 11, color: "#52525B" }}>Your human-readable wallet name</p>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.01em" }}>Vaultfire Name System</p>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: "#22C55E", backgroundColor: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 4, padding: "1px 6px", letterSpacing: "0.04em" }}>FREE</span>
+                  </div>
+                  <p style={{ fontSize: 11, color: "#52525B" }}>e.g. ghostkey316.vns · Only pay gas</p>
                 </div>
               </div>
               {vnsEditing ? (
@@ -1116,7 +1332,7 @@ export default function Wallet() {
                     type="text"
                     value={vnsInput}
                     onChange={(e) => setVnsInput(e.target.value)}
-                    placeholder="ghostkey.vault"
+                    placeholder="ghostkey316.vns"
                     autoFocus
                     style={{ flex: 1, padding: "10px 14px", backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(249,115,22,0.3)", borderRadius: 10, color: "#F4F4F5", fontSize: 14, outline: "none", ...mono }}
                     onKeyDown={(e) => { if (e.key === "Enter") saveVNS(); if (e.key === "Escape") { setVnsEditing(false); setVnsInput(""); } }}
