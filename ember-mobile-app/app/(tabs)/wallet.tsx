@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -13,6 +12,7 @@ import {
 import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import * as Clipboard from "expo-clipboard";
 import {
   ChainBalance,
@@ -45,6 +45,37 @@ interface EmbrisMessage {
   isEmbris: boolean;
 }
 
+// ─── Chain Icon Component ───────────────────────────────────────────
+
+function ChainIcon({ name, size = 36 }: { name: string; size?: number }) {
+  const colors = useColors();
+  const iconMap: Record<string, { bg: string; letter: string; color: string }> = {
+    Ethereum: { bg: "#627EEA", letter: "Ξ", color: "#FFFFFF" },
+    Base: { bg: "#0052FF", letter: "B", color: "#FFFFFF" },
+    Avalanche: { bg: "#E84142", letter: "A", color: "#FFFFFF" },
+  };
+  const config = iconMap[name] || { bg: colors.muted, letter: "?", color: "#FFFFFF" };
+  return (
+    <View style={{
+      width: size,
+      height: size,
+      borderRadius: size / 2,
+      backgroundColor: config.bg,
+      justifyContent: "center",
+      alignItems: "center",
+    }}>
+      <Text style={{
+        color: config.color,
+        fontSize: size * 0.45,
+        fontWeight: "700",
+        fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+      }}>
+        {config.letter}
+      </Text>
+    </View>
+  );
+}
+
 // ─── Wallet Screen ──────────────────────────────────────────────────
 
 export default function WalletScreen() {
@@ -61,6 +92,7 @@ export default function WalletScreen() {
   const [importError, setImportError] = useState<string | null>(null);
   const [importLoading, setImportLoading] = useState(false);
   const [embrisMessages, setEmbrisMessages] = useState<EmbrisMessage[]>([]);
+  const [showFullAddress, setShowFullAddress] = useState(false);
 
   // ─── Init ──────────────────────────────────────────────────────────
 
@@ -112,7 +144,6 @@ export default function WalletScreen() {
       { text: "Welcome! Let's set up your Vaultfire wallet together. This will be your key to the Vaultfire ecosystem.", isEmbris: true },
     ]);
 
-    // Small delay for the conversational feel
     await new Promise((r) => setTimeout(r, 1200));
     setEmbrisMessages((prev) => [
       ...prev,
@@ -133,7 +164,6 @@ export default function WalletScreen() {
 
       await new Promise((r) => setTimeout(r, 600));
 
-      // Pick 3 random indices for verification
       const indices: number[] = [];
       while (indices.length < 3) {
         const idx = Math.floor(Math.random() * 12);
@@ -166,9 +196,9 @@ export default function WalletScreen() {
 
     if (correct) {
       setEmbrisMessages([
-        { text: "Your wallet is secured! I'll always be here to help you manage it. Welcome to the Vaultfire ecosystem. 🔥", isEmbris: true },
+        { text: "Your wallet is secured! I'll always be here to help you manage it. Welcome to the Vaultfire ecosystem.", isEmbris: true },
       ]);
-      setMnemonic(null); // Clear mnemonic from memory
+      setMnemonic(null);
       setPhase("ready");
       if (address) fetchBalances(address);
     } else {
@@ -256,6 +286,8 @@ export default function WalletScreen() {
   const totalValue = useMemo(() => calculateTotalValue(balances), [balances]);
   const mnemonicWords = useMemo(() => mnemonic?.split(" ") ?? [], [mnemonic]);
 
+  const truncateAddr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+
   // ─── Render: Loading ───────────────────────────────────────────────
 
   if (phase === "loading") {
@@ -275,13 +307,13 @@ export default function WalletScreen() {
       <ScreenContainer>
         <ScrollView contentContainerStyle={s.scrollContent}>
           <Animated.View entering={FadeInDown.duration(400)} style={s.onboardingContainer}>
-            {/* Shield+Flame */}
-            <View style={[s.logoCircle, { backgroundColor: `${colors.primary}20` }]}>
-              <Text style={s.logoEmoji}>🔥</Text>
+            {/* Premium shield icon */}
+            <View style={[s.logoCircle, { backgroundColor: `${colors.primary}15` }]}>
+              <IconSymbol name="lock.shield.fill" size={40} color={colors.primary} />
             </View>
 
             <Text style={[s.title, { color: colors.foreground }]}>
-              Create Your Vaultfire Wallet
+              Vaultfire Wallet
             </Text>
             <Text style={[s.subtitle, { color: colors.muted }]}>
               Your gateway to the Vaultfire ecosystem.{"\n"}
@@ -291,9 +323,12 @@ export default function WalletScreen() {
             {/* Embris intro message */}
             <Animated.View
               entering={FadeInDown.delay(200).duration(400)}
-              style={[s.embrisBubble, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}
+              style={[s.embrisBubble, { backgroundColor: `${colors.primary}10`, borderColor: `${colors.primary}20` }]}
             >
-              <Text style={[s.embrisLabel, { color: colors.primary }]}>🔥 Embris</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                <IconSymbol name="flame.fill" size={14} color={colors.primary} />
+                <Text style={[s.embrisLabel, { color: colors.primary, marginBottom: 0 }]}>Embris</Text>
+              </View>
               <Text style={[s.embrisText, { color: colors.foreground }]}>
                 Welcome! I'll guide you through setting up your wallet. It only takes a minute.
               </Text>
@@ -308,7 +343,10 @@ export default function WalletScreen() {
                   { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
                 ]}
               >
-                <Text style={[s.primaryButtonText, { color: "#FAFAFA" }]}>Create New Wallet</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <IconSymbol name="wallet.pass.fill" size={18} color="#FAFAFA" />
+                  <Text style={[s.primaryButtonText, { color: "#FAFAFA" }]}>Create New Wallet</Text>
+                </View>
               </Pressable>
             </Animated.View>
 
@@ -318,7 +356,7 @@ export default function WalletScreen() {
                 onPress={() => setPhase("import")}
                 style={({ pressed }) => [
                   s.secondaryButton,
-                  { borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+                  { borderColor: `${colors.foreground}15`, opacity: pressed ? 0.7 : 1 },
                 ]}
               >
                 <Text style={[s.secondaryButtonText, { color: colors.foreground }]}>
@@ -328,11 +366,14 @@ export default function WalletScreen() {
             </Animated.View>
 
             {/* Security note */}
-            <Animated.View entering={FadeInDown.delay(600).duration(400)}>
-              <Text style={[s.securityNote, { color: colors.muted }]}>
-                🔒 Your private key is encrypted and stored only on this device.
-                {"\n"}No cloud backup. No server storage. You are in control.
-              </Text>
+            <Animated.View entering={FadeInDown.delay(600).duration(400)} style={{ width: "100%" }}>
+              <View style={[s.securityCard, { backgroundColor: `${colors.success}08`, borderColor: `${colors.success}20` }]}>
+                <IconSymbol name="lock.shield.fill" size={16} color={colors.success} />
+                <Text style={[s.securityNote, { color: colors.muted }]}>
+                  Your private key is encrypted and stored only on this device.
+                  No cloud backup. No server storage. You are in control.
+                </Text>
+              </View>
             </Animated.View>
           </Animated.View>
         </ScrollView>
@@ -353,10 +394,13 @@ export default function WalletScreen() {
                 entering={FadeInDown.delay(idx * 300).duration(400)}
                 style={[
                   s.embrisBubble,
-                  { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` },
+                  { backgroundColor: `${colors.primary}10`, borderColor: `${colors.primary}20` },
                 ]}
               >
-                <Text style={[s.embrisLabel, { color: colors.primary }]}>🔥 Embris</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                  <IconSymbol name="flame.fill" size={14} color={colors.primary} />
+                  <Text style={[s.embrisLabel, { color: colors.primary, marginBottom: 0 }]}>Embris</Text>
+                </View>
                 <Text style={[s.embrisText, { color: colors.foreground }]}>{msg.text}</Text>
               </Animated.View>
             ))}
@@ -380,33 +424,41 @@ export default function WalletScreen() {
 
             <Animated.View
               entering={FadeInDown.delay(100).duration(400)}
-              style={[s.embrisBubble, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}
+              style={[s.embrisBubble, { backgroundColor: `${colors.primary}10`, borderColor: `${colors.primary}20` }]}
             >
-              <Text style={[s.embrisLabel, { color: colors.primary }]}>🔥 Embris</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                <IconSymbol name="flame.fill" size={14} color={colors.primary} />
+                <Text style={[s.embrisLabel, { color: colors.primary, marginBottom: 0 }]}>Embris</Text>
+              </View>
               <Text style={[s.embrisText, { color: colors.foreground }]}>
                 Write these words down in order. Embris can't recover them for you. This is your only backup.
               </Text>
             </Animated.View>
 
             {/* Seed phrase grid */}
-            <View style={s.seedGrid}>
-              {mnemonicWords.map((word, idx) => (
-                <Animated.View
-                  key={idx}
-                  entering={FadeInDown.delay(150 + idx * 50).duration(300)}
-                  style={[s.seedWord, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                >
-                  <Text style={[s.seedIndex, { color: colors.muted }]}>{idx + 1}</Text>
-                  <Text style={[s.seedText, { color: colors.foreground }]}>{word}</Text>
-                </Animated.View>
-              ))}
+            <View style={[s.seedContainer, { backgroundColor: colors.surface, borderColor: `${colors.foreground}08` }]}>
+              <View style={s.seedGrid}>
+                {mnemonicWords.map((word, idx) => (
+                  <Animated.View
+                    key={idx}
+                    entering={FadeInDown.delay(150 + idx * 50).duration(300)}
+                    style={[s.seedWord, { backgroundColor: colors.background, borderColor: `${colors.foreground}06` }]}
+                  >
+                    <Text style={[s.seedIndex, { color: colors.muted }]}>{idx + 1}</Text>
+                    <Text style={[s.seedText, { color: colors.foreground }]}>{word}</Text>
+                  </Animated.View>
+                ))}
+              </View>
             </View>
 
             {/* Warning */}
-            <View style={[s.warningBox, { backgroundColor: `${colors.warning}15`, borderColor: `${colors.warning}40` }]}>
-              <Text style={[s.warningText, { color: colors.warning }]}>
-                ⚠️ Never share your recovery phrase. Anyone with these words can access your wallet.
-              </Text>
+            <View style={[s.warningBox, { backgroundColor: `${colors.warning}10`, borderColor: `${colors.warning}30` }]}>
+              <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
+                <IconSymbol name="exclamationmark.triangle.fill" size={16} color={colors.warning} />
+                <Text style={[s.warningText, { color: colors.warning, flex: 1 }]}>
+                  Never share your recovery phrase. Anyone with these words can access your wallet.
+                </Text>
+              </View>
             </View>
 
             <Pressable
@@ -437,9 +489,12 @@ export default function WalletScreen() {
 
             <Animated.View
               entering={FadeInDown.delay(100).duration(400)}
-              style={[s.embrisBubble, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}
+              style={[s.embrisBubble, { backgroundColor: `${colors.primary}10`, borderColor: `${colors.primary}20` }]}
             >
-              <Text style={[s.embrisLabel, { color: colors.primary }]}>🔥 Embris</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                <IconSymbol name="flame.fill" size={14} color={colors.primary} />
+                <Text style={[s.embrisLabel, { color: colors.primary, marginBottom: 0 }]}>Embris</Text>
+              </View>
               <Text style={[s.embrisText, { color: colors.foreground }]}>
                 Enter the following words from your recovery phrase to confirm you saved it correctly.
               </Text>
@@ -480,7 +535,7 @@ export default function WalletScreen() {
                     {
                       color: colors.foreground,
                       backgroundColor: colors.surface,
-                      borderColor: verifyError ? colors.error : colors.border,
+                      borderColor: verifyError ? colors.error : `${colors.foreground}08`,
                     },
                   ]}
                 />
@@ -519,9 +574,12 @@ export default function WalletScreen() {
 
             <Animated.View
               entering={FadeInDown.delay(100).duration(400)}
-              style={[s.embrisBubble, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}
+              style={[s.embrisBubble, { backgroundColor: `${colors.primary}10`, borderColor: `${colors.primary}20` }]}
             >
-              <Text style={[s.embrisLabel, { color: colors.primary }]}>🔥 Embris</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                <IconSymbol name="flame.fill" size={14} color={colors.primary} />
+                <Text style={[s.embrisLabel, { color: colors.primary, marginBottom: 0 }]}>Embris</Text>
+              </View>
               <Text style={[s.embrisText, { color: colors.foreground }]}>
                 Paste your 12-word seed phrase or private key below. Your key will be encrypted and stored only on this device.
               </Text>
@@ -529,7 +587,10 @@ export default function WalletScreen() {
 
             {importError && (
               <Animated.View entering={FadeIn.duration(200)}>
-                <Text style={[s.errorText, { color: colors.error }]}>{importError}</Text>
+                <View style={[s.errorCard, { backgroundColor: `${colors.error}10`, borderColor: `${colors.error}30` }]}>
+                  <IconSymbol name="exclamationmark.triangle.fill" size={14} color={colors.error} />
+                  <Text style={[s.errorText, { color: colors.error, flex: 1, textAlign: "left", marginVertical: 0 }]}>{importError}</Text>
+                </View>
               </Animated.View>
             )}
 
@@ -547,7 +608,7 @@ export default function WalletScreen() {
                 {
                   color: colors.foreground,
                   backgroundColor: colors.surface,
-                  borderColor: importError ? colors.error : colors.border,
+                  borderColor: importError ? colors.error : `${colors.foreground}08`,
                 },
               ]}
             />
@@ -566,7 +627,10 @@ export default function WalletScreen() {
               {importLoading ? (
                 <ActivityIndicator size="small" color="#FAFAFA" />
               ) : (
-                <Text style={[s.primaryButtonText, { color: "#FAFAFA" }]}>Import Wallet</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <IconSymbol name="arrow.down.circle.fill" size={18} color="#FAFAFA" />
+                  <Text style={[s.primaryButtonText, { color: "#FAFAFA" }]}>Import Wallet</Text>
+                </View>
               )}
             </Pressable>
 
@@ -578,7 +642,7 @@ export default function WalletScreen() {
               }}
               style={({ pressed }) => [
                 s.secondaryButton,
-                { borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+                { borderColor: `${colors.foreground}10`, opacity: pressed ? 0.7 : 1 },
               ]}
             >
               <Text style={[s.secondaryButtonText, { color: colors.muted }]}>Back</Text>
@@ -604,43 +668,38 @@ export default function WalletScreen() {
           />
         }
       >
-        {/* Portfolio Header */}
-        <Animated.View entering={FadeInDown.duration(400)} style={s.portfolioHeader}>
-          <Text style={[s.portfolioLabel, { color: colors.muted }]}>Total Portfolio</Text>
-          <Text style={[s.portfolioValue, { color: colors.foreground }]}>
-            {totalValue} <Text style={[s.portfolioUnit, { color: colors.muted }]}>ETH equiv.</Text>
+        {/* Balance Hero */}
+        <Animated.View entering={FadeInDown.duration(400)} style={[s.balanceHero, { backgroundColor: colors.surface, borderColor: `${colors.foreground}06` }]}>
+          <Text style={[s.balanceLabel, { color: colors.muted }]}>Total Balance</Text>
+          <Text style={[s.balanceValue, { color: colors.foreground }]}>
+            {totalValue}
           </Text>
-          <View style={s.addressRow}>
+          <Text style={[s.balanceUnit, { color: colors.muted }]}>ETH equivalent</Text>
+
+          {/* Address Row */}
+          <Pressable
+            onPress={() => setShowFullAddress(!showFullAddress)}
+            style={[s.addressPill, { backgroundColor: `${colors.foreground}06` }]}
+          >
             <Text style={[s.addressText, { color: colors.muted }]}>
-              {address ? `${address.slice(0, 8)}...${address.slice(-6)}` : ""}
+              {address ? (showFullAddress ? address : truncateAddr(address)) : ""}
             </Text>
             <Pressable
               onPress={handleCopyAddress}
-              style={({ pressed }) => [
-                s.copyButton,
-                { backgroundColor: `${colors.primary}20`, opacity: pressed ? 0.7 : 1 },
-              ]}
+              hitSlop={8}
+              style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
             >
-              <Text style={[s.copyButtonText, { color: colors.primary }]}>
-                {copied ? "Copied!" : "Copy"}
-              </Text>
+              <IconSymbol
+                name={copied ? "checkmark.seal.fill" : "doc.on.doc.fill"}
+                size={14}
+                color={copied ? colors.success : colors.muted}
+              />
             </Pressable>
-          </View>
+          </Pressable>
         </Animated.View>
 
         {/* Action Buttons */}
         <Animated.View entering={FadeInDown.delay(100).duration(400)} style={s.actionRow}>
-          <Pressable
-            onPress={handleCopyAddress}
-            style={({ pressed }) => [
-              s.actionButton,
-              { backgroundColor: colors.surface, borderColor: colors.border, opacity: pressed ? 0.8 : 1 },
-            ]}
-          >
-            <Text style={s.actionIcon}>📥</Text>
-            <Text style={[s.actionLabel, { color: colors.foreground }]}>Receive</Text>
-          </Pressable>
-
           <Pressable
             onPress={() => {
               if (Platform.OS === "web") {
@@ -651,61 +710,101 @@ export default function WalletScreen() {
             }}
             style={({ pressed }) => [
               s.actionButton,
-              { backgroundColor: colors.surface, borderColor: colors.border, opacity: pressed ? 0.8 : 1 },
+              { backgroundColor: colors.surface, borderColor: `${colors.foreground}06`, opacity: pressed ? 0.8 : 1 },
             ]}
           >
-            <Text style={s.actionIcon}>📤</Text>
+            <View style={[s.actionIconCircle, { backgroundColor: `${colors.primary}15` }]}>
+              <IconSymbol name="arrow.up.circle.fill" size={22} color={colors.primary} />
+            </View>
             <Text style={[s.actionLabel, { color: colors.foreground }]}>Send</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={handleCopyAddress}
+            style={({ pressed }) => [
+              s.actionButton,
+              { backgroundColor: colors.surface, borderColor: `${colors.foreground}06`, opacity: pressed ? 0.8 : 1 },
+            ]}
+          >
+            <View style={[s.actionIconCircle, { backgroundColor: `${colors.success}15` }]}>
+              <IconSymbol name="arrow.down.circle.fill" size={22} color={colors.success} />
+            </View>
+            <Text style={[s.actionLabel, { color: colors.foreground }]}>Receive</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={onRefresh}
+            style={({ pressed }) => [
+              s.actionButton,
+              { backgroundColor: colors.surface, borderColor: `${colors.foreground}06`, opacity: pressed ? 0.8 : 1 },
+            ]}
+          >
+            <View style={[s.actionIconCircle, { backgroundColor: `${colors.muted}15` }]}>
+              <IconSymbol name="arrow.clockwise" size={22} color={colors.muted} />
+            </View>
+            <Text style={[s.actionLabel, { color: colors.foreground }]}>Refresh</Text>
           </Pressable>
         </Animated.View>
 
-        {/* Chain Balance Cards */}
+        {/* Token List */}
         <Animated.View entering={FadeInDown.delay(200).duration(400)}>
-          <Text style={[s.sectionLabel, { color: colors.foreground }]}>Balances</Text>
+          <Text style={[s.sectionLabel, { color: colors.foreground }]}>Assets</Text>
         </Animated.View>
 
         {balances.length === 0 ? (
-          <Animated.View entering={FadeInDown.delay(300).duration(400)} style={s.loadingBalances}>
-            <ActivityIndicator size="small" color={colors.primary} />
-            <Text style={[s.loadingText, { color: colors.muted }]}>Fetching balances...</Text>
+          <Animated.View entering={FadeInDown.delay(300).duration(400)}>
+            {/* Skeleton loading */}
+            {[0, 1, 2].map((idx) => (
+              <View key={idx} style={[s.tokenCard, { backgroundColor: colors.surface, borderColor: `${colors.foreground}06` }]}>
+                <View style={s.tokenCardLeft}>
+                  <View style={[s.skeletonCircle, { backgroundColor: `${colors.foreground}08` }]} />
+                  <View style={{ gap: 6 }}>
+                    <View style={[s.skeletonLine, { width: 80, backgroundColor: `${colors.foreground}08` }]} />
+                    <View style={[s.skeletonLine, { width: 50, height: 10, backgroundColor: `${colors.foreground}05` }]} />
+                  </View>
+                </View>
+                <View style={{ alignItems: "flex-end", gap: 6 }}>
+                  <View style={[s.skeletonLine, { width: 70, backgroundColor: `${colors.foreground}08` }]} />
+                  <View style={[s.skeletonLine, { width: 40, height: 10, backgroundColor: `${colors.foreground}05` }]} />
+                </View>
+              </View>
+            ))}
           </Animated.View>
         ) : (
           balances.map((balance, idx) => (
             <Animated.View
               key={balance.chain.chainId}
-              entering={FadeInDown.delay(300 + idx * 100).duration(400)}
-              style={[s.balanceCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              entering={FadeInDown.delay(300 + idx * 80).duration(400)}
+              style={[s.tokenCard, { backgroundColor: colors.surface, borderColor: `${colors.foreground}06` }]}
             >
-              <View style={s.balanceCardLeft}>
-                <View style={[s.chainDot, { backgroundColor: balance.chain.color }]}>
-                  <Text style={s.chainLogo}>{balance.chain.logo}</Text>
-                </View>
+              <View style={s.tokenCardLeft}>
+                <ChainIcon name={balance.chain.name} size={40} />
                 <View>
-                  <Text style={[s.chainName, { color: colors.foreground }]}>{balance.chain.name}</Text>
-                  <Text style={[s.chainId, { color: colors.muted }]}>
-                    Chain ID: {balance.chain.chainId}
+                  <Text style={[s.tokenName, { color: colors.foreground }]}>{balance.chain.name}</Text>
+                  <Text style={[s.tokenSymbol, { color: colors.muted }]}>
+                    {balance.chain.symbol}
                   </Text>
                 </View>
               </View>
-              <View style={s.balanceCardRight}>
-                <Text style={[s.balanceAmount, { color: colors.foreground }]}>
+              <View style={s.tokenCardRight}>
+                <Text style={[s.tokenBalance, { color: balance.error ? colors.error : colors.foreground }]}>
                   {balance.error ? "Error" : balance.balanceFormatted}
                 </Text>
-                <Text style={[s.balanceSymbol, { color: colors.muted }]}>
-                  {balance.chain.symbol}
+                <Text style={[s.tokenChain, { color: colors.muted }]}>
+                  {balance.chain.name}
                 </Text>
               </View>
             </Animated.View>
           ))
         )}
 
-        {/* Transaction History Placeholder */}
-        <Animated.View entering={FadeInDown.delay(600).duration(400)}>
-          <Text style={[s.sectionLabel, { color: colors.foreground, marginTop: 24 }]}>
+        {/* Transaction History */}
+        <Animated.View entering={FadeInDown.delay(600).duration(400)} style={{ marginTop: 24 }}>
+          <Text style={[s.sectionLabel, { color: colors.foreground }]}>
             Recent Activity
           </Text>
-          <View style={[s.emptyState, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={s.emptyIcon}>📋</Text>
+          <View style={[s.emptyState, { backgroundColor: colors.surface, borderColor: `${colors.foreground}06` }]}>
+            <IconSymbol name="clock.fill" size={28} color={`${colors.muted}60`} />
             <Text style={[s.emptyTitle, { color: colors.muted }]}>No transactions yet</Text>
             <Text style={[s.emptySubtitle, { color: `${colors.muted}80` }]}>
               Your transaction history will appear here
@@ -713,17 +812,34 @@ export default function WalletScreen() {
           </View>
         </Animated.View>
 
+        {/* Alpha Warning */}
+        <Animated.View entering={FadeInDown.delay(700).duration(400)} style={{ marginTop: 20 }}>
+          <View style={[s.alphaNotice, { backgroundColor: `${colors.warning}08`, borderColor: `${colors.warning}20` }]}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 }}>
+              <IconSymbol name="exclamationmark.triangle.fill" size={14} color={colors.warning} />
+              <Text style={{ color: colors.warning, fontSize: 13, fontWeight: "600" }}>Alpha Software</Text>
+            </View>
+            <Text style={{ color: `${colors.warning}CC`, fontSize: 12, lineHeight: 18 }}>
+              This wallet is in alpha. Store funds at your own risk. Always keep your recovery phrase backed up securely.
+            </Text>
+          </View>
+        </Animated.View>
+
         {/* Danger Zone */}
-        <Animated.View entering={FadeInDown.delay(700).duration(400)} style={s.dangerZone}>
-          <Pressable
-            onPress={handleDeleteWallet}
-            style={({ pressed }) => [
-              s.deleteButton,
-              { borderColor: colors.error, opacity: pressed ? 0.7 : 1 },
-            ]}
-          >
-            <Text style={[s.deleteButtonText, { color: colors.error }]}>Delete Wallet</Text>
-          </Pressable>
+        <Animated.View entering={FadeInDown.delay(800).duration(400)} style={s.dangerZone}>
+          <View style={[s.dangerCard, { backgroundColor: `${colors.error}06`, borderColor: `${colors.error}15` }]}>
+            <Text style={{ color: colors.muted, fontSize: 12, fontWeight: "600", marginBottom: 8, letterSpacing: 0.5 }}>DANGER ZONE</Text>
+            <Pressable
+              onPress={handleDeleteWallet}
+              style={({ pressed }) => [
+                s.deleteButton,
+                { borderColor: `${colors.error}40`, opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <IconSymbol name="trash.fill" size={14} color={colors.error} />
+              <Text style={[s.deleteButtonText, { color: colors.error }]}>Delete Wallet</Text>
+            </Pressable>
+          </View>
         </Animated.View>
       </ScrollView>
     </ScreenContainer>
@@ -752,15 +868,12 @@ const s = StyleSheet.create({
     paddingTop: 40,
   },
   logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 8,
-  },
-  logoEmoji: {
-    fontSize: 40,
   },
   title: {
     fontSize: 26,
@@ -777,7 +890,7 @@ const s = StyleSheet.create({
   fullWidth: {
     width: "100%",
   },
-  // Ember bubble
+  // Embris bubble
   embrisBubble: {
     width: "100%",
     borderRadius: 16,
@@ -800,6 +913,7 @@ const s = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: "center",
+    justifyContent: "center",
     marginTop: 8,
   },
   primaryButtonText: {
@@ -818,12 +932,19 @@ const s = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
   },
+  securityCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 8,
+  },
   securityNote: {
     fontSize: 13,
-    textAlign: "center",
     lineHeight: 20,
-    marginTop: 8,
-    paddingHorizontal: 10,
+    flex: 1,
   },
   // Chat container
   chatContainer: {
@@ -845,11 +966,16 @@ const s = StyleSheet.create({
     marginBottom: 4,
     letterSpacing: -0.3,
   },
+  seedContainer: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 12,
+    marginVertical: 4,
+  },
   seedGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    marginVertical: 8,
   },
   seedWord: {
     width: "30%",
@@ -862,9 +988,10 @@ const s = StyleSheet.create({
     gap: 6,
   },
   seedIndex: {
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 11,
+    fontWeight: "700",
     minWidth: 18,
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
   seedText: {
     fontSize: 14,
@@ -902,6 +1029,14 @@ const s = StyleSheet.create({
     textAlign: "center",
     marginVertical: 4,
   },
+  errorCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
   // Import
   importInput: {
     borderRadius: 12,
@@ -912,158 +1047,166 @@ const s = StyleSheet.create({
     minHeight: 100,
     textAlignVertical: "top",
   },
-  // Ready / Main wallet
-  portfolioHeader: {
+  // Ready / Main wallet — Balance Hero
+  balanceHero: {
     alignItems: "center",
-    paddingVertical: 24,
+    paddingVertical: 28,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginBottom: 16,
     gap: 4,
   },
-  portfolioLabel: {
-    fontSize: 14,
+  balanceLabel: {
+    fontSize: 13,
     fontWeight: "500",
+    letterSpacing: 0.3,
   },
-  portfolioValue: {
-    fontSize: 34,
+  balanceValue: {
+    fontSize: 38,
     fontWeight: "700",
-    letterSpacing: -1,
+    letterSpacing: -1.5,
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+    marginTop: 4,
   },
-  portfolioUnit: {
-    fontSize: 16,
+  balanceUnit: {
+    fontSize: 13,
     fontWeight: "400",
+    marginBottom: 8,
   },
-  addressRow: {
+  addressPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
     marginTop: 4,
   },
   addressText: {
-    fontSize: 14,
-    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
-  },
-  copyButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  copyButtonText: {
     fontSize: 13,
-    fontWeight: "600",
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
   // Action buttons
   actionRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: 10,
     marginBottom: 24,
   },
   actionButton: {
     flex: 1,
     alignItems: "center",
     paddingVertical: 16,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    gap: 4,
+    gap: 8,
   },
-  actionIcon: {
-    fontSize: 24,
-  },
-  actionLabel: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  // Balance cards
-  sectionLabel: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 12,
-  },
-  balanceCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    marginBottom: 8,
-  },
-  balanceCardLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  chainDot: {
+  actionIconCircle: {
     width: 40,
     height: 40,
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
   },
-  chainLogo: {
-    fontSize: 18,
+  actionLabel: {
+    fontSize: 13,
+    fontWeight: "600",
   },
-  chainName: {
+  // Token list
+  sectionLabel: {
+    fontSize: 17,
+    fontWeight: "600",
+    marginBottom: 12,
+    letterSpacing: -0.2,
+  },
+  tokenCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  tokenCardLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  tokenName: {
     fontSize: 16,
     fontWeight: "600",
   },
-  chainId: {
+  tokenSymbol: {
     fontSize: 12,
     marginTop: 2,
   },
-  balanceCardRight: {
+  tokenCardRight: {
     alignItems: "flex-end",
   },
-  balanceAmount: {
+  tokenBalance: {
     fontSize: 16,
     fontWeight: "600",
     fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
-  balanceSymbol: {
-    fontSize: 12,
+  tokenChain: {
+    fontSize: 11,
     marginTop: 2,
+  },
+  // Skeleton
+  skeletonCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  skeletonLine: {
+    height: 14,
+    borderRadius: 4,
   },
   // Empty state
   emptyState: {
     alignItems: "center",
-    padding: 24,
-    borderRadius: 14,
+    padding: 28,
+    borderRadius: 16,
     borderWidth: 1,
     gap: 8,
   },
-  emptyIcon: {
-    fontSize: 32,
-  },
   emptyTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "500",
   },
   emptySubtitle: {
     fontSize: 13,
     textAlign: "center",
   },
-  // Loading
-  loadingBalances: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 20,
-  },
-  loadingText: {
-    fontSize: 14,
-  },
-  // Danger zone
-  dangerZone: {
-    marginTop: 32,
-    alignItems: "center",
-  },
-  deleteButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+  // Alpha notice
+  alphaNotice: {
+    padding: 14,
     borderRadius: 12,
     borderWidth: 1,
   },
+  // Danger zone
+  dangerZone: {
+    marginTop: 16,
+    marginBottom: 20,
+  },
+  dangerCard: {
+    padding: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: "center",
+  },
+  deleteButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
   deleteButtonText: {
-    fontSize: 15,
-    fontWeight: "500",
+    fontSize: 14,
+    fontWeight: "600",
   },
 });

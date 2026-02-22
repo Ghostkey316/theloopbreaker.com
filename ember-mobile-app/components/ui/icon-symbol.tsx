@@ -39,6 +39,12 @@ const MAPPING = {
   "ellipsis": "more-horiz",
   "trash.fill": "delete",
   "stop.fill": "stop",
+  "arrow.up.circle.fill": "arrow-upward",
+  "arrow.down.circle.fill": "arrow-downward",
+  "doc.on.doc.fill": "content-copy",
+  "exclamationmark.triangle.fill": "warning",
+  "clock.fill": "schedule",
+  "arrow.clockwise": "refresh",
 } as IconMapping;
 
 /**

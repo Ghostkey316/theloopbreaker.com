@@ -64,7 +64,7 @@ import { detectEmotion, recordEmotion } from "@/lib/emotional-intelligence";
 import { trackMessage, trackSession } from "@/lib/analytics";
 import { addNotification, checkMilestones } from "@/lib/notifications";
 import { detectContractQuery, executeContractQuery } from "@/lib/contract-interaction";
-import { speakText, stopSpeaking, isTTSSupported, isSTTSupported, getVoiceModeEnabled, setVoiceModeEnabled } from "@/lib/voice-mode";
+import { speakText, stopSpeaking, isTTSSupported, isSTTSupported, getVoiceModeEnabled, setVoiceModeEnabled, getVoiceRate, setVoiceRate as saveVoiceRate, getVoicePitch, setVoicePitch as saveVoicePitch } from "@/lib/voice-mode";
 
 interface ChatMessageWithStatus extends ChatMessage {
   isTyping?: boolean;
@@ -97,6 +97,9 @@ export default function ChatScreen() {
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [isSpeakingNow, setIsSpeakingNow] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [voiceRate, setVoiceRateState] = useState(1.0);
+  const [voicePitch, setVoicePitchState] = useState(1.0);
+  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const chatMutation = trpc.chat.send.useMutation();
   const inputRef = useRef<TextInput>(null);
@@ -106,16 +109,20 @@ export default function ChatScreen() {
   // Load data on mount
   useEffect(() => {
     const loadData = async () => {
-      const [history, mems, legacyAddr, nativeAddr, voiceMode] = await Promise.all([
+      const [history, mems, legacyAddr, nativeAddr, voiceMode, rate, pitch] = await Promise.all([
         getChatHistory(),
         getMemories(),
         getLegacyWalletAddress(),
         getNativeWalletAddress(),
         getVoiceModeEnabled(),
+        getVoiceRate(),
+        getVoicePitch(),
       ]);
       if (history.length > 0) setMessages(history);
       setMemoriesState(mems);
       setVoiceEnabled(voiceMode);
+      setVoiceRateState(rate);
+      setVoicePitchState(pitch);
       messageCountRef.current = history.length;
 
       const addr = nativeAddr || legacyAddr;
@@ -167,6 +174,7 @@ export default function ChatScreen() {
     if (!newValue) {
       await stopSpeaking();
       setIsSpeakingNow(false);
+      setShowVoiceSettings(false);
     }
   }, [voiceEnabled]);
 
@@ -176,9 +184,26 @@ export default function ChatScreen() {
       setIsSpeakingNow(false);
     } else {
       setIsSpeakingNow(true);
-      await speakText(text, () => setIsSpeakingNow(false));
+      await speakText(text, {
+        onStart: () => setIsSpeakingNow(true),
+        onEnd: () => setIsSpeakingNow(false),
+        rate: voiceRate,
+        pitch: voicePitch,
+      });
     }
-  }, [isSpeakingNow]);
+  }, [isSpeakingNow, voiceRate, voicePitch]);
+
+  const handleRateChange = useCallback(async (newRate: number) => {
+    const clamped = Math.max(0.5, Math.min(2.0, newRate));
+    setVoiceRateState(clamped);
+    await saveVoiceRate(clamped);
+  }, []);
+
+  const handlePitchChange = useCallback(async (newPitch: number) => {
+    const clamped = Math.max(0.5, Math.min(2.0, newPitch));
+    setVoicePitchState(clamped);
+    await saveVoicePitch(clamped);
+  }, []);
 
   const connectWallet = useCallback(async () => {
     const trimmed = walletInput.trim();
@@ -354,8 +379,13 @@ export default function ChatScreen() {
 
             // Auto-speak if voice mode enabled
             if (voiceEnabled && isTTSSupported()) {
-              speakText(fullText, () => setIsSpeakingNow(false)).catch(() => {});
               setIsSpeakingNow(true);
+              speakText(fullText, {
+                onStart: () => setIsSpeakingNow(true),
+                onEnd: () => setIsSpeakingNow(false),
+                rate: voiceRate,
+                pitch: voicePitch,
+              }).catch(() => setIsSpeakingNow(false));
             }
 
             // Sync to server
@@ -471,7 +501,7 @@ export default function ChatScreen() {
         setIsLoading(false);
       }
     },
-    [inputText, isLoading, messages, memories, walletAddress, chatMutation, voiceEnabled, syncEnabled, syncConvoId]
+    [inputText, isLoading, messages, memories, walletAddress, chatMutation, voiceEnabled, voiceRate, voicePitch, syncEnabled, syncConvoId]
   );
 
   const renderMessage = useCallback(
@@ -575,15 +605,32 @@ export default function ChatScreen() {
             </View>
             <View>
               <Text style={[styles.headerTitle, { color: colors.foreground }]}>Embris</Text>
-              <Text style={[styles.headerSubtitle, { color: colors.muted }]}>
-                {isLoading ? "Thinking..." : voiceEnabled ? "Voice Mode ✓" : syncEnabled ? "Synced ✓" : "Vaultfire Protocol"}
+              <Text style={[styles.headerSubtitle, { color: isSpeakingNow ? colors.primary : colors.muted }]}>
+                {isSpeakingNow ? "Speaking..." : isLoading ? "Thinking..." : voiceEnabled ? "Voice Mode ✓" : syncEnabled ? "Synced ✓" : "Vaultfire Protocol"}
               </Text>
             </View>
           </View>
           <View style={styles.headerRight}>
+            {/* Stop Speaking Button */}
+            {isSpeakingNow && (
+              <Pressable
+                onPress={async () => { await stopSpeaking(); setIsSpeakingNow(false); }}
+                style={({ pressed }) => [
+                  styles.headerBtn,
+                  {
+                    backgroundColor: `${colors.error}20`,
+                    borderColor: colors.error,
+                    opacity: pressed ? 0.7 : 1,
+                  },
+                ]}
+              >
+                <IconSymbol name="stop.fill" size={14} color={colors.error} />
+              </Pressable>
+            )}
             {/* Voice Mode Toggle */}
             <Pressable
               onPress={toggleVoiceMode}
+              onLongPress={() => voiceEnabled && setShowVoiceSettings(true)}
               style={({ pressed }) => [
                 styles.headerBtn,
                 {
@@ -594,7 +641,7 @@ export default function ChatScreen() {
               ]}
             >
               <IconSymbol
-                name="mic.fill"
+                name={voiceEnabled ? (isSpeakingNow ? "speaker.wave.2.fill" : "mic.fill") : "mic.fill"}
                 size={14}
                 color={voiceEnabled ? colors.primary : colors.muted}
               />
@@ -767,6 +814,24 @@ export default function ChatScreen() {
                 </Text>
               </Pressable>
               <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
+              {/* Voice Settings */}
+              {voiceEnabled && (
+                <>
+                  <Pressable
+                    onPress={() => { setMenuVisible(false); setShowVoiceSettings(true); }}
+                    style={({ pressed }) => [
+                      styles.menuItem,
+                      { opacity: pressed ? 0.6 : 1 },
+                    ]}
+                  >
+                    <IconSymbol name="gearshape.fill" size={18} color={colors.muted} />
+                    <Text style={{ color: colors.foreground, fontSize: 15, fontWeight: "500" }}>
+                      Voice Settings
+                    </Text>
+                  </Pressable>
+                  <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
+                </>
+              )}
               <Pressable
                 onPress={handleClearChat}
                 style={({ pressed }) => [
@@ -791,6 +856,80 @@ export default function ChatScreen() {
                 <Text style={{ color: colors.muted, fontSize: 15 }}>Cancel</Text>
               </Pressable>
             </Animated.View>
+          </Pressable>
+        </Modal>
+
+        {/* Voice Settings Modal */}
+        <Modal visible={showVoiceSettings} transparent animationType="fade">
+          <Pressable style={styles.modalOverlay} onPress={() => setShowVoiceSettings(false)}>
+            <Pressable onPress={() => {}}>
+              <Animated.View
+                entering={FadeInDown.duration(250)}
+                style={[styles.walletCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              >
+                <View style={styles.walletHeader}>
+                  <IconSymbol name="gearshape.fill" size={20} color={colors.primary} />
+                  <Text style={[styles.walletTitle, { color: colors.foreground }]}>Voice Settings</Text>
+                </View>
+
+                {/* Speech Rate */}
+                <View style={{ gap: 8 }}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                    <Text style={{ color: colors.muted, fontSize: 13, fontWeight: "600" }}>Speech Rate</Text>
+                    <Text style={{ color: colors.foreground, fontSize: 13, fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace" }}>{voiceRate.toFixed(1)}x</Text>
+                  </View>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <Pressable
+                      onPress={() => handleRateChange(voiceRate - 0.1)}
+                      style={({ pressed }) => [{ padding: 8, borderRadius: 8, backgroundColor: colors.background, opacity: pressed ? 0.7 : 1 }]}
+                    >
+                      <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: "700" }}>−</Text>
+                    </Pressable>
+                    <View style={{ flex: 1, height: 4, backgroundColor: colors.background, borderRadius: 2, overflow: "hidden" }}>
+                      <View style={{ width: `${((voiceRate - 0.5) / 1.5) * 100}%`, height: "100%", backgroundColor: colors.primary, borderRadius: 2 }} />
+                    </View>
+                    <Pressable
+                      onPress={() => handleRateChange(voiceRate + 0.1)}
+                      style={({ pressed }) => [{ padding: 8, borderRadius: 8, backgroundColor: colors.background, opacity: pressed ? 0.7 : 1 }]}
+                    >
+                      <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: "700" }}>+</Text>
+                    </Pressable>
+                  </View>
+                </View>
+
+                {/* Pitch */}
+                <View style={{ gap: 8 }}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                    <Text style={{ color: colors.muted, fontSize: 13, fontWeight: "600" }}>Pitch</Text>
+                    <Text style={{ color: colors.foreground, fontSize: 13, fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace" }}>{voicePitch.toFixed(1)}x</Text>
+                  </View>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <Pressable
+                      onPress={() => handlePitchChange(voicePitch - 0.1)}
+                      style={({ pressed }) => [{ padding: 8, borderRadius: 8, backgroundColor: colors.background, opacity: pressed ? 0.7 : 1 }]}
+                    >
+                      <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: "700" }}>−</Text>
+                    </Pressable>
+                    <View style={{ flex: 1, height: 4, backgroundColor: colors.background, borderRadius: 2, overflow: "hidden" }}>
+                      <View style={{ width: `${((voicePitch - 0.5) / 1.5) * 100}%`, height: "100%", backgroundColor: colors.primary, borderRadius: 2 }} />
+                    </View>
+                    <Pressable
+                      onPress={() => handlePitchChange(voicePitch + 0.1)}
+                      style={({ pressed }) => [{ padding: 8, borderRadius: 8, backgroundColor: colors.background, opacity: pressed ? 0.7 : 1 }]}
+                    >
+                      <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: "700" }}>+</Text>
+                    </Pressable>
+                  </View>
+                </View>
+
+                <Pressable
+                  onPress={() => setShowVoiceSettings(false)}
+                  style={({ pressed }) => [{ marginTop: 4, opacity: pressed ? 0.6 : 1 }]}
+                >
+                  <Text style={{ color: colors.muted, textAlign: "center", fontSize: 14 }}>Done</Text>
+                </Pressable>
+              </Animated.View>
+            </Pressable>
           </Pressable>
         </Modal>
 

@@ -1,14 +1,20 @@
 /**
- * Embris Voice Mode (Mobile)
- * Text-to-speech using expo-speech (cross-platform).
- * Speech-to-text placeholder — requires expo-speech-recognition or native module.
- * For now, TTS is fully functional; STT shows a "coming soon" message on native.
+ * Embris Voice Mode (Mobile) — Enhanced Two-Way Voice Conversation
+ *
+ * TTS: expo-speech on native, SpeechSynthesis on web
+ * STT: Web SpeechRecognition API (native STT requires additional module)
+ * Auto-speak: Embris automatically speaks responses when voice mode is on
+ * Adjustable rate/pitch, best voice selection, interrupt support
  */
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 
 const VOICE_MODE_KEY = "@embris_voice_mode_v1";
+const VOICE_RATE_KEY = "@embris_voice_rate_v1";
+const VOICE_PITCH_KEY = "@embris_voice_pitch_v1";
+
+/* ── Voice Mode Preference ── */
 
 export async function getVoiceModeEnabled(): Promise<boolean> {
   try {
@@ -23,11 +29,36 @@ export async function setVoiceModeEnabled(enabled: boolean): Promise<void> {
   await AsyncStorage.setItem(VOICE_MODE_KEY, enabled ? "true" : "false");
 }
 
-/**
- * Check if TTS is available.
- * On web, uses SpeechSynthesis API.
- * On native, uses expo-speech (must be installed).
- */
+/* ── Voice Settings ── */
+
+export async function getVoiceRate(): Promise<number> {
+  try {
+    const val = await AsyncStorage.getItem(VOICE_RATE_KEY);
+    return val ? parseFloat(val) : 1.0;
+  } catch {
+    return 1.0;
+  }
+}
+
+export async function setVoiceRate(rate: number): Promise<void> {
+  await AsyncStorage.setItem(VOICE_RATE_KEY, String(Math.max(0.5, Math.min(2.0, rate))));
+}
+
+export async function getVoicePitch(): Promise<number> {
+  try {
+    const val = await AsyncStorage.getItem(VOICE_PITCH_KEY);
+    return val ? parseFloat(val) : 1.0;
+  } catch {
+    return 1.0;
+  }
+}
+
+export async function setVoicePitch(pitch: number): Promise<void> {
+  await AsyncStorage.setItem(VOICE_PITCH_KEY, String(Math.max(0.5, Math.min(2.0, pitch))));
+}
+
+/* ── TTS Support Check ── */
+
 export function isTTSSupported(): boolean {
   if (Platform.OS === "web") {
     return typeof window !== "undefined" && !!window.speechSynthesis;
@@ -36,11 +67,8 @@ export function isTTSSupported(): boolean {
   return true;
 }
 
-/**
- * Check if STT is available.
- * On web, uses SpeechRecognition API.
- * On native, not yet implemented (requires native module).
- */
+/* ── STT Support Check ── */
+
 export function isSTTSupported(): boolean {
   if (Platform.OS === "web") {
     return typeof window !== "undefined" && !!(
@@ -51,9 +79,8 @@ export function isSTTSupported(): boolean {
   return false; // Native STT requires additional setup
 }
 
-/**
- * Clean markdown from text for natural speech.
- */
+/* ── Text Cleaning for Speech ── */
+
 function cleanTextForSpeech(text: string): string {
   return text
     .replace(/```[\s\S]*?```/g, "code block")
@@ -66,44 +93,77 @@ function cleanTextForSpeech(text: string): string {
     .replace(/>/g, "")
     .replace(/\n{2,}/g, ". ")
     .replace(/\n/g, " ")
+    .replace(/\s{2,}/g, " ")
     .trim();
 }
 
+/* ── Enhanced TTS with callbacks and settings ── */
+
 /**
- * Speak text using platform TTS.
- * Web: SpeechSynthesis API
- * Native: expo-speech (dynamic import)
+ * Speak text using platform TTS with enhanced options.
+ * Supports onStart/onEnd callbacks for UI animations.
  */
-export async function speakText(text: string, onEnd?: () => void): Promise<void> {
+export async function speakText(
+  text: string,
+  onEndOrOptions?: (() => void) | {
+    onStart?: () => void;
+    onEnd?: () => void;
+    rate?: number;
+    pitch?: number;
+  },
+): Promise<void> {
   const cleanText = cleanTextForSpeech(text);
-  if (!cleanText) return;
+  if (!cleanText) {
+    if (typeof onEndOrOptions === "function") onEndOrOptions();
+    else onEndOrOptions?.onEnd?.();
+    return;
+  }
+
+  // Normalize options
+  const options = typeof onEndOrOptions === "function"
+    ? { onEnd: onEndOrOptions }
+    : onEndOrOptions ?? {};
+
+  const rate = options.rate ?? (await getVoiceRate());
+  const pitch = options.pitch ?? (await getVoicePitch());
 
   if (Platform.OS === "web") {
     if (typeof window !== "undefined" && window.speechSynthesis) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(cleanText);
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
+      utterance.rate = rate;
+      utterance.pitch = pitch;
+      utterance.volume = 1.0;
+
+      // Select best voice
       const voices = window.speechSynthesis.getVoices();
-      const preferred = voices.find(
-        (v) => v.name.includes("Google") && v.lang.startsWith("en")
-      ) || voices.find((v) => v.lang.startsWith("en"));
+      const preferred =
+        voices.find((v) => v.name.includes("Google") && v.lang.startsWith("en") && v.name.includes("US")) ||
+        voices.find((v) => v.name.includes("Google") && v.lang.startsWith("en")) ||
+        voices.find((v) => (v.name.includes("Microsoft") || v.name.includes("Edge")) && v.lang.startsWith("en")) ||
+        voices.find((v) => v.lang.startsWith("en"));
       if (preferred) utterance.voice = preferred;
-      if (onEnd) utterance.onend = onEnd;
+
+      utterance.onstart = () => options.onStart?.();
+      utterance.onend = () => options.onEnd?.();
+      utterance.onerror = () => options.onEnd?.();
       window.speechSynthesis.speak(utterance);
     }
   } else {
     // Native: use expo-speech
     try {
       const Speech = await import("expo-speech");
+      options.onStart?.();
       await Speech.default.speak(cleanText, {
         language: "en-US",
-        rate: 1.0,
-        pitch: 1.0,
-        onDone: onEnd,
+        rate,
+        pitch,
+        onDone: () => options.onEnd?.(),
+        onError: () => options.onEnd?.(),
       });
     } catch {
       console.warn("expo-speech not available");
+      options.onEnd?.();
     }
   }
 }
@@ -133,9 +193,8 @@ export async function isSpeaking(): Promise<boolean> {
   }
 }
 
-/**
- * Web-only: Create SpeechRecognition instance for STT.
- */
+/* ── Web-only: SpeechRecognition for STT ── */
+
 export function createWebSpeechRecognition(): unknown | null {
   if (Platform.OS !== "web" || typeof window === "undefined") return null;
   const SpeechRecognitionClass =
