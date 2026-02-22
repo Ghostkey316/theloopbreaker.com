@@ -148,12 +148,12 @@ function IdentityTypeCard({
 /* ── Anti-Gaming Rules Panel ── */
 function AntiGamingRules() {
   const rules = [
-    { icon: "🔒", title: "One Human Per Wallet", desc: "Each wallet can register exactly one human .vns identity." },
-    { icon: "🤝", title: "One Companion Per Human", desc: "Each human gets one AI companion, tied to their identity." },
-    { icon: "🤖", title: "Unlimited AI Agents", desc: "Developers can register unlimited agents — each requires a bond." },
-    { icon: "⛓️", title: "On-Chain Registration", desc: "Every name backed by a real transaction. Gas = anti-bot." },
-    { icon: "🚫", title: "No Name Squatting", desc: "Names without bonds or activity can be flagged." },
-    { icon: "🔤", title: "Case-Insensitive Uniqueness", desc: "ghostkey316.vns and Ghostkey316.vns are the same name." },
+    { icon: "lock", title: "One Human Per Wallet", desc: "Each wallet can register exactly one human .vns identity." },
+    { icon: "handshake", title: "One Companion Per Human", desc: "Each human gets one AI companion, tied to their identity." },
+    { icon: "cpu", title: "Unlimited AI Agents", desc: "Developers can register unlimited agents — each requires a bond." },
+    { icon: "link", title: "On-Chain Registration", desc: "Every name backed by a real transaction. Gas = anti-bot." },
+    { icon: "shield", title: "No Name Squatting", desc: "Names without bonds or activity can be flagged." },
+    { icon: "type", title: "Case-Insensitive Uniqueness", desc: "ghostkey316.vns and Ghostkey316.vns are the same name." },
   ];
 
   return (
@@ -165,7 +165,14 @@ function AntiGamingRules() {
       <div style={{ display: "grid", gap: 10 }}>
         {rules.map((r, i) => (
           <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-            <span style={{ fontSize: 14, lineHeight: "20px", flexShrink: 0 }}>{r.icon}</span>
+            <span style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, color: "#71717A" }}>
+              {r.icon === "lock" && <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>}
+              {r.icon === "handshake" && <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
+              {r.icon === "cpu" && <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>}
+              {r.icon === "link" && <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>}
+              {r.icon === "shield" && <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>}
+              {r.icon === "type" && <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>}
+            </span>
             <div>
               <div style={{ fontSize: 12, fontWeight: 600, color: "#D4D4D8" }}>{r.title}</div>
               <div style={{ fontSize: 11, color: "#71717A", lineHeight: 1.4 }}>{r.desc}</div>

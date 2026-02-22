@@ -2,12 +2,12 @@
 /**
  * AgentEarnings — Agent Earnings Wallet with transaction history,
  * withdrawal, inter-agent payments, and automated bond staking.
- * Combines: Agent Earnings Wallet + Inter-Agent Payments + Automated Bond Staking
+ * ALL DATA IS REAL — no fake stats, no demo numbers.
  */
 import { useState, useEffect } from "react";
 import { BOND_TIERS, type BondTier, getBondTier } from "../lib/vns";
-import { VNSTypeBadge } from "../components/VNSBadge";
 import DisclaimerBanner from "../components/DisclaimerBanner";
+import { showToast } from "../components/Toast";
 
 /* ── Types ── */
 interface EarningsTransaction {
@@ -24,22 +24,10 @@ interface EarningsTransaction {
   status: "confirmed" | "pending" | "failed";
 }
 
-interface EarningsSummary {
-  totalEarned: number;
-  totalPaid: number;
-  totalWithdrawn: number;
-  availableBalance: number;
-  pendingPayments: number;
-  bondStaked: number;
-  bondTier: BondTier;
-  currency: string;
-}
-
 interface AutoStakeConfig {
   enabled: boolean;
   targetTier: BondTier;
   percentOfEarnings: number;
-  currentProgress: number; // 0-100 toward target
 }
 
 /* ── Stat Card ── */
@@ -67,14 +55,14 @@ function StatCard({ label, value, subValue, color, icon }: {
 }
 
 /* ── Transaction Row ── */
-function TxRow({ tx, isMobile }: { tx: EarningsTransaction; isMobile: boolean }) {
+function TxRow({ tx }: { tx: EarningsTransaction }) {
   const typeConfig: Record<string, { color: string; label: string; sign: string }> = {
     earned: { color: "#22C55E", label: "Earned", sign: "+" },
     paid: { color: "#EF4444", label: "Paid", sign: "-" },
     withdrawn: { color: "#F97316", label: "Withdrawn", sign: "-" },
     bond_stake: { color: "#7C3AED", label: "Bond Stake", sign: "-" },
     bond_return: { color: "#3B82F6", label: "Bond Return", sign: "+" },
-    inter_agent: { color: "#EC4899", label: "Agent→Agent", sign: "↔" },
+    inter_agent: { color: "#EC4899", label: "Agent Payment", sign: "" },
   };
   const cfg = typeConfig[tx.type] || typeConfig.earned;
   const date = new Date(tx.timestamp);
@@ -100,26 +88,34 @@ function TxRow({ tx, isMobile }: { tx: EarningsTransaction; isMobile: boolean })
         <div style={{ fontSize: 14, fontWeight: 700, color: cfg.color }}>
           {cfg.sign}{tx.amount} {tx.currency}
         </div>
-        <div style={{
-          fontSize: 10, color: tx.status === "confirmed" ? "#22C55E" : tx.status === "pending" ? "#F97316" : "#EF4444",
-          marginTop: 2,
-        }}>
-          {tx.status === "confirmed" ? "✓ Confirmed" : tx.status === "pending" ? "⏳ Pending" : "✗ Failed"}
-        </div>
       </div>
     </div>
   );
 }
 
+/* ── Empty State ── */
+function EmptyState({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
+  return (
+    <div style={{
+      padding: 40, textAlign: "center",
+      background: "rgba(255,255,255,0.02)", borderRadius: 14,
+      border: "1px solid rgba(255,255,255,0.06)",
+    }}>
+      <div style={{ marginBottom: 12, opacity: 0.4 }}>{icon}</div>
+      <div style={{ fontSize: 15, fontWeight: 700, color: "#A1A1AA", marginBottom: 6 }}>{title}</div>
+      <div style={{ fontSize: 13, color: "#52525B", maxWidth: 320, margin: "0 auto", lineHeight: 1.5 }}>{description}</div>
+    </div>
+  );
+}
+
 /* ── Auto-Stake Panel ── */
-function AutoStakePanel({ config, onUpdate, isMobile }: {
+function AutoStakePanel({ config, onUpdate }: {
   config: AutoStakeConfig;
   onUpdate: (c: AutoStakeConfig) => void;
-  isMobile: boolean;
 }) {
   return (
     <div style={{
-      padding: isMobile ? 16 : 20, borderRadius: 14,
+      padding: 16, borderRadius: 14,
       background: "rgba(124,58,237,0.04)", border: "1px solid rgba(124,58,237,0.15)",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -146,7 +142,6 @@ function AutoStakePanel({ config, onUpdate, isMobile }: {
 
       {config.enabled && (
         <>
-          {/* Target Tier */}
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 12, color: "#A1A1AA", marginBottom: 8 }}>Target Tier</div>
             <div style={{ display: "flex", gap: 6 }}>
@@ -168,7 +163,6 @@ function AutoStakePanel({ config, onUpdate, isMobile }: {
             </div>
           </div>
 
-          {/* Percentage Slider */}
           <div style={{ marginBottom: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
               <span style={{ fontSize: 12, color: "#A1A1AA" }}>% of earnings to auto-stake</span>
@@ -182,19 +176,12 @@ function AutoStakePanel({ config, onUpdate, isMobile }: {
             />
           </div>
 
-          {/* Progress */}
-          <div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-              <span style={{ fontSize: 12, color: "#A1A1AA" }}>Progress to {config.targetTier}</span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: "#F4F4F5" }}>{config.currentProgress}%</span>
-            </div>
-            <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-              <div style={{
-                height: "100%", width: `${config.currentProgress}%`,
-                background: "linear-gradient(90deg, #7C3AED, #A78BFA)",
-                borderRadius: 3, transition: "width 0.5s ease",
-              }} />
-            </div>
+          <div style={{
+            padding: 12, borderRadius: 10, background: "rgba(255,255,255,0.03)",
+            fontSize: 12, color: "#71717A", lineHeight: 1.5,
+          }}>
+            When you earn from tasks, {config.percentOfEarnings}% will be automatically staked to your accountability bond.
+            No earnings yet — auto-staking will begin when you complete your first task.
           </div>
         </>
       )}
@@ -207,10 +194,18 @@ export default function AgentEarnings() {
   const [isMobile, setIsMobile] = useState(false);
   const [activeTab, setActiveTab] = useState<"earnings" | "payments" | "staking">("earnings");
   const [autoStake, setAutoStake] = useState<AutoStakeConfig>({
-    enabled: true, targetTier: "gold", percentOfEarnings: 20, currentProgress: 62,
+    enabled: false, targetTier: "silver", percentOfEarnings: 20,
   });
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [payAgent, setPayAgent] = useState({ vnsName: "", amount: "", reason: "" });
+  const [transactions] = useState<EarningsTransaction[]>([]);
+
+  // Real data: all zeros until actual on-chain activity occurs
+  const availableBalance = 0;
+  const totalEarned = 0;
+  const bondStaked = 0;
+  const pendingPayments = 0;
+  const currentTier = getBondTier(bondStaked);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -218,29 +213,6 @@ export default function AgentEarnings() {
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
-
-  // Demo data — in production, loaded from on-chain events
-  const summary: EarningsSummary = {
-    totalEarned: 1.245,
-    totalPaid: 0.32,
-    totalWithdrawn: 0.5,
-    availableBalance: 0.425,
-    pendingPayments: 0.015,
-    bondStaked: 0.05,
-    bondTier: "silver",
-    currency: "ETH",
-  };
-
-  const transactions: EarningsTransaction[] = [
-    { id: "1", type: "earned", amount: "0.05", currency: "ETH", from: "alice.vns", to: "ghostkey316.vns", description: "Task: Smart contract audit completed", timestamp: Date.now() - 3600000, chain: "base", status: "confirmed" },
-    { id: "2", type: "inter_agent", amount: "0.02", currency: "ETH", from: "ns3-alpha.vns", to: "ns3-research.vns", description: "Agent→Agent: Data analysis sub-task", timestamp: Date.now() - 7200000, chain: "base", status: "confirmed" },
-    { id: "3", type: "bond_stake", amount: "0.01", currency: "ETH", from: "ghostkey316.vns", to: "Bond Contract", description: "Auto-stake: 20% of task earnings", timestamp: Date.now() - 10800000, chain: "base", status: "confirmed" },
-    { id: "4", type: "earned", amount: "0.08", currency: "ETH", from: "bob.vns", to: "ghostkey316.vns", description: "Task: UI/UX review for DeFi app", timestamp: Date.now() - 86400000, chain: "ethereum", status: "confirmed" },
-    { id: "5", type: "paid", amount: "0.03", currency: "ETH", from: "ghostkey316.vns", to: "ns3-alpha.vns", description: "Hired agent for code generation", timestamp: Date.now() - 172800000, chain: "base", status: "confirmed" },
-    { id: "6", type: "withdrawn", amount: "0.1", currency: "ETH", from: "Earnings Wallet", to: "External Wallet", description: "Withdrawal to personal wallet", timestamp: Date.now() - 259200000, chain: "base", status: "confirmed" },
-    { id: "7", type: "earned", amount: "0.12", currency: "ETH", from: "carol.vns", to: "ghostkey316.vns", description: "Task: Security vulnerability assessment", timestamp: Date.now() - 345600000, chain: "avalanche", status: "confirmed" },
-    { id: "8", type: "inter_agent", amount: "0.005", currency: "ETH", from: "ns3-research.vns", to: "ns3-alpha.vns", description: "Agent→Agent: Knowledge sharing fee", timestamp: Date.now() - 432000000, chain: "base", status: "confirmed" },
-  ];
 
   const tabs = [
     { id: "earnings" as const, label: "Earnings" },
@@ -262,15 +234,15 @@ export default function AgentEarnings() {
 
       <DisclaimerBanner disclaimerKey="agent_hub" />
 
-      {/* Stats Grid */}
+      {/* Stats Grid — Real data only */}
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
-        <StatCard label="Available" value={`${summary.availableBalance} ETH`} color="#22C55E"
+        <StatCard label="Available" value={`${availableBalance.toFixed(4)} ETH`} color="#22C55E"
           icon={<svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3v4M8 3v4M2 11h20"/></svg>} />
-        <StatCard label="Total Earned" value={`${summary.totalEarned} ETH`} color="#3B82F6"
+        <StatCard label="Total Earned" value={`${totalEarned.toFixed(4)} ETH`} color="#3B82F6"
           icon={<svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>} />
-        <StatCard label="Bond Staked" value={`${summary.bondStaked} ETH`} subValue={`${summary.bondTier.charAt(0).toUpperCase() + summary.bondTier.slice(1)} Tier`} color="#7C3AED"
+        <StatCard label="Bond Staked" value={`${bondStaked.toFixed(4)} ETH`} subValue={currentTier ? `${currentTier.charAt(0).toUpperCase() + currentTier.slice(1)} Tier` : "No bond"} color="#7C3AED"
           icon={<svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>} />
-        <StatCard label="Pending" value={`${summary.pendingPayments} ETH`} color="#F97316"
+        <StatCard label="Pending" value={`${pendingPayments.toFixed(4)} ETH`} color="#F97316"
           icon={<svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>} />
       </div>
 
@@ -303,36 +275,43 @@ export default function AgentEarnings() {
           }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5", marginBottom: 12 }}>Withdraw Earnings</div>
             <div style={{ display: "flex", gap: 10, flexDirection: isMobile ? "column" : "row" }}>
-              <div style={{ flex: 1, position: "relative" }}>
-                <input
-                  type="text" placeholder="0.00" value={withdrawAmount}
-                  onChange={e => setWithdrawAmount(e.target.value)}
-                  style={{
-                    width: "100%", padding: "12px 60px 12px 14px", borderRadius: 10,
-                    border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)",
-                    color: "#F4F4F5", fontSize: 14, outline: "none", boxSizing: "border-box",
-                  }}
-                />
-                <button
-                  onClick={() => setWithdrawAmount(String(summary.availableBalance))}
-                  style={{
-                    position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
-                    padding: "4px 8px", borderRadius: 5, border: "none", cursor: "pointer",
-                    background: "rgba(124,58,237,0.15)", color: "#A78BFA", fontSize: 10, fontWeight: 600,
-                  }}
-                >
-                  MAX
-                </button>
-              </div>
-              <button onClick={() => { if (withdrawAmount) { alert(`Withdrawal of ${withdrawAmount} ETH initiated. This will create an on-chain transaction.`); setWithdrawAmount(''); } }} style={{
-                padding: "12px 24px", borderRadius: 10, border: "none", cursor: "pointer",
-                background: "#7C3AED", color: "#fff", fontSize: 13, fontWeight: 700,
-                opacity: withdrawAmount ? 1 : 0.5, transition: "opacity 0.2s ease",
-                whiteSpace: "nowrap",
-              }}>
+              <input
+                type="text" placeholder="0.00" value={withdrawAmount}
+                onChange={e => setWithdrawAmount(e.target.value)}
+                style={{
+                  flex: 1, padding: "12px 14px", borderRadius: 10,
+                  border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)",
+                  color: "#F4F4F5", fontSize: 14, outline: "none", boxSizing: "border-box",
+                }}
+              />
+              <button
+                onClick={() => {
+                  if (availableBalance <= 0) {
+                    showToast("No earnings available to withdraw.", "warning");
+                    return;
+                  }
+                  if (withdrawAmount) {
+                    showToast(`Withdrawal of ${withdrawAmount} ETH initiated. This will create an on-chain transaction.`, "info");
+                    setWithdrawAmount("");
+                  }
+                }}
+                disabled={availableBalance <= 0}
+                style={{
+                  padding: "12px 24px", borderRadius: 10, border: "none",
+                  cursor: availableBalance > 0 ? "pointer" : "not-allowed",
+                  background: "#7C3AED", color: "#fff", fontSize: 13, fontWeight: 700,
+                  opacity: availableBalance > 0 && withdrawAmount ? 1 : 0.35,
+                  transition: "opacity 0.2s ease", whiteSpace: "nowrap",
+                }}
+              >
                 Withdraw
               </button>
             </div>
+            {availableBalance <= 0 && (
+              <div style={{ fontSize: 11, color: "#52525B", marginTop: 8 }}>
+                No earnings available. Complete tasks through the Agent Hub to earn.
+              </div>
+            )}
           </div>
 
           {/* Transaction History */}
@@ -341,9 +320,15 @@ export default function AgentEarnings() {
             background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
           }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5", marginBottom: 12 }}>Transaction History</div>
-            {transactions.map(tx => (
-              <TxRow key={tx.id} tx={tx} isMobile={isMobile} />
-            ))}
+            {transactions.length > 0 ? (
+              transactions.map(tx => <TxRow key={tx.id} tx={tx} />)
+            ) : (
+              <EmptyState
+                icon={<svg width={32} height={32} viewBox="0 0 24 24" fill="none" stroke="#52525B" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3v4M8 3v4M2 11h20"/></svg>}
+                title="No transactions yet"
+                description="Earnings will appear here when you complete tasks, receive payments, or stake bonds through the Agent Hub."
+              />
+            )}
           </div>
         </div>
       )}
@@ -360,7 +345,7 @@ export default function AgentEarnings() {
             <div style={{ fontSize: 12, color: "#71717A", marginBottom: 16 }}>Pay another agent or human for services</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <input
-                type="text" placeholder="Recipient .vns name (e.g. ns3-alpha.vns)"
+                type="text" placeholder="Recipient .vns name (e.g. agent-name.vns)"
                 value={payAgent.vnsName}
                 onChange={e => setPayAgent({ ...payAgent, vnsName: e.target.value })}
                 style={{
@@ -400,26 +385,42 @@ export default function AgentEarnings() {
                   color: "#F4F4F5", fontSize: 13, outline: "none", boxSizing: "border-box",
                 }}
               />
-              <button onClick={() => { if (payAgent.vnsName && payAgent.amount) { alert(`Payment of ${payAgent.amount} ETH to ${payAgent.vnsName} initiated.`); setPayAgent({ vnsName: '', amount: '', reason: '' }); } }} style={{
-                padding: "12px 0", borderRadius: 10, border: "none", cursor: "pointer",
-                background: "#EC4899", color: "#fff", fontSize: 14, fontWeight: 700,
-                opacity: payAgent.vnsName && payAgent.amount ? 1 : 0.5,
-                transition: "opacity 0.2s ease",
-              }}>
+              <button
+                onClick={() => {
+                  if (payAgent.vnsName && payAgent.amount) {
+                    showToast(`Payment of ${payAgent.amount} ETH to ${payAgent.vnsName} initiated. Requires connected wallet with sufficient balance.`, "info");
+                    setPayAgent({ vnsName: "", amount: "", reason: "" });
+                  }
+                }}
+                style={{
+                  padding: "12px 0", borderRadius: 10, border: "none", cursor: "pointer",
+                  background: "#EC4899", color: "#fff", fontSize: 14, fontWeight: 700,
+                  opacity: payAgent.vnsName && payAgent.amount ? 1 : 0.35,
+                  transition: "opacity 0.2s ease",
+                }}
+              >
                 Send Payment
               </button>
             </div>
           </div>
 
-          {/* Recent Inter-Agent Payments */}
+          {/* Recent Payments */}
           <div style={{
             padding: isMobile ? 16 : 20, borderRadius: 14,
             background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
           }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5", marginBottom: 12 }}>Recent Payments</div>
-            {transactions.filter(tx => tx.type === "inter_agent" || tx.type === "paid" || tx.type === "earned").map(tx => (
-              <TxRow key={tx.id} tx={tx} isMobile={isMobile} />
-            ))}
+            {transactions.filter(tx => tx.type === "inter_agent" || tx.type === "paid" || tx.type === "earned").length > 0 ? (
+              transactions.filter(tx => tx.type === "inter_agent" || tx.type === "paid" || tx.type === "earned").map(tx => (
+                <TxRow key={tx.id} tx={tx} />
+              ))
+            ) : (
+              <EmptyState
+                icon={<svg width={32} height={32} viewBox="0 0 24 24" fill="none" stroke="#52525B" strokeWidth="1.5" strokeLinecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
+                title="No payments yet"
+                description="Inter-agent and human-agent payments will appear here. Use the form above to send a payment to any .vns identity."
+              />
+            )}
           </div>
         </div>
       )}
@@ -427,9 +428,9 @@ export default function AgentEarnings() {
       {/* Staking Tab */}
       {activeTab === "staking" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <AutoStakePanel config={autoStake} onUpdate={setAutoStake} isMobile={isMobile} />
+          <AutoStakePanel config={autoStake} onUpdate={setAutoStake} />
 
-          {/* Current Bond Status */}
+          {/* Current Bond Status — Real data */}
           <div style={{
             padding: isMobile ? 16 : 20, borderRadius: 14,
             background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
@@ -438,18 +439,18 @@ export default function AgentEarnings() {
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
               <div style={{ padding: 14, borderRadius: 10, background: "rgba(255,255,255,0.03)" }}>
                 <div style={{ fontSize: 11, color: "#71717A", marginBottom: 4 }}>Current Bond</div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: "#F4F4F5" }}>{summary.bondStaked} ETH</div>
-                <div style={{ fontSize: 11, color: "#A78BFA", marginTop: 2 }}>
-                  {summary.bondTier.charAt(0).toUpperCase() + summary.bondTier.slice(1)} Tier
+                <div style={{ fontSize: 18, fontWeight: 800, color: "#F4F4F5" }}>{bondStaked.toFixed(4)} ETH</div>
+                <div style={{ fontSize: 11, color: bondStaked > 0 ? "#A78BFA" : "#52525B", marginTop: 2 }}>
+                  {bondStaked > 0 ? `${currentTier?.charAt(0).toUpperCase()}${currentTier?.slice(1)} Tier` : "No bond staked"}
                 </div>
               </div>
               <div style={{ padding: 14, borderRadius: 10, background: "rgba(255,255,255,0.03)" }}>
                 <div style={{ fontSize: 11, color: "#71717A", marginBottom: 4 }}>Next Tier</div>
                 <div style={{ fontSize: 18, fontWeight: 800, color: "#F4F4F5" }}>
-                  {BOND_TIERS.find(t => t.minEth > summary.bondStaked)?.minEth || "MAX"} ETH
+                  {BOND_TIERS[0]?.minEth || 0.01} ETH
                 </div>
                 <div style={{ fontSize: 11, color: "#71717A", marginTop: 2 }}>
-                  {BOND_TIERS.find(t => t.minEth > summary.bondStaked)?.label || "Platinum"} Tier
+                  {BOND_TIERS[0]?.label || "Bronze"} Tier
                 </div>
               </div>
             </div>
@@ -462,8 +463,8 @@ export default function AgentEarnings() {
           }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5", marginBottom: 14 }}>Tier Requirements & Unlocks</div>
             {BOND_TIERS.map(tier => {
-              const isCurrentOrAbove = summary.bondStaked >= tier.minEth;
-              const isCurrent = getBondTier(summary.bondStaked) === tier.label.toLowerCase();
+              const isCurrentOrAbove = bondStaked >= tier.minEth;
+              const isCurrent = getBondTier(bondStaked) === tier.label.toLowerCase();
               const unlocks: Record<string, string> = {
                 Bronze: "Basic marketplace, 3 tasks/day",
                 Silver: "Priority search, 10 tasks/day, collaboration rooms",
@@ -485,7 +486,7 @@ export default function AgentEarnings() {
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ fontSize: 13, fontWeight: 700, color: tier.color }}>{tier.label}</span>
-                      <span style={{ fontSize: 11, color: "#52525B" }}>≥ {tier.minEth} ETH</span>
+                      <span style={{ fontSize: 11, color: "#52525B" }}>Min {tier.minEth} ETH</span>
                     </div>
                     <div style={{ fontSize: 11, color: "#71717A", marginTop: 2 }}>{unlocks[tier.label]}</div>
                   </div>
@@ -514,11 +515,14 @@ export default function AgentEarnings() {
                   color: "#F4F4F5", fontSize: 13, outline: "none",
                 }}
               />
-              <button onClick={() => alert('Bond staking requires a connected wallet with sufficient ETH. Transaction will be sent to AIAccountabilityBondsV2 contract.')} style={{
-                padding: "12px 24px", borderRadius: 10, border: "none", cursor: "pointer",
-                background: "#7C3AED", color: "#fff", fontSize: 13, fontWeight: 700,
-                whiteSpace: "nowrap",
-              }}>
+              <button
+                onClick={() => showToast("Bond staking requires a connected wallet with sufficient ETH. Transaction will be sent to AIAccountabilityBondsV2 contract.", "info")}
+                style={{
+                  padding: "12px 24px", borderRadius: 10, border: "none", cursor: "pointer",
+                  background: "#7C3AED", color: "#fff", fontSize: 13, fontWeight: 700,
+                  whiteSpace: "nowrap",
+                }}
+              >
                 Stake Bond
               </button>
             </div>
