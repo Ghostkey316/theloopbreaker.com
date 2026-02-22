@@ -58,6 +58,11 @@ import {
   isSpeechSynthesisSupported,
   speakText,
   stopSpeaking,
+  getVoiceRate,
+  setVoiceRate,
+  getVoicePitch,
+  setVoicePitch,
+  preloadVoices,
   type SpeechRecognitionInstance,
 } from '../lib/voice-mode';
 
@@ -138,6 +143,24 @@ function SpeakerIcon({ size = 12 }: { size?: number }) {
   );
 }
 
+function StopCircleIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <rect x="9" y="9" width="6" height="6" rx="1" />
+    </svg>
+  );
+}
+
+function SettingsIcon({ size = 12 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  );
+}
+
 /* Small Embris flame icon for chat responses */
 function EmbrisFlame() {
   return (
@@ -145,6 +168,45 @@ function EmbrisFlame() {
       <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9" />
       <path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C" />
     </svg>
+  );
+}
+
+/* Animated Embris flame for speaking state */
+function EmbrisFlameSpeaking() {
+  return (
+    <div className="embris-speaking-flame" style={{ flexShrink: 0, marginTop: 3, position: 'relative' }}>
+      <svg width={16} height={16} viewBox="0 0 32 32" fill="none">
+        <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9" />
+        <path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C" />
+      </svg>
+      <div style={{
+        position: 'absolute', top: -3, left: -3, right: -3, bottom: -3,
+        borderRadius: '50%',
+        border: '1.5px solid rgba(249,115,22,0.4)',
+        animation: 'embrisSpeakPulse 1.2s ease-in-out infinite',
+      }} />
+    </div>
+  );
+}
+
+/* Voice waveform animation for speaking indicator */
+function VoiceWaveform() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 2, height: 16 }}>
+      {[0, 1, 2, 3, 4].map((i) => (
+        <div
+          key={i}
+          className="voice-wave-bar"
+          style={{
+            width: 2,
+            height: 4,
+            borderRadius: 1,
+            backgroundColor: '#F97316',
+            animationDelay: `${i * 0.1}s`,
+          }}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -264,11 +326,15 @@ export default function Chat() {
   const [registered, setRegistered] = useState(false);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
 
-  // Voice mode state
+  // Voice mode state — enhanced
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [embrisSpeaking, setEmbrisSpeaking] = useState(false);
   const [ttsSupported, setTtsSupported] = useState(false);
   const [sttSupported, setSttSupported] = useState(false);
+  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
+  const [voiceRate, setVoiceRateState] = useState(1.0);
+  const [voicePitchVal, setVoicePitchState] = useState(1.0);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -289,6 +355,10 @@ export default function Chat() {
     setSttSupported(isSpeechRecognitionSupported());
     setTtsSupported(isSpeechSynthesisSupported());
     setVoiceEnabled(getVoiceModeEnabled());
+    setVoiceRateState(getVoiceRate());
+    setVoicePitchState(getVoicePitch());
+    // Preload voices
+    preloadVoices();
   }, []);
 
   useEffect(() => {
@@ -397,7 +467,14 @@ export default function Chat() {
     [],
   );
 
+  // ── Voice: Toggle listening (interrupt Embris if speaking) ──
   const toggleListening = useCallback(() => {
+    // If Embris is speaking, interrupt her
+    if (embrisSpeaking) {
+      stopSpeaking();
+      setEmbrisSpeaking(false);
+    }
+
     if (isListening) {
       recognitionRef.current?.stop();
       setIsListening(false);
@@ -417,7 +494,7 @@ export default function Chat() {
     recognition.onend = () => setIsListening(false);
     recognition.onerror = () => setIsListening(false);
     recognition.start();
-  }, [isListening]);
+  }, [isListening, embrisSpeaking]);
 
   const handleToggleVoice = useCallback(() => {
     const next = !voiceEnabled;
@@ -425,17 +502,42 @@ export default function Chat() {
     setVoiceModeEnabled(next);
     if (!next) {
       stopSpeaking();
+      setEmbrisSpeaking(false);
       if (isListening) {
         recognitionRef.current?.stop();
         setIsListening(false);
       }
+      setShowVoiceSettings(false);
     }
   }, [voiceEnabled, isListening]);
 
+  const handleStopSpeaking = useCallback(() => {
+    stopSpeaking();
+    setEmbrisSpeaking(false);
+  }, []);
+
   const handleSpeak = useCallback((text: string) => {
-    if (!voiceEnabled || !ttsSupported) return;
-    speakText(text);
-  }, [voiceEnabled, ttsSupported]);
+    if (!ttsSupported) return;
+    if (embrisSpeaking) {
+      stopSpeaking();
+      setEmbrisSpeaking(false);
+      return;
+    }
+    speakText(text, {
+      onStart: () => setEmbrisSpeaking(true),
+      onEnd: () => setEmbrisSpeaking(false),
+    });
+  }, [ttsSupported, embrisSpeaking]);
+
+  const handleRateChange = useCallback((val: number) => {
+    setVoiceRateState(val);
+    setVoiceRate(val);
+  }, []);
+
+  const handlePitchChange = useCallback((val: number) => {
+    setVoicePitchState(val);
+    setVoicePitch(val);
+  }, []);
 
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || isLoading) return;
@@ -444,6 +546,12 @@ export default function Chat() {
     // Send button animation
     setSendAnimating(true);
     setTimeout(() => setSendAnimating(false), 300);
+
+    // Interrupt Embris if speaking
+    if (embrisSpeaking) {
+      stopSpeaking();
+      setEmbrisSpeaking(false);
+    }
 
     if (isListening) {
       recognitionRef.current?.stop();
@@ -537,7 +645,14 @@ export default function Chat() {
         if (features.goals) {
           setTimeout(() => runBackgroundGoalExtraction(text), 2000);
         }
-        if (voiceEnabled && ttsSupported) speakText(fullText);
+
+        // Auto-speak when voice mode is on
+        if (voiceEnabled && ttsSupported) {
+          speakText(fullText, {
+            onStart: () => setEmbrisSpeaking(true),
+            onEnd: () => setEmbrisSpeaking(false),
+          });
+        }
 
         setMessages((prev) =>
           prev.map((m) => m.id === assistantMsg.id ? { ...m, content: fullText, isStreaming: false } : m)
@@ -555,7 +670,7 @@ export default function Chat() {
         setIsLoading(false);
       },
     });
-  }, [isLoading, isListening, voiceEnabled, ttsSupported, runBackgroundMemoryExtraction, runBackgroundSelfLearning, runBackgroundGoalExtraction]);
+  }, [isLoading, isListening, voiceEnabled, ttsSupported, embrisSpeaking, runBackgroundMemoryExtraction, runBackgroundSelfLearning, runBackgroundGoalExtraction]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -572,6 +687,7 @@ export default function Chat() {
       } catch { /* silent fail */ }
     }
     stopSpeaking();
+    setEmbrisSpeaking(false);
     clearChatHistory();
     setMessages([]);
     setShowSuggestions(true);
@@ -593,7 +709,8 @@ export default function Chat() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 14, fontWeight: 500, color: '#A1A1AA', letterSpacing: '-0.01em' }}>Embris</span>
-          {registered && currentMood && currentMood.confidence > 0.3 && (
+          {embrisSpeaking && <VoiceWaveform />}
+          {registered && currentMood && currentMood.confidence > 0.3 && !embrisSpeaking && (
             <MoodDot mood={currentMood.mood} />
           )}
           {registered ? (
@@ -634,29 +751,74 @@ export default function Chat() {
             </span>
           )}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Voice Mode Toggle — Prominent */}
           {sttSupported && (
             <button
               onClick={handleToggleVoice}
               title={voiceEnabled ? 'Disable voice mode' : 'Enable voice mode'}
               style={{
-                display: 'flex', alignItems: 'center', gap: 4,
-                fontSize: 10, fontWeight: 500,
-                padding: '4px 8px', borderRadius: 6,
-                border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 5,
+                fontSize: 11, fontWeight: 600,
+                padding: '5px 10px', borderRadius: 8,
+                border: voiceEnabled ? '1px solid rgba(249,115,22,0.3)' : '1px solid rgba(255,255,255,0.06)',
+                cursor: 'pointer',
                 backgroundColor: voiceEnabled ? 'rgba(249,115,22,0.12)' : 'transparent',
-                color: voiceEnabled ? '#F97316' : '#3F3F46',
+                color: voiceEnabled ? '#F97316' : '#52525B',
                 transition: 'all 0.15s ease',
               }}
               onMouseEnter={(e) => {
-                if (!voiceEnabled) e.currentTarget.style.color = '#71717A';
+                if (!voiceEnabled) {
+                  e.currentTarget.style.color = '#A1A1AA';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                }
               }}
               onMouseLeave={(e) => {
-                if (!voiceEnabled) e.currentTarget.style.color = '#3F3F46';
+                if (!voiceEnabled) {
+                  e.currentTarget.style.color = '#52525B';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                }
               }}
             >
-              <MicIcon size={11} />
-              {!isMobile && (voiceEnabled ? 'Voice On' : 'Voice')}
+              <MicIcon size={12} />
+              {voiceEnabled ? 'Voice On' : 'Voice'}
+            </button>
+          )}
+          {/* Voice Settings */}
+          {voiceEnabled && (
+            <button
+              onClick={() => setShowVoiceSettings(!showVoiceSettings)}
+              title="Voice settings"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 28, height: 28, borderRadius: 6,
+                border: 'none', cursor: 'pointer',
+                backgroundColor: showVoiceSettings ? 'rgba(249,115,22,0.12)' : 'transparent',
+                color: showVoiceSettings ? '#F97316' : '#3F3F46',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <SettingsIcon size={12} />
+            </button>
+          )}
+          {/* Stop Speaking */}
+          {embrisSpeaking && (
+            <button
+              onClick={handleStopSpeaking}
+              title="Stop Embris speaking"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                fontSize: 10, fontWeight: 500,
+                padding: '4px 8px', borderRadius: 6,
+                border: '1px solid rgba(239,68,68,0.3)',
+                cursor: 'pointer',
+                backgroundColor: 'rgba(239,68,68,0.1)',
+                color: '#EF4444',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <StopCircleIcon size={11} />
+              {!isMobile && 'Stop'}
             </button>
           )}
           {walletAddress && !isMobile && (
@@ -697,6 +859,48 @@ export default function Chat() {
         </div>
       </div>
 
+      {/* ── Voice Settings Panel ── */}
+      {voiceEnabled && showVoiceSettings && (
+        <div className="fade-in" style={{
+          padding: isMobile ? '12px 16px' : '12px 32px',
+          backgroundColor: '#111113',
+          borderBottom: '1px solid rgba(255,255,255,0.03)',
+          display: 'flex', flexDirection: isMobile ? 'column' : 'row',
+          gap: isMobile ? 12 : 24, alignItems: isMobile ? 'stretch' : 'center',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+            <label style={{ fontSize: 11, color: '#71717A', fontWeight: 500, minWidth: 40 }}>Speed</label>
+            <input
+              type="range"
+              min="0.5"
+              max="2.0"
+              step="0.1"
+              value={voiceRate}
+              onChange={(e) => handleRateChange(parseFloat(e.target.value))}
+              style={{ flex: 1, accentColor: '#F97316', height: 4 }}
+            />
+            <span style={{ fontSize: 11, color: '#52525B', fontFamily: "'JetBrains Mono', monospace", minWidth: 28 }}>
+              {voiceRate.toFixed(1)}×
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+            <label style={{ fontSize: 11, color: '#71717A', fontWeight: 500, minWidth: 40 }}>Pitch</label>
+            <input
+              type="range"
+              min="0.5"
+              max="2.0"
+              step="0.1"
+              value={voicePitchVal}
+              onChange={(e) => handlePitchChange(parseFloat(e.target.value))}
+              style={{ flex: 1, accentColor: '#F97316', height: 4 }}
+            />
+            <span style={{ fontSize: 11, color: '#52525B', fontFamily: "'JetBrains Mono', monospace", minWidth: 28 }}>
+              {voicePitchVal.toFixed(1)}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* ── Registration Banner ── */}
       {!registered && messages.length > 0 && (
         <RegistrationBanner onRegisterClick={() => setShowRegistrationModal(true)} />
@@ -733,6 +937,11 @@ export default function Chat() {
                   : 'Your AI companion for the Vaultfire Protocol — register on-chain to unlock my full potential'
                 }
               </p>
+              {voiceEnabled && (
+                <p style={{ fontSize: 12, color: '#F97316', marginTop: 8, opacity: 0.7 }}>
+                  Voice mode active — tap the mic to speak, I&apos;ll talk back
+                </p>
+              )}
             </div>
 
             {!registered && (
@@ -821,7 +1030,11 @@ export default function Chat() {
                 gap: 10, alignItems: 'flex-start',
               }}
             >
-              {msg.role === 'assistant' && <EmbrisFlame />}
+              {msg.role === 'assistant' && (
+                embrisSpeaking && msg.content && !msg.isStreaming
+                  ? <EmbrisFlameSpeaking />
+                  : <EmbrisFlame />
+              )}
 
               <div style={{
                 maxWidth: '85%',
@@ -844,20 +1057,22 @@ export default function Chat() {
                 )}
               </div>
 
-              {/* TTS speaker button */}
-              {msg.role === 'assistant' && voiceEnabled && ttsSupported && msg.content && !msg.isStreaming && (
+              {/* TTS speaker button — always show for assistant messages */}
+              {msg.role === 'assistant' && ttsSupported && msg.content && !msg.isStreaming && (
                 <button
                   onClick={() => handleSpeak(msg.content)}
-                  title="Read aloud"
+                  title={embrisSpeaking ? 'Stop speaking' : 'Read aloud'}
                   style={{
                     flexShrink: 0, width: 22, height: 22, borderRadius: 4,
                     border: 'none', background: 'transparent',
-                    color: '#3F3F46', cursor: 'pointer',
+                    color: voiceEnabled ? '#71717A' : '#3F3F46',
+                    cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     marginTop: 2, transition: 'color 0.15s ease',
+                    opacity: voiceEnabled ? 1 : 0.6,
                   }}
                   onMouseEnter={(e) => { e.currentTarget.style.color = '#F97316'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.color = '#3F3F46'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = voiceEnabled ? '#71717A' : '#3F3F46'; }}
                 >
                   <SpeakerIcon size={12} />
                 </button>
@@ -876,6 +1091,44 @@ export default function Chat() {
         backgroundColor: '#09090B',
       }}>
         <div style={{ maxWidth: 680, margin: '0 auto' }}>
+          {/* Voice mode active indicator */}
+          {voiceEnabled && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              marginBottom: 8,
+            }}>
+              {embrisSpeaking ? (
+                <>
+                  <VoiceWaveform />
+                  <span style={{ fontSize: 11, color: '#F97316', fontWeight: 500 }}>Embris is speaking...</span>
+                  <button
+                    onClick={handleStopSpeaking}
+                    style={{
+                      fontSize: 10, color: '#EF4444', background: 'none',
+                      border: 'none', cursor: 'pointer', fontWeight: 500,
+                      padding: '2px 6px',
+                    }}
+                  >
+                    Stop
+                  </button>
+                </>
+              ) : isListening ? (
+                <>
+                  <div style={{
+                    width: 6, height: 6, borderRadius: '50%',
+                    backgroundColor: '#EF4444',
+                    animation: 'pulse 1.5s ease-in-out infinite',
+                  }} />
+                  <span style={{ fontSize: 11, color: '#A1A1AA', fontWeight: 500 }}>Listening...</span>
+                </>
+              ) : isLoading ? (
+                <span style={{ fontSize: 11, color: '#52525B' }}>Embris is thinking...</span>
+              ) : (
+                <span style={{ fontSize: 11, color: '#3F3F46' }}>Tap mic to speak</span>
+              )}
+            </div>
+          )}
+
           <div style={{
             display: 'flex', gap: 10, alignItems: 'flex-end',
             backgroundColor: '#111113',
@@ -884,7 +1137,7 @@ export default function Chat() {
             boxShadow: inputFocused
               ? '0 0 0 1px rgba(255,255,255,0.07), 0 2px 12px rgba(0,0,0,0.3)'
               : isListening
-                ? '0 0 0 1px rgba(249,115,22,0.35)'
+                ? '0 0 0 1.5px rgba(249,115,22,0.4), 0 0 12px rgba(249,115,22,0.1)'
                 : '0 0 0 1px rgba(255,255,255,0.04)',
             transition: 'box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
           }}>
@@ -895,7 +1148,7 @@ export default function Chat() {
               onKeyDown={handleKeyDown}
               onFocus={() => setInputFocused(true)}
               onBlur={() => setInputFocused(false)}
-              placeholder={isListening ? 'Listening...' : 'Message Embris...'}
+              placeholder={isListening ? 'Listening...' : voiceEnabled ? 'Speak or type...' : 'Message Embris...'}
               disabled={isLoading}
               rows={1}
               style={{
@@ -912,22 +1165,23 @@ export default function Chat() {
               }}
             />
 
-            {/* Mic button */}
+            {/* Mic button — always visible in voice mode, prominent */}
             {voiceEnabled && sttSupported && (
               <button
                 onClick={toggleListening}
                 disabled={isLoading}
-                title={isListening ? 'Stop listening' : 'Start listening'}
+                title={isListening ? 'Stop listening' : embrisSpeaking ? 'Interrupt & speak' : 'Start listening'}
+                className={isListening ? 'voice-mic-active' : ''}
                 style={{
-                  width: 32, height: 32, borderRadius: 8, border: 'none',
+                  width: 36, height: 36, borderRadius: 10, border: 'none',
                   cursor: isLoading ? 'default' : 'pointer',
-                  backgroundColor: isListening ? '#F97316' : 'transparent',
-                  color: isListening ? '#09090B' : '#52525B',
+                  backgroundColor: isListening ? '#F97316' : 'rgba(249,115,22,0.1)',
+                  color: isListening ? '#09090B' : '#F97316',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'all 0.15s ease', flexShrink: 0,
                   position: 'relative',
                 }}>
-                <MicIcon size={14} />
+                <MicIcon size={16} />
                 {isListening && (
                   <span style={{
                     position: 'absolute', top: -2, right: -2,
@@ -978,7 +1232,7 @@ export default function Chat() {
           </div>
           {!isMobile && (
             <p style={{ fontSize: 11, color: '#27272A', marginTop: 8, textAlign: 'center', lineHeight: 1.5 }}>
-              Enter to send · Shift+Enter for new line{voiceEnabled ? ' · Click mic to speak' : ''}
+              Enter to send · Shift+Enter for new line{voiceEnabled ? ' · Click mic or tap to interrupt' : ''}
             </p>
           )}
         </div>

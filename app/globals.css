@@ -472,6 +472,68 @@ a:focus-visible {
   50% { height: 16px; }
 }
 
+/* Embris speaking pulse — flame glow */
+@keyframes embrisSpeakPulse {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.4); opacity: 0; }
+}
+
+.embris-speaking-flame {
+  animation: none;
+}
+
+/* Voice waveform bars */
+@keyframes voiceWaveBar {
+  0%, 100% { height: 4px; opacity: 0.5; }
+  50% { height: 14px; opacity: 1; }
+}
+
+.voice-wave-bar {
+  animation: voiceWaveBar 0.8s ease-in-out infinite;
+}
+
+.voice-wave-bar:nth-child(1) { animation-delay: 0s; }
+.voice-wave-bar:nth-child(2) { animation-delay: 0.1s; }
+.voice-wave-bar:nth-child(3) { animation-delay: 0.2s; }
+.voice-wave-bar:nth-child(4) { animation-delay: 0.3s; }
+.voice-wave-bar:nth-child(5) { animation-delay: 0.15s; }
+
+/* Active mic button glow */
+.voice-mic-active {
+  box-shadow: 0 0 0 3px rgba(249,115,22,0.2), 0 0 16px rgba(249,115,22,0.15);
+}
+
+/* Voice settings range slider */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px;
+  height: 4px;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #F97316;
+  cursor: pointer;
+  border: 2px solid #09090B;
+  box-shadow: 0 0 4px rgba(249,115,22,0.3);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #F97316;
+  cursor: pointer;
+  border: 2px solid #09090B;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    ONBOARDING MODAL — Slide animation
    ═══════════════════════════════════════════════════════════════════════════ */
