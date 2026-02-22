@@ -202,7 +202,12 @@ export default function WalletScreen() {
   const [tokenBalances, setTokenBalances] = useState<TokenBalance[]>([]);
   const [customTokens, setCustomTokens] = useState<TokenInfo[]>([]);
   const [prices, setPrices] = useState<Record<string, number>>({});
-  const [tokenLogos, setTokenLogos] = useState<Record<string, string>>({});
+  // CRITICAL FIX: Logo cache stored in useRef (NOT useState) to prevent infinite re-renders
+  const logoCache = useRef<Record<string, string>>({});
+  const [logoVersion, setLogoVersion] = useState(0);
+  const logoFetchInProgress = useRef(false);
+  // Computed tokenLogos from ref for rendering
+  const tokenLogos = logoCache.current; // eslint-disable-line @typescript-eslint/no-unused-vars
   const [refreshing, setRefreshing] = useState(false);
   const [loadingAssets, setLoadingAssets] = useState(true);
 
@@ -297,27 +302,29 @@ export default function WalletScreen() {
       const ownedTokens = erc20Results.filter((t) => t.balanceRaw !== "0" && parseFloat(t.balanceFormatted) > 0);
       setTokenBalances(ownedTokens);
 
-      // Fetch logos for tokens that have coingeckoId
-      const allTokensWithId = [...nativeResults, ...ownedTokens].filter(
-        (t: any) => t.coingeckoId
-      );
-      const logos: Record<string, string> = {};
-      for (const t of allTokensWithId) {
-        const id = (t as any).coingeckoId;
-        if (id && !tokenLogos[id]) {
-          const url = await fetchTokenLogo(id);
-          if (url) logos[id] = url;
+      // Fetch logos for tokens that have coingeckoId (using ref to avoid re-render cascade)
+      if (!logoFetchInProgress.current) {
+        logoFetchInProgress.current = true;
+        const allTokensWithId = [...nativeResults, ...ownedTokens].filter(
+          (t: any) => t.coingeckoId
+        );
+        let newLogos = 0;
+        for (const t of allTokensWithId) {
+          const id = (t as any).coingeckoId;
+          if (id && !logoCache.current[id]) {
+            const url = await fetchTokenLogo(id);
+            if (url) { logoCache.current[id] = url; newLogos++; }
+          }
         }
-      }
-      if (Object.keys(logos).length > 0) {
-        setTokenLogos((prev) => ({ ...prev, ...logos }));
+        logoFetchInProgress.current = false;
+        if (newLogos > 0) setLogoVersion(v => v + 1); // ONE re-render when all logos ready
       }
     } catch {
       // Keep existing data on error
     } finally {
       setLoadingAssets(false);
     }
-  }, [tokenLogos]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onRefresh = useCallback(async () => {
     if (!address) return;
@@ -386,7 +393,8 @@ export default function WalletScreen() {
     // Sort: highest USD value first
     items.sort((a, b) => b.usdValue - a.usdValue);
     return items;
-  }, [balances, tokenBalances, prices, tokenLogos]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [balances, tokenBalances, prices, logoVersion]); // logoVersion triggers re-render when logos are ready
 
   const totalUsdValue = useMemo(() => {
     return assets.reduce((sum, a) => sum + a.usdValue, 0);
