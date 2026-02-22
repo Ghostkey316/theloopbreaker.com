@@ -8,7 +8,8 @@ async function callGemini(
   apiKey: string,
   messages: Array<{ role: string; content: string }>,
   model: string,
-  stream: boolean
+  stream: boolean,
+  maxTokens: number
 ) {
   return fetch(`${GEMINI_BASE_URL}/chat/completions`, {
     method: 'POST',
@@ -19,7 +20,7 @@ async function callGemini(
     body: JSON.stringify({
       model,
       messages,
-      max_tokens: 8192,
+      max_tokens: maxTokens,
       stream,
     }),
   });
@@ -27,7 +28,12 @@ async function callGemini(
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages } = await req.json();
+    const body = await req.json();
+    const { messages, stream: wantStream, max_tokens: maxTokens } = body;
+
+    // Default to non-streaming (the client sends stream: false)
+    const useStream = wantStream === true;
+    const tokens = typeof maxTokens === 'number' ? maxTokens : 8192;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(
@@ -44,14 +50,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Try primary model (gemini-2.5-flash), fall back to gemini-2.0-flash
-    let response = await callGemini(apiKey, messages, GEMINI_MODEL, true);
+    // Try primary model, fall back to secondary
+    let response = await callGemini(apiKey, messages, GEMINI_MODEL, useStream, tokens);
 
     if (!response.ok) {
       console.warn(
         `Primary model ${GEMINI_MODEL} failed (${response.status}), trying fallback ${FALLBACK_MODEL}`
       );
-      response = await callGemini(apiKey, messages, FALLBACK_MODEL, true);
+      response = await callGemini(apiKey, messages, FALLBACK_MODEL, useStream, tokens);
     }
 
     if (!response.ok) {
@@ -64,7 +70,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Stream the SSE response back to the client
+    // ── NON-STREAMING MODE ──
+    // Client sends stream: false, expects standard JSON:
+    // { choices: [{ message: { content: "..." } }] }
+    if (!useStream) {
+      const data = await response.json();
+      return new Response(JSON.stringify(data), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // ── STREAMING MODE ──
+    // Proxy SSE chunks from Gemini back to the client
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
 
