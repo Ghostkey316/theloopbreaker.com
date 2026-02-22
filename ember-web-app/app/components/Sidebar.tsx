@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-type Section = 'home' | 'chat' | 'wallet' | 'verify' | 'bridge' | 'dashboard';
+type Section = 'home' | 'chat' | 'wallet' | 'verify' | 'bridge' | 'dashboard' | 'vns' | 'agent-hub' | 'marketplace' | 'ns3';
 
 interface SidebarProps {
   activeSection: Section;
@@ -16,8 +16,12 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
     { id: 'home', label: 'Home', icon: '🏠' },
     { id: 'chat', label: 'Ember Chat', icon: '🔥' },
     { id: 'wallet', label: 'Wallet', icon: '💼' },
-    { id: 'verify', label: 'Trust Verification', icon: '✓' },
-    { id: 'bridge', label: 'Cross-Chain Bridge', icon: '🌉' },
+    { id: 'vns', label: 'VNS Identity', icon: '🌐' },
+    { id: 'agent-hub', label: 'Agent Hub', icon: '🤖' },
+    { id: 'marketplace', label: 'Marketplace', icon: '🏪' },
+    { id: 'ns3', label: 'ZK Proofs', icon: '🔐' },
+    { id: 'verify', label: 'Verification', icon: '✓' },
+    { id: 'bridge', label: 'Cross-Chain', icon: '🌉' },
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
   ];
 

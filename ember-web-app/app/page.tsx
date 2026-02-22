@@ -8,8 +8,12 @@ import Wallet from './sections/Wallet';
 import Verify from './sections/Verify';
 import Bridge from './sections/Bridge';
 import Dashboard from './sections/Dashboard';
+import VNS from './sections/VNS';
+import AgentHub from './sections/AgentHub';
+import AgentMarketplace from './sections/AgentMarketplace';
+import NS3 from './sections/NS3';
 
-type Section = 'home' | 'chat' | 'wallet' | 'verify' | 'bridge' | 'dashboard';
+type Section = 'home' | 'chat' | 'wallet' | 'verify' | 'bridge' | 'dashboard' | 'vns' | 'agent-hub' | 'marketplace' | 'ns3';
 
 export default function Page() {
   const [activeSection, setActiveSection] = useState<Section>('home');
@@ -22,6 +26,14 @@ export default function Page() {
         return <Chat />;
       case 'wallet':
         return <Wallet />;
+      case 'vns':
+        return <VNS />;
+      case 'agent-hub':
+        return <AgentHub />;
+      case 'marketplace':
+        return <AgentMarketplace />;
+      case 'ns3':
+        return <NS3 />;
       case 'verify':
         return <Verify />;
       case 'bridge':

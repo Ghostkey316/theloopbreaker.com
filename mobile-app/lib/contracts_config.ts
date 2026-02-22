@@ -11,6 +11,10 @@ export const AVAX_CHAIN_ID = 43114;
 export const AVAX_RPC_URL = "https://api.avax.network/ext/bc/C/rpc";
 export const SNOWTRACE_URL = "https://snowscan.xyz";
 
+export const ETH_CHAIN_ID = 1;
+export const ETH_RPC_URL = "https://eth.llamarpc.com";
+export const ETHERSCAN_URL = "https://etherscan.io";
+
 export const CONTRACTS = {
   PrivacyGuarantees: "0xBdB6c89f5cb86f4d44F7E01d9393b29D83e3DB55",
   MissionEnforcement: "0x38165D2D7a8584985CCa5640f4b32b1f3347CC83",
@@ -46,8 +50,32 @@ export const AVAX_CONTRACTS = {
   MultisigGovernance: "0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1",
 } as const;
 
+/** Ethereum Mainnet contract addresses (chain ID 1) */
+export const ETH_CONTRACTS = {
+  PrivacyGuarantees: "0xE1D52bF7A842B207B8C48eAE801f9d97A3C4D709",
+  ERC8004IdentityRegistry: "0xaCB59e0f0eA47B25b24390B71b877928E5842630",
+  AIAccountabilityBondsV2: "0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5",
+  ERC8004ReputationRegistry: "0x37679B1dCfabE6eA6b8408626815A1426bE2D717",
+  ERC8004ValidationRegistry: "0x83b2D1a8e383c4239dE66b6614176636618c1c0A",
+  VaultfireERC8004Adapter: "0xEF022Bdf55940491d4efeBDE61Ffa3f3fF81b192",
+  VaultfireToken: "0x20E8CDFae485F0E8E90D24c9E071957A53eE0cB1",
+  AntiSurveillance: "0x964562f712c5690465B0AA2F8fA16d9dDAc6eCdf",
+  BeliefAttestationVerifier: "0x38165D2D7a8584985CCa5640f4b32b1f3347CC83",
+  MultisigGovernance: "0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C",
+  VaultfireTeleporterBridge: "0xBdB6c89f5cb86f4d44F7E01d9393b29D83e3DB55",
+  GovernanceTimelock: "0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5",
+} as const;
+
 export function snowtraceAddress(addr: string) {
   return `${SNOWTRACE_URL}/address/${addr}`;
+}
+
+export function etherscanAddress(addr: string) {
+  return `${ETHERSCAN_URL}/address/${addr}`;
+}
+
+export function etherscanTx(hash: string) {
+  return `${ETHERSCAN_URL}/tx/${hash}`;
 }
 
 export type ContractName = keyof typeof CONTRACTS;
