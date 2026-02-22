@@ -22,7 +22,7 @@ import {
 type TokenPrices = Record<string, number>;
 interface PriceCache { prices: TokenPrices; fetchedAt: number }
 type WalletView = "none" | "created" | "import-mnemonic" | "import-pk";
-type ModalView = "none" | "send" | "receive" | "add-token" | "send-confirm" | "send-success";
+type ModalView = "none" | "send" | "receive" | "add-token" | "send-confirm" | "send-success" | "security";
 
 interface SendState {
   token: AssetItem | null;
@@ -142,9 +142,6 @@ function ArrowLeftIcon({ size = 14 }: { size?: number }) {
 }
 function RefreshIcon({ size = 14 }: { size?: number }) {
   return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>);
-}
-function EyeIcon({ size = 12 }: { size?: number }) {
-  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>);
 }
 function EyeOffIcon({ size = 12 }: { size?: number }) {
   return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>);
@@ -347,7 +344,6 @@ export default function Wallet() {
   const [loadingBals, setLoadingBals] = useState(false);
   const [importInput, setImportInput] = useState("");
   const [importError, setImportError] = useState("");
-  const [showMnemonic, setShowMnemonic] = useState(false);
   const [copied, setCopied] = useState("");
   const [isMobile, setIsMobile] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -365,6 +361,10 @@ export default function Wallet() {
     token: null, toAddress: "", amount: "", gas: null,
     gasLoading: false, sending: false, error: "", txHash: "", txExplorerUrl: "",
   });
+
+  // Security state
+  const [securityRevealInput, setSecurityRevealInput] = useState("");
+  const [securityRevealed, setSecurityRevealed] = useState(false);
 
   // Add custom token state
   const [addTokenChain, setAddTokenChain] = useState<SupportedChain>("base");
@@ -844,11 +844,25 @@ export default function Wallet() {
           <p style={{ fontSize: 13, color: "#52525B", fontWeight: 500 }}>Total Portfolio Value</p>
         </div>
 
+        {/* Vaultfire Protocol badge */}
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            padding: "4px 12px", borderRadius: 20,
+            backgroundColor: "rgba(249,115,22,0.06)",
+            border: "1px solid rgba(249,115,22,0.15)",
+          }}>
+            <svg width={10} height={10} viewBox="0 0 24 24" fill="#F97316"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+            <span style={{ fontSize: 11, color: "#F97316", fontWeight: 600, letterSpacing: "0.02em" }}>Powered by Vaultfire Protocol</span>
+          </div>
+        </div>
+
         {/* Action Buttons — Coinbase-style circular */}
         <div style={{ display: "flex", justifyContent: "center", gap: isMobile ? 24 : 32 }}>
           <ActionBtn icon={<SendIcon size={22} />} label="Send" onClick={() => openSend()} color="#F97316" />
           <ActionBtn icon={<ReceiveIcon size={22} />} label="Receive" onClick={() => setModalView("receive")} color="#22C55E" />
           <ActionBtn icon={<RefreshIcon size={18} />} label="Refresh" onClick={handleRefresh} color="#71717A" />
+          <ActionBtn icon={<ShieldIcon size={18} />} label="Settings" onClick={() => { setSecurityRevealInput(""); setSecurityRevealed(false); setModalView("security"); }} color="#A78BFA" />
         </div>
       </div>
 
@@ -937,42 +951,114 @@ export default function Wallet() {
         )}
       </div>
 
-      {/* ── Wallet Management ── */}
-      <div style={{ padding: `32px ${px} 0` }}>
-        <button onClick={() => setShowMnemonic(!showMnemonic)} style={{
-          display: "flex", alignItems: "center", gap: 8,
-          fontSize: 13, color: "#F97316", background: "none",
-          border: "1px solid rgba(249,115,22,0.2)", cursor: "pointer", fontWeight: 600,
-          padding: "8px 14px", borderRadius: 8, marginBottom: 12, transition: "all 0.15s ease",
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(249,115,22,0.06)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
-        >
-          {showMnemonic ? <EyeOffIcon size={12} /> : <EyeIcon size={12} />}
-          {showMnemonic ? "Hide Seed Phrase" : "Show Seed Phrase"}
-        </button>
-        {showMnemonic && walletData?.mnemonic && (
-          <div style={{ padding: "12px 14px", backgroundColor: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.08)", borderRadius: 12, marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <p style={{ fontSize: 12, color: "#A1A1AA", ...mono, wordBreak: "break-all", flex: 1 }}>{walletData.mnemonic}</p>
-            <button onClick={() => copyToClipboard(walletData.mnemonic || "", "mnemonic")} style={{ background: "none", border: "none", cursor: "pointer", color: copied === "mnemonic" ? "#22C55E" : "#52525B", padding: 0, display: "flex", marginLeft: 8, flexShrink: 0 }}>
-              {copied === "mnemonic" ? <CheckIcon size={11} /> : <CopyIcon size={11} />}
-            </button>
-          </div>
-        )}
-        <button onClick={handleDelete} style={{
-          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-          padding: "10px 14px", width: "100%",
-          backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.12)",
-          borderRadius: 10, color: "#EF4444", fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.15s ease",
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.12)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.06)"; }}
-        >
-          <TrashIcon size={12} /> Delete Wallet
-        </button>
+      {/* ── Alpha Notice ── */}
+      <div style={{ padding: `24px ${px} 0` }}>
+        <div style={{ padding: "12px 16px", backgroundColor: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.1)", borderRadius: 12, display: "flex", alignItems: "flex-start", gap: 10 }}>
+          <div style={{ color: "#F97316", flexShrink: 0, marginTop: 1 }}><AlertTriangleIcon size={13} /></div>
+          <p style={{ fontSize: 11, color: "#71717A", lineHeight: 1.6 }}>
+            <strong style={{ color: "#A1A1AA" }}>Alpha Software.</strong> Store funds at your own risk. No recovery possible — you are solely responsible for your seed phrase and private keys. Embris and Vaultfire Protocol are not liable for any losses.
+          </p>
+        </div>
       </div>
 
       {/* ── MODALS ── */}
+
+      {/* Security Modal */}
+      {modalView === "security" && (
+        <Modal onClose={() => { setModalView("none"); setSecurityRevealed(false); setSecurityRevealInput(""); }} title="Security">
+          <div style={{ padding: "24px 24px 32px", display: "flex", flexDirection: "column", gap: 20 }}>
+            {/* Recovery Phrase Section */}
+            <div style={{ padding: "20px", backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <ShieldIcon size={16} />
+                </div>
+                <div>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.01em" }}>Recovery Phrase</p>
+                  <p style={{ fontSize: 11, color: "#52525B" }}>Your 12-word seed phrase</p>
+                </div>
+              </div>
+              {!securityRevealed ? (
+                <div>
+                  <div style={{ padding: "12px 14px", backgroundColor: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.1)", borderRadius: 10, marginBottom: 14 }}>
+                    <p style={{ fontSize: 11, color: "#EF4444", lineHeight: 1.6 }}>
+                      <strong>Never share your seed phrase.</strong> Anyone with this phrase has full access to your wallet. Vaultfire will never ask for it.
+                    </p>
+                  </div>
+                  <p style={{ fontSize: 12, color: "#71717A", marginBottom: 8 }}>Type <strong style={{ color: "#A1A1AA" }}>reveal</strong> to unlock:</p>
+                  <input
+                    type="text"
+                    value={securityRevealInput}
+                    onChange={(e) => setSecurityRevealInput(e.target.value)}
+                    placeholder='Type "reveal" to continue'
+                    style={{
+                      width: "100%", padding: "12px 14px",
+                      backgroundColor: "rgba(255,255,255,0.03)",
+                      border: securityRevealInput === "reveal" ? "1px solid rgba(167,139,250,0.4)" : "1px solid rgba(255,255,255,0.07)",
+                      borderRadius: 10, color: "#F4F4F5", fontSize: 14,
+                      outline: "none", boxSizing: "border-box", marginBottom: 10,
+                    }}
+                  />
+                  <button
+                    onClick={() => { if (securityRevealInput === "reveal") setSecurityRevealed(true); }}
+                    disabled={securityRevealInput !== "reveal"}
+                    style={{
+                      width: "100%", padding: "12px",
+                      background: securityRevealInput === "reveal" ? "rgba(167,139,250,0.15)" : "rgba(255,255,255,0.02)",
+                      border: securityRevealInput === "reveal" ? "1px solid rgba(167,139,250,0.3)" : "1px solid rgba(255,255,255,0.05)",
+                      borderRadius: 10, color: securityRevealInput === "reveal" ? "#A78BFA" : "#3F3F46",
+                      fontSize: 13, fontWeight: 600, cursor: securityRevealInput === "reveal" ? "pointer" : "default",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    Reveal Seed Phrase
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ padding: "14px 16px", backgroundColor: "rgba(167,139,250,0.04)", border: "1px solid rgba(167,139,250,0.12)", borderRadius: 10, marginBottom: 10 }}>
+                    <p style={{ fontSize: 12, color: "#C4B5FD", ...mono, wordBreak: "break-all", lineHeight: 1.8 }}>{walletData?.mnemonic}</p>
+                  </div>
+                  <button onClick={() => copyToClipboard(walletData?.mnemonic || "", "sec-mnemonic")} style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                    width: "100%", padding: "10px",
+                    backgroundColor: copied === "sec-mnemonic" ? "rgba(34,197,94,0.08)" : "rgba(255,255,255,0.03)",
+                    border: copied === "sec-mnemonic" ? "1px solid rgba(34,197,94,0.2)" : "1px solid rgba(255,255,255,0.06)",
+                    borderRadius: 8, color: copied === "sec-mnemonic" ? "#22C55E" : "#71717A",
+                    fontSize: 12, fontWeight: 600, cursor: "pointer",
+                  }}>
+                    {copied === "sec-mnemonic" ? <><CheckIcon size={11} /> Copied!</> : <><CopyIcon size={11} /> Copy Phrase</>}
+                  </button>
+                  <button onClick={() => setSecurityRevealed(false)} style={{
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    width: "100%", padding: "8px", marginTop: 6,
+                    backgroundColor: "transparent", border: "none",
+                    color: "#52525B", fontSize: 11, cursor: "pointer",
+                  }}>
+                    <EyeOffIcon size={10} /> &nbsp;Hide
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Danger Zone */}
+            <div style={{ padding: "16px", backgroundColor: "rgba(239,68,68,0.03)", border: "1px solid rgba(239,68,68,0.1)", borderRadius: 16 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: "#EF4444", letterSpacing: "0.08em", marginBottom: 10, textTransform: "uppercase" }}>Danger Zone</p>
+              <button onClick={() => { setModalView("none"); handleDelete(); }} style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                padding: "12px", width: "100%",
+                backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)",
+                borderRadius: 10, color: "#EF4444", fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.15s ease",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.12)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.06)"; }}
+              >
+                <TrashIcon size={12} /> Delete Wallet
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {/* Receive Modal */}
       {modalView === "receive" && (
@@ -1013,6 +1099,11 @@ export default function Wallet() {
             <div>
               <label style={{ fontSize: 12, color: "#71717A", fontWeight: 500, display: "block", marginBottom: 8 }}>Asset</label>
               <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 180, overflowY: "auto", borderRadius: 14, border: "1px solid rgba(255,255,255,0.06)", padding: 4 }}>
+                {assets.length === 0 && (
+                  <div style={{ padding: "20px", textAlign: "center" }}>
+                    <p style={{ fontSize: 13, color: "#52525B" }}>No assets to send. Fund your wallet first.</p>
+                  </div>
+                )}
                 {assets.map((a, i) => (
                   <button key={i} onClick={() => setSendState((s) => ({ ...s, token: a, gas: null }))} style={{
                     display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",

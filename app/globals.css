@@ -129,25 +129,13 @@ main, section, div { max-width: 100%; }
    PAGE TRANSITION SYSTEM
    ═══════════════════════════════════════════════════════════════════════════ */
 @keyframes pageFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes pageFadeOut {
-  from {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 .page-enter {
@@ -227,8 +215,8 @@ main, section, div { max-width: 100%; }
 .typing-dot:nth-child(3) { animation-delay: 0.4s; }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(3px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 .fade-in { animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
@@ -250,8 +238,8 @@ main, section, div { max-width: 100%; }
 
 /* Typing indicator fade-in */
 @keyframes typingFadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 .typing-indicator-enter {
   animation: typingFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -437,8 +425,8 @@ a:focus-visible {
    MODAL ANIMATION
    ═══════════════════════════════════════════════════════════════════════════ */
 @keyframes modalIn {
-  from { opacity: 0; transform: translateY(8px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 .modal-in { animation: modalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
