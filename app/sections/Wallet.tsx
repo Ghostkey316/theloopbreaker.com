@@ -7,10 +7,9 @@ import {
 } from "../lib/wallet";
 import { getAllBalances, type ChainBalance } from "../lib/blockchain";
 import {
-  fetchAllTokenBalances, fetchTokenInfo,
-  fetchTokenBalance, parseTokenAmount,
-  ALL_COINGECKO_IDS,
-  type TokenInfo, type TokenBalance, type SupportedChain,
+  fetchAllTokenBalances, fetchTokenInfo, fetchTokenBalance,
+  fetchTokenLogo, lookupTokenOnCoinGecko, parseTokenAmount,
+  ALL_COINGECKO_IDS, type TokenInfo, type TokenBalance, type SupportedChain,
 } from "../lib/erc20";
 import {
   TX_CHAINS, sendNativeToken, sendERC20Token,
@@ -22,7 +21,6 @@ import {
 
 type TokenPrices = Record<string, number>;
 interface PriceCache { prices: TokenPrices; fetchedAt: number }
-
 type WalletView = "none" | "created" | "import-mnemonic" | "import-pk";
 type ModalView = "none" | "send" | "receive" | "add-token" | "send-confirm" | "send-success";
 
@@ -52,6 +50,7 @@ interface AssetItem {
   pricePerToken: number;
   tokenAddress?: string;
   coingeckoId?: string;
+  logoUrl?: string;
   logoColor?: string;
   chainName: string;
   error?: string;
@@ -62,7 +61,6 @@ interface AssetItem {
 const PRICE_TTL = 60_000;
 let _priceCache: PriceCache | null = null;
 
-// Native token CoinGecko IDs
 const NATIVE_PRICE_IDS = ["ethereum", "avalanche-2"];
 
 async function fetchPrices(): Promise<TokenPrices> {
@@ -205,18 +203,31 @@ function TokenLetter({ symbol, color, size = 40 }: { symbol: string; color: stri
 }
 
 function TokenAvatar({ item, size = 40 }: { item: AssetItem; size?: number }) {
+  // Show real logo if available
+  if (item.logoUrl) {
+    return (
+      <img
+        src={item.logoUrl}
+        alt={item.symbol}
+        style={{
+          width: size, height: size, borderRadius: "50%",
+          objectFit: "cover", flexShrink: 0,
+        }}
+        onError={(e) => {
+          e.currentTarget.style.display = "none";
+        }}
+      />
+    );
+  }
+
+  // Native token icons
   if (item.type === "native") {
     if (item.chain === "avalanche") return <AvaxIcon size={size} />;
     if (item.chain === "base") return <BaseIcon size={size} />;
     return <EthIcon size={size} />;
   }
-  // Known token icons
-  const sym = item.symbol.toUpperCase();
-  if (sym === "USDC") return <TokenLetter symbol="USDC" color="#2775CA" size={size} />;
-  if (sym === "USDT") return <TokenLetter symbol="USDT" color="#26A17B" size={size} />;
-  if (sym === "DAI") return <TokenLetter symbol="DAI" color="#F5AC37" size={size} />;
-  if (sym === "WETH") return <EthIcon size={size} />;
-  if (sym === "WAVAX") return <AvaxIcon size={size} />;
+
+  // Fallback to colored letter
   return <TokenLetter symbol={item.symbol} color={item.logoColor || "#71717A"} size={size} />;
 }
 
@@ -295,49 +306,35 @@ function QRCodeDisplay({ value }: { value: string }) {
       });
     });
   }, [value]);
+  return <canvas ref={canvasRef} />;
+}
+
+// ─── Action Button ────────────────────────────────────────────────────────────
+
+function ActionBtn({ icon, label, onClick, color }: { icon: React.ReactNode; label: string; onClick: () => void; color: string }) {
   return (
-    <div style={{
-      padding: 16, borderRadius: 20,
-      backgroundColor: "#0F0F0F",
-      border: "1px solid rgba(255,255,255,0.06)",
-      display: "inline-block",
-    }}>
-      <canvas ref={canvasRef} />
-    </div>
+    <button onClick={onClick} style={{
+      display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+      width: 72, height: 72, borderRadius: 20,
+      backgroundColor: `${color}15`,
+      border: `1.5px solid ${color}30`,
+      cursor: "pointer", transition: "all 0.15s ease",
+    }}
+    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = `${color}25`; }}
+    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = `${color}15`; }}
+    >
+      <div style={{ color }}>{icon}</div>
+      <span style={{ fontSize: 11, fontWeight: 600, color }}>{label}</span>
+    </button>
   );
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const mono: React.CSSProperties = { fontFamily: "'JetBrains Mono', 'SF Mono', 'Fira Code', monospace" };
+const mono = { fontFamily: "'Courier New', monospace" };
 
 function isValidAddress(addr: string): boolean {
-  return /^0x[0-9a-fA-F]{40}$/.test(addr);
-}
-
-// ─── Coinbase-style Action Button ─────────────────────────────────────────────
-
-function ActionBtn({ icon, label, onClick, color }: { icon: React.ReactNode; label: string; onClick: () => void; color: string }) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <button onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-      style={{
-        display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
-        background: "none", border: "none", cursor: "pointer", padding: "4px 16px",
-        transition: "transform 0.15s ease", transform: hovered ? "translateY(-2px)" : "none",
-      }}>
-      <div style={{
-        width: 56, height: 56, borderRadius: "50%",
-        backgroundColor: hovered ? `${color}25` : `${color}15`,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        color, transition: "all 0.2s ease",
-        boxShadow: hovered ? `0 8px 24px ${color}20` : "none",
-      }}>
-        {icon}
-      </div>
-      <span style={{ fontSize: 12, fontWeight: 600, color: "#A1A1AA", letterSpacing: "-0.01em" }}>{label}</span>
-    </button>
-  );
+  return /^0x[a-fA-F0-9]{40}$/.test(addr);
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -360,6 +357,7 @@ export default function Wallet() {
   const [pricesLoading, setPricesLoading] = useState(false);
   const [modalView, setModalView] = useState<ModalView>("none");
   const [customTokens, setCustomTokens] = useState<TokenInfo[]>([]);
+  const [tokenLogos, setTokenLogos] = useState<Record<string, string | null>>({});
   const priceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Send state
@@ -410,6 +408,24 @@ export default function Wallet() {
     return () => { if (priceIntervalRef.current) clearInterval(priceIntervalRef.current); };
   }, [view]);
 
+  // Fetch logos for all tokens
+  useEffect(() => {
+    const fetchLogos = async () => {
+      const logos: Record<string, string | null> = {};
+      const allTokens = [...tokenBalances];
+      for (const token of allTokens) {
+        if (token.coingeckoId && !tokenLogos[token.coingeckoId]) {
+          const url = await fetchTokenLogo(token.coingeckoId);
+          logos[token.coingeckoId] = url;
+        }
+      }
+      if (Object.keys(logos).length > 0) {
+        setTokenLogos((prev) => ({ ...prev, ...logos }));
+      }
+    };
+    fetchLogos();
+  }, [tokenBalances, tokenLogos]);
+
   const loadAllBalances = async (address: string) => {
     setLoadingBals(true);
     const customs = loadCustomTokens();
@@ -439,41 +455,46 @@ export default function Wallet() {
     setPricesLoading(false);
   }, [walletData]);
 
-  // Build unified asset list
+  // Build unified asset list — ONLY SHOW OWNED TOKENS (balance > 0)
   const buildAssets = useCallback((): AssetItem[] => {
     const items: AssetItem[] = [];
 
-    // Native tokens from blockchain.ts (Ethereum, Base, Avalanche)
+    // Native tokens
     for (const bal of nativeBalances) {
+      const amount = parseFloat(bal.balanceFormatted);
+      if (amount <= 0) continue; // Skip zero balance
+
       const chain: SupportedChain = bal.chain.toLowerCase().includes("avalanche") ? "avalanche"
         : bal.chain.toLowerCase().includes("base") ? "base" : "ethereum";
       const chainCfg = TX_CHAINS[chain];
-      // Both Ethereum and Base use ETH — price is "ethereum"
-      // Avalanche uses AVAX — price is "avalanche-2"
       const priceId = chain === "avalanche" ? "avalanche-2" : "ethereum";
       const pricePerToken = getTokenPrice(prices, priceId);
-      const amount = parseFloat(bal.balanceFormatted);
+
       items.push({
         type: "native",
         chain,
         chainConfig: chainCfg,
-        symbol: bal.symbol, // ETH on Ethereum/Base, AVAX on Avalanche
+        symbol: bal.symbol,
         name: `${bal.symbol} on ${bal.chain}`,
         chainName: bal.chain,
         decimals: 18,
         balanceFormatted: bal.balanceFormatted,
         balanceRaw: bal.balance,
-        usdValue: isNaN(amount) ? 0 : amount * pricePerToken,
+        usdValue: amount * pricePerToken,
         pricePerToken,
         error: bal.error,
       });
     }
 
-    // ERC-20 tokens (featured + custom)
+    // ERC-20 tokens — ONLY SHOW IF BALANCE > 0
     for (const tb of tokenBalances) {
-      const pricePerToken = getTokenPrice(prices, tb.coingeckoId);
       const amount = parseFloat(tb.balanceFormatted);
+      if (amount <= 0) continue; // Skip zero balance
+
+      const pricePerToken = getTokenPrice(prices, tb.coingeckoId);
       const chainLabel = { ethereum: "Ethereum", base: "Base", avalanche: "Avalanche" }[tb.chain];
+      const logoUrl = tb.coingeckoId ? tokenLogos[tb.coingeckoId] : undefined;
+
       items.push({
         type: "erc20",
         chain: tb.chain,
@@ -484,19 +505,20 @@ export default function Wallet() {
         decimals: tb.decimals,
         balanceFormatted: tb.balanceFormatted,
         balanceRaw: tb.balanceRaw,
-        usdValue: isNaN(amount) ? 0 : amount * pricePerToken,
+        usdValue: amount * pricePerToken,
         pricePerToken,
         tokenAddress: tb.address,
         coingeckoId: tb.coingeckoId,
+        logoUrl: logoUrl || undefined,
         logoColor: tb.logoColor,
       });
     }
 
-    // Sort: native first (by chain order), then ERC-20 by USD value desc
+    // Sort: native first, then ERC-20 by USD value desc
     const nativeItems = items.filter((a) => a.type === "native");
     const erc20Items = items.filter((a) => a.type === "erc20").sort((a, b) => b.usdValue - a.usdValue);
     return [...nativeItems, ...erc20Items];
-  }, [nativeBalances, tokenBalances, prices]);
+  }, [nativeBalances, tokenBalances, prices, tokenLogos]);
 
   const assets = buildAssets();
   const totalUsd = assets.reduce((sum, a) => sum + a.usdValue, 0);
@@ -617,6 +639,23 @@ export default function Wallet() {
       setAddTokenError("Invalid contract address"); return;
     }
     setAddTokenLoading(true); setAddTokenError(""); setAddTokenInfo(null);
+    
+    // Try CoinGecko lookup first
+    const cgResult = await lookupTokenOnCoinGecko(addTokenChain, addTokenAddress);
+    if (cgResult) {
+      const info = await fetchTokenInfo(addTokenChain, addTokenAddress);
+      if (info) {
+        setAddTokenInfo({
+          ...info,
+          coingeckoId: cgResult.coingeckoId,
+          logoUrl: cgResult.logoUrl,
+        });
+        setAddTokenLoading(false);
+        return;
+      }
+    }
+
+    // Fallback: just fetch from chain
     const info = await fetchTokenInfo(addTokenChain, addTokenAddress);
     if (!info) {
       setAddTokenError("Token not found on this chain. Check the address and network.");
@@ -650,56 +689,33 @@ export default function Wallet() {
           <div style={{
             width: 72, height: 72, borderRadius: 24,
             background: "linear-gradient(135deg, rgba(249,115,22,0.15), rgba(249,115,22,0.04))",
-            border: "1px solid rgba(249,115,22,0.12)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            margin: "0 auto 24px",
-            boxShadow: "0 8px 32px rgba(249,115,22,0.08)",
+            marginBottom: 20, marginLeft: "auto", marginRight: "auto",
           }}>
             <ShieldIcon size={32} />
           </div>
-          <h1 style={{ fontSize: isMobile ? 28 : 34, fontWeight: 700, color: "#F4F4F5", marginBottom: 10, letterSpacing: "-0.04em", lineHeight: 1.15 }}>Vaultfire Wallet</h1>
-          <p style={{ fontSize: 14, color: "#71717A", lineHeight: 1.75, maxWidth: 340, margin: "0 auto" }}>
-            Self-custodial multi-chain wallet. ETH, AVAX, and any ERC-20 token on Ethereum, Base, and Avalanche.
+          <h1 style={{ fontSize: 32, fontWeight: 800, color: "#F4F4F5", marginBottom: 8, letterSpacing: "-0.04em" }}>Vaultfire Wallet</h1>
+          <p style={{ fontSize: 14, color: "#71717A", lineHeight: 1.7, marginBottom: 28 }}>
+            Secure multi-chain wallet for Ethereum, Base, and Avalanche. Full control of your assets.
           </p>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 32 }}>
-          <button onClick={handleCreate} disabled={creating} style={{
-            display: "flex", alignItems: "center", gap: 14, padding: "18px 20px", width: "100%",
-            background: creating ? "rgba(255,255,255,0.02)" : "linear-gradient(135deg, #F97316, #EA580C)",
-            border: "none", borderRadius: 16, color: creating ? "#3F3F46" : "#FFFFFF",
-            fontSize: 15, fontWeight: 600, cursor: creating ? "default" : "pointer",
-            transition: "all 0.2s ease", boxShadow: creating ? "none" : "0 4px 24px rgba(249,115,22,0.25)",
-          }}>
-            {creating ? (
-              <div style={{ width: 18, height: 18, border: "2px solid rgba(255,255,255,0.1)", borderTopColor: "#3F3F46", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-            ) : (
-              <div style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <PlusIcon size={18} />
-              </div>
-            )}
-            <div style={{ textAlign: "left" }}>
-              <div>{creating ? "Generating..." : "Create New Wallet"}</div>
-              {!creating && <div style={{ fontSize: 12, fontWeight: 400, opacity: 0.8, marginTop: 2 }}>Generate a new keypair with seed phrase</div>}
-            </div>
-          </button>
-
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 32 }}>
           {[
-            { label: "Import Seed Phrase", sub: "Restore with your 12 or 24 word phrase", icon: <FileTextIcon size={16} />, action: () => setView("import-mnemonic") },
-            { label: "Import Private Key", sub: "Import using your private key directly", icon: <KeyIcon size={16} />, action: () => setView("import-pk") },
+            { icon: <PlusIcon size={20} />, label: "Create New Wallet", sub: "Generate a new seed phrase", onClick: handleCreate },
+            { icon: <FileTextIcon size={20} />, label: "Import Seed Phrase", sub: "12 or 24 word recovery phrase", onClick: () => setView("import-mnemonic") },
+            { icon: <KeyIcon size={20} />, label: "Import Private Key", sub: "Direct private key import", onClick: () => setView("import-pk") },
           ].map((item) => (
-            <button key={item.label} onClick={item.action} style={{
-              display: "flex", alignItems: "center", gap: 14, padding: "16px 20px", width: "100%",
-              background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
-              borderRadius: 16, color: "#E4E4E7", fontSize: 15, fontWeight: 500, cursor: "pointer",
-              transition: "all 0.15s ease", textAlign: "left",
+            <button key={item.label} onClick={item.onClick} disabled={creating || importing} style={{
+              display: "flex", alignItems: "center", gap: 14,
+              padding: "16px", borderRadius: 16,
+              backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)",
+              color: "#F4F4F5", cursor: "pointer", transition: "all 0.15s ease",
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.04)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)"; e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.02)"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.06)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.03)"; }}
             >
-              <div style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#A1A1AA" }}>
-                {item.icon}
-              </div>
+              <div style={{ color: "#F97316" }}>{item.icon}</div>
               <div>
                 <div>{item.label}</div>
                 <div style={{ fontSize: 12, fontWeight: 400, color: "#71717A", marginTop: 2 }}>{item.sub}</div>
@@ -853,34 +869,25 @@ export default function Wallet() {
           </button>
         </div>
 
-        {/* Live prices ticker */}
-        {!pricesLoading && Object.keys(prices).length > 0 && (
-          <div style={{
-            display: "flex", gap: 12, marginBottom: 14, flexWrap: "wrap",
-          }}>
-            {prices.ethereum > 0 && (
-              <span style={{ fontSize: 11, color: "#52525B", ...mono }}>
-                ETH {formatPrice(prices.ethereum)}
-              </span>
-            )}
-            {prices["avalanche-2"] > 0 && (
-              <span style={{ fontSize: 11, color: "#52525B", ...mono }}>
-                AVAX {formatPrice(prices["avalanche-2"])}
-              </span>
-            )}
-            {prices["assemble-protocol"] > 0 && (
-              <span style={{ fontSize: 11, color: "#52525B", ...mono }}>
-                ASM {formatPrice(prices["assemble-protocol"])}
-              </span>
-            )}
-          </div>
-        )}
-
         {loadingBals ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {[0, 1, 2, 3, 4].map((i) => (
               <div key={i} className="skeleton" style={{ height: 72, borderRadius: 16, border: "1px solid rgba(255,255,255,0.03)" }} />
             ))}
+          </div>
+        ) : assets.length === 0 ? (
+          <div style={{
+            padding: "48px 24px", textAlign: "center",
+            backgroundColor: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)",
+            borderRadius: 16,
+          }}>
+            <div style={{ width: 48, height: 48, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
+              <ClockIcon size={24} />
+            </div>
+            <p style={{ fontSize: 14, color: "#71717A", marginBottom: 12 }}>No assets yet</p>
+            <p style={{ fontSize: 12, color: "#52525B", lineHeight: 1.6 }}>
+              Send tokens to your address to get started, or add a custom token to track your holdings.
+            </p>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -920,8 +927,8 @@ export default function Wallet() {
                   <p style={{ fontSize: 15, fontWeight: 700, color: asset.error ? "#EF4444" : "#F4F4F5", ...mono, letterSpacing: "-0.02em", marginBottom: 2 }}>
                     {asset.error ? "Error" : asset.balanceFormatted}
                   </p>
-                  <p style={{ fontSize: 12, color: "#52525B", fontWeight: 500 }}>
-                    {asset.error ? "—" : (pricesLoading ? "..." : formatUsd(asset.usdValue))}
+                  <p style={{ fontSize: 12, color: "#52525B", ...mono }}>
+                    {asset.usdValue > 0 ? formatUsd(asset.usdValue) : "—"}
                   </p>
                 </div>
               </div>
@@ -930,76 +937,39 @@ export default function Wallet() {
         )}
       </div>
 
-      {/* ── Transaction History ── */}
-      <div style={{ padding: `28px ${px} 0` }}>
-        <h3 style={{ fontSize: 17, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.02em", marginBottom: 14 }}>Activity</h3>
-        <div style={{ padding: "32px 20px", backgroundColor: "rgba(255,255,255,0.015)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16, textAlign: "center" }}>
-          <div style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", color: "#3F3F46" }}>
-            <ClockIcon size={20} />
-          </div>
-          <p style={{ fontSize: 14, color: "#52525B", fontWeight: 500, marginBottom: 4 }}>No transactions yet</p>
-          <p style={{ fontSize: 12, color: "#3F3F46", lineHeight: 1.6 }}>Your transaction history will appear here</p>
-        </div>
-      </div>
-
-      {/* ── Recovery Phrase ── */}
-      {walletData?.mnemonic && (
-        <div style={{ padding: `28px ${px} 0` }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-            <h3 style={{ fontSize: 17, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.02em" }}>Recovery Phrase</h3>
-            <button onClick={() => setShowMnemonic(!showMnemonic)} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: "#F97316", background: "none", border: "none", cursor: "pointer", fontWeight: 500, padding: "4px 8px", borderRadius: 6 }}>
-              {showMnemonic ? <><EyeOffIcon size={12} /> Hide</> : <><EyeIcon size={12} /> Reveal</>}
+      {/* ── Wallet Management ── */}
+      <div style={{ padding: `32px ${px} 0` }}>
+        <button onClick={() => setShowMnemonic(!showMnemonic)} style={{
+          display: "flex", alignItems: "center", gap: 8,
+          fontSize: 13, color: "#F97316", background: "none",
+          border: "1px solid rgba(249,115,22,0.2)", cursor: "pointer", fontWeight: 600,
+          padding: "8px 14px", borderRadius: 8, marginBottom: 12, transition: "all 0.15s ease",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(249,115,22,0.06)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+        >
+          {showMnemonic ? <EyeOffIcon size={12} /> : <EyeIcon size={12} />}
+          {showMnemonic ? "Hide Seed Phrase" : "Show Seed Phrase"}
+        </button>
+        {showMnemonic && walletData?.mnemonic && (
+          <div style={{ padding: "12px 14px", backgroundColor: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.08)", borderRadius: 12, marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <p style={{ fontSize: 12, color: "#A1A1AA", ...mono, wordBreak: "break-all", flex: 1 }}>{walletData.mnemonic}</p>
+            <button onClick={() => copyToClipboard(walletData.mnemonic || "", "mnemonic")} style={{ background: "none", border: "none", cursor: "pointer", color: copied === "mnemonic" ? "#22C55E" : "#52525B", padding: 0, display: "flex", marginLeft: 8, flexShrink: 0 }}>
+              {copied === "mnemonic" ? <CheckIcon size={11} /> : <CopyIcon size={11} />}
             </button>
           </div>
-          {showMnemonic ? (
-            <div style={{ backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: 16 }}>
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(3, 1fr)", gap: "8px", marginBottom: 14 }}>
-                {walletData.mnemonic.split(" ").map((word, i) => (
-                  <div key={i} style={{ padding: "9px 12px", backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 10, fontSize: 13, color: "#E4E4E7", ...mono, display: "flex", alignItems: "center", gap: 8, border: "1px solid rgba(255,255,255,0.04)" }}>
-                    <span style={{ color: "#3F3F46", fontSize: 10, fontWeight: 700, minWidth: 16 }}>{i + 1}</span>
-                    {word}
-                  </div>
-                ))}
-              </div>
-              <button onClick={() => copyToClipboard(walletData.mnemonic, "mnemonic")} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5, width: "100%", padding: "11px", backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, color: copied === "mnemonic" ? "#22C55E" : "#71717A", fontSize: 12, cursor: "pointer", fontWeight: 500, transition: "all 0.15s ease" }}>
-                {copied === "mnemonic" ? <><CheckIcon size={11} /> Copied</> : <><CopyIcon size={11} /> Copy Seed Phrase</>}
-              </button>
-            </div>
-          ) : (
-            <div style={{ padding: "20px", backgroundColor: "rgba(255,255,255,0.015)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16, textAlign: "center" }}>
-              <p style={{ fontSize: 13, color: "#3F3F46", ...mono, letterSpacing: "0.15em" }}>●●●● ●●●● ●●●● ●●●● ●●●● ●●●●</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Alpha Warning ── */}
-      <div style={{ padding: `24px ${px} 0` }}>
-        <div style={{ padding: "14px 16px", backgroundColor: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.08)", borderRadius: 14, display: "flex", alignItems: "flex-start", gap: 10 }}>
-          <div style={{ color: "#F97316", marginTop: 1, flexShrink: 0 }}><AlertTriangleIcon size={13} /></div>
-          <div>
-            <p style={{ fontSize: 12, color: "#F97316", fontWeight: 600, marginBottom: 3 }}>Alpha Software</p>
-            <p style={{ fontSize: 11, color: "#71717A", lineHeight: 1.65 }}>
-              Store funds at your own risk. No recovery possible — you are solely responsible for your seed phrase and private keys. Embris and Vaultfire Protocol are not liable for any losses.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Danger Zone ── */}
-      <div style={{ padding: `20px ${px} 0` }}>
-        <div style={{ padding: "14px 16px", backgroundColor: "rgba(239,68,68,0.03)", border: "1px solid rgba(239,68,68,0.06)", borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div>
-            <p style={{ fontSize: 13, color: "#EF4444", fontWeight: 600, marginBottom: 2 }}>Delete Wallet</p>
-            <p style={{ fontSize: 11, color: "#71717A", lineHeight: 1.5 }}>This cannot be undone without your recovery phrase</p>
-          </div>
-          <button onClick={handleDelete} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: "#EF4444", fontWeight: 600, padding: "8px 14px", borderRadius: 10, backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.15)", cursor: "pointer", transition: "all 0.15s ease" }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.14)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.08)"; }}
-          >
-            <TrashIcon size={11} /> Delete
-          </button>
-        </div>
+        )}
+        <button onClick={handleDelete} style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          padding: "10px 14px", width: "100%",
+          backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.12)",
+          borderRadius: 10, color: "#EF4444", fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.15s ease",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.12)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.06)"; }}
+        >
+          <TrashIcon size={12} /> Delete Wallet
+        </button>
       </div>
 
       {/* ── MODALS ── */}
@@ -1196,11 +1166,10 @@ export default function Wallet() {
 
             <div style={{ backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, overflow: "hidden" }}>
               {[
-                { label: "Network", value: sendState.token.chainConfig.name },
-                { label: "To", value: `${sendState.toAddress.slice(0, 10)}...${sendState.toAddress.slice(-8)}`, isMono: true },
+                { label: "To", value: `${sendState.toAddress.slice(0, 6)}...${sendState.toAddress.slice(-4)}`, isMono: true },
                 { label: "Gas Fee", value: `~${sendState.gas?.estimatedFeeFormatted} ${sendState.token.chainConfig.symbol}` },
               ].map((row, i) => (
-                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderBottom: i < 2 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderBottom: i < 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
                   <span style={{ fontSize: 13, color: "#71717A" }}>{row.label}</span>
                   <span style={{ fontSize: 13, color: "#F4F4F5", fontWeight: 500, ...(row.isMono ? mono : {}) }}>{row.value}</span>
                 </div>
@@ -1336,7 +1305,11 @@ export default function Wallet() {
             {addTokenInfo && (
               <div style={{ padding: "14px 16px", backgroundColor: "rgba(34,197,94,0.04)", border: "1px solid rgba(34,197,94,0.12)", borderRadius: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <TokenLetter symbol={addTokenInfo.symbol} color="#71717A" size={40} />
+                  {addTokenInfo.logoUrl ? (
+                    <img src={addTokenInfo.logoUrl} alt={addTokenInfo.symbol} style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }} />
+                  ) : (
+                    <TokenLetter symbol={addTokenInfo.symbol} color="#71717A" size={40} />
+                  )}
                   <div>
                     <p style={{ fontSize: 14, fontWeight: 600, color: "#F4F4F5" }}>{addTokenInfo.name}</p>
                     <p style={{ fontSize: 12, color: "#52525B", ...mono }}>{addTokenInfo.symbol} · {addTokenInfo.decimals} decimals</p>

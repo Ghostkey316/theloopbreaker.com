@@ -16,6 +16,7 @@ export interface TokenInfo {
   chainId: number;
   coingeckoId?: string; // for price lookup
   logoColor?: string;   // fallback color for icon
+  logoUrl?: string;     // CoinGecko image URL
 }
 
 export interface TokenBalance extends TokenInfo {
@@ -368,5 +369,90 @@ export function parseTokenAmount(
     return BigInt(whole) * BigInt(10 ** decimals) + BigInt(fracPadded);
   } catch {
     return BigInt(0);
+  }
+}
+
+
+// ─── CoinGecko Logo Fetching ──────────────────────────────────────────────────
+
+const LOGO_CACHE_KEY = "vaultfire_token_logos";
+const LOGO_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+interface LogoCache {
+  [key: string]: { url: string; fetchedAt: number };
+}
+
+function getLogoCache(): LogoCache {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(localStorage.getItem(LOGO_CACHE_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function saveLogoCache(cache: LogoCache): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(LOGO_CACHE_KEY, JSON.stringify(cache));
+  } catch { /* ignore */ }
+}
+
+/**
+ * Fetch token logo from CoinGecko by CoinGecko ID.
+ * Returns the small image URL or null if not found.
+ */
+export async function fetchTokenLogo(coingeckoId: string): Promise<string | null> {
+  if (!coingeckoId) return null;
+  
+  const cache = getLogoCache();
+  const cached = cache[coingeckoId];
+  if (cached && Date.now() - cached.fetchedAt < LOGO_TTL) {
+    return cached.url || null;
+  }
+
+  try {
+    const res = await fetch(`https://api.coingecko.com/api/v3/coins/${coingeckoId}`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) throw new Error("Not found");
+    const data = (await res.json()) as { image?: { small?: string; thumb?: string } };
+    const url = data.image?.small || data.image?.thumb || null;
+    
+    cache[coingeckoId] = { url: url || "", fetchedAt: Date.now() };
+    saveLogoCache(cache);
+    return url;
+  } catch {
+    cache[coingeckoId] = { url: "", fetchedAt: Date.now() };
+    saveLogoCache(cache);
+    return null;
+  }
+}
+
+/**
+ * Lookup token on CoinGecko by contract address.
+ * Platform: "ethereum", "base", "avalanche"
+ */
+export async function lookupTokenOnCoinGecko(
+  platform: string,
+  contractAddress: string
+): Promise<{ coingeckoId: string; logoUrl?: string } | null> {
+  try {
+    const res = await fetch(
+      `https://api.coingecko.com/api/v3/coins/${platform}/contract/${contractAddress}`,
+      { signal: AbortSignal.timeout(5000) }
+    );
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      id?: string;
+      image?: { small?: string; thumb?: string };
+    };
+    if (!data.id) return null;
+    return {
+      coingeckoId: data.id,
+      logoUrl: data.image?.small || data.image?.thumb,
+    };
+  } catch {
+    return null;
   }
 }
