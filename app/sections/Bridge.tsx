@@ -555,7 +555,7 @@ export default function Bridge() {
           </div>
 
           <p style={{ fontSize: 13, color: "#3F3F46", lineHeight: 1.8, marginTop: 32 }}>
-            The Teleporter Bridge enables cross-chain trust data synchronisation between Base and Avalanche
+            The Teleporter Bridge enables cross-chain trust data synchronisation between Ethereum, Base, and Avalanche
             using Avalanche Warp Messaging (AWM) for trustless message relay.
           </p>
         </div>

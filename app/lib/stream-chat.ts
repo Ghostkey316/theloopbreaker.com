@@ -9,7 +9,7 @@
  * - Registered users get the full Embris companion experience
  * - Smart prompt size management to stay within model limits
  */
-import { EMBER_SYSTEM_PROMPT } from './contracts';
+import { EMBRIS_SYSTEM_PROMPT } from './contracts';
 import { formatMemoriesForPrompt } from './memory';
 import { formatSelfLearningForPrompt } from './self-learning';
 import { formatEmotionalContextForPrompt } from './emotional-intelligence';
@@ -31,8 +31,8 @@ function getCompanionName(): string {
   return localStorage.getItem('vaultfire_companion_name') || 'Embris';
 }
 
-const API_URL = 'https://api.manus.im/api/llm-proxy/v1/chat/completions';
-const API_KEY = process.env.NEXT_PUBLIC_OPENAI_API_KEY || '';
+const API_URL = '/api/chat';
+const API_KEY = '';
 
 export { API_KEY };
 
@@ -106,7 +106,7 @@ function buildUnregisteredPrompt(userMessage?: string): string {
   // Contract knowledge is always available
   const contractBlock = userMessage ? formatContractDataForPrompt(userMessage) : '';
 
-  let prompt = EMBER_SYSTEM_PROMPT;
+  let prompt = EMBRIS_SYSTEM_PROMPT;
 
   prompt += `
 
@@ -165,10 +165,10 @@ function buildRegisteredPrompt(memories: Memory[], userMessage?: string): string
   // Target: keep total system prompt under ~12K tokens (~48K chars)
   // to leave room for conversation history and response
   const MAX_PROMPT_TOKENS = 12000;
-  const basePromptTokens = estimateTokens(EMBER_SYSTEM_PROMPT);
+  const basePromptTokens = estimateTokens(EMBRIS_SYSTEM_PROMPT);
   let remainingBudget = MAX_PROMPT_TOKENS - basePromptTokens - 500; // 500 token buffer
 
-  let prompt = EMBER_SYSTEM_PROMPT;
+  let prompt = EMBRIS_SYSTEM_PROMPT;
 
   // VNS and companion name
   const vnsName = getVNSName();
@@ -374,8 +374,7 @@ export async function streamChat({
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'text/plain',
-        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         model: 'gpt-4.1-mini',

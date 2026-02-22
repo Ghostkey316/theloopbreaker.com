@@ -157,7 +157,7 @@ export function extractMemories(userMessage: string, _assistantResponse: string)
 
 /* ── AI-powered memory extraction (runs in background after each exchange) ── */
 
-const AI_EXTRACT_API_URL = 'https://api.manus.im/api/llm-proxy/v1/chat/completions';
+const AI_EXTRACT_API_URL = '/api/chat';
 
 export async function extractMemoriesWithAI(
   userMessage: string,
@@ -201,8 +201,7 @@ If nothing to extract, respond with: []`;
     const response = await fetch(AI_EXTRACT_API_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'text/plain',
-        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         model: 'gpt-4.1-nano',

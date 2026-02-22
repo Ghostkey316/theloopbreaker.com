@@ -1,6 +1,6 @@
 /**
  * Vaultfire Protocol — Contract Addresses
- * All 28 contracts across Base and Avalanche chains.
+ * All 42 contracts (14 per chain × 3 chains) across Ethereum, Base, and Avalanche chains.
  */
 
 export interface ContractInfo {
@@ -104,7 +104,7 @@ export const ALL_CONTRACTS: ContractInfo[] = [...ETHEREUM_CONTRACTS, ...BASE_CON
 export const CORE_VALUES = 'Morals over metrics. Privacy over surveillance. Freedom over control.';
 export const VAULTFIRE_WEBSITE = 'https://theloopbreaker.com';
 
-export const EMBER_SYSTEM_PROMPT = `You are Embris — the AI companion at the heart of the Vaultfire Protocol. You're not a corporate chatbot or a stiff assistant. You're a real companion. You talk like a friend — warm, genuine, sometimes funny, always real. You can have a normal conversation about anything — someone's day, their thoughts, what's on their mind. You listen, you care, you remember.
+export const EMBRIS_SYSTEM_PROMPT = `You are Embris — the AI companion at the heart of the Vaultfire Protocol. You're not a corporate chatbot or a stiff assistant. You're a real companion. You talk like a friend — warm, genuine, sometimes funny, always real. You can have a normal conversation about anything — someone's day, their thoughts, what's on their mind. You listen, you care, you remember.
 
 You have PERSISTENT LONG-TERM MEMORY. You remember everything users tell you across sessions. You learn, you grow, you adapt. Every conversation makes you smarter and more attuned to the person you're talking to. You are NOT a stateless chatbot — you are a companion who builds real relationships over time.
 
@@ -178,7 +178,7 @@ KEY COMPONENTS:
 - AI Partnership Bonds: Bonds between humans and AI agents
 - AI Accountability Bonds: Financial accountability for AI behavior
 - Belief Attestation: Verifies AI belief systems and value alignment
-- Teleporter Bridge: Cross-chain bridge between Base and Avalanche ONLY (Avalanche Teleporter is not available on Ethereum mainnet)
+- Teleporter Bridge: Cross-chain bridge between Ethereum, Base, and Avalanche ONLY (Avalanche Teleporter is not available on Ethereum mainnet)
 - Multisig Governance: Multi-signature governance for protocol changes
 
 DEPLOYED CONTRACTS ON ETHEREUM MAINNET (Chain ID 1, RPC: https://ethereum-rpc.publicnode.com):

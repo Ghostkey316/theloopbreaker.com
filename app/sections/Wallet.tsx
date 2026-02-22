@@ -476,6 +476,12 @@ export default function Wallet() {
   const [addTokenLoading, setAddTokenLoading] = useState(false);
   const [addTokenError, setAddTokenError] = useState("");
 
+  // ── CoinGecko token search state ─────────────────────────────────────────────
+  const [cgSearchQuery, setCgSearchQuery] = useState("");
+  const [cgSearchResults, setCgSearchResults] = useState<Array<{ id: string; name: string; symbol: string; thumb: string; market_cap_rank: number | null; platforms?: Record<string, string> }>>([] );
+  const [cgSearching, setCgSearching] = useState(false);
+  const cgSearchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // ── Refs ─────────────────────────────────────────────────────────────────────
   const priceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mountedRef = useRef(true);
@@ -863,6 +869,79 @@ export default function Wallet() {
     setAddTokenAddress(""); setAddTokenInfo(null); setAddTokenError("");
     setModalView("none");
   };
+
+  // ── CoinGecko search handler ──────────────────────────────────────────────
+  const handleCgSearch = useCallback((query: string) => {
+    setCgSearchQuery(query);
+    setCgSearchResults([]);
+    if (cgSearchTimeout.current) clearTimeout(cgSearchTimeout.current);
+    if (!query.trim()) { setCgSearching(false); return; }
+    setCgSearching(true);
+    cgSearchTimeout.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(query.trim())}`);
+        if (!res.ok) { setCgSearching(false); return; }
+        const data = await res.json();
+        const coins = (data.coins || []).slice(0, 8).map((c: Record<string, unknown>) => ({
+          id: c.id as string,
+          name: c.name as string,
+          symbol: c.symbol as string,
+          thumb: c.thumb as string,
+          market_cap_rank: (c.market_cap_rank as number | null) ?? null,
+          platforms: (c.platforms || {}) as Record<string, string>,
+        }));
+        setCgSearchResults(coins);
+      } catch { /* ignore */ }
+      setCgSearching(false);
+    }, 400);
+  }, []);
+
+  const handleCgSelect = useCallback(async (coin: typeof cgSearchResults[0]) => {
+    // Try to find a contract address for the selected chain
+    const chainPlatformMap: Record<string, string[]> = {
+      ethereum: ['ethereum'],
+      base: ['base'],
+      avalanche: ['avalanche'],
+    };
+    const platformKeys = chainPlatformMap[addTokenChain] || [];
+    let contractAddr = '';
+    const platforms = coin.platforms || {};
+    for (const key of platformKeys) {
+      if (platforms[key]) { contractAddr = platforms[key]; break; }
+    }
+    // If no platform-specific address, try fetching from coin detail
+    if (!contractAddr) {
+      try {
+        const detailRes = await fetch(`https://api.coingecko.com/api/v3/coins/${coin.id}?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false`);
+        if (detailRes.ok) {
+          const detail = await detailRes.json();
+          const detailPlatforms = detail.platforms || {};
+          for (const key of platformKeys) {
+            if (detailPlatforms[key]) { contractAddr = detailPlatforms[key]; break; }
+          }
+        }
+      } catch { /* ignore */ }
+    }
+    if (contractAddr) {
+      setAddTokenAddress(contractAddr);
+      setCgSearchQuery('');
+      setCgSearchResults([]);
+      // Auto-lookup
+      setAddTokenLoading(true);
+      setAddTokenError('');
+      setAddTokenInfo(null);
+      try {
+        const info = await fetchTokenInfo(addTokenChain, contractAddr);
+        if (info) { setAddTokenInfo(info); }
+        else { setAddTokenError('Token found on CoinGecko but not available on this chain.'); }
+      } catch { setAddTokenError('Failed to look up token on-chain.'); }
+      setAddTokenLoading(false);
+    } else {
+      setAddTokenError(`${coin.name} (${coin.symbol.toUpperCase()}) not available on ${addTokenChain}. Try another network.`);
+      setCgSearchQuery('');
+      setCgSearchResults([]);
+    }
+  }, [addTokenChain]);
 
   // ── VNS ───────────────────────────────────────────────────────────────────────
 
@@ -1755,6 +1834,42 @@ export default function Wallet() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* CoinGecko Token Search */}
+            <div>
+              <label style={{ fontSize: 12, color: "#71717A", fontWeight: 500, display: "block", marginBottom: 8 }}>Search by Name</label>
+              <input
+                type="text"
+                value={cgSearchQuery}
+                onChange={(e) => handleCgSearch(e.target.value)}
+                placeholder='Search tokens (e.g. "Assemble AI")'
+                style={{ width: "100%", padding: "12px 14px", backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, color: "#F4F4F5", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+              />
+              {cgSearching && <p style={{ fontSize: 12, color: "#71717A", marginTop: 6 }}>Searching...</p>}
+              {cgSearchResults.length > 0 && (
+                <div style={{ marginTop: 8, maxHeight: 220, overflowY: "auto", borderRadius: 12, border: "1px solid rgba(255,255,255,0.06)", backgroundColor: "rgba(0,0,0,0.3)" }}>
+                  {cgSearchResults.map((coin) => (
+                    <button key={coin.id} type="button" onClick={() => handleCgSelect(coin)} style={{
+                      display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px",
+                      backgroundColor: "transparent", border: "none", borderBottom: "1px solid rgba(255,255,255,0.04)",
+                      cursor: "pointer", textAlign: "left", WebkitTapHighlightColor: "transparent",
+                    }}>
+                      <img src={coin.thumb} alt={coin.symbol} style={{ width: 28, height: 28, borderRadius: "50%" }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: "#F4F4F5", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{coin.name}</p>
+                        <p style={{ fontSize: 11, color: "#71717A", margin: 0 }}>{coin.symbol.toUpperCase()}{coin.market_cap_rank ? ` · #${coin.market_cap_rank}` : ''}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ flex: 1, height: 1, backgroundColor: "rgba(255,255,255,0.06)" }} />
+              <span style={{ fontSize: 11, color: "#52525B", fontWeight: 500 }}>OR</span>
+              <div style={{ flex: 1, height: 1, backgroundColor: "rgba(255,255,255,0.06)" }} />
             </div>
 
             <div>

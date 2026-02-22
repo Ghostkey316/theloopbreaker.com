@@ -74,7 +74,7 @@ export const DISCLAIMERS: Record<DisclaimerKey, Disclaimer> = {
   general: {
     key: 'general',
     title: 'Terms of Use',
-    body: 'Vaultfire Protocol is experimental software. Smart contracts are deployed on Base and Avalanche networks. All on-chain transactions are irreversible. This application is not financial, legal, or investment advice. By using Vaultfire, you accept full responsibility for your actions and agree to use this software at your own risk.',
+    body: 'Vaultfire Protocol is experimental software. Smart contracts are deployed on Ethereum, Base, and Avalanche networks. All on-chain transactions are irreversible. This application is not financial, legal, or investment advice. By using Vaultfire, you accept full responsibility for your actions and agree to use this software at your own risk.',
     version: 1,
     requiresExplicitAck: false,
   },
@@ -141,4 +141,4 @@ export function getAcknowledgedCount(): number {
 export const GENERAL_DISCLAIMER_SHORT =
   'Experimental software. Not financial advice. On-chain transactions are irreversible. Use at your own risk.';
 
-export const GENERAL_DISCLAIMER_FULL = `Vaultfire Protocol is experimental software deployed on Base and Avalanche networks. All on-chain transactions are irreversible. Smart contracts may contain bugs or vulnerabilities. This application does not constitute financial, legal, investment, or professional advice of any kind. Vaultfire is a non-custodial wallet — you are solely responsible for your private keys. The Agent Hub and Marketplace are experimental platforms; Vaultfire does not guarantee agent performance or reliability. VNS registrations are permanent and on-chain. By using Vaultfire, you accept these terms and agree to use this software entirely at your own risk. © ${new Date().getFullYear()} Vaultfire Protocol.`;
+export const GENERAL_DISCLAIMER_FULL = `Vaultfire Protocol is experimental software deployed on Ethereum, Base, and Avalanche networks. All on-chain transactions are irreversible. Smart contracts may contain bugs or vulnerabilities. This application does not constitute financial, legal, investment, or professional advice of any kind. Vaultfire is a non-custodial wallet — you are solely responsible for your private keys. The Agent Hub and Marketplace are experimental platforms; Vaultfire does not guarantee agent performance or reliability. VNS registrations are permanent and on-chain. By using Vaultfire, you accept these terms and agree to use this software entirely at your own risk. © ${new Date().getFullYear()} Vaultfire Protocol.`;

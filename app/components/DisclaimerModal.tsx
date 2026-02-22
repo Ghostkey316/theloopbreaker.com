@@ -37,7 +37,7 @@ export default function DisclaimerModal() {
   const items = [
     "Vaultfire is a non-custodial wallet. You are solely responsible for your private keys and seed phrase. Vaultfire cannot recover lost keys.",
     "Nothing on this platform constitutes financial, investment, legal, or professional advice of any kind.",
-    "Smart contracts deployed on Base and Avalanche have not been formally audited. Use at your own risk.",
+    "Smart contracts deployed on Ethereum, Base, and Avalanche have not been formally audited. Use at your own risk.",
     "All on-chain transactions are irreversible. Vaultfire Protocol and its contributors are not liable for any losses or damages.",
     "The Agent Hub and Marketplace are experimental platforms. Vaultfire does not guarantee agent performance or reliability.",
     "VNS names are permanent and immutable once registered on-chain.",

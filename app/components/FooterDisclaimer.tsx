@@ -30,7 +30,7 @@ export default function FooterDisclaimer() {
       }}>
         {GENERAL_DISCLAIMER_SHORT}
         {" "}&middot;{" "}
-        Smart contracts deployed on Base &amp; Avalanche. Non-custodial — you control your keys.
+        Smart contracts deployed on Ethereum, Base &amp; Avalanche. Non-custodial — you control your keys.
         {" "}&middot;{" "}
         <span style={{ color: "#52525B" }}>
           &copy; {new Date().getFullYear()} Vaultfire Protocol. All rights reserved.

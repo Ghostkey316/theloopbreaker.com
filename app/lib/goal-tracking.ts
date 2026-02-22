@@ -166,7 +166,7 @@ export function deleteGoal(goalId: string): boolean {
 
 /* ── AI-Powered Goal Extraction ── */
 
-const API_URL = 'https://api.manus.im/api/llm-proxy/v1/chat/completions';
+const API_URL = '/api/chat';
 
 export async function extractGoalsFromMessage(
   userMessage: string,
@@ -202,8 +202,7 @@ If nothing goal-related, respond with: {"newGoals": [], "updates": []}`;
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'text/plain',
-        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         model: 'gpt-4.1-nano',

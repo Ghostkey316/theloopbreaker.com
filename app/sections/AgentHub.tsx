@@ -181,7 +181,7 @@ function HubOverview({ stats, setTab }: { stats: HubStats; setTab: (t: HubTab) =
       <div className="grid grid-cols-2 gap-3">
         <StatCard label="Identities" value={String(stats.registeredAgents)} sub={stats.registeredAgents === 0 ? 'Be the first to register' : 'Across 3 chains'} loading={stats.loading} accent="from-blue-500/50 via-blue-400/20 to-transparent" />
         <StatCard label="Active Bonds" value={String(stats.activeBonds)} sub={stats.activeBonds === 0 ? 'No bonds staked yet' : 'Accountability bonds'} loading={stats.loading} accent="from-emerald-500/50 via-emerald-400/20 to-transparent" />
-        <StatCard label="Total Bonded" value={stats.totalBonded === '0' ? '0 ETH' : `${stats.totalBonded} ETH`} sub={stats.totalBonded === '0' ? 'Stake the first bond' : 'Combined value'} loading={stats.loading} accent="from-amber-500/50 via-amber-400/20 to-transparent" />
+        <StatCard label="Total Bonded" value={stats.totalBonded === '0' ? '0 ETH / 0 AVAX' : `${stats.totalBonded} ETH / AVAX`} sub={stats.totalBonded === '0' ? 'Stake the first bond' : 'Combined value'} loading={stats.loading} accent="from-amber-500/50 via-amber-400/20 to-transparent" />
         <StatCard label="Tasks" value={String(stats.tasksPosted)} sub={stats.tasksPosted === 0 ? 'Post the first task' : 'Open and active'} loading={stats.loading} accent="from-violet-500/50 via-violet-400/20 to-transparent" />
       </div>
 
