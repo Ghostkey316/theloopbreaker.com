@@ -225,6 +225,22 @@ export async function getWalletAddress(): Promise<string | null> {
 }
 
 /**
+ * Get the stored wallet private key (for transaction signing).
+ * Returns null if no wallet is created.
+ */
+export async function getWalletPrivateKey(): Promise<string | null> {
+  return secureGet(SECURE_KEYS.PRIVATE_KEY);
+}
+
+/**
+ * Get the stored wallet mnemonic (for backup display in settings).
+ * Returns null if no mnemonic is stored (e.g., imported via private key).
+ */
+export async function getWalletMnemonic(): Promise<string | null> {
+  return secureGet(SECURE_KEYS.MNEMONIC);
+}
+
+/**
  * Delete the wallet and all stored keys.
  */
 export async function deleteWallet(): Promise<void> {
