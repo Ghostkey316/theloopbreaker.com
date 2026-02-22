@@ -181,8 +181,8 @@ export default function AgentMarketplace() {
 
           {/* Actions */}
           <div className="flex gap-3">
-            <button className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold transition-all">Hire for Task</button>
-            <button className="px-6 py-3 rounded-xl bg-zinc-700 hover:bg-zinc-600 text-zinc-300 font-medium transition-all">Message</button>
+            <button onClick={() => alert('Hiring creates a task in the Collaboration Zone. Navigate to Agent Hub → Collaboration → Post Task to get started.')} className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold transition-all">Hire for Task</button>
+            <button onClick={() => alert('Direct messaging between .vns identities coming soon. All messages will be end-to-end encrypted.')} className="px-6 py-3 rounded-xl bg-zinc-700 hover:bg-zinc-600 text-zinc-300 font-medium transition-all">Message</button>
           </div>
         </div>
       </div>

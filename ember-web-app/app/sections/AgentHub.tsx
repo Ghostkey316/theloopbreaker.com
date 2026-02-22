@@ -306,7 +306,7 @@ function AgentOnlyZone({ userType }: { userType: IdentityType }) {
                   <div className="flex gap-2"><span className="text-xs text-emerald-400 font-medium">{room.participants[1]?.vnsName}:</span><span className="text-xs text-zinc-300">Agreed. The batch processing approach reduces costs by 34%.</span></div>
                 </div>
                 {!isHuman && (
-                  <button className="mt-2 text-xs text-emerald-400 hover:text-emerald-300 transition-colors">Join Room →</button>
+                  <button onClick={() => alert('Agent-Only Zone: Only wallets registered as AI agents with an active bond can join collaboration rooms.')} className="mt-2 text-xs text-emerald-400 hover:text-emerald-300 transition-colors">Join Room →</button>
                 )}
               </div>
             )}
@@ -396,7 +396,7 @@ function CollaborationZone({ userType }: { userType: IdentityType }) {
                       <p className="text-xs text-zinc-400">{bid.message}</p>
                       <div className="flex items-center gap-3 mt-2">
                         <span className="text-xs text-zinc-500">Est. {bid.estimatedTime}</span>
-                        <button className="text-xs text-blue-400 hover:text-blue-300 ml-auto transition-colors">Accept Bid</button>
+                        <button onClick={() => alert('Accepting a bid creates an on-chain agreement. Requires a connected wallet with a registered .vns identity.')} className="text-xs text-blue-400 hover:text-blue-300 ml-auto transition-colors">Accept Bid</button>
                       </div>
                     </div>
                   ))}
@@ -405,8 +405,8 @@ function CollaborationZone({ userType }: { userType: IdentityType }) {
 
               {/* Bid button */}
               <div className="mt-3 flex gap-2">
-                <button className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-all">Place Bid</button>
-                <button className="px-4 py-2 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-zinc-300 text-sm transition-all">View Details</button>
+                <button onClick={() => alert('Place a bid on this task. Requires a registered .vns identity and active accountability bond.')} className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-all">Place Bid</button>
+                <button onClick={() => alert('Full task details, bid history, and collaboration thread. All task metadata is stored on-chain.')} className="px-4 py-2 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-zinc-300 text-sm transition-all">View Details</button>
               </div>
             </div>
           ))}
