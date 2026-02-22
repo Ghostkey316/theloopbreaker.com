@@ -32,7 +32,7 @@ function getCompanionName(): string {
 }
 
 const API_URL = 'https://api.manus.im/api/llm-proxy/v1/chat/completions';
-const API_KEY = process.env.NEXT_PUBLIC_OPENAI_API_KEY || 'sk-ADn9FUEGSQtAJYdaQiEjYF';
+const API_KEY = process.env.NEXT_PUBLIC_OPENAI_API_KEY || '';
 
 export { API_KEY };
 

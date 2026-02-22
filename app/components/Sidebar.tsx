@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { getThemePreference, toggleTheme, type ThemeMode } from "../lib/theme";
 import { getUnreadCount } from "../lib/notifications";
 
-type Section = "home" | "chat" | "wallet" | "verify" | "bridge" | "dashboard" | "sync" | "trust" | "analytics" | "vns" | "agent-hub" | "marketplace" | "ns3";
+type Section = "home" | "chat" | "wallet" | "verify" | "bridge" | "dashboard" | "sync" | "trust" | "analytics" | "vns" | "agent-hub" | "marketplace" | "ns3" | "trust-badges" | "earnings" | "agent-api";
 
 const Icons: Record<string, (props: { size?: number; color?: string }) => React.ReactElement> = {
   home: ({ size = 18, color = "currentColor" }) => (
@@ -95,6 +95,9 @@ const NAV_ITEMS: { id: Section; label: string; iconKey: string; group?: string }
   { id: "vns", label: "VNS Identity", iconKey: "vns", group: "Identity" },
   { id: "agent-hub", label: "Agent Hub", iconKey: "agentHub", group: "Agents" },
   { id: "marketplace", label: "Marketplace", iconKey: "marketplace" },
+  { id: "trust-badges", label: "Trust Badges", iconKey: "trust" },
+  { id: "earnings", label: "Earnings", iconKey: "wallet" },
+  { id: "agent-api", label: "API / SDK", iconKey: "verify" },
   { id: "ns3", label: "ZK Proofs", iconKey: "ns3" },
   { id: "verify", label: "Contracts", iconKey: "verify", group: "Protocol" },
   { id: "bridge", label: "Bridge", iconKey: "bridge" },
