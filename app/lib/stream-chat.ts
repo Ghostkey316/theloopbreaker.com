@@ -386,8 +386,10 @@ export async function streamChat({
     });
 
     if (!response.ok) {
+      // Log the raw error for debugging but never show it to users
       const errorText = await response.text().catch(() => '');
-      onError(`Chat service unavailable (${response.status}): ${errorText}`);
+      console.error(`Chat API error (${response.status}):`, errorText);
+      onError('Embris is taking a moment to think. Please try again shortly.');
       return;
     }
 
@@ -404,7 +406,7 @@ export async function streamChat({
     onDone(content);
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') return;
-    const msg = error instanceof Error ? error.message : 'Connection failed';
-    onError(msg);
+    console.error('Chat connection error:', error);
+    onError('Embris is taking a moment to think. Please try again shortly.');
   }
 }

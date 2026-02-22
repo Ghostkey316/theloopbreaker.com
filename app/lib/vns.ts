@@ -88,7 +88,7 @@ export interface VNSProfile {
   name: string;           // e.g. "ghostkey316"
   fullName: string;       // e.g. "ghostkey316.vns"
   address: string;        // 0x...
-  chain: 'base' | 'avalanche' | 'ethereum' | 'both';
+  chain: 'base' | 'avalanche' | 'ethereum' | 'all';
   identityType: IdentityType;
   registeredAt?: number;  // unix timestamp
   description?: string;
@@ -113,7 +113,7 @@ export interface VNSAvailability {
   name: string;
   available: boolean;
   takenBy?: string;       // address if taken
-  takenOn?: 'base' | 'avalanche' | 'ethereum' | 'both';
+  takenOn?: 'base' | 'avalanche' | 'ethereum' | 'all';
   checking: boolean;
   error?: string;
 }
@@ -425,8 +425,8 @@ export async function getProfileByAddress(address: string): Promise<VNSProfile |
       return null;
     }
 
-    const chain: 'base' | 'avalanche' | 'ethereum' | 'both' =
-      baseResult && avaxResult ? 'both' : baseResult ? 'base' : 'avalanche';
+    const chain: 'base' | 'avalanche' | 'ethereum' | 'all' =
+      baseResult && avaxResult ? 'all' : baseResult ? 'base' : 'avalanche';
 
     // Check local registry for identity type
     const localRegistry = getLocalVNSRegistry();
@@ -466,7 +466,7 @@ export async function resolveVNSName(fullName: string): Promise<VNSProfile | nul
         name,
         fullName: `${name}.vns`,
         address: localEntry.address,
-        chain: localEntry.chain as 'base' | 'avalanche' | 'ethereum' | 'ethereum' | 'both',
+        chain: localEntry.chain as 'base' | 'avalanche' | 'ethereum' | 'all',
         identityType: localEntry.identityType || 'agent',
         registeredAt: localEntry.registeredAt,
         explorerUrl: `https://basescan.org/address/${localEntry.address}`,
@@ -498,7 +498,7 @@ export async function checkVNSAvailability(name: string): Promise<VNSAvailabilit
       name: normalized,
       available: false,
       takenBy: localEntry.address,
-      takenOn: localEntry.chain as 'base' | 'avalanche' | 'ethereum' | 'ethereum' | 'both',
+      takenOn: localEntry.chain as 'base' | 'avalanche' | 'ethereum' | 'all',
       checking: false,
     };
   }
@@ -1038,7 +1038,7 @@ export interface RegisteredAgent {
   name: string;
   fullName: string;
   address: string;
-  chain: 'base' | 'avalanche' | 'ethereum' | 'both';
+  chain: 'base' | 'avalanche' | 'ethereum' | 'all';
   identityType: IdentityType;
   description?: string;
   bondAmount?: string;
@@ -1057,7 +1057,7 @@ const KNOWN_AGENTS: RegisteredAgent[] = [
     name: 'embris',
     fullName: 'embris.vns',
     address: '0x0000000000000000000000000000000000000001',
-    chain: 'both',
+    chain: 'all',
     identityType: 'companion',
     description: 'Vaultfire AI Companion — ethical, accountable, privacy-first',
     bondAmount: '0.1 ETH',
@@ -1096,7 +1096,7 @@ export function getKnownAgents(): RegisteredAgent[] {
       name,
       fullName: `${name}.vns`,
       address: entry.address,
-      chain: entry.chain as 'base' | 'avalanche' | 'ethereum' | 'ethereum' | 'both',
+      chain: entry.chain as 'base' | 'avalanche' | 'ethereum' | 'all',
       identityType: 'agent' as IdentityType,
       bondTier: entry.bondTier,
       hasBond: entry.hasBond,

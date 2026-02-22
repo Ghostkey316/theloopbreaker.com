@@ -79,6 +79,7 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
   const [statusText, setStatusText] = useState('');
   const [selectedChains, setSelectedChains] = useState<SupportedChain[]>(['base']);
   const [useManual, setUseManual] = useState(false);
+  const [ethAlreadyDone, setEthAlreadyDone] = useState(false);
   const [baseAlreadyDone, setBaseAlreadyDone] = useState(false);
   const [avaxAlreadyDone, setAvaxAlreadyDone] = useState(false);
 
@@ -95,20 +96,23 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
       setStatusText('');
       setUseManual(false);
 
+      const eDone = isRegisteredOnChain('ethereum');
       const bDone = isRegisteredOnChain('base');
       const aDone = isRegisteredOnChain('avalanche');
+      setEthAlreadyDone(eDone);
       setBaseAlreadyDone(bDone);
       setAvaxAlreadyDone(aDone);
 
       // Default selection: whatever isn't done yet
-      if (bDone && !aDone) setSelectedChains(['avalanche']);
-      else if (!bDone && aDone) setSelectedChains(['base']);
-      else if (!bDone && !aDone) setSelectedChains(['base']);
-      else setSelectedChains([]);
+      const remaining: SupportedChain[] = [];
+      if (!eDone) remaining.push('ethereum');
+      if (!bDone) remaining.push('base');
+      if (!aDone) remaining.push('avalanche');
+      setSelectedChains(remaining.length > 0 ? [remaining[0]] : []);
 
-      if (isRegistered() && bDone && aDone) {
+      if (isRegistered() && eDone && bDone && aDone) {
         const reg = getRegistration();
-        setResultMessage('Registered on both Ethereum, Base, and Avalanche.');
+        setResultMessage('Registered on Ethereum, Base, and Avalanche.');
         setChainResults(reg?.chains.map(c => ({
           chain: c.chain,
           success: true,
@@ -257,7 +261,7 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
           {step === 'intro' && (
             <div>
               <p style={{ fontSize: 13, color: '#71717A', lineHeight: 1.65, marginBottom: 16 }}>
-                Register your wallet on-chain to unlock everything Embris can do. Vaultfire is deployed on Ethereum, Base, and Avalanche — you can register on one or both.
+                Register your wallet on-chain to unlock everything Embris can do. Vaultfire is deployed on Ethereum, Base, and Avalanche — you can register on one or more chains.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 20 }}>
                 {FEATURES.map((f) => (
@@ -366,10 +370,10 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
 
               {/* Chain selection cards */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-                {(['base', 'avalanche'] as SupportedChain[]).map((chain) => {
+                {(['ethereum', 'base', 'avalanche'] as SupportedChain[]).map((chain) => {
                   const cfg = getChainConfig(chain);
                   const selected = selectedChains.includes(chain);
-                  const alreadyDone = chain === 'base' ? baseAlreadyDone : avaxAlreadyDone;
+                  const alreadyDone = chain === 'ethereum' ? ethAlreadyDone : chain === 'base' ? baseAlreadyDone : avaxAlreadyDone;
 
                   return (
                     <button
@@ -473,7 +477,7 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
                   onMouseEnter={(e) => { if (selectedChains.length > 0) e.currentTarget.style.backgroundColor = '#FB923C'; }}
                   onMouseLeave={(e) => { if (selectedChains.length > 0) e.currentTarget.style.backgroundColor = '#F97316'; }}
                 >
-                  {selectedChains.length === 2 ? 'Register on Both Chains' :
+                  {selectedChains.length >= 2 ? `Register on ${selectedChains.length} Chains` :
                    selectedChains.length === 1 ? `Register on ${getChainConfig(selectedChains[0]).name}` :
                    'Select a Chain'}
                 </button>

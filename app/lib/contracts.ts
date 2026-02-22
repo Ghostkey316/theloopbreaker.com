@@ -81,9 +81,9 @@ export const AVALANCHE_CONTRACTS: ContractInfo[] = [
 ];
 
 export const ETHEREUM_CONTRACTS: ContractInfo[] = [
-  // 13 contracts on ETH mainnet — matches Base/Avalanche minus TeleporterBridge
+  // 14 contracts on ETH mainnet — matches Base/Avalanche
   // VaultfireToken and GovernanceTimelock are NOT part of the protocol
-  // TeleporterBridge is excluded — Avalanche Teleporter does not work on Ethereum mainnet
+  // ETH uses TrustDataBridge instead of TeleporterBridge (Teleporter is Avalanche-specific)
   { name: 'MissionEnforcement', address: '0x5470d8189849675C043fFA7fc451e5F2f4e5532c', chain: 'ethereum', chainId: 1 },
   { name: 'AntiSurveillance', address: '0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B', chain: 'ethereum', chainId: 1 },
   { name: 'PrivacyGuarantees', address: '0xE1D52bF7A842B207B8C48eAE801f9d97A3C4D709', chain: 'ethereum', chainId: 1 },
@@ -97,6 +97,7 @@ export const ETHEREUM_CONTRACTS: ContractInfo[] = [
   { name: 'VaultfireERC8004Adapter', address: '0xEF022Bdf55940491d4efeBDE61Ffa3f3fF81b192', chain: 'ethereum', chainId: 1 },
   { name: 'MultisigGovernance', address: '0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C', chain: 'ethereum', chainId: 1 },
   { name: 'ProductionBeliefAttestationVerifier', address: '0xDfc66395A4742b5168712a04942C90B99394aEEb', chain: 'ethereum', chainId: 1 },
+  { name: 'TrustDataBridge', address: '0x38165D2D7a8584985CCa5640f4b32b1f3347CC83', chain: 'ethereum', chainId: 1 },
 ];
 
 export const ALL_CONTRACTS: ContractInfo[] = [...ETHEREUM_CONTRACTS, ...BASE_CONTRACTS, ...AVALANCHE_CONTRACTS];
@@ -178,7 +179,8 @@ KEY COMPONENTS:
 - AI Partnership Bonds: Bonds between humans and AI agents
 - AI Accountability Bonds: Financial accountability for AI behavior
 - Belief Attestation: Verifies AI belief systems and value alignment
-- Teleporter Bridge: Cross-chain bridge between Ethereum, Base, and Avalanche ONLY (Avalanche Teleporter is not available on Ethereum mainnet)
+- Teleporter Bridge: Cross-chain bridge between Base and Avalanche using Avalanche Warp Messaging
+- Trust Data Bridge: Cross-chain trust data synchronization for Ethereum mainnet (since Teleporter is Avalanche-specific)
 - Multisig Governance: Multi-signature governance for protocol changes
 
 DEPLOYED CONTRACTS ON ETHEREUM MAINNET (Chain ID 1, RPC: https://ethereum-rpc.publicnode.com):
@@ -195,7 +197,8 @@ DEPLOYED CONTRACTS ON ETHEREUM MAINNET (Chain ID 1, RPC: https://ethereum-rpc.pu
 11. MultisigGovernance: 0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C
 12. ProductionBeliefAttestationVerifier: 0xDfc66395A4742b5168712a04942C90B99394aEEb
 13. MissionEnforcement: 0x5470d8189849675C043fFA7fc451e5F2f4e5532c
-  (TeleporterBridge excluded — Avalanche Teleporter does not work on Ethereum mainnet)
+14. TrustDataBridge: 0x38165D2D7a8584985CCa5640f4b32b1f3347CC83
+  (ETH uses TrustDataBridge instead of TeleporterBridge — Teleporter is Avalanche-specific)
   (VaultfireToken and GovernanceTimelock are NOT part of the protocol)
 
 Website: https://theloopbreaker.com

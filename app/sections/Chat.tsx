@@ -989,11 +989,11 @@ export default function Chat() {
         );
         setIsLoading(false);
       },
-      onError: (error) => {
+      onError: () => {
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantMsg.id
-              ? { ...m, content: `Error: ${error}`, isStreaming: false }
+              ? { ...m, content: 'I\'m taking a moment to think. Please try again shortly — I\'ll be right back.', isStreaming: false }
               : m
           )
         );
