@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { getThemePreference, toggleTheme, type ThemeMode } from "../lib/theme";
 import { getUnreadCount } from "../lib/notifications";
 
-type Section = "home" | "chat" | "wallet" | "verify" | "bridge" | "dashboard" | "sync" | "trust" | "analytics" | "vns" | "agent-hub" | "marketplace" | "ns3" | "trust-badges" | "earnings" | "agent-api";
+type Section = "home" | "chat" | "wallet" | "verify" | "bridge" | "dashboard" | "sync" | "trust" | "analytics" | "vns" | "agent-hub" | "marketplace" | "zk-proofs" | "trust-badges" | "earnings" | "agent-api";
 
 const Icons: Record<string, (props: { size?: number; color?: string }) => React.ReactElement> = {
   home: ({ size = 18, color = "currentColor" }) => (
@@ -66,9 +66,9 @@ const Icons: Record<string, (props: { size?: number; color?: string }) => React.
       <path d="M6 2L3 7v11a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-3-5z" /><line x1="3" y1="7" x2="21" y2="7" /><path d="M16 11a4 4 0 0 1-8 0" />
     </svg>
   ),
-  ns3: ({ size = 18, color = "currentColor" }) => (
+  zkProofs: ({ size = 18, color = "currentColor" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M12 8v4" /><path d="M12 16h.01" />
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M9 12l2 2 4-4" />
     </svg>
   ),
   sun: ({ size = 18, color = "currentColor" }) => (
@@ -98,7 +98,7 @@ const NAV_ITEMS: { id: Section; label: string; iconKey: string; group?: string }
   { id: "trust-badges", label: "Trust Badges", iconKey: "trust" },
   { id: "earnings", label: "Earnings", iconKey: "wallet" },
   { id: "agent-api", label: "API / SDK", iconKey: "verify" },
-  { id: "ns3", label: "ZK Proofs", iconKey: "ns3" },
+  { id: "zk-proofs", label: "ZK Proofs", iconKey: "zkProofs" },
   { id: "verify", label: "Contracts", iconKey: "verify", group: "Protocol" },
   { id: "bridge", label: "Bridge", iconKey: "bridge" },
   { id: "dashboard", label: "Dashboard", iconKey: "dashboard" },

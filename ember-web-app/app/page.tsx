@@ -14,15 +14,16 @@ import Analytics from './sections/Analytics';
 import VNS from './sections/VNS';
 import AgentHub from './sections/AgentHub';
 import AgentMarketplace from './sections/AgentMarketplace';
-import NS3 from './sections/NS3';
+import ZKProofs from './sections/ZKProofs';
 import TrustBadges from './sections/TrustBadges';
 import AgentEarnings from './sections/AgentEarnings';
 import AgentAPI from './sections/AgentAPI';
 import DisclaimerModal from './components/DisclaimerModal';
 import FooterDisclaimer from './components/FooterDisclaimer';
 import OnboardingModal from './components/OnboardingModal';
+import ToastContainer from './components/Toast';
 
-type Section = 'home' | 'chat' | 'wallet' | 'verify' | 'bridge' | 'dashboard' | 'sync' | 'trust' | 'analytics' | 'vns' | 'agent-hub' | 'marketplace' | 'ns3' | 'trust-badges' | 'earnings' | 'agent-api';
+type Section = 'home' | 'chat' | 'wallet' | 'verify' | 'bridge' | 'dashboard' | 'sync' | 'trust' | 'analytics' | 'vns' | 'agent-hub' | 'marketplace' | 'zk-proofs' | 'trust-badges' | 'earnings' | 'agent-api';
 
 // Skeleton placeholder for section loading
 function SectionSkeleton() {
@@ -106,7 +107,7 @@ export default function Page() {
     setIsTransitioning(true);
 
     // Show skeleton briefly for heavier sections
-    const heavySections = ['dashboard', 'analytics', 'trust', 'verify', 'bridge', 'agent-hub', 'marketplace', 'ns3', 'vns', 'trust-badges', 'earnings', 'agent-api'];
+    const heavySections = ['dashboard', 'analytics', 'trust', 'verify', 'bridge', 'agent-hub', 'marketplace', 'zk-proofs', 'vns', 'trust-badges', 'earnings', 'agent-api'];
     if (heavySections.includes(newSection)) {
       skeletonTimeout.current = setTimeout(() => {
         setShowSkeleton(false);
@@ -159,7 +160,7 @@ export default function Page() {
       case 'vns': return <VNS />;
       case 'agent-hub': return <AgentHub />;
       case 'marketplace': return <AgentMarketplace />;
-      case 'ns3': return <NS3 />;
+      case 'zk-proofs': return <ZKProofs />;
       case 'trust-badges': return <TrustBadges />;
       case 'earnings': return <AgentEarnings />;
       case 'agent-api': return <AgentAPI />;
@@ -173,6 +174,7 @@ export default function Page() {
     <>
       <DisclaimerModal />
       <OnboardingModal />
+      <ToastContainer />
 
       <div
         style={{
