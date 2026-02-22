@@ -141,7 +141,7 @@ Vaultfire Protocol is deployed across multiple EVM-compatible chains, establishi
 
 **Deployer Address:** `0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324`
 
-### 5.1. Base Mainnet (Chain ID: 8453) — 16 Contracts
+### 5.1. Base Mainnet (Chain ID: 8453) — 15 Contracts
 
 | Contract Name                       | Address                                    |
 | :---------------------------------- | :----------------------------------------- |
@@ -161,7 +161,7 @@ Vaultfire Protocol is deployed across multiple EVM-compatible chains, establishi
 | VaultfireTeleporterBridge           | `0xFe122605364f428570c4C0EB2CCAEBb68dD22d05` |
 | DilithiumAttestor                   | `0xB53cd0A2ec4051018E6e3A0F2FF1EEC6487b123E` |
 
-### 5.2. Avalanche C-Chain (Chain ID: 43114) — 16 Contracts
+### 5.2. Avalanche C-Chain (Chain ID: 43114) — 15 Contracts
 
 | Contract Name                       | Address                                    |
 | :---------------------------------- | :----------------------------------------- |
@@ -181,7 +181,7 @@ Vaultfire Protocol is deployed across multiple EVM-compatible chains, establishi
 | MultisigGovernance                  | `0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1` |
 | DilithiumAttestor                   | `0x5470d8189849675C043fFA7fc451e5F2f4e5532c` |
 
-### 5.3. Ethereum Mainnet (Chain ID: 1) — 16 Contracts
+### 5.3. Ethereum Mainnet (Chain ID: 1) — 15 Contracts
 
 | Contract Name                       | Address                                    |
 | :---------------------------------- | :----------------------------------------- |
@@ -343,7 +343,7 @@ Vaultfire Protocol is currently in its **ALPHA stage**. While the core protocol 
 
 ### 7.2. Functional Audit Status
 
-A multi-chain functional audit (2026-02-22) confirmed that the Vaultfire Protocol is **fully operational and partner-ready on all three chains: Base Mainnet, Avalanche C-Chain, and Ethereum Mainnet**. All 48 contracts across the three chains have been deployed, verified on their respective block explorers, and confirmed functional through comprehensive automated testing.
+A multi-chain functional audit (2026-02-22) confirmed that the Vaultfire Protocol is **fully operational and partner-ready on all three chains: Base Mainnet, Avalanche C-Chain, and Ethereum Mainnet**. All 45 contracts across the three chains have been deployed, verified on their respective block explorers, and confirmed functional through comprehensive automated testing.
 
 ---
 
