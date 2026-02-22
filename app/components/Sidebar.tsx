@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { getThemePreference, toggleTheme, type ThemeMode } from "../lib/theme";
 import { getUnreadCount } from "../lib/notifications";
 
-type Section = "home" | "chat" | "wallet" | "verify" | "bridge" | "dashboard" | "sync" | "trust" | "analytics";
+type Section = "home" | "chat" | "wallet" | "verify" | "bridge" | "dashboard" | "sync" | "trust" | "analytics" | "vns" | "agent-hub" | "marketplace" | "ns3";
 
 const Icons: Record<string, (props: { size?: number; color?: string }) => React.ReactElement> = {
   home: ({ size = 18, color = "currentColor" }) => (
@@ -51,6 +51,26 @@ const Icons: Record<string, (props: { size?: number; color?: string }) => React.
       <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
     </svg>
   ),
+  vns: ({ size = 18, color = "currentColor" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  ),
+  agentHub: ({ size = 18, color = "currentColor" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="4" width="16" height="16" rx="2" /><path d="M9 9h6v6H9z" /><path d="M9 1v3" /><path d="M15 1v3" /><path d="M9 20v3" /><path d="M15 20v3" /><path d="M20 9h3" /><path d="M20 14h3" /><path d="M1 9h3" /><path d="M1 14h3" />
+    </svg>
+  ),
+  marketplace: ({ size = 18, color = "currentColor" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 2L3 7v11a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-3-5z" /><line x1="3" y1="7" x2="21" y2="7" /><path d="M16 11a4 4 0 0 1-8 0" />
+    </svg>
+  ),
+  ns3: ({ size = 18, color = "currentColor" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M12 8v4" /><path d="M12 16h.01" />
+    </svg>
+  ),
   sun: ({ size = 18, color = "currentColor" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
@@ -68,11 +88,15 @@ const Icons: Record<string, (props: { size?: number; color?: string }) => React.
   ),
 };
 
-const NAV_ITEMS: { id: Section; label: string; iconKey: string }[] = [
+const NAV_ITEMS: { id: Section; label: string; iconKey: string; group?: string }[] = [
   { id: "home", label: "Home", iconKey: "home" },
-  { id: "chat", label: "Chat", iconKey: "chat" },
+  { id: "chat", label: "Embris", iconKey: "chat" },
   { id: "wallet", label: "Wallet", iconKey: "wallet" },
-  { id: "verify", label: "Verify", iconKey: "verify" },
+  { id: "vns", label: "VNS Identity", iconKey: "vns", group: "Identity" },
+  { id: "agent-hub", label: "Agent Hub", iconKey: "agentHub", group: "Agents" },
+  { id: "marketplace", label: "Marketplace", iconKey: "marketplace" },
+  { id: "ns3", label: "ZK Proofs", iconKey: "ns3" },
+  { id: "verify", label: "Contracts", iconKey: "verify", group: "Protocol" },
   { id: "bridge", label: "Bridge", iconKey: "bridge" },
   { id: "dashboard", label: "Dashboard", iconKey: "dashboard" },
   { id: "trust", label: "Trust Score", iconKey: "trust" },
@@ -234,78 +258,96 @@ export default function Sidebar({ activeSection, onSectionChange, mobileForceOpe
     );
   };
 
-  const SidebarContent = () => (
-    <>
-      {/* Embris brand header */}
-      <div style={{
-        padding: "24px 18px 20px",
-        display: "flex", alignItems: "center", gap: 10,
-      }}>
-        <EmbrisLogo size={22} />
-        <div>
-          <h1 style={{
-            fontSize: 15, fontWeight: 600, color: "#F4F4F5",
-            margin: 0, letterSpacing: "-0.02em", lineHeight: 1.2,
-          }}>Embris</h1>
-          <p style={{
-            fontSize: 10, color: "#3F3F46", margin: 0,
-            fontWeight: 400, letterSpacing: "0.02em",
-          }}>Powered by Vaultfire</p>
-        </div>
-      </div>
-
-      {/* Nav */}
-      <nav style={{
-        flex: 1, padding: "4px 10px",
-        display: "flex", flexDirection: "column", gap: 2,
-        overflowY: "auto",
-      }}>
-        {NAV_ITEMS.map((item) => (
-          <NavButton key={item.id} item={item} />
-        ))}
-      </nav>
-
-      {/* Footer controls */}
-      <div style={{ padding: "12px 14px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
-        {unreadCount > 0 && (
-          <div style={{
-            display: "flex", alignItems: "center", gap: 8,
-            padding: "6px 10px", borderRadius: 6,
-            backgroundColor: "rgba(249,115,22,0.06)",
-          }}>
-            <Icons.bell size={13} color="#F97316" />
-            <span style={{ fontSize: 11, color: "#F97316", fontWeight: 500 }}>
-              {unreadCount} notification{unreadCount > 1 ? 's' : ''}
-            </span>
+  const SidebarContent = () => {
+    let lastGroup: string | undefined = undefined;
+    return (
+      <>
+        {/* Embris brand header */}
+        <div style={{
+          padding: "24px 18px 20px",
+          display: "flex", alignItems: "center", gap: 10,
+        }}>
+          <EmbrisLogo size={22} />
+          <div>
+            <h1 style={{
+              fontSize: 15, fontWeight: 600, color: "#F4F4F5",
+              margin: 0, letterSpacing: "-0.02em", lineHeight: 1.2,
+            }}>Embris</h1>
+            <p style={{
+              fontSize: 10, color: "#3F3F46", margin: 0,
+              fontWeight: 400, letterSpacing: "0.02em",
+            }}>Powered by Vaultfire</p>
           </div>
-        )}
+        </div>
 
-        <button
-          onClick={handleThemeToggle}
-          style={{
-            display: "flex", alignItems: "center", gap: 8,
-            padding: "6px 10px", borderRadius: 6,
-            backgroundColor: "transparent",
-            border: "none", cursor: "pointer",
-            color: "#52525B", width: "100%", textAlign: "left",
-            transition: "color 0.15s ease",
-            minHeight: 32,
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = '#A1A1AA'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = '#52525B'; }}
-        >
-          {theme === 'dark' ? <Icons.sun size={13} color="currentColor" /> : <Icons.moon size={13} color="currentColor" />}
-          <span style={{ fontSize: 11, fontWeight: 400 }}>
-            {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-          </span>
-        </button>
+        {/* Nav */}
+        <nav style={{
+          flex: 1, padding: "4px 10px",
+          display: "flex", flexDirection: "column", gap: 2,
+          overflowY: "auto",
+        }}>
+          {NAV_ITEMS.map((item) => {
+            const showGroup = item.group && item.group !== lastGroup;
+            if (item.group) lastGroup = item.group;
+            return (
+              <div key={item.id}>
+                {showGroup && (
+                  <div style={{
+                    fontSize: 10, fontWeight: 500, color: "#3F3F46",
+                    letterSpacing: "0.06em", textTransform: "uppercase",
+                    padding: "12px 14px 4px",
+                  }}>
+                    {item.group}
+                  </div>
+                )}
+                <NavButton item={item} />
+              </div>
+            );
+          })}
+        </nav>
 
-        <p style={{ fontSize: 10, color: "#27272A", fontWeight: 400, letterSpacing: "0.01em", padding: "0 4px" }}>
-          v1.1 · theloopbreaker.com
-        </p>
-      </div>
-    </>
-  );
+        {/* Footer controls */}
+        <div style={{ padding: "12px 14px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
+          {unreadCount > 0 && (
+            <div style={{
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "6px 10px", borderRadius: 6,
+              backgroundColor: "rgba(249,115,22,0.06)",
+            }}>
+              <Icons.bell size={13} color="#F97316" />
+              <span style={{ fontSize: 11, color: "#F97316", fontWeight: 500 }}>
+                {unreadCount} notification{unreadCount > 1 ? 's' : ''}
+              </span>
+            </div>
+          )}
+
+          <button
+            onClick={handleThemeToggle}
+            style={{
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "6px 10px", borderRadius: 6,
+              backgroundColor: "transparent",
+              border: "none", cursor: "pointer",
+              color: "#52525B", width: "100%", textAlign: "left",
+              transition: "color 0.15s ease",
+              minHeight: 32,
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#A1A1AA'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = '#52525B'; }}
+          >
+            {theme === 'dark' ? <Icons.sun size={13} color="currentColor" /> : <Icons.moon size={13} color="currentColor" />}
+            <span style={{ fontSize: 11, fontWeight: 400 }}>
+              {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+            </span>
+          </button>
+
+          <p style={{ fontSize: 10, color: "#27272A", fontWeight: 400, letterSpacing: "0.01em", padding: "0 4px" }}>
+            v2.0 · theloopbreaker.com
+          </p>
+        </div>
+      </>
+    );
+  };
 
   if (isMobile) {
     return (

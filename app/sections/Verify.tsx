@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
-import { BASE_CONTRACTS, AVALANCHE_CONTRACTS, CHAINS, type ContractInfo } from "../lib/contracts";
+import { BASE_CONTRACTS, AVALANCHE_CONTRACTS, ALL_CONTRACTS, CHAINS, type ContractInfo } from "../lib/contracts";
 import { checkContractAlive } from "../lib/blockchain";
+import { SectionDisclaimer } from "../components/DisclaimerBanner";
 
-type ChainFilter = "all" | "base" | "avalanche";
+type ChainFilter = "all" | "base" | "avalanche" | "ethereum";
 
 function ExternalLinkIcon({ size = 11 }: { size?: number }) {
   return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>);
@@ -42,8 +43,8 @@ export default function Verify() {
   }, []);
 
   useEffect(() => {
-    const all = [...BASE_CONTRACTS, ...AVALANCHE_CONTRACTS].map((c) => ({
-      ...c, alive: null, checking: false,
+    const all = ALL_CONTRACTS.map((c) => ({
+      ...c, alive: null as boolean | null, checking: false,
     }));
     setContracts(all);
   }, []);
@@ -70,7 +71,7 @@ export default function Verify() {
     setVerifyingAll(false);
   };
 
-  const verifySingle = async (address: string, chain: "base" | "avalanche") => {
+  const verifySingle = async (address: string, chain: "base" | "avalanche" | "ethereum") => {
     setContracts((prev) =>
       prev.map((c) => c.address === address && c.chain === chain ? { ...c, checking: true } : c)
     );
@@ -98,6 +99,9 @@ export default function Verify() {
         <h1 style={{ fontSize: 28, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.04em" }}>Verification</h1>
         <p style={{ fontSize: 14, color: "#52525B", marginTop: 6 }}>Verify all {contracts.length} deployed smart contracts on-chain</p>
       </div>
+
+      {/* Contract Verification Disclaimer */}
+      <SectionDisclaimer text="Smart contracts are deployed on Base and Avalanche. Vaultfire Protocol has not been formally audited. Verify contract addresses independently before interacting. All on-chain transactions are irreversible." type="warning" />
 
       {/* Stats — inline, monospace numbers */}
       <div style={{
@@ -129,7 +133,7 @@ export default function Verify() {
           backgroundColor: "rgba(255,255,255,0.02)",
           borderRadius: 8, padding: 2,
         }}>
-          {(["all", "base", "avalanche"] as ChainFilter[]).map((f) => (
+          {(["all", "base", "avalanche", "ethereum"] as ChainFilter[]).map((f) => (
             <button key={f} onClick={() => setFilter(f)} style={{
               padding: "6px 14px", borderRadius: 6, border: "none",
               fontSize: 12, fontWeight: 500, cursor: "pointer", flex: isMobile ? 1 : "none",
@@ -137,7 +141,7 @@ export default function Verify() {
               color: filter === f ? "#F4F4F5" : "#52525B",
               transition: "all 0.12s ease",
             }}>
-              {f === "all" ? "All" : f === "base" ? "Base" : "Avax"}
+              {f === "all" ? "All" : f === "base" ? "Base" : f === "avalanche" ? "Avax" : "ETH"}
             </button>
           ))}
         </div>
@@ -219,7 +223,7 @@ export default function Verify() {
               fontSize: 10, fontWeight: 500, color: "#52525B",
               ...monoStyle,
             }}>
-              {contract.chain === "base" ? "Base" : "Avax"}
+              {contract.chain === "base" ? "Base" : contract.chain === "avalanche" ? "Avax" : "ETH"}
             </span>
           )}
 

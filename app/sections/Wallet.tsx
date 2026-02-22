@@ -18,6 +18,8 @@ import {
   estimateNativeSendGas, estimateERC20SendGas,
   type ChainConfig, type GasEstimate,
 } from "../lib/transactions";
+import { DisclaimerModal, FooterDisclaimer } from "../components/DisclaimerBanner";
+import { isDisclaimerAcknowledged } from "../lib/disclaimers";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -411,6 +413,7 @@ function isValidAddress(addr: string): boolean {
 export default function Wallet() {
   // ── Core state ──────────────────────────────────────────────────────────────
   const [view, setView] = useState<WalletView>("none");
+  const [showWalletDisclaimer, setShowWalletDisclaimer] = useState(false);
   const [walletData, setWalletData] = useState<WalletData | null>(null);
   const [nativeBalances, setNativeBalances] = useState<ChainBalance[]>([]);
   const [tokenBalances, setTokenBalances] = useState<TokenBalance[]>([]);
@@ -878,6 +881,7 @@ export default function Wallet() {
 
   if (view === "none") {
     return (
+    <>
       <div className="page-enter" style={{
         padding: isMobile ? "24px 20px 48px" : "48px 40px",
         maxWidth: 480, margin: "0 auto",
@@ -901,9 +905,9 @@ export default function Wallet() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 32 }}>
           {[
-            { icon: <PlusIcon size={20} />, label: "Create New Wallet", sub: "Generate a new seed phrase", onClick: () => setView("create-password"), color: "#F97316" },
-            { icon: <FileTextIcon size={20} />, label: "Import Seed Phrase", sub: "12 or 24 word recovery phrase", onClick: () => setView("import-mnemonic"), color: "#22C55E" },
-            { icon: <KeyIcon size={20} />, label: "Import Private Key", sub: "Direct private key import", onClick: () => setView("import-pk"), color: "#A78BFA" },
+            { icon: <PlusIcon size={20} />, label: "Create New Wallet", sub: "Generate a new seed phrase", onClick: () => { if (!isDisclaimerAcknowledged('wallet')) { setShowWalletDisclaimer(true); } else { setView("create-password"); } }, color: "#F97316" },
+            { icon: <FileTextIcon size={20} />, label: "Import Seed Phrase", sub: "12 or 24 word recovery phrase", onClick: () => { if (!isDisclaimerAcknowledged('wallet')) { setShowWalletDisclaimer(true); } else { setView("import-mnemonic"); } }, color: "#22C55E" },
+            { icon: <KeyIcon size={20} />, label: "Import Private Key", sub: "Direct private key import", onClick: () => { if (!isDisclaimerAcknowledged('wallet')) { setShowWalletDisclaimer(true); } else { setView("import-pk"); } }, color: "#A78BFA" },
           ].map((item) => (
             <button key={item.label} type="button" onClick={item.onClick} disabled={creating || importing} style={{
               display: "flex", alignItems: "center", gap: 14,
@@ -928,13 +932,22 @@ export default function Wallet() {
         <div style={{ padding: "14px 16px", backgroundColor: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.1)", borderRadius: 14, display: "flex", alignItems: "flex-start", gap: 10 }}>
           <div style={{ color: "#F97316", marginTop: 1, flexShrink: 0 }}><AlertTriangleIcon size={14} /></div>
           <div>
-            <p style={{ fontSize: 12, color: "#F97316", fontWeight: 600, marginBottom: 4 }}>Alpha Software</p>
+            <p style={{ fontSize: 12, color: "#F97316", fontWeight: 600, marginBottom: 4 }}>Non-Custodial Wallet</p>
             <p style={{ fontSize: 11, color: "#71717A", lineHeight: 1.65 }}>
-              Store funds at your own risk. No recovery possible — you are solely responsible for your seed phrase and private keys.
+              You are solely responsible for your private keys and seed phrase. Vaultfire cannot recover lost keys. Not financial advice. Use at your own risk.
             </p>
           </div>
         </div>
+        <FooterDisclaimer />
       </div>
+      {showWalletDisclaimer && (
+        <DisclaimerModal
+          disclaimerKey="wallet"
+          onAcknowledge={() => { setShowWalletDisclaimer(false); setView("create-password"); }}
+          onDecline={() => setShowWalletDisclaimer(false)}
+        />
+      )}
+    </>
     );
   }
 

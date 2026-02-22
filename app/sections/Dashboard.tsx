@@ -2,11 +2,12 @@
 import { useEffect, useState } from "react";
 import { ALL_CONTRACTS, BASE_CONTRACTS, AVALANCHE_CONTRACTS, CHAINS } from "../lib/contracts";
 import { checkAllChains, getMultipleContractStatus, getGovernanceData, getTeleporterBridgeStats, type RPCResult, type GovernanceData, type BridgeStats } from "../lib/blockchain";
+import { SectionDisclaimer } from "../components/DisclaimerBanner";
 
 interface ContractWithStatus {
   name: string;
   address: string;
-  chain: "base" | "avalanche";
+  chain: "base" | "avalanche" | "ethereum";
   chainId: number;
   alive: boolean | null;
 }
@@ -165,6 +166,9 @@ export default function Dashboard() {
           {loading ? "Refreshing..." : "Refresh"}
         </button>
       </div>
+
+      {/* Dashboard Disclaimer */}
+      <SectionDisclaimer text="Dashboard data is fetched live from Base and Avalanche RPCs. On-chain data may be delayed. All transactions are irreversible. This is not financial advice." />
 
       {/* Stats — skeleton while loading */}
       <div style={{

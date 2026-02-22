@@ -46,6 +46,7 @@ import {
 } from '../lib/registration';
 import RegistrationModal from '../components/RegistrationModal';
 import RegistrationBanner from '../components/RegistrationBanner';
+import DisclaimerBanner from '../components/DisclaimerBanner';
 
 // Voice Mode imports
 import {
@@ -1057,6 +1058,7 @@ export default function Chat() {
 
       {/* ── Main chat area ── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
+        <DisclaimerBanner disclaimerKey="companion" mode="banner" />
 
         {/* ── Header ── */}
         <div style={{

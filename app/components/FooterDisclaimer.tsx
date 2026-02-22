@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { GENERAL_DISCLAIMER_SHORT } from "../lib/disclaimers";
 
 export default function FooterDisclaimer() {
   const [isMobile, setIsMobile] = useState(false);
@@ -14,21 +15,26 @@ export default function FooterDisclaimer() {
   return (
     <footer style={{
       backgroundColor: "#09090B",
-      padding: isMobile ? "8px 16px" : "8px 24px",
+      borderTop: "1px solid rgba(255,255,255,0.03)",
+      padding: isMobile ? "10px 16px" : "10px 24px",
       flexShrink: 0,
     }}>
       <p style={{
-        fontSize: 9,
-        color: "#27272A",
+        fontSize: 10,
+        color: "#3F3F46",
         textAlign: "center",
         lineHeight: 1.6,
         letterSpacing: "0.01em",
-        maxWidth: 720,
+        maxWidth: 760,
         margin: "0 auto",
       }}>
-        Alpha software — use at your own risk. Not financial advice. Smart contracts unaudited. No liability for losses.
+        {GENERAL_DISCLAIMER_SHORT}
         {" "}&middot;{" "}
-        &copy; {new Date().getFullYear()} Embris, powered by Vaultfire Protocol. All rights reserved.
+        Smart contracts deployed on Base &amp; Avalanche. Non-custodial — you control your keys.
+        {" "}&middot;{" "}
+        <span style={{ color: "#52525B" }}>
+          &copy; {new Date().getFullYear()} Vaultfire Protocol. All rights reserved.
+        </span>
       </p>
     </footer>
   );

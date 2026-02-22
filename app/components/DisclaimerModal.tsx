@@ -35,11 +35,13 @@ export default function DisclaimerModal() {
   if (!mounted || !visible) return null;
 
   const items = [
-    "Embris is currently in alpha. Features may be incomplete or change without notice.",
-    "Nothing on this platform constitutes financial, investment, or legal advice.",
-    "You are solely responsible for securing your seed phrase and private keys.",
-    "Smart contracts deployed by this protocol have not been formally audited.",
-    "Vaultfire Protocol and its contributors are not liable for any losses or damages.",
+    "Vaultfire is a non-custodial wallet. You are solely responsible for your private keys and seed phrase. Vaultfire cannot recover lost keys.",
+    "Nothing on this platform constitutes financial, investment, legal, or professional advice of any kind.",
+    "Smart contracts deployed on Base and Avalanche have not been formally audited. Use at your own risk.",
+    "All on-chain transactions are irreversible. Vaultfire Protocol and its contributors are not liable for any losses or damages.",
+    "The Agent Hub and Marketplace are experimental platforms. Vaultfire does not guarantee agent performance or reliability.",
+    "VNS names are permanent and immutable once registered on-chain.",
+    "Embris is an AI companion. Responses may not always be accurate and are not a substitute for professional advice.",
   ];
 
   return (

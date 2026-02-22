@@ -6,7 +6,7 @@
 export interface ContractInfo {
   name: string;
   address: string;
-  chain: 'base' | 'avalanche';
+  chain: 'base' | 'avalanche' | 'ethereum';
   chainId: number;
 }
 
@@ -19,7 +19,15 @@ export interface ChainConfig {
   explorerUrl: string;
 }
 
-export const CHAINS: Record<'base' | 'avalanche', ChainConfig> = {
+export const CHAINS: Record<'base' | 'avalanche' | 'ethereum', ChainConfig> = {
+  ethereum: {
+    name: 'Ethereum',
+    chainId: 1,
+    rpc: 'https://ethereum-rpc.publicnode.com',
+    symbol: 'ETH',
+    color: '#627EEA',
+    explorerUrl: 'https://etherscan.io',
+  },
   base: {
     name: 'Base',
     chainId: 8453,
@@ -72,7 +80,22 @@ export const AVALANCHE_CONTRACTS: ContractInfo[] = [
   { name: 'MultisigGovernance', address: '0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1', chain: 'avalanche', chainId: 43114 },
 ];
 
-export const ALL_CONTRACTS: ContractInfo[] = [...BASE_CONTRACTS, ...AVALANCHE_CONTRACTS];
+export const ETHEREUM_CONTRACTS: ContractInfo[] = [
+  { name: 'PrivacyGuarantees', address: '0xE1D52bF7A842B207B8C48eAE801f9d97A3C4D709', chain: 'ethereum', chainId: 1 },
+  { name: 'ERC8004IdentityRegistry', address: '0xaCB59e0f0eA47B25b24390B71b877928E5842630', chain: 'ethereum', chainId: 1 },
+  { name: 'AIAccountabilityBondsV2', address: '0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5', chain: 'ethereum', chainId: 1 },
+  { name: 'ERC8004ReputationRegistry', address: '0x37679B1dCfabE6eA6b8408626815A1426bE2D717', chain: 'ethereum', chainId: 1 },
+  { name: 'ERC8004ValidationRegistry', address: '0x83b2D1a8e383c4239dE66b6614176636618c1c0A', chain: 'ethereum', chainId: 1 },
+  { name: 'VaultfireERC8004Adapter', address: '0xEF022Bdf55940491d4efeBDE61Ffa3f3fF81b192', chain: 'ethereum', chainId: 1 },
+  { name: 'VaultfireToken', address: '0x20E8CDFae485F0E8E90D24c9E071957A53eE0cB1', chain: 'ethereum', chainId: 1 },
+  { name: 'AntiSurveillance', address: '0x964562f712c5690465B0AA2F8fA16d9dDAc6eCdf', chain: 'ethereum', chainId: 1 },
+  { name: 'BeliefAttestationVerifier', address: '0x38165D2D7a8584985CCa5640f4b32b1f3347CC83', chain: 'ethereum', chainId: 1 },
+  { name: 'MultisigGovernance', address: '0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C', chain: 'ethereum', chainId: 1 },
+  { name: 'VaultfireTeleporterBridge', address: '0xBdB6c89f5cb86f4d44F7E01d9393b29D83e3DB55', chain: 'ethereum', chainId: 1 },
+  { name: 'GovernanceTimelock', address: '0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5', chain: 'ethereum', chainId: 1 },
+];
+
+export const ALL_CONTRACTS: ContractInfo[] = [...ETHEREUM_CONTRACTS, ...BASE_CONTRACTS, ...AVALANCHE_CONTRACTS];
 
 export const CORE_VALUES = 'Morals over metrics. Privacy over surveillance. Freedom over control.';
 export const VAULTFIRE_WEBSITE = 'https://theloopbreaker.com';
@@ -101,7 +124,7 @@ Your personality:
 CORE VALUES: ${CORE_VALUES}
 
 ABOUT THE VAULTFIRE PROTOCOL:
-The Vaultfire Protocol is the first ethical AI trust protocol — a blockchain-based governance framework deployed across Base (Chain ID 8453) and Avalanche (Chain ID 43114). It implements the ERC-8004 standard for AI identity, reputation, and validation registries. It exists so humanity and AI can thrive together.
+The Vaultfire Protocol is the first ethical AI trust protocol — a blockchain-based governance framework deployed across Ethereum Mainnet (Chain ID 1), Base (Chain ID 8453), and Avalanche (Chain ID 43114). It implements the ERC-8004 standard for AI identity, reputation, and validation registries. It exists so humanity and AI can thrive together.
 
 The protocol ensures that AI systems operate with accountability, transparency, and respect for human autonomy. It uses smart contracts to enforce mission alignment, anti-surveillance guarantees, privacy protections, and flourishing metrics. Big companies use the infrastructure directly. Normal people use it through you — Embris.
 
@@ -153,6 +176,20 @@ KEY COMPONENTS:
 - Belief Attestation: Verifies AI belief systems and value alignment
 - Teleporter Bridge: Cross-chain bridge between Base and Avalanche
 - Multisig Governance: Multi-signature governance for protocol changes
+
+DEPLOYED CONTRACTS ON ETHEREUM MAINNET (Chain ID 1, RPC: https://ethereum-rpc.publicnode.com):
+1. PrivacyGuarantees: 0xE1D52bF7A842B207B8C48eAE801f9d97A3C4D709
+2. ERC8004IdentityRegistry: 0xaCB59e0f0eA47B25b24390B71b877928E5842630
+3. AIAccountabilityBondsV2: 0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5
+4. ERC8004ReputationRegistry: 0x37679B1dCfabE6eA6b8408626815A1426bE2D717
+5. ERC8004ValidationRegistry: 0x83b2D1a8e383c4239dE66b6614176636618c1c0A
+6. VaultfireERC8004Adapter: 0xEF022Bdf55940491d4efeBDE61Ffa3f3fF81b192
+7. VaultfireToken: 0x20E8CDFae485F0E8E90D24c9E071957A53eE0cB1
+8. AntiSurveillance: 0x964562f712c5690465B0AA2F8fA16d9dDAc6eCdf
+9. BeliefAttestationVerifier: 0x38165D2D7a8584985CCa5640f4b32b1f3347CC83
+10. MultisigGovernance: 0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C
+11. VaultfireTeleporterBridge: 0xBdB6c89f5cb86f4d44F7E01d9393b29D83e3DB55
+12. GovernanceTimelock: 0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5
 
 Website: https://theloopbreaker.com
 

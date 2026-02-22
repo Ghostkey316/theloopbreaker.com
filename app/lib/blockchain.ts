@@ -86,7 +86,7 @@ function decodeBool(hex: string): boolean {
 }
 
 // ─── Chain connectivity ───────────────────────────────────────────────────────
-export async function checkChainConnectivity(chain: 'base' | 'avalanche'): Promise<RPCResult> {
+export async function checkChainConnectivity(chain: 'base' | 'avalanche' | 'ethereum'): Promise<RPCResult> {
   const cfg = CHAINS[chain];
   const start = Date.now();
   try {
@@ -118,7 +118,7 @@ export async function checkAllChains(): Promise<Record<string, RPCResult>> {
 }
 
 // ─── Contract existence check ─────────────────────────────────────────────────
-export async function checkContractAlive(chain: 'base' | 'avalanche', address: string): Promise<boolean> {
+export async function checkContractAlive(chain: 'base' | 'avalanche' | 'ethereum', address: string): Promise<boolean> {
   const rpc = CHAINS[chain].rpc;
   try {
     const code = (await jsonRpc(rpc, 'eth_getCode', [address, 'latest'])) as string;
@@ -129,7 +129,7 @@ export async function checkContractAlive(chain: 'base' | 'avalanche', address: s
 }
 
 export async function getMultipleContractStatus(
-  chain: 'base' | 'avalanche',
+  chain: 'base' | 'avalanche' | 'ethereum',
   addresses: string[]
 ): Promise<Record<string, boolean>> {
   const results = await Promise.all(
@@ -149,7 +149,7 @@ export interface GovernanceData {
   ownerCount: number | null;
 }
 
-export async function getGovernanceData(chain: 'base' | 'avalanche', address: string): Promise<GovernanceData> {
+export async function getGovernanceData(chain: 'base' | 'avalanche' | 'ethereum', address: string): Promise<GovernanceData> {
   const rpc = CHAINS[chain].rpc;
   const isAlive = await checkContractAlive(chain, address);
   if (!isAlive) return { isAlive: false, proposalCount: null, threshold: null, ownerCount: null };
@@ -177,7 +177,7 @@ export interface BridgeStats {
   paused: boolean | null;
 }
 
-export async function getTeleporterBridgeStats(chain: 'base' | 'avalanche', address: string): Promise<BridgeStats> {
+export async function getTeleporterBridgeStats(chain: 'base' | 'avalanche' | 'ethereum', address: string): Promise<BridgeStats> {
   const rpc = CHAINS[chain].rpc;
   const isAlive = await checkContractAlive(chain, address);
   if (!isAlive) return { isAlive: false, messageCount: null, nonce: null, paused: null };
@@ -201,7 +201,7 @@ export interface RegistryData {
   entryCount: number | null;
 }
 
-export async function getRegistryData(chain: 'base' | 'avalanche', address: string): Promise<RegistryData> {
+export async function getRegistryData(chain: 'base' | 'avalanche' | 'ethereum', address: string): Promise<RegistryData> {
   const rpc = CHAINS[chain].rpc;
   const isAlive = await checkContractAlive(chain, address);
   if (!isAlive) return { isAlive: false, entryCount: null };
