@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { WalletAuthProvider } from './lib/WalletAuthContext';
 
 export const metadata: Metadata = {
   title: 'Embris — Powered by Vaultfire Protocol',
@@ -25,7 +26,9 @@ export default function RootLayout({
         />
       </head>
       <body style={{ background: '#09090B', color: '#F4F4F5' }}>
-        {children}
+        <WalletAuthProvider>
+          {children}
+        </WalletAuthProvider>
       </body>
     </html>
   );

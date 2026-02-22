@@ -22,6 +22,7 @@ import DisclaimerModal from './components/DisclaimerModal';
 import FooterDisclaimer from './components/FooterDisclaimer';
 import OnboardingModal from './components/OnboardingModal';
 import ToastContainer from './components/Toast';
+import WalletGate from './components/WalletGate';
 
 type Section = 'home' | 'chat' | 'wallet' | 'verify' | 'bridge' | 'dashboard' | 'sync' | 'trust' | 'analytics' | 'vns' | 'agent-hub' | 'marketplace' | 'zk-proofs' | 'trust-badges' | 'earnings' | 'agent-api';
 
@@ -142,6 +143,8 @@ export default function Page() {
     touchStartX.current = null;
   }, [isMobile]);
 
+  const goToWallet = useCallback(() => handleSectionChange('wallet'), [handleSectionChange]);
+
   const renderSection = () => {
     if (showSkeleton) {
       return displayedSection === 'chat' ? <ChatSkeleton /> : <SectionSkeleton />;
@@ -149,7 +152,11 @@ export default function Page() {
 
     switch (displayedSection) {
       case 'home': return <Home />;
-      case 'chat': return <Chat />;
+      case 'chat': return (
+        <WalletGate featureName="Embris" featureDesc="Chat with your AI companion. Your wallet is your identity — no account needed." onGoToWallet={goToWallet}>
+          <Chat />
+        </WalletGate>
+      );
       case 'wallet': return <Wallet />;
       case 'verify': return <Verify />;
       case 'bridge': return <Bridge />;
@@ -157,12 +164,20 @@ export default function Page() {
       case 'sync': return <Sync />;
       case 'trust': return <TrustScore />;
       case 'analytics': return <Analytics />;
-      case 'vns': return <VNS />;
+      case 'vns': return (
+        <WalletGate featureName="VNS Identity" featureDesc="Register your .vns name on-chain. Requires a connected wallet to sign the transaction." onGoToWallet={goToWallet}>
+          <VNS />
+        </WalletGate>
+      );
       case 'agent-hub': return <AgentHub />;
       case 'marketplace': return <AgentMarketplace />;
       case 'zk-proofs': return <ZKProofs />;
       case 'trust-badges': return <TrustBadges />;
-      case 'earnings': return <AgentEarnings />;
+      case 'earnings': return (
+        <WalletGate featureName="Agent Earnings" featureDesc="View and withdraw your on-chain earnings. Requires a connected wallet." onGoToWallet={goToWallet}>
+          <AgentEarnings />
+        </WalletGate>
+      );
       case 'agent-api': return <AgentAPI />;
       default: return <Home />;
     }
