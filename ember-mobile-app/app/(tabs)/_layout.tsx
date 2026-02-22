@@ -54,10 +54,25 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="trust"
+        options={{
+          title: "Trust",
+          tabBarIcon: ({ color }) => <IconSymbol size={22} name="checkmark.seal.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="analytics"
+        options={{
+          title: "Analytics",
+          tabBarIcon: ({ color }) => <IconSymbol size={22} name="chart.pie.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="verify"
         options={{
           title: "Verify",
           tabBarIcon: ({ color }) => <IconSymbol size={22} name="shield.checkered" color={color} />,
+          href: null, // Hidden from tab bar — accessible via navigation
         }}
       />
       <Tabs.Screen
@@ -65,6 +80,7 @@ export default function TabLayout() {
         options={{
           title: "Bridge",
           tabBarIcon: ({ color }) => <IconSymbol size={22} name="arrow.left.arrow.right" color={color} />,
+          href: null, // Hidden from tab bar — accessible via navigation
         }}
       />
       <Tabs.Screen
@@ -72,6 +88,7 @@ export default function TabLayout() {
         options={{
           title: "Dashboard",
           tabBarIcon: ({ color }) => <IconSymbol size={22} name="chart.bar.fill" color={color} />,
+          href: null, // Hidden from tab bar — accessible via navigation
         }}
       />
     </Tabs>

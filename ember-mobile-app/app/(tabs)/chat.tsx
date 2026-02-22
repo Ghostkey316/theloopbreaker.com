@@ -39,15 +39,14 @@ import {
   getWalletAddress as getNativeWalletAddress,
   getWalletContextForEmbris,
 } from "@/lib/wallet-core";
+import { enhancedStreamChat } from "@/lib/enhanced-stream-chat";
 import { streamChat } from "@/lib/stream-chat";
 import {
   syncAuth,
   createSyncConversation,
   updateSyncConversation,
   pushMemories,
-  fetchConversations,
   fetchMemories as fetchSyncMemories,
-  type SyncConversation,
 } from "@/lib/sync-service";
 import Animated, {
   FadeIn,
@@ -59,6 +58,14 @@ import { TypingIndicator } from "@/components/typing-indicator";
 import { MarkdownText } from "@/components/markdown-text";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 
+// Intelligence modules
+import { generateReflection, updatePatterns, recordConversation } from "@/lib/self-learning";
+import { detectEmotion, recordEmotion } from "@/lib/emotional-intelligence";
+import { trackMessage, trackSession } from "@/lib/analytics";
+import { addNotification, checkMilestones } from "@/lib/notifications";
+import { detectContractQuery, executeContractQuery } from "@/lib/contract-interaction";
+import { speakText, stopSpeaking, isTTSSupported, isSTTSupported, getVoiceModeEnabled, setVoiceModeEnabled } from "@/lib/voice-mode";
+
 interface ChatMessageWithStatus extends ChatMessage {
   isTyping?: boolean;
   isStreaming?: boolean;
@@ -69,8 +76,8 @@ const SUGGESTED_PROMPTS = [
   "Show me the Base contracts",
   "Explain the core values",
   "How does the bridge work?",
-  "Tell me about AI governance",
-  "What contracts are on Avalanche?",
+  "Check chain status",
+  "How many agents are registered?",
 ];
 
 export default function ChatScreen() {
@@ -87,42 +94,49 @@ export default function ChatScreen() {
   const [menuVisible, setMenuVisible] = useState(false);
   const [syncEnabled, setSyncEnabled] = useState(false);
   const [syncConvoId, setSyncConvoId] = useState<number | null>(null);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [isSpeakingNow, setIsSpeakingNow] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const chatMutation = trpc.chat.send.useMutation();
   const inputRef = useRef<TextInput>(null);
   const streamingRef = useRef<string>("");
+  const messageCountRef = useRef(0);
 
-  // Load chat history, memories, and wallet on mount
+  // Load data on mount
   useEffect(() => {
     const loadData = async () => {
-      const [history, mems, legacyAddr, nativeAddr] = await Promise.all([
+      const [history, mems, legacyAddr, nativeAddr, voiceMode] = await Promise.all([
         getChatHistory(),
         getMemories(),
         getLegacyWalletAddress(),
         getNativeWalletAddress(),
+        getVoiceModeEnabled(),
       ]);
       if (history.length > 0) setMessages(history);
       setMemoriesState(mems);
-      // Prefer native wallet address, fall back to legacy
+      setVoiceEnabled(voiceMode);
+      messageCountRef.current = history.length;
+
       const addr = nativeAddr || legacyAddr;
       if (addr) {
         setWalletAddress(addr);
-        // Load wallet data in background
-        getWalletData(addr)
-          .then(setWalletDataState)
-          .catch(() => {});
-        // Initialize sync
+        getWalletData(addr).then(setWalletDataState).catch(() => {});
         syncAuth(addr)
           .then((profile) => {
             if (profile?.dbAvailable) {
               setSyncEnabled(true);
-              // Load server-side memories
               fetchSyncMemories(addr).then((serverMems) => {
                 if (serverMems.length > 0) {
                   const merged = [...mems];
                   serverMems.forEach((sm) => {
                     if (!merged.some((m) => m.content === sm.content)) {
-                      merged.push({ id: `sync_${sm.id}`, type: "fact" as const, content: sm.content, timestamp: new Date(sm.createdAt).getTime() });
+                      merged.push({
+                        id: `sync_${sm.id}`,
+                        type: "fact" as const,
+                        content: sm.content,
+                        timestamp: new Date(sm.createdAt).getTime(),
+                      });
                     }
                   });
                   setMemoriesState(merged);
@@ -132,16 +146,39 @@ export default function ChatScreen() {
           })
           .catch(() => {});
       }
+
+      // Track session
+      trackSession().catch(() => {});
     };
     loadData();
   }, []);
 
-  // Auto-scroll to bottom
+  // Auto-scroll
   useEffect(() => {
     if (messages.length > 0) {
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     }
   }, [messages]);
+
+  const toggleVoiceMode = useCallback(async () => {
+    const newValue = !voiceEnabled;
+    setVoiceEnabled(newValue);
+    await setVoiceModeEnabled(newValue);
+    if (!newValue) {
+      await stopSpeaking();
+      setIsSpeakingNow(false);
+    }
+  }, [voiceEnabled]);
+
+  const handleSpeak = useCallback(async (text: string) => {
+    if (isSpeakingNow) {
+      await stopSpeaking();
+      setIsSpeakingNow(false);
+    } else {
+      setIsSpeakingNow(true);
+      await speakText(text, () => setIsSpeakingNow(false));
+    }
+  }, [isSpeakingNow]);
 
   const connectWallet = useCallback(async () => {
     const trimmed = walletInput.trim();
@@ -157,7 +194,6 @@ export default function ChatScreen() {
       await saveWalletAddress(trimmed);
       setWalletAddress(trimmed);
       setWalletInput("");
-      // Fetch wallet data
       const data = await getWalletData(trimmed);
       setWalletDataState(data);
       setWalletModalVisible(false);
@@ -215,7 +251,17 @@ export default function ChatScreen() {
       setIsLoading(true);
       streamingRef.current = "";
 
-      // Add streaming placeholder
+      // Track analytics
+      const emotion = detectEmotion(msgText);
+      recordEmotion(emotion).catch(() => {});
+      trackMessage(emotion.mood).catch(() => {});
+      updatePatterns(msgText).catch(() => {});
+      recordConversation().catch(() => {});
+      generateReflection(msgText, "").catch(() => {});
+
+      // Check for contract queries
+      const contractQuery = detectContractQuery(msgText);
+
       const streamMsgId = `msg_${Date.now()}_stream`;
       const streamingMsg: ChatMessageWithStatus = {
         id: streamMsgId,
@@ -233,7 +279,6 @@ export default function ChatScreen() {
       }));
 
       const memoryStrings = memories.map((m) => m.content);
-      // Add wallet context from native wallet if available
       const walletCtx = await getWalletContextForEmbris();
       if (walletCtx) {
         memoryStrings.push(walletCtx);
@@ -241,10 +286,29 @@ export default function ChatScreen() {
         memoryStrings.push(`User wallet: ${walletAddress}`);
       }
 
+      // If contract query detected, execute it and prepend to context
+      let contractContext = "";
+      if (contractQuery) {
+        try {
+          const result = await executeContractQuery(contractQuery, walletAddress);
+          if (result.success) {
+            contractContext = `\n\n[ON-CHAIN DATA - Include this in your response]\n${result.data}`;
+          }
+        } catch { /* ignore */ }
+      }
+
+      if (contractContext) {
+        const lastMsg = recentMessages[recentMessages.length - 1];
+        if (lastMsg) {
+          lastMsg.content += contractContext;
+        }
+      }
+
       try {
-        await streamChat({
+        await enhancedStreamChat({
           messages: recentMessages,
           memories: memoryStrings,
+          userMessage: msgText,
           onToken: (token) => {
             streamingRef.current += token;
             const currentText = streamingRef.current;
@@ -257,7 +321,6 @@ export default function ChatScreen() {
             );
           },
           onDone: async (fullText) => {
-            // Finalize the message
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === streamMsgId
@@ -285,7 +348,17 @@ export default function ChatScreen() {
             ];
             await saveChatHistory(finalMessages);
 
-            // Sync to server if wallet connected
+            // Update message count and check milestones
+            messageCountRef.current += 2;
+            checkMilestones(messageCountRef.current).catch(() => {});
+
+            // Auto-speak if voice mode enabled
+            if (voiceEnabled && isTTSSupported()) {
+              speakText(fullText, () => setIsSpeakingNow(false)).catch(() => {});
+              setIsSpeakingNow(true);
+            }
+
+            // Sync to server
             if (walletAddress && syncEnabled) {
               const syncMsgs = finalMessages.map((m) => ({
                 role: m.role,
@@ -299,7 +372,6 @@ export default function ChatScreen() {
                   .then((result) => { if (result) setSyncConvoId(result.id); })
                   .catch(() => {});
               }
-              // Push new memories to server
               if (newMemories.length > 0) {
                 pushMemories(walletAddress, newMemories.map((m) => ({ content: m.content }))).catch(() => {});
               }
@@ -308,79 +380,98 @@ export default function ChatScreen() {
             setIsLoading(false);
           },
           onError: async (error) => {
-            console.error("Stream error:", error);
-            // Fall back to non-streaming tRPC call
+            console.error("Enhanced stream error:", error);
+            // Fall back to basic stream chat
             try {
-              const result = await chatMutation.mutateAsync({
+              await streamChat({
                 messages: recentMessages,
                 memories: memoryStrings,
-              });
-
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === streamMsgId
-                    ? {
-                        ...m,
-                        content: result.response,
-                        isStreaming: false,
-                        isTyping: false,
-                      }
-                    : m
-                )
-              );
-
-              const newMemories = extractMemories(msgText, result.response);
-              if (newMemories.length > 0) {
-                await saveMemories(newMemories);
-                setMemoriesState((prev) => [...prev, ...newMemories]);
-              }
-
-              const finalMessages = [
-                ...updatedMessages,
-                {
-                  id: streamMsgId,
-                  role: "assistant" as const,
-                  content: result.response,
-                  timestamp: Date.now(),
+                onToken: (token) => {
+                  streamingRef.current += token;
+                  const currentText = streamingRef.current;
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === streamMsgId
+                        ? { ...m, content: currentText, isTyping: false, isStreaming: true }
+                        : m
+                    )
+                  );
                 },
-              ];
-              await saveChatHistory(finalMessages);
+                onDone: async (fullText) => {
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === streamMsgId
+                        ? { ...m, content: fullText, isStreaming: false, isTyping: false }
+                        : m
+                    )
+                  );
+                  const newMemories = extractMemories(msgText, fullText);
+                  if (newMemories.length > 0) {
+                    await saveMemories(newMemories);
+                    setMemoriesState((prev) => [...prev, ...newMemories]);
+                  }
+                  const finalMessages = [
+                    ...updatedMessages,
+                    { id: streamMsgId, role: "assistant" as const, content: fullText, timestamp: Date.now() },
+                  ];
+                  await saveChatHistory(finalMessages);
+                  setIsLoading(false);
+                },
+                onError: async () => {
+                  // Final fallback to tRPC
+                  try {
+                    const result = await chatMutation.mutateAsync({
+                      messages: recentMessages,
+                      memories: memoryStrings,
+                    });
+                    setMessages((prev) =>
+                      prev.map((m) =>
+                        m.id === streamMsgId
+                          ? { ...m, content: result.response, isStreaming: false, isTyping: false }
+                          : m
+                      )
+                    );
+                    const finalMessages = [
+                      ...updatedMessages,
+                      { id: streamMsgId, role: "assistant" as const, content: result.response, timestamp: Date.now() },
+                    ];
+                    await saveChatHistory(finalMessages);
+                  } catch {
+                    setMessages((prev) =>
+                      prev.map((m) =>
+                        m.id === streamMsgId
+                          ? { ...m, content: "I'm having trouble connecting right now. Please check your connection and try again.", isStreaming: false, isTyping: false }
+                          : m
+                      )
+                    );
+                  }
+                  setIsLoading(false);
+                },
+              });
             } catch {
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === streamMsgId
-                    ? {
-                        ...m,
-                        content:
-                          "I'm having trouble connecting right now. Please check your connection and try again.",
-                        isStreaming: false,
-                        isTyping: false,
-                      }
+                    ? { ...m, content: "I'm having trouble connecting right now. Please check your connection and try again.", isStreaming: false, isTyping: false }
                     : m
                 )
               );
+              setIsLoading(false);
             }
-            setIsLoading(false);
           },
         });
       } catch {
         setMessages((prev) =>
           prev.map((m) =>
             m.id === streamMsgId
-              ? {
-                  ...m,
-                  content:
-                    "I'm having trouble connecting right now. Please check your connection and try again.",
-                  isStreaming: false,
-                  isTyping: false,
-                }
+              ? { ...m, content: "I'm having trouble connecting right now. Please check your connection and try again.", isStreaming: false, isTyping: false }
               : m
           )
         );
         setIsLoading(false);
       }
     },
-    [inputText, isLoading, messages, memories, walletAddress, chatMutation]
+    [inputText, isLoading, messages, memories, walletAddress, chatMutation, voiceEnabled, syncEnabled, syncConvoId]
   );
 
   const renderMessage = useCallback(
@@ -413,7 +504,7 @@ export default function ChatScreen() {
         );
       }
 
-      // Assistant message (streaming or complete)
+      // Assistant message
       return (
         <Animated.View entering={SlideInLeft.duration(250).delay(50)} style={styles.assistantRow}>
           <View style={[styles.avatarSmall, { backgroundColor: colors.primary }]}>
@@ -432,11 +523,27 @@ export default function ChatScreen() {
                 <View style={[styles.cursorDot, { backgroundColor: colors.primary }]} />
               </Animated.View>
             )}
+            {/* TTS Speaker Button */}
+            {!item.isStreaming && item.content && voiceEnabled && isTTSSupported() && (
+              <Pressable
+                onPress={() => handleSpeak(item.content)}
+                style={({ pressed }) => [
+                  styles.speakerBtn,
+                  { opacity: pressed ? 0.6 : 1 },
+                ]}
+              >
+                <IconSymbol
+                  name={isSpeakingNow ? "stop.fill" : "speaker.wave.2.fill"}
+                  size={14}
+                  color={colors.muted}
+                />
+              </Pressable>
+            )}
           </View>
         </Animated.View>
       );
     },
-    [colors]
+    [colors, voiceEnabled, isSpeakingNow, handleSpeak]
   );
 
   const hasText = inputText.trim().length > 0;
@@ -469,11 +576,29 @@ export default function ChatScreen() {
             <View>
               <Text style={[styles.headerTitle, { color: colors.foreground }]}>Embris</Text>
               <Text style={[styles.headerSubtitle, { color: colors.muted }]}>
-                {isLoading ? "Thinking..." : syncEnabled ? "Synced ✓" : "Vaultfire Protocol"}
+                {isLoading ? "Thinking..." : voiceEnabled ? "Voice Mode ✓" : syncEnabled ? "Synced ✓" : "Vaultfire Protocol"}
               </Text>
             </View>
           </View>
           <View style={styles.headerRight}>
+            {/* Voice Mode Toggle */}
+            <Pressable
+              onPress={toggleVoiceMode}
+              style={({ pressed }) => [
+                styles.headerBtn,
+                {
+                  backgroundColor: voiceEnabled ? `${colors.primary}20` : colors.surface,
+                  borderColor: voiceEnabled ? colors.primary : colors.border,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              <IconSymbol
+                name="mic.fill"
+                size={14}
+                color={voiceEnabled ? colors.primary : colors.muted}
+              />
+            </Pressable>
             <Pressable
               onPress={() => setWalletModalVisible(true)}
               style={({ pressed }) => [
@@ -521,6 +646,14 @@ export default function ChatScreen() {
                 Your AI companion for the Vaultfire Protocol. Ask about contracts, ERC-8004,
                 governance, or anything about ethical AI.
               </Text>
+              {voiceEnabled && (
+                <View style={[styles.voiceBadge, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}>
+                  <IconSymbol name="mic.fill" size={14} color={colors.primary} />
+                  <Text style={{ color: colors.primary, fontSize: 12, fontWeight: "600" }}>
+                    Voice Mode Active
+                  </Text>
+                </View>
+              )}
             </Animated.View>
 
             <Animated.View entering={FadeInDown.duration(400).delay(200)} style={styles.promptsContainer}>
@@ -577,7 +710,7 @@ export default function ChatScreen() {
               ref={inputRef}
               value={inputText}
               onChangeText={setInputText}
-              placeholder="Message Embris..."
+              placeholder={voiceEnabled ? "Speak or type..." : "Message Embris..."}
               placeholderTextColor={colors.muted}
               style={[styles.input, { color: colors.foreground }]}
               multiline
@@ -620,6 +753,20 @@ export default function ChatScreen() {
               entering={FadeIn.duration(150)}
               style={[styles.menuCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
             >
+              {/* Voice Mode Toggle */}
+              <Pressable
+                onPress={() => { toggleVoiceMode(); setMenuVisible(false); }}
+                style={({ pressed }) => [
+                  styles.menuItem,
+                  { opacity: pressed ? 0.6 : 1 },
+                ]}
+              >
+                <IconSymbol name="mic.fill" size={18} color={voiceEnabled ? colors.primary : colors.muted} />
+                <Text style={{ color: voiceEnabled ? colors.primary : colors.foreground, fontSize: 15, fontWeight: "500" }}>
+                  {voiceEnabled ? "Disable Voice Mode" : "Enable Voice Mode"}
+                </Text>
+              </Pressable>
+              <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
               <Pressable
                 onPress={handleClearChat}
                 style={({ pressed }) => [
@@ -685,7 +832,6 @@ export default function ChatScreen() {
                       </Text>
                     </View>
 
-                    {/* Balance display */}
                     {walletData && (
                       <View style={{ gap: 8 }}>
                         <View
@@ -876,6 +1022,16 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     paddingHorizontal: 16,
   },
+  voiceBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginTop: 4,
+  },
   promptsContainer: { gap: 12 },
   promptsLabel: {
     fontSize: 12,
@@ -938,6 +1094,11 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     opacity: 0.6,
+  },
+  speakerBtn: {
+    marginTop: 6,
+    padding: 4,
+    alignSelf: "flex-start",
   },
   inputContainer: {
     paddingHorizontal: 12,

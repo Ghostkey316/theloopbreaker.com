@@ -25,6 +25,20 @@ const MAPPING = {
   "link": "link",
   "person.fill": "person",
   "wallet.pass.fill": "account-balance-wallet",
+  "mic.fill": "mic",
+  "speaker.wave.2.fill": "volume-up",
+  "speaker.slash.fill": "volume-off",
+  "bell.fill": "notifications",
+  "chart.pie.fill": "pie-chart",
+  "checkmark.seal.fill": "verified",
+  "xmark": "close",
+  "gearshape.fill": "settings",
+  "square.and.arrow.up": "share",
+  "doc.text.fill": "description",
+  "questionmark.circle.fill": "help",
+  "ellipsis": "more-horiz",
+  "trash.fill": "delete",
+  "stop.fill": "stop",
 } as IconMapping;
 
 /**
