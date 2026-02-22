@@ -51,7 +51,7 @@ export default function Bridge() {
   const monoStyle: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
 
   return (
-    <div style={{ padding: isMobile ? "24px 16px 48px" : "48px 40px", maxWidth: 640, margin: "0 auto" }}>
+    <div className="page-enter" style={{ padding: isMobile ? "24px 16px 48px" : "48px 40px", maxWidth: 640, margin: "0 auto" }}>
       {/* Header */}
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",

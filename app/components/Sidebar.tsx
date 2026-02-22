@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getThemePreference, toggleTheme, type ThemeMode } from "../lib/theme";
 import { getUnreadCount } from "../lib/notifications";
 
@@ -51,16 +51,6 @@ const Icons: Record<string, (props: { size?: number; color?: string }) => React.
       <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
     </svg>
   ),
-  menu: ({ size = 18, color = "currentColor" }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
-    </svg>
-  ),
-  close: ({ size = 18, color = "currentColor" }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  ),
   sun: ({ size = 18, color = "currentColor" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
@@ -100,12 +90,45 @@ function EmbrisLogo({ size = 24 }: { size?: number }) {
   );
 }
 
+// Animated hamburger icon
+function HamburgerIcon({ isOpen, size = 17 }: { isOpen: boolean; size?: number }) {
+  const lineStyle: React.CSSProperties = {
+    display: 'block',
+    width: size,
+    height: 1.5,
+    backgroundColor: '#A1A1AA',
+    borderRadius: 2,
+    transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease',
+    transformOrigin: 'center',
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4.5, width: size, alignItems: 'center' }}>
+      <span style={{
+        ...lineStyle,
+        transform: isOpen ? `translateY(6px) rotate(45deg)` : 'none',
+      }} />
+      <span style={{
+        ...lineStyle,
+        opacity: isOpen ? 0 : 1,
+        transform: isOpen ? 'scaleX(0)' : 'none',
+      }} />
+      <span style={{
+        ...lineStyle,
+        transform: isOpen ? `translateY(-6px) rotate(-45deg)` : 'none',
+      }} />
+    </div>
+  );
+}
+
 interface SidebarProps {
   activeSection: string;
   onSectionChange: (section: string) => void;
+  mobileForceOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
-export default function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
+export default function Sidebar({ activeSection, onSectionChange, mobileForceOpen, onMobileClose }: SidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
@@ -122,22 +145,32 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
   useEffect(() => {
     setTheme(getThemePreference());
     setUnreadCount(getUnreadCount());
-    // Refresh unread count periodically
     const interval = setInterval(() => setUnreadCount(getUnreadCount()), 10000);
     return () => clearInterval(interval);
   }, []);
 
-  const handleNav = (id: string) => {
-    onSectionChange(id);
-    if (isMobile) setMobileOpen(false);
-  };
+  // Respond to swipe-to-open from parent
+  useEffect(() => {
+    if (mobileForceOpen) {
+      setMobileOpen(true);
+    }
+  }, [mobileForceOpen]);
 
-  const handleThemeToggle = () => {
+  const closeMobile = useCallback(() => {
+    setMobileOpen(false);
+    onMobileClose?.();
+  }, [onMobileClose]);
+
+  const handleNav = useCallback((id: string) => {
+    onSectionChange(id);
+    if (isMobile) closeMobile();
+  }, [onSectionChange, isMobile, closeMobile]);
+
+  const handleThemeToggle = useCallback(() => {
     const next = toggleTheme(theme);
     setTheme(next);
-    // Apply theme class to document
     document.documentElement.setAttribute('data-theme', next);
-  };
+  }, [theme]);
 
   const NavButton = ({ item }: { item: typeof NAV_ITEMS[0] }) => {
     const isActive = activeSection === item.id;
@@ -155,18 +188,45 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
           padding: "9px 14px",
           borderRadius: 8, border: "none", cursor: "pointer",
           textAlign: "left", width: "100%",
-          backgroundColor: isActive ? "rgba(255,255,255,0.04)" : isHovered ? "rgba(255,255,255,0.02)" : "transparent",
+          backgroundColor: isActive
+            ? "rgba(255,255,255,0.05)"
+            : isHovered
+              ? "rgba(255,255,255,0.025)"
+              : "transparent",
           color: isActive ? "#F4F4F5" : "#71717A",
-          transition: "all 0.12s ease",
+          transition: "background-color 0.12s ease, color 0.12s ease",
           position: "relative",
+          // Minimum touch target
+          minHeight: 40,
         }}
+        aria-current={isActive ? 'page' : undefined}
       >
-        <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
-          <IconComponent size={16} color={isActive ? "#F97316" : isHovered ? "#A1A1AA" : "#52525B"} />
+        {/* Active indicator bar */}
+        {isActive && (
+          <span style={{
+            position: 'absolute',
+            left: 0,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: 2,
+            height: 16,
+            backgroundColor: '#F97316',
+            borderRadius: '0 2px 2px 0',
+            opacity: 0.85,
+            transition: 'all 0.15s ease',
+          }} />
+        )}
+
+        <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', transition: 'transform 0.12s ease' }}>
+          <IconComponent
+            size={16}
+            color={isActive ? "#F97316" : isHovered ? "#A1A1AA" : "#52525B"}
+          />
         </span>
         <span style={{
           fontSize: 13.5, fontWeight: isActive ? 500 : 400,
           whiteSpace: "nowrap", letterSpacing: "-0.01em",
+          transition: 'color 0.12s ease',
         }}>
           {item.label}
         </span>
@@ -176,7 +236,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
 
   const SidebarContent = () => (
     <>
-      {/* Embris brand header — minimal, just text + tiny icon */}
+      {/* Embris brand header */}
       <div style={{
         padding: "24px 18px 20px",
         display: "flex", alignItems: "center", gap: 10,
@@ -194,7 +254,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
         </div>
       </div>
 
-      {/* Nav — just text items with subtle hover, like ChatGPT sidebar */}
+      {/* Nav */}
       <nav style={{
         flex: 1, padding: "4px 10px",
         display: "flex", flexDirection: "column", gap: 2,
@@ -205,9 +265,8 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
         ))}
       </nav>
 
-      {/* Footer controls — theme toggle + notification badge */}
+      {/* Footer controls */}
       <div style={{ padding: "12px 14px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
-        {/* Notification indicator */}
         {unreadCount > 0 && (
           <div style={{
             display: "flex", alignItems: "center", gap: 8,
@@ -221,7 +280,6 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
           </div>
         )}
 
-        {/* Theme toggle */}
         <button
           onClick={handleThemeToggle}
           style={{
@@ -230,7 +288,8 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
             backgroundColor: "transparent",
             border: "none", cursor: "pointer",
             color: "#52525B", width: "100%", textAlign: "left",
-            transition: "color 0.15s",
+            transition: "color 0.15s ease",
+            minHeight: 32,
           }}
           onMouseEnter={(e) => { e.currentTarget.style.color = '#A1A1AA'; }}
           onMouseLeave={(e) => { e.currentTarget.style.color = '#52525B'; }}
@@ -241,64 +300,79 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
           </span>
         </button>
 
-        <p style={{ fontSize: 10, color: "#27272A", fontWeight: 400, letterSpacing: "0.01em", padding: "0 4px" }}>v1.1 · theloopbreaker.com</p>
+        <p style={{ fontSize: 10, color: "#27272A", fontWeight: 400, letterSpacing: "0.01em", padding: "0 4px" }}>
+          v1.1 · theloopbreaker.com
+        </p>
       </div>
     </>
   );
 
-  // Mobile: hamburger + overlay
   if (isMobile) {
     return (
       <>
+        {/* Hamburger button */}
         <button
-          onClick={() => setMobileOpen(true)}
+          onClick={() => setMobileOpen(!mobileOpen)}
           style={{
             position: "fixed", top: 12, left: 12, zIndex: 1000,
             width: 40, height: 40, borderRadius: 10,
-            background: "rgba(9,9,11,0.9)",
+            background: "rgba(9,9,11,0.92)",
             backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-            border: "none",
+            border: "1px solid rgba(255,255,255,0.04)",
             color: "#A1A1AA", display: "flex", alignItems: "center", justifyContent: "center",
             cursor: "pointer",
+            transition: "background-color 0.15s ease, border-color 0.15s ease",
           }}
-          aria-label="Open menu"
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(24,24,27,0.95)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(9,9,11,0.92)'; }}
+          aria-label={mobileOpen ? "Close menu" : "Open menu"}
         >
-          <Icons.menu size={17} color="#A1A1AA" />
+          <HamburgerIcon isOpen={mobileOpen} size={17} />
         </button>
 
-        {mobileOpen && (
-          <div
-            onClick={() => setMobileOpen(false)}
-            style={{
-              position: "fixed", inset: 0,
-              backgroundColor: "rgba(0,0,0,0.6)",
-              backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)",
-              zIndex: 1001,
-            }}
-          />
-        )}
+        {/* Overlay */}
+        <div
+          onClick={closeMobile}
+          style={{
+            position: "fixed", inset: 0,
+            backgroundColor: "rgba(0,0,0,0.6)",
+            backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)",
+            zIndex: 1001,
+            opacity: mobileOpen ? 1 : 0,
+            pointerEvents: mobileOpen ? 'auto' : 'none',
+            transition: "opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1)",
+          }}
+        />
 
+        {/* Sidebar panel */}
         <aside
           style={{
-            position: "fixed", top: 0, left: mobileOpen ? 0 : -260,
+            position: "fixed", top: 0, left: 0,
             width: 248, height: "100vh",
             background: "#0C0C0E",
             zIndex: 1002, display: "flex", flexDirection: "column",
-            transition: "left 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+            transform: mobileOpen ? 'translateX(0)' : 'translateX(-260px)',
+            transition: "transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)",
+            willChange: 'transform',
           }}
         >
-          <div style={{
-            position: "absolute", top: 16, right: 14,
-          }}>
+          {/* Close button inside sidebar */}
+          <div style={{ position: "absolute", top: 16, right: 14 }}>
             <button
-              onClick={() => setMobileOpen(false)}
+              onClick={closeMobile}
               style={{
                 background: "none", border: "none", color: "#52525B",
                 cursor: "pointer", padding: 4, borderRadius: 6,
                 display: "flex", alignItems: "center", justifyContent: "center",
+                transition: "color 0.15s ease",
+                minHeight: 32, minWidth: 32,
               }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = '#A1A1AA'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = '#52525B'; }}
             >
-              <Icons.close size={16} color="#52525B" />
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </button>
           </div>
           <SidebarContent />
@@ -307,7 +381,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
     );
   }
 
-  // Desktop: permanent sidebar — no visible border, separated by background color
+  // Desktop: permanent sidebar
   return (
     <aside
       style={{

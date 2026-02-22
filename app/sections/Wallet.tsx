@@ -140,7 +140,7 @@ export default function Wallet() {
   // ── No wallet view ──
   if (view === "none") {
     return (
-      <div style={{ padding: isMobile ? "24px 20px 48px" : "48px 40px", maxWidth: 440, margin: "0 auto" }}>
+      <div className="page-enter" style={{ padding: isMobile ? "24px 20px 48px" : "48px 40px", maxWidth: 440, margin: "0 auto" }}>
         {/* Alpha banner — minimal inline notice */}
         <div style={{
           padding: "8px 0", marginBottom: 40,
@@ -278,7 +278,7 @@ export default function Wallet() {
 
   // ── Wallet created view ──
   return (
-    <div style={{ padding: isMobile ? "24px 20px 48px" : "48px 40px", maxWidth: 520, margin: "0 auto" }}>
+    <div className="page-enter" style={{ padding: isMobile ? "24px 20px 48px" : "48px 40px", maxWidth: 520, margin: "0 auto" }}>
       {/* Alpha banner */}
       <div style={{
         padding: "8px 0", marginBottom: 32,

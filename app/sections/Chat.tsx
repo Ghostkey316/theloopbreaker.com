@@ -1,4 +1,4 @@
-'use client';
+"use client";
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { streamChat, API_KEY } from '../lib/stream-chat';
 import {
@@ -138,7 +138,7 @@ function SpeakerIcon({ size = 12 }: { size?: number }) {
   );
 }
 
-/* Small Embris flame icon for chat responses — 16px */
+/* Small Embris flame icon for chat responses */
 function EmbrisFlame() {
   return (
     <svg width={16} height={16} viewBox="0 0 32 32" fill="none" style={{ flexShrink: 0, marginTop: 3 }}>
@@ -165,12 +165,8 @@ function MoodDot({ mood }: { mood: string }) {
   return (
     <span style={{
       display: 'inline-block',
-      width: 6,
-      height: 6,
-      borderRadius: '50%',
-      backgroundColor: color,
-      marginRight: 4,
-      opacity: 0.8,
+      width: 6, height: 6, borderRadius: '50%',
+      backgroundColor: color, marginRight: 4, opacity: 0.8,
     }} title={`Mood: ${mood}`} />
   );
 }
@@ -182,23 +178,23 @@ function MarkdownText({ text }: { text: string }) {
   while (i < lines.length) {
     const line = lines[i];
     if (line.startsWith('### ')) {
-      elements.push(<h3 key={i} style={{ color: '#F4F4F5', fontWeight: 600, margin: '0.75rem 0 0.25rem', fontSize: '0.95em' }}>{line.slice(4)}</h3>);
+      elements.push(<h3 key={i} style={{ color: '#F4F4F5', fontWeight: 600, margin: '0.875rem 0 0.25rem', fontSize: '0.95em', letterSpacing: '-0.015em' }}>{line.slice(4)}</h3>);
     } else if (line.startsWith('## ')) {
-      elements.push(<h2 key={i} style={{ color: '#F4F4F5', fontWeight: 600, margin: '0.75rem 0 0.25rem', fontSize: '1.05em' }}>{line.slice(3)}</h2>);
+      elements.push(<h2 key={i} style={{ color: '#F4F4F5', fontWeight: 600, margin: '1rem 0 0.375rem', fontSize: '1.05em', letterSpacing: '-0.02em' }}>{line.slice(3)}</h2>);
     } else if (line.startsWith('# ')) {
-      elements.push(<h1 key={i} style={{ color: '#F4F4F5', fontWeight: 700, margin: '0.75rem 0 0.25rem', fontSize: '1.15em' }}>{line.slice(2)}</h1>);
+      elements.push(<h1 key={i} style={{ color: '#F4F4F5', fontWeight: 700, margin: '1.25rem 0 0.5rem', fontSize: '1.15em', letterSpacing: '-0.025em' }}>{line.slice(2)}</h1>);
     } else if (line.startsWith('- ') || line.startsWith('* ')) {
-      elements.push(<li key={i} style={{ marginLeft: '1.25rem', margin: '0.2rem 0' }}>{renderInline(line.slice(2))}</li>);
+      elements.push(<li key={i} style={{ marginLeft: '1.25rem', margin: '0.25rem 0', lineHeight: 1.7 }}>{renderInline(line.slice(2))}</li>);
     } else if (line.match(/^\d+\. /)) {
-      elements.push(<li key={i} style={{ marginLeft: '1.25rem', margin: '0.2rem 0', listStyleType: 'decimal' }}>{renderInline(line.replace(/^\d+\. /, ''))}</li>);
+      elements.push(<li key={i} style={{ marginLeft: '1.25rem', margin: '0.25rem 0', listStyleType: 'decimal', lineHeight: 1.7 }}>{renderInline(line.replace(/^\d+\. /, ''))}</li>);
     } else if (line.startsWith('> ')) {
       elements.push(<blockquote key={i} style={{ borderLeft: '2px solid rgba(255,255,255,0.06)', paddingLeft: '0.75rem', color: '#A1A1AA', fontStyle: 'italic', margin: '0.5rem 0' }}>{line.slice(2)}</blockquote>);
     } else if (line === '---' || line === '***') {
-      elements.push(<hr key={i} style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.03)', margin: '1rem 0' }} />);
+      elements.push(<hr key={i} style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.03)', margin: '1.25rem 0' }} />);
     } else if (line === '') {
       elements.push(<br key={i} />);
     } else {
-      elements.push(<p key={i} style={{ margin: '0.3rem 0', lineHeight: 1.75 }}>{renderInline(line)}</p>);
+      elements.push(<p key={i} style={{ margin: '0.375rem 0', lineHeight: 1.75 }}>{renderInline(line)}</p>);
     }
     i++;
   }
@@ -221,14 +217,30 @@ function renderInline(text: string): React.ReactNode {
   });
 }
 
+/* Premium typing indicator — three dots with smooth fade-in */
 function TypingIndicator() {
   return (
-    <div style={{ display: 'flex', gap: 5, alignItems: 'center', padding: '8px 0' }}>
+    <div
+      className="typing-indicator-enter"
+      style={{
+        display: 'flex',
+        gap: 5,
+        alignItems: 'center',
+        padding: '10px 0 6px',
+      }}
+    >
       {[0, 1, 2].map((i) => (
-        <div key={i} className="typing-dot" style={{
-          width: 4, height: 4, borderRadius: '50%', backgroundColor: '#71717A',
-          animationDelay: `${i * 0.2}s`,
-        }} />
+        <div
+          key={i}
+          className="typing-dot"
+          style={{
+            width: 5,
+            height: 5,
+            borderRadius: '50%',
+            backgroundColor: '#52525B',
+            animationDelay: `${i * 0.2}s`,
+          }}
+        />
       ))}
     </div>
   );
@@ -246,6 +258,7 @@ export default function Chat() {
   const [growthStats, setGrowthStats] = useState({ conversations: 0, memories: 0 });
   const [currentMood, setCurrentMood] = useState<EmotionalState | null>(null);
   const [activeGoalCount, setActiveGoalCount] = useState(0);
+  const [sendAnimating, setSendAnimating] = useState(false);
 
   // Registration state
   const [registered, setRegistered] = useState(false);
@@ -259,9 +272,11 @@ export default function Chat() {
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const streamingRef = useRef('');
+  const isNearBottomRef = useRef(true);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -270,24 +285,19 @@ export default function Chat() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Initialize voice mode
   useEffect(() => {
     setSttSupported(isSpeechRecognitionSupported());
     setTtsSupported(isSpeechSynthesisSupported());
     setVoiceEnabled(getVoiceModeEnabled());
   }, []);
 
-  // Load chat history, memories, goals, growth stats, and registration status on mount
   useEffect(() => {
     const reg = isRegistered();
     setRegistered(reg);
-
     const history = getChatHistory();
     const addr = getWalletAddress();
     setWalletAddress(addr);
-
     if (reg) {
-      // Full mode — load everything
       const mems = getMemories();
       const stats = getGrowthStats();
       const goals = getGoals();
@@ -296,26 +306,38 @@ export default function Chat() {
       setGrowthStats({ conversations: stats.totalConversations, memories: mems.length });
       setActiveGoalCount(goals.filter(g => g.status === 'active').length);
     } else {
-      // Basic mode — load chat history only (no persistence across sessions for unregistered)
       setMessages(history);
       setMemoriesState([]);
       setGrowthStats({ conversations: 0, memories: 0 });
       setActiveGoalCount(0);
     }
-
     if (history.length > 0) setShowSuggestions(false);
   }, []);
 
+  // Track whether user is near the bottom for auto-scroll
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      isNearBottomRef.current = scrollHeight - scrollTop - clientHeight < 120;
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Smooth scroll to bottom when messages update (only if near bottom)
+  useEffect(() => {
+    if (isNearBottomRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
 
-  // Handle registration completion
   const handleRegistered = useCallback(() => {
     setRegistered(true);
     resetNudgeCounter();
-
-    // Load all data now that features are unlocked
     const mems = getMemories();
     const stats = getGrowthStats();
     const goals = getGoals();
@@ -324,67 +346,41 @@ export default function Chat() {
     setActiveGoalCount(goals.filter(g => g.status === 'active').length);
   }, []);
 
-  /**
-   * Background AI memory extraction — runs after each exchange
-   * without blocking the UI or the conversation flow.
-   * Only runs for registered users.
-   */
   const runBackgroundMemoryExtraction = useCallback(
     async (userText: string, assistantText: string, currentMemories: Memory[]) => {
       if (!isRegistered()) return;
       try {
-        const aiMemories = await extractMemoriesWithAI(
-          userText,
-          assistantText,
-          currentMemories,
-          API_KEY,
-        );
+        const aiMemories = await extractMemoriesWithAI(userText, assistantText, currentMemories, API_KEY);
         if (aiMemories.length > 0) {
           const merged = deduplicateMemories([...currentMemories, ...aiMemories]);
           saveMemories(merged);
           setMemoriesState(merged);
         }
-      } catch {
-        // Silent fail — background extraction should never disrupt UX
-      }
+      } catch { /* silent fail */ }
     },
     [],
   );
 
-  /**
-   * Background self-learning — runs after memory extraction.
-   * Only runs for registered users.
-   */
   const runBackgroundSelfLearning = useCallback(
     async (userText: string, assistantText: string) => {
       if (!isRegistered()) return;
       try {
         const result = await runSelfLearning(userText, assistantText, API_KEY);
-
-        // Update growth stats display
         const stats = getGrowthStats();
         const mems = getMemories();
         setGrowthStats({ conversations: stats.totalConversations, memories: mems.length });
         setMemoriesState(mems);
-
-        // Log self-learning activity (dev only)
         if (process.env.NODE_ENV === 'development') {
           if (result.reflection) console.log('[Embris Self-Learning] Reflection:', result.reflection.content);
           if (result.corrected) console.log('[Embris Self-Learning] Self-corrections:', result.corrections);
           if (result.patternsSynthesized) console.log('[Embris Self-Learning] Patterns synthesized');
           if (result.insightsGenerated) console.log('[Embris Self-Learning] Insights generated');
         }
-      } catch {
-        // Silent fail
-      }
+      } catch { /* silent fail */ }
     },
     [],
   );
 
-  /**
-   * Background goal extraction — detects goals and updates from messages.
-   * Only runs for registered users.
-   */
   const runBackgroundGoalExtraction = useCallback(
     async (userText: string) => {
       if (!isRegistered()) return;
@@ -395,32 +391,22 @@ export default function Chat() {
           processGoalExtraction(result);
           const updatedGoals = getGoals();
           setActiveGoalCount(updatedGoals.filter(g => g.status === 'active').length);
-          if (process.env.NODE_ENV === 'development') {
-            console.log('[Embris Goals] New:', result.newGoals, 'Updates:', result.updates);
-          }
         }
-      } catch {
-        // Silent fail
-      }
+      } catch { /* silent fail */ }
     },
     [],
   );
 
-  /* ── Voice Mode: Start/Stop Listening ── */
   const toggleListening = useCallback(() => {
     if (isListening) {
-      // Stop listening
       recognitionRef.current?.stop();
       setIsListening(false);
       return;
     }
-
     const recognition = createSpeechRecognition();
     if (!recognition) return;
-
     recognitionRef.current = recognition;
     setIsListening(true);
-
     recognition.onresult = (event) => {
       let transcript = '';
       for (let i = 0; i < event.results.length; i++) {
@@ -428,19 +414,11 @@ export default function Chat() {
       }
       setInputText(transcript);
     };
-
-    recognition.onend = () => {
-      setIsListening(false);
-    };
-
-    recognition.onerror = () => {
-      setIsListening(false);
-    };
-
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => setIsListening(false);
     recognition.start();
   }, [isListening]);
 
-  /* ── Voice Mode: Toggle ── */
   const handleToggleVoice = useCallback(() => {
     const next = !voiceEnabled;
     setVoiceEnabled(next);
@@ -454,7 +432,6 @@ export default function Chat() {
     }
   }, [voiceEnabled, isListening]);
 
-  /* ── TTS: Speak a message ── */
   const handleSpeak = useCallback((text: string) => {
     if (!voiceEnabled || !ttsSupported) return;
     speakText(text);
@@ -464,7 +441,10 @@ export default function Chat() {
     if (!text.trim() || isLoading) return;
     setShowSuggestions(false);
 
-    // Stop listening if voice was active
+    // Send button animation
+    setSendAnimating(true);
+    setTimeout(() => setSendAnimating(false), 300);
+
     if (isListening) {
       recognitionRef.current?.stop();
       setIsListening(false);
@@ -472,41 +452,22 @@ export default function Chat() {
 
     const features = getAvailableFeatures();
 
-    // ── PRE-RESPONSE PROCESSING (only for registered users) ──
-
     if (features.emotionalIntelligence) {
-      // 1. Analyze emotional tone (fast, local, no LLM)
       const mood = analyzeMood(text.trim());
       setCurrentMood(mood);
     }
+    if (features.personality) applyPersonalityFeedback(text.trim());
+    if (features.proactiveSuggestions) incrementMessageCount();
+    if (features.sessionSummaries) updateCurrentSession();
 
-    if (features.personality) {
-      // 2. Detect personality feedback (fast, local)
-      applyPersonalityFeedback(text.trim());
-    }
-
-    if (features.proactiveSuggestions) {
-      // 3. Track message for proactive suggestions
-      incrementMessageCount();
-    }
-
-    if (features.sessionSummaries) {
-      // 4. Update current session tracking
-      updateCurrentSession();
-    }
-
-    // ── CONTRACT INTERACTION: Detect on-chain queries ──
     const contractQuery = detectContractQuery(text.trim());
     let contractContext = '';
     if (contractQuery) {
       try {
         contractContext = await executeContractQuery(contractQuery);
-      } catch {
-        // Silent fail
-      }
+      } catch { /* silent fail */ }
     }
 
-    // Reload memories fresh from storage each time (only for registered)
     const currentMemories = features.memory ? getMemories() : [];
 
     const userMsg: ChatMessageWithStatus = {
@@ -529,16 +490,14 @@ export default function Chat() {
     setIsLoading(true);
     streamingRef.current = '';
 
+    // Force scroll to bottom when sending
+    isNearBottomRef.current = true;
+
     const controller = new AbortController();
     abortRef.current = controller;
 
     const history = getChatHistory();
-
-    // Build messages — inject contract context if available
-    const userContent = contractContext
-      ? text.trim() + contractContext
-      : text.trim();
-
+    const userContent = contractContext ? text.trim() + contractContext : text.trim();
     const llmMessages = [
       ...history.slice(-20).map((m) => ({ role: m.role, content: m.content })),
       { role: 'user', content: userContent },
@@ -562,10 +521,7 @@ export default function Chat() {
         const updatedHistory = [...history, { ...userMsg, isStreaming: undefined }, finalAsst];
         saveChatHistory(updatedHistory);
 
-        // ── POST-RESPONSE PROCESSING (only for registered users) ──
-
         if (features.memory) {
-          // Step 1: Fast regex extraction (immediate)
           const regexMems = extractMemories(text, fullText);
           let allMems = currentMemories;
           if (regexMems.length > 0) {
@@ -573,29 +529,15 @@ export default function Chat() {
             saveMemories(allMems);
             setMemoriesState(allMems);
           }
-
-          // Step 2: AI-powered extraction (background, non-blocking)
           runBackgroundMemoryExtraction(text, fullText, allMems);
         }
-
         if (features.selfLearning) {
-          // Step 3: Self-learning (background, non-blocking)
-          setTimeout(() => {
-            runBackgroundSelfLearning(text, fullText);
-          }, 1500);
+          setTimeout(() => runBackgroundSelfLearning(text, fullText), 1500);
         }
-
         if (features.goals) {
-          // Step 4: Goal extraction (background, non-blocking)
-          setTimeout(() => {
-            runBackgroundGoalExtraction(text);
-          }, 2000);
+          setTimeout(() => runBackgroundGoalExtraction(text), 2000);
         }
-
-        // Voice Mode: TTS auto-read response
-        if (voiceEnabled && ttsSupported) {
-          speakText(fullText);
-        }
+        if (voiceEnabled && ttsSupported) speakText(fullText);
 
         setMessages((prev) =>
           prev.map((m) => m.id === assistantMsg.id ? { ...m, content: fullText, isStreaming: false } : m)
@@ -623,25 +565,16 @@ export default function Chat() {
   };
 
   const handleClear = async () => {
-    // Generate session summary before clearing (if registered and there are messages)
     if (registered && messages.length >= 4) {
       try {
         const chatMessages = messages.map(m => ({ role: m.role, content: m.content }));
         await generateSessionSummary(chatMessages, API_KEY);
-      } catch {
-        // Silent fail — don't block clear
-      }
+      } catch { /* silent fail */ }
     }
-
-    // Stop any TTS
     stopSpeaking();
-
-    // Only clear chat history — preserve the brain (memories, learning, goals, personality)
     clearChatHistory();
     setMessages([]);
     setShowSuggestions(true);
-
-    // Reset current mood since chat is cleared
     setCurrentMood(null);
   };
 
@@ -656,13 +589,13 @@ export default function Chat() {
         padding: isMobile ? '10px 16px' : '10px 32px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         backgroundColor: '#09090B',
+        borderBottom: '1px solid rgba(255,255,255,0.03)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 14, fontWeight: 500, color: '#A1A1AA', letterSpacing: '-0.01em' }}>Embris</span>
           {registered && currentMood && currentMood.confidence > 0.3 && (
             <MoodDot mood={currentMood.mood} />
           )}
-          {/* Registration status badge */}
           {registered ? (
             <span style={{
               display: 'inline-flex', alignItems: 'center', gap: 3,
@@ -682,10 +615,8 @@ export default function Chat() {
                 fontSize: 10, color: '#F97316', fontWeight: 500,
                 padding: '2px 8px',
                 backgroundColor: 'rgba(249,115,22,0.08)',
-                borderRadius: 6,
-                border: 'none',
-                cursor: 'pointer',
-                transition: 'background-color 0.15s',
+                borderRadius: 6, border: 'none', cursor: 'pointer',
+                transition: 'background-color 0.15s ease',
               }}
               onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(249,115,22,0.15)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(249,115,22,0.08)'; }}
@@ -704,7 +635,6 @@ export default function Chat() {
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* Voice mode toggle */}
           {sttSupported && (
             <button
               onClick={handleToggleVoice}
@@ -716,7 +646,13 @@ export default function Chat() {
                 border: 'none', cursor: 'pointer',
                 backgroundColor: voiceEnabled ? 'rgba(249,115,22,0.12)' : 'transparent',
                 color: voiceEnabled ? '#F97316' : '#3F3F46',
-                transition: 'all 0.15s',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                if (!voiceEnabled) e.currentTarget.style.color = '#71717A';
+              }}
+              onMouseLeave={(e) => {
+                if (!voiceEnabled) e.currentTarget.style.color = '#3F3F46';
               }}
             >
               <MicIcon size={11} />
@@ -740,38 +676,47 @@ export default function Chat() {
             </span>
           )}
           {registered && memories.length > 0 && (
-            <span style={{
-              fontSize: 11, color: '#3F3F46', fontWeight: 400,
-            }}>
+            <span style={{ fontSize: 11, color: '#3F3F46', fontWeight: 400 }}>
               {memories.length} {isMobile ? 'mem' : 'memories'}
             </span>
           )}
-          <button onClick={handleClear} style={{
-            display: 'flex', alignItems: 'center', gap: 5,
-            fontSize: 12, color: '#3F3F46', background: 'none',
-            border: 'none', cursor: 'pointer', padding: '6px 8px',
-            borderRadius: 6,
-          }}>
+          <button
+            onClick={handleClear}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              fontSize: 12, color: '#3F3F46', background: 'none',
+              border: 'none', cursor: 'pointer', padding: '6px 8px',
+              borderRadius: 6, transition: 'color 0.15s ease',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#71717A'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = '#3F3F46'; }}
+          >
             <TrashIcon size={12} />
             {!isMobile && 'Clear'}
           </button>
         </div>
       </div>
 
-      {/* ── Registration Banner (shown when unregistered) ── */}
+      {/* ── Registration Banner ── */}
       {!registered && messages.length > 0 && (
         <RegistrationBanner onRegisterClick={() => setShowRegistrationModal(true)} />
       )}
 
       {/* ── Messages ── */}
-      <div style={{
-        flex: 1, overflowY: 'auto',
-        display: 'flex', flexDirection: 'column',
-      }}>
+      <div
+        ref={messagesContainerRef}
+        className="scroll-smooth"
+        style={{
+          flex: 1, overflowY: 'auto',
+          display: 'flex', flexDirection: 'column',
+          overscrollBehavior: 'contain',
+        }}
+      >
         {messages.length === 0 && showSuggestions && (
           <div className="fade-in" style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
             justifyContent: 'center', flex: 1, gap: isMobile ? 32 : 40,
+            padding: isMobile ? '24px 16px' : '40px 24px',
           }}>
             <div style={{ textAlign: 'center' }}>
               <svg width={28} height={28} viewBox="0 0 32 32" fill="none" style={{ marginBottom: 20, opacity: 0.7 }}>
@@ -780,9 +725,9 @@ export default function Chat() {
               </svg>
               <h3 style={{
                 fontSize: isMobile ? 20 : 24, fontWeight: 600, color: '#F4F4F5',
-                marginBottom: 8, letterSpacing: '-0.03em',
+                marginBottom: 8, letterSpacing: '-0.03em', lineHeight: 1.25,
               }}>Ask Embris anything</h3>
-              <p style={{ fontSize: 14, color: '#3F3F46' }}>
+              <p style={{ fontSize: 14, color: '#3F3F46', lineHeight: 1.6 }}>
                 {registered
                   ? 'Your self-learning companion — I remember, reflect, grow, and track your goals'
                   : 'Your AI companion for the Vaultfire Protocol — register on-chain to unlock my full potential'
@@ -790,7 +735,6 @@ export default function Chat() {
               </p>
             </div>
 
-            {/* Registration CTA for unregistered users */}
             {!registered && (
               <button
                 onClick={() => setShowRegistrationModal(true)}
@@ -803,15 +747,17 @@ export default function Chat() {
                   borderRadius: 12,
                   fontSize: 13.5, fontWeight: 600,
                   cursor: 'pointer',
-                  transition: 'all 0.15s',
+                  transition: 'all 0.15s ease',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = 'rgba(249,115,22,0.15)';
                   e.currentTarget.style.borderColor = 'rgba(249,115,22,0.3)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = 'rgba(249,115,22,0.1)';
                   e.currentTarget.style.borderColor = 'rgba(249,115,22,0.2)';
+                  e.currentTarget.style.transform = 'none';
                 }}
               >
                 <ShieldCheckIcon size={15} />
@@ -825,7 +771,9 @@ export default function Chat() {
               gap: 8, maxWidth: 480, width: '100%',
             }}>
               {suggestedPrompts.map((prompt) => (
-                <button key={prompt} onClick={() => sendMessage(prompt)}
+                <button
+                  key={prompt}
+                  onClick={() => sendMessage(prompt)}
                   style={{
                     padding: '12px 16px',
                     backgroundColor: 'transparent',
@@ -834,9 +782,19 @@ export default function Chat() {
                     fontSize: 13, cursor: 'pointer', textAlign: 'left',
                     transition: 'all 0.15s ease',
                     fontWeight: 400, lineHeight: 1.4,
+                    minHeight: 44,
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#A1A1AA'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#52525B'; }}>
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+                    e.currentTarget.style.color = '#A1A1AA';
+                    e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)';
+                    e.currentTarget.style.color = '#52525B';
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
+                >
                   {prompt}
                 </button>
               ))}
@@ -844,19 +802,25 @@ export default function Chat() {
           </div>
         )}
 
-        {/* Message list — centered with max-width like ChatGPT */}
-        <div style={{
-          maxWidth: 680, width: '100%', margin: '0 auto',
-          padding: isMobile ? '20px 16px' : '28px 24px',
-          display: 'flex', flexDirection: 'column', gap: isMobile ? 24 : 28,
-        }}>
+        {/* Message list */}
+        <div
+          className="chat-messages"
+          style={{
+            maxWidth: 680, width: '100%', margin: '0 auto',
+            padding: isMobile ? '20px 16px' : '28px 24px',
+            display: 'flex', flexDirection: 'column', gap: isMobile ? 24 : 28,
+          }}
+        >
           {messages.map((msg) => (
-            <div key={msg.id} className="fade-in" style={{
-              display: 'flex',
-              flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
-              gap: 10, alignItems: 'flex-start',
-            }}>
-              {/* Small flame icon for Embris — 16px, like ChatGPT's avatar */}
+            <div
+              key={msg.id}
+              className="fade-in"
+              style={{
+                display: 'flex',
+                flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
+                gap: 10, alignItems: 'flex-start',
+              }}
+            >
               {msg.role === 'assistant' && <EmbrisFlame />}
 
               <div style={{
@@ -870,6 +834,7 @@ export default function Chat() {
                 overflow: 'hidden', wordBreak: 'break-word',
                 letterSpacing: '-0.01em',
               }}>
+                {/* Show typing indicator when streaming starts (empty content) */}
                 {msg.isStreaming && msg.content === '' ? (
                   <TypingIndicator />
                 ) : msg.role === 'assistant' ? (
@@ -879,7 +844,7 @@ export default function Chat() {
                 )}
               </div>
 
-              {/* TTS speaker button for assistant messages */}
+              {/* TTS speaker button */}
               {msg.role === 'assistant' && voiceEnabled && ttsSupported && msg.content && !msg.isStreaming && (
                 <button
                   onClick={() => handleSpeak(msg.content)}
@@ -889,7 +854,7 @@ export default function Chat() {
                     border: 'none', background: 'transparent',
                     color: '#3F3F46', cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    marginTop: 2, transition: 'color 0.15s',
+                    marginTop: 2, transition: 'color 0.15s ease',
                   }}
                   onMouseEnter={(e) => { e.currentTarget.style.color = '#F97316'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.color = '#3F3F46'; }}
@@ -899,7 +864,9 @@ export default function Chat() {
               )}
             </div>
           ))}
-          <div ref={messagesEndRef} />
+
+          {/* Scroll anchor */}
+          <div ref={messagesEndRef} className="chat-scroll-anchor" />
         </div>
       </div>
 
@@ -908,20 +875,18 @@ export default function Chat() {
         padding: isMobile ? '12px 16px 16px' : '16px 24px 24px',
         backgroundColor: '#09090B',
       }}>
-        <div style={{
-          maxWidth: 680, margin: '0 auto',
-        }}>
+        <div style={{ maxWidth: 680, margin: '0 auto' }}>
           <div style={{
             display: 'flex', gap: 10, alignItems: 'flex-end',
             backgroundColor: '#111113',
             borderRadius: 16,
             padding: isMobile ? '10px 12px' : '12px 16px',
             boxShadow: inputFocused
-              ? '0 0 0 1px rgba(255,255,255,0.06)'
+              ? '0 0 0 1px rgba(255,255,255,0.07), 0 2px 12px rgba(0,0,0,0.3)'
               : isListening
-                ? '0 0 0 1px rgba(249,115,22,0.3)'
-                : '0 0 0 1px rgba(255,255,255,0.03)',
-            transition: 'box-shadow 0.15s ease',
+                ? '0 0 0 1px rgba(249,115,22,0.35)'
+                : '0 0 0 1px rgba(255,255,255,0.04)',
+            transition: 'box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
           }}>
             <textarea
               ref={inputRef}
@@ -936,7 +901,7 @@ export default function Chat() {
               style={{
                 flex: 1, background: 'none', border: 'none', outline: 'none',
                 color: '#F4F4F5', fontSize: 15, resize: 'none',
-                maxHeight: 120, overflowY: 'auto', lineHeight: 1.5,
+                maxHeight: 120, overflowY: 'auto', lineHeight: 1.55,
                 fontFamily: "'Inter', sans-serif", letterSpacing: '-0.01em',
                 fontWeight: 400,
               }}
@@ -947,7 +912,7 @@ export default function Chat() {
               }}
             />
 
-            {/* Mic button — shown when voice mode is enabled */}
+            {/* Mic button */}
             {voiceEnabled && sttSupported && (
               <button
                 onClick={toggleListening}
@@ -963,7 +928,6 @@ export default function Chat() {
                   position: 'relative',
                 }}>
                 <MicIcon size={14} />
-                {/* Pulsing indicator when listening */}
                 {isListening && (
                   <span style={{
                     position: 'absolute', top: -2, right: -2,
@@ -975,6 +939,7 @@ export default function Chat() {
               </button>
             )}
 
+            {/* Send button with animation */}
             <button
               onClick={() => sendMessage(inputText)}
               disabled={isLoading || !hasText}
@@ -985,16 +950,34 @@ export default function Chat() {
                 color: hasText ? '#09090B' : '#3F3F46',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'all 0.15s ease', flexShrink: 0,
-              }}>
+                transform: sendAnimating ? 'scale(0.88)' : 'scale(1)',
+              }}
+              onMouseEnter={(e) => {
+                if (hasText && !isLoading) {
+                  e.currentTarget.style.backgroundColor = '#FB923C';
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (hasText) e.currentTarget.style.backgroundColor = '#F97316';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
               {isLoading ? (
-                <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.06)', borderTopColor: '#52525B', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                <div style={{
+                  width: 14, height: 14,
+                  border: '2px solid rgba(255,255,255,0.06)',
+                  borderTopColor: '#52525B',
+                  borderRadius: '50%',
+                  animation: 'spin 0.8s linear infinite',
+                }} />
               ) : (
                 <SendIcon size={14} />
               )}
             </button>
           </div>
           {!isMobile && (
-            <p style={{ fontSize: 11, color: '#27272A', marginTop: 8, textAlign: 'center' }}>
+            <p style={{ fontSize: 11, color: '#27272A', marginTop: 8, textAlign: 'center', lineHeight: 1.5 }}>
               Enter to send · Shift+Enter for new line{voiceEnabled ? ' · Click mic to speak' : ''}
             </p>
           )}

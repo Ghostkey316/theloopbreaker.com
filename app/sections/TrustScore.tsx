@@ -23,9 +23,30 @@ function RefreshIcon({ size = 12 }: { size?: number }) {
   );
 }
 
+// Skeleton for trust score circle
+function CircleSkeleton() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 48 }}>
+      <div className="skeleton skeleton-circle" style={{ width: 140, height: 140 }} />
+      <div className="skeleton skeleton-text-sm" style={{ width: 160, marginTop: 16 }} />
+    </div>
+  );
+}
+
+// Skeleton for a metric card
+function MetricSkeleton() {
+  return (
+    <div>
+      <div className="skeleton skeleton-text-sm" style={{ width: '70%', marginBottom: 10 }} />
+      <div className="skeleton skeleton-text-lg" style={{ width: '40%' }} />
+    </div>
+  );
+}
+
 export default function TrustScore() {
   const [metrics, setMetrics] = useState<TrustMetrics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [chainStatus, setChainStatus] = useState<Record<string, RPCResult>>({});
 
@@ -39,6 +60,7 @@ export default function TrustScore() {
   useEffect(() => { loadMetrics(); }, []);
 
   const loadMetrics = async () => {
+    if (!loading) setRefreshing(true);
     setLoading(true);
     try {
       const [chains, baseStatus, avaxStatus] = await Promise.all([
@@ -56,23 +78,16 @@ export default function TrustScore() {
       const userReg = isRegistered();
       const regChains = getRegisteredChains();
 
-      // Calculate chains active
       let chainsActive = 0;
       if (chains.base?.success) chainsActive++;
       if (chains.avalanche?.success) chainsActive++;
 
-      // Calculate uptime from contract health
       const uptimePercent = totalCount > 0 ? Math.round((verifiedCount / totalCount) * 100) : 0;
 
-      // Calculate trust score
       let score = 0;
-      // Contract health (40%)
       score += (verifiedCount / totalCount) * 40;
-      // Chain availability (20%)
       score += (chainsActive / 2) * 20;
-      // Protocol maturity (20%) — always high since contracts are deployed
       score += 20;
-      // User registration (20%)
       if (userReg) score += 10;
       if (regChains.length >= 2) score += 10;
       else if (regChains.length >= 1) score += 5;
@@ -94,7 +109,6 @@ export default function TrustScore() {
         grade,
       });
     } catch {
-      // Set defaults on error
       setMetrics({
         totalContracts: ALL_CONTRACTS.length,
         verifiedContracts: 0,
@@ -107,11 +121,11 @@ export default function TrustScore() {
       });
     }
     setLoading(false);
+    setRefreshing(false);
   };
 
   const monoStyle: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
 
-  // Circular score display
   const scoreColor = metrics ? (
     metrics.trustScore >= 90 ? '#22C55E' :
     metrics.trustScore >= 70 ? '#EAB308' :
@@ -122,7 +136,7 @@ export default function TrustScore() {
   const strokeDashoffset = metrics ? circumference - (metrics.trustScore / 100) * circumference : circumference;
 
   return (
-    <div style={{ padding: isMobile ? "24px 16px 48px" : "48px 40px", maxWidth: 680, margin: "0 auto" }}>
+    <div className="page-enter" style={{ padding: isMobile ? "24px 16px 48px" : "48px 40px", maxWidth: 680, margin: "0 auto" }}>
       {/* Header */}
       <div style={{
         display: "flex", alignItems: isMobile ? "flex-start" : "center",
@@ -130,10 +144,12 @@ export default function TrustScore() {
         flexDirection: isMobile ? "column" : "row", gap: isMobile ? 16 : 0,
       }}>
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 600, color: "#F4F4F5", letterSpacing: "-0.03em" }}>Trust Score</h1>
-          <p style={{ fontSize: 12, color: "#3F3F46", marginTop: 4 }}>Vaultfire Protocol ecosystem health</p>
+          <h1 style={{ fontSize: 28, fontWeight: 600, color: "#F4F4F5", letterSpacing: "-0.03em", lineHeight: 1.25 }}>Trust Score</h1>
+          <p style={{ fontSize: 12, color: "#3F3F46", marginTop: 4, lineHeight: 1.5 }}>Vaultfire Protocol ecosystem health</p>
         </div>
-        <button onClick={loadMetrics} disabled={loading}
+        <button
+          onClick={loadMetrics}
+          disabled={loading}
           style={{
             display: "inline-flex", alignItems: "center", gap: 6,
             padding: "8px 16px",
@@ -143,49 +159,70 @@ export default function TrustScore() {
             fontSize: 12, fontWeight: 600,
             cursor: loading ? "default" : "pointer",
             alignSelf: isMobile ? "stretch" : "auto", justifyContent: "center",
-          }}>
-          <RefreshIcon size={12} />
+            transition: "all 0.15s ease",
+          }}
+          onMouseEnter={(e) => {
+            if (!loading) {
+              e.currentTarget.style.background = '#FB923C';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!loading) {
+              e.currentTarget.style.background = '#F97316';
+              e.currentTarget.style.transform = 'none';
+            }
+          }}
+        >
+          <span style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none', display: 'flex' }}>
+            <RefreshIcon size={12} />
+          </span>
           {loading ? "Checking..." : "Refresh"}
         </button>
       </div>
 
       {/* Trust Score Circle */}
-      <div style={{
-        display: "flex", flexDirection: "column", alignItems: "center",
-        marginBottom: 48,
-      }}>
-        <div style={{ position: "relative", width: 140, height: 140 }}>
-          <svg width={140} height={140} viewBox="0 0 120 120" style={{ transform: "rotate(-90deg)" }}>
-            <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="8" />
-            <circle
-              cx="60" cy="60" r="54" fill="none"
-              stroke={scoreColor}
-              strokeWidth="8"
-              strokeLinecap="round"
-              strokeDasharray={circumference}
-              strokeDashoffset={loading ? circumference : strokeDashoffset}
-              style={{ transition: "stroke-dashoffset 1s ease-out, stroke 0.3s ease" }}
-            />
-          </svg>
-          <div style={{
-            position: "absolute", inset: 0,
-            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-          }}>
-            <span style={{
-              fontSize: 32, fontWeight: 700, color: scoreColor,
-              ...monoStyle, letterSpacing: "-0.03em",
+      {loading ? (
+        <CircleSkeleton />
+      ) : (
+        <div style={{
+          display: "flex", flexDirection: "column", alignItems: "center",
+          marginBottom: 48,
+        }}>
+          <div style={{ position: "relative", width: 140, height: 140 }}>
+            <svg width={140} height={140} viewBox="0 0 120 120" style={{ transform: "rotate(-90deg)" }}>
+              <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="8" />
+              <circle
+                cx="60" cy="60" r="54" fill="none"
+                stroke={scoreColor}
+                strokeWidth="8"
+                strokeLinecap="round"
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+                style={{ transition: "stroke-dashoffset 1.2s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.3s ease" }}
+              />
+            </svg>
+            <div style={{
+              position: "absolute", inset: 0,
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
             }}>
-              {loading ? "—" : metrics?.trustScore || 0}
-            </span>
-            <span style={{ fontSize: 11, color: "#52525B", fontWeight: 500 }}>
-              {loading ? "" : `Grade: ${metrics?.grade || 'N/A'}`}
-            </span>
+              <span style={{
+                fontSize: 32, fontWeight: 700, color: scoreColor,
+                ...monoStyle, letterSpacing: "-0.03em",
+                transition: "color 0.3s ease",
+              }}>
+                {metrics?.trustScore || 0}
+              </span>
+              <span style={{ fontSize: 11, color: "#52525B", fontWeight: 500 }}>
+                {`Grade: ${metrics?.grade || 'N/A'}`}
+              </span>
+            </div>
           </div>
+          <p style={{ fontSize: 12, color: "#3F3F46", marginTop: 12, lineHeight: 1.5 }}>
+            Vaultfire Protocol Trust Score
+          </p>
         </div>
-        <p style={{ fontSize: 12, color: "#3F3F46", marginTop: 12 }}>
-          Vaultfire Protocol Trust Score
-        </p>
-      </div>
+      )}
 
       {/* Metrics Grid */}
       <div style={{
@@ -194,17 +231,20 @@ export default function TrustScore() {
         gap: isMobile ? "24px 16px" : "24px 32px",
         marginBottom: 48,
       }}>
-        {[
-          { label: "Verified Contracts", value: loading ? "—" : `${metrics?.verifiedContracts || 0}/${metrics?.totalContracts || 0}`, color: "#F4F4F5" },
-          { label: "Chains Active", value: loading ? "—" : `${metrics?.chainsActive || 0}/2`, color: metrics && metrics.chainsActive >= 2 ? "#22C55E" : "#EAB308" },
-          { label: "Protocol Uptime", value: loading ? "—" : `${metrics?.uptimePercent || 0}%`, color: metrics && metrics.uptimePercent >= 90 ? "#22C55E" : "#EAB308" },
-          { label: "Your Status", value: loading ? "—" : metrics?.userRegistered ? "Registered" : "Unregistered", color: metrics?.userRegistered ? "#22C55E" : "#71717A" },
-        ].map((stat) => (
-          <div key={stat.label}>
-            <p style={{ fontSize: 11, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8, fontWeight: 500 }}>{stat.label}</p>
-            <p style={{ fontSize: 20, fontWeight: 600, color: stat.color, ...monoStyle, letterSpacing: "-0.02em" }}>{stat.value}</p>
-          </div>
-        ))}
+        {loading
+          ? Array.from({ length: 4 }).map((_, i) => <MetricSkeleton key={i} />)
+          : [
+            { label: "Verified Contracts", value: `${metrics?.verifiedContracts || 0}/${metrics?.totalContracts || 0}`, color: "#F4F4F5" },
+            { label: "Chains Active", value: `${metrics?.chainsActive || 0}/2`, color: metrics && metrics.chainsActive >= 2 ? "#22C55E" : "#EAB308" },
+            { label: "Protocol Uptime", value: `${metrics?.uptimePercent || 0}%`, color: metrics && metrics.uptimePercent >= 90 ? "#22C55E" : "#EAB308" },
+            { label: "Your Status", value: metrics?.userRegistered ? "Registered" : "Unregistered", color: metrics?.userRegistered ? "#22C55E" : "#71717A" },
+          ].map((stat) => (
+            <div key={stat.label}>
+              <p style={{ fontSize: 11, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8, fontWeight: 500 }}>{stat.label}</p>
+              <p style={{ fontSize: 20, fontWeight: 600, color: stat.color, ...monoStyle, letterSpacing: "-0.02em" }}>{stat.value}</p>
+            </div>
+          ))
+        }
       </div>
 
       {/* Chain Status */}
@@ -221,13 +261,15 @@ export default function TrustScore() {
               display: "flex", alignItems: "center", justifyContent: "space-between",
               padding: "14px 0",
               borderBottom: "1px solid rgba(255,255,255,0.03)",
+              transition: "background-color 0.12s ease",
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{
                   width: 6, height: 6, borderRadius: "50%",
                   backgroundColor: status?.success ? "#22C55E" : "#3F3F46",
+                  transition: "background-color 0.3s ease",
                 }} />
-                <span style={{ fontSize: 14, color: "#F4F4F5", fontWeight: 400 }}>{c.name}</span>
+                <span style={{ fontSize: 14, color: "#F4F4F5", fontWeight: 400, lineHeight: 1.5 }}>{c.name}</span>
                 <span style={{
                   fontSize: 10, color: c.color, fontWeight: 500,
                   padding: "2px 6px", backgroundColor: `${c.color}10`, borderRadius: 4,
@@ -245,6 +287,7 @@ export default function TrustScore() {
                 <span style={{
                   fontSize: 11, fontWeight: 500,
                   color: status?.success ? "#22C55E" : "#3F3F46",
+                  transition: "color 0.3s ease",
                 }}>
                   {loading ? "..." : status?.success ? "Live" : "Down"}
                 </span>
@@ -264,19 +307,20 @@ export default function TrustScore() {
             { label: "Protocol Maturity", weight: "20%", score: 20, max: 20 },
             { label: "User Registration", weight: "20%", score: metrics.userRegistered ? (metrics.registeredChains.length >= 2 ? 20 : 15) : 0, max: 20 },
           ].map((item) => (
-            <div key={item.label} style={{ marginBottom: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                <span style={{ fontSize: 13, color: "#A1A1AA" }}>{item.label}</span>
+            <div key={item.label} style={{ marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ fontSize: 13, color: "#A1A1AA", lineHeight: 1.5 }}>{item.label}</span>
                 <span style={{ fontSize: 12, color: "#71717A", ...monoStyle }}>{item.score}/{item.max}</span>
               </div>
               <div style={{
                 width: "100%", height: 3, backgroundColor: "rgba(255,255,255,0.04)",
-                borderRadius: 2,
+                borderRadius: 2, overflow: "hidden",
               }}>
                 <div style={{
                   width: `${(item.score / item.max) * 100}%`, height: "100%",
                   backgroundColor: item.score >= item.max * 0.8 ? "#22C55E" : item.score >= item.max * 0.5 ? "#EAB308" : "#EF4444",
-                  borderRadius: 2, transition: "width 0.5s ease",
+                  borderRadius: 2,
+                  transition: "width 0.8s cubic-bezier(0.16, 1, 0.3, 1)",
                 }} />
               </div>
             </div>

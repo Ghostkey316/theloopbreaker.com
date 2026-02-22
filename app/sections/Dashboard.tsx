@@ -18,10 +18,36 @@ function ExternalIcon({ size = 10 }: { size?: number }) {
   return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>);
 }
 
+// Skeleton for a stat card
+function StatSkeleton() {
+  return (
+    <div>
+      <div className="skeleton skeleton-text-sm" style={{ width: '55%', marginBottom: 10 }} />
+      <div className="skeleton skeleton-title" style={{ width: '40%' }} />
+    </div>
+  );
+}
+
+// Skeleton for a contract row
+function ContractRowSkeleton({ idx }: { idx: number }) {
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 8,
+      padding: "8px 0",
+      backgroundColor: idx % 2 === 1 ? "rgba(255,255,255,0.015)" : "transparent",
+    }}>
+      <div className="skeleton skeleton-circle" style={{ width: 4, height: 4, flexShrink: 0 }} />
+      <div className="skeleton skeleton-text" style={{ flex: 1 }} />
+      <div className="skeleton skeleton-circle" style={{ width: 12, height: 12, flexShrink: 0 }} />
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const [chainStatus, setChainStatus] = useState<Record<string, RPCResult>>({});
   const [contractStatus, setContractStatus] = useState<Record<string, boolean | null>>({});
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [baseGov, setBaseGov] = useState<GovernanceData | null>(null);
@@ -39,6 +65,7 @@ export default function Dashboard() {
   useEffect(() => { loadAll(); }, []);
 
   const loadAll = async () => {
+    if (!loading) setRefreshing(true);
     setLoading(true);
     const [chains, baseStatus, avaxStatus] = await Promise.all([
       checkAllChains(),
@@ -66,6 +93,7 @@ export default function Dashboard() {
 
     setLastUpdated(new Date());
     setLoading(false);
+    setRefreshing(false);
   };
 
   const contractsWithStatus: ContractWithStatus[] = ALL_CONTRACTS.map((c) => ({
@@ -81,8 +109,17 @@ export default function Dashboard() {
 
   const monoStyle: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
 
+  const statCards = [
+    { label: "Health", value: healthScore !== null ? `${healthScore}%` : "\u2014", color: healthScore !== null ? (healthScore >= 90 ? "#22C55E" : healthScore >= 70 ? "#EAB308" : "#EF4444") : "#3F3F46" },
+    { label: "Contracts Live", value: `${aliveCount}/${totalChecked || ALL_CONTRACTS.length}`, color: "#F4F4F5" },
+    { label: "Base Block", value: chainStatus.base?.blockNumber?.toLocaleString() || "\u2014", color: "#F4F4F5" },
+    { label: "Avax Block", value: chainStatus.avalanche?.blockNumber?.toLocaleString() || "\u2014", color: "#F4F4F5" },
+    { label: "Base Latency", value: chainStatus.base?.latency ? `${chainStatus.base.latency}ms` : "\u2014", color: "#A1A1AA" },
+    { label: "Avax Latency", value: chainStatus.avalanche?.latency ? `${chainStatus.avalanche.latency}ms` : "\u2014", color: "#A1A1AA" },
+  ];
+
   return (
-    <div style={{ padding: isMobile ? "24px 16px 48px" : "48px 40px", maxWidth: 720, margin: "0 auto" }}>
+    <div className="page-enter" style={{ padding: isMobile ? "24px 16px 48px" : "48px 40px", maxWidth: 720, margin: "0 auto" }}>
       {/* Header */}
       <div style={{
         display: "flex", alignItems: isMobile ? "flex-start" : "center",
@@ -90,10 +127,14 @@ export default function Dashboard() {
         flexDirection: isMobile ? "column" : "row", gap: isMobile ? 16 : 0,
       }}>
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 600, color: "#F4F4F5", letterSpacing: "-0.03em" }}>Dashboard</h1>
-          <p style={{ fontSize: 12, color: "#3F3F46", marginTop: 4 }}>{lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : "Loading..."}</p>
+          <h1 style={{ fontSize: 28, fontWeight: 600, color: "#F4F4F5", letterSpacing: "-0.03em", lineHeight: 1.25 }}>Dashboard</h1>
+          <p style={{ fontSize: 12, color: "#3F3F46", marginTop: 4, lineHeight: 1.5 }}>
+            {lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : "Loading on-chain data..."}
+          </p>
         </div>
-        <button onClick={loadAll} disabled={loading}
+        <button
+          onClick={loadAll}
+          disabled={loading}
           style={{
             display: "inline-flex", alignItems: "center", gap: 6,
             padding: "8px 16px",
@@ -103,40 +144,52 @@ export default function Dashboard() {
             fontSize: 12, fontWeight: 600,
             cursor: loading ? "default" : "pointer",
             alignSelf: isMobile ? "stretch" : "auto", justifyContent: "center",
-          }}>
-          <RefreshIcon size={12} />
+            transition: "all 0.15s ease",
+          }}
+          onMouseEnter={(e) => {
+            if (!loading) {
+              e.currentTarget.style.background = '#FB923C';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!loading) {
+              e.currentTarget.style.background = '#F97316';
+              e.currentTarget.style.transform = 'none';
+            }
+          }}
+        >
+          <span style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none', display: 'flex' }}>
+            <RefreshIcon size={12} />
+          </span>
           {loading ? "Refreshing..." : "Refresh"}
         </button>
       </div>
 
-      {/* Stats — large numbers, whitespace separated */}
+      {/* Stats — skeleton while loading */}
       <div style={{
         display: "grid",
         gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(3, 1fr)",
         gap: isMobile ? "24px 16px" : "32px 40px",
         marginBottom: 48,
       }}>
-        {[
-          { label: "Health", value: healthScore !== null ? `${healthScore}%` : "\u2014", color: healthScore !== null ? (healthScore >= 90 ? "#22C55E" : healthScore >= 70 ? "#EAB308" : "#EF4444") : "#3F3F46" },
-          { label: "Contracts Live", value: `${aliveCount}/${totalChecked || ALL_CONTRACTS.length}`, color: "#F4F4F5" },
-          { label: "Base Block", value: chainStatus.base?.blockNumber?.toLocaleString() || "\u2014", color: "#F4F4F5" },
-          { label: "Avax Block", value: chainStatus.avalanche?.blockNumber?.toLocaleString() || "\u2014", color: "#F4F4F5" },
-          { label: "Base Latency", value: chainStatus.base?.latency ? `${chainStatus.base.latency}ms` : "\u2014", color: "#A1A1AA" },
-          { label: "Avax Latency", value: chainStatus.avalanche?.latency ? `${chainStatus.avalanche.latency}ms` : "\u2014", color: "#A1A1AA" },
-        ].map((card) => (
-          <div key={card.label}>
-            <p style={{ fontSize: 11, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8, fontWeight: 500 }}>{card.label}</p>
-            <p style={{
-              fontSize: isMobile ? 22 : 26, fontWeight: 600, color: card.color,
-              ...monoStyle,
-              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-              letterSpacing: "-0.02em",
-            }}>{loading ? "\u2014" : card.value}</p>
-          </div>
-        ))}
+        {loading
+          ? Array.from({ length: 6 }).map((_, i) => <StatSkeleton key={i} />)
+          : statCards.map((card) => (
+            <div key={card.label}>
+              <p style={{ fontSize: 11, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8, fontWeight: 500 }}>{card.label}</p>
+              <p style={{
+                fontSize: isMobile ? 22 : 26, fontWeight: 600, color: card.color,
+                ...monoStyle,
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                letterSpacing: "-0.02em",
+              }}>{card.value}</p>
+            </div>
+          ))
+        }
       </div>
 
-      {/* Governance & Bridge — clean table rows, no card borders */}
+      {/* Governance & Bridge */}
       {!loading && (
         <div style={{ marginBottom: 48 }}>
           <h2 style={{
@@ -145,7 +198,6 @@ export default function Dashboard() {
             marginBottom: 16,
           }}>Governance & Bridge</h2>
 
-          {/* Table header */}
           <div style={{
             display: "grid",
             gridTemplateColumns: isMobile ? "1fr auto auto" : "1fr auto auto auto",
@@ -173,13 +225,15 @@ export default function Dashboard() {
               padding: "12px 0",
               backgroundColor: i % 2 === 1 ? "rgba(255,255,255,0.015)" : "transparent",
               borderBottom: "1px solid rgba(255,255,255,0.02)",
+              transition: "background-color 0.12s ease",
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{
                   width: 5, height: 5, borderRadius: "50%",
                   backgroundColor: row.alive ? "#22C55E" : "#3F3F46",
+                  transition: "background-color 0.3s ease",
                 }} />
-                <span style={{ fontSize: 13, color: "#F4F4F5", fontWeight: 400 }}>{row.label}</span>
+                <span style={{ fontSize: 13, color: "#F4F4F5", fontWeight: 400, lineHeight: 1.5 }}>{row.label}</span>
               </div>
               <span style={{ fontSize: 12, color: "#71717A", ...monoStyle, textAlign: "right" }}>
                 {row.detail}
@@ -189,6 +243,7 @@ export default function Dashboard() {
                 fontSize: 11, fontWeight: 500,
                 color: row.alive ? "#22C55E" : "#3F3F46",
                 textAlign: "right",
+                transition: "color 0.3s ease",
               }}>
                 {row.alive ? "Live" : "N/A"}
               </span>
@@ -197,7 +252,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Contract Tables — real tables with column headers */}
+      {/* Contract Tables */}
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)", gap: isMobile ? 40 : 32 }}>
         {[
           { title: "Base", contracts: baseContracts, chain: "base" as const },
@@ -214,7 +269,6 @@ export default function Dashboard() {
               </span>
             </div>
 
-            {/* Column header */}
             <div style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
               padding: "0 0 6px",
@@ -225,33 +279,45 @@ export default function Dashboard() {
               <span style={{ fontSize: 10, color: "#52525B", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500 }}>Link</span>
             </div>
 
-            {contracts.map((contract, idx) => (
-              <div key={contract.address} style={{
-                display: "flex", alignItems: "center", gap: 8,
-                padding: "8px 0",
-                backgroundColor: idx % 2 === 1 ? "rgba(255,255,255,0.015)" : "transparent",
-                borderBottom: idx < contracts.length - 1 ? "1px solid rgba(255,255,255,0.02)" : "none",
-              }}>
-                <div style={{
-                  width: 4, height: 4, borderRadius: "50%", flexShrink: 0,
-                  backgroundColor: loading ? "#52525B" : contract.alive === true ? "#22C55E" : contract.alive === false ? "#EF4444" : "#3F3F46",
-                }} />
-                <span style={{
-                  fontSize: 12, fontWeight: 400, color: "#E4E4E7",
-                  flex: 1, minWidth: 0,
-                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                  ...monoStyle,
-                }}>{contract.name}</span>
-                <a href={`${CHAINS[chain].explorerUrl}/address/${contract.address}`} target="_blank" rel="noopener noreferrer"
-                  style={{
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    flexShrink: 0, padding: 3, color: "#3F3F46",
-                    textDecoration: "none",
-                  }}>
-                  <ExternalIcon size={9} />
-                </a>
-              </div>
-            ))}
+            {loading
+              ? Array.from({ length: 5 }).map((_, i) => <ContractRowSkeleton key={i} idx={i} />)
+              : contracts.map((contract, idx) => (
+                <div key={contract.address} style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  padding: "8px 0",
+                  backgroundColor: idx % 2 === 1 ? "rgba(255,255,255,0.015)" : "transparent",
+                  borderBottom: idx < contracts.length - 1 ? "1px solid rgba(255,255,255,0.02)" : "none",
+                  transition: "background-color 0.12s ease",
+                }}>
+                  <div style={{
+                    width: 4, height: 4, borderRadius: "50%", flexShrink: 0,
+                    backgroundColor: loading ? "#52525B" : contract.alive === true ? "#22C55E" : contract.alive === false ? "#EF4444" : "#3F3F46",
+                    transition: "background-color 0.3s ease",
+                  }} />
+                  <span style={{
+                    fontSize: 12, fontWeight: 400, color: "#E4E4E7",
+                    flex: 1, minWidth: 0,
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    ...monoStyle,
+                  }}>{contract.name}</span>
+                  <a
+                    href={`${CHAINS[chain].explorerUrl}/address/${contract.address}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      flexShrink: 0, padding: 4, color: "#3F3F46",
+                      textDecoration: "none", borderRadius: 4,
+                      transition: "color 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = '#F97316'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = '#3F3F46'; }}
+                  >
+                    <ExternalIcon size={9} />
+                  </a>
+                </div>
+              ))
+            }
           </div>
         ))}
       </div>

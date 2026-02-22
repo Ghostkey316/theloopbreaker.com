@@ -49,15 +49,15 @@ export default function Analytics() {
 
   if (!registered) {
     return (
-      <div style={{ padding: isMobile ? "24px 16px 48px" : "48px 40px", maxWidth: 600, margin: "0 auto" }}>
-        <h1 style={{ fontSize: 28, fontWeight: 600, color: "#F4F4F5", letterSpacing: "-0.03em", marginBottom: 8 }}>Analytics</h1>
-        <p style={{ fontSize: 14, color: "#52525B", marginBottom: 40 }}>Your Embris intelligence data</p>
+      <div className="page-enter" style={{ padding: isMobile ? "24px 16px 48px" : "48px 40px", maxWidth: 600, margin: "0 auto" }}>
+        <h1 style={{ fontSize: 28, fontWeight: 600, color: "#F4F4F5", letterSpacing: "-0.03em", marginBottom: 8, lineHeight: 1.25 }}>Analytics</h1>
+        <p style={{ fontSize: 14, color: "#52525B", marginBottom: 40, lineHeight: 1.6 }}>Your Embris intelligence data</p>
         <div style={{
           display: "flex", flexDirection: "column", alignItems: "center",
           padding: "60px 24px", textAlign: "center",
         }}>
           <div style={{ color: "#3F3F46", marginBottom: 16 }}><LockIcon size={32} /></div>
-          <h2 style={{ fontSize: 18, fontWeight: 600, color: "#F4F4F5", marginBottom: 8 }}>Register to Unlock Analytics</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 600, color: "#F4F4F5", marginBottom: 8, letterSpacing: "-0.02em", lineHeight: 1.3 }}>Register to Unlock Analytics</h2>
           <p style={{ fontSize: 14, color: "#52525B", maxWidth: 360, lineHeight: 1.6 }}>
             Analytics tracks your Embris growth — conversations, memories, patterns, insights, goals, and emotional trends.
             Register on-chain to start building your profile.
@@ -68,7 +68,7 @@ export default function Analytics() {
   }
 
   return (
-    <div style={{ padding: isMobile ? "24px 16px 48px" : "48px 40px", maxWidth: 680, margin: "0 auto" }}>
+    <div className="page-enter" style={{ padding: isMobile ? "24px 16px 48px" : "48px 40px", maxWidth: 680, margin: "0 auto" }}>
       {/* Header */}
       <div style={{
         display: "flex", alignItems: isMobile ? "flex-start" : "center",
@@ -76,17 +76,28 @@ export default function Analytics() {
         flexDirection: isMobile ? "column" : "row", gap: isMobile ? 16 : 0,
       }}>
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 600, color: "#F4F4F5", letterSpacing: "-0.03em" }}>Analytics</h1>
-          <p style={{ fontSize: 12, color: "#3F3F46", marginTop: 4 }}>Your Embris intelligence data</p>
+          <h1 style={{ fontSize: 28, fontWeight: 600, color: "#F4F4F5", letterSpacing: "-0.03em", lineHeight: 1.25 }}>Analytics</h1>
+          <p style={{ fontSize: 12, color: "#3F3F46", marginTop: 4, lineHeight: 1.5 }}>Your Embris intelligence data</p>
         </div>
-        <button onClick={refresh}
+        <button
+          onClick={refresh}
           style={{
             display: "inline-flex", alignItems: "center", gap: 6,
             padding: "8px 16px", background: "#F97316",
             border: "none", borderRadius: 8,
             color: "#09090B", fontSize: 12, fontWeight: 600, cursor: "pointer",
             alignSelf: isMobile ? "stretch" : "auto", justifyContent: "center",
-          }}>
+            transition: "all 0.15s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#FB923C';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = '#F97316';
+            e.currentTarget.style.transform = 'none';
+          }}
+        >
           <RefreshIcon size={12} />
           Refresh
         </button>
@@ -143,20 +154,20 @@ export default function Analytics() {
                   const total = data.totalMemories || 1;
                   const percent = Math.round((count / total) * 100);
                   return (
-                    <div key={category} style={{ marginBottom: 10 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                        <span style={{ fontSize: 13, color: "#A1A1AA", textTransform: "capitalize" }}>
+                    <div key={category} style={{ marginBottom: 12 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                        <span style={{ fontSize: 13, color: "#A1A1AA", textTransform: "capitalize", lineHeight: 1.5 }}>
                           {category.replace(/_/g, ' ')}
                         </span>
                         <span style={{ fontSize: 12, color: "#71717A", ...monoStyle }}>{count} ({percent}%)</span>
                       </div>
                       <div style={{
-                        width: "100%", height: 3, backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 2,
+                        width: "100%", height: 3, backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 2, overflow: "hidden",
                       }}>
                         <div style={{
                           width: `${percent}%`, height: "100%",
                           backgroundColor: "#F97316", borderRadius: 2,
-                          transition: "width 0.5s ease", opacity: 0.7,
+                          transition: "width 0.8s cubic-bezier(0.16, 1, 0.3, 1)", opacity: 0.7,
                         }} />
                       </div>
                     </div>
@@ -177,15 +188,22 @@ export default function Analytics() {
                     sad: '#6366F1', curious: '#06B6D4', determined: '#F97316',
                   };
                   return (
-                    <div key={mood} style={{
-                      display: "flex", alignItems: "center", gap: 6,
-                      padding: "6px 12px",
-                      backgroundColor: "rgba(255,255,255,0.02)",
-                      borderRadius: 8,
-                    }}>
+                    <div
+                      key={mood}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 6,
+                        padding: "6px 12px",
+                        backgroundColor: "rgba(255,255,255,0.02)",
+                        borderRadius: 8,
+                        transition: "background-color 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)'; }}
+                    >
                       <span style={{
                         width: 6, height: 6, borderRadius: "50%",
                         backgroundColor: moodColors[mood] || '#71717A',
+                        flexShrink: 0,
                       }} />
                       <span style={{ fontSize: 12, color: "#A1A1AA", textTransform: "capitalize" }}>{mood}</span>
                       <span style={{ fontSize: 11, color: "#52525B", ...monoStyle }}>{count}</span>
@@ -204,13 +222,19 @@ export default function Analytics() {
                 {Object.entries(data.patternCategories)
                   .sort((a, b) => b[1] - a[1])
                   .map(([category, count]) => (
-                    <div key={category} style={{
-                      padding: "6px 12px",
-                      backgroundColor: "rgba(255,255,255,0.02)",
-                      borderRadius: 8,
-                      fontSize: 12, color: "#A1A1AA",
-                      textTransform: "capitalize",
-                    }}>
+                    <div
+                      key={category}
+                      style={{
+                        padding: "6px 12px",
+                        backgroundColor: "rgba(255,255,255,0.02)",
+                        borderRadius: 8,
+                        fontSize: 12, color: "#A1A1AA",
+                        textTransform: "capitalize",
+                        transition: "background-color 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)'; }}
+                    >
                       {category} <span style={{ color: "#52525B", ...monoStyle }}>({count})</span>
                     </div>
                   ))}
@@ -223,8 +247,8 @@ export default function Analytics() {
               textAlign: "center", padding: "40px 24px",
               color: "#3F3F46",
             }}>
-              <p style={{ fontSize: 14, marginBottom: 8 }}>No data yet</p>
-              <p style={{ fontSize: 12, color: "#27272A" }}>Start chatting with Embris to see your analytics grow.</p>
+              <p style={{ fontSize: 14, marginBottom: 8, lineHeight: 1.6 }}>No data yet</p>
+              <p style={{ fontSize: 12, color: "#27272A", lineHeight: 1.6 }}>Start chatting with Embris to see your analytics grow.</p>
             </div>
           )}
         </>

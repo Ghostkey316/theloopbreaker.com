@@ -53,7 +53,7 @@ export default function Home() {
   const anyLoading = chains.some(c => c.loading);
 
   return (
-    <div style={{ padding: isMobile ? '32px 20px 48px' : '56px 48px', maxWidth: 640, margin: '0 auto' }}>
+    <div className="page-enter" style={{ padding: isMobile ? '32px 20px 48px' : '56px 48px', maxWidth: 640, margin: '0 auto' }}>
 
       {/* ── Hero ── */}
       <div style={{ marginBottom: isMobile ? 56 : 72 }}>
