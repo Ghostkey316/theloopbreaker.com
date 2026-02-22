@@ -11,6 +11,7 @@ import {
   Modal,
   Keyboard,
   Alert,
+  ScrollView,
 } from "react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ScreenContainer } from "@/components/screen-container";
@@ -65,6 +66,17 @@ import { trackMessage, trackSession } from "@/lib/analytics";
 import { addNotification, checkMilestones } from "@/lib/notifications";
 import { detectContractQuery, executeContractQuery } from "@/lib/contract-interaction";
 import { speakText, stopSpeaking, isTTSSupported, isSTTSupported, getVoiceModeEnabled, setVoiceModeEnabled, getVoiceRate, setVoiceRate as saveVoiceRate, getVoicePitch, setVoicePitch as saveVoicePitch } from "@/lib/voice-mode";
+import {
+  type ConversationMeta,
+  getConversationIndex,
+  ensureActiveConversation,
+  createConversation,
+  deleteConversation,
+  getConversationMessages,
+  saveConversationMessages,
+  setActiveConversationId,
+  updateConversationTitle,
+} from "@/lib/conversations";
 
 interface ChatMessageWithStatus extends ChatMessage {
   isTyping?: boolean;
@@ -100,6 +112,12 @@ export default function ChatScreen() {
   const [voiceRate, setVoiceRateState] = useState(1.0);
   const [voicePitch, setVoicePitchState] = useState(1.0);
   const [showVoiceSettings, setShowVoiceSettings] = useState(false);
+  // Multi-conversation state
+  const [conversationList, setConversationList] = useState<ConversationMeta[]>([]);
+  const [activeConvId, setActiveConvId] = useState<string | null>(null);
+  const [showConversations, setShowConversations] = useState(false);
+  const [confirmDeleteConvId, setConfirmDeleteConvId] = useState<string | null>(null);
+  const titleSetRef = useRef(false);
   const flatListRef = useRef<FlatList>(null);
   const chatMutation = trpc.chat.send.useMutation();
   const inputRef = useRef<TextInput>(null);
@@ -107,10 +125,22 @@ export default function ChatScreen() {
   const messageCountRef = useRef(0);
 
   // Load data on mount
+  // Refresh conversation list
+  const refreshConversationList = useCallback(async () => {
+    const index = await getConversationIndex();
+    setConversationList(index);
+  }, []);
+
   useEffect(() => {
     const loadData = async () => {
-      const [history, mems, legacyAddr, nativeAddr, voiceMode, rate, pitch] = await Promise.all([
-        getChatHistory(),
+      // Initialize multi-conversation system
+      const convId = await ensureActiveConversation();
+      setActiveConvId(convId);
+      titleSetRef.current = false;
+      const convMessages = await getConversationMessages(convId);
+      await refreshConversationList();
+
+      const [mems, legacyAddr, nativeAddr, voiceMode, rate, pitch] = await Promise.all([
         getMemories(),
         getLegacyWalletAddress(),
         getNativeWalletAddress(),
@@ -118,12 +148,12 @@ export default function ChatScreen() {
         getVoiceRate(),
         getVoicePitch(),
       ]);
-      if (history.length > 0) setMessages(history);
+      if (convMessages.length > 0) setMessages(convMessages);
       setMemoriesState(mems);
       setVoiceEnabled(voiceMode);
       setVoiceRateState(rate);
       setVoicePitchState(pitch);
-      messageCountRef.current = history.length;
+      messageCountRef.current = convMessages.length;
 
       const addr = nativeAddr || legacyAddr;
       if (addr) {
@@ -250,12 +280,63 @@ export default function ChatScreen() {
             setMemoriesState([]);
             await clearChatHistory();
             await clearMemories();
+            // Start a fresh conversation
+            if (activeConvId) {
+              await saveConversationMessages(activeConvId, []);
+            }
+            const meta = await createConversation();
+            setActiveConvId(meta.id);
+            titleSetRef.current = false;
+            messageCountRef.current = 0;
+            await refreshConversationList();
             setMenuVisible(false);
           },
         },
       ]
     );
-  }, []);
+  }, [activeConvId, refreshConversationList]);
+
+  // Multi-conversation handlers
+  const handleNewConversation = useCallback(async () => {
+    const meta = await createConversation();
+    setActiveConvId(meta.id);
+    setMessages([]);
+    titleSetRef.current = false;
+    messageCountRef.current = 0;
+    await refreshConversationList();
+    setShowConversations(false);
+  }, [refreshConversationList]);
+
+  const handleSwitchConversation = useCallback(async (id: string) => {
+    if (id === activeConvId) { setShowConversations(false); return; }
+    await setActiveConversationId(id);
+    setActiveConvId(id);
+    titleSetRef.current = false;
+    const msgs = await getConversationMessages(id);
+    setMessages(msgs);
+    messageCountRef.current = msgs.length;
+    setShowConversations(false);
+  }, [activeConvId]);
+
+  const handleDeleteConversation = useCallback(async (id: string) => {
+    await deleteConversation(id);
+    const index = await getConversationIndex();
+    setConversationList(index);
+    if (id === activeConvId) {
+      if (index.length > 0) {
+        await setActiveConversationId(index[0].id);
+        setActiveConvId(index[0].id);
+        const msgs = await getConversationMessages(index[0].id);
+        setMessages(msgs);
+      } else {
+        const meta = await createConversation();
+        setActiveConvId(meta.id);
+        setMessages([]);
+        await refreshConversationList();
+      }
+    }
+    setConfirmDeleteConvId(null);
+  }, [activeConvId, refreshConversationList]);
 
   const sendMessage = useCallback(
     async (text?: string) => {
@@ -371,7 +452,16 @@ export default function ChatScreen() {
                 timestamp: Date.now(),
               },
             ];
-            await saveChatHistory(finalMessages);
+            if (activeConvId) {
+              await saveConversationMessages(activeConvId, finalMessages);
+              if (!titleSetRef.current) {
+                await updateConversationTitle(activeConvId, msgText);
+                titleSetRef.current = true;
+                refreshConversationList();
+              }
+            } else {
+              await saveChatHistory(finalMessages);
+            }
 
             // Update message count and check milestones
             messageCountRef.current += 2;
@@ -444,7 +534,16 @@ export default function ChatScreen() {
                     ...updatedMessages,
                     { id: streamMsgId, role: "assistant" as const, content: fullText, timestamp: Date.now() },
                   ];
-                  await saveChatHistory(finalMessages);
+                  if (activeConvId) {
+              await saveConversationMessages(activeConvId, finalMessages);
+              if (!titleSetRef.current) {
+                await updateConversationTitle(activeConvId, msgText);
+                titleSetRef.current = true;
+                refreshConversationList();
+              }
+            } else {
+              await saveChatHistory(finalMessages);
+            }
                   setIsLoading(false);
                 },
                 onError: async () => {
@@ -465,7 +564,16 @@ export default function ChatScreen() {
                       ...updatedMessages,
                       { id: streamMsgId, role: "assistant" as const, content: result.response, timestamp: Date.now() },
                     ];
-                    await saveChatHistory(finalMessages);
+                    if (activeConvId) {
+              await saveConversationMessages(activeConvId, finalMessages);
+              if (!titleSetRef.current) {
+                await updateConversationTitle(activeConvId, msgText);
+                titleSetRef.current = true;
+                refreshConversationList();
+              }
+            } else {
+              await saveChatHistory(finalMessages);
+            }
                   } catch {
                     setMessages((prev) =>
                       prev.map((m) =>
@@ -501,7 +609,7 @@ export default function ChatScreen() {
         setIsLoading(false);
       }
     },
-    [inputText, isLoading, messages, memories, walletAddress, chatMutation, voiceEnabled, voiceRate, voicePitch, syncEnabled, syncConvoId]
+    [inputText, isLoading, messages, memories, walletAddress, chatMutation, voiceEnabled, voiceRate, voicePitch, syncEnabled, syncConvoId, activeConvId, refreshConversationList]
   );
 
   const renderMessage = useCallback(
@@ -662,6 +770,20 @@ export default function ChatScreen() {
                 size={14}
                 color={walletAddress ? colors.success : colors.muted}
               />
+            </Pressable>
+            {/* Conversations Button */}
+            <Pressable
+              onPress={() => setShowConversations(true)}
+              style={({ pressed }) => [
+                styles.headerBtn,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              <IconSymbol name="doc.on.doc.fill" size={14} color={colors.muted} />
             </Pressable>
             <Pressable
               onPress={() => setMenuVisible(true)}
@@ -927,6 +1049,80 @@ export default function ChatScreen() {
                   style={({ pressed }) => [{ marginTop: 4, opacity: pressed ? 0.6 : 1 }]}
                 >
                   <Text style={{ color: colors.muted, textAlign: "center", fontSize: 14 }}>Done</Text>
+                </Pressable>
+              </Animated.View>
+            </Pressable>
+          </Pressable>
+        </Modal>
+
+        {/* Conversations Modal */}
+        <Modal visible={showConversations} transparent animationType="fade">
+          <Pressable style={styles.modalOverlay} onPress={() => setShowConversations(false)}>
+            <Pressable onPress={() => {}}>
+              <Animated.View
+                entering={FadeInDown.duration(250)}
+                style={[styles.walletCard, { backgroundColor: colors.surface, borderColor: colors.border, maxHeight: 500 }]}
+              >
+                <View style={styles.walletHeader}>
+                  <IconSymbol name="doc.on.doc.fill" size={20} color={colors.primary} />
+                  <Text style={[styles.walletTitle, { color: colors.foreground, flex: 1 }]}>Conversations</Text>
+                  <Pressable
+                    onPress={handleNewConversation}
+                    style={({ pressed }) => [{
+                      paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8,
+                      backgroundColor: colors.primary, opacity: pressed ? 0.7 : 1,
+                    }]}
+                  >
+                    <Text style={{ color: '#FAFAFA', fontSize: 12, fontWeight: '700' }}>+ New</Text>
+                  </Pressable>
+                </View>
+                <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false}>
+                  {conversationList.length === 0 ? (
+                    <Text style={{ color: colors.muted, fontSize: 13, textAlign: 'center', paddingVertical: 24 }}>No conversations yet</Text>
+                  ) : (
+                    conversationList.map((conv) => (
+                      <Pressable
+                        key={conv.id}
+                        onPress={() => handleSwitchConversation(conv.id)}
+                        style={({ pressed }) => [{
+                          flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                          paddingHorizontal: 12, paddingVertical: 12, borderRadius: 10, marginBottom: 4,
+                          backgroundColor: conv.id === activeConvId ? `${colors.primary}15` : pressed ? colors.background : 'transparent',
+                          borderWidth: conv.id === activeConvId ? 1 : 0,
+                          borderColor: conv.id === activeConvId ? `${colors.primary}30` : 'transparent',
+                        }]}
+                      >
+                        <View style={{ flex: 1, marginRight: 8 }}>
+                          <Text numberOfLines={1} style={{ color: conv.id === activeConvId ? colors.primary : colors.foreground, fontSize: 14, fontWeight: conv.id === activeConvId ? '600' : '400' }}>
+                            {conv.title}
+                          </Text>
+                          <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>
+                            {new Date(conv.updatedAt).toLocaleDateString()}
+                          </Text>
+                        </View>
+                        {confirmDeleteConvId === conv.id ? (
+                          <View style={{ flexDirection: 'row', gap: 8 }}>
+                            <Pressable onPress={() => handleDeleteConversation(conv.id)} style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}>
+                              <Text style={{ color: colors.error, fontSize: 12, fontWeight: '700' }}>Delete</Text>
+                            </Pressable>
+                            <Pressable onPress={() => setConfirmDeleteConvId(null)} style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}>
+                              <Text style={{ color: colors.muted, fontSize: 12 }}>Cancel</Text>
+                            </Pressable>
+                          </View>
+                        ) : (
+                          <Pressable onPress={() => setConfirmDeleteConvId(conv.id)} style={({ pressed }) => [{ padding: 4, opacity: pressed ? 0.6 : 1 }]}>
+                            <IconSymbol name="trash.fill" size={14} color={colors.muted} />
+                          </Pressable>
+                        )}
+                      </Pressable>
+                    ))
+                  )}
+                </ScrollView>
+                <Pressable
+                  onPress={() => setShowConversations(false)}
+                  style={({ pressed }) => [{ marginTop: 4, opacity: pressed ? 0.6 : 1 }]}
+                >
+                  <Text style={{ color: colors.muted, textAlign: 'center', fontSize: 14 }}>Close</Text>
                 </Pressable>
               </Animated.View>
             </Pressable>
