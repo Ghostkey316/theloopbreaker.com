@@ -55,7 +55,7 @@ function decodeUint256(hex: string): number {
 /* ── Known Selectors ── */
 
 const SELECTORS = {
-  getAgentCount: '0x0f755a56',
+  getAgentCount: '0x3731a16f',
   getAgent: '0xfb3551ff',
   owner: '0x8da5cb5b',
   paused: '0x5c975abb',

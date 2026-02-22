@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   createWallet, importFromMnemonic, importFromPrivateKey,
   deleteWallet, isWalletCreated, getWalletAddress,
@@ -36,7 +37,6 @@ interface SendState {
   txExplorerUrl: string;
 }
 
-// Unified asset item (native or ERC-20)
 interface AssetItem {
   type: "native" | "erc20";
   chain: SupportedChain;
@@ -54,6 +54,34 @@ interface AssetItem {
   logoColor?: string;
   chainName: string;
   error?: string;
+}
+
+// ─── VNS (Vaultfire Name System) ─────────────────────────────────────────────
+
+const VNS_KEY = "vaultfire_vns_name";
+
+function getVNSName(): string {
+  if (typeof window === "undefined") return "";
+  return localStorage.getItem(VNS_KEY) || "";
+}
+
+function setVNSName(name: string): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(VNS_KEY, name);
+}
+
+// ─── Companion Name ───────────────────────────────────────────────────────────
+
+const COMPANION_NAME_KEY = "vaultfire_companion_name";
+
+function getCompanionName(): string {
+  if (typeof window === "undefined") return "Embris";
+  return localStorage.getItem(COMPANION_NAME_KEY) || "Embris";
+}
+
+function setCompanionNameStorage(name: string): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(COMPANION_NAME_KEY, name || "Embris");
 }
 
 // ─── Price Fetching ───────────────────────────────────────────────────────────
@@ -170,6 +198,18 @@ function XIcon({ size = 16 }: { size?: number }) {
 function ExternalLinkIcon({ size = 12 }: { size?: number }) {
   return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>);
 }
+function GasIcon({ size = 12 }: { size?: number }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 22V8l7-6 7 6v14H3z"/><path d="M10 22V12h4v10"/><path d="M14 10h3l2 2v4l-2 2h-3"/></svg>);
+}
+function UserIcon({ size = 16 }: { size?: number }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>);
+}
+function EditIcon({ size = 12 }: { size?: number }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>);
+}
+function FireIcon({ size = 16 }: { size?: number }) {
+  return (<svg width={size} height={size} viewBox="0 0 32 32" fill="none"><path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9"/><path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C"/><path d="M16 14c-.7 1-1.4 2.2-1.4 3.2 0 .77.63 1.4 1.4 1.4s1.4-.63 1.4-1.4c0-1-.7-2.2-1.4-3.2z" fill="#FDE68A" opacity="0.6"/></svg>);
+}
 
 // ─── Chain Token Icons ────────────────────────────────────────────────────────
 
@@ -182,6 +222,8 @@ function AvaxIcon({ size = 40 }: { size?: number }) {
 function BaseIcon({ size = 40 }: { size?: number }) {
   return (<svg width={size} height={size} viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="16" fill="#0052FF"/><path d="M16 26c5.523 0 10-4.477 10-10S21.523 6 16 6c-5.2 0-9.473 3.97-9.95 9.04h13.1v1.92H6.05C6.527 22.03 10.8 26 16 26z" fill="#fff"/></svg>);
 }
+
+// ─── Token Letter Fallback ────────────────────────────────────────────────────
 
 function TokenLetter({ symbol, color, size = 40 }: { symbol: string; color: string; size?: number }) {
   return (
@@ -200,31 +242,21 @@ function TokenLetter({ symbol, color, size = 40 }: { symbol: string; color: stri
 }
 
 function TokenAvatar({ item, size = 40 }: { item: AssetItem; size?: number }) {
-  // Show real logo if available
   if (item.logoUrl) {
     return (
       <img
         src={item.logoUrl}
         alt={item.symbol}
-        style={{
-          width: size, height: size, borderRadius: "50%",
-          objectFit: "cover", flexShrink: 0,
-        }}
-        onError={(e) => {
-          e.currentTarget.style.display = "none";
-        }}
+        style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+        onError={(e) => { e.currentTarget.style.display = "none"; }}
       />
     );
   }
-
-  // Native token icons
   if (item.type === "native") {
     if (item.chain === "avalanche") return <AvaxIcon size={size} />;
     if (item.chain === "base") return <BaseIcon size={size} />;
     return <EthIcon size={size} />;
   }
-
-  // Fallback to colored letter
   return <TokenLetter symbol={item.symbol} color={item.logoColor || "#71717A"} size={size} />;
 }
 
@@ -244,41 +276,85 @@ function ChainBadge({ chain }: { chain: SupportedChain }) {
   );
 }
 
-// ─── Modal Shell ──────────────────────────────────────────────────────────────
+// ─── Portal Modal Shell ───────────────────────────────────────────────────────
+// Uses createPortal to render OUTSIDE any parent stacking context.
+// This is the definitive fix for the "buttons don't work" issue.
 
 function Modal({ onClose, children, title }: { onClose: () => void; children: React.ReactNode; title?: string }) {
-  return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 1000,
-      backgroundColor: "rgba(0,0,0,0.8)",
-      display: "flex", alignItems: "flex-end", justifyContent: "center",
-      backdropFilter: "blur(8px)",
-    }}
-    onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
+  // Handle ESC key
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  if (!mounted) return null;
+
+  const modalContent = (
+    <div
+      style={{
+        position: "fixed",
+        top: 0, left: 0, right: 0, bottom: 0,
+        zIndex: 99999,
+        backgroundColor: "rgba(0,0,0,0.85)",
+        display: "flex",
+        alignItems: "flex-end",
+        justifyContent: "center",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+      }}
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div style={{
-        width: "100%", maxWidth: 480,
-        backgroundColor: "#0F0F0F",
-        borderRadius: "24px 24px 0 0",
-        border: "1px solid rgba(255,255,255,0.06)",
-        borderBottom: "none",
-        maxHeight: "92vh",
-        overflowY: "auto",
-        animation: "slideUp 0.25s ease",
-      }}>
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 520,
+          backgroundColor: "#111113",
+          borderRadius: "24px 24px 0 0",
+          border: "1px solid rgba(255,255,255,0.08)",
+          borderBottom: "none",
+          maxHeight: "90vh",
+          overflowY: "auto",
+          overflowX: "hidden",
+          animation: "slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+        }}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        {/* Drag handle */}
+        <div style={{ display: "flex", justifyContent: "center", paddingTop: 12, paddingBottom: 4 }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.1)" }} />
+        </div>
+
         {title && (
           <div style={{
             display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "20px 24px 0",
+            padding: "12px 24px 0",
           }}>
             <h3 style={{ fontSize: 18, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.03em" }}>{title}</h3>
-            <button onClick={onClose} style={{
-              width: 32, height: 32, borderRadius: "50%",
-              backgroundColor: "rgba(255,255,255,0.06)",
-              border: "none", cursor: "pointer", color: "#71717A",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              transition: "all 0.15s ease",
-            }}>
+            <button
+              onClick={onClose}
+              style={{
+                width: 32, height: 32, borderRadius: "50%",
+                backgroundColor: "rgba(255,255,255,0.06)",
+                border: "none", cursor: "pointer", color: "#71717A",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                transition: "all 0.15s ease",
+                flexShrink: 0,
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.1)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.06)"; }}
+            >
               <XIcon size={14} />
             </button>
           </div>
@@ -287,6 +363,8 @@ function Modal({ onClose, children, title }: { onClose: () => void; children: Re
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }
 
 // ─── QR Code Component ────────────────────────────────────────────────────────
@@ -294,41 +372,73 @@ function Modal({ onClose, children, title }: { onClose: () => void; children: Re
 function QRCodeDisplay({ value }: { value: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current || !value) return;
     import("qrcode").then((QRCode) => {
       QRCode.toCanvas(canvasRef.current!, value, {
-        width: 200,
-        margin: 2,
-        color: { dark: "#F4F4F5", light: "#0F0F0F" },
+        width: 200, margin: 2,
+        color: { dark: "#F4F4F5", light: "#111113" },
       });
     });
   }, [value]);
-  return <canvas ref={canvasRef} />;
+  return (
+    <div style={{
+      padding: 16,
+      backgroundColor: "#111113",
+      border: "1px solid rgba(255,255,255,0.06)",
+      borderRadius: 16,
+      display: "inline-flex",
+    }}>
+      <canvas ref={canvasRef} />
+    </div>
+  );
 }
 
 // ─── Action Button ────────────────────────────────────────────────────────────
 
 function ActionBtn({ icon, label, onClick, color }: { icon: React.ReactNode; label: string; onClick: () => void; color: string }) {
   return (
-    <button onClick={onClick} style={{
-      display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
-      width: 72, height: 72, borderRadius: 20,
-      backgroundColor: `${color}15`,
-      border: `1.5px solid ${color}30`,
-      cursor: "pointer", transition: "all 0.15s ease",
-    }}
-    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = `${color}25`; }}
-    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = `${color}15`; }}
+    <button
+      type="button"
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClick(); }}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 6,
+        width: 76,
+        height: 76,
+        borderRadius: 22,
+        backgroundColor: `${color}18`,
+        border: `1.5px solid ${color}28`,
+        cursor: "pointer",
+        transition: "all 0.15s ease",
+        padding: 0,
+        userSelect: "none",
+        WebkitUserSelect: "none",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = `${color}28`;
+        e.currentTarget.style.borderColor = `${color}45`;
+        e.currentTarget.style.transform = "translateY(-1px)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = `${color}18`;
+        e.currentTarget.style.borderColor = `${color}28`;
+        e.currentTarget.style.transform = "translateY(0)";
+      }}
+      onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.95)"; }}
+      onMouseUp={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; }}
     >
-      <div style={{ color }}>{icon}</div>
-      <span style={{ fontSize: 11, fontWeight: 600, color }}>{label}</span>
+      <div style={{ color, display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</div>
+      <span style={{ fontSize: 11, fontWeight: 600, color, letterSpacing: "0.01em" }}>{label}</span>
     </button>
   );
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const mono = { fontFamily: "'Courier New', monospace" };
+const mono = { fontFamily: "'Courier New', 'JetBrains Mono', monospace" };
 
 function isValidAddress(addr: string): boolean {
   return /^0x[a-fA-F0-9]{40}$/.test(addr);
@@ -356,6 +466,16 @@ export default function Wallet() {
   const [tokenLogos, setTokenLogos] = useState<Record<string, string | null>>({});
   const priceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // VNS state
+  const [vnsName, setVnsName] = useState("");
+  const [vnsInput, setVnsInput] = useState("");
+  const [vnsEditing, setVnsEditing] = useState(false);
+
+  // Companion name state
+  const [companionName, setCompanionName] = useState("Embris");
+  const [companionNameInput, setCompanionNameInput] = useState("");
+  const [companionNameEditing, setCompanionNameEditing] = useState(false);
+
   // Send state
   const [sendState, setSendState] = useState<SendState>({
     token: null, toAddress: "", amount: "", gas: null,
@@ -382,6 +502,8 @@ export default function Wallet() {
 
   useEffect(() => {
     setCustomTokens(loadCustomTokens());
+    setVnsName(getVNSName());
+    setCompanionName(getCompanionName());
     if (isWalletCreated()) {
       const addr = getWalletAddress();
       const mnemonic = getWalletMnemonic();
@@ -408,12 +530,10 @@ export default function Wallet() {
     return () => { if (priceIntervalRef.current) clearInterval(priceIntervalRef.current); };
   }, [view]);
 
-  // Fetch logos for all tokens
   useEffect(() => {
     const fetchLogos = async () => {
       const logos: Record<string, string | null> = {};
-      const allTokens = [...tokenBalances];
-      for (const token of allTokens) {
+      for (const token of tokenBalances) {
         if (token.coingeckoId && !tokenLogos[token.coingeckoId]) {
           const url = await fetchTokenLogo(token.coingeckoId);
           logos[token.coingeckoId] = url;
@@ -424,7 +544,8 @@ export default function Wallet() {
       }
     };
     fetchLogos();
-  }, [tokenBalances, tokenLogos]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tokenBalances]);
 
   const loadAllBalances = async (address: string) => {
     setLoadingBals(true);
@@ -459,62 +580,39 @@ export default function Wallet() {
   const buildAssets = useCallback((): AssetItem[] => {
     const items: AssetItem[] = [];
 
-    // Native tokens
     for (const bal of nativeBalances) {
       const amount = parseFloat(bal.balanceFormatted);
-      if (amount <= 0) continue; // Skip zero balance
-
+      if (amount <= 0) continue;
       const chain: SupportedChain = bal.chain.toLowerCase().includes("avalanche") ? "avalanche"
         : bal.chain.toLowerCase().includes("base") ? "base" : "ethereum";
       const chainCfg = TX_CHAINS[chain];
       const priceId = chain === "avalanche" ? "avalanche-2" : "ethereum";
       const pricePerToken = getTokenPrice(prices, priceId);
-
       items.push({
-        type: "native",
-        chain,
-        chainConfig: chainCfg,
-        symbol: bal.symbol,
-        name: `${bal.symbol} on ${bal.chain}`,
-        chainName: bal.chain,
-        decimals: 18,
-        balanceFormatted: bal.balanceFormatted,
-        balanceRaw: bal.balance,
-        usdValue: amount * pricePerToken,
-        pricePerToken,
-        error: bal.error,
+        type: "native", chain, chainConfig: chainCfg,
+        symbol: bal.symbol, name: `${bal.symbol} on ${bal.chain}`,
+        chainName: bal.chain, decimals: 18,
+        balanceFormatted: bal.balanceFormatted, balanceRaw: bal.balance,
+        usdValue: amount * pricePerToken, pricePerToken, error: bal.error,
       });
     }
 
-    // ERC-20 tokens — ONLY SHOW IF BALANCE > 0
     for (const tb of tokenBalances) {
       const amount = parseFloat(tb.balanceFormatted);
-      if (amount <= 0) continue; // Skip zero balance
-
+      if (amount <= 0) continue;
       const pricePerToken = getTokenPrice(prices, tb.coingeckoId);
       const chainLabel = { ethereum: "Ethereum", base: "Base", avalanche: "Avalanche" }[tb.chain];
       const logoUrl = tb.coingeckoId ? tokenLogos[tb.coingeckoId] : undefined;
-
       items.push({
-        type: "erc20",
-        chain: tb.chain,
-        chainConfig: TX_CHAINS[tb.chain],
-        symbol: tb.symbol,
-        name: tb.name,
-        chainName: chainLabel,
-        decimals: tb.decimals,
-        balanceFormatted: tb.balanceFormatted,
-        balanceRaw: tb.balanceRaw,
-        usdValue: amount * pricePerToken,
-        pricePerToken,
-        tokenAddress: tb.address,
-        coingeckoId: tb.coingeckoId,
-        logoUrl: logoUrl || undefined,
-        logoColor: tb.logoColor,
+        type: "erc20", chain: tb.chain, chainConfig: TX_CHAINS[tb.chain],
+        symbol: tb.symbol, name: tb.name, chainName: chainLabel,
+        decimals: tb.decimals, balanceFormatted: tb.balanceFormatted, balanceRaw: tb.balanceRaw,
+        usdValue: amount * pricePerToken, pricePerToken,
+        tokenAddress: tb.address, coingeckoId: tb.coingeckoId,
+        logoUrl: logoUrl || undefined, logoColor: tb.logoColor,
       });
     }
 
-    // Sort: native first, then ERC-20 by USD value desc
     const nativeItems = items.filter((a) => a.type === "native");
     const erc20Items = items.filter((a) => a.type === "erc20").sort((a, b) => b.usdValue - a.usdValue);
     return [...nativeItems, ...erc20Items];
@@ -557,14 +655,26 @@ export default function Wallet() {
     if (confirm("Delete this wallet? Make sure you have your seed phrase backed up.")) {
       deleteWallet();
       setWalletData(null); setNativeBalances([]); setTokenBalances([]);
-      setView("none");
+      setView("none"); setModalView("none");
     }
   };
 
   const copyToClipboard = async (text: string, label: string) => {
-    await navigator.clipboard.writeText(text);
-    setCopied(label);
-    setTimeout(() => setCopied(""), 2000);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(label);
+      setTimeout(() => setCopied(""), 2000);
+    } catch {
+      // Fallback
+      const el = document.createElement("textarea");
+      el.value = text;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      setCopied(label);
+      setTimeout(() => setCopied(""), 2000);
+    }
   };
 
   // ── Send flow ────────────────────────────────────────────────────────────────
@@ -587,15 +697,10 @@ export default function Wallet() {
     try {
       let gas: GasEstimate;
       if (state.token.type === "native") {
-        gas = await estimateNativeSendGas(
-          state.token.chainConfig, walletData.address, state.toAddress, state.amount
-        );
+        gas = await estimateNativeSendGas(state.token.chainConfig, walletData.address, state.toAddress, state.amount);
       } else {
         const rawAmount = parseTokenAmount(state.amount, state.token.decimals);
-        gas = await estimateERC20SendGas(
-          state.token.chainConfig, walletData.address,
-          state.token.tokenAddress!, state.toAddress, rawAmount
-        );
+        gas = await estimateERC20SendGas(state.token.chainConfig, walletData.address, state.token.tokenAddress!, state.toAddress, rawAmount);
       }
       setSendState((s) => ({ ...s, gas, gasLoading: false }));
     } catch {
@@ -612,16 +717,10 @@ export default function Wallet() {
     try {
       let result;
       if (sendState.token.type === "native") {
-        result = await sendNativeToken(
-          sendState.token.chainConfig, pk, walletData.address,
-          sendState.toAddress, sendState.amount
-        );
+        result = await sendNativeToken(sendState.token.chainConfig, pk, walletData.address, sendState.toAddress, sendState.amount);
       } else {
         const rawAmount = parseTokenAmount(sendState.amount, sendState.token.decimals);
-        result = await sendERC20Token(
-          sendState.token.chainConfig, pk, walletData.address,
-          sendState.token.tokenAddress!, sendState.toAddress, rawAmount
-        );
+        result = await sendERC20Token(sendState.token.chainConfig, pk, walletData.address, sendState.token.tokenAddress!, sendState.toAddress, rawAmount);
       }
       setSendState((s) => ({ ...s, sending: false, txHash: result.hash, txExplorerUrl: result.explorerUrl }));
       setModalView("send-success");
@@ -639,23 +738,15 @@ export default function Wallet() {
       setAddTokenError("Invalid contract address"); return;
     }
     setAddTokenLoading(true); setAddTokenError(""); setAddTokenInfo(null);
-    
-    // Try CoinGecko lookup first
     const cgResult = await lookupTokenOnCoinGecko(addTokenChain, addTokenAddress);
     if (cgResult) {
       const info = await fetchTokenInfo(addTokenChain, addTokenAddress);
       if (info) {
-        setAddTokenInfo({
-          ...info,
-          coingeckoId: cgResult.coingeckoId,
-          logoUrl: cgResult.logoUrl,
-        });
+        setAddTokenInfo({ ...info, coingeckoId: cgResult.coingeckoId, logoUrl: cgResult.logoUrl });
         setAddTokenLoading(false);
         return;
       }
     }
-
-    // Fallback: just fetch from chain
     const info = await fetchTokenInfo(addTokenChain, addTokenAddress);
     if (!info) {
       setAddTokenError("Token not found on this chain. Check the address and network.");
@@ -676,6 +767,26 @@ export default function Wallet() {
     setModalView("none");
   };
 
+  // ── VNS ──────────────────────────────────────────────────────────────────────
+
+  const saveVNS = () => {
+    const name = vnsInput.trim().toLowerCase().replace(/[^a-z0-9.]/g, "");
+    setVNSName(name);
+    setVnsName(name);
+    setVnsEditing(false);
+    setVnsInput("");
+  };
+
+  // ── Companion Name ────────────────────────────────────────────────────────────
+
+  const saveCompanionName = () => {
+    const name = companionNameInput.trim() || "Embris";
+    setCompanionNameStorage(name);
+    setCompanionName(name);
+    setCompanionNameEditing(false);
+    setCompanionNameInput("");
+  };
+
   // ── Onboarding ────────────────────────────────────────────────────────────────
 
   if (view === "none") {
@@ -687,12 +798,13 @@ export default function Wallet() {
       }}>
         <div style={{ textAlign: "center", marginBottom: 40, paddingTop: isMobile ? 20 : 40 }}>
           <div style={{
-            width: 72, height: 72, borderRadius: 24,
+            width: 80, height: 80, borderRadius: 28,
             background: "linear-gradient(135deg, rgba(249,115,22,0.15), rgba(249,115,22,0.04))",
             display: "flex", alignItems: "center", justifyContent: "center",
             marginBottom: 20, marginLeft: "auto", marginRight: "auto",
+            border: "1px solid rgba(249,115,22,0.15)",
           }}>
-            <ShieldIcon size={32} />
+            <FireIcon size={36} />
           </div>
           <h1 style={{ fontSize: 32, fontWeight: 800, color: "#F4F4F5", marginBottom: 8, letterSpacing: "-0.04em" }}>Vaultfire Wallet</h1>
           <p style={{ fontSize: 14, color: "#71717A", lineHeight: 1.7, marginBottom: 28 }}>
@@ -702,22 +814,28 @@ export default function Wallet() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 32 }}>
           {[
-            { icon: <PlusIcon size={20} />, label: "Create New Wallet", sub: "Generate a new seed phrase", onClick: handleCreate },
-            { icon: <FileTextIcon size={20} />, label: "Import Seed Phrase", sub: "12 or 24 word recovery phrase", onClick: () => setView("import-mnemonic") },
-            { icon: <KeyIcon size={20} />, label: "Import Private Key", sub: "Direct private key import", onClick: () => setView("import-pk") },
+            { icon: <PlusIcon size={20} />, label: "Create New Wallet", sub: "Generate a new seed phrase", onClick: handleCreate, color: "#F97316" },
+            { icon: <FileTextIcon size={20} />, label: "Import Seed Phrase", sub: "12 or 24 word recovery phrase", onClick: () => setView("import-mnemonic"), color: "#22C55E" },
+            { icon: <KeyIcon size={20} />, label: "Import Private Key", sub: "Direct private key import", onClick: () => setView("import-pk"), color: "#A78BFA" },
           ].map((item) => (
-            <button key={item.label} onClick={item.onClick} disabled={creating || importing} style={{
+            <button key={item.label} type="button" onClick={item.onClick} disabled={creating || importing} style={{
               display: "flex", alignItems: "center", gap: 14,
-              padding: "16px", borderRadius: 16,
+              padding: "16px 18px", borderRadius: 16,
               backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)",
               color: "#F4F4F5", cursor: "pointer", transition: "all 0.15s ease",
+              textAlign: "left",
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.06)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.03)"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.06)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.03)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)"; }}
             >
-              <div style={{ color: "#F97316" }}>{item.icon}</div>
+              <div style={{
+                width: 44, height: 44, borderRadius: 14, flexShrink: 0,
+                backgroundColor: `${item.color}12`, border: `1px solid ${item.color}25`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: item.color,
+              }}>{item.icon}</div>
               <div>
-                <div>{item.label}</div>
+                <div style={{ fontWeight: 600, fontSize: 15 }}>{creating && item.label === "Create New Wallet" ? "Creating..." : item.label}</div>
                 <div style={{ fontSize: 12, fontWeight: 400, color: "#71717A", marginTop: 2 }}>{item.sub}</div>
               </div>
             </button>
@@ -729,7 +847,7 @@ export default function Wallet() {
           <div>
             <p style={{ fontSize: 12, color: "#F97316", fontWeight: 600, marginBottom: 4 }}>Alpha Software</p>
             <p style={{ fontSize: 11, color: "#71717A", lineHeight: 1.65 }}>
-              Store funds at your own risk. No recovery possible — you are solely responsible for your seed phrase and private keys. Embris and Vaultfire Protocol are not liable for any losses.
+              Store funds at your own risk. No recovery possible — you are solely responsible for your seed phrase and private keys.
             </p>
           </div>
         </div>
@@ -743,21 +861,18 @@ export default function Wallet() {
     const isMnemonicView = view === "import-mnemonic";
     return (
       <div className="page-enter" style={{ padding: isMobile ? "24px 20px 48px" : "48px 40px", maxWidth: 480, margin: "0 auto" }}>
-        <button onClick={() => { setView("none"); setImportInput(""); setImportError(""); }}
+        <button type="button" onClick={() => { setView("none"); setImportInput(""); setImportError(""); }}
           style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "#71717A", cursor: "pointer", marginBottom: 32, fontSize: 13, padding: 0, fontWeight: 500 }}
         >
           <ArrowLeftIcon size={14} /> Back
         </button>
-        <div style={{ width: 52, height: 52, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, color: "#A1A1AA" }}>
-          {isMnemonicView ? <FileTextIcon size={22} /> : <KeyIcon size={22} />}
-        </div>
-        <h2 style={{ fontSize: 26, fontWeight: 700, color: "#F4F4F5", marginBottom: 8, letterSpacing: "-0.04em" }}>
+        <h2 style={{ fontSize: 24, fontWeight: 800, color: "#F4F4F5", marginBottom: 8, letterSpacing: "-0.04em" }}>
           {isMnemonicView ? "Import Seed Phrase" : "Import Private Key"}
         </h2>
-        <p style={{ fontSize: 14, color: "#71717A", marginBottom: 28, lineHeight: 1.7 }}>
+        <p style={{ fontSize: 13, color: "#71717A", marginBottom: 24, lineHeight: 1.6 }}>
           {isMnemonicView ? "Enter your 12 or 24 word recovery phrase, separated by spaces." : "Enter your private key (with or without 0x prefix)."}
         </p>
-        <div style={{ backgroundColor: "rgba(255,255,255,0.02)", border: importError ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: 2 }}>
+        <div style={{ backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: 4, marginBottom: 12 }}>
           <textarea value={importInput} onChange={(e) => setImportInput(e.target.value)}
             placeholder={isMnemonicView ? "word1 word2 word3 word4 ..." : "0x..."}
             rows={isMnemonicView ? 4 : 2}
@@ -770,7 +885,7 @@ export default function Wallet() {
             <p style={{ color: "#EF4444", fontSize: 12 }}>{importError}</p>
           </div>
         )}
-        <button onClick={isMnemonicView ? handleImportMnemonic : handleImportPK}
+        <button type="button" onClick={isMnemonicView ? handleImportMnemonic : handleImportPK}
           disabled={importInput.trim().length === 0 || importing}
           style={{
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
@@ -782,7 +897,7 @@ export default function Wallet() {
             cursor: importInput.trim().length === 0 || importing ? "default" : "pointer",
             boxShadow: importInput.trim().length === 0 || importing ? "none" : "0 4px 20px rgba(249,115,22,0.2)",
           }}>
-          {importing && <div style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,0.1)", borderTopColor: "#3F3F46", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />}
+          {importing && <div style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,0.1)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />}
           {importing ? "Importing..." : "Import Wallet"}
         </button>
       </div>
@@ -794,49 +909,54 @@ export default function Wallet() {
   const addr = walletData?.address || "";
   const truncAddr = `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   const px = isMobile ? "20px" : "32px";
-
   return (
     <div className="page-enter" style={{ paddingBottom: 48 }}>
 
       {/* ── Hero: Total Portfolio Value ── */}
       <div style={{
         padding: `${isMobile ? 28 : 40}px ${px} ${isMobile ? 24 : 32}px`,
-        background: "linear-gradient(180deg, rgba(249,115,22,0.04) 0%, transparent 100%)",
+        background: "linear-gradient(180deg, rgba(249,115,22,0.05) 0%, transparent 100%)",
       }}>
-        {/* Address pill */}
+        {/* VNS / Address pill */}
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
-          <button
-            onClick={() => setShowFullAddress(!showFullAddress)}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 6,
-              padding: "6px 14px", borderRadius: 20,
-              backgroundColor: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.06)",
-              color: "#A1A1AA", fontSize: 12, fontWeight: 500,
-              cursor: "pointer", ...mono, transition: "all 0.15s ease",
-            }}
-          >
-            <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#22C55E" }} />
-            {showFullAddress ? addr : truncAddr}
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <button
+              type="button"
+              onClick={() => setShowFullAddress(!showFullAddress)}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                padding: "6px 14px", borderRadius: 20,
+                backgroundColor: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                color: "#A1A1AA", fontSize: 12, fontWeight: 500,
+                cursor: "pointer", ...mono, transition: "all 0.15s ease",
+              }}
+            >
+              <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#22C55E", flexShrink: 0 }} />
+              {vnsName ? (
+                <span style={{ color: "#F97316", fontWeight: 600 }}>{vnsName}</span>
+              ) : null}
+              {showFullAddress ? addr : (vnsName ? truncAddr : truncAddr)}
+            </button>
+            <button
+              type="button"
               onClick={(e) => { e.stopPropagation(); copyToClipboard(addr, "addr"); }}
-              style={{ background: "none", border: "none", cursor: "pointer", color: copied === "addr" ? "#22C55E" : "#52525B", padding: 0, display: "flex" }}
+              style={{ background: "none", border: "none", cursor: "pointer", color: copied === "addr" ? "#22C55E" : "#52525B", padding: "4px", display: "flex", alignItems: "center" }}
             >
               {copied === "addr" ? <CheckIcon size={11} /> : <CopyIcon size={11} />}
             </button>
-          </button>
+          </div>
         </div>
 
-        {/* Total USD Value — THE MOST PROMINENT THING */}
+        {/* Total USD Value */}
         <div style={{ textAlign: "center", marginBottom: 28 }}>
           {loadingBals || pricesLoading ? (
             <div className="skeleton" style={{ height: 52, width: 200, borderRadius: 12, margin: "0 auto 8px" }} />
           ) : (
             <h1 style={{
-              fontSize: isMobile ? 44 : 52, fontWeight: 800,
+              fontSize: isMobile ? 44 : 56, fontWeight: 800,
               color: "#F4F4F5", letterSpacing: "-0.04em",
-              lineHeight: 1.1, marginBottom: 6,
-              ...mono,
+              lineHeight: 1.1, marginBottom: 6, ...mono,
             }}>
               {formatUsd(totalUsd)}
             </h1>
@@ -845,24 +965,44 @@ export default function Wallet() {
         </div>
 
         {/* Vaultfire Protocol badge */}
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
           <div style={{
             display: "inline-flex", alignItems: "center", gap: 6,
-            padding: "4px 12px", borderRadius: 20,
+            padding: "5px 14px", borderRadius: 20,
             backgroundColor: "rgba(249,115,22,0.06)",
             border: "1px solid rgba(249,115,22,0.15)",
           }}>
-            <svg width={10} height={10} viewBox="0 0 24 24" fill="#F97316"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+            <FireIcon size={12} />
             <span style={{ fontSize: 11, color: "#F97316", fontWeight: 600, letterSpacing: "0.02em" }}>Powered by Vaultfire Protocol</span>
           </div>
         </div>
 
-        {/* Action Buttons — Coinbase-style circular */}
-        <div style={{ display: "flex", justifyContent: "center", gap: isMobile ? 24 : 32 }}>
-          <ActionBtn icon={<SendIcon size={22} />} label="Send" onClick={() => openSend()} color="#F97316" />
-          <ActionBtn icon={<ReceiveIcon size={22} />} label="Receive" onClick={() => setModalView("receive")} color="#22C55E" />
-          <ActionBtn icon={<RefreshIcon size={18} />} label="Refresh" onClick={handleRefresh} color="#71717A" />
-          <ActionBtn icon={<ShieldIcon size={18} />} label="Settings" onClick={() => { setSecurityRevealInput(""); setSecurityRevealed(false); setModalView("security"); }} color="#A78BFA" />
+        {/* Action Buttons — Coinbase-style */}
+        <div style={{ display: "flex", justifyContent: "center", gap: isMobile ? 20 : 28 }}>
+          <ActionBtn
+            icon={<SendIcon size={22} />}
+            label="Send"
+            onClick={() => openSend()}
+            color="#F97316"
+          />
+          <ActionBtn
+            icon={<ReceiveIcon size={22} />}
+            label="Receive"
+            onClick={() => setModalView("receive")}
+            color="#22C55E"
+          />
+          <ActionBtn
+            icon={<RefreshIcon size={18} />}
+            label="Refresh"
+            onClick={handleRefresh}
+            color="#71717A"
+          />
+          <ActionBtn
+            icon={<ShieldIcon size={18} />}
+            label="Settings"
+            onClick={() => { setSecurityRevealInput(""); setSecurityRevealed(false); setModalView("security"); }}
+            color="#A78BFA"
+          />
         </div>
       </div>
 
@@ -870,14 +1010,17 @@ export default function Wallet() {
       <div style={{ padding: `0 ${px}` }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, marginTop: 8 }}>
           <h3 style={{ fontSize: 17, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.02em" }}>Assets</h3>
-          <button onClick={() => setModalView("add-token")} style={{
-            display: "inline-flex", alignItems: "center", gap: 5,
-            fontSize: 12, color: "#F97316", background: "none",
-            border: "1px solid rgba(249,115,22,0.2)", cursor: "pointer", fontWeight: 600,
-            padding: "5px 12px", borderRadius: 8, transition: "all 0.15s ease",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(249,115,22,0.06)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+          <button
+            type="button"
+            onClick={() => setModalView("add-token")}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 5,
+              fontSize: 12, color: "#F97316", background: "none",
+              border: "1px solid rgba(249,115,22,0.2)", cursor: "pointer", fontWeight: 600,
+              padding: "5px 12px", borderRadius: 8, transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(249,115,22,0.06)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
           >
             <PlusIcon size={10} /> Add Token
           </button>
@@ -906,8 +1049,12 @@ export default function Wallet() {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {assets.map((asset, idx) => (
-              <div key={`${asset.chain}-${asset.symbol}-${asset.tokenAddress || "native"}-${idx}`}
+              <div
+                key={`${asset.chain}-${asset.symbol}-${asset.tokenAddress || "native"}-${idx}`}
+                role="button"
+                tabIndex={0}
                 onClick={() => openSend(asset)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") openSend(asset); }}
                 style={{
                   display: "flex", alignItems: "center", justifyContent: "space-between",
                   padding: "14px 16px",
@@ -956,17 +1103,101 @@ export default function Wallet() {
         <div style={{ padding: "12px 16px", backgroundColor: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.1)", borderRadius: 12, display: "flex", alignItems: "flex-start", gap: 10 }}>
           <div style={{ color: "#F97316", flexShrink: 0, marginTop: 1 }}><AlertTriangleIcon size={13} /></div>
           <p style={{ fontSize: 11, color: "#71717A", lineHeight: 1.6 }}>
-            <strong style={{ color: "#A1A1AA" }}>Alpha Software.</strong> Store funds at your own risk. No recovery possible — you are solely responsible for your seed phrase and private keys. Embris and Vaultfire Protocol are not liable for any losses.
+            <strong style={{ color: "#A1A1AA" }}>Alpha Software.</strong> Store funds at your own risk. No recovery possible — you are solely responsible for your seed phrase and private keys.
           </p>
         </div>
       </div>
 
-      {/* ── MODALS ── */}
+      {/* ── MODALS (rendered via Portal — no stacking context issues) ── */}
 
       {/* Security Modal */}
       {modalView === "security" && (
-        <Modal onClose={() => { setModalView("none"); setSecurityRevealed(false); setSecurityRevealInput(""); }} title="Security">
-          <div style={{ padding: "24px 24px 32px", display: "flex", flexDirection: "column", gap: 20 }}>
+        <Modal onClose={() => { setModalView("none"); setSecurityRevealed(false); setSecurityRevealInput(""); }} title="Security & Settings">
+          <div style={{ padding: "20px 24px 32px", display: "flex", flexDirection: "column", gap: 20 }}>
+
+            {/* VNS Section */}
+            <div style={{ padding: "18px", backgroundColor: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.1)", borderRadius: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(249,115,22,0.1)", border: "1px solid rgba(249,115,22,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#F97316" }}>
+                  <UserIcon size={16} />
+                </div>
+                <div>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.01em" }}>Vaultfire Name (VNS)</p>
+                  <p style={{ fontSize: 11, color: "#52525B" }}>Your human-readable wallet name</p>
+                </div>
+              </div>
+              {vnsEditing ? (
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    type="text"
+                    value={vnsInput}
+                    onChange={(e) => setVnsInput(e.target.value)}
+                    placeholder="ghostkey.vault"
+                    autoFocus
+                    style={{
+                      flex: 1, padding: "10px 14px",
+                      backgroundColor: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(249,115,22,0.3)",
+                      borderRadius: 10, color: "#F4F4F5", fontSize: 14,
+                      outline: "none", ...mono,
+                    }}
+                    onKeyDown={(e) => { if (e.key === "Enter") saveVNS(); if (e.key === "Escape") { setVnsEditing(false); setVnsInput(""); } }}
+                  />
+                  <button type="button" onClick={saveVNS} style={{ padding: "10px 16px", backgroundColor: "rgba(249,115,22,0.15)", border: "1px solid rgba(249,115,22,0.3)", borderRadius: 10, color: "#F97316", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Save</button>
+                  <button type="button" onClick={() => { setVnsEditing(false); setVnsInput(""); }} style={{ padding: "10px 12px", backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, color: "#71717A", fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                </div>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 14, color: vnsName ? "#F97316" : "#52525B", ...mono, fontWeight: vnsName ? 600 : 400 }}>
+                    {vnsName || "Not set"}
+                  </span>
+                  <button type="button" onClick={() => { setVnsEditing(true); setVnsInput(vnsName); }} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, color: "#A1A1AA", fontSize: 12, cursor: "pointer" }}>
+                    <EditIcon size={11} /> {vnsName ? "Edit" : "Set Name"}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Companion Name Section */}
+            <div style={{ padding: "18px", backgroundColor: "rgba(167,139,250,0.04)", border: "1px solid rgba(167,139,250,0.1)", borderRadius: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <FireIcon size={16} />
+                </div>
+                <div>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.01em" }}>Companion Name</p>
+                  <p style={{ fontSize: 11, color: "#52525B" }}>What do you call your AI companion?</p>
+                </div>
+              </div>
+              {companionNameEditing ? (
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    type="text"
+                    value={companionNameInput}
+                    onChange={(e) => setCompanionNameInput(e.target.value)}
+                    placeholder="Embris, Phoenix, Nova..."
+                    autoFocus
+                    style={{
+                      flex: 1, padding: "10px 14px",
+                      backgroundColor: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(167,139,250,0.3)",
+                      borderRadius: 10, color: "#F4F4F5", fontSize: 14, outline: "none",
+                    }}
+                    onKeyDown={(e) => { if (e.key === "Enter") saveCompanionName(); if (e.key === "Escape") { setCompanionNameEditing(false); setCompanionNameInput(""); } }}
+                  />
+                  <button type="button" onClick={saveCompanionName} style={{ padding: "10px 16px", backgroundColor: "rgba(167,139,250,0.15)", border: "1px solid rgba(167,139,250,0.3)", borderRadius: 10, color: "#A78BFA", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Save</button>
+                  <button type="button" onClick={() => { setCompanionNameEditing(false); setCompanionNameInput(""); }} style={{ padding: "10px 12px", backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, color: "#71717A", fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                </div>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 14, color: "#C4B5FD", fontWeight: 600 }}>{companionName}</span>
+                  <button type="button" onClick={() => { setCompanionNameEditing(true); setCompanionNameInput(companionName); }} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, color: "#A1A1AA", fontSize: 12, cursor: "pointer" }}>
+                    <EditIcon size={11} /> Rename
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* Recovery Phrase Section */}
             <div style={{ padding: "20px", backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
@@ -982,7 +1213,7 @@ export default function Wallet() {
                 <div>
                   <div style={{ padding: "12px 14px", backgroundColor: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.1)", borderRadius: 10, marginBottom: 14 }}>
                     <p style={{ fontSize: 11, color: "#EF4444", lineHeight: 1.6 }}>
-                      <strong>Never share your seed phrase.</strong> Anyone with this phrase has full access to your wallet. Vaultfire will never ask for it.
+                      <strong>Never share your seed phrase.</strong> Anyone with this phrase has full access to your wallet.
                     </p>
                   </div>
                   <p style={{ fontSize: 12, color: "#71717A", marginBottom: 8 }}>Type <strong style={{ color: "#A1A1AA" }}>reveal</strong> to unlock:</p>
@@ -998,8 +1229,10 @@ export default function Wallet() {
                       borderRadius: 10, color: "#F4F4F5", fontSize: 14,
                       outline: "none", boxSizing: "border-box", marginBottom: 10,
                     }}
+                    onKeyDown={(e) => { if (e.key === "Enter" && securityRevealInput === "reveal") setSecurityRevealed(true); }}
                   />
                   <button
+                    type="button"
                     onClick={() => { if (securityRevealInput === "reveal") setSecurityRevealed(true); }}
                     disabled={securityRevealInput !== "reveal"}
                     style={{
@@ -1019,7 +1252,7 @@ export default function Wallet() {
                   <div style={{ padding: "14px 16px", backgroundColor: "rgba(167,139,250,0.04)", border: "1px solid rgba(167,139,250,0.12)", borderRadius: 10, marginBottom: 10 }}>
                     <p style={{ fontSize: 12, color: "#C4B5FD", ...mono, wordBreak: "break-all", lineHeight: 1.8 }}>{walletData?.mnemonic}</p>
                   </div>
-                  <button onClick={() => copyToClipboard(walletData?.mnemonic || "", "sec-mnemonic")} style={{
+                  <button type="button" onClick={() => copyToClipboard(walletData?.mnemonic || "", "sec-mnemonic")} style={{
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                     width: "100%", padding: "10px",
                     backgroundColor: copied === "sec-mnemonic" ? "rgba(34,197,94,0.08)" : "rgba(255,255,255,0.03)",
@@ -1029,7 +1262,7 @@ export default function Wallet() {
                   }}>
                     {copied === "sec-mnemonic" ? <><CheckIcon size={11} /> Copied!</> : <><CopyIcon size={11} /> Copy Phrase</>}
                   </button>
-                  <button onClick={() => setSecurityRevealed(false)} style={{
+                  <button type="button" onClick={() => setSecurityRevealed(false)} style={{
                     display: "flex", alignItems: "center", justifyContent: "center",
                     width: "100%", padding: "8px", marginTop: 6,
                     backgroundColor: "transparent", border: "none",
@@ -1044,7 +1277,7 @@ export default function Wallet() {
             {/* Danger Zone */}
             <div style={{ padding: "16px", backgroundColor: "rgba(239,68,68,0.03)", border: "1px solid rgba(239,68,68,0.1)", borderRadius: 16 }}>
               <p style={{ fontSize: 11, fontWeight: 700, color: "#EF4444", letterSpacing: "0.08em", marginBottom: 10, textTransform: "uppercase" }}>Danger Zone</p>
-              <button onClick={() => { setModalView("none"); handleDelete(); }} style={{
+              <button type="button" onClick={() => { setModalView("none"); handleDelete(); }} style={{
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                 padding: "12px", width: "100%",
                 backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)",
@@ -1069,9 +1302,10 @@ export default function Wallet() {
             </p>
             <QRCodeDisplay value={addr} />
             <div style={{ width: "100%", padding: "12px 16px", backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, ...mono, fontSize: 12, color: "#A1A1AA", wordBreak: "break-all", textAlign: "center" }}>
+              {vnsName && <div style={{ fontSize: 14, color: "#F97316", fontWeight: 700, marginBottom: 6 }}>{vnsName}</div>}
               {addr}
             </div>
-            <button onClick={() => copyToClipboard(addr, "receive-addr")} style={{
+            <button type="button" onClick={() => copyToClipboard(addr, "receive-addr")} style={{
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               width: "100%", padding: "14px",
               background: copied === "receive-addr" ? "rgba(34,197,94,0.1)" : "linear-gradient(135deg, #F97316, #EA580C)",
@@ -1105,7 +1339,7 @@ export default function Wallet() {
                   </div>
                 )}
                 {assets.map((a, i) => (
-                  <button key={i} onClick={() => setSendState((s) => ({ ...s, token: a, gas: null }))} style={{
+                  <button key={i} type="button" onClick={() => setSendState((s) => ({ ...s, token: a, gas: null }))} style={{
                     display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
                     backgroundColor: sendState.token === a ? "rgba(249,115,22,0.08)" : "transparent",
                     border: sendState.token === a ? "1px solid rgba(249,115,22,0.2)" : "1px solid transparent",
@@ -1130,6 +1364,7 @@ export default function Wallet() {
             <div>
               <label style={{ fontSize: 12, color: "#71717A", fontWeight: 500, display: "block", marginBottom: 8 }}>Recipient Address</label>
               <input
+                type="text"
                 value={sendState.toAddress}
                 onChange={(e) => setSendState((s) => ({ ...s, toAddress: e.target.value, gas: null }))}
                 placeholder="0x..."
@@ -1150,7 +1385,7 @@ export default function Wallet() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                 <label style={{ fontSize: 12, color: "#71717A", fontWeight: 500 }}>Amount</label>
                 {sendState.token && (
-                  <button onClick={() => setSendState((s) => ({ ...s, amount: s.token?.balanceFormatted || "", gas: null }))}
+                  <button type="button" onClick={() => setSendState((s) => ({ ...s, amount: s.token?.balanceFormatted || "", gas: null }))}
                     style={{ fontSize: 11, color: "#F97316", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>
                     Max
                   </button>
@@ -1158,11 +1393,11 @@ export default function Wallet() {
               </div>
               <div style={{ position: "relative" }}>
                 <input
+                  type="text"
+                  inputMode="decimal"
                   value={sendState.amount}
                   onChange={(e) => setSendState((s) => ({ ...s, amount: e.target.value, gas: null }))}
                   placeholder="0.0"
-                  type="text"
-                  inputMode="decimal"
                   style={{
                     width: "100%", padding: "14px 70px 14px 16px", boxSizing: "border-box",
                     backgroundColor: "rgba(255,255,255,0.03)",
@@ -1182,251 +1417,205 @@ export default function Wallet() {
             </div>
 
             {/* Estimate gas button */}
-            {sendState.token && isValidAddress(sendState.toAddress) && sendState.amount && !sendState.gas && (
-              <button onClick={() => estimateGasForSend(sendState)} disabled={sendState.gasLoading} style={{
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                padding: "12px", width: "100%",
-                backgroundColor: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.08)",
+            <button
+              type="button"
+              onClick={() => estimateGasForSend(sendState)}
+              disabled={!sendState.token || !isValidAddress(sendState.toAddress) || !sendState.amount || sendState.gasLoading}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                padding: "11px", width: "100%",
+                backgroundColor: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.06)",
                 borderRadius: 12, color: "#A1A1AA", fontSize: 13, fontWeight: 500, cursor: "pointer",
-              }}>
-                {sendState.gasLoading ? (
-                  <div style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.1)", borderTopColor: "#71717A", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-                ) : null}
-                {sendState.gasLoading ? "Estimating gas..." : "Estimate Gas Fee"}
-              </button>
-            )}
-
-            {/* Gas estimate display */}
-            {sendState.gas && (
-              <div style={{ padding: "12px 14px", backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: 12, color: "#71717A" }}>Estimated Gas</span>
-                <span style={{ fontSize: 13, color: "#A1A1AA", fontWeight: 600, ...mono }}>
-                  ~{sendState.gas.estimatedFeeFormatted} {sendState.token?.chainConfig.symbol}
-                </span>
-              </div>
-            )}
+                transition: "all 0.15s ease",
+              }}
+            >
+              {sendState.gasLoading ? (
+                <><div style={{ width: 12, height: 12, border: "2px solid rgba(255,255,255,0.1)", borderTopColor: "#A1A1AA", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} /> Estimating gas...</>
+              ) : sendState.gas ? (
+                <><GasIcon size={12} /> Gas: ~{sendState.gas.estimatedFeeFormatted}</>
+              ) : (
+                <><GasIcon size={12} /> Estimate Gas</>
+              )}
+            </button>
 
             {sendState.error && (
-              <div style={{ padding: "10px 14px", backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 10 }}>
-                <p style={{ fontSize: 12, color: "#EF4444" }}>{sendState.error}</p>
+              <div style={{ padding: "10px 14px", backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.12)", borderRadius: 10, display: "flex", alignItems: "flex-start", gap: 8 }}>
+                <div style={{ color: "#EF4444", flexShrink: 0, marginTop: 1 }}><AlertTriangleIcon size={12} /></div>
+                <p style={{ fontSize: 12, color: "#EF4444", lineHeight: 1.5 }}>{sendState.error}</p>
               </div>
             )}
 
-            {/* Review button */}
+            {/* Send button */}
             <button
-              onClick={() => setModalView("send-confirm")}
-              disabled={!sendState.token || !isValidAddress(sendState.toAddress) || !sendState.amount || !sendState.gas}
+              type="button"
+              onClick={handleSendConfirm}
+              disabled={!sendState.token || !isValidAddress(sendState.toAddress) || !sendState.amount || sendState.sending}
               style={{
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                 padding: "15px", width: "100%",
-                background: (!sendState.token || !isValidAddress(sendState.toAddress) || !sendState.amount || !sendState.gas) ? "rgba(255,255,255,0.03)" : "linear-gradient(135deg, #F97316, #EA580C)",
+                background: (!sendState.token || !isValidAddress(sendState.toAddress) || !sendState.amount || sendState.sending)
+                  ? "rgba(255,255,255,0.03)"
+                  : "linear-gradient(135deg, #F97316, #EA580C)",
                 border: "none", borderRadius: 14,
-                color: (!sendState.token || !isValidAddress(sendState.toAddress) || !sendState.amount || !sendState.gas) ? "#3F3F46" : "#fff",
+                color: (!sendState.token || !isValidAddress(sendState.toAddress) || !sendState.amount || sendState.sending)
+                  ? "#3F3F46" : "#fff",
                 fontSize: 15, fontWeight: 600,
-                cursor: (!sendState.token || !isValidAddress(sendState.toAddress) || !sendState.amount || !sendState.gas) ? "default" : "pointer",
-                boxShadow: (sendState.token && isValidAddress(sendState.toAddress) && sendState.amount && sendState.gas) ? "0 4px 20px rgba(249,115,22,0.2)" : "none",
+                cursor: (!sendState.token || !isValidAddress(sendState.toAddress) || !sendState.amount || sendState.sending) ? "default" : "pointer",
+                boxShadow: (!sendState.token || !isValidAddress(sendState.toAddress) || !sendState.amount || sendState.sending)
+                  ? "none" : "0 4px 20px rgba(249,115,22,0.25)",
+                transition: "all 0.15s ease",
               }}
             >
-              Review Transaction
-            </button>
-          </div>
-        </Modal>
-      )}
-
-      {/* Send Confirmation Modal */}
-      {modalView === "send-confirm" && sendState.token && (
-        <Modal onClose={() => setModalView("send")} title="Confirm Transaction">
-          <div style={{ padding: "20px 24px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ textAlign: "center", padding: "24px 0 16px" }}>
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
-                <div style={{ position: "relative" }}>
-                  <TokenAvatar item={sendState.token} size={56} />
-                  {sendState.token.type === "erc20" && <ChainBadge chain={sendState.token.chain} />}
-                </div>
-              </div>
-              <p style={{ fontSize: 36, fontWeight: 800, color: "#F4F4F5", letterSpacing: "-0.03em", ...mono }}>
-                {sendState.amount} {sendState.token.symbol}
-              </p>
-              {sendState.token.pricePerToken > 0 && (
-                <p style={{ fontSize: 14, color: "#52525B", marginTop: 4 }}>
-                  ≈ {formatUsd(parseFloat(sendState.amount || "0") * sendState.token.pricePerToken)}
-                </p>
+              {sendState.sending ? (
+                <><div style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,0.2)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} /> Sending...</>
+              ) : (
+                <><SendIcon size={16} /> Send {sendState.token?.symbol || ""}</>
               )}
-            </div>
-
-            <div style={{ backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, overflow: "hidden" }}>
-              {[
-                { label: "To", value: `${sendState.toAddress.slice(0, 6)}...${sendState.toAddress.slice(-4)}`, isMono: true },
-                { label: "Gas Fee", value: `~${sendState.gas?.estimatedFeeFormatted} ${sendState.token.chainConfig.symbol}` },
-              ].map((row, i) => (
-                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderBottom: i < 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
-                  <span style={{ fontSize: 13, color: "#71717A" }}>{row.label}</span>
-                  <span style={{ fontSize: 13, color: "#F4F4F5", fontWeight: 500, ...(row.isMono ? mono : {}) }}>{row.value}</span>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ padding: "12px 14px", backgroundColor: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.1)", borderRadius: 10, display: "flex", alignItems: "flex-start", gap: 8 }}>
-              <div style={{ color: "#EF4444", flexShrink: 0, marginTop: 1 }}><AlertTriangleIcon size={12} /></div>
-              <p style={{ fontSize: 11, color: "#71717A", lineHeight: 1.6 }}>
-                This transaction is irreversible. Double-check the recipient address and amount before confirming.
-              </p>
-            </div>
-
-            {sendState.error && (
-              <div style={{ padding: "10px 14px", backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 10 }}>
-                <p style={{ fontSize: 12, color: "#EF4444" }}>{sendState.error}</p>
-              </div>
-            )}
-
-            <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => setModalView("send")} style={{ flex: 1, padding: "14px", backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, color: "#A1A1AA", fontSize: 15, fontWeight: 600, cursor: "pointer" }}>
-                Back
-              </button>
-              <button onClick={handleSendConfirm} disabled={sendState.sending} style={{
-                flex: 2, display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                padding: "14px",
-                background: sendState.sending ? "rgba(255,255,255,0.03)" : "linear-gradient(135deg, #F97316, #EA580C)",
-                border: "none", borderRadius: 14,
-                color: sendState.sending ? "#3F3F46" : "#fff",
-                fontSize: 15, fontWeight: 600, cursor: sendState.sending ? "default" : "pointer",
-                boxShadow: sendState.sending ? "none" : "0 4px 20px rgba(249,115,22,0.2)",
-              }}>
-                {sendState.sending && <div style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,0.1)", borderTopColor: "#3F3F46", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />}
-                {sendState.sending ? "Sending..." : "Confirm & Send"}
-              </button>
-            </div>
+            </button>
           </div>
         </Modal>
       )}
 
       {/* Send Success Modal */}
       {modalView === "send-success" && (
-        <Modal onClose={() => setModalView("none")} title="">
-          <div style={{ padding: "32px 24px 40px", display: "flex", flexDirection: "column", alignItems: "center", gap: 20, textAlign: "center" }}>
-            <div style={{ width: 72, height: 72, borderRadius: "50%", backgroundColor: "rgba(34,197,94,0.1)", border: "2px solid rgba(34,197,94,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Modal onClose={() => setModalView("none")} title="Transaction Sent">
+          <div style={{ padding: "24px 24px 32px", display: "flex", flexDirection: "column", alignItems: "center", gap: 20, textAlign: "center" }}>
+            <div style={{
+              width: 72, height: 72, borderRadius: "50%",
+              backgroundColor: "rgba(34,197,94,0.1)",
+              border: "2px solid rgba(34,197,94,0.3)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
               <CheckIcon size={32} />
             </div>
             <div>
-              <h3 style={{ fontSize: 22, fontWeight: 700, color: "#F4F4F5", marginBottom: 8, letterSpacing: "-0.03em" }}>Transaction Sent!</h3>
-              <p style={{ fontSize: 14, color: "#71717A", lineHeight: 1.6 }}>Your transaction has been broadcast to the network.</p>
+              <h3 style={{ fontSize: 20, fontWeight: 700, color: "#22C55E", marginBottom: 8 }}>Transaction Submitted!</h3>
+              <p style={{ fontSize: 13, color: "#71717A", lineHeight: 1.6 }}>
+                Your transaction has been broadcast to the network. It may take a few minutes to confirm.
+              </p>
             </div>
-            <div style={{ width: "100%", padding: "12px 16px", backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12 }}>
-              <p style={{ fontSize: 11, color: "#52525B", marginBottom: 4 }}>Transaction Hash</p>
-              <p style={{ fontSize: 12, color: "#A1A1AA", ...mono, wordBreak: "break-all" }}>{sendState.txHash}</p>
+            {sendState.txHash && (
+              <div style={{ width: "100%", padding: "12px 16px", backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12 }}>
+                <p style={{ fontSize: 11, color: "#52525B", marginBottom: 6 }}>Transaction Hash</p>
+                <p style={{ fontSize: 12, color: "#A1A1AA", ...mono, wordBreak: "break-all" }}>{sendState.txHash}</p>
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 10, width: "100%" }}>
+              {sendState.txExplorerUrl && (
+                <a
+                  href={sendState.txExplorerUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                    padding: "12px", backgroundColor: "rgba(249,115,22,0.08)",
+                    border: "1px solid rgba(249,115,22,0.2)", borderRadius: 12,
+                    color: "#F97316", fontSize: 13, fontWeight: 600, textDecoration: "none",
+                  }}
+                >
+                  <ExternalLinkIcon size={12} /> View on Explorer
+                </a>
+              )}
+              <button type="button" onClick={() => setModalView("none")} style={{
+                flex: 1, padding: "12px",
+                backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: 12, color: "#A1A1AA", fontSize: 13, fontWeight: 600, cursor: "pointer",
+              }}>
+                Done
+              </button>
             </div>
-            <a href={sendState.txExplorerUrl} target="_blank" rel="noopener noreferrer" style={{
-              display: "flex", alignItems: "center", gap: 6,
-              padding: "12px 20px", borderRadius: 12,
-              backgroundColor: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.07)",
-              color: "#F97316", fontSize: 13, fontWeight: 600,
-              textDecoration: "none", transition: "all 0.15s ease",
-            }}>
-              View on Explorer <ExternalLinkIcon size={12} />
-            </a>
-            <button onClick={() => { setModalView("none"); }} style={{ width: "100%", padding: "14px", background: "linear-gradient(135deg, #F97316, #EA580C)", border: "none", borderRadius: 14, color: "#fff", fontSize: 15, fontWeight: 600, cursor: "pointer" }}>
-              Done
-            </button>
           </div>
         </Modal>
       )}
 
-      {/* Add Custom Token Modal */}
+      {/* Add Token Modal */}
       {modalView === "add-token" && (
-        <Modal onClose={() => { setModalView("none"); setAddTokenAddress(""); setAddTokenInfo(null); setAddTokenError(""); }} title="Add Custom Token">
+        <Modal onClose={() => { setModalView("none"); setAddTokenAddress(""); setAddTokenInfo(null); setAddTokenError(""); }} title="Add Token">
           <div style={{ padding: "20px 24px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
-            <p style={{ fontSize: 13, color: "#71717A", lineHeight: 1.6 }}>
-              Add any ERC-20 token on Ethereum, Base, or Avalanche C-Chain by pasting its contract address.
-            </p>
-
-            {/* Chain selector */}
             <div>
               <label style={{ fontSize: 12, color: "#71717A", fontWeight: 500, display: "block", marginBottom: 8 }}>Network</label>
               <div style={{ display: "flex", gap: 8 }}>
-                {(["ethereum", "base", "avalanche"] as SupportedChain[]).map((c) => {
-                  const labels = { ethereum: "Ethereum", base: "Base", avalanche: "Avalanche" };
-                  const colors = { ethereum: "#627EEA", base: "#0052FF", avalanche: "#E84142" };
-                  return (
-                    <button key={c} onClick={() => { setAddTokenChain(c); setAddTokenInfo(null); setAddTokenError(""); }} style={{
-                      flex: 1, padding: "10px 8px",
-                      backgroundColor: addTokenChain === c ? `${colors[c]}15` : "rgba(255,255,255,0.02)",
-                      border: addTokenChain === c ? `1px solid ${colors[c]}40` : "1px solid rgba(255,255,255,0.06)",
-                      borderRadius: 10, color: addTokenChain === c ? colors[c] : "#71717A",
-                      fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 0.15s ease",
-                    }}>
-                      {labels[c]}
-                    </button>
-                  );
-                })}
+                {(["base", "ethereum", "avalanche"] as SupportedChain[]).map((chain) => (
+                  <button key={chain} type="button" onClick={() => setAddTokenChain(chain)} style={{
+                    flex: 1, padding: "10px 8px",
+                    backgroundColor: addTokenChain === chain ? "rgba(249,115,22,0.1)" : "rgba(255,255,255,0.03)",
+                    border: addTokenChain === chain ? "1px solid rgba(249,115,22,0.3)" : "1px solid rgba(255,255,255,0.06)",
+                    borderRadius: 10, color: addTokenChain === chain ? "#F97316" : "#71717A",
+                    fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 0.15s ease",
+                    textTransform: "capitalize",
+                  }}>
+                    {chain === "avalanche" ? "Avalanche" : chain === "base" ? "Base" : "Ethereum"}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Contract address */}
             <div>
               <label style={{ fontSize: 12, color: "#71717A", fontWeight: 500, display: "block", marginBottom: 8 }}>Contract Address</label>
               <div style={{ display: "flex", gap: 8 }}>
                 <input
+                  type="text"
                   value={addTokenAddress}
                   onChange={(e) => { setAddTokenAddress(e.target.value); setAddTokenInfo(null); setAddTokenError(""); }}
                   placeholder="0x..."
                   style={{
-                    flex: 1, padding: "12px 14px", boxSizing: "border-box",
+                    flex: 1, padding: "12px 14px",
                     backgroundColor: "rgba(255,255,255,0.03)",
-                    border: addTokenError ? "1px solid rgba(239,68,68,0.4)" : "1px solid rgba(255,255,255,0.07)",
-                    borderRadius: 12, color: "#F4F4F5", fontSize: 13, ...mono, outline: "none",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                    borderRadius: 12, color: "#F4F4F5", fontSize: 14, ...mono, outline: "none",
                   }}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleLookupToken(); }}
                 />
-                <button onClick={handleLookupToken} disabled={addTokenLoading || !isValidAddress(addTokenAddress)} style={{
-                  padding: "12px 16px", borderRadius: 12,
-                  backgroundColor: isValidAddress(addTokenAddress) ? "rgba(249,115,22,0.1)" : "rgba(255,255,255,0.02)",
-                  border: isValidAddress(addTokenAddress) ? "1px solid rgba(249,115,22,0.2)" : "1px solid rgba(255,255,255,0.06)",
-                  color: isValidAddress(addTokenAddress) ? "#F97316" : "#3F3F46",
-                  fontSize: 12, fontWeight: 600, cursor: isValidAddress(addTokenAddress) ? "pointer" : "default",
-                  whiteSpace: "nowrap",
-                }}>
-                  {addTokenLoading ? "..." : "Look Up"}
+                <button type="button" onClick={handleLookupToken} disabled={addTokenLoading || !addTokenAddress}
+                  style={{
+                    padding: "12px 16px",
+                    backgroundColor: addTokenLoading || !addTokenAddress ? "rgba(255,255,255,0.02)" : "rgba(249,115,22,0.1)",
+                    border: addTokenLoading || !addTokenAddress ? "1px solid rgba(255,255,255,0.05)" : "1px solid rgba(249,115,22,0.25)",
+                    borderRadius: 12, color: addTokenLoading || !addTokenAddress ? "#3F3F46" : "#F97316",
+                    fontSize: 13, fontWeight: 600, cursor: addTokenLoading || !addTokenAddress ? "default" : "pointer",
+                    whiteSpace: "nowrap",
+                  }}>
+                  {addTokenLoading ? "..." : "Lookup"}
                 </button>
               </div>
-              {addTokenError && <p style={{ fontSize: 11, color: "#EF4444", marginTop: 6 }}>{addTokenError}</p>}
             </div>
 
-            {/* Token preview */}
-            {addTokenInfo && (
-              <div style={{ padding: "14px 16px", backgroundColor: "rgba(34,197,94,0.04)", border: "1px solid rgba(34,197,94,0.12)", borderRadius: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  {addTokenInfo.logoUrl ? (
-                    <img src={addTokenInfo.logoUrl} alt={addTokenInfo.symbol} style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }} />
-                  ) : (
-                    <TokenLetter symbol={addTokenInfo.symbol} color="#71717A" size={40} />
-                  )}
-                  <div>
-                    <p style={{ fontSize: 14, fontWeight: 600, color: "#F4F4F5" }}>{addTokenInfo.name}</p>
-                    <p style={{ fontSize: 12, color: "#52525B", ...mono }}>{addTokenInfo.symbol} · {addTokenInfo.decimals} decimals</p>
-                  </div>
-                  <div style={{ marginLeft: "auto" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 4, color: "#22C55E" }}>
-                      <CheckIcon size={12} />
-                      <span style={{ fontSize: 11, fontWeight: 600 }}>Found</span>
-                    </div>
-                  </div>
-                </div>
+            {addTokenError && (
+              <div style={{ padding: "10px 14px", backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.12)", borderRadius: 10 }}>
+                <p style={{ fontSize: 12, color: "#EF4444" }}>{addTokenError}</p>
               </div>
             )}
 
-            <button onClick={handleAddToken} disabled={!addTokenInfo} style={{
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              padding: "15px", width: "100%",
-              background: !addTokenInfo ? "rgba(255,255,255,0.03)" : "linear-gradient(135deg, #F97316, #EA580C)",
-              border: "none", borderRadius: 14,
-              color: !addTokenInfo ? "#3F3F46" : "#fff",
-              fontSize: 15, fontWeight: 600,
-              cursor: !addTokenInfo ? "default" : "pointer",
-              boxShadow: addTokenInfo ? "0 4px 20px rgba(249,115,22,0.2)" : "none",
-            }}>
-              Add Token
-            </button>
+            {addTokenInfo && (
+              <div style={{ padding: "16px", backgroundColor: "rgba(34,197,94,0.04)", border: "1px solid rgba(34,197,94,0.12)", borderRadius: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                  {addTokenInfo.logoUrl ? (
+                    <img src={addTokenInfo.logoUrl} alt={addTokenInfo.symbol} style={{ width: 40, height: 40, borderRadius: "50%" }} />
+                  ) : (
+                    <TokenLetter symbol={addTokenInfo.symbol} color="#22C55E" size={40} />
+                  )}
+                  <div>
+                    <p style={{ fontSize: 15, fontWeight: 700, color: "#F4F4F5" }}>{addTokenInfo.symbol}</p>
+                    <p style={{ fontSize: 12, color: "#71717A" }}>{addTokenInfo.name}</p>
+                  </div>
+                  <div style={{ marginLeft: "auto", textAlign: "right" }}>
+                    <p style={{ fontSize: 11, color: "#52525B" }}>Decimals</p>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: "#A1A1AA" }}>{addTokenInfo.decimals}</p>
+                  </div>
+                </div>
+                <button type="button" onClick={handleAddToken} style={{
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                  width: "100%", padding: "12px",
+                  background: "linear-gradient(135deg, #22C55E, #16A34A)",
+                  border: "none", borderRadius: 12, color: "#fff",
+                  fontSize: 14, fontWeight: 600, cursor: "pointer",
+                  boxShadow: "0 4px 16px rgba(34,197,94,0.2)",
+                }}>
+                  <PlusIcon size={14} /> Add {addTokenInfo.symbol}
+                </button>
+              </div>
+            )}
           </div>
         </Modal>
       )}

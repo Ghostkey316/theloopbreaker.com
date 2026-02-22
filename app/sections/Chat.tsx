@@ -102,7 +102,7 @@ const SUGGESTED_PROMPTS_UNREGISTERED = [
   'Show me the Base contracts',
   'What can you do?',
   'How does the protocol work?',
-  'What is Embris?',
+  'What are you capable of?',
 ];
 
 /* ── SVG Icons ── */
@@ -336,6 +336,7 @@ function ConversationSidebar({
   isOpen,
   onClose,
   isMobile,
+  companionName = 'Embris',
 }: {
   conversations: ConversationMeta[];
   activeId: string | null;
@@ -345,6 +346,7 @@ function ConversationSidebar({
   isOpen: boolean;
   onClose: () => void;
   isMobile: boolean;
+  companionName?: string;
 }) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -404,7 +406,7 @@ function ConversationSidebar({
               <path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C" />
             </svg>
             <span style={{ fontSize: 12, fontWeight: 600, color: '#52525B', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-              Embris
+              {companionName}
             </span>
           </div>
           <button
@@ -541,6 +543,9 @@ export default function Chat() {
   const [registered, setRegistered] = useState(false);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
 
+  // Companion name (dynamic from wallet settings)
+  const [companionDisplayName, setCompanionDisplayName] = useState('Embris');
+
   // Voice mode state
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -590,6 +595,10 @@ export default function Chat() {
     setRegistered(reg);
     const addr = getWalletAddress();
     setWalletAddress(addr);
+
+    // Load companion name from localStorage
+    const storedName = localStorage.getItem('vaultfire_companion_name') || 'Embris';
+    setCompanionDisplayName(storedName);
 
     if (reg) {
       const mems = getMemories();
@@ -1004,6 +1013,7 @@ export default function Chat() {
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         isMobile={isMobile}
+        companionName={companionDisplayName}
       />
 
       {/* ── Main chat area ── */}
@@ -1036,7 +1046,7 @@ export default function Chat() {
               <SidebarIcon size={15} />
             </button>
 
-            <span style={{ fontSize: 14, fontWeight: 500, color: '#A1A1AA', letterSpacing: '-0.01em' }}>Embris</span>
+            <span style={{ fontSize: 14, fontWeight: 500, color: '#A1A1AA', letterSpacing: '-0.01em' }}>{companionDisplayName}</span>
             {embrisSpeaking && <VoiceWaveform />}
             {registered && currentMood && currentMood.confidence > 0.3 && !embrisSpeaking && (
               <MoodDot mood={currentMood.mood} />
@@ -1159,7 +1169,7 @@ export default function Chat() {
             {embrisSpeaking && (
               <button
                 onClick={handleStopSpeaking}
-                title="Stop Embris speaking"
+                title={`Stop ${companionDisplayName} speaking`}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 4,
                   fontSize: 10, fontWeight: 500,
@@ -1272,7 +1282,7 @@ export default function Chat() {
                 <h3 style={{
                   fontSize: isMobile ? 20 : 24, fontWeight: 600, color: '#F4F4F5',
                   marginBottom: 8, letterSpacing: '-0.03em', lineHeight: 1.25,
-                }}>Ask Embris anything</h3>
+                }}>Ask {companionDisplayName} anything</h3>
                 <p style={{ fontSize: 14, color: '#3F3F46', lineHeight: 1.6 }}>
                   {registered
                     ? 'Your self-learning companion — I remember, reflect, grow, and track your goals'
@@ -1439,7 +1449,7 @@ export default function Chat() {
                 {embrisSpeaking ? (
                   <>
                     <VoiceWaveform />
-                    <span style={{ fontSize: 11, color: '#F97316', fontWeight: 500 }}>Embris is speaking...</span>
+                    <span style={{ fontSize: 11, color: '#F97316', fontWeight: 500 }}>{companionDisplayName} is speaking...</span>
                     <button
                       onClick={handleStopSpeaking}
                       style={{ fontSize: 10, color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500, padding: '2px 6px' }}
@@ -1453,7 +1463,7 @@ export default function Chat() {
                     <span style={{ fontSize: 11, color: '#A1A1AA', fontWeight: 500 }}>Listening...</span>
                   </>
                 ) : isLoading ? (
-                  <span style={{ fontSize: 11, color: '#52525B' }}>Embris is thinking...</span>
+                  <span style={{ fontSize: 11, color: '#52525B' }}>{companionDisplayName} is thinking...</span>
                 ) : (
                   <span style={{ fontSize: 11, color: '#3F3F46' }}>Tap mic to speak</span>
                 )}
@@ -1479,7 +1489,7 @@ export default function Chat() {
                 onKeyDown={handleKeyDown}
                 onFocus={() => setInputFocused(true)}
                 onBlur={() => setInputFocused(false)}
-                placeholder={isListening ? 'Listening...' : voiceEnabled ? 'Speak or type...' : 'Message Embris...'}
+                placeholder={isListening ? 'Listening...' : voiceEnabled ? 'Speak or type...' : `Message ${companionDisplayName}...`}
                 disabled={isLoading}
                 rows={1}
                 style={{

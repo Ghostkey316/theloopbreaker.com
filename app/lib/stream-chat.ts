@@ -21,6 +21,16 @@ import { formatPersonalityForPrompt } from './personality-tuning';
 import { isRegistered, shouldNudgeRegistration, getRegisteredWalletAddress } from './registration';
 import type { Memory } from './memory';
 
+// VNS and companion name helpers
+function getVNSName(): string {
+  if (typeof window === 'undefined') return '';
+  return localStorage.getItem('vaultfire_vns_name') || '';
+}
+function getCompanionName(): string {
+  if (typeof window === 'undefined') return 'Embris';
+  return localStorage.getItem('vaultfire_companion_name') || 'Embris';
+}
+
 const API_URL = 'https://api.manus.im/api/llm-proxy/v1/chat/completions';
 const API_KEY = process.env.NEXT_PUBLIC_OPENAI_API_KEY || 'sk-ADn9FUEGSQtAJYdaQiEjYF';
 
@@ -160,12 +170,17 @@ function buildRegisteredPrompt(memories: Memory[], userMessage?: string): string
 
   let prompt = EMBER_SYSTEM_PROMPT;
 
+  // VNS and companion name
+  const vnsName = getVNSName();
+  const companionName = getCompanionName();
+
   // Registration status
   prompt += `
 
 ═══ REGISTRATION STATUS ═══
-User is REGISTERED on-chain. Wallet: ${walletAddress || 'linked'}
-All features are ACTIVE. You are operating at full capacity as their personal AI companion.`;
+User is REGISTERED on-chain. Wallet: ${walletAddress || 'linked'}${vnsName ? ` · VNS Name: ${vnsName}` : ''}
+All features are ACTIVE. You are operating at full capacity as their personal AI companion.
+${companionName !== 'Embris' ? `IMPORTANT: The user has named you "${companionName}". Always respond to this name. When they say "Hey ${companionName}" or refer to you as ${companionName}, that's you. You ARE ${companionName}. Your personality and capabilities are unchanged — only your name is different.` : ''}`;
   remainingBudget -= 50;
 
   // 1. Personality tuning (affects overall response style) — small, always include
