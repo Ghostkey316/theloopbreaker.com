@@ -49,6 +49,24 @@ import {
 import RegistrationModal from '../components/RegistrationModal';
 import RegistrationBanner from '../components/RegistrationBanner';
 
+// Voice Mode imports
+import {
+  getVoiceModeEnabled,
+  setVoiceModeEnabled,
+  isSpeechRecognitionSupported,
+  createSpeechRecognition,
+  isSpeechSynthesisSupported,
+  speakText,
+  stopSpeaking,
+  type SpeechRecognitionInstance,
+} from '../lib/voice-mode';
+
+// Contract Interaction imports
+import {
+  detectContractQuery,
+  executeContractQuery,
+} from '../lib/contract-interaction';
+
 interface ChatMessageWithStatus extends ChatMessage {
   isStreaming?: boolean;
 }
@@ -59,7 +77,7 @@ const SUGGESTED_PROMPTS_REGISTERED = [
   'What are my goals?',
   'What do you remember about me?',
   'How have you grown?',
-  'Show me previous sessions',
+  'Am I registered on-chain?',
 ];
 
 const SUGGESTED_PROMPTS_UNREGISTERED = [
@@ -95,6 +113,27 @@ function ShieldCheckIcon({ size = 14 }: { size?: number }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
       <polyline points="9 12 11 14 15 10" />
+    </svg>
+  );
+}
+
+function MicIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+      <line x1="12" y1="19" x2="12" y2="23" />
+      <line x1="8" y1="23" x2="16" y2="23" />
+    </svg>
+  );
+}
+
+function SpeakerIcon({ size = 12 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
     </svg>
   );
 }
@@ -212,6 +251,13 @@ export default function Chat() {
   const [registered, setRegistered] = useState(false);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
 
+  // Voice mode state
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [ttsSupported, setTtsSupported] = useState(false);
+  const [sttSupported, setSttSupported] = useState(false);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -222,6 +268,13 @@ export default function Chat() {
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
+  }, []);
+
+  // Initialize voice mode
+  useEffect(() => {
+    setSttSupported(isSpeechRecognitionSupported());
+    setTtsSupported(isSpeechSynthesisSupported());
+    setVoiceEnabled(getVoiceModeEnabled());
   }, []);
 
   // Load chat history, memories, goals, growth stats, and registration status on mount
@@ -353,9 +406,69 @@ export default function Chat() {
     [],
   );
 
+  /* ── Voice Mode: Start/Stop Listening ── */
+  const toggleListening = useCallback(() => {
+    if (isListening) {
+      // Stop listening
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const recognition = createSpeechRecognition();
+    if (!recognition) return;
+
+    recognitionRef.current = recognition;
+    setIsListening(true);
+
+    recognition.onresult = (event) => {
+      let transcript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setInputText(transcript);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognition.onerror = () => {
+      setIsListening(false);
+    };
+
+    recognition.start();
+  }, [isListening]);
+
+  /* ── Voice Mode: Toggle ── */
+  const handleToggleVoice = useCallback(() => {
+    const next = !voiceEnabled;
+    setVoiceEnabled(next);
+    setVoiceModeEnabled(next);
+    if (!next) {
+      stopSpeaking();
+      if (isListening) {
+        recognitionRef.current?.stop();
+        setIsListening(false);
+      }
+    }
+  }, [voiceEnabled, isListening]);
+
+  /* ── TTS: Speak a message ── */
+  const handleSpeak = useCallback((text: string) => {
+    if (!voiceEnabled || !ttsSupported) return;
+    speakText(text);
+  }, [voiceEnabled, ttsSupported]);
+
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || isLoading) return;
     setShowSuggestions(false);
+
+    // Stop listening if voice was active
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+    }
 
     const features = getAvailableFeatures();
 
@@ -380,6 +493,17 @@ export default function Chat() {
     if (features.sessionSummaries) {
       // 4. Update current session tracking
       updateCurrentSession();
+    }
+
+    // ── CONTRACT INTERACTION: Detect on-chain queries ──
+    const contractQuery = detectContractQuery(text.trim());
+    let contractContext = '';
+    if (contractQuery) {
+      try {
+        contractContext = await executeContractQuery(contractQuery);
+      } catch {
+        // Silent fail
+      }
     }
 
     // Reload memories fresh from storage each time (only for registered)
@@ -409,9 +533,15 @@ export default function Chat() {
     abortRef.current = controller;
 
     const history = getChatHistory();
+
+    // Build messages — inject contract context if available
+    const userContent = contractContext
+      ? text.trim() + contractContext
+      : text.trim();
+
     const llmMessages = [
       ...history.slice(-20).map((m) => ({ role: m.role, content: m.content })),
-      { role: 'user', content: text.trim() },
+      { role: 'user', content: userContent },
     ];
 
     await streamChat({
@@ -462,6 +592,11 @@ export default function Chat() {
           }, 2000);
         }
 
+        // Voice Mode: TTS auto-read response
+        if (voiceEnabled && ttsSupported) {
+          speakText(fullText);
+        }
+
         setMessages((prev) =>
           prev.map((m) => m.id === assistantMsg.id ? { ...m, content: fullText, isStreaming: false } : m)
         );
@@ -478,7 +613,7 @@ export default function Chat() {
         setIsLoading(false);
       },
     });
-  }, [isLoading, runBackgroundMemoryExtraction, runBackgroundSelfLearning, runBackgroundGoalExtraction]);
+  }, [isLoading, isListening, voiceEnabled, ttsSupported, runBackgroundMemoryExtraction, runBackgroundSelfLearning, runBackgroundGoalExtraction]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -497,6 +632,9 @@ export default function Chat() {
         // Silent fail — don't block clear
       }
     }
+
+    // Stop any TTS
+    stopSpeaking();
 
     // Only clear chat history — preserve the brain (memories, learning, goals, personality)
     clearChatHistory();
@@ -566,6 +704,25 @@ export default function Chat() {
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Voice mode toggle */}
+          {sttSupported && (
+            <button
+              onClick={handleToggleVoice}
+              title={voiceEnabled ? 'Disable voice mode' : 'Enable voice mode'}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                fontSize: 10, fontWeight: 500,
+                padding: '4px 8px', borderRadius: 6,
+                border: 'none', cursor: 'pointer',
+                backgroundColor: voiceEnabled ? 'rgba(249,115,22,0.12)' : 'transparent',
+                color: voiceEnabled ? '#F97316' : '#3F3F46',
+                transition: 'all 0.15s',
+              }}
+            >
+              <MicIcon size={11} />
+              {!isMobile && (voiceEnabled ? 'Voice On' : 'Voice')}
+            </button>
+          )}
           {walletAddress && !isMobile && (
             <span style={{
               fontSize: 11, color: '#3F3F46',
@@ -721,6 +878,25 @@ export default function Chat() {
                   msg.content
                 )}
               </div>
+
+              {/* TTS speaker button for assistant messages */}
+              {msg.role === 'assistant' && voiceEnabled && ttsSupported && msg.content && !msg.isStreaming && (
+                <button
+                  onClick={() => handleSpeak(msg.content)}
+                  title="Read aloud"
+                  style={{
+                    flexShrink: 0, width: 22, height: 22, borderRadius: 4,
+                    border: 'none', background: 'transparent',
+                    color: '#3F3F46', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    marginTop: 2, transition: 'color 0.15s',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = '#F97316'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = '#3F3F46'; }}
+                >
+                  <SpeakerIcon size={12} />
+                </button>
+              )}
             </div>
           ))}
           <div ref={messagesEndRef} />
@@ -740,7 +916,11 @@ export default function Chat() {
             backgroundColor: '#111113',
             borderRadius: 16,
             padding: isMobile ? '10px 12px' : '12px 16px',
-            boxShadow: inputFocused ? '0 0 0 1px rgba(255,255,255,0.06)' : '0 0 0 1px rgba(255,255,255,0.03)',
+            boxShadow: inputFocused
+              ? '0 0 0 1px rgba(255,255,255,0.06)'
+              : isListening
+                ? '0 0 0 1px rgba(249,115,22,0.3)'
+                : '0 0 0 1px rgba(255,255,255,0.03)',
             transition: 'box-shadow 0.15s ease',
           }}>
             <textarea
@@ -750,7 +930,7 @@ export default function Chat() {
               onKeyDown={handleKeyDown}
               onFocus={() => setInputFocused(true)}
               onBlur={() => setInputFocused(false)}
-              placeholder="Message Embris..."
+              placeholder={isListening ? 'Listening...' : 'Message Embris...'}
               disabled={isLoading}
               rows={1}
               style={{
@@ -766,6 +946,35 @@ export default function Chat() {
                 el.style.height = Math.min(el.scrollHeight, 120) + 'px';
               }}
             />
+
+            {/* Mic button — shown when voice mode is enabled */}
+            {voiceEnabled && sttSupported && (
+              <button
+                onClick={toggleListening}
+                disabled={isLoading}
+                title={isListening ? 'Stop listening' : 'Start listening'}
+                style={{
+                  width: 32, height: 32, borderRadius: 8, border: 'none',
+                  cursor: isLoading ? 'default' : 'pointer',
+                  backgroundColor: isListening ? '#F97316' : 'transparent',
+                  color: isListening ? '#09090B' : '#52525B',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.15s ease', flexShrink: 0,
+                  position: 'relative',
+                }}>
+                <MicIcon size={14} />
+                {/* Pulsing indicator when listening */}
+                {isListening && (
+                  <span style={{
+                    position: 'absolute', top: -2, right: -2,
+                    width: 8, height: 8, borderRadius: '50%',
+                    backgroundColor: '#EF4444',
+                    animation: 'pulse 1.5s ease-in-out infinite',
+                  }} />
+                )}
+              </button>
+            )}
+
             <button
               onClick={() => sendMessage(inputText)}
               disabled={isLoading || !hasText}
@@ -786,7 +995,7 @@ export default function Chat() {
           </div>
           {!isMobile && (
             <p style={{ fontSize: 11, color: '#27272A', marginTop: 8, textAlign: 'center' }}>
-              Enter to send · Shift+Enter for new line
+              Enter to send · Shift+Enter for new line{voiceEnabled ? ' · Click mic to speak' : ''}
             </p>
           )}
         </div>

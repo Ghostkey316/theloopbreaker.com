@@ -9,10 +9,13 @@ import Verify from './sections/Verify';
 import Bridge from './sections/Bridge';
 import Dashboard from './sections/Dashboard';
 import Sync from './sections/Sync';
+import TrustScore from './sections/TrustScore';
+import Analytics from './sections/Analytics';
 import DisclaimerModal from './components/DisclaimerModal';
 import FooterDisclaimer from './components/FooterDisclaimer';
+import OnboardingModal from './components/OnboardingModal';
 
-type Section = 'home' | 'chat' | 'wallet' | 'verify' | 'bridge' | 'dashboard' | 'sync';
+type Section = 'home' | 'chat' | 'wallet' | 'verify' | 'bridge' | 'dashboard' | 'sync' | 'trust' | 'analytics';
 
 export default function Page() {
   const [activeSection, setActiveSection] = useState<Section>('home');
@@ -34,6 +37,8 @@ export default function Page() {
       case 'bridge': return <Bridge />;
       case 'dashboard': return <Dashboard />;
       case 'sync': return <Sync />;
+      case 'trust': return <TrustScore />;
+      case 'analytics': return <Analytics />;
       default: return <Home />;
     }
   };
@@ -43,6 +48,7 @@ export default function Page() {
   return (
     <>
       <DisclaimerModal />
+      <OnboardingModal />
 
       <div style={{
         display: 'flex',
