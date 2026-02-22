@@ -32,18 +32,21 @@ interface ChainCfg {
   name: string;
 }
 
-const CHAIN_CFG: Record<SupportedChain, ChainCfg> = {
+export const CHAIN_CFG: Record<SupportedChain, ChainCfg> = {
   ethereum: { chainId: 1, rpc: "https://eth.llamarpc.com", name: "Ethereum" },
   base:     { chainId: 8453, rpc: "https://mainnet.base.org", name: "Base" },
   avalanche:{ chainId: 43114, rpc: "https://api.avax.network/ext/bc/C/rpc", name: "Avalanche" },
 };
 
 // ─── Featured / Default Tokens ────────────────────────────────────────────────
+// Popular tokens across all supported chains.
+// Users see these by default even if balance is 0 — shows the wallet supports them.
 
 export const FEATURED_TOKENS: TokenInfo[] = [
+  // ── Ethereum Mainnet ──
   {
     address: "0x2565ae0385659badCada1031DB704442E1b69982",
-    name: "Assemble Protocol",
+    name: "Assemble AI",
     symbol: "ASM",
     decimals: 18,
     chain: "ethereum",
@@ -51,9 +54,41 @@ export const FEATURED_TOKENS: TokenInfo[] = [
     coingeckoId: "assemble-protocol",
     logoColor: "#00B4D8",
   },
+
+  // ── Base ──
+  {
+    address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    name: "USD Coin",
+    symbol: "USDC",
+    decimals: 6,
+    chain: "base",
+    chainId: 8453,
+    coingeckoId: "usd-coin",
+    logoColor: "#2775CA",
+  },
+  {
+    address: "0x4200000000000000000000000000000000000006",
+    name: "Wrapped Ether",
+    symbol: "WETH",
+    decimals: 18,
+    chain: "base",
+    chainId: 8453,
+    coingeckoId: "weth",
+    logoColor: "#627EEA",
+  },
+  {
+    address: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",
+    name: "Dai Stablecoin",
+    symbol: "DAI",
+    decimals: 18,
+    chain: "base",
+    chainId: 8453,
+    coingeckoId: "dai",
+    logoColor: "#F5AC37",
+  },
   {
     address: "0x3b53604113B5677291BFc0bc255379E7a796559b",
-    name: "Assemble Protocol",
+    name: "Assemble AI",
     symbol: "ASM",
     decimals: 18,
     chain: "base",
@@ -61,6 +96,63 @@ export const FEATURED_TOKENS: TokenInfo[] = [
     coingeckoId: "assemble-protocol",
     logoColor: "#00B4D8",
   },
+
+  // ── Avalanche C-Chain ──
+  {
+    address: "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E",
+    name: "USD Coin",
+    symbol: "USDC",
+    decimals: 6,
+    chain: "avalanche",
+    chainId: 43114,
+    coingeckoId: "usd-coin",
+    logoColor: "#2775CA",
+  },
+  {
+    address: "0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7",
+    name: "Tether USD",
+    symbol: "USDT",
+    decimals: 6,
+    chain: "avalanche",
+    chainId: 43114,
+    coingeckoId: "tether",
+    logoColor: "#26A17B",
+  },
+  {
+    address: "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7",
+    name: "Wrapped AVAX",
+    symbol: "WAVAX",
+    decimals: 18,
+    chain: "avalanche",
+    chainId: 43114,
+    coingeckoId: "wrapped-avax",
+    logoColor: "#E84142",
+  },
+  {
+    address: "0x6e84a6216eA6dACC71eE8E6b0a5B7322EEbC0fDd",
+    name: "Trader Joe",
+    symbol: "JOE",
+    decimals: 18,
+    chain: "avalanche",
+    chainId: 43114,
+    coingeckoId: "joe",
+    logoColor: "#E8544F",
+  },
+  {
+    address: "0xd586E7F844cEa2F87f50152665BCbc2C279D8d70",
+    name: "Dai Stablecoin",
+    symbol: "DAI",
+    decimals: 18,
+    chain: "avalanche",
+    chainId: 43114,
+    coingeckoId: "dai",
+    logoColor: "#F5AC37",
+  },
+];
+
+// All unique CoinGecko IDs from featured tokens (for batch price lookup)
+export const ALL_COINGECKO_IDS: string[] = [
+  ...new Set(FEATURED_TOKENS.map((t) => t.coingeckoId).filter(Boolean) as string[]),
 ];
 
 // ─── JSON-RPC ─────────────────────────────────────────────────────────────────
@@ -159,6 +251,10 @@ async function ethCall(
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
+/**
+ * Fetch token metadata (name, symbol, decimals) for any ERC-20 contract.
+ * Used for "Add Custom Token" flow.
+ */
 export async function fetchTokenInfo(
   chain: SupportedChain,
   address: string
@@ -192,6 +288,9 @@ export async function fetchTokenInfo(
   }
 }
 
+/**
+ * Fetch the ERC-20 balance for a specific token and owner.
+ */
 export async function fetchTokenBalance(
   token: TokenInfo,
   ownerAddress: string
@@ -214,15 +313,27 @@ export async function fetchTokenBalance(
   }
 }
 
-export async function fetchAllFeaturedBalances(
-  ownerAddress: string
+/**
+ * Fetch balances for ALL featured tokens + any custom tokens.
+ */
+export async function fetchAllTokenBalances(
+  ownerAddress: string,
+  extraTokens: TokenInfo[] = []
 ): Promise<TokenBalance[]> {
+  const allTokens = [...FEATURED_TOKENS, ...extraTokens];
   const results = await Promise.allSettled(
-    FEATURED_TOKENS.map((t) => fetchTokenBalance(t, ownerAddress))
+    allTokens.map((t) => fetchTokenBalance(t, ownerAddress))
   );
   return results
     .filter((r): r is PromiseFulfilledResult<TokenBalance> => r.status === "fulfilled")
     .map((r) => r.value);
+}
+
+/** @deprecated Use fetchAllTokenBalances instead */
+export async function fetchAllFeaturedBalances(
+  ownerAddress: string
+): Promise<TokenBalance[]> {
+  return fetchAllTokenBalances(ownerAddress);
 }
 
 // ─── Format Helpers ───────────────────────────────────────────────────────────
