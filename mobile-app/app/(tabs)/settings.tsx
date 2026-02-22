@@ -157,9 +157,9 @@ const s = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 14,
     borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.03)",
   },
-  headerTitle: { fontSize: 28, fontWeight: "600", color: "#FAFAFA" },
+  headerTitle: { fontSize: 28, fontWeight: "600", color: "#FAFAFA", letterSpacing: -0.5 },
   scroll: { flex: 1 },
-  content: { paddingHorizontal: 16, paddingVertical: 24, gap: 48 },
+  content: { paddingHorizontal: 16, paddingVertical: 24, gap: 40 },
 
   section: { gap: 16 },
   sectionLabel: {
@@ -172,12 +172,12 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: "rgba(255,255,255,0.03)", gap: 12,
   },
   cardRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  cardTitle: { fontSize: 14, fontWeight: "500", color: "#FAFAFA" },
+  cardTitle: { fontSize: 14, fontWeight: "500", color: "#FAFAFA", letterSpacing: -0.1 },
   badge: {
     fontSize: 12, fontWeight: "600", color: "#FAFAFA",
     backgroundColor: "rgba(249,115,22,0.15)", paddingHorizontal: 10, paddingVertical: 3, borderRadius: 12,
   },
-  cardDesc: { fontSize: 13, color: "#A1A1AA", lineHeight: 18 },
+  cardDesc: { fontSize: 13, color: "#71717A", lineHeight: 19, letterSpacing: -0.1 },
 
   privacyNote: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 },
   privacyText: { fontSize: 12, color: "#52525B" },
@@ -202,11 +202,11 @@ const s = StyleSheet.create({
     fontSize: 10, fontWeight: "500", color: "#52525B",
     textTransform: "uppercase", letterSpacing: 1, marginBottom: 4,
   },
-  memKey: { fontSize: 13, fontWeight: "500", color: "#FAFAFA" },
-  memValue: { fontSize: 12, color: "#A1A1AA", marginTop: 2 },
+  memKey: { fontSize: 13, fontWeight: "500", color: "#FAFAFA", letterSpacing: -0.1 },
+  memValue: { fontSize: 12, color: "#71717A", marginTop: 2, letterSpacing: -0.1 },
   memDate: { fontSize: 10, color: "#52525B", marginTop: 6 },
 
   growthRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  growthLabel: { fontSize: 13, color: "#A1A1AA" },
-  growthValue: { fontSize: 14, fontWeight: "600", color: "#FAFAFA" },
+  growthLabel: { fontSize: 13, color: "#71717A", letterSpacing: -0.1 },
+  growthValue: { fontSize: 14, fontWeight: "600", color: "#FAFAFA", letterSpacing: -0.2 },
 });

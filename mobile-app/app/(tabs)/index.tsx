@@ -1,3 +1,5 @@
+"use client";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -13,6 +15,7 @@ import {
   Modal,
   Alert,
   ScrollView,
+  Easing,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -69,6 +72,10 @@ export default function ChatScreen() {
   const sidebarAnim = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
   const overlayAnim = useRef(new Animated.Value(0)).current;
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Send button animation
+  const sendScaleAnim = useRef(new Animated.Value(1)).current;
+  // Input focus animation
+  const inputBorderAnim = useRef(new Animated.Value(0)).current;
 
   const chatMutation = trpc.chat.send.useMutation();
 
@@ -89,12 +96,14 @@ export default function ChatScreen() {
     Animated.parallel([
       Animated.timing(sidebarAnim, {
         toValue: 0,
-        duration: 250,
+        duration: 280,
+        easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(overlayAnim, {
         toValue: 1,
         duration: 250,
+        easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
     ]).start();
@@ -104,12 +113,14 @@ export default function ChatScreen() {
     Animated.parallel([
       Animated.timing(sidebarAnim, {
         toValue: -SIDEBAR_WIDTH,
-        duration: 200,
+        duration: 220,
+        easing: Easing.in(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(overlayAnim, {
         toValue: 0,
         duration: 200,
+        easing: Easing.in(Easing.quad),
         useNativeDriver: true,
       }),
     ]).start(() => setSidebarOpen(false));
@@ -170,6 +181,7 @@ export default function ChatScreen() {
     }
   };
 
+  // Smooth word-by-word streaming simulation
   const simulateStreaming = useCallback((fullText: string, onComplete: () => void) => {
     setIsStreaming(true);
     setStreamingText("");
@@ -177,25 +189,49 @@ export default function ChatScreen() {
     let currentIndex = 0;
     let accumulated = "";
 
+    // Adaptive speed: faster for longer responses
+    const chunkSize = fullText.length > 500 ? 3 : 2;
+    const intervalMs = fullText.length > 1000 ? 20 : 28;
+
     const interval = setInterval(() => {
       if (currentIndex < words.length) {
-        const chunk = words.slice(currentIndex, currentIndex + 2).join("");
+        const chunk = words.slice(currentIndex, currentIndex + chunkSize).join("");
         accumulated += chunk;
         setStreamingText(accumulated);
-        currentIndex += 2;
+        currentIndex += chunkSize;
       } else {
         clearInterval(interval);
         setIsStreaming(false);
         setStreamingText("");
         onComplete();
       }
-    }, 30);
+    }, intervalMs);
 
     return () => clearInterval(interval);
   }, []);
 
+  // Animate send button on press
+  const animateSendButton = useCallback(() => {
+    Animated.sequence([
+      Animated.timing(sendScaleAnim, {
+        toValue: 0.85,
+        duration: 80,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.spring(sendScaleAnim, {
+        toValue: 1,
+        friction: 4,
+        tension: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [sendScaleAnim]);
+
   const handleSend = async () => {
     if (!inputText.trim() || isLoading) return;
+
+    animateSendButton();
 
     let convo = activeConversation;
     if (!convo) {
@@ -346,7 +382,7 @@ export default function ChatScreen() {
   const scrollToEnd = () => {
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    }, 80);
   };
 
   useEffect(() => {
@@ -365,7 +401,7 @@ export default function ChatScreen() {
       : []),
   ];
 
-  const renderMessage = ({ item }: { item: typeof displayMessages[0] }) => {
+  const renderMessage = ({ item, index }: { item: typeof displayMessages[0]; index: number }) => {
     const isUser = item.role === "user";
     const isLoadingMsg = item.role === "loading";
     const isStreamingMsg = item.role === "streaming";
@@ -404,28 +440,28 @@ export default function ChatScreen() {
 
     if (isUser) {
       return (
-        <View style={s.userRow}>
+        <FadeInView delay={0} style={s.userRow}>
           <View style={s.userBubble}>
             <Text style={s.userText}>{item.content}</Text>
           </View>
-        </View>
+        </FadeInView>
       );
     }
 
     return (
-      <View style={s.aiRow}>
+      <FadeInView delay={0} style={s.aiRow}>
         <View style={s.avatarWrap}>
           <View style={s.avatar}>
             <MaterialIcons name="local-fire-department" size={14} color="#F97316" />
           </View>
         </View>
         <View style={s.aiContent}>
-          <Text style={s.aiText}>
+          <Text style={[s.aiText, isStreamingMsg && s.streamingText]}>
             {item.content}
-            {isStreamingMsg && <Text style={s.cursor}>|</Text>}
+            {isStreamingMsg && <Text style={s.cursor}>▋</Text>}
           </Text>
         </View>
-      </View>
+      </FadeInView>
     );
   };
 
@@ -448,13 +484,15 @@ export default function ChatScreen() {
     </View>
   );
 
+  const canSend = inputText.trim().length > 0 && !isLoading;
+
   return (
     <View style={[s.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={s.header}>
         <Pressable
           onPress={openSidebar}
-          style={({ pressed }) => [s.headerBtn, pressed && { opacity: 0.5 }]}
+          style={({ pressed }) => [s.headerBtn, pressed && s.headerBtnPressed]}
         >
           <MaterialIcons name="menu" size={22} color="#A1A1AA" />
         </Pressable>
@@ -470,7 +508,7 @@ export default function ChatScreen() {
           )}
           <Pressable
             onPress={() => setShowWalletModal(true)}
-            style={({ pressed }) => [s.headerBtn, pressed && { opacity: 0.5 }]}
+            style={({ pressed }) => [s.headerBtn, pressed && s.headerBtnPressed]}
           >
             <MaterialIcons
               name={connectedAddress ? "account-balance-wallet" : "link"}
@@ -480,7 +518,7 @@ export default function ChatScreen() {
           </Pressable>
           <Pressable
             onPress={handleNewChat}
-            style={({ pressed }) => [s.headerBtn, pressed && { opacity: 0.5 }]}
+            style={({ pressed }) => [s.headerBtn, pressed && s.headerBtnPressed]}
           >
             <MaterialIcons name="edit" size={20} color="#52525B" />
           </Pressable>
@@ -520,21 +558,22 @@ export default function ChatScreen() {
               maxLength={4000}
               returnKeyType="default"
             />
-            <Pressable
-              onPress={handleSend}
-              disabled={!inputText.trim() || isLoading}
-              style={({ pressed }) => [
-                s.sendBtn,
-                inputText.trim() && !isLoading ? s.sendBtnActive : s.sendBtnDisabled,
-                pressed && inputText.trim() && { opacity: 0.8 },
-              ]}
-            >
-              <MaterialIcons
-                name="arrow-upward"
-                size={18}
-                color={inputText.trim() && !isLoading ? "#09090B" : "#52525B"}
-              />
-            </Pressable>
+            <Animated.View style={{ transform: [{ scale: sendScaleAnim }] }}>
+              <Pressable
+                onPress={handleSend}
+                disabled={!canSend}
+                style={[
+                  s.sendBtn,
+                  canSend ? s.sendBtnActive : s.sendBtnDisabled,
+                ]}
+              >
+                <MaterialIcons
+                  name="arrow-upward"
+                  size={18}
+                  color={canSend ? "#09090B" : "#52525B"}
+                />
+              </Pressable>
+            </Animated.View>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -558,13 +597,31 @@ export default function ChatScreen() {
             },
           ]}
         >
+          {/* Sidebar header */}
+          <View style={s.sidebarHeader}>
+            <View style={s.sidebarBrandRow}>
+              <MaterialIcons name="local-fire-department" size={18} color="#F97316" />
+              <Text style={s.sidebarBrandTitle}>Embris</Text>
+            </View>
+            <Pressable
+              onPress={closeSidebar}
+              style={({ pressed }) => [s.closeBtn, pressed && { opacity: 0.5 }]}
+            >
+              <MaterialIcons name="close" size={20} color="#52525B" />
+            </Pressable>
+          </View>
+
           <Pressable
             onPress={handleNewChat}
-            style={({ pressed }) => [s.newChatBtn, pressed && { opacity: 0.8 }]}
+            style={({ pressed }) => [s.newChatBtn, pressed && s.newChatBtnPressed]}
           >
             <MaterialIcons name="add" size={18} color="#09090B" />
             <Text style={s.newChatText}>New Chat</Text>
           </Pressable>
+
+          {conversations.length > 0 && (
+            <Text style={s.historyLabel}>RECENT CHATS</Text>
+          )}
 
           <FlatList
             data={conversations}
@@ -575,24 +632,28 @@ export default function ChatScreen() {
                 style={({ pressed }) => [
                   s.convoItem,
                   activeConversation?.id === item.id && s.convoItemActive,
-                  pressed && { opacity: 0.7 },
+                  pressed && s.convoItemPressed,
                 ]}
               >
                 <View style={s.convoContent}>
-                  <Text style={s.convoTitle} numberOfLines={1}>
+                  <Text style={[
+                    s.convoTitle,
+                    activeConversation?.id === item.id && s.convoTitleActive,
+                  ]} numberOfLines={1}>
                     {item.title}
                   </Text>
                   <Text style={s.convoMeta} numberOfLines={1}>
                     {item.messages.length > 0
-                      ? `${item.messages.length} messages`
+                      ? `${item.messages.length} message${item.messages.length !== 1 ? "s" : ""}`
                       : "No messages yet"}
                   </Text>
                 </View>
                 <Pressable
                   onPress={() => handleDeleteConversation(item.id)}
                   style={({ pressed }) => [s.deleteBtn, pressed && { opacity: 0.4 }]}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <MaterialIcons name="delete-outline" size={16} color="#52525B" />
+                  <MaterialIcons name="delete-outline" size={16} color="#3F3F46" />
                 </Pressable>
               </Pressable>
             )}
@@ -602,7 +663,7 @@ export default function ChatScreen() {
 
           <View style={s.sidebarFooter}>
             <View style={s.sidebarBrand}>
-              <MaterialIcons name="shield" size={16} color="#52525B" />
+              <MaterialIcons name="shield" size={14} color="#3F3F46" />
               <Text style={s.sidebarBrandText}>Vaultfire Protocol</Text>
             </View>
           </View>
@@ -613,16 +674,17 @@ export default function ChatScreen() {
       <Modal
         visible={showWalletModal}
         transparent
-        animationType="fade"
+        animationType="slide"
         onRequestClose={() => setShowWalletModal(false)}
       >
         <View style={s.modalOverlay}>
           <View style={s.modalContent}>
+            <View style={s.modalHandle} />
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>Connect Wallet</Text>
               <Pressable
                 onPress={() => setShowWalletModal(false)}
-                style={({ pressed }) => [pressed && { opacity: 0.5 }]}
+                style={({ pressed }) => [s.modalCloseBtn, pressed && { opacity: 0.5 }]}
               >
                 <MaterialIcons name="close" size={22} color="#52525B" />
               </Pressable>
@@ -630,7 +692,9 @@ export default function ChatScreen() {
 
             {connectedAddress ? (
               <View style={s.modalConnected}>
-                <MaterialIcons name="check-circle" size={28} color="#22C55E" />
+                <View style={s.connectedIconWrap}>
+                  <MaterialIcons name="check-circle" size={28} color="#22C55E" />
+                </View>
                 <Text style={s.modalConnectedTitle}>Connected</Text>
                 <Text style={s.modalConnectedAddr}>{shortenAddress(connectedAddress)}</Text>
                 <Text style={s.modalConnectedHint}>
@@ -663,7 +727,7 @@ export default function ChatScreen() {
                   style={({ pressed }) => [
                     s.connectBtn,
                     (!walletInput.trim() || isConnecting) && s.connectBtnDisabled,
-                    pressed && walletInput.trim() && { opacity: 0.8 },
+                    pressed && walletInput.trim() && { opacity: 0.85 },
                   ]}
                 >
                   {isConnecting ? (
@@ -687,6 +751,7 @@ export default function ChatScreen() {
       >
         <View style={s.txOverlay}>
           <View style={s.txContent}>
+            <View style={s.modalHandle} />
             <View style={s.txHeader}>
               <Text style={s.txTitle}>Transaction Preview</Text>
               <Pressable
@@ -743,41 +808,93 @@ export default function ChatScreen() {
   );
 }
 
-function TypingDots() {
-  const dot1 = useRef(new Animated.Value(0.3)).current;
-  const dot2 = useRef(new Animated.Value(0.3)).current;
-  const dot3 = useRef(new Animated.Value(0.3)).current;
+// ─── FadeInView — smooth message entrance ────────────────────────────────────
+function FadeInView({ children, delay = 0, style }: { children: React.ReactNode; delay?: number; style?: any }) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(6)).current;
 
   useEffect(() => {
-    const animate = (dot: Animated.Value, delay: number) => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(delay),
-          Animated.timing(dot, { toValue: 1, duration: 400, useNativeDriver: true }),
-          Animated.timing(dot, { toValue: 0.3, duration: 400, useNativeDriver: true }),
-        ])
-      ).start();
-    };
-    animate(dot1, 0);
-    animate(dot2, 200);
-    animate(dot3, 400);
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 220,
+        delay,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 220,
+        delay,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
   }, []);
 
   return (
-    <View style={s.dotsWrap}>
-      {[dot1, dot2, dot3].map((dot, i) => (
-        <Animated.View key={i} style={[s.dot, { opacity: dot }]} />
-      ))}
-    </View>
+    <Animated.View style={[style, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+      {children}
+    </Animated.View>
   );
 }
 
-// ─── Professional Design System ───────────────────────────────────
-// Background: #09090B | Cards: #111113 | Border: rgba(255,255,255,0.03)
-// Text: #FAFAFA primary, #A1A1AA secondary, #52525B tertiary
-// Accent: #F97316 (orange) — used sparingly
-// No gradients, no glows, no decorative effects. Clean and minimal.
+// ─── TypingDots — premium animated typing indicator ──────────────────────────
+function TypingDots() {
+  const dot1 = useRef(new Animated.Value(0)).current;
+  const dot2 = useRef(new Animated.Value(0)).current;
+  const dot3 = useRef(new Animated.Value(0)).current;
+  const containerFade = useRef(new Animated.Value(0)).current;
 
+  useEffect(() => {
+    // Fade in the whole indicator
+    Animated.timing(containerFade, {
+      toValue: 1,
+      duration: 200,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    }).start();
+
+    // Bounce animation for each dot
+    const animateDot = (dot: Animated.Value, delay: number) => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(dot, {
+            toValue: -5,
+            duration: 350,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.timing(dot, {
+            toValue: 0,
+            duration: 350,
+            easing: Easing.in(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.delay(200),
+        ])
+      ).start();
+    };
+
+    animateDot(dot1, 0);
+    animateDot(dot2, 160);
+    animateDot(dot3, 320);
+  }, []);
+
+  return (
+    <Animated.View style={[s.dotsWrap, { opacity: containerFade }]}>
+      {[dot1, dot2, dot3].map((dot, i) => (
+        <Animated.View
+          key={i}
+          style={[s.dot, { transform: [{ translateY: dot }] }]}
+        />
+      ))}
+    </Animated.View>
+  );
+}
+
+// ─── Design System ────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   // ── Layout ──────────────────────────────────────────────────────
   container: {
@@ -793,10 +910,19 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.03)",
+    borderBottomColor: "rgba(255,255,255,0.04)",
+    backgroundColor: "#09090B",
   },
   headerBtn: {
-    padding: 6,
+    padding: 8,
+    borderRadius: 8,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerBtnPressed: {
+    backgroundColor: "rgba(255,255,255,0.04)",
   },
   headerCenter: {
     flexDirection: "row",
@@ -807,6 +933,7 @@ const s = StyleSheet.create({
     fontSize: 17,
     fontWeight: "600",
     color: "#FAFAFA",
+    letterSpacing: -0.3,
   },
   headerRight: {
     flexDirection: "row",
@@ -819,7 +946,8 @@ const s = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.03)",
+    borderColor: "rgba(255,255,255,0.04)",
+    marginRight: 4,
   },
   walletChipText: {
     fontSize: 10,
@@ -835,8 +963,8 @@ const s = StyleSheet.create({
   },
   messageList: {
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
+    paddingTop: 20,
+    paddingBottom: 12,
   },
   messageListEmpty: {
     flex: 1,
@@ -852,21 +980,22 @@ const s = StyleSheet.create({
   userBubble: {
     maxWidth: "78%",
     backgroundColor: "#111113",
-    borderRadius: 16,
+    borderRadius: 18,
     borderTopRightRadius: 4,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.03)",
+    borderColor: "rgba(255,255,255,0.04)",
   },
   userText: {
     fontSize: 14,
-    lineHeight: 21,
+    lineHeight: 22,
     color: "#FAFAFA",
     fontWeight: "400",
+    letterSpacing: -0.1,
   },
 
-  // ── AI Messages (ChatGPT-style: no bubble) ─────────────────────
+  // ── AI Messages ─────────────────────────────────────────────────
   aiRow: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -877,9 +1006,9 @@ const s = StyleSheet.create({
     marginTop: 2,
   },
   avatar: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: "#111113",
     alignItems: "center",
     justifyContent: "center",
@@ -892,13 +1021,18 @@ const s = StyleSheet.create({
   },
   aiText: {
     fontSize: 14,
-    lineHeight: 22,
+    lineHeight: 23,
     color: "#FAFAFA",
     fontWeight: "400",
+    letterSpacing: -0.1,
+  },
+  streamingText: {
+    color: "#E4E4E7",
   },
   cursor: {
     color: "#F97316",
-    fontWeight: "600",
+    fontWeight: "400",
+    fontSize: 12,
   },
 
   // ── Tool Status ─────────────────────────────────────────────────
@@ -910,56 +1044,59 @@ const s = StyleSheet.create({
   },
   toolText: {
     fontSize: 13,
-    color: "#A1A1AA",
+    color: "#71717A",
     fontWeight: "400",
+    letterSpacing: -0.1,
   },
 
   // ── Typing Dots ─────────────────────────────────────────────────
   dotsWrap: {
     flexDirection: "row",
-    gap: 4,
+    gap: 5,
     alignItems: "center",
-    paddingVertical: 4,
+    paddingVertical: 6,
+    height: 28,
   },
   dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#A1A1AA",
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: "#71717A",
   },
 
   // ── Input Bar ───────────────────────────────────────────────────
   inputBar: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 10,
     backgroundColor: "#09090B",
     borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.03)",
+    borderTopColor: "rgba(255,255,255,0.04)",
   },
   inputWrap: {
     flexDirection: "row",
     alignItems: "flex-end",
     backgroundColor: "#111113",
-    borderRadius: 20,
+    borderRadius: 22,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.06)",
     paddingLeft: 16,
-    paddingRight: 4,
-    paddingVertical: 4,
-    minHeight: 44,
+    paddingRight: 6,
+    paddingVertical: 6,
+    minHeight: 48,
   },
   textInput: {
     flex: 1,
     fontSize: 14,
     color: "#FAFAFA",
     maxHeight: 120,
-    paddingVertical: 8,
+    paddingVertical: 6,
     lineHeight: 20,
+    letterSpacing: -0.1,
   },
   sendBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 1,
@@ -968,7 +1105,7 @@ const s = StyleSheet.create({
     backgroundColor: "#F97316",
   },
   sendBtnDisabled: {
-    backgroundColor: "transparent",
+    backgroundColor: "rgba(255,255,255,0.04)",
   },
 
   // ── Empty State ─────────────────────────────────────────────────
@@ -993,6 +1130,7 @@ const s = StyleSheet.create({
     fontSize: 28,
     fontWeight: "600",
     color: "#FAFAFA",
+    letterSpacing: -0.5,
   },
   emptySubtitle: {
     fontSize: 11,
@@ -1003,17 +1141,22 @@ const s = StyleSheet.create({
   },
   emptyHint: {
     fontSize: 14,
-    color: "#A1A1AA",
+    color: "#71717A",
     textAlign: "center",
     marginTop: 12,
-    lineHeight: 20,
+    lineHeight: 22,
     fontWeight: "400",
+    letterSpacing: -0.1,
   },
   connectedPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
     marginTop: 12,
+    backgroundColor: "rgba(34,197,94,0.06)",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
   },
   connectedPillText: {
     fontSize: 11,
@@ -1025,7 +1168,7 @@ const s = StyleSheet.create({
   // ── Sidebar Overlay ─────────────────────────────────────────────
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    backgroundColor: "rgba(0, 0, 0, 0.65)",
     zIndex: 10,
   },
 
@@ -1035,11 +1178,46 @@ const s = StyleSheet.create({
     top: 0,
     left: 0,
     bottom: 0,
-    backgroundColor: "#09090B",
+    backgroundColor: "#0C0C0E",
     zIndex: 20,
     borderRightWidth: 1,
-    borderRightColor: "rgba(255,255,255,0.03)",
-    paddingHorizontal: 16,
+    borderRightColor: "rgba(255,255,255,0.04)",
+    paddingHorizontal: 14,
+  },
+  sidebarHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    marginBottom: 12,
+  },
+  sidebarBrandRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  sidebarBrandTitle: {
+    fontSize: 17,
+    fontWeight: "600",
+    color: "#FAFAFA",
+    letterSpacing: -0.3,
+  },
+  closeBtn: {
+    padding: 8,
+    borderRadius: 8,
+    minWidth: 36,
+    minHeight: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  historyLabel: {
+    fontSize: 10,
+    fontWeight: "500",
+    color: "#3F3F46",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    marginBottom: 8,
+    paddingHorizontal: 2,
   },
   newChatBtn: {
     flexDirection: "row",
@@ -1048,13 +1226,18 @@ const s = StyleSheet.create({
     gap: 8,
     backgroundColor: "#F97316",
     borderRadius: 10,
-    paddingVertical: 11,
-    marginBottom: 16,
+    paddingVertical: 12,
+    marginBottom: 20,
+    minHeight: 44,
+  },
+  newChatBtnPressed: {
+    backgroundColor: "#EA6C0A",
   },
   newChatText: {
     fontSize: 14,
     fontWeight: "600",
     color: "#09090B",
+    letterSpacing: -0.2,
   },
   convoList: {
     paddingBottom: 16,
@@ -1063,45 +1246,59 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     borderRadius: 8,
-    marginBottom: 4,
+    marginBottom: 2,
+    minHeight: 44,
   },
   convoItemActive: {
-    backgroundColor: "#111113",
+    backgroundColor: "rgba(255,255,255,0.04)",
+  },
+  convoItemPressed: {
+    backgroundColor: "rgba(255,255,255,0.03)",
   },
   convoContent: {
     flex: 1,
+    marginRight: 8,
   },
   convoTitle: {
-    fontSize: 14,
-    fontWeight: "500",
+    fontSize: 13,
+    fontWeight: "400",
+    color: "#71717A",
+    letterSpacing: -0.1,
+  },
+  convoTitleActive: {
     color: "#FAFAFA",
+    fontWeight: "500",
   },
   convoMeta: {
     fontSize: 11,
-    color: "#52525B",
+    color: "#3F3F46",
     marginTop: 2,
   },
   deleteBtn: {
-    padding: 4,
+    padding: 6,
+    borderRadius: 6,
+    minWidth: 32,
+    minHeight: 32,
+    alignItems: "center",
+    justifyContent: "center",
   },
   sidebarFooter: {
     borderTopWidth: 1,
     borderTopColor: "rgba(255,255,255,0.03)",
-    paddingVertical: 12,
+    paddingVertical: 14,
   },
   sidebarBrand: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
   },
   sidebarBrandText: {
     fontSize: 11,
-    fontWeight: "500",
-    color: "#52525B",
-    textTransform: "uppercase",
-    letterSpacing: 1,
+    fontWeight: "400",
+    color: "#3F3F46",
+    letterSpacing: 0.5,
   },
 
   // ── Wallet Modal ────────────────────────────────────────────────
@@ -1111,14 +1308,22 @@ const s = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: "#09090B",
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    backgroundColor: "#0C0C0E",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     paddingHorizontal: 24,
-    paddingTop: 24,
-    maxHeight: "80%",
+    paddingTop: 12,
+    maxHeight: "85%",
     borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.03)",
+    borderTopColor: "rgba(255,255,255,0.04)",
+  },
+  modalHandle: {
+    width: 36,
+    height: 4,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: 2,
+    alignSelf: "center",
+    marginBottom: 20,
   },
   modalHeader: {
     flexDirection: "row",
@@ -1130,38 +1335,48 @@ const s = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     color: "#FAFAFA",
+    letterSpacing: -0.3,
+  },
+  modalCloseBtn: {
+    padding: 4,
+    minWidth: 36,
+    minHeight: 36,
+    alignItems: "center",
+    justifyContent: "center",
   },
   modalLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "500",
     color: "#52525B",
     textTransform: "uppercase",
-    letterSpacing: 1,
+    letterSpacing: 1.2,
     marginBottom: 8,
   },
   modalInput: {
     backgroundColor: "#111113",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.06)",
-    borderRadius: 10,
+    borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     color: "#FAFAFA",
     fontSize: 14,
     marginBottom: 12,
+    minHeight: 48,
   },
   modalHint: {
     fontSize: 12,
     color: "#52525B",
     marginBottom: 20,
-    lineHeight: 16,
+    lineHeight: 17,
   },
   connectBtn: {
     backgroundColor: "#F97316",
-    borderRadius: 10,
-    paddingVertical: 12,
+    borderRadius: 12,
+    paddingVertical: 14,
     alignItems: "center",
     marginBottom: 24,
+    minHeight: 48,
   },
   connectBtnDisabled: {
     backgroundColor: "#111113",
@@ -1170,19 +1385,24 @@ const s = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     color: "#09090B",
+    letterSpacing: -0.2,
   },
   modalForm: {
-    marginBottom: 24,
+    marginBottom: 8,
   },
   modalConnected: {
     alignItems: "center",
     marginBottom: 24,
     gap: 8,
   },
+  connectedIconWrap: {
+    marginBottom: 4,
+  },
   modalConnectedTitle: {
     fontSize: 18,
     fontWeight: "600",
     color: "#FAFAFA",
+    letterSpacing: -0.3,
   },
   modalConnectedAddr: {
     fontSize: 13,
@@ -1193,17 +1413,20 @@ const s = StyleSheet.create({
     fontSize: 13,
     color: "#52525B",
     textAlign: "center",
-    lineHeight: 18,
+    lineHeight: 19,
     marginTop: 4,
+    paddingHorizontal: 8,
   },
   disconnectBtn: {
     backgroundColor: "#111113",
-    borderRadius: 10,
+    borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderWidth: 1,
-    borderColor: "rgba(239,68,68,0.3)",
+    borderColor: "rgba(239,68,68,0.2)",
     marginTop: 8,
+    minHeight: 44,
+    alignItems: "center",
   },
   disconnectBtnText: {
     fontSize: 14,
@@ -1218,14 +1441,14 @@ const s = StyleSheet.create({
     justifyContent: "flex-end",
   },
   txContent: {
-    backgroundColor: "#09090B",
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    backgroundColor: "#0C0C0E",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     paddingHorizontal: 24,
-    paddingTop: 24,
-    maxHeight: "90%",
+    paddingTop: 12,
+    maxHeight: "92%",
     borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.03)",
+    borderTopColor: "rgba(255,255,255,0.04)",
   },
   txHeader: {
     flexDirection: "row",
@@ -1237,6 +1460,7 @@ const s = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     color: "#FAFAFA",
+    letterSpacing: -0.3,
   },
   txBody: {
     marginBottom: 24,
@@ -1247,20 +1471,21 @@ const s = StyleSheet.create({
     padding: 20,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.03)",
+    borderColor: "rgba(255,255,255,0.04)",
   },
   txLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "500",
     color: "#52525B",
     textTransform: "uppercase",
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
   txValue: {
     fontSize: 14,
     color: "#FAFAFA",
     marginTop: 4,
     fontWeight: "400",
+    letterSpacing: -0.1,
   },
   paramRow: {
     flexDirection: "row",
@@ -1287,25 +1512,27 @@ const s = StyleSheet.create({
     fontSize: 13,
     color: "#A1A1AA",
     backgroundColor: "#111113",
-    borderRadius: 8,
+    borderRadius: 10,
     padding: 16,
     marginBottom: 16,
-    lineHeight: 18,
+    lineHeight: 19,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.03)",
   },
   txCloseBtn: {
     backgroundColor: "#111113",
-    borderRadius: 10,
-    paddingVertical: 12,
+    borderRadius: 12,
+    paddingVertical: 14,
     alignItems: "center",
     marginBottom: 24,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.06)",
+    minHeight: 48,
   },
   txCloseBtnText: {
     fontSize: 15,
     fontWeight: "500",
     color: "#FAFAFA",
+    letterSpacing: -0.2,
   },
 });

@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#111113",
+    borderBottomColor: "rgba(255,255,255,0.04)",
   },
   headerLeft: {
     flexDirection: "row",
@@ -318,9 +318,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "600",
     color: "#FAFAFA",
+    letterSpacing: -0.3,
   },
   searchSection: {
     flexDirection: "row",
@@ -338,20 +339,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.06)",
     paddingHorizontal: 12,
-    height: 44,
+    height: 48,
     gap: 8,
   },
   searchInput: {
     flex: 1,
     fontSize: 14,
     color: "#FAFAFA",
+    letterSpacing: -0.1,
   },
   pasteButton: {
     padding: 4,
   },
   searchButton: {
-    width: 44,
-    height: 44,
+    width: 48,
+    height: 48,
     borderRadius: 12,
     backgroundColor: "#F97316",
     alignItems: "center",
@@ -441,6 +443,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#FAFAFA",
+    letterSpacing: -0.2,
   },
   cardContent: {
     gap: 0,
@@ -458,12 +461,14 @@ const styles = StyleSheet.create({
   },
   dataLabel: {
     fontSize: 13,
-    color: "#A1A1AA",
+    color: "#71717A",
+    letterSpacing: -0.1,
   },
   dataValue: {
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "500",
     color: "#FAFAFA",
+    letterSpacing: -0.1,
   },
   ratingRow: {
     flexDirection: "row",
@@ -533,11 +538,13 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#FAFAFA",
     textAlign: "center",
+    letterSpacing: -0.3,
   },
   emptySubtitle: {
-    fontSize: 13,
-    color: "#A1A1AA",
+    fontSize: 14,
+    color: "#71717A",
     textAlign: "center",
-    lineHeight: 18,
+    lineHeight: 21,
+    letterSpacing: -0.1,
   },
 });
