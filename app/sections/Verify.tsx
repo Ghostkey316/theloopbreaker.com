@@ -95,7 +95,7 @@ export default function Verify() {
     <div className="page-enter" style={{ padding: isMobile ? "24px 16px 48px" : "48px 40px", maxWidth: 720, margin: "0 auto" }}>
       {/* Header */}
       <div style={{ marginBottom: isMobile ? 32 : 40 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 600, color: "#F4F4F5", letterSpacing: "-0.03em" }}>Verification</h1>
+        <h1 style={{ fontSize: 28, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.04em" }}>Verification</h1>
         <p style={{ fontSize: 14, color: "#52525B", marginTop: 6 }}>Verify all {contracts.length} deployed smart contracts on-chain</p>
       </div>
 

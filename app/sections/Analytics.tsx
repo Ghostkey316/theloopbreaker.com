@@ -50,7 +50,7 @@ export default function Analytics() {
   if (!registered) {
     return (
       <div className="page-enter" style={{ padding: isMobile ? "24px 16px 48px" : "48px 40px", maxWidth: 600, margin: "0 auto" }}>
-        <h1 style={{ fontSize: 28, fontWeight: 600, color: "#F4F4F5", letterSpacing: "-0.03em", marginBottom: 8, lineHeight: 1.25 }}>Analytics</h1>
+        <h1 style={{ fontSize: 28, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.04em", marginBottom: 8, lineHeight: 1.25 }}>Analytics</h1>
         <p style={{ fontSize: 14, color: "#52525B", marginBottom: 40, lineHeight: 1.6 }}>Your Embris intelligence data</p>
         <div style={{
           display: "flex", flexDirection: "column", alignItems: "center",
@@ -76,7 +76,7 @@ export default function Analytics() {
         flexDirection: isMobile ? "column" : "row", gap: isMobile ? 16 : 0,
       }}>
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 600, color: "#F4F4F5", letterSpacing: "-0.03em", lineHeight: 1.25 }}>Analytics</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.04em", lineHeight: 1.25 }}>Analytics</h1>
           <p style={{ fontSize: 12, color: "#3F3F46", marginTop: 4, lineHeight: 1.5 }}>Your Embris intelligence data</p>
         </div>
         <button
@@ -147,7 +147,7 @@ export default function Analytics() {
           {/* Memory Categories */}
           {Object.keys(data.memoryCategories).length > 0 && (
             <div style={{ marginBottom: 40 }}>
-              <h2 style={{ fontSize: 11, fontWeight: 500, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Memory Categories</h2>
+              <h2 style={{ fontSize: 11, fontWeight: 600, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Memory Categories</h2>
               {Object.entries(data.memoryCategories)
                 .sort((a, b) => b[1] - a[1])
                 .map(([category, count]) => {
@@ -179,7 +179,7 @@ export default function Analytics() {
           {/* Top Moods */}
           {data.topMoods.length > 0 && (
             <div style={{ marginBottom: 40 }}>
-              <h2 style={{ fontSize: 11, fontWeight: 500, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Emotional Patterns</h2>
+              <h2 style={{ fontSize: 11, fontWeight: 600, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Emotional Patterns</h2>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {data.topMoods.map(({ mood, count }) => {
                   const moodColors: Record<string, string> = {
@@ -217,7 +217,7 @@ export default function Analytics() {
           {/* Pattern Categories */}
           {Object.keys(data.patternCategories).length > 0 && (
             <div style={{ marginBottom: 40 }}>
-              <h2 style={{ fontSize: 11, fontWeight: 500, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Pattern Categories</h2>
+              <h2 style={{ fontSize: 11, fontWeight: 600, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Pattern Categories</h2>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {Object.entries(data.patternCategories)
                   .sort((a, b) => b[1] - a[1])

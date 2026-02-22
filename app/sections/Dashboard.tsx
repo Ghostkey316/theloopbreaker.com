@@ -127,8 +127,8 @@ export default function Dashboard() {
         flexDirection: isMobile ? "column" : "row", gap: isMobile ? 16 : 0,
       }}>
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 600, color: "#F4F4F5", letterSpacing: "-0.03em", lineHeight: 1.25 }}>Dashboard</h1>
-          <p style={{ fontSize: 12, color: "#3F3F46", marginTop: 4, lineHeight: 1.5 }}>
+          <h1 style={{ fontSize: 28, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.04em", lineHeight: 1.25 }}>Dashboard</h1>
+          <p style={{ fontSize: 12, color: "#52525B", marginTop: 4, lineHeight: 1.5 }}>
             {lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : "Loading on-chain data..."}
           </p>
         </div>
@@ -170,16 +170,21 @@ export default function Dashboard() {
       <div style={{
         display: "grid",
         gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(3, 1fr)",
-        gap: isMobile ? "24px 16px" : "32px 40px",
+        gap: isMobile ? 12 : 16,
         marginBottom: 48,
       }}>
         {loading
           ? Array.from({ length: 6 }).map((_, i) => <StatSkeleton key={i} />)
           : statCards.map((card) => (
-            <div key={card.label}>
-              <p style={{ fontSize: 11, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8, fontWeight: 500 }}>{card.label}</p>
+            <div key={card.label} style={{
+              padding: isMobile ? '14px 12px' : '16px',
+              backgroundColor: 'rgba(255,255,255,0.02)',
+              border: '1px solid rgba(255,255,255,0.05)',
+              borderRadius: 12,
+            }}>
+              <p style={{ fontSize: 10, color: "#52525B", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8, fontWeight: 600 }}>{card.label}</p>
               <p style={{
-                fontSize: isMobile ? 22 : 26, fontWeight: 600, color: card.color,
+                fontSize: isMobile ? 20 : 24, fontWeight: 600, color: card.color,
                 ...monoStyle,
                 overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                 letterSpacing: "-0.02em",

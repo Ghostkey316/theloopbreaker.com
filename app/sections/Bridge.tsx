@@ -58,7 +58,7 @@ export default function Bridge() {
         marginBottom: isMobile ? 40 : 48, gap: 12, flexWrap: "wrap",
       }}>
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 600, color: "#F4F4F5", letterSpacing: "-0.03em" }}>Bridge</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.04em" }}>Bridge</h1>
           <p style={{ fontSize: 14, color: "#52525B", marginTop: 4 }}>Cross-chain communication via Teleporter</p>
         </div>
         <button onClick={loadData} disabled={loading} style={{
@@ -117,7 +117,7 @@ export default function Bridge() {
       {/* Bridge Status — clean rows, no card borders */}
       <div style={{ marginBottom: 48 }}>
         <h2 style={{
-          fontSize: 11, fontWeight: 500, color: "#71717A",
+          fontSize: 11, fontWeight: 600, color: "#71717A",
           textTransform: "uppercase", letterSpacing: "0.1em",
           marginBottom: 16,
         }}>Bridge Status</h2>

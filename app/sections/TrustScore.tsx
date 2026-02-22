@@ -144,7 +144,7 @@ export default function TrustScore() {
         flexDirection: isMobile ? "column" : "row", gap: isMobile ? 16 : 0,
       }}>
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 600, color: "#F4F4F5", letterSpacing: "-0.03em", lineHeight: 1.25 }}>Trust Score</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.04em", lineHeight: 1.25 }}>Trust Score</h1>
           <p style={{ fontSize: 12, color: "#3F3F46", marginTop: 4, lineHeight: 1.5 }}>Vaultfire Protocol ecosystem health</p>
         </div>
         <button
@@ -208,7 +208,7 @@ export default function TrustScore() {
             }}>
               <span style={{
                 fontSize: 32, fontWeight: 700, color: scoreColor,
-                ...monoStyle, letterSpacing: "-0.03em",
+                ...monoStyle, letterSpacing: "-0.04em",
                 transition: "color 0.3s ease",
               }}>
                 {metrics?.trustScore || 0}
@@ -249,7 +249,7 @@ export default function TrustScore() {
 
       {/* Chain Status */}
       <div style={{ marginBottom: 48 }}>
-        <h2 style={{ fontSize: 11, fontWeight: 500, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Chain Status</h2>
+        <h2 style={{ fontSize: 11, fontWeight: 600, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Chain Status</h2>
         {[
           { name: "Base", chain: "base" as const, color: "#627EEA" },
           { name: "Avalanche", chain: "avalanche" as const, color: "#E84142" },
@@ -300,7 +300,7 @@ export default function TrustScore() {
       {/* Score Breakdown */}
       {metrics && !loading && (
         <div style={{ marginBottom: 32 }}>
-          <h2 style={{ fontSize: 11, fontWeight: 500, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Score Breakdown</h2>
+          <h2 style={{ fontSize: 11, fontWeight: 600, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Score Breakdown</h2>
           {[
             { label: "Contract Health", weight: "40%", score: Math.round((metrics.verifiedContracts / metrics.totalContracts) * 40), max: 40 },
             { label: "Chain Availability", weight: "20%", score: Math.round((metrics.chainsActive / 2) * 20), max: 20 },

@@ -162,7 +162,7 @@ export default function Sync() {
     <div className="page-enter" style={{ padding: isMobile ? "24px 16px 48px" : "48px 40px", maxWidth: 600, margin: "0 auto" }}>
       {/* Header */}
       <div style={{ marginBottom: isMobile ? 40 : 48 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 600, color: "#F4F4F5", letterSpacing: "-0.03em" }}>Data</h1>
+        <h1 style={{ fontSize: 28, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.04em" }}>Data</h1>
         <p style={{ fontSize: 14, color: "#52525B", marginTop: 6 }}>Export, import, and manage your complete Embris profile</p>
       </div>
 
