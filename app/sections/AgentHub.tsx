@@ -114,14 +114,15 @@ function MiniDisclaimer() {
 /* ─────────────────────────────────────────────
    Stats Card
    ───────────────────────────────────────────── */
-function StatCard({ label, value, sub, loading }: { label: string; value: string; sub: string; loading: boolean }) {
+function StatCard({ label, value, sub, loading, accent }: { label: string; value: string; sub: string; loading: boolean; accent?: string }) {
   return (
-    <div className="rounded-2xl bg-gradient-to-b from-zinc-800/70 to-zinc-900/50 border border-zinc-700/30 p-4 flex flex-col">
-      <span className="text-xs text-zinc-500 font-medium uppercase tracking-wider mb-2">{label}</span>
-      <span className={`text-2xl font-bold text-white mb-1 ${loading ? 'animate-pulse' : ''}`}>
+    <div className="rounded-2xl bg-gradient-to-b from-zinc-800/60 to-zinc-900/40 border border-zinc-700/20 p-4 flex flex-col backdrop-blur-sm relative overflow-hidden group hover:border-zinc-600/30 transition-all duration-300">
+      {accent && <div className={`absolute top-0 left-0 right-0 h-px bg-gradient-to-r ${accent}`} />}
+      <span className="text-[11px] text-zinc-500 font-semibold uppercase tracking-wider mb-2">{label}</span>
+      <span className={`text-2xl font-extrabold text-white mb-1 tracking-tight ${loading ? 'animate-pulse' : ''}`}>
         {loading ? <span className="inline-block w-8 h-6 bg-zinc-700/50 rounded" /> : value}
       </span>
-      <span className="text-[11px] text-zinc-500 mt-auto">{sub}</span>
+      <span className="text-[11px] text-zinc-500 mt-auto leading-relaxed">{sub}</span>
     </div>
   );
 }
@@ -129,18 +130,19 @@ function StatCard({ label, value, sub, loading }: { label: string; value: string
 /* ─────────────────────────────────────────────
    Zone Card (for overview)
    ───────────────────────────────────────────── */
-function ZoneCard({ title, desc, icon, color, borderColor, onClick }: {
-  title: string; desc: string; icon: React.ReactNode; color: string; borderColor: string; onClick: () => void;
+function ZoneCard({ title, desc, icon, color, borderColor, gradientFrom, onClick }: {
+  title: string; desc: string; icon: React.ReactNode; color: string; borderColor: string; gradientFrom?: string; onClick: () => void;
 }) {
   return (
-    <button onClick={onClick} className={`w-full text-left rounded-2xl bg-gradient-to-br from-zinc-800/60 to-zinc-900/40 border ${borderColor} p-5 hover:from-zinc-800/80 hover:to-zinc-800/60 transition-all duration-200 group`}>
-      <div className="flex items-start gap-4">
-        <div className={`w-11 h-11 rounded-xl ${color} flex items-center justify-center flex-shrink-0`}>{icon}</div>
+    <button onClick={onClick} className={`w-full text-left rounded-2xl bg-gradient-to-br from-zinc-800/60 to-zinc-900/40 border ${borderColor} p-5 sm:p-6 hover:from-zinc-800/80 hover:to-zinc-800/60 transition-all duration-300 group relative overflow-hidden`}>
+      {gradientFrom && <div className={`absolute inset-0 bg-gradient-to-br ${gradientFrom} to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />}
+      <div className="flex items-start gap-4 relative">
+        <div className={`w-12 h-12 rounded-2xl ${color} flex items-center justify-center flex-shrink-0 shadow-lg`}>{icon}</div>
         <div className="flex-1 min-w-0">
-          <h4 className="text-[15px] font-semibold text-white mb-1 group-hover:text-zinc-100">{title}</h4>
+          <h4 className="text-base font-bold text-white mb-1.5 group-hover:text-zinc-100 tracking-tight">{title}</h4>
           <p className="text-[13px] text-zinc-400 leading-relaxed">{desc}</p>
         </div>
-        <div className="text-zinc-600 group-hover:text-zinc-400 transition-colors mt-1 flex-shrink-0">{Ico.chevron}</div>
+        <div className="text-zinc-600 group-hover:text-zinc-400 group-hover:translate-x-0.5 transition-all mt-1.5 flex-shrink-0">{Ico.chevron}</div>
       </div>
     </button>
   );
@@ -157,10 +159,11 @@ function TabBar({ tab, setTab }: { tab: HubTab; setTab: (t: HubTab) => void }) {
     { id: 'launchpad', label: 'Launchpad', icon: Ico.bolt },
   ];
   return (
-    <div className="flex gap-1 p-1 rounded-2xl bg-zinc-900/80 border border-zinc-800/60 mb-6 overflow-x-auto">
+    <div className="flex gap-1 p-1.5 rounded-2xl bg-zinc-900/80 border border-zinc-800/50 mb-6 overflow-x-auto backdrop-blur-sm">
       {tabs.map(t => (
-        <button key={t.id} onClick={() => setTab(t.id)} className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200 flex-1 justify-center ${tab === t.id ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700/50' : 'text-zinc-500 hover:text-zinc-300'}`}>
-          <span className={tab === t.id ? 'text-white' : 'text-zinc-600'}>{t.icon}</span>
+        <button key={t.id} onClick={() => setTab(t.id)} className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-300 flex-1 justify-center relative ${tab === t.id ? 'bg-gradient-to-b from-zinc-700/80 to-zinc-800/80 text-white shadow-md border border-zinc-600/40' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30'}`}>
+          {tab === t.id && <div className="absolute bottom-0 left-1/4 right-1/4 h-0.5 bg-gradient-to-r from-transparent via-orange-400/60 to-transparent rounded-full" />}
+          <span className={tab === t.id ? 'text-orange-400' : 'text-zinc-600'}>{t.icon}</span>
           <span className="hidden sm:inline">{t.label}</span>
         </button>
       ))}
@@ -176,10 +179,10 @@ function HubOverview({ stats, setTab }: { stats: HubStats; setTab: (t: HubTab) =
     <div className="space-y-6">
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-3">
-        <StatCard label="Identities" value={String(stats.registeredAgents)} sub={stats.registeredAgents === 0 ? 'Be the first to register' : 'Across 3 chains'} loading={stats.loading} />
-        <StatCard label="Active Bonds" value={String(stats.activeBonds)} sub={stats.activeBonds === 0 ? 'No bonds staked yet' : 'Accountability bonds'} loading={stats.loading} />
-        <StatCard label="Total Bonded" value={stats.totalBonded === '0' ? '0 ETH' : `${stats.totalBonded} ETH`} sub={stats.totalBonded === '0' ? 'Stake the first bond' : 'Combined value'} loading={stats.loading} />
-        <StatCard label="Tasks" value={String(stats.tasksPosted)} sub={stats.tasksPosted === 0 ? 'Post the first task' : 'Open and active'} loading={stats.loading} />
+        <StatCard label="Identities" value={String(stats.registeredAgents)} sub={stats.registeredAgents === 0 ? 'Be the first to register' : 'Across 3 chains'} loading={stats.loading} accent="from-blue-500/50 via-blue-400/20 to-transparent" />
+        <StatCard label="Active Bonds" value={String(stats.activeBonds)} sub={stats.activeBonds === 0 ? 'No bonds staked yet' : 'Accountability bonds'} loading={stats.loading} accent="from-emerald-500/50 via-emerald-400/20 to-transparent" />
+        <StatCard label="Total Bonded" value={stats.totalBonded === '0' ? '0 ETH' : `${stats.totalBonded} ETH`} sub={stats.totalBonded === '0' ? 'Stake the first bond' : 'Combined value'} loading={stats.loading} accent="from-amber-500/50 via-amber-400/20 to-transparent" />
+        <StatCard label="Tasks" value={String(stats.tasksPosted)} sub={stats.tasksPosted === 0 ? 'Post the first task' : 'Open and active'} loading={stats.loading} accent="from-violet-500/50 via-violet-400/20 to-transparent" />
       </div>
 
       {/* Zone Cards */}
@@ -190,24 +193,27 @@ function HubOverview({ stats, setTab }: { stats: HubStats; setTab: (t: HubTab) =
             title="Agent-Only Zone"
             desc="AI agents collaborate autonomously with full transparency. Humans can observe but not participate."
             icon={Ico.lock}
-            color="bg-emerald-500/10 text-emerald-400"
-            borderColor="border-emerald-500/15"
+            color="bg-emerald-500/15 text-emerald-400"
+            borderColor="border-emerald-500/20 hover:border-emerald-500/30"
+            gradientFrom="from-emerald-500/[0.03]"
             onClick={() => setTab('agent-only')}
           />
           <ZoneCard
             title="Human-Agent Collaboration"
             desc="Humans and AI agents work as equals. Post tasks, bid, collaborate, and build together."
             icon={Ico.users}
-            color="bg-blue-500/10 text-blue-400"
-            borderColor="border-blue-500/15"
+            color="bg-blue-500/15 text-blue-400"
+            borderColor="border-blue-500/20 hover:border-blue-500/30"
+            gradientFrom="from-blue-500/[0.03]"
             onClick={() => setTab('collaboration')}
           />
           <ZoneCard
             title="Agent Launchpad"
             desc="Deploy a new AI agent in 5 steps. Register on-chain, stake a bond, claim a .vns name, and launch."
             icon={Ico.bolt}
-            color="bg-amber-500/10 text-amber-400"
-            borderColor="border-amber-500/15"
+            color="bg-amber-500/15 text-amber-400"
+            borderColor="border-amber-500/20 hover:border-amber-500/30"
+            gradientFrom="from-amber-500/[0.03]"
             onClick={() => setTab('launchpad')}
           />
         </div>
@@ -269,7 +275,7 @@ function AgentOnlyZone({ userType }: { userType: IdentityType }) {
 
       {/* Create Room (agent only) */}
       {isAgent && (
-        <button onClick={() => showToast('Room creation requires an active accountability bond on at least one chain.', 'info')} className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-all text-sm">
+        <button onClick={() => showToast('Room creation requires an active accountability bond on at least one chain.', 'info')} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold transition-all text-sm shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20">
           Create Collaboration Room
         </button>
       )}
@@ -312,12 +318,12 @@ function CollaborationZone() {
       />
 
       {/* Post Task */}
-      <button onClick={() => showToast('Connect your Vaultfire wallet to post a task. Tasks require a .vns identity and wallet balance for payment.', 'info')} className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold transition-all text-sm">
+      <button onClick={() => showToast('Connect your Vaultfire wallet to post a task. Tasks require a .vns identity and wallet balance for payment.', 'info')} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold transition-all text-sm shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20">
         Post a Task
       </button>
 
       {/* How It Works */}
-      <div className="rounded-2xl bg-zinc-900/40 border border-zinc-800/40 p-5">
+      <div className="rounded-2xl bg-gradient-to-b from-zinc-800/30 to-zinc-900/20 border border-zinc-700/20 p-5 backdrop-blur-sm">
         <h4 className="text-sm font-semibold text-zinc-300 mb-4">How It Works</h4>
         <div className="space-y-4">
           {[
@@ -391,21 +397,35 @@ function AgentLaunchpad() {
         </div>
       </div>
 
-      {/* Progress Steps */}
-      <div className="flex items-center gap-0 p-1.5 rounded-2xl bg-zinc-900/60 border border-zinc-800/50">
+      {/* Progress Steps — Connected circles */}
+      <div className="flex items-center justify-between px-2 py-4">
         {steps.map((s, i) => (
           <React.Fragment key={s.n}>
-            <button onClick={() => step > s.n && setStep(s.n)} className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all flex-1 justify-center ${step === s.n ? 'bg-amber-500/15 text-amber-400 border border-amber-500/25' : step > s.n ? 'text-emerald-400' : 'text-zinc-600'}`}>
-              {step > s.n ? Ico.check : <span className="opacity-70">{s.icon}</span>}
-              <span className="hidden sm:inline">{s.title}</span>
+            <button onClick={() => step > s.n && setStep(s.n)} className="flex flex-col items-center gap-1.5 group">
+              <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all duration-300 ${
+                step === s.n
+                  ? 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/20 scale-110'
+                  : step > s.n
+                    ? 'bg-emerald-500/15 text-emerald-400 border-2 border-emerald-500/30'
+                    : 'bg-zinc-800/80 text-zinc-600 border border-zinc-700/40'
+              }`}>
+                {step > s.n ? Ico.check : <span className="scale-90">{s.icon}</span>}
+              </div>
+              <span className={`text-[10px] font-semibold transition-colors ${
+                step === s.n ? 'text-amber-400' : step > s.n ? 'text-emerald-400' : 'text-zinc-600'
+              }`}>{s.title}</span>
             </button>
-            {i < steps.length - 1 && <div className={`w-3 h-px flex-shrink-0 ${step > s.n ? 'bg-emerald-500/40' : 'bg-zinc-800'}`} />}
+            {i < steps.length - 1 && (
+              <div className={`flex-1 h-0.5 rounded-full mx-1 transition-colors duration-500 -mt-5 ${
+                step > s.n ? 'bg-gradient-to-r from-emerald-500/40 to-emerald-500/20' : 'bg-zinc-800/60'
+              }`} />
+            )}
           </React.Fragment>
         ))}
       </div>
 
       {/* Step Content */}
-      <div className="rounded-2xl bg-zinc-900/40 border border-zinc-800/40 p-5 sm:p-6">
+      <div className="rounded-2xl bg-gradient-to-b from-zinc-800/40 to-zinc-900/30 border border-zinc-700/25 p-5 sm:p-6 backdrop-blur-sm">
         {step === 1 && (
           <div className="space-y-5">
             <div>
@@ -432,7 +452,7 @@ function AgentLaunchpad() {
                 ))}
               </div>
             </div>
-            <button onClick={() => simulateStep(1)} disabled={!agentName || !agentDesc || processing} className="w-full py-3.5 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:bg-zinc-800 disabled:text-zinc-600 disabled:border disabled:border-zinc-700/50 text-white font-semibold transition-all text-sm">
+            <button onClick={() => simulateStep(1)} disabled={!agentName || !agentDesc || processing} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 disabled:from-zinc-800 disabled:to-zinc-800 disabled:text-zinc-600 disabled:border disabled:border-zinc-700/50 text-white font-bold transition-all text-sm shadow-lg shadow-amber-500/10 hover:shadow-amber-500/20 disabled:shadow-none">
               {processing ? 'Creating...' : 'Continue'}
             </button>
           </div>
@@ -467,7 +487,7 @@ function AgentLaunchpad() {
                 <span className="text-xs text-zinc-600 font-mono ml-auto">{txHashes[0]?.slice(0, 18)}...</span>
               </div>
             )}
-            <button onClick={() => simulateStep(2)} disabled={processing} className="w-full py-3.5 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white font-semibold transition-all text-sm">
+            <button onClick={() => simulateStep(2)} disabled={processing} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 disabled:from-zinc-800 disabled:to-zinc-800 disabled:text-zinc-600 text-white font-bold transition-all text-sm shadow-lg shadow-amber-500/10 hover:shadow-amber-500/20 disabled:shadow-none">
               {processing ? 'Registering...' : 'Register Identity'}
             </button>
           </div>
@@ -502,7 +522,7 @@ function AgentLaunchpad() {
                 <span className="text-xs text-zinc-600 font-mono ml-auto">{txHashes[1]?.slice(0, 18)}...</span>
               </div>
             )}
-            <button onClick={() => simulateStep(3)} disabled={processing || !bondAmount} className="w-full py-3.5 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white font-semibold transition-all text-sm">
+            <button onClick={() => simulateStep(3)} disabled={processing || !bondAmount} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 disabled:from-zinc-800 disabled:to-zinc-800 disabled:text-zinc-600 text-white font-bold transition-all text-sm shadow-lg shadow-amber-500/10 hover:shadow-amber-500/20 disabled:shadow-none">
               {processing ? 'Staking...' : `Stake ${bondAmount} ${chain === 'avalanche' ? 'AVAX' : 'ETH'}`}
             </button>
           </div>
@@ -533,7 +553,7 @@ function AgentLaunchpad() {
                 <span className="text-xs text-emerald-400 font-medium">Bond Staked — {bondAmount} {chain === 'avalanche' ? 'AVAX' : 'ETH'}</span>
               </div>
             )}
-            <button onClick={() => simulateStep(4)} disabled={processing || !vnsName} className="w-full py-3.5 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white font-semibold transition-all text-sm">
+            <button onClick={() => simulateStep(4)} disabled={processing || !vnsName} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 disabled:from-zinc-800 disabled:to-zinc-800 disabled:text-zinc-600 text-white font-bold transition-all text-sm shadow-lg shadow-amber-500/10 hover:shadow-amber-500/20 disabled:shadow-none">
               {processing ? 'Registering...' : `Register ${vnsName}.vns`}
             </button>
           </div>
@@ -562,7 +582,7 @@ function AgentLaunchpad() {
                 </div>
               ))}
             </div>
-            <button onClick={() => simulateStep(5)} disabled={processing} className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white font-bold text-base transition-all">
+            <button onClick={() => simulateStep(5)} disabled={processing} className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:from-zinc-800 disabled:to-zinc-800 disabled:text-zinc-600 text-white font-bold text-base transition-all shadow-lg shadow-emerald-500/15 hover:shadow-emerald-500/25 disabled:shadow-none">
               {processing ? 'Launching...' : 'Release Agent to Hub'}
             </button>
           </div>
@@ -590,10 +610,17 @@ export default function AgentHub() {
 
   return (
     <div className="page-enter px-4 sm:px-6 py-5 max-w-2xl mx-auto pb-28">
-      {/* Header — pl-12 on mobile to clear hamburger */}
-      <div className="mb-6 pl-12 sm:pl-0">
-        <h1 className="text-2xl font-bold text-white tracking-tight">Agent Hub</h1>
-        <p className="text-sm text-zinc-500 mt-1 leading-relaxed">The self-governing AI network where agents collaborate, compete, and evolve.</p>
+      {/* Hero Header with gradient */}
+      <div className="mb-6 pl-12 sm:pl-0 relative">
+        <div className="absolute -top-5 -left-4 -right-4 h-40 bg-gradient-to-b from-orange-500/[0.04] via-amber-500/[0.02] to-transparent rounded-3xl pointer-events-none" />
+        <div className="relative">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-500/8 border border-orange-500/15 mb-3">
+            <div className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+            <span className="text-[10px] font-semibold text-orange-400 uppercase tracking-wider">Live on 3 chains</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Agent Hub</h1>
+          <p className="text-sm text-zinc-400 mt-1.5 leading-relaxed max-w-md">The self-governing AI network where agents collaborate, compete, and evolve.</p>
+        </div>
       </div>
 
       {/* Mini Disclaimer */}
