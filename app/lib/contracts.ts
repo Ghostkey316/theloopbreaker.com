@@ -81,22 +81,22 @@ export const AVALANCHE_CONTRACTS: ContractInfo[] = [
 ];
 
 export const ETHEREUM_CONTRACTS: ContractInfo[] = [
+  // 13 contracts on ETH mainnet — matches Base/Avalanche minus TeleporterBridge
+  // VaultfireToken and GovernanceTimelock are NOT part of the protocol
+  // TeleporterBridge is excluded — Avalanche Teleporter does not work on Ethereum mainnet
+  { name: 'MissionEnforcement', address: '0x5470d8189849675C043fFA7fc451e5F2f4e5532c', chain: 'ethereum', chainId: 1 },
+  { name: 'AntiSurveillance', address: '0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B', chain: 'ethereum', chainId: 1 },
   { name: 'PrivacyGuarantees', address: '0xE1D52bF7A842B207B8C48eAE801f9d97A3C4D709', chain: 'ethereum', chainId: 1 },
   { name: 'ERC8004IdentityRegistry', address: '0xaCB59e0f0eA47B25b24390B71b877928E5842630', chain: 'ethereum', chainId: 1 },
+  { name: 'BeliefAttestationVerifier', address: '0xFe122605364f428570c4C0EB2CCAEBb68dD22d05', chain: 'ethereum', chainId: 1 },
+  { name: 'AIPartnershipBondsV2', address: '0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1', chain: 'ethereum', chainId: 1 },
+  { name: 'FlourishingMetricsOracle', address: '0x544B575431ECD927bA83E85008446fA1e100204a', chain: 'ethereum', chainId: 1 },
   { name: 'AIAccountabilityBondsV2', address: '0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5', chain: 'ethereum', chainId: 1 },
   { name: 'ERC8004ReputationRegistry', address: '0x37679B1dCfabE6eA6b8408626815A1426bE2D717', chain: 'ethereum', chainId: 1 },
   { name: 'ERC8004ValidationRegistry', address: '0x83b2D1a8e383c4239dE66b6614176636618c1c0A', chain: 'ethereum', chainId: 1 },
   { name: 'VaultfireERC8004Adapter', address: '0xEF022Bdf55940491d4efeBDE61Ffa3f3fF81b192', chain: 'ethereum', chainId: 1 },
-  { name: 'VaultfireToken', address: '0x20E8CDFae485F0E8E90D24c9E071957A53eE0cB1', chain: 'ethereum', chainId: 1 },
-  { name: 'AntiSurveillance', address: '0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B', chain: 'ethereum', chainId: 1 },
-  { name: 'BeliefAttestationVerifier', address: '0xFe122605364f428570c4C0EB2CCAEBb68dD22d05', chain: 'ethereum', chainId: 1 },
   { name: 'MultisigGovernance', address: '0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C', chain: 'ethereum', chainId: 1 },
-  // VaultfireTeleporterBridge is excluded from ETH mainnet — Avalanche Teleporter is not compatible with Ethereum mainnet
-  { name: 'GovernanceTimelock', address: '0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5', chain: 'ethereum', chainId: 1 },
-  { name: 'AIPartnershipBondsV2', address: '0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1', chain: 'ethereum', chainId: 1 },
   { name: 'ProductionBeliefAttestationVerifier', address: '0xDfc66395A4742b5168712a04942C90B99394aEEb', chain: 'ethereum', chainId: 1 },
-  { name: 'FlourishingMetricsOracle', address: '0x544B575431ECD927bA83E85008446fA1e100204a', chain: 'ethereum', chainId: 1 },
-  { name: 'MissionEnforcement', address: '0x5470d8189849675C043fFA7fc451e5F2f4e5532c', chain: 'ethereum', chainId: 1 },
 ];
 
 export const ALL_CONTRACTS: ContractInfo[] = [...ETHEREUM_CONTRACTS, ...BASE_CONTRACTS, ...AVALANCHE_CONTRACTS];
@@ -188,16 +188,15 @@ DEPLOYED CONTRACTS ON ETHEREUM MAINNET (Chain ID 1, RPC: https://ethereum-rpc.pu
 4. ERC8004ReputationRegistry: 0x37679B1dCfabE6eA6b8408626815A1426bE2D717
 5. ERC8004ValidationRegistry: 0x83b2D1a8e383c4239dE66b6614176636618c1c0A
 6. VaultfireERC8004Adapter: 0xEF022Bdf55940491d4efeBDE61Ffa3f3fF81b192
-7. VaultfireToken: 0x20E8CDFae485F0E8E90D24c9E071957A53eE0cB1
-8. AntiSurveillance: 0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B
-9. BeliefAttestationVerifier: 0xFe122605364f428570c4C0EB2CCAEBb68dD22d05
-10. MultisigGovernance: 0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C
-  // TeleporterBridge excluded — Avalanche Teleporter does not work on Ethereum mainnet
-12. GovernanceTimelock: 0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5
-13. AIPartnershipBondsV2: 0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1
-14. ProductionBeliefAttestationVerifier: 0xDfc66395A4742b5168712a04942C90B99394aEEb
-15. FlourishingMetricsOracle: 0x544B575431ECD927bA83E85008446fA1e100204a
-16. MissionEnforcement: 0x5470d8189849675C043fFA7fc451e5F2f4e5532c
+7. AntiSurveillance: 0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B
+8. BeliefAttestationVerifier: 0xFe122605364f428570c4C0EB2CCAEBb68dD22d05
+9. AIPartnershipBondsV2: 0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1
+10. FlourishingMetricsOracle: 0x544B575431ECD927bA83E85008446fA1e100204a
+11. MultisigGovernance: 0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C
+12. ProductionBeliefAttestationVerifier: 0xDfc66395A4742b5168712a04942C90B99394aEEb
+13. MissionEnforcement: 0x5470d8189849675C043fFA7fc451e5F2f4e5532c
+  (TeleporterBridge excluded — Avalanche Teleporter does not work on Ethereum mainnet)
+  (VaultfireToken and GovernanceTimelock are NOT part of the protocol)
 
 Website: https://theloopbreaker.com
 

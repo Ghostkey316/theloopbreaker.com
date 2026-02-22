@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from 'react';
 import { checkAllChains, type RPCResult } from '../lib/blockchain';
-import { BASE_CONTRACTS, AVALANCHE_CONTRACTS } from '../lib/contracts';
+import { BASE_CONTRACTS, AVALANCHE_CONTRACTS, ETHEREUM_CONTRACTS } from '../lib/contracts';
 import { isRegistered, getRegistration, getRegisteredChains, getChainConfig, type SupportedChain } from '../lib/registration';
 import { getAgentCount } from '../lib/contract-interaction';
 
@@ -85,6 +85,7 @@ function AnimatedCounter({ value, loading }: { value: number | null; loading: bo
 
 export default function Home() {
   const [chains, setChains] = useState<ChainStatus[]>([
+    { name: 'Ethereum', chainId: 1, result: null, loading: true },
     { name: 'Base', chainId: 8453, result: null, loading: true },
     { name: 'Avalanche', chainId: 43114, result: null, loading: true },
   ]);
@@ -112,6 +113,7 @@ export default function Home() {
     }
     checkAllChains().then((results) => {
       setChains([
+        { name: 'Ethereum', chainId: 1, result: results.ethereum, loading: false },
         { name: 'Base', chainId: 8453, result: results.base, loading: false },
         { name: 'Avalanche', chainId: 43114, result: results.avalanche, loading: false },
       ]);
@@ -129,7 +131,7 @@ export default function Home() {
     });
   }, []);
 
-  const totalContracts = BASE_CONTRACTS.length + AVALANCHE_CONTRACTS.length;
+  const totalContracts = BASE_CONTRACTS.length + AVALANCHE_CONTRACTS.length + ETHEREUM_CONTRACTS.length;
   const allConnected = chains.every(c => !c.loading && c.result?.success);
   const anyLoading = chains.some(c => c.loading);
   const totalAgents = (agentCounts.base ?? 0) + (agentCounts.avalanche ?? 0);
@@ -202,7 +204,7 @@ export default function Home() {
           fontSize: isMobile ? 14 : 16, color: '#71717A', lineHeight: 1.7,
           maxWidth: 480, margin: '0 auto 24px',
         }}>
-          {totalContracts} smart contracts across Base and Avalanche enforce ethical AI behavior, protect privacy, and give users real control.
+          {totalContracts} smart contracts across Ethereum, Base, and Avalanche enforce ethical AI behavior, protect privacy, and give users real control.
         </p>
 
         {/* Registration status pill */}
@@ -579,7 +581,7 @@ export default function Home() {
         }}>
           {[
             { label: 'Contracts', value: String(totalContracts), sub: `${BASE_CONTRACTS.length} per chain`, mono: true, color: '#F97316' },
-            { label: 'Chains', value: '2', sub: 'Base + Avalanche', mono: true, color: '#38BDF8' },
+            { label: 'Chains', value: '3', sub: 'ETH + Base + Avalanche', mono: true, color: '#38BDF8' },
             { label: 'Standard', value: 'ERC-8004', sub: 'AI Identity', mono: false, color: '#A78BFA' },
             { label: 'Bridge', value: 'Teleporter', sub: 'Cross-chain', mono: false, color: '#22C55E' },
           ].map((item) => (
@@ -655,12 +657,12 @@ export default function Home() {
           </div>
         </div>
         <p style={{ fontSize: 12, color: '#3F3F46', lineHeight: 1.6 }}>
-          {totalContracts} smart contracts across Base and Avalanche.
+          {totalContracts} smart contracts across Ethereum, Base, and Avalanche.
           <br />
           All governance is on-chain and verifiable.
         </p>
         <p style={{ fontSize: 11, color: '#27272A', marginTop: 12, fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-          Vaultfire Protocol &middot; 2025
+          Vaultfire Protocol &middot; 2025–2026
         </p>
       </div>
     </div>

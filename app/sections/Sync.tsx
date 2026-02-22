@@ -162,8 +162,8 @@ export default function Sync() {
     <div className="page-enter" style={{ padding: isMobile ? "24px 16px 48px" : "48px 40px", maxWidth: 600, margin: "0 auto" }}>
       {/* Header */}
       <div style={{ marginBottom: isMobile ? 40 : 48 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.04em" }}>Data</h1>
-        <p style={{ fontSize: 14, color: "#52525B", marginTop: 6 }}>Export, import, and manage your complete Embris profile</p>
+        <h1 style={{ fontSize: 28, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.04em", paddingLeft: isMobile ? 48 : 0 }}>Data</h1>
+        <p style={{ fontSize: 14, color: "#52525B", marginTop: 6, paddingLeft: isMobile ? 48 : 0 }}>Export, import, and manage your complete Embris profile</p>
       </div>
 
       {/* Stats — enhanced grid */}
@@ -394,7 +394,7 @@ export default function Sync() {
         {importDetails.length > 0 && (
           <div style={{ padding: "8px 0 8px 42px" }}>
             {importDetails.map((d, i) => (
-              <p key={i} style={{ fontSize: 11, color: "#22C55E", lineHeight: 1.6 }}>✓ {d}</p>
+              <p key={i} style={{ fontSize: 11, color: "#22C55E", lineHeight: 1.6, display: 'flex', alignItems: 'center', gap: 4 }}><CheckIcon size={10} /> {d}</p>
             ))}
           </div>
         )}
