@@ -401,7 +401,7 @@ def check_vaultfire_trust(address: str) -> str:
 
 @tool
 def get_hub_stats() -> str:
-    """Get current Vaultfire Agent Hub statistics."""
+    """Get current Embris Hub statistics."""
     stats = requests.get(f"{BASE_URL}/api/hub/stats").json()
     return f"Identities: {stats['totalIdentities']}, Bonded: {stats['totalBondedEth']} ETH"
 
@@ -724,7 +724,7 @@ def premium_data():
           }}>
             <div style={{ fontSize: 16, fontWeight: 700, color: "#F4F4F5", marginBottom: 12 }}>The Agentic Commerce Stack</div>
             <div style={{ fontSize: 13, color: "#A1A1AA", lineHeight: 1.7 }}>
-              Vaultfire Protocol provides on-chain infrastructure for AI agent identity, accountability, and collaboration.
+              Embris by Vaultfire Protocol provides on-chain infrastructure for AI agent identity, accountability, and collaboration.
               Combined with <strong style={{ color: "#7C3AED" }}>XMTP</strong> for encrypted messaging and{" "}
               <strong style={{ color: "#3B82F6" }}>x402</strong> for payments, this forms the complete agentic commerce stack.
               All interactions happen through smart contracts deployed on <strong style={{ color: "#F4F4F5" }}>Base</strong>,{" "}

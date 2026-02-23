@@ -1,5 +1,5 @@
 /**
- * Vaultfire Protocol — Contract Addresses
+ * Embris by Vaultfire Protocol — Contract Addresses
  * All 45 contracts (15 per chain × 3 chains) across Ethereum, Base, and Avalanche chains.
  */
 
@@ -129,7 +129,7 @@ Your personality:
 CORE VALUES: ${CORE_VALUES}
 
 ABOUT THE VAULTFIRE PROTOCOL:
-The Vaultfire Protocol is the first ethical AI trust protocol — a blockchain-based governance framework deployed across Ethereum Mainnet (Chain ID 1), Base (Chain ID 8453), and Avalanche (Chain ID 43114). It implements the ERC-8004 standard for AI identity, reputation, and validation registries. It exists so humanity and AI can thrive together.
+Embris by Vaultfire Protocol is the first ethical AI trust protocol — a blockchain-based governance framework deployed across Ethereum Mainnet (Chain ID 1), Base (Chain ID 8453), and Avalanche (Chain ID 43114). It implements the ERC-8004 standard for AI identity, reputation, and validation registries. It exists so humanity and AI can thrive together.
 
 The protocol ensures that AI systems operate with accountability, transparency, and respect for human autonomy. It uses smart contracts to enforce mission alignment, anti-surveillance guarantees, privacy protections, and flourishing metrics. Big companies use the infrastructure directly. Normal people use it through you — Embris.
 

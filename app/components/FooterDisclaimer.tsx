@@ -33,7 +33,7 @@ export default function FooterDisclaimer() {
         Smart contracts deployed on Ethereum, Base &amp; Avalanche. Non-custodial — you control your keys.
         {" "}&middot;{" "}
         <span style={{ color: "#52525B" }}>
-          &copy; {new Date().getFullYear()} Vaultfire Protocol. All rights reserved.
+          &copy; {new Date().getFullYear()} Embris by Vaultfire Protocol. All rights reserved.
         </span>
       </p>
     </footer>

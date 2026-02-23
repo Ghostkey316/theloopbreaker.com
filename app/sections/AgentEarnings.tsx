@@ -432,7 +432,7 @@ export default function AgentEarnings() {
           Embris Earnings & Payments
         </h2>
         <p style={{ fontSize: 13, color: "#71717A", margin: "6px 0 0" }}>
-          Powered by Vaultfire Protocol · x402 USDC payments · Automated Bond Staking
+          Powered by Embris & Vaultfire Protocol · x402 USDC payments · Automated Bond Staking
         </p>
       </div>
 

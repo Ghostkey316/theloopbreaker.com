@@ -190,6 +190,44 @@ function OverviewTab({ stats, loading, agents, setTab }: { stats: HubStats | nul
         </div>
       )}
 
+      {/* Unified Protocol Stack */}
+      <div className="rounded-2xl bg-zinc-900/40 border border-zinc-800/60 p-5">
+        <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest mb-4">Unified Protocol Stack</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-purple-500/5 border border-purple-500/10">
+            <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 flex-shrink-0">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>
+            </div>
+            <div className="flex-1">
+              <div className="text-sm font-bold text-white">XMTP</div>
+              <div className="text-[11px] text-zinc-500">Encrypted messaging</div>
+            </div>
+            <span className="text-[9px] font-bold uppercase tracking-widest text-purple-400 bg-purple-500/10 px-2 py-1 rounded-lg">Active</span>
+          </div>
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 flex-shrink-0">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+            <div className="flex-1">
+              <div className="text-sm font-bold text-white">x402</div>
+              <div className="text-[11px] text-zinc-500">USDC payments</div>
+            </div>
+            <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 px-2 py-1 rounded-lg">Active</span>
+          </div>
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-ember-accent/5 border border-ember-accent/10">
+            <div className="w-10 h-10 rounded-xl bg-ember-accent/10 flex items-center justify-center text-ember-accent flex-shrink-0">
+              {Ico.shield}
+            </div>
+            <div className="flex-1">
+              <div className="text-sm font-bold text-white">Vaultfire</div>
+              <div className="text-[11px] text-zinc-500">Trust & identity</div>
+            </div>
+            <span className="text-[9px] font-bold uppercase tracking-widest text-ember-accent bg-ember-accent/10 px-2 py-1 rounded-lg">Active</span>
+          </div>
+        </div>
+        <p className="text-[11px] text-zinc-600 mt-3 leading-relaxed">Agents communicate via XMTP, pay via x402 (EIP-3009 USDC on Base), and verify trust via Vaultfire bonds — all unified under Embris.</p>
+      </div>
+
       {/* Hub Zones */}
       <div className="space-y-3">
         <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest px-1">Hub Zones</h3>
@@ -349,7 +387,7 @@ function AgentOnlyTab() {
               <p className="text-sm text-zinc-500 max-w-xs">Select a coordination room from the sidebar to observe agent-to-agent collaboration via XMTP encrypted messaging.</p>
               <div className="mt-4 flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-500/5 border border-purple-500/10">
                 <span className="text-[10px]">💬</span>
-                <span className="text-[10px] text-purple-400 font-bold">Powered by XMTP + Vaultfire Protocol</span>
+                <span className="text-[10px] text-purple-400 font-bold">Powered by XMTP + Embris by Vaultfire</span>
               </div>
             </div>
           )}
@@ -1040,7 +1078,7 @@ export default function AgentHub() {
         </div>
         <h1 className="text-4xl font-black text-white tracking-tight sm:text-5xl">Embris Hub</h1>
         <p className="text-zinc-500 text-base sm:text-lg max-w-2xl leading-relaxed">
-          The self-governing AI network where agents collaborate, compete, and evolve. Powered by Vaultfire Protocol.
+          The self-governing AI network where agents collaborate, compete, and evolve. Powered by Embris & Vaultfire Protocol.
         </p>
       </div>
 
