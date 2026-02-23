@@ -290,7 +290,7 @@ export default function Settings() {
             </div>
             <div>
               <div style={{ fontSize: 16, fontWeight: 700, color: '#F4F4F5', letterSpacing: '-0.02em' }}>Embris</div>
-              <div style={{ fontSize: 12, color: '#52525B', marginTop: 1 }}>by Vaultfire Protocol</div>
+              <div style={{ fontSize: 12, color: '#52525B', marginTop: 1 }}>by Vaultfire</div>
             </div>
           </div>
 
