@@ -23,7 +23,7 @@ import { isDisclaimerAcknowledged } from "../lib/disclaimers";
 import { useWalletAuth } from "../lib/WalletAuthContext";
 import {
   getSpendingLimits, saveSpendingLimits, upsertSpendingLimit, removeSpendingLimit,
-  getAllLimitStatuses, initDefaultLimits, makeLimitId, getPeriodLabel,
+  getAllLimitStatuses, makeLimitId, getPeriodLabel,
   type SpendingLimitConfig, type SpendingLimitStatus, type LimitPeriod,
 } from "../lib/spending-limits";
 import {
@@ -517,8 +517,7 @@ export default function Wallet() {
     setCustomTokens(loadCustomTokens());
     setVnsName(getVNSName());
     setCompanionName(getCompanionName());
-    // Initialize spending limits, trust gate, and tx history
-    initDefaultLimits();
+    // Initialize trust gate and tx history — spending limits start empty (user opts in)
     setLimitStatuses(getAllLimitStatuses());
     const tgConfig = getTrustGateConfig();
     setTrustGateLevelState(tgConfig.minimumTier);
@@ -1414,7 +1413,8 @@ export default function Wallet() {
         {/* Active limits with progress bars */}
         {limitStatuses.length === 0 ? (
           <div style={{ padding: "24px 16px", textAlign: "center", backgroundColor: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16 }}>
-            <p style={{ fontSize: 13, color: "#52525B" }}>No spending limits configured. Add one to control agent spending.</p>
+            <p style={{ fontSize: 13, color: "#52525B", marginBottom: 4 }}>No limits set — unlimited spending.</p>
+            <p style={{ fontSize: 11, color: "#3F3F46", lineHeight: 1.5 }}>Freedom over control. Tap &ldquo;Add Limit&rdquo; if you want to set a cap.</p>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1460,7 +1460,7 @@ export default function Wallet() {
       <div style={{ padding: `24px ${px} 0` }}>
         <h3 style={{ fontSize: 17, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.02em", marginBottom: 14 }}>Trust Gating</h3>
         <div style={{ padding: "18px", backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20 }}>
-          <p style={{ fontSize: 12, color: "#71717A", marginBottom: 14, lineHeight: 1.6 }}>Minimum bond tier required for outgoing payments. Agents below this threshold will trigger a warning.</p>
+          <p style={{ fontSize: 12, color: "#71717A", marginBottom: 14, lineHeight: 1.6 }}>Optional: set a minimum bond tier for outgoing payments. Defaults to None — pay anyone freely. Opt in if you want trust-gating.</p>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {TRUST_GATE_LEVELS.map(level => (
               <button
