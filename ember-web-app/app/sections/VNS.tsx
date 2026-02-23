@@ -9,7 +9,7 @@ import {
   type VNSProfile, type VNSAvailability, type IdentityType, type VNSGasEstimate,
 } from "../lib/vns";
 import { getWalletAddress, isWalletCreated, getWalletPrivateKey } from "../lib/wallet";
-import DisclaimerBanner from "../components/DisclaimerBanner";
+import DisclaimerBanner, { AlphaBanner } from "../components/DisclaimerBanner";
 
 /* ── Icons ── */
 const SearchIcon = ({ size = 18 }: { size?: number }) => (
@@ -334,6 +334,7 @@ export default function VNS() {
 
   return (
     <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 16px 80px" }}>
+      <AlphaBanner />
       {/* Header */}
       <div className="pl-12 sm:pl-0" style={{ marginBottom: 28 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>

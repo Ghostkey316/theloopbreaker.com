@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { clearAllMemories } from "../lib/memory";
+import { AlphaBanner } from "../components/DisclaimerBanner";
 import { clearSelfLearningData } from "../lib/self-learning";
 import {
   exportAllData,
@@ -160,6 +161,7 @@ export default function Sync() {
 
   return (
     <div className="page-enter" style={{ padding: isMobile ? "24px 16px 48px" : "48px 40px", maxWidth: 600, margin: "0 auto" }}>
+      <AlphaBanner />
       {/* Header */}
       <div style={{ marginBottom: isMobile ? 40 : 48 }}>
         <h1 style={{ fontSize: 28, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.04em", paddingLeft: isMobile ? 48 : 0 }}>Data</h1>

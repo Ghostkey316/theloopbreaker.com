@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { ALL_CONTRACTS, CHAINS, type ContractInfo } from "../lib/contracts";
 import { checkContractAlive } from "../lib/blockchain";
-import { SectionDisclaimer } from "../components/DisclaimerBanner";
+import { SectionDisclaimer, AlphaBanner } from "../components/DisclaimerBanner";
 
 type ChainFilter = "all" | "base" | "avalanche" | "ethereum";
 
@@ -94,6 +94,7 @@ export default function Verify() {
 
   return (
     <div className="page-enter" style={{ padding: isMobile ? "24px 16px 48px" : "48px 40px", maxWidth: 720, margin: "0 auto" }}>
+      <AlphaBanner />
       {/* Header */}
       <div style={{ marginBottom: isMobile ? 32 : 40, paddingLeft: isMobile ? 48 : 0 }}>
         <h1 style={{ fontSize: 28, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.04em" }}>Verification</h1>

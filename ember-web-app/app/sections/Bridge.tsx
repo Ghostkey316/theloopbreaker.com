@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { BASE_CONTRACTS, AVALANCHE_CONTRACTS, CHAINS } from "../lib/contracts";
 import { getTeleporterBridgeStats, checkChainConnectivity, type BridgeStats, type RPCResult } from "../lib/blockchain";
 import { showToast } from "../components/Toast";
+import { AlphaBanner } from "../components/DisclaimerBanner";
 
 const BASE_BRIDGE = BASE_CONTRACTS.find((c) => c.name === "VaultfireTeleporterBridge");
 const AVAX_BRIDGE = AVALANCHE_CONTRACTS.find((c) => c.name === "VaultfireTeleporterBridge");
@@ -121,6 +122,7 @@ export default function Bridge() {
   return (
     <div className="page-enter" style={{ padding: `${isMobile ? 24 : 40}px ${px}px 48px`, maxWidth: 720, margin: "0 auto" }}>
 
+      <AlphaBanner />
       {/* Header */}
       <div style={{ marginBottom: 32, paddingLeft: isMobile ? 48 : 0 }}>
         <h1 style={{ fontSize: isMobile ? 24 : 32, fontWeight: 800, color: "#F4F4F5", letterSpacing: "-0.03em" }}>

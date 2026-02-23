@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
-import DisclaimerBanner from '../components/DisclaimerBanner';
+import DisclaimerBanner, { AlphaBanner } from '../components/DisclaimerBanner';
 import {
   getOnChainAgents,
   getKnownAgents,
@@ -254,6 +254,7 @@ export default function AgentMarketplace() {
   return (
     <div className="page-enter" style={{ padding: '0 0 80px', maxWidth: 900, margin: '0 auto' }}>
 
+      <AlphaBanner />
       {/* Header */}
       <div style={{ padding: '28px 20px 16px' }}>
         <h1 style={{ fontSize: 26, fontWeight: 800, color: '#F4F4F5', letterSpacing: '-0.03em', marginBottom: 4 }}>

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { ALL_CONTRACTS, CHAINS } from '../lib/contracts';
-import DisclaimerBanner from '../components/DisclaimerBanner';
+import DisclaimerBanner, { AlphaBanner } from '../components/DisclaimerBanner';
 import { showToast } from '../components/Toast';
 
 /* ─────────────────────────────────────────────
@@ -368,6 +368,7 @@ export default function ZKProofs() {
 
   return (
     <div className="page-enter px-4 sm:px-6 py-4 max-w-4xl mx-auto pb-24">
+      <AlphaBanner />
       {/* Header */}
       <div className="mb-5 pl-12 sm:pl-0">
         <h1 className="text-2xl font-bold text-white">ZK Proofs</h1>

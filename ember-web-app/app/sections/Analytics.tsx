@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { getAnalyticsData, type AnalyticsData } from "../lib/analytics";
 import { isRegistered } from "../lib/registration";
+import { AlphaBanner } from "../components/DisclaimerBanner";
 
 function RefreshIcon({ size = 12 }: { size?: number }) {
   return (
@@ -69,6 +70,7 @@ export default function Analytics() {
 
   return (
     <div className="page-enter" style={{ padding: isMobile ? "24px 16px 48px" : "48px 40px", maxWidth: 680, margin: "0 auto" }}>
+      <AlphaBanner />
       {/* Header */}
       <div style={{
         display: "flex", alignItems: isMobile ? "flex-start" : "center",

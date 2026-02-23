@@ -37,6 +37,156 @@ const ShieldIcon = ({ size = 16 }: { size?: number }) => (
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
   </svg>
 );
+const AlertTriangleIcon = ({ size = 14 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+    <line x1="12" y1="9" x2="12" y2="13"/>
+    <line x1="12" y1="17" x2="12.01" y2="17"/>
+  </svg>
+);
+
+/* ── Alpha Banner — Persistent, visible on every section ── */
+const ALPHA_STORAGE_KEY = "embris_alpha_banner_dismissed_v1";
+
+export function AlphaBanner() {
+  const [dismissed, setDismissed] = useState(true); // start hidden to avoid flash
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const isDismissed = localStorage.getItem(ALPHA_STORAGE_KEY) === "true";
+    setDismissed(isDismissed);
+  }, []);
+
+  if (!mounted || dismissed) return null;
+
+  return (
+    <div
+      role="alert"
+      aria-live="polite"
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 10,
+        padding: "12px 16px",
+        borderRadius: 12,
+        background: "linear-gradient(135deg, rgba(234,179,8,0.10), rgba(234,179,8,0.04))",
+        border: "1.5px solid rgba(234,179,8,0.30)",
+        marginBottom: 20,
+        position: "relative",
+      }}
+    >
+      {/* Warning icon */}
+      <div style={{
+        flexShrink: 0,
+        marginTop: 1,
+        color: "#EAB308",
+        display: "flex",
+        alignItems: "center",
+      }}>
+        <AlertTriangleIcon size={16} />
+      </div>
+
+      {/* Text */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{
+          fontSize: 12,
+          fontWeight: 700,
+          color: "#EAB308",
+          margin: "0 0 3px 0",
+          letterSpacing: "0.01em",
+        }}>
+          ⚠ Alpha Software
+        </p>
+        <p style={{
+          fontSize: 11,
+          color: "#A1A1AA",
+          margin: 0,
+          lineHeight: 1.6,
+        }}>
+          Embris by Vaultfire Protocol is in active development. Smart contracts are live but features may change.
+          All on-chain transactions are <strong style={{ color: "#D4D4D8" }}>irreversible</strong>.{" "}
+          <strong style={{ color: "#D4D4D8" }}>Not financial advice.</strong> Use at your own risk.
+        </p>
+      </div>
+
+      {/* Dismiss */}
+      <button
+        type="button"
+        onClick={() => {
+          localStorage.setItem(ALPHA_STORAGE_KEY, "true");
+          setDismissed(true);
+        }}
+        style={{
+          flexShrink: 0,
+          background: "none",
+          border: "none",
+          color: "#52525B",
+          cursor: "pointer",
+          padding: 4,
+          display: "flex",
+          alignItems: "center",
+          borderRadius: 6,
+          transition: "color 0.15s",
+          marginTop: -2,
+        }}
+        onMouseEnter={e => (e.currentTarget.style.color = "#A1A1AA")}
+        onMouseLeave={e => (e.currentTarget.style.color = "#52525B")}
+        aria-label="Dismiss alpha notice"
+      >
+        <XIcon size={13} />
+      </button>
+    </div>
+  );
+}
+
+/* ── Feature Disclaimer — Big, prominent, shown at top of each feature modal ── */
+export function FeatureDisclaimer({
+  text,
+  type = "warning",
+}: {
+  text: string;
+  type?: "warning" | "info";
+}) {
+  const isWarning = type === "warning";
+  const color = isWarning ? "#EAB308" : "#F97316";
+  const bgColor = isWarning ? "rgba(234,179,8,0.08)" : "rgba(249,115,22,0.08)";
+  const borderColor = isWarning ? "rgba(234,179,8,0.30)" : "rgba(249,115,22,0.25)";
+
+  return (
+    <div
+      role="alert"
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 12,
+        padding: "14px 16px",
+        borderRadius: 14,
+        background: bgColor,
+        border: `1.5px solid ${borderColor}`,
+        marginBottom: 20,
+      }}
+    >
+      <div style={{
+        flexShrink: 0,
+        marginTop: 1,
+        color,
+        display: "flex",
+        alignItems: "flex-start",
+      }}>
+        <AlertTriangleIcon size={16} />
+      </div>
+      <p style={{
+        fontSize: 12,
+        color: "#A1A1AA",
+        margin: 0,
+        lineHeight: 1.65,
+      }}>
+        {text}
+      </p>
+    </div>
+  );
+}
 
 /* ── Banner Mode ── */
 interface DisclaimerBannerProps {

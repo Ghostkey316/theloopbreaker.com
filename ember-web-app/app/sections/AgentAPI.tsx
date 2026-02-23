@@ -10,7 +10,7 @@
  */
 import { useState, useEffect } from "react";
 import { CHAINS, ALL_CONTRACTS } from "../lib/contracts";
-import DisclaimerBanner from "../components/DisclaimerBanner";
+import DisclaimerBanner, { AlphaBanner } from "../components/DisclaimerBanner";
 
 /* ── Types ── */
 interface Endpoint {
@@ -661,6 +661,7 @@ def premium_data():
 
   return (
     <div style={{ padding: isMobile ? 16 : 32, maxWidth: 1000, margin: "0 auto" }}>
+      <AlphaBanner />
       {/* Header */}
       <div style={{ marginBottom: 24, paddingLeft: isMobile ? 48 : 0 }}>
         <h2 style={{ fontSize: isMobile ? 22 : 26, fontWeight: 800, color: "#F4F4F5", margin: 0, letterSpacing: -0.5 }}>

@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";
 import { BOND_TIERS, getBondTier, getBondTierInfo } from "../lib/vns";
 import { getWalletAddress, isWalletCreated } from "../lib/wallet";
 import { isRegistered, getRegistration, getRegisteredChains } from "../lib/registration";
-import DisclaimerBanner from "../components/DisclaimerBanner";
+import DisclaimerBanner, { AlphaBanner } from "../components/DisclaimerBanner";
 
 /* ── Badge Tier Card ── */
 function TierCard({ tier, isActive, isMobile }: {
@@ -259,6 +259,7 @@ export default function TrustBadges() {
 
   return (
     <div style={{ padding: isMobile ? 16 : 32, maxWidth: 900, margin: "0 auto" }}>
+      <AlphaBanner />
       {/* Header */}
       <div style={{ marginBottom: 24, paddingLeft: isMobile ? 48 : 0 }}>
         <h2 style={{ fontSize: isMobile ? 22 : 26, fontWeight: 800, color: "#F4F4F5", margin: 0, letterSpacing: -0.5 }}>

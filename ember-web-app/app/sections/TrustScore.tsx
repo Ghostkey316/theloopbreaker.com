@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { ALL_CONTRACTS, BASE_CONTRACTS, AVALANCHE_CONTRACTS } from "../lib/contracts";
 import { checkAllChains, getMultipleContractStatus, type RPCResult } from "../lib/blockchain";
 import { isRegistered, getRegisteredChains } from "../lib/registration";
+import { AlphaBanner } from "../components/DisclaimerBanner";
 
 interface TrustMetrics {
   totalContracts: number;
@@ -137,6 +138,7 @@ export default function TrustScore() {
 
   return (
     <div className="page-enter" style={{ padding: isMobile ? "24px 16px 48px" : "48px 40px", maxWidth: 680, margin: "0 auto" }}>
+      <AlphaBanner />
       {/* Header */}
       <div style={{
         display: "flex", alignItems: isMobile ? "flex-start" : "center",
