@@ -224,6 +224,11 @@ contract ERC8004ReputationRegistry is PrivacyGuarantees {
      * @param newRating New rating to incorporate
      * @param verified Whether this is verified feedback
      */
+    /// @custom:audit-fix MEDIUM-001 — Overflow-safe running average (2026-02-23)
+    /// @dev Previous: totalRating = averageRating * totalFeedbacks could overflow at ~1.8e54 feedbacks.
+    ///      Fix: use true running average for first 1000 feedbacks, then EMA (alpha=10%) beyond that.
+    uint256 private constant MAX_FEEDBACKS_FOR_TRUE_AVG = 1000;
+
     function _updateReputation(
         address agentAddress,
         uint256 newRating,
@@ -231,11 +236,18 @@ contract ERC8004ReputationRegistry is PrivacyGuarantees {
     ) internal {
         AgentReputation storage rep = reputations[agentAddress];
 
-        // Calculate new average using weighted average
-        uint256 totalRating = rep.averageRating * rep.totalFeedbacks;
-        totalRating += newRating;
-        rep.totalFeedbacks += 1;
-        rep.averageRating = totalRating / rep.totalFeedbacks;
+        // ✅ MEDIUM-001 FIX: Overflow-safe running average
+        if (rep.totalFeedbacks < MAX_FEEDBACKS_FOR_TRUE_AVG) {
+            // True running average: safe since totalFeedbacks < 1000 and rating <= 10000
+            uint256 totalRating = rep.averageRating * rep.totalFeedbacks;
+            totalRating += newRating;
+            rep.totalFeedbacks += 1;
+            rep.averageRating = totalRating / rep.totalFeedbacks;
+        } else {
+            // EMA: new_avg = old_avg * 90% + new_rating * 10% (no overflow risk)
+            rep.averageRating = (rep.averageRating * 9 + newRating) / 10;
+            rep.totalFeedbacks += 1;
+        }
 
         if (verified) {
             rep.verifiedFeedbacks += 1;

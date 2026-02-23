@@ -169,7 +169,13 @@ contract BeliefAttestationVerifierProduction is IStarkVerifier {
 
         // Construct journal digest from public inputs
         // This MUST match what the guest program commits to its journal
-        bytes32 journalDigest = keccak256(
+        // ✅ CRITICAL-004 FIX: RISC Zero verifier expects sha256(journal_bytes), NOT keccak256.
+        //    The guest program commits ABI-encoded bytes to its journal; the on-chain verifier
+        //    checks sha256(journal_bytes) == journalDigest. Using keccak256 would cause ALL
+        //    real proofs to fail verification silently.
+        //    Reference: https://dev.risczero.com/api/blockchain-integration/contracts/verifier
+        // @custom:audit-fix CRITICAL-004 — Changed keccak256 to sha256 for RISC Zero compatibility (2026-02-23)
+        bytes32 journalDigest = sha256(
             abi.encode(beliefHash, proverAddress, epoch, moduleID)
         );
 

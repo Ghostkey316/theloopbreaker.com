@@ -4,6 +4,7 @@ pragma solidity ^0.8.25;
 import "./PrivacyGuarantees.sol";
 import "./ERC8004IdentityRegistry.sol";
 import "./BeliefAttestationVerifier.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title ERC-8004 Validation Registry for VaultFire
@@ -29,7 +30,8 @@ import "./BeliefAttestationVerifier.sol";
  * @custom:security Economic stakes + ZK proofs + multi-validator consensus
  * @custom:ethics Privacy-preserving validation (no data extraction)
  */
-contract ERC8004ValidationRegistry is PrivacyGuarantees {
+/// @custom:audit-fix HIGH-001 — Added ReentrancyGuard; replaced .transfer() with .call{} (2026-02-23)
+contract ERC8004ValidationRegistry is PrivacyGuarantees, ReentrancyGuard {
 
     ERC8004IdentityRegistry public immutable identityRegistry;
     BeliefAttestationVerifier public immutable zkVerifier;
@@ -362,7 +364,12 @@ contract ERC8004ValidationRegistry is PrivacyGuarantees {
 
             // Reward validators who voted with the majority
             if (response.approved == approved) {
-                payable(response.validator).transfer(VALIDATION_REWARD);
+                // ✅ HIGH-001 FIX: Use .call{} instead of deprecated .transfer()
+                (bool rewardSuccess, ) = payable(response.validator).call{value: VALIDATION_REWARD}("");
+                if (!rewardSuccess) {
+                    // Do not revert — log and continue to avoid DoS on reward distribution
+                    emit ValidatorSlashed(response.validator, 0, "Reward transfer failed — skipped", block.timestamp);
+                }
                 validatorActiveValidations[response.validator] -= 1;
             } else {
                 // Slash validators who voted against majority
@@ -381,7 +388,7 @@ contract ERC8004ValidationRegistry is PrivacyGuarantees {
     /**
      * @notice Stake to become a validator
      */
-    function stakeAsValidator() external payable {
+    function stakeAsValidator() external payable nonReentrant {
         require(msg.value >= MIN_VALIDATOR_STAKE, "Insufficient stake");
 
         validatorStakes[msg.sender] += msg.value;
@@ -398,15 +405,18 @@ contract ERC8004ValidationRegistry is PrivacyGuarantees {
      * @notice Withdraw validator stake
      * @param amount Amount to withdraw
      */
-    function withdrawValidatorStake(uint256 amount) external {
+    /// @custom:audit-fix HIGH-001 — CEI pattern + .call{} replaces .transfer()
+    function withdrawValidatorStake(uint256 amount) external nonReentrant {
         require(amount > 0, "Amount must be greater than zero");
         require(validatorStakes[msg.sender] >= amount, "Insufficient stake");
         require(validatorActiveValidations[msg.sender] == 0, "Active validations pending");
 
+        // ✅ HIGH-001 FIX: CEI pattern — update state BEFORE external call
         validatorStakes[msg.sender] -= amount;
-        payable(msg.sender).transfer(amount);
-
-        emit ValidatorStakeWithdrawn(
+        // ✅ HIGH-001 FIX: Use .call{} instead of deprecated .transfer()
+        (bool success, ) = payable(msg.sender).call{value: amount}("");
+        require(success, "Stake withdrawal failed");
+        emit ValidatorStakeWithdrawn((
             msg.sender,
             amount,
             validatorStakes[msg.sender],

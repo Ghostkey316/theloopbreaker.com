@@ -352,13 +352,14 @@ contract VaultfireTeleporterBridge is ITeleporterReceiver {
     /**
      * @notice Send an agent registration to the remote chain.
      */
+    /// @custom:audit-fix HIGH-002 — Added onlyAuthorizedRelayer to prevent arbitrary trust-data injection (2026-02-23)
     function sendAgentRegistration(
         address agentAddress,
         string calldata agentURI,
         string calldata agentType,
         bytes32 capabilitiesHash,
         uint256 registeredAt
-    ) external whenNotPaused returns (uint256 nonce) {
+    ) external onlyAuthorizedRelayer whenNotPaused returns (uint256 nonce) {
         AgentRegistrationPayload memory payload = AgentRegistrationPayload({
             agentAddress: agentAddress,
             agentURI: agentURI,
@@ -372,6 +373,7 @@ contract VaultfireTeleporterBridge is ITeleporterReceiver {
     /**
      * @notice Send a partnership bond to the remote chain.
      */
+    /// @custom:audit-fix HIGH-002 — Added onlyAuthorizedRelayer
     function sendPartnershipBond(
         uint256 bondId,
         address human,
@@ -379,7 +381,7 @@ contract VaultfireTeleporterBridge is ITeleporterReceiver {
         string calldata purpose,
         uint256 createdAt,
         bool active
-    ) external whenNotPaused returns (uint256 nonce) {
+    ) external onlyAuthorizedRelayer whenNotPaused returns (uint256 nonce) {
         PartnershipBondPayload memory payload = PartnershipBondPayload({
             bondId: bondId,
             human: human,
@@ -394,6 +396,7 @@ contract VaultfireTeleporterBridge is ITeleporterReceiver {
     /**
      * @notice Send an accountability bond to the remote chain.
      */
+    /// @custom:audit-fix HIGH-002 — Added onlyAuthorizedRelayer
     function sendAccountabilityBond(
         uint256 bondId,
         address aiCompany,
@@ -402,7 +405,7 @@ contract VaultfireTeleporterBridge is ITeleporterReceiver {
         uint256 stakeAmount,
         uint256 createdAt,
         bool active
-    ) external whenNotPaused returns (uint256 nonce) {
+    ) external onlyAuthorizedRelayer whenNotPaused returns (uint256 nonce) {
         AccountabilityBondPayload memory payload = AccountabilityBondPayload({
             bondId: bondId,
             aiCompany: aiCompany,
@@ -418,13 +421,14 @@ contract VaultfireTeleporterBridge is ITeleporterReceiver {
     /**
      * @notice Send a reputation update to the remote chain.
      */
+    /// @custom:audit-fix HIGH-002 — Added onlyAuthorizedRelayer
     function sendReputation(
         address agentAddress,
         uint256 totalFeedbacks,
         uint256 averageRating,
         uint256 verifiedFeedbacks,
         uint256 lastUpdated
-    ) external whenNotPaused returns (uint256 nonce) {
+    ) external onlyAuthorizedRelayer whenNotPaused returns (uint256 nonce) {
         ReputationPayload memory payload = ReputationPayload({
             agentAddress: agentAddress,
             totalFeedbacks: totalFeedbacks,
@@ -438,6 +442,7 @@ contract VaultfireTeleporterBridge is ITeleporterReceiver {
     /**
      * @notice Send a validation status update to the remote chain.
      */
+    /// @custom:audit-fix HIGH-002 — Added onlyAuthorizedRelayer
     function sendValidation(
         uint256 requestId,
         address agentAddress,
@@ -445,7 +450,7 @@ contract VaultfireTeleporterBridge is ITeleporterReceiver {
         uint256 approvalsCount,
         uint256 rejectionsCount,
         uint256 timestamp
-    ) external whenNotPaused returns (uint256 nonce) {
+    ) external onlyAuthorizedRelayer whenNotPaused returns (uint256 nonce) {
         ValidationPayload memory payload = ValidationPayload({
             requestId: requestId,
             agentAddress: agentAddress,

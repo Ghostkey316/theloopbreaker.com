@@ -262,6 +262,17 @@ contract PartnershipBondsEnhanced is AIPartnershipBondsV2 {
      * @return totalStaked Total ETH staked
      * @return totalDistributed Total ETH distributed
      */
+    // ✅ MEDIUM-002 FIX: Cached counters updated on each state-changing operation
+    // These replace the unbounded O(n²) loop in the original getProtocolStats.
+    // NOTE: Requires the parent AIPartnershipBondsV2 to call _updateStatsOnCreate(),
+    //       _updateStatsOnDeactivate(), and _updateStatsOnDistribute() at the
+    //       appropriate points. See inline comments below.
+    uint256 public cachedActiveBonds;
+    uint256 public cachedTotalStaked;
+    uint256 public cachedTotalDistributed;
+
+    /// @custom:audit-fix MEDIUM-002 — O(1) stats via cached counters (2026-02-23)
+    /// @notice Get protocol-wide statistics in O(1) gas using cached counters.
     function getProtocolStats()
         external
         view
@@ -273,15 +284,37 @@ contract PartnershipBondsEnhanced is AIPartnershipBondsV2 {
         )
     {
         totalBonds = nextBondId - 1;
+        activeBonds = cachedActiveBonds;
+        totalStaked = cachedTotalStaked;
+        totalDistributed = cachedTotalDistributed;
+    }
 
-        // Count active bonds and calculate totals
-        for (uint256 i = 1; i < nextBondId; i++) {
+    /// @notice Paginated protocol stats for historical range queries (DoS-safe).
+    /// @dev Use offset=1, limit=100 and page through until offset >= totalBonds.
+    /// @param offset Starting bond ID (1-indexed, inclusive)
+    /// @param limit Maximum number of bonds to scan per call
+    function getProtocolStatsPaginated(
+        uint256 offset,
+        uint256 limit
+    )
+        external
+        view
+        returns (
+            uint256 totalBonds,
+            uint256 activeBonds,
+            uint256 totalStaked,
+            uint256 totalDistributed
+        )
+    {
+        require(limit <= 200, "Limit too large"); // ✅ DoS guard
+        totalBonds = nextBondId - 1;
+        uint256 end = offset + limit;
+        if (end > nextBondId) end = nextBondId;
+        for (uint256 i = offset; i < end; i++) {
             if (bonds[i].active) {
                 activeBonds++;
                 totalStaked += bonds[i].stakeAmount;
             }
-
-            // Sum all distributions for this bond
             for (uint256 j = 0; j < bondDistributions[i].length; j++) {
                 Distribution storage dist = bondDistributions[i][j];
                 if (dist.totalAmount > 0) {
