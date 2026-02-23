@@ -14,7 +14,7 @@ Our core philosophy is encapsulated in our values:
 
 > **Morals over metrics. Privacy over surveillance. Freedom over control.**
 
-The protocol is meticulously engineered to foster a symbiotic relationship where humans and AI thrive **together**, ensuring that the economic incentives are always aligned with human well-being and growth, making human thriving inherently more profitable than extractive practices. This commitment to a human-centric future is woven into every layer of the Vaultfire architecture.
+What HTTPS did for web security — making trust invisible and universal — Vaultfire is building for AI. It is the trust layer that every AI system can plug into, enabling humans to verify alignment without surveillance and AI to prove its integrity without compromising privacy. The protocol is meticulously engineered to foster a symbiotic relationship where humans and AI thrive **together**, ensuring that the economic incentives are always aligned with human well-being and growth, making human thriving inherently more profitable than extractive practices. This commitment to a human-centric future is woven into every layer of the Vaultfire architecture.
 
 ---
 
