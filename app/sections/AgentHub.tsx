@@ -122,6 +122,18 @@ function OverviewTab({ stats, loading, agents, setTab }: { stats: HubStats | nul
         />
       </div>
 
+      {/* x402 Payment Protocol Banner */}
+      <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-blue-500/5 border border-blue-500/10">
+        <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 flex-shrink-0">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        </div>
+        <div className="flex-1">
+          <span className="text-xs font-bold text-blue-400">x402 Payment Protocol</span>
+          <span className="text-[11px] text-zinc-500 ml-2">USDC payments on Base via EIP-3009 · Pay by .vns name or address</span>
+        </div>
+        <span className="text-[9px] font-bold uppercase tracking-widest text-blue-500/70 bg-blue-500/10 px-2 py-1 rounded-lg">Active</span>
+      </div>
+
       {/* On-Chain Data Source Badge */}
       <div className="flex items-center gap-2 px-1">
         <div className="flex items-center gap-1.5 text-[10px] text-emerald-500/80 font-bold uppercase tracking-widest">
@@ -162,6 +174,11 @@ function OverviewTab({ stats, loading, agents, setTab }: { stats: HubStats | nul
                     {agent.address.slice(0, 10)}...{agent.address.slice(-6)} on {agent.chain}
                   </div>
                 </div>
+                {agent.acceptsPayments !== false && (
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 px-2 py-1 rounded-lg" title="Accepts x402 payments">
+                    x402
+                  </span>
+                )}
                 {agent.bondTier && (
                   <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 bg-zinc-800 px-2 py-1 rounded-lg">
                     {agent.bondTier}

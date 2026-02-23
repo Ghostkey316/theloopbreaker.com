@@ -107,6 +107,12 @@ export interface VNSProfile {
   specializations?: string[];
   /** Agent capabilities */
   capabilities?: string[];
+  /** Whether this identity accepts x402 payments */
+  acceptsPayments?: boolean;
+  /** Payment address (defaults to identity address if not set) */
+  paymentAddress?: string;
+  /** Preferred payment currency (default: USDC) */
+  preferredCurrency?: string;
 }
 
 export interface VNSAvailability {
@@ -474,6 +480,9 @@ export async function resolveVNSName(fullName: string): Promise<VNSProfile | nul
         hasBond: localEntry.hasBond,
         specializations: localEntry.specializations,
         capabilities: localEntry.capabilities,
+        acceptsPayments: localEntry.acceptsPayments ?? true,
+        paymentAddress: localEntry.paymentAddress || localEntry.address,
+        preferredCurrency: localEntry.preferredCurrency || 'USDC',
       };
       setCache(name, profile);
       return profile;
@@ -482,6 +491,132 @@ export async function resolveVNSName(fullName: string): Promise<VNSProfile | nul
 
   setCache(name, null);
   return null;
+}
+
+/**
+ * Resolve a .vns name OR raw address to a payment address.
+ *
+ * Accepts:
+ *   - "vaultfire-sentinel" or "vaultfire-sentinel.vns" → resolves VNS name to payment address
+ *   - "0x1234...abcd" → returns the raw address as-is
+ *
+ * Returns the payment address (from VNS profile if available) or null if
+ * the name cannot be resolved.
+ */
+export async function resolvePaymentAddress(
+  nameOrAddress: string,
+): Promise<{ address: string; vnsName?: string; vnsProfile?: VNSProfile } | null> {
+  // Raw Ethereum address — return directly
+  if (/^0x[a-fA-F0-9]{40}$/.test(nameOrAddress)) {
+    // Try reverse-resolve to get VNS name
+    const profile = await getProfileByAddress(nameOrAddress);
+    if (profile) {
+      return {
+        address: profile.paymentAddress || profile.address,
+        vnsName: profile.fullName,
+        vnsProfile: profile,
+      };
+    }
+    return { address: nameOrAddress };
+  }
+
+  // Treat as VNS name
+  const vnsInput = nameOrAddress.endsWith(VNS_SUFFIX)
+    ? nameOrAddress
+    : `${nameOrAddress}${VNS_SUFFIX}`;
+
+  const profile = await resolveVNSName(vnsInput);
+  if (profile) {
+    return {
+      address: profile.paymentAddress || profile.address,
+      vnsName: profile.fullName,
+      vnsProfile: profile,
+    };
+  }
+
+  // Also check local registry directly (for names not yet on-chain confirmed)
+  const localRegistry = getLocalVNSRegistry();
+  const normalized = stripVNSSuffix(nameOrAddress).toLowerCase();
+  const localEntry = localRegistry[normalized];
+  if (localEntry) {
+    return {
+      address: localEntry.paymentAddress || localEntry.address,
+      vnsName: `${normalized}.vns`,
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Reverse-resolve an address to its VNS name for display purposes.
+ * Returns the .vns name if found, otherwise null.
+ */
+export async function reverseResolveVNS(address: string): Promise<string | null> {
+  const profile = await getProfileByAddress(address);
+  if (profile) return profile.fullName;
+
+  // Check local registry
+  const registry = getLocalVNSRegistry();
+  const addr = address.toLowerCase();
+  for (const [name, entry] of Object.entries(registry)) {
+    if (entry.address.toLowerCase() === addr) {
+      return `${name}.vns`;
+    }
+  }
+  return null;
+}
+
+/**
+ * Set payment preferences for a VNS identity.
+ * Updates the local registry with payment configuration.
+ */
+export function setPaymentPreferences(
+  vnsName: string,
+  preferences: {
+    acceptsPayments?: boolean;
+    paymentAddress?: string;
+    preferredCurrency?: string;
+  },
+): boolean {
+  const normalized = stripVNSSuffix(vnsName).toLowerCase();
+  const registry = getLocalVNSRegistry();
+  const entry = registry[normalized];
+  if (!entry) return false;
+
+  if (preferences.acceptsPayments !== undefined) {
+    entry.acceptsPayments = preferences.acceptsPayments;
+  }
+  if (preferences.paymentAddress !== undefined) {
+    entry.paymentAddress = preferences.paymentAddress;
+  }
+  if (preferences.preferredCurrency !== undefined) {
+    entry.preferredCurrency = preferences.preferredCurrency;
+  }
+
+  registry[normalized] = entry;
+  storageSet(LOCAL_REGISTRY_KEY, JSON.stringify(registry));
+
+  // Invalidate cache
+  setCache(normalized, null);
+  return true;
+}
+
+/**
+ * Get all agents that accept x402 payments.
+ * Returns agents from the local registry that have payment capabilities.
+ */
+export function getPaymentCapableAgents(): RegisteredAgent[] {
+  return getKnownAgents().filter(a => {
+    // All registered agents with bonds accept payments by default
+    if (a.acceptsPayments === false) return false;
+    return true;
+  }).map(a => ({
+    ...a,
+    acceptsPayments: a.acceptsPayments ?? true,
+    paymentAddress: a.paymentAddress || a.address,
+    preferredCurrency: a.preferredCurrency || 'USDC',
+  }));
 }
 
 export async function checkVNSAvailability(name: string): Promise<VNSAvailability> {
@@ -519,6 +654,12 @@ interface LocalVNSEntry {
   specializations?: string[];
   capabilities?: string[];
   humanVNS?: string;
+  /** Whether this identity accepts x402 payments */
+  acceptsPayments?: boolean;
+  /** Payment address (defaults to identity address if not set) */
+  paymentAddress?: string;
+  /** Preferred payment currency (default: USDC) */
+  preferredCurrency?: string;
 }
 
 const LOCAL_REGISTRY_KEY = 'vaultfire_vns_registry';
@@ -1064,6 +1205,12 @@ export interface RegisteredAgent {
   capabilities?: string[];
   tasksCompleted?: number;
   trustScore?: number;
+  /** Whether this agent accepts x402 payments */
+  acceptsPayments?: boolean;
+  /** Payment address (defaults to agent address if not set) */
+  paymentAddress?: string;
+  /** Preferred payment currency (default: USDC) */
+  preferredCurrency?: string;
 }
 
 /* ── On-Chain Agent Discovery ── */
@@ -1246,6 +1393,9 @@ export async function getOnChainAgents(): Promise<RegisteredAgent[]> {
       capabilities: entry.capabilities,
       tasksCompleted: 0,
       trustScore: 50,
+      acceptsPayments: entry.acceptsPayments ?? true,
+      paymentAddress: entry.paymentAddress || entry.address,
+      preferredCurrency: entry.preferredCurrency || 'USDC',
     }));
 
   // Deduplicate: on-chain data takes precedence
@@ -1272,6 +1422,9 @@ export function getKnownAgents(): RegisteredAgent[] {
       capabilities: entry.capabilities,
       tasksCompleted: 0,
       trustScore: 50,
+      acceptsPayments: entry.acceptsPayments ?? true,
+      paymentAddress: entry.paymentAddress || entry.address,
+      preferredCurrency: entry.preferredCurrency || 'USDC',
     }));
 }
 
