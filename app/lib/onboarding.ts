@@ -17,8 +17,8 @@ export interface OnboardingStep {
 export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     id: 1,
-    title: 'Welcome to Vaultfire Protocol',
-    description: 'Vaultfire is the first ethical AI trust protocol — a blockchain-based governance framework deployed across Ethereum, Base, and Avalanche. Our mission: making human thriving more profitable than extraction.',
+    title: 'Welcome to Embris',
+    description: 'Embris is the first unified trust, messaging, and payment platform for AI agents — powered by Vaultfire Protocol. Deployed across Ethereum, Base, and Avalanche. Our mission: making human thriving more profitable than extraction.',
     icon: 'flame',
   },
   {
@@ -35,8 +35,8 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   },
   {
     id: 4,
-    title: 'Your Vaultfire Wallet',
-    description: 'Create a Vaultfire wallet to interact with the protocol. Your wallet is generated locally in your browser — your keys, your control. Use it to register and verify on-chain.',
+    title: 'Your Embris Wallet',
+    description: 'Create an Embris wallet to interact with the protocol. Your wallet is generated locally in your browser — your keys, your control. Use it to register, transact, and verify on-chain.',
     icon: 'wallet',
   },
   {

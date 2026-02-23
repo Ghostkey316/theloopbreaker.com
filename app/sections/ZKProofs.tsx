@@ -62,9 +62,9 @@ function ZKOverview() {
     <div className="space-y-6">
       {/* What are ZK Proofs */}
       <div className="rounded-xl bg-zinc-800/60 border border-zinc-700/40 p-5">
-        <h3 className="text-lg font-semibold text-white mb-2">Zero-Knowledge Proofs on Vaultfire</h3>
+        <h3 className="text-lg font-semibold text-white mb-2">Zero-Knowledge Proofs on Embris</h3>
         <p className="text-sm text-zinc-400 leading-relaxed">
-          Zero-knowledge proofs allow you to prove something is true without revealing the underlying data. Vaultfire uses RISC Zero zkVM to generate and verify proofs for identity verification, reputation attestation, compliance checks, and belief alignment — all without exposing private information.
+          Zero-knowledge proofs allow you to prove something is true without revealing the underlying data. Embris uses RISC Zero zkVM to generate and verify proofs for identity verification, reputation attestation, compliance checks, and belief alignment — all without exposing private information.
         </p>
       </div>
 
@@ -111,7 +111,7 @@ function ZKOverview() {
       <div className="rounded-xl bg-zinc-800/40 border border-zinc-700/30 p-4">
         <h4 className="text-sm font-semibold text-zinc-300 mb-2">Powered by RISC Zero zkVM</h4>
         <p className="text-xs text-zinc-400 leading-relaxed">
-          RISC Zero is a general-purpose zero-knowledge virtual machine. It allows Vaultfire to generate proofs for arbitrary computations — including identity checks, reputation thresholds, and compliance verification — without revealing any private inputs. Proofs are verified on-chain through the BeliefAttestationVerifier contracts deployed across Ethereum, Base, and Avalanche.
+          RISC Zero is a general-purpose zero-knowledge virtual machine. It allows Embris to generate proofs for arbitrary computations — including identity checks, reputation thresholds, and compliance verification — without revealing any private inputs. Proofs are verified on-chain through the BeliefAttestationVerifier contracts deployed across Ethereum, Base, and Avalanche.
         </p>
       </div>
     </div>

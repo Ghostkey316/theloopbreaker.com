@@ -99,7 +99,7 @@ const SUGGESTED_PROMPTS_REGISTERED = [
 
 const SUGGESTED_PROMPTS_UNREGISTERED = [
   'What is ERC-8004?',
-  'Tell me about Vaultfire',
+  'Tell me about Embris',
   'Show me the Base contracts',
   'What can you do?',
   'How does the protocol work?',
@@ -1327,7 +1327,7 @@ export default function Chat() {
                 <p style={{ fontSize: 14, color: '#3F3F46', lineHeight: 1.6 }}>
                   {registered
                     ? 'Your self-learning companion — I remember, reflect, grow, and track your goals'
-                    : 'Your AI companion for the Vaultfire Protocol — register on-chain to unlock my full potential'
+                    : 'Your AI companion for Embris — register on-chain to unlock my full potential'
                   }
                 </p>
                 {voiceEnabled && (

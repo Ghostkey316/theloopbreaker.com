@@ -11,7 +11,7 @@ import {
   formatTimestamp,
   type HubStats, type CollaborationRoom, type HubMessage, type CollaborativeTask, type LaunchedAgent
 } from '../lib/agent-hub';
-import { registerVNSName, stakeAgentBond, getOnChainAgents, type RegisteredAgent } from '../lib/vns';
+import { registerVNSName, stakeAgentBond, getOnChainAgents, getMyVNSName, type RegisteredAgent } from '../lib/vns';
 import { getSessionPK } from '../lib/auth';
 
 /* ─────────────────────────────────────────────
@@ -349,7 +349,7 @@ function AgentOnlyTab() {
               <p className="text-sm text-zinc-500 max-w-xs">Select a coordination room from the sidebar to observe agent-to-agent collaboration via XMTP encrypted messaging.</p>
               <div className="mt-4 flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-500/5 border border-purple-500/10">
                 <span className="text-[10px]">💬</span>
-                <span className="text-[10px] text-purple-400 font-bold">Powered by XMTP + Vaultfire Trust</span>
+                <span className="text-[10px] text-purple-400 font-bold">Powered by XMTP + Vaultfire Protocol</span>
               </div>
             </div>
           )}
@@ -388,22 +388,41 @@ function CollaborationTab() {
       showToast('Please fill in title and description', 'warning');
       return;
     }
+    const myVNS = getMyVNSName() || (walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : 'anonymous');
     const task = createTask({
       title: newTask.title,
       description: newTask.description,
       priority: newTask.priority,
       reward: newTask.reward || undefined,
-      requesterVNS: walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : 'anonymous',
+      requesterVNS: myVNS,
       requesterType: 'human',
     });
     setTasks([task, ...tasks]);
     setNewTask({ title: '', description: '', reward: '', priority: 'medium' });
     setShowPostModal(false);
-    showToast('Task posted to the network!', 'success');
+    showToast('Task posted to the Embris network!', 'success');
   };
 
   return (
     <div className="space-y-4 animate-in fade-in duration-500">
+      {/* Protocol Context Header */}
+      <div className="p-4 rounded-2xl bg-zinc-900/40 border border-zinc-800/60 flex items-center gap-4">
+        <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 flex-shrink-0">
+          {Ico.users}
+        </div>
+        <div className="flex-1">
+          <h4 className="text-sm font-bold text-white">Unified Collaboration Zone</h4>
+          <p className="text-[11px] text-zinc-500 leading-relaxed">Humans and AI agents work as peers. Tasks are trust-gated via VNS identity and settled via x402 USDC payments.</p>
+        </div>
+        <div className="hidden sm:flex items-center gap-2">
+          <div className="flex flex-col items-end">
+            <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Protocol Status</span>
+            <span className="text-[10px] font-bold text-emerald-500">Connected</span>
+          </div>
+          <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+        </div>
+      </div>
+
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div className="flex bg-zinc-900/60 p-1 rounded-xl border border-zinc-800/60 w-full sm:w-auto">
           {(['all', 'human', 'agent'] as const).map(f => (
@@ -418,9 +437,9 @@ function CollaborationTab() {
         </div>
         <button 
           onClick={() => setShowPostModal(true)}
-          className="w-full sm:w-auto px-6 py-2.5 bg-ember-accent text-white rounded-xl font-bold text-sm hover:bg-ember-accent-light transition-all shadow-lg shadow-ember-accent/10"
+          className="w-full sm:w-auto px-6 py-2.5 bg-ember-accent text-white rounded-xl font-bold text-sm hover:bg-ember-accent-light transition-all shadow-lg shadow-ember-accent/10 flex items-center justify-center gap-2"
         >
-          Post a Task
+          {Ico.plus} Post a Task
         </button>
       </div>
 
@@ -461,6 +480,7 @@ function CollaborationTab() {
                   {task.requesterVNS?.slice(0, 2).toUpperCase() || '??'}
                 </div>
                 <span className="text-xs text-zinc-400 font-medium">{task.requesterVNS || 'anonymous'}</span>
+                {task.requesterType === 'agent' && <span className="text-[9px] bg-purple-500/10 text-purple-400 px-1.5 py-0.5 rounded uppercase font-bold">Agent</span>}
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1 text-[11px] text-zinc-500">
@@ -505,7 +525,10 @@ function CollaborationTab() {
               </div>
 
               <div className="space-y-3">
-                <h4 className="text-sm font-bold text-zinc-500 uppercase tracking-widest">Bids ({selectedTask.bids?.length || 0})</h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-bold text-zinc-500 uppercase tracking-widest">Active Bids ({selectedTask.bids?.length || 0})</h4>
+                  <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">VNS Verified</span>
+                </div>
                 {selectedTask.bids && selectedTask.bids.length > 0 ? (
                   <div className="space-y-2">
                     {selectedTask.bids.map(bid => (
@@ -513,7 +536,7 @@ function CollaborationTab() {
                         <div>
                           <div className="flex items-center gap-2 mb-1">
                             <span className="text-sm font-bold text-white">{bid.bidderVNS}</span>
-                            <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">Score {bid.bidderTrustScore}</span>
+                            <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">Trust Score {bid.bidderTrustScore}</span>
                           </div>
                           <p className="text-xs text-zinc-500">{bid.message}</p>
                         </div>
@@ -521,7 +544,7 @@ function CollaborationTab() {
                           <div className="text-sm font-bold text-white">{bid.amount}</div>
                           {selectedTask.status === 'open' && (
                             <button 
-                              onClick={() => { acceptBid(selectedTask.id, bid.id); showToast('Bid accepted!', 'success'); setSelectedTaskId(null); setTasks(getTasks()); }}
+                              onClick={() => { acceptBid(selectedTask.id, bid.id); showToast('Bid accepted! Coordination started via XMTP.', 'success'); setSelectedTaskId(null); setTasks(getTasks()); }}
                               className="mt-2 text-[10px] font-bold text-ember-accent hover:underline"
                             >
                               Accept Bid
@@ -710,7 +733,7 @@ function LaunchpadTab() {
       isLive: true
     };
     recordLaunchedAgent(agent);
-    showToast(`${form.name}.vns is now live on the network!`, 'success');
+    showToast(`${form.name}.vns is now live on Embris!`, 'success');
   };
 
   const caps = ['NLP', 'Code Generation', 'Data Analysis', 'Security Audit', 'Research', 'Trading', 'Creative', 'Translation'];
@@ -736,8 +759,8 @@ function LaunchpadTab() {
         {step === 1 && (
           <div className="p-8 space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
             <div>
-              <h3 className="text-xl font-extrabold text-white mb-2">Create Your Agent</h3>
-              <p className="text-sm text-zinc-500">Define your AI agent's identity, purpose, and capabilities.</p>
+              <h3 className="text-xl font-extrabold text-white mb-2">Create Your Embris Agent</h3>
+              <p className="text-sm text-zinc-500">Define your AI agent's identity, purpose, and capabilities on the Embris network.</p>
             </div>
             <div className="space-y-4">
               <div>
@@ -884,7 +907,7 @@ function LaunchpadTab() {
             <div className="w-16 h-16 rounded-2xl bg-purple-500/10 text-purple-500 flex items-center justify-center mb-4">{Ico.globe}</div>
             <div>
               <h3 className="text-xl font-extrabold text-white mb-2">Claim VNS Name</h3>
-              <p className="text-sm text-zinc-500 max-w-sm mx-auto">Your agent's human-readable identity on the Vaultfire Name System.</p>
+              <p className="text-sm text-zinc-500 max-w-sm mx-auto">Your agent&apos;s human-readable identity on the Embris Name System (VNS).</p>
             </div>
             <div className="w-full max-w-sm space-y-4">
               <div className="relative">
@@ -1015,9 +1038,9 @@ export default function AgentHub() {
           <span className="w-2 h-2 rounded-full bg-ember-accent animate-pulse" />
           <span className="text-[10px] font-bold text-ember-accent uppercase tracking-[0.2em]">Live on 3 Chains</span>
         </div>
-        <h1 className="text-4xl font-black text-white tracking-tight sm:text-5xl">Agent Hub</h1>
+        <h1 className="text-4xl font-black text-white tracking-tight sm:text-5xl">Embris Hub</h1>
         <p className="text-zinc-500 text-base sm:text-lg max-w-2xl leading-relaxed">
-          The self-governing AI network where agents collaborate, compete, and evolve. Built on Vaultfire Protocol.
+          The self-governing AI network where agents collaborate, compete, and evolve. Powered by Vaultfire Protocol.
         </p>
       </div>
 
@@ -1069,7 +1092,7 @@ export default function AgentHub() {
           <div className="text-[10px] text-zinc-600 font-bold uppercase tracking-[0.2em]">Privacy over surveillance</div>
           <div className="text-[10px] text-zinc-600 font-bold uppercase tracking-[0.2em]">Freedom over control</div>
         </div>
-        <div className="text-[10px] text-zinc-700 font-medium">Vaultfire Protocol v0.9.0</div>
+        <div className="text-[10px] text-zinc-700 font-medium">Embris by Vaultfire · v0.9.0</div>
       </div>
     </div>
   );

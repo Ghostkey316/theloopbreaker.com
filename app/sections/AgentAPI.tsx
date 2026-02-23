@@ -1,6 +1,6 @@
 "use client";
 /**
- * AgentAPI — API/SDK Reference for developers integrating with Vaultfire.
+ * Embris API — API/SDK Reference for developers integrating with Embris by Vaultfire.
  *
  * Includes:
  * - Real API endpoints (Next.js API routes)
@@ -651,23 +651,23 @@ def premium_data():
   ];
 
   const tabs = [
-    { id: "quickstart" as const, label: "Quick Start" },
-    { id: "endpoints" as const, label: "Endpoints" },
-    { id: "x402" as const, label: "x402" },
-    { id: "xmtp" as const, label: "XMTP" },
+    { id: "quickstart" as const, label: "Quickstart" },
+    { id: "endpoints" as const, label: "API Endpoints" },
     { id: "contracts" as const, label: "Contracts" },
-    { id: "sdk" as const, label: "SDK" },
+    { id: "sdk" as const, label: "Agent SDK" },
+    { id: "xmtp" as const, label: "XMTP / Messaging" },
+    { id: "x402" as const, label: "x402 / Payments" },
   ];
 
   return (
-    <div style={{ padding: isMobile ? 16 : 32, maxWidth: 900, margin: "0 auto" }}>
+    <div style={{ padding: isMobile ? 16 : 32, maxWidth: 1000, margin: "0 auto" }}>
       {/* Header */}
       <div style={{ marginBottom: 24, paddingLeft: isMobile ? 48 : 0 }}>
         <h2 style={{ fontSize: isMobile ? 22 : 26, fontWeight: 800, color: "#F4F4F5", margin: 0, letterSpacing: -0.5 }}>
-          Agent API / SDK
+          Embris Developer API & SDK
         </h2>
         <p style={{ fontSize: 13, color: "#71717A", margin: "6px 0 0" }}>
-          Integrate with Vaultfire Protocol — register agents, stake bonds, message via XMTP, and build on the trust network
+          Integrate your AI agents with Embris by Vaultfire for identity, trust, and payments.
         </p>
       </div>
 
@@ -1010,14 +1010,14 @@ await agent.start();`} />
 
           {/* Python XMTP Integration */}
           <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5", marginBottom: 4 }}>Python Agent with XMTP + Vaultfire</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5", marginBottom: 4 }}>Python Agent with XMTP + Embris</div>
             <div style={{ fontSize: 12, color: "#71717A", marginBottom: 10 }}>
               Verify trust via the REST API before responding to XMTP messages
             </div>
             <CodeBlock language="python" code={`import requests
 
-def verify_vaultfire_trust(sender_address: str, min_tier: str = "bronze") -> bool:
-    """Check if an XMTP sender is a trusted Vaultfire agent."""
+def verify_embriss_trust(sender_address: str, min_tier: str = "bronze") -> bool:
+    """Check if an XMTP sender is a trusted Embris agent."""
     resp = requests.get(
         "https://theloopbreaker.com/api/agent/status",
         params={"address": sender_address, "chain": "base"}
@@ -1038,8 +1038,8 @@ def verify_vaultfire_trust(sender_address: str, min_tier: str = "bronze") -> boo
 
 # In your XMTP message handler:
 def handle_message(sender_address: str, content: str):
-    if not verify_vaultfire_trust(sender_address, "bronze"):
-        return "You need a Vaultfire bond to interact with me."
+    if not verify_embriss_trust(sender_address, "bronze"):
+        return "You need an Embris bond to interact with me."
 
     # Process trusted message
     return f"Verified agent. Processing: {content}"`} />

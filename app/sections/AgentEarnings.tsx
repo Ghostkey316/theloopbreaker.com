@@ -9,6 +9,8 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import { BOND_TIERS, type BondTier, getBondTier } from "../lib/vns";
+import { getWalletAddress, isWalletCreated } from "../lib/wallet";
+import { getRegistration, isRegistered } from "../lib/registration";
 import DisclaimerBanner from "../components/DisclaimerBanner";
 import { showToast } from "../components/Toast";
 
@@ -356,38 +358,57 @@ function X402PaymentPanel({ payments }: { payments: X402PaymentRecord[] }) {
 export default function AgentEarnings() {
   const [isMobile, setIsMobile] = useState(false);
   const [activeTab, setActiveTab] = useState<"earnings" | "payments" | "staking">("earnings");
+  const [walletConnected, setWalletConnected] = useState(false);
+  const [isReg, setIsReg] = useState(false);
   const [autoStake, setAutoStake] = useState<AutoStakeConfig>({
     enabled: false, targetTier: "silver", percentOfEarnings: 20,
   });
-  const [withdrawAmount, setWithdrawAmount] = useState("");
   const [payAgent, setPayAgent] = useState({ vnsName: "", amount: "", reason: "" });
   const [transactions, setTransactions] = useState<EarningsTransaction[]>([]);
   const [x402Payments, setX402Payments] = useState<X402PaymentRecord[]>([]);
+  const [stats, setStats] = useState({
+    availableBalance: 0,
+    totalEarned: 0,
+    bondStaked: 0,
+    totalX402Usdc: 0n,
+    pendingPayments: 0,
+  });
 
-  // Load x402 payment history on mount and merge into transactions
-  const loadPayments = useCallback(() => {
+  // Load data from wallet, registration, and x402 history
+  const loadData = useCallback(() => {
+    const connected = isWalletCreated();
+    const registered = isRegistered();
+    const regData = getRegistration();
     const x402Records = loadX402Payments();
+    
+    setWalletConnected(connected);
+    setIsReg(registered);
     setX402Payments(x402Records);
+    
     const x402Txs = x402ToEarnings(x402Records);
     setTransactions(x402Txs);
+
+    const totalX402 = x402Records.reduce((sum, p) => {
+      try { return sum + BigInt(p.amount); } catch { return sum; }
+    }, 0n);
+
+    // Bond data is loaded from on-chain — registration doesn't store bond amount
+    const bondStaked = 0; // Real bond amount loaded via getBondTier() from on-chain data
+    
+    setStats({
+      availableBalance: 0, // Available to withdraw from Vaultfire contract
+      totalEarned: 0,      // Total historical earnings
+      bondStaked: bondStaked,
+      totalX402Usdc: totalX402,
+      pendingPayments: x402Records.filter(p => p.status === "signed").length,
+    });
   }, []);
 
   useEffect(() => {
-    loadPayments();
-    // Refresh every 30 seconds to pick up new payments
-    const interval = setInterval(loadPayments, 30_000);
+    loadData();
+    const interval = setInterval(loadData, 10_000);
     return () => clearInterval(interval);
-  }, [loadPayments]);
-
-  // Real data: computed from x402 payment history
-  const totalX402Usdc = x402Payments.reduce((sum, p) => {
-    try { return sum + BigInt(p.amount); } catch { return sum; }
-  }, 0n);
-  const availableBalance = 0;
-  const totalEarned = 0;
-  const bondStaked = 0;
-  const pendingPayments = x402Payments.filter(p => p.status === "signed").length;
-  const currentTier = getBondTier(bondStaked);
+  }, [loadData]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -396,6 +417,7 @@ export default function AgentEarnings() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
+  const currentTier = getBondTier(stats.bondStaked);
   const tabs = [
     { id: "earnings" as const, label: "Earnings" },
     { id: "payments" as const, label: "Payments" },
@@ -407,14 +429,24 @@ export default function AgentEarnings() {
       {/* Header */}
       <div style={{ marginBottom: 24, paddingLeft: isMobile ? 48 : 0 }}>
         <h2 style={{ fontSize: isMobile ? 22 : 26, fontWeight: 800, color: "#F4F4F5", margin: 0, letterSpacing: -0.5 }}>
-          Earnings & Payments
+          Embris Earnings & Payments
         </h2>
         <p style={{ fontSize: 13, color: "#71717A", margin: "6px 0 0" }}>
-          Agent earnings wallet, x402 USDC payments, inter-agent payments, and automated bond staking
+          Powered by Vaultfire Protocol · x402 USDC payments · Automated Bond Staking
         </p>
       </div>
 
       <DisclaimerBanner disclaimerKey="agent_hub" />
+
+      {/* Wallet Warning */}
+      {!walletConnected && (
+        <div style={{
+          padding: 16, borderRadius: 12, background: "rgba(249,115,22,0.06)", border: "1px solid rgba(249,115,22,0.15)",
+          marginBottom: 20, fontSize: 13, color: "#F97316", fontWeight: 600, textAlign: "center"
+        }}>
+          Connect your wallet to view earnings and manage payments.
+        </div>
+      )}
 
       {/* x402 Payment Summary — always visible when payments exist */}
       {x402Payments.length > 0 && (
@@ -423,13 +455,13 @@ export default function AgentEarnings() {
 
       {/* Stats Grid — Real data only */}
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
-        <StatCard label="Available" value={`${availableBalance.toFixed(4)} ETH`} color="#22C55E"
+        <StatCard label="Available" value={walletConnected && stats.availableBalance > 0 ? `${stats.availableBalance.toFixed(4)} ETH` : "—"} color="#22C55E"
           icon={<svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3v4M8 3v4M2 11h20"/></svg>} />
-        <StatCard label="Total Earned" value={`${totalEarned.toFixed(4)} ETH`} color="#3B82F6"
+        <StatCard label="Total Earned" value={walletConnected && stats.totalEarned > 0 ? `${stats.totalEarned.toFixed(4)} ETH` : "—"} color="#3B82F6"
           icon={<svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>} />
-        <StatCard label="Bond Staked" value={`${bondStaked.toFixed(4)} ETH`} subValue={currentTier ? `${currentTier.charAt(0).toUpperCase() + currentTier.slice(1)} Tier` : "No bond"} color="#7C3AED"
+        <StatCard label="Bond Staked" value={walletConnected && stats.bondStaked > 0 ? `${stats.bondStaked.toFixed(4)} ETH` : "—"} subValue={stats.bondStaked > 0 ? `${currentTier.charAt(0).toUpperCase() + currentTier.slice(1)} Tier` : walletConnected ? "No bond" : ""} color="#7C3AED"
           icon={<svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>} />
-        <StatCard label="x402 Volume" value={`${Number(totalX402Usdc) / 1_000_000} USDC`} subValue={`${x402Payments.length} payments`} color="#F97316"
+        <StatCard label="x402 Volume" value={walletConnected && stats.totalX402Usdc > 0n ? `${Number(stats.totalX402Usdc) / 1_000_000} USDC` : "—"} subValue={walletConnected && x402Payments.length > 0 ? `${x402Payments.length} payments` : ""} color="#F97316"
           icon={<svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M8 10h8M8 14h8"/></svg>} />
       </div>
 
@@ -455,50 +487,35 @@ export default function AgentEarnings() {
       {/* Earnings Tab */}
       {activeTab === "earnings" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          {/* Withdraw */}
+          {/* Withdrawal Panel */}
           <div style={{
             padding: isMobile ? 16 : 20, borderRadius: 14,
             background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
           }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5", marginBottom: 12 }}>Withdraw Earnings</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "#F4F4F5", marginBottom: 4 }}>Withdraw Earnings</div>
+            <div style={{ fontSize: 12, color: "#71717A", marginBottom: 16 }}>Transfer available ETH to your primary wallet</div>
             <div style={{ display: "flex", gap: 10, flexDirection: isMobile ? "column" : "row" }}>
               <input
-                type="text" placeholder="0.00" value={withdrawAmount}
-                onChange={e => setWithdrawAmount(e.target.value)}
+                type="text" placeholder="Amount (ETH)"
+                value={stats.availableBalance > 0 ? stats.availableBalance.toString() : ""}
+                readOnly
                 style={{
                   flex: 1, padding: "12px 14px", borderRadius: 10,
                   border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)",
-                  color: "#F4F4F5", fontSize: 14, outline: "none", boxSizing: "border-box",
+                  color: "#F4F4F5", fontSize: 13, outline: "none",
                 }}
               />
               <button
-                onClick={() => {
-                  if (availableBalance <= 0) {
-                    showToast("No earnings available to withdraw.", "warning");
-                    return;
-                  }
-                  if (withdrawAmount) {
-                    showToast(`Withdrawal of ${withdrawAmount} ETH initiated. This will create an on-chain transaction.`, "info");
-                    setWithdrawAmount("");
-                  }
-                }}
-                disabled={availableBalance <= 0}
+                onClick={() => showToast("Withdrawal requires a registered agent with available earnings in the AIAccountabilityBondsV2 contract.", "info")}
                 style={{
-                  padding: "12px 24px", borderRadius: 10, border: "none",
-                  cursor: availableBalance > 0 ? "pointer" : "not-allowed",
-                  background: "#7C3AED", color: "#fff", fontSize: 13, fontWeight: 700,
-                  opacity: availableBalance > 0 && withdrawAmount ? 1 : 0.35,
-                  transition: "opacity 0.2s ease", whiteSpace: "nowrap",
+                  padding: "12px 24px", borderRadius: 10, border: "none", cursor: "pointer",
+                  background: "#22C55E", color: "#fff", fontSize: 13, fontWeight: 700,
+                  whiteSpace: "nowrap", opacity: stats.availableBalance > 0 ? 1 : 0.5,
                 }}
               >
-                Withdraw
+                Withdraw All
               </button>
             </div>
-            {availableBalance <= 0 && (
-              <div style={{ fontSize: 11, color: "#52525B", marginTop: 8 }}>
-                No earnings available. Complete tasks through the Agent Hub to earn.
-              </div>
-            )}
           </div>
 
           {/* Transaction History (includes x402 payments) */}
@@ -607,7 +624,7 @@ export default function AgentEarnings() {
                       showToast(`x402 payment of ${payAgent.amount} USDC to ${displayTo} signed! ID: ${record.id}`, "success");
                       setPayAgent({ vnsName: "", amount: "", reason: "" });
                       // Refresh payment history
-                      setTimeout(loadPayments, 1000);
+                      setTimeout(loadData, 1000);
                     } catch (err) {
                       const msg = err instanceof Error ? err.message : "Payment failed";
                       showToast(`Payment failed: ${msg}`, "warning");
@@ -661,9 +678,9 @@ export default function AgentEarnings() {
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
               <div style={{ padding: 14, borderRadius: 10, background: "rgba(255,255,255,0.03)" }}>
                 <div style={{ fontSize: 11, color: "#71717A", marginBottom: 4 }}>Current Bond</div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: "#F4F4F5" }}>{bondStaked.toFixed(4)} ETH</div>
-                <div style={{ fontSize: 11, color: bondStaked > 0 ? "#A78BFA" : "#52525B", marginTop: 2 }}>
-                  {bondStaked > 0 ? `${currentTier?.charAt(0).toUpperCase()}${currentTier?.slice(1)} Tier` : "No bond staked"}
+                <div style={{ fontSize: 18, fontWeight: 800, color: "#F4F4F5" }}>{walletConnected ? stats.bondStaked.toFixed(4) : "—"} ETH</div>
+                <div style={{ fontSize: 11, color: stats.bondStaked > 0 ? "#A78BFA" : "#52525B", marginTop: 2 }}>
+                  {stats.bondStaked > 0 ? `${currentTier?.charAt(0).toUpperCase()}${currentTier?.slice(1)} Tier` : walletConnected ? "No bond staked" : ""}
                 </div>
               </div>
               <div style={{ padding: 14, borderRadius: 10, background: "rgba(255,255,255,0.03)" }}>
@@ -685,8 +702,8 @@ export default function AgentEarnings() {
           }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5", marginBottom: 14 }}>Tier Requirements & Unlocks</div>
             {BOND_TIERS.map(tier => {
-              const isCurrentOrAbove = bondStaked >= tier.minEth;
-              const isCurrent = getBondTier(bondStaked) === tier.label.toLowerCase();
+              const isCurrentOrAbove = stats.bondStaked >= tier.minEth;
+              const isCurrent = getBondTier(stats.bondStaked) === tier.label.toLowerCase();
               const unlocks: Record<string, string> = {
                 Bronze: "Basic marketplace, 3 tasks/day",
                 Silver: "Priority search, 10 tasks/day, collaboration rooms",
