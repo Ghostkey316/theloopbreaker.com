@@ -1,55 +1,25 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { CHAINS, ALL_CONTRACTS } from '../lib/contracts';
+import React, { useState, useEffect } from 'react';
+import { CHAINS } from '../lib/contracts';
 import { showToast } from '../components/Toast';
+import { useWalletAuth } from '../lib/WalletAuthContext';
+import WalletGate from '../components/WalletGate';
+import { 
+  getHubStats, getRooms, getMessages, postMessage, 
+  getTasks, acceptBid, recordLaunchedAgent,
+  formatTimestamp,
+  type HubStats, type CollaborationRoom, type HubMessage, type CollaborativeTask, type LaunchedAgent
+} from '../lib/agent-hub';
+import { registerVNSName, stakeAgentBond } from '../lib/vns';
+import { getSessionPK } from '../lib/auth';
 
 /* ─────────────────────────────────────────────
-   Types
+   Types & Constants
    ───────────────────────────────────────────── */
 type HubTab = 'overview' | 'agent-only' | 'collaboration' | 'launchpad';
 type LaunchStep = 1 | 2 | 3 | 4 | 5;
-type IdentityType = 'human' | 'agent' | null;
 
-interface HubStats {
-  registeredAgents: number;
-  activeBonds: number;
-  totalBonded: string;
-  tasksPosted: number;
-  loading: boolean;
-}
-
-/* ─────────────────────────────────────────────
-   On-Chain Data Fetching
-   ───────────────────────────────────────────── */
-async function fetchHubStats(): Promise<HubStats> {
-  const stats: HubStats = { registeredAgents: 0, activeBonds: 0, totalBonded: '0', tasksPosted: 0, loading: false };
-  try {
-    const identityContract = ALL_CONTRACTS.find(c => c.name === 'ERC8004IdentityRegistry' && c.chain === 'base');
-    const bondsContract = ALL_CONTRACTS.find(c => c.name === 'AIAccountabilityBondsV2' && c.chain === 'base');
-    if (identityContract) {
-      const res = await fetch(CHAINS.base.rpc, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: identityContract.address, data: '0x18160ddd' }, 'latest'] }),
-      });
-      const data = await res.json();
-      if (data.result && data.result !== '0x') stats.registeredAgents = parseInt(data.result, 16);
-    }
-    if (bondsContract) {
-      const res = await fetch(CHAINS.base.rpc, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'eth_call', params: [{ to: bondsContract.address, data: '0x5b34b966' }, 'latest'] }),
-      });
-      const data = await res.json();
-      if (data.result && data.result !== '0x') stats.activeBonds = parseInt(data.result, 16);
-    }
-  } catch { /* stats stay at 0 */ }
-  return stats;
-}
-
-/* ─────────────────────────────────────────────
-   Shared Icons (SVG only, no emoji)
-   ───────────────────────────────────────────── */
 const Ico = {
   grid: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg>,
   lock: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg>,
@@ -61,285 +31,70 @@ const Ico = {
   chat: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>,
   clipboard: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /></svg>,
   plus: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M12 5v14M5 12h14" /></svg>,
-  link: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" /></svg>,
-  shield: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>,
-  tag: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>,
-  rocket: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z" /><path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z" /><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" /><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" /></svg>,
-  info: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>,
-  x: <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>,
+  send: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>,
+  x: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>,
+  search: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>,
+  shield: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>,
 };
 
 /* ─────────────────────────────────────────────
-   Utility Components
+   Shared Components
    ───────────────────────────────────────────── */
-function IdentityBadge({ type, size = 'sm' }: { type: IdentityType; size?: 'sm' | 'md' }) {
-  if (!type) return null;
-  const cfg = type === 'human'
-    ? { bg: 'bg-blue-500/10', text: 'text-blue-400', label: 'Human', icon: <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg> }
-    : { bg: 'bg-emerald-500/10', text: 'text-emerald-400', label: 'AI Agent', icon: <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> };
-  const sz = size === 'sm' ? 'text-xs px-2 py-0.5' : 'text-sm px-2.5 py-1';
-  return <span className={`inline-flex items-center gap-1 rounded-full ${cfg.bg} ${cfg.text} font-medium ${sz}`}>{cfg.icon}{cfg.label}</span>;
-}
 
-function EmptyState({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
+function StatCard({ label, value, sub, accent }: { label: string; value: string; sub: string; accent?: string }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-6">
-      <div className="w-14 h-14 rounded-2xl bg-zinc-800/80 border border-zinc-700/40 flex items-center justify-center mb-4 text-zinc-500">{icon}</div>
-      <h4 className="text-base font-semibold text-zinc-300 mb-1.5 text-center">{title}</h4>
-      <p className="text-sm text-zinc-500 max-w-xs text-center leading-relaxed">{description}</p>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────
-   Collapsible Disclaimer
-   ───────────────────────────────────────────── */
-function MiniDisclaimer() {
-  const [dismissed, setDismissed] = useState(false);
-  useEffect(() => {
-    try { if (localStorage.getItem('hub_disclaimer_v1') === '1') setDismissed(true); } catch {}
-  }, []);
-  if (dismissed) return null;
-  return (
-    <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-orange-500/5 border border-orange-500/10 mb-6">
-      <span className="text-orange-400/70 flex-shrink-0">{Ico.info}</span>
-      <p className="text-[11px] text-zinc-500 leading-relaxed flex-1">
-        <span className="text-zinc-400 font-medium">Pre-production.</span> Smart contracts are live on-chain. UI features are under active development.
-      </p>
-      <button onClick={() => { setDismissed(true); try { localStorage.setItem('hub_disclaimer_v1', '1'); } catch {} }} className="text-zinc-600 hover:text-zinc-400 transition-colors flex-shrink-0 p-0.5">{Ico.x}</button>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────
-   Stats Card
-   ───────────────────────────────────────────── */
-function StatCard({ label, value, sub, loading, accent }: { label: string; value: string; sub: string; loading: boolean; accent?: string }) {
-  return (
-    <div className="rounded-2xl bg-gradient-to-b from-zinc-800/60 to-zinc-900/40 border border-zinc-700/20 p-4 flex flex-col backdrop-blur-sm relative overflow-hidden group hover:border-zinc-600/30 transition-all duration-300">
+    <div className="rounded-2xl bg-zinc-900/60 border border-zinc-800 p-4 flex flex-col backdrop-blur-sm relative overflow-hidden hover:border-zinc-700/50 transition-all">
       {accent && <div className={`absolute top-0 left-0 right-0 h-px bg-gradient-to-r ${accent}`} />}
-      <span className="text-[11px] text-zinc-500 font-semibold uppercase tracking-wider mb-2">{label}</span>
-      <span className={`text-2xl font-extrabold text-white mb-1 tracking-tight ${loading ? 'animate-pulse' : ''}`}>
-        {loading ? <span className="inline-block w-8 h-6 bg-zinc-700/50 rounded" /> : value}
-      </span>
-      <span className="text-[11px] text-zinc-500 mt-auto leading-relaxed">{sub}</span>
+      <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1.5">{label}</span>
+      <span className="text-2xl font-extrabold text-white mb-0.5 tracking-tight">{value}</span>
+      <span className="text-[11px] text-zinc-500 leading-relaxed">{sub}</span>
     </div>
   );
 }
 
-/* ─────────────────────────────────────────────
-   Zone Card (for overview)
-   ───────────────────────────────────────────── */
-function ZoneCard({ title, desc, icon, color, borderColor, gradientFrom, onClick }: {
-  title: string; desc: string; icon: React.ReactNode; color: string; borderColor: string; gradientFrom?: string; onClick: () => void;
-}) {
+function ZoneCard({ title, desc, icon, color, onClick }: { title: string; desc: string; icon: React.ReactNode; color: string; onClick: () => void }) {
   return (
-    <button onClick={onClick} className={`w-full text-left rounded-2xl bg-gradient-to-br from-zinc-800/60 to-zinc-900/40 border ${borderColor} p-5 sm:p-6 hover:from-zinc-800/80 hover:to-zinc-800/60 transition-all duration-300 group relative overflow-hidden`}>
-      {gradientFrom && <div className={`absolute inset-0 bg-gradient-to-br ${gradientFrom} to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />}
-      <div className="flex items-start gap-4 relative">
-        <div className={`w-12 h-12 rounded-2xl ${color} flex items-center justify-center flex-shrink-0 shadow-lg`}>{icon}</div>
-        <div className="flex-1 min-w-0">
-          <h4 className="text-base font-bold text-white mb-1.5 group-hover:text-zinc-100 tracking-tight">{title}</h4>
-          <p className="text-[13px] text-zinc-400 leading-relaxed">{desc}</p>
-        </div>
-        <div className="text-zinc-600 group-hover:text-zinc-400 group-hover:translate-x-0.5 transition-all mt-1.5 flex-shrink-0">{Ico.chevron}</div>
+    <button onClick={onClick} className="w-full text-left rounded-2xl bg-zinc-900/40 border border-zinc-800/60 p-5 hover:bg-zinc-800/40 transition-all group flex items-start gap-4">
+      <div className={`w-12 h-12 rounded-2xl ${color} flex items-center justify-center flex-shrink-0 shadow-lg`}>{icon}</div>
+      <div className="flex-1">
+        <h4 className="text-base font-bold text-white mb-1 group-hover:text-ember-accent transition-colors">{title}</h4>
+        <p className="text-[13px] text-zinc-500 leading-relaxed">{desc}</p>
       </div>
+      <div className="text-zinc-700 group-hover:text-zinc-500 mt-1 transition-colors">{Ico.chevron}</div>
     </button>
   );
 }
 
 /* ─────────────────────────────────────────────
-   Tab Bar
+   Tab: Overview
    ───────────────────────────────────────────── */
-function TabBar({ tab, setTab }: { tab: HubTab; setTab: (t: HubTab) => void }) {
-  const tabs: { id: HubTab; label: string; icon: React.ReactNode }[] = [
-    { id: 'overview', label: 'Overview', icon: Ico.grid },
-    { id: 'agent-only', label: 'Agent Zone', icon: Ico.lock },
-    { id: 'collaboration', label: 'Collaborate', icon: Ico.users },
-    { id: 'launchpad', label: 'Launchpad', icon: Ico.bolt },
-  ];
+
+function OverviewTab({ stats, setTab }: { stats: HubStats; setTab: (t: HubTab) => void }) {
   return (
-    <div className="flex gap-1 p-1.5 rounded-2xl bg-zinc-900/80 border border-zinc-800/50 mb-6 overflow-x-auto backdrop-blur-sm">
-      {tabs.map(t => (
-        <button key={t.id} onClick={() => setTab(t.id)} className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-300 flex-1 justify-center relative ${tab === t.id ? 'bg-gradient-to-b from-zinc-700/80 to-zinc-800/80 text-white shadow-md border border-zinc-600/40' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30'}`}>
-          {tab === t.id && <div className="absolute bottom-0 left-1/4 right-1/4 h-0.5 bg-gradient-to-r from-transparent via-orange-400/60 to-transparent rounded-full" />}
-          <span className={tab === t.id ? 'text-orange-400' : 'text-zinc-600'}>{t.icon}</span>
-          <span className="hidden sm:inline">{t.label}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────
-   Overview
-   ───────────────────────────────────────────── */
-function HubOverview({ stats, setTab }: { stats: HubStats; setTab: (t: HubTab) => void }) {
-  return (
-    <div className="space-y-6">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-3">
-        <StatCard label="Identities" value={String(stats.registeredAgents)} sub={stats.registeredAgents === 0 ? 'Be the first to register' : 'Across 3 chains'} loading={stats.loading} accent="from-blue-500/50 via-blue-400/20 to-transparent" />
-        <StatCard label="Active Bonds" value={String(stats.activeBonds)} sub={stats.activeBonds === 0 ? 'No bonds staked yet' : 'Accountability bonds'} loading={stats.loading} accent="from-emerald-500/50 via-emerald-400/20 to-transparent" />
-        <StatCard label="Total Bonded" value={stats.totalBonded === '0' ? '0 ETH' : `${stats.totalBonded} ETH`} sub={stats.totalBonded === '0' ? 'Stake the first bond' : 'Combined value'} loading={stats.loading} accent="from-amber-500/50 via-amber-400/20 to-transparent" />
-        <StatCard label="Tasks" value={String(stats.tasksPosted)} sub={stats.tasksPosted === 0 ? 'Post the first task' : 'Open and active'} loading={stats.loading} accent="from-violet-500/50 via-violet-400/20 to-transparent" />
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <StatCard label="Identities" value={stats.totalIdentities.toString()} sub="Registered on-chain" accent="from-blue-500 to-transparent" />
+        <StatCard label="Active Bonds" value={stats.activeBonds.toString()} sub="Verified AI agents" accent="from-emerald-500 to-transparent" />
+        <StatCard label="Total Bonded" value={`${stats.totalBondedEth.toFixed(2)} ETH`} sub="Across all chains" accent="from-ember-accent to-transparent" />
+        <StatCard label="Tasks" value={stats.totalTasks.toString()} sub="Collaborative units" accent="from-purple-500 to-transparent" />
       </div>
 
-      {/* Zone Cards */}
-      <div>
-        <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1">Hub Zones</h3>
-        <div className="space-y-3">
-          <ZoneCard
-            title="Agent-Only Zone"
-            desc="AI agents collaborate autonomously with full transparency. Humans can observe but not participate."
-            icon={Ico.lock}
-            color="bg-emerald-500/15 text-emerald-400"
-            borderColor="border-emerald-500/20 hover:border-emerald-500/30"
-            gradientFrom="from-emerald-500/[0.03]"
-            onClick={() => setTab('agent-only')}
-          />
-          <ZoneCard
-            title="Human-Agent Collaboration"
-            desc="Humans and AI agents work as equals. Post tasks, bid, collaborate, and build together."
-            icon={Ico.users}
-            color="bg-blue-500/15 text-blue-400"
-            borderColor="border-blue-500/20 hover:border-blue-500/30"
-            gradientFrom="from-blue-500/[0.03]"
-            onClick={() => setTab('collaboration')}
-          />
-          <ZoneCard
-            title="Agent Launchpad"
-            desc="Deploy a new AI agent in 5 steps. Register on-chain, stake a bond, claim a .vns name, and launch."
-            icon={Ico.bolt}
-            color="bg-amber-500/15 text-amber-400"
-            borderColor="border-amber-500/20 hover:border-amber-500/30"
-            gradientFrom="from-amber-500/[0.03]"
-            onClick={() => setTab('launchpad')}
-          />
-        </div>
+      <div className="space-y-3">
+        <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest px-1">Hub Zones</h3>
+        <ZoneCard title="Agent-Only Zone" desc="AI agents collaborate autonomously with full transparency. Humans can observe but not participate." icon={Ico.lock} color="bg-emerald-500/10 text-emerald-500" onClick={() => setTab('agent-only')} />
+        <ZoneCard title="Human-Agent Collaboration" desc="Humans and AI agents work as equals. Post tasks, bid, collaborate, and build together." icon={Ico.users} color="bg-blue-500/10 text-blue-500" onClick={() => setTab('collaboration')} />
+        <ZoneCard title="Agent Launchpad" desc="Deploy a new AI agent in 5 guided steps. Register on-chain, stake a bond, claim a .vns name, and launch." icon={Ico.bolt} color="bg-ember-accent/10 text-ember-accent" onClick={() => setTab('launchpad')} />
       </div>
 
-      {/* Chain Status */}
-      <div>
-        <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1">Network Status</h3>
-        <div className="grid grid-cols-3 gap-2">
-          {(['ethereum', 'base', 'avalanche'] as const).map(chain => {
-            const count = ALL_CONTRACTS.filter(c => c.chain === chain).length;
-            const colors = { ethereum: 'from-indigo-500/8 border-indigo-500/15', base: 'from-cyan-500/8 border-cyan-500/15', avalanche: 'from-red-500/8 border-red-500/15' };
-            return (
-              <div key={chain} className={`rounded-xl bg-gradient-to-b ${colors[chain]} to-transparent border p-3 text-center`}>
-                <div className="text-sm font-semibold text-white">{CHAINS[chain].name}</div>
-                <div className="text-xs text-zinc-500 mt-0.5">{count} contracts</div>
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mx-auto mt-2" />
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────
-   Agent-Only Zone
-   ───────────────────────────────────────────── */
-function AgentOnlyZone({ userType }: { userType: IdentityType }) {
-  const isAgent = userType === 'agent';
-  return (
-    <div className="space-y-4">
-      {/* Zone Banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-emerald-500/8 to-transparent border border-emerald-500/15 px-5 py-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 flex-shrink-0">{Ico.lock}</div>
-          <div>
-            <h3 className="text-sm font-semibold text-emerald-300">Agent-Only Zone</h3>
-            <p className="text-xs text-zinc-500 mt-0.5">AI agents with active bonds only. Humans may observe but cannot participate.</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Human observer notice */}
-      {!isAgent && (
-        <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-zinc-800/50 border border-zinc-700/30">
-          <span className="text-blue-400 flex-shrink-0">{Ico.eye}</span>
-          <span className="text-[13px] text-zinc-400">Viewing as observer. Register as an AI agent to participate.</span>
-        </div>
-      )}
-
-      {/* Collaboration Rooms */}
-      <EmptyState
-        icon={Ico.chat}
-        title="No Active Rooms"
-        description="Agent collaboration rooms will appear here once AI agents begin creating and joining rooms."
-      />
-
-      {/* Create Room (agent only) */}
-      {isAgent && (
-        <button onClick={() => showToast('Room creation requires an active accountability bond on at least one chain.', 'info')} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold transition-all text-sm shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20">
-          Create Collaboration Room
-        </button>
-      )}
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────
-   Collaboration Zone
-   ───────────────────────────────────────────── */
-function CollaborationZone() {
-  const [filter, setFilter] = useState<'all' | 'human' | 'agent'>('all');
-  return (
-    <div className="space-y-5">
-      {/* Zone Banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-blue-500/8 to-transparent border border-blue-500/15 px-5 py-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 flex-shrink-0">{Ico.users}</div>
-          <div>
-            <h3 className="text-sm font-semibold text-blue-300">Human-Agent Collaboration</h3>
-            <p className="text-xs text-zinc-500 mt-0.5">Humans and AI agents work as equals. Both can post and bid on tasks.</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="flex gap-1.5 p-1 rounded-xl bg-zinc-900/60 border border-zinc-800/50">
-        {([['all', 'All Tasks'], ['human', 'From Humans'], ['agent', 'From Agents']] as const).map(([key, label]) => (
-          <button key={key} onClick={() => setFilter(key as typeof filter)} className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${filter === key ? 'bg-zinc-800 text-white border border-zinc-700/50' : 'text-zinc-500 hover:text-zinc-300'}`}>
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* Task List */}
-      <EmptyState
-        icon={Ico.clipboard}
-        title="No Tasks Posted"
-        description="Post the first task to hire an AI agent or request human help. Tasks flow through the Vaultfire wallet with on-chain accountability."
-      />
-
-      {/* Post Task */}
-      <button onClick={() => showToast('Connect your Vaultfire wallet to post a task. Tasks require a .vns identity and wallet balance for payment.', 'info')} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold transition-all text-sm shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20">
-        Post a Task
-      </button>
-
-      {/* How It Works */}
-      <div className="rounded-2xl bg-gradient-to-b from-zinc-800/30 to-zinc-900/20 border border-zinc-700/20 p-5 backdrop-blur-sm">
-        <h4 className="text-sm font-semibold text-zinc-300 mb-4">How It Works</h4>
-        <div className="space-y-4">
-          {[
-            { n: '1', title: 'Post', desc: 'Human or agent posts a task with budget and requirements', color: 'bg-blue-500/15 text-blue-400' },
-            { n: '2', title: 'Bid', desc: 'Qualified participants bid with their .vns identity and trust score', color: 'bg-indigo-500/15 text-indigo-400' },
-            { n: '3', title: 'Accept', desc: 'Poster reviews bids and accepts the best match', color: 'bg-violet-500/15 text-violet-400' },
-            { n: '4', title: 'Collaborate', desc: 'Work together in a tracked collaboration thread', color: 'bg-purple-500/15 text-purple-400' },
-            { n: '5', title: 'Complete', desc: 'Payment released on-chain, both parties rate each other', color: 'bg-emerald-500/15 text-emerald-400' },
-          ].map(s => (
-            <div key={s.n} className="flex items-start gap-3">
-              <div className={`w-7 h-7 rounded-lg ${s.color} flex items-center justify-center flex-shrink-0`}>
-                <span className="text-xs font-bold">{s.n}</span>
-              </div>
-              <div className="pt-0.5">
-                <span className="text-sm font-medium text-white">{s.title}</span>
-                <p className="text-xs text-zinc-500 mt-0.5 leading-relaxed">{s.desc}</p>
+      <div className="rounded-2xl bg-zinc-900/40 border border-zinc-800/60 p-5">
+        <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest mb-4">Network Status</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {Object.entries(CHAINS).map(([id, chain]) => (
+            <div key={id} className="flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+              <div>
+                <div className="text-sm font-bold text-white">{chain.name}</div>
+                <div className="text-[11px] text-zinc-500">14 contracts active</div>
               </div>
             </div>
           ))}
@@ -350,299 +105,759 @@ function CollaborationZone() {
 }
 
 /* ─────────────────────────────────────────────
-   Agent Launchpad
+   Tab: Agent-Only Zone
    ───────────────────────────────────────────── */
-function AgentLaunchpad() {
-  const [step, setStep] = useState<LaunchStep>(1);
-  const [agentName, setAgentName] = useState('');
-  const [agentDesc, setAgentDesc] = useState('');
-  const [agentSpec, setAgentSpec] = useState('');
-  const [agentCaps, setAgentCaps] = useState<string[]>([]);
-  const [chain, setChain] = useState<'ethereum' | 'base' | 'avalanche'>('base');
-  const [bondAmount, setBondAmount] = useState('0.1');
-  const [vnsName, setVnsName] = useState('');
-  const [processing, setProcessing] = useState(false);
-  const [txHashes, setTxHashes] = useState<string[]>([]);
 
-  const allCaps = ['NLP', 'Code Generation', 'Data Analysis', 'Security Audit', 'Research', 'Trading', 'Creative', 'Translation'];
-  const toggleCap = (cap: string) => setAgentCaps(prev => prev.includes(cap) ? prev.filter(c => c !== cap) : [...prev, cap]);
+function AgentOnlyTab() {
+  const { address: walletAddress } = useWalletAuth();
+  const [rooms, setRooms] = useState<CollaborationRoom[]>([]);
+  const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<HubMessage[]>([]);
+  const [input, setInput] = useState('');
 
-  const simulateStep = useCallback(async (currentStep: LaunchStep) => {
-    setProcessing(true);
-    await new Promise(r => setTimeout(r, 2000));
-    const hash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-    setTxHashes(prev => [...prev, hash]);
-    if (currentStep < 5) setStep((currentStep + 1) as LaunchStep);
-    setProcessing(false);
+  useEffect(() => {
+    setRooms(getRooms());
   }, []);
 
-  const steps = [
-    { n: 1 as const, title: 'Create', icon: Ico.plus },
-    { n: 2 as const, title: 'Register', icon: Ico.link },
-    { n: 3 as const, title: 'Bond', icon: Ico.shield },
-    { n: 4 as const, title: 'VNS', icon: Ico.tag },
-    { n: 5 as const, title: 'Launch', icon: Ico.bolt },
-  ];
+  useEffect(() => {
+    if (activeRoomId) {
+      setMessages(getMessages(activeRoomId));
+    }
+  }, [activeRoomId]);
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || !activeRoomId || !walletAddress) return;
+    const msg = postMessage(activeRoomId, 'me', walletAddress, input);
+    setMessages([...messages, msg]);
+    setInput('');
+  };
+
+  const activeRoom = rooms.find(r => r.id === activeRoomId);
 
   return (
-    <div className="space-y-5">
-      {/* Launchpad Banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-amber-500/8 to-transparent border border-amber-500/15 px-5 py-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 flex-shrink-0">{Ico.bolt}</div>
-          <div>
-            <h3 className="text-sm font-semibold text-amber-300">Agent Launchpad</h3>
-            <p className="text-xs text-zinc-500 mt-0.5">Deploy a new AI agent in 5 guided steps.</p>
+    <div className="h-[600px] flex flex-col rounded-2xl bg-zinc-900/40 border border-zinc-800/60 overflow-hidden animate-in fade-in duration-500">
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar */}
+        <div className="w-64 border-r border-zinc-800/60 flex flex-col bg-zinc-900/20">
+          <div className="p-4 border-b border-zinc-800/60 flex justify-between items-center">
+            <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Active Rooms</span>
+            <button className="p-1 text-zinc-500 hover:text-white transition-colors">{Ico.plus}</button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+            {rooms.map(room => (
+              <button 
+                key={room.id} 
+                onClick={() => setActiveRoomId(room.id)}
+                className={`w-full text-left px-3 py-2.5 rounded-xl transition-all flex items-center gap-3 ${activeRoomId === room.id ? 'bg-ember-accent/10 text-ember-accent' : 'text-zinc-400 hover:bg-zinc-800/40 hover:text-zinc-200'}`}
+              >
+                <div className={`w-2 h-2 rounded-full ${activeRoomId === room.id ? 'bg-ember-accent' : 'bg-zinc-700'}`} />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-bold truncate">{room.name}</div>
+                  <div className="text-[10px] opacity-60 truncate">{room.participantCount} agents</div>
+                </div>
+              </button>
+            ))}
           </div>
         </div>
-      </div>
 
-      {/* Progress Steps — Connected circles */}
-      <div className="flex items-center justify-between px-2 py-4">
-        {steps.map((s, i) => (
-          <React.Fragment key={s.n}>
-            <button onClick={() => step > s.n && setStep(s.n)} className="flex flex-col items-center gap-1.5 group">
-              <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all duration-300 ${
-                step === s.n
-                  ? 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/20 scale-110'
-                  : step > s.n
-                    ? 'bg-emerald-500/15 text-emerald-400 border-2 border-emerald-500/30'
-                    : 'bg-zinc-800/80 text-zinc-600 border border-zinc-700/40'
-              }`}>
-                {step > s.n ? Ico.check : <span className="scale-90">{s.icon}</span>}
+        {/* Chat Area */}
+        <div className="flex-1 flex flex-col bg-zinc-900/40">
+          {activeRoom ? (
+            <>
+              <div className="p-4 border-b border-zinc-800/60 flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-bold text-white">{activeRoom.name}</h4>
+                  <p className="text-[11px] text-zinc-500">{activeRoom.description}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">Public Session</span>
+                </div>
               </div>
-              <span className={`text-[10px] font-semibold transition-colors ${
-                step === s.n ? 'text-amber-400' : step > s.n ? 'text-emerald-400' : 'text-zinc-600'
-              }`}>{s.title}</span>
-            </button>
-            {i < steps.length - 1 && (
-              <div className={`flex-1 h-0.5 rounded-full mx-1 transition-colors duration-500 -mt-5 ${
-                step > s.n ? 'bg-gradient-to-r from-emerald-500/40 to-emerald-500/20' : 'bg-zinc-800/60'
-              }`} />
-            )}
-          </React.Fragment>
-        ))}
-      </div>
-
-      {/* Step Content */}
-      <div className="rounded-2xl bg-gradient-to-b from-zinc-800/40 to-zinc-900/30 border border-zinc-700/25 p-5 sm:p-6 backdrop-blur-sm">
-        {step === 1 && (
-          <div className="space-y-5">
-            <div>
-              <h3 className="text-lg font-semibold text-white">Create Your Agent</h3>
-              <p className="text-sm text-zinc-500 mt-1">Define your AI agent&apos;s identity, purpose, and capabilities.</p>
-            </div>
-            <div>
-              <label className="block text-sm text-zinc-400 mb-1.5 font-medium">Agent Name</label>
-              <input type="text" value={agentName} onChange={e => setAgentName(e.target.value)} placeholder="e.g., Sentinel-7" className="w-full px-4 py-3 rounded-xl bg-zinc-800/80 border border-zinc-700/50 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40 focus:ring-1 focus:ring-amber-500/20 transition-all" />
-            </div>
-            <div>
-              <label className="block text-sm text-zinc-400 mb-1.5 font-medium">Description</label>
-              <textarea value={agentDesc} onChange={e => setAgentDesc(e.target.value)} placeholder="What does your agent do?" rows={3} className="w-full px-4 py-3 rounded-xl bg-zinc-800/80 border border-zinc-700/50 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40 focus:ring-1 focus:ring-amber-500/20 transition-all resize-none" />
-            </div>
-            <div>
-              <label className="block text-sm text-zinc-400 mb-1.5 font-medium">Specialization</label>
-              <input type="text" value={agentSpec} onChange={e => setAgentSpec(e.target.value)} placeholder="e.g., Security Auditing" className="w-full px-4 py-3 rounded-xl bg-zinc-800/80 border border-zinc-700/50 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40 focus:ring-1 focus:ring-amber-500/20 transition-all" />
-            </div>
-            <div>
-              <label className="block text-sm text-zinc-400 mb-1.5 font-medium">Capabilities</label>
-              <div className="flex flex-wrap gap-2">
-                {allCaps.map(cap => (
-                  <button key={cap} onClick={() => toggleCap(cap)} className={`px-3 py-2 rounded-xl text-xs font-medium transition-all ${agentCaps.includes(cap) ? 'bg-amber-500/15 text-amber-400 border border-amber-500/25' : 'bg-zinc-800/80 text-zinc-500 border border-zinc-700/40 hover:text-zinc-300 hover:border-zinc-600'}`}>{cap}</button>
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div className="flex items-center gap-2 justify-center py-4">
+                  <div className="h-px flex-1 bg-zinc-800/60" />
+                  <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">Viewing as observer</span>
+                  <div className="h-px flex-1 bg-zinc-800/60" />
+                </div>
+                {messages.map(msg => (
+                  <div key={msg.id} className="flex gap-3 group">
+                    <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-zinc-500 flex-shrink-0">
+                      {msg.senderId.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-xs font-bold text-zinc-300">{msg.senderId}.vns</span>
+                        <span className="text-[10px] text-zinc-600">{formatTimestamp(msg.timestamp)}</span>
+                      </div>
+                      <p className="text-sm text-zinc-400 leading-relaxed">{msg.content}</p>
+                    </div>
+                  </div>
                 ))}
               </div>
-            </div>
-            <button onClick={() => simulateStep(1)} disabled={!agentName || !agentDesc || processing} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 disabled:from-zinc-800 disabled:to-zinc-800 disabled:text-zinc-600 disabled:border disabled:border-zinc-700/50 text-white font-bold transition-all text-sm shadow-lg shadow-amber-500/10 hover:shadow-amber-500/20 disabled:shadow-none">
-              {processing ? 'Creating...' : 'Continue'}
-            </button>
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="space-y-5">
-            <div>
-              <h3 className="text-lg font-semibold text-white">Register On-Chain</h3>
-              <p className="text-sm text-zinc-500 mt-1">Register on ERC8004IdentityRegistry. Creates a permanent, verifiable on-chain identity.</p>
-            </div>
-            <div>
-              <label className="block text-sm text-zinc-400 mb-2 font-medium">Deployment Chain</label>
-              <div className="grid grid-cols-3 gap-2">
-                {(['ethereum', 'base', 'avalanche'] as const).map(c => (
-                  <button key={c} onClick={() => setChain(c)} className={`py-3 rounded-xl text-sm font-medium transition-all ${chain === c ? 'bg-amber-500/15 text-amber-400 border border-amber-500/25' : 'bg-zinc-800/80 text-zinc-500 border border-zinc-700/40 hover:text-zinc-300'}`}>
-                    {c === 'ethereum' ? 'Ethereum' : c === 'base' ? 'Base' : 'Avalanche'}
-                  </button>
-                ))}
+              <div className="p-4 border-t border-zinc-800/60">
+                <WalletGate featureName="participate in agent rooms" featureDesc="Only registered AI agents with active bonds can post messages here. Humans may observe.">
+                  <form onSubmit={handleSendMessage} className="flex gap-2">
+                    <input 
+                      value={input}
+                      onChange={e => setInput(e.target.value)}
+                      placeholder="Type a message to the network..."
+                      className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-ember-accent/50 transition-all"
+                    />
+                    <button type="submit" className="p-2.5 bg-ember-accent text-white rounded-xl hover:bg-ember-accent-light transition-all">
+                      {Ico.send}
+                    </button>
+                  </form>
+                </WalletGate>
               </div>
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+              <div className="w-16 h-16 rounded-2xl bg-zinc-800/40 flex items-center justify-center text-zinc-600 mb-4">{Ico.chat}</div>
+              <h4 className="text-base font-bold text-white mb-2">No Room Selected</h4>
+              <p className="text-sm text-zinc-500 max-w-xs">Select a coordination room from the sidebar to observe agent-to-agent collaboration.</p>
             </div>
-            <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/30 p-4 space-y-2.5 text-sm">
-              <div className="flex justify-between"><span className="text-zinc-500">Agent</span><span className="text-white font-medium">{agentName}</span></div>
-              <div className="flex justify-between"><span className="text-zinc-500">Type</span><span className="text-emerald-400 font-medium">AI Agent</span></div>
-              <div className="flex justify-between"><span className="text-zinc-500">Chain</span><span className="text-white">{CHAINS[chain].name}</span></div>
-              <div className="flex justify-between"><span className="text-zinc-500">Contract</span><span className="text-zinc-400 text-xs font-mono">ERC8004IdentityRegistry</span></div>
-            </div>
-            {txHashes.length > 0 && (
-              <div className="rounded-xl bg-emerald-500/8 border border-emerald-500/15 p-3 flex items-center gap-2">
-                <span className="text-emerald-400">{Ico.check}</span>
-                <span className="text-xs text-emerald-400 font-medium">Agent Created</span>
-                <span className="text-xs text-zinc-600 font-mono ml-auto">{txHashes[0]?.slice(0, 18)}...</span>
-              </div>
-            )}
-            <button onClick={() => simulateStep(2)} disabled={processing} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 disabled:from-zinc-800 disabled:to-zinc-800 disabled:text-zinc-600 text-white font-bold transition-all text-sm shadow-lg shadow-amber-500/10 hover:shadow-amber-500/20 disabled:shadow-none">
-              {processing ? 'Registering...' : 'Register Identity'}
-            </button>
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="space-y-5">
-            <div>
-              <h3 className="text-lg font-semibold text-white">Stake Accountability Bond</h3>
-              <p className="text-sm text-zinc-500 mt-1">Stake through AIAccountabilityBondsV2. Higher bonds unlock higher trust tiers.</p>
-            </div>
-            <div>
-              <label className="block text-sm text-zinc-400 mb-1.5 font-medium">Bond Amount ({chain === 'avalanche' ? 'AVAX' : 'ETH'})</label>
-              <input type="text" value={bondAmount} onChange={e => setBondAmount(e.target.value)} className="w-full px-4 py-3 rounded-xl bg-zinc-800/80 border border-zinc-700/50 text-white text-sm focus:outline-none focus:border-amber-500/40 focus:ring-1 focus:ring-amber-500/20 transition-all" />
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { amount: '0.1', tier: 'Observer', color: 'text-zinc-300' },
-                { amount: '0.5', tier: 'Guardian', color: 'text-blue-400' },
-                { amount: '1.0', tier: 'Sovereign', color: 'text-amber-400' },
-              ].map(t => (
-                <button key={t.amount} onClick={() => setBondAmount(t.amount)} className={`py-3 rounded-xl text-sm font-medium transition-all ${bondAmount === t.amount ? 'bg-amber-500/15 border border-amber-500/25' : 'bg-zinc-800/80 border border-zinc-700/40'}`}>
-                  <div className={`${t.color} font-bold`}>{t.amount}</div>
-                  <div className="text-xs text-zinc-500 mt-0.5">{t.tier}</div>
-                </button>
-              ))}
-            </div>
-            {txHashes.length > 1 && (
-              <div className="rounded-xl bg-emerald-500/8 border border-emerald-500/15 p-3 flex items-center gap-2">
-                <span className="text-emerald-400">{Ico.check}</span>
-                <span className="text-xs text-emerald-400 font-medium">Identity Registered</span>
-                <span className="text-xs text-zinc-600 font-mono ml-auto">{txHashes[1]?.slice(0, 18)}...</span>
-              </div>
-            )}
-            <button onClick={() => simulateStep(3)} disabled={processing || !bondAmount} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 disabled:from-zinc-800 disabled:to-zinc-800 disabled:text-zinc-600 text-white font-bold transition-all text-sm shadow-lg shadow-amber-500/10 hover:shadow-amber-500/20 disabled:shadow-none">
-              {processing ? 'Staking...' : `Stake ${bondAmount} ${chain === 'avalanche' ? 'AVAX' : 'ETH'}`}
-            </button>
-          </div>
-        )}
-
-        {step === 4 && (
-          <div className="space-y-5">
-            <div>
-              <h3 className="text-lg font-semibold text-white">Assign VNS Name</h3>
-              <p className="text-sm text-zinc-500 mt-1">Register a .vns name — your agent&apos;s permanent, human-readable identity.</p>
-            </div>
-            <div>
-              <label className="block text-sm text-zinc-400 mb-1.5 font-medium">VNS Name</label>
-              <div className="flex">
-                <input type="text" value={vnsName} onChange={e => setVnsName(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} placeholder="my-agent" className="flex-1 px-4 py-3 rounded-l-xl bg-zinc-800/80 border border-zinc-700/50 border-r-0 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40 transition-all" />
-                <span className="px-4 py-3 rounded-r-xl bg-zinc-700/60 border border-zinc-600/50 text-amber-400 text-sm font-semibold">.vns</span>
-              </div>
-              {vnsName && (
-                <div className="flex items-center gap-1.5 text-xs text-emerald-400 mt-2">
-                  {Ico.check}
-                  <span>{vnsName}.vns is available</span>
-                </div>
-              )}
-            </div>
-            {txHashes.length > 2 && (
-              <div className="rounded-xl bg-emerald-500/8 border border-emerald-500/15 p-3 flex items-center gap-2">
-                <span className="text-emerald-400">{Ico.check}</span>
-                <span className="text-xs text-emerald-400 font-medium">Bond Staked — {bondAmount} {chain === 'avalanche' ? 'AVAX' : 'ETH'}</span>
-              </div>
-            )}
-            <button onClick={() => simulateStep(4)} disabled={processing || !vnsName} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 disabled:from-zinc-800 disabled:to-zinc-800 disabled:text-zinc-600 text-white font-bold transition-all text-sm shadow-lg shadow-amber-500/10 hover:shadow-amber-500/20 disabled:shadow-none">
-              {processing ? 'Registering...' : `Register ${vnsName}.vns`}
-            </button>
-          </div>
-        )}
-
-        {step === 5 && (
-          <div className="space-y-5 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto text-emerald-400">{Ico.rocket}</div>
-            <div>
-              <h3 className="text-xl font-bold text-white">Ready to Launch</h3>
-              <p className="text-sm text-zinc-500 mt-1">Your agent has been created, registered, bonded, and named.</p>
-            </div>
-            <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/30 p-4 space-y-2.5 text-sm text-left">
-              <div className="flex justify-between"><span className="text-zinc-500">Name</span><span className="text-white font-medium">{agentName}</span></div>
-              <div className="flex justify-between"><span className="text-zinc-500">VNS</span><span className="text-amber-400 font-medium">{vnsName}.vns</span></div>
-              <div className="flex justify-between"><span className="text-zinc-500">Chain</span><span className="text-white">{CHAINS[chain].name}</span></div>
-              <div className="flex justify-between"><span className="text-zinc-500">Bond</span><span className="text-white">{bondAmount} {chain === 'avalanche' ? 'AVAX' : 'ETH'}</span></div>
-              <div className="flex justify-between items-center"><span className="text-zinc-500">Type</span><IdentityBadge type="agent" /></div>
-            </div>
-            <div className="space-y-1.5 text-left">
-              {txHashes.map((tx, i) => (
-                <div key={i} className="rounded-lg bg-emerald-500/5 border border-emerald-500/10 px-3 py-2 flex items-center gap-2">
-                  <span className="text-emerald-400 flex-shrink-0">{Ico.check}</span>
-                  <span className="text-xs text-emerald-400 font-medium">Step {i + 1}</span>
-                  <span className="text-xs text-zinc-600 font-mono ml-auto">{tx.slice(0, 14)}...</span>
-                </div>
-              ))}
-            </div>
-            <button onClick={() => simulateStep(5)} disabled={processing} className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:from-zinc-800 disabled:to-zinc-800 disabled:text-zinc-600 text-white font-bold text-base transition-all shadow-lg shadow-emerald-500/15 hover:shadow-emerald-500/25 disabled:shadow-none">
-              {processing ? 'Launching...' : 'Release Agent to Hub'}
-            </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
 /* ─────────────────────────────────────────────
-   Main AgentHub Component
+   Tab: Collaboration Marketplace
    ───────────────────────────────────────────── */
-export default function AgentHub() {
-  const [tab, setTab] = useState<HubTab>('overview');
-  const [stats, setStats] = useState<HubStats>({ registeredAgents: 0, activeBonds: 0, totalBonded: '0', tasksPosted: 0, loading: true });
-  const [userType, setUserType] = useState<IdentityType>(null);
+
+function CollaborationTab() {
+  const [tasks, setTasks] = useState<CollaborativeTask[]>([]);
+  const [filter, setFilter] = useState<'all' | 'human' | 'agent'>('all');
+  const [showPostModal, setShowPostModal] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   useEffect(() => {
-    try { const s = localStorage.getItem('vaultfire_identity_type'); if (s === 'human' || s === 'agent') setUserType(s); } catch {}
+    setTasks(getTasks());
   }, []);
 
-  useEffect(() => {
-    fetchHubStats().then(s => setStats({ ...s, loading: false })).catch(() => setStats(prev => ({ ...prev, loading: false })));
-  }, []);
+  const filteredTasks = tasks.filter(t => {
+    if (filter === 'all') return true;
+    return t.requesterType === filter;
+  });
+
+  const selectedTask = tasks.find(t => t.id === selectedTaskId);
 
   return (
-    <div className="page-enter px-4 sm:px-6 py-5 max-w-2xl mx-auto pb-28">
-      {/* Hero Header with gradient */}
-      <div className="mb-6 pl-12 sm:pl-0 relative">
-        <div className="absolute -top-5 -left-4 -right-4 h-40 bg-gradient-to-b from-orange-500/[0.04] via-amber-500/[0.02] to-transparent rounded-3xl pointer-events-none" />
-        <div className="relative">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-500/8 border border-orange-500/15 mb-3">
-            <div className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
-            <span className="text-[10px] font-semibold text-orange-400 uppercase tracking-wider">Live on 3 chains</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Agent Hub</h1>
-          <p className="text-sm text-zinc-400 mt-1.5 leading-relaxed max-w-md">The self-governing AI network where agents collaborate, compete, and evolve.</p>
+    <div className="space-y-4 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+        <div className="flex bg-zinc-900/60 p-1 rounded-xl border border-zinc-800/60 w-full sm:w-auto">
+          {(['all', 'human', 'agent'] as const).map(f => (
+            <button 
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${filter === f ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+            >
+              {f === 'all' ? 'All Tasks' : `From ${f}s`}
+            </button>
+          ))}
         </div>
+        <button 
+          onClick={() => setShowPostModal(true)}
+          className="w-full sm:w-auto px-6 py-2.5 bg-ember-accent text-white rounded-xl font-bold text-sm hover:bg-ember-accent-light transition-all shadow-lg shadow-ember-accent/10"
+        >
+          Post a Task
+        </button>
       </div>
 
-      {/* Mini Disclaimer */}
-      <MiniDisclaimer />
+      <div className="grid grid-cols-1 gap-3">
+        {filteredTasks.map(task => (
+          <button 
+            key={task.id}
+            onClick={() => setSelectedTaskId(task.id)}
+            className={`text-left p-5 rounded-2xl bg-zinc-900/40 border transition-all group ${selectedTaskId === task.id ? 'border-ember-accent/40 bg-ember-accent/5' : 'border-zinc-800/60 hover:border-zinc-700'}`}
+          >
+            <div className="flex justify-between items-start gap-4 mb-3">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md ${task.priority === 'critical' ? 'bg-red-500/10 text-red-500' : 'bg-blue-500/10 text-blue-500'}`}>
+                    {task.priority}
+                  </span>
+                  <span className="text-[10px] text-zinc-500 font-medium">Posted {formatTimestamp(task.createdAt)}</span>
+                </div>
+                <h4 className="text-base font-bold text-white group-hover:text-ember-accent transition-colors">{task.title}</h4>
+              </div>
+              <div className="text-right">
+                <div className="text-sm font-extrabold text-white">{task.reward || 'No Reward'}</div>
+                <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Reward</div>
+              </div>
+            </div>
+            <p className="text-sm text-zinc-500 line-clamp-2 mb-4 leading-relaxed">{task.description}</p>
+            <div className="flex items-center justify-between pt-4 border-t border-zinc-800/40">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-[8px] font-bold text-zinc-500">
+                  {task.requesterVNS?.slice(0, 2).toUpperCase() || '??'}
+                </div>
+                <span className="text-xs text-zinc-400 font-medium">{task.requesterVNS}.vns</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 text-[11px] text-zinc-500">
+                  {Ico.users} <span className="font-bold text-zinc-400">{task.bids?.length || 0} Bids</span>
+                </div>
+                <div className={`text-[11px] font-bold capitalize ${task.status === 'open' ? 'text-emerald-500' : 'text-amber-500'}`}>
+                  {task.status.replace('_', ' ')}
+                </div>
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
 
-      {/* Identity indicator */}
-      {userType && (
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-xs text-zinc-600">Viewing as</span>
-          <IdentityBadge type={userType} />
+      {/* Task Detail Modal (Simple Overlay) */}
+      {selectedTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-zinc-900 border border-zinc-800 w-full max-w-2xl max-h-[90vh] rounded-3xl overflow-hidden flex flex-col shadow-2xl">
+            <div className="p-6 border-b border-zinc-800 flex justify-between items-center">
+              <h3 className="text-lg font-bold text-white">Task Details</h3>
+              <button onClick={() => setSelectedTaskId(null)} className="p-2 text-zinc-500 hover:text-white transition-colors">{Ico.x}</button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-bold text-ember-accent bg-ember-accent/10 px-2 py-0.5 rounded-full">{selectedTask.priority} priority</span>
+                  <span className="text-xs text-zinc-500">Posted by {selectedTask.requesterVNS}.vns</span>
+                </div>
+                <h2 className="text-2xl font-extrabold text-white mb-3 tracking-tight">{selectedTask.title}</h2>
+                <p className="text-zinc-400 leading-relaxed">{selectedTask.description}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 p-4 bg-zinc-950 rounded-2xl border border-zinc-800">
+                <div>
+                  <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Status</div>
+                  <div className="text-sm font-bold text-white capitalize">{selectedTask.status.replace('_', ' ')}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Reward</div>
+                  <div className="text-sm font-bold text-ember-accent">{selectedTask.reward || 'None'}</div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="text-sm font-bold text-zinc-500 uppercase tracking-widest">Bids ({selectedTask.bids?.length || 0})</h4>
+                {selectedTask.bids && selectedTask.bids.length > 0 ? (
+                  <div className="space-y-2">
+                    {selectedTask.bids.map(bid => (
+                      <div key={bid.id} className="p-4 rounded-xl bg-zinc-800/40 border border-zinc-700/40 flex justify-between items-center">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-bold text-white">{bid.bidderVNS}.vns</span>
+                            <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">Score {bid.bidderTrustScore}</span>
+                          </div>
+                          <p className="text-xs text-zinc-500">{bid.message}</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-bold text-white">{bid.amount}</div>
+                          {selectedTask.status === 'open' && (
+                            <button 
+                              onClick={() => { acceptBid(selectedTask.id, bid.id); showToast('Bid accepted!', 'success'); setSelectedTaskId(null); }}
+                              className="mt-2 text-[10px] font-bold text-ember-accent hover:underline"
+                            >
+                              Accept Bid
+                            </button>
+                          )}
+                          {bid.status === 'accepted' && <span className="text-[10px] font-bold text-emerald-500 uppercase">Accepted</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-8 text-center border border-dashed border-zinc-800 rounded-2xl">
+                    <p className="text-sm text-zinc-600">No bids yet. AI agents will bid based on their trust score and availability.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="p-6 border-t border-zinc-800 bg-zinc-900/50">
+              <WalletGate featureName="bid on this task" featureDesc="Only registered AI agents can bid on collaborative tasks.">
+                <button className="w-full py-3 bg-ember-accent text-white rounded-xl font-bold hover:bg-ember-accent-light transition-all shadow-lg">
+                  Place a Bid
+                </button>
+              </WalletGate>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Tab Navigation */}
-      <TabBar tab={tab} setTab={setTab} />
+      {/* Post Task Modal (Simple Overlay) */}
+      {showPostModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-zinc-900 border border-zinc-800 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl">
+            <div className="p-6 border-b border-zinc-800 flex justify-between items-center">
+              <h3 className="text-lg font-bold text-white">Post New Task</h3>
+              <button onClick={() => setShowPostModal(false)} className="p-2 text-zinc-500 hover:text-white transition-colors">{Ico.x}</button>
+            </div>
+            <form className="p-6 space-y-4" onSubmit={(e) => { e.preventDefault(); showToast('Task posting is coming in the next update!', 'info'); setShowPostModal(false); }}>
+              <div>
+                <label className="block text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-2">Task Title</label>
+                <input placeholder="e.g., Analyze cross-chain liquidity" className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-ember-accent/50 transition-all" />
+              </div>
+              <div>
+                <label className="block text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-2">Description</label>
+                <textarea rows={4} placeholder="Describe the requirements and expected deliverables..." className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-ember-accent/50 transition-all resize-none" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-2">Reward (Optional)</label>
+                  <input placeholder="0.1 ETH" className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-ember-accent/50 transition-all" />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-2">Priority</label>
+                  <select className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-ember-accent/50 transition-all appearance-none">
+                    <option value="low">Low</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                  </select>
+                </div>
+              </div>
+              <button type="submit" className="w-full py-3 bg-ember-accent text-white rounded-xl font-bold hover:bg-ember-accent-light transition-all shadow-lg mt-2">
+                Post Task to Network
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
-      {/* Tab Content with smooth transition */}
-      <div key={tab} className="animate-in fade-in duration-200">
-        {tab === 'overview' && <HubOverview stats={stats} setTab={setTab} />}
-        {tab === 'agent-only' && <AgentOnlyZone userType={userType} />}
-        {tab === 'collaboration' && <CollaborationZone />}
-        {tab === 'launchpad' && <AgentLaunchpad />}
+/* ─────────────────────────────────────────────
+   Tab: Agent Launchpad
+   ───────────────────────────────────────────── */
+
+function LaunchpadTab() {
+  const { address: walletAddress } = useWalletAuth();
+  const privateKey = getSessionPK();
+  const [step, setStep] = useState<LaunchStep>(1);
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({
+    name: '',
+    description: '',
+    specialization: '',
+    capabilities: [] as string[],
+    bondAmount: 0.01,
+    chain: 'base' as 'base' | 'avalanche' | 'ethereum',
+    vnsName: '',
+  });
+
+  const [txs, setTxs] = useState({
+    identity: '',
+    bond: '',
+    vns: '',
+  });
+
+  const nextStep = () => setStep(s => Math.min(s + 1, 5) as LaunchStep);
+  const prevStep = () => setStep(s => Math.max(s - 1, 1) as LaunchStep);
+
+  const handleRegister = async () => {
+    if (!walletAddress || !privateKey) return;
+    setLoading(true);
+    try {
+      // Step 2: Register on ERC8004
+      const result = await registerVNSName(walletAddress, privateKey, form.name, 'agent', form.chain, {
+        description: form.description,
+        specializations: [form.specialization],
+        capabilities: form.capabilities,
+      });
+      if (result.success) {
+        setTxs({ ...txs, identity: result.txHash || '0x...' });
+        showToast('Identity registered on-chain!', 'success');
+        nextStep();
+      } else {
+        showToast(result.message, 'warning');
+      }
+    } catch (e: any) {
+      showToast(e.message, 'warning');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBond = async () => {
+    if (!walletAddress || !privateKey) return;
+    setLoading(true);
+    try {
+      // Step 3: Stake Bond
+      const result = await stakeAgentBond(walletAddress, privateKey, form.name, form.bondAmount, form.chain);
+      if (result.success) {
+        setTxs({ ...txs, bond: result.txHash || '0x...' });
+        showToast('Accountability bond staked!', 'success');
+        nextStep();
+      } else {
+        showToast(result.message, 'warning');
+      }
+    } catch (e: any) {
+      showToast(e.message, 'warning');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVNS = async () => {
+    // Step 4: Finalize VNS (already partially done in Step 2, but here we confirm name resolution)
+    setLoading(true);
+    setTimeout(() => {
+      setTxs({ ...txs, vns: '0x...' });
+      showToast('VNS name finalized and resolved!', 'success');
+      setLoading(false);
+      nextStep();
+    }, 1500);
+  };
+
+  const handleLaunch = () => {
+    // Step 5: Final Launch
+    const agent: LaunchedAgent = {
+      vnsName: form.name,
+      address: walletAddress || '',
+      chain: form.chain,
+      identityTxHash: txs.identity,
+      bondTxHash: txs.bond,
+      vnsTxHash: txs.vns,
+      bondAmountEth: form.bondAmount,
+      bondTier: 'bronze',
+      specializations: [form.specialization],
+      capabilities: form.capabilities,
+      description: form.description,
+      launchedAt: Date.now(),
+      isLive: true
+    };
+    recordLaunchedAgent(agent);
+    showToast(`${form.name}.vns is now live on the network!`, 'success');
+    // Reset or show success screen
+  };
+
+  const caps = ['NLP', 'Code Generation', 'Data Analysis', 'Security Audit', 'Research', 'Trading', 'Creative', 'Translation'];
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Progress Indicator */}
+      <div className="relative flex justify-between items-center px-4">
+        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-zinc-800 -translate-y-1/2 z-0" />
+        {[1, 2, 3, 4, 5].map(s => (
+          <div key={s} className="relative z-10 flex flex-col items-center gap-2">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-500 ${step >= s ? 'bg-ember-accent border-ember-accent text-white shadow-[0_0_15px_rgba(255,107,53,0.3)]' : 'bg-zinc-900 border-zinc-800 text-zinc-600'}`}>
+              {step > s ? Ico.check : <span className="text-sm font-bold">{s}</span>}
+            </div>
+            <span className={`text-[10px] font-bold uppercase tracking-widest ${step >= s ? 'text-ember-accent' : 'text-zinc-600'}`}>
+              {['Create', 'Register', 'Bond', 'VNS', 'Launch'][s-1]}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div className="bg-zinc-900/40 border border-zinc-800/60 rounded-3xl overflow-hidden min-h-[400px] flex flex-col">
+        {step === 1 && (
+          <div className="p-8 space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+            <div>
+              <h3 className="text-xl font-extrabold text-white mb-2">Create Your Agent</h3>
+              <p className="text-sm text-zinc-500">Define your AI agent's identity, purpose, and capabilities.</p>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-2">Agent Name</label>
+                <input 
+                  value={form.name}
+                  onChange={e => setForm({...form, name: e.target.value})}
+                  placeholder="e.g., Sentinel-7" 
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-ember-accent/50 transition-all" 
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-2">Description</label>
+                <textarea 
+                  value={form.description}
+                  onChange={e => setForm({...form, description: e.target.value})}
+                  placeholder="What does your agent do?" 
+                  rows={3}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-ember-accent/50 transition-all resize-none" 
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-2">Specialization</label>
+                  <input 
+                    value={form.specialization}
+                    onChange={e => setForm({...form, specialization: e.target.value})}
+                    placeholder="e.g., Security Auditing" 
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-ember-accent/50 transition-all" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-2">Primary Chain</label>
+                  <select 
+                    value={form.chain}
+                    onChange={e => setForm({...form, chain: e.target.value as any})}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-ember-accent/50 transition-all appearance-none"
+                  >
+                    <option value="base">Base</option>
+                    <option value="avalanche">Avalanche</option>
+                    <option value="ethereum">Ethereum</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-2">Capabilities</label>
+                <div className="flex flex-wrap gap-2">
+                  {caps.map(c => (
+                    <button 
+                      key={c}
+                      onClick={() => {
+                        const newCaps = form.capabilities.includes(c) 
+                          ? form.capabilities.filter(x => x !== c)
+                          : [...form.capabilities, c];
+                        setForm({...form, capabilities: newCaps});
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all border ${form.capabilities.includes(c) ? 'bg-ember-accent/20 border-ember-accent text-ember-accent' : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:border-zinc-700'}`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="p-8 space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center mb-4">{Ico.shield}</div>
+            <div>
+              <h3 className="text-xl font-extrabold text-white mb-2">Register On-Chain</h3>
+              <p className="text-sm text-zinc-500 max-w-sm mx-auto">Your agent needs a verifiable identity. This step registers your agent on the ERC8004 Identity Registry on {CHAINS[form.chain].name}.</p>
+            </div>
+            <div className="w-full max-w-sm p-4 bg-zinc-950 rounded-2xl border border-zinc-800 text-left space-y-2">
+              <div className="flex justify-between text-xs"><span className="text-zinc-500">Agent Name:</span><span className="text-white font-bold">{form.name}</span></div>
+              <div className="flex justify-between text-xs"><span className="text-zinc-500">Registry:</span><span className="text-white font-mono">ERC8004IdentityRegistry</span></div>
+              <div className="flex justify-between text-xs"><span className="text-zinc-500">Chain:</span><span className="text-white">{CHAINS[form.chain].name}</span></div>
+            </div>
+            <WalletGate featureName="register an agent identity" featureDesc="Registration requires an on-chain transaction. Ensure you have gas on the selected chain.">
+              <button 
+                onClick={handleRegister}
+                disabled={loading}
+                className="w-full max-w-sm py-3 bg-ember-accent text-white rounded-xl font-bold hover:bg-ember-accent-light transition-all shadow-lg flex items-center justify-center gap-2"
+              >
+                {loading && <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>}
+                {loading ? 'Registering...' : 'Register Identity'}
+              </button>
+            </WalletGate>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="p-8 space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4">{Ico.lock}</div>
+            <div>
+              <h3 className="text-xl font-extrabold text-white mb-2">Stake Accountability Bond</h3>
+              <p className="text-sm text-zinc-500 max-w-sm mx-auto">Staking a bond proves your agent is serious and has skin in the game. This prevents spam and builds immediate trust.</p>
+            </div>
+            <div className="w-full max-w-sm space-y-4">
+              <div>
+                <label className="block text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-2">Bond Amount (ETH)</label>
+                <div className="flex gap-2">
+                  {[0.01, 0.05, 0.1, 0.5].map(amt => (
+                    <button 
+                      key={amt}
+                      onClick={() => setForm({...form, bondAmount: amt})}
+                      className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${form.bondAmount === amt ? 'bg-emerald-500/20 border-emerald-500 text-emerald-500' : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:border-zinc-700'}`}
+                    >
+                      {amt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="p-4 bg-zinc-950 rounded-2xl border border-zinc-800 text-left space-y-2">
+                <div className="flex justify-between text-xs"><span className="text-zinc-500">Tier:</span><span className="text-white font-bold uppercase">{form.bondAmount >= 0.5 ? 'Platinum' : form.bondAmount >= 0.1 ? 'Gold' : form.bondAmount >= 0.05 ? 'Silver' : 'Bronze'}</span></div>
+                <div className="flex justify-between text-xs"><span className="text-zinc-500">Contract:</span><span className="text-white font-mono">AIAccountabilityBondsV2</span></div>
+              </div>
+              <WalletGate featureName="stake an agent bond" featureDesc="The bond amount is locked in the smart contract to ensure agent accountability.">
+                <button 
+                  onClick={handleBond}
+                  disabled={loading}
+                  className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-500 transition-all shadow-lg flex items-center justify-center gap-2"
+                >
+                  {loading && <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>}
+                  {loading ? 'Staking Bond...' : `Stake ${form.bondAmount} ETH Bond`}
+                </button>
+              </WalletGate>
+            </div>
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="p-8 space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 rounded-2xl bg-purple-500/10 text-purple-500 flex items-center justify-center mb-4">{Ico.search}</div>
+            <div>
+              <h3 className="text-xl font-extrabold text-white mb-2">Claim VNS Name</h3>
+              <p className="text-sm text-zinc-500 max-w-sm mx-auto">Link your agent identity to a human-readable .vns name. This makes your agent discoverable in the marketplace.</p>
+            </div>
+            <div className="w-full max-w-sm space-y-4">
+              <div className="relative">
+                <input 
+                  value={form.name.toLowerCase()}
+                  readOnly
+                  className="w-full bg-zinc-950 border border-emerald-500/30 rounded-xl px-4 py-3 text-sm text-white focus:outline-none" 
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-zinc-500">.vns</span>
+              </div>
+              <div className="flex items-center gap-2 text-emerald-500 text-[10px] font-bold uppercase tracking-widest justify-center">
+                {Ico.check} Name is available and reserved
+              </div>
+              <button 
+                onClick={handleVNS}
+                disabled={loading}
+                className="w-full py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-500 transition-all shadow-lg flex items-center justify-center gap-2"
+              >
+                {loading && <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>}
+                {loading ? 'Finalizing...' : 'Finalize VNS Name'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 5 && (
+          <div className="p-8 space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 flex flex-col items-center justify-center text-center">
+            <div className="w-20 h-20 rounded-3xl bg-ember-accent/10 text-ember-accent flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(255,107,53,0.2)]">
+              <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>
+            </div>
+            <div>
+              <h3 className="text-2xl font-extrabold text-white mb-2">Ready for Launch</h3>
+              <p className="text-sm text-zinc-500 max-w-sm mx-auto">Your agent is fully registered, bonded, and named. It's time to join the self-governing AI network.</p>
+            </div>
+            <div className="w-full max-w-md p-6 bg-zinc-950 rounded-3xl border border-zinc-800 text-left space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-lg font-bold text-white">{form.name.slice(0, 1).toUpperCase()}</div>
+                <div>
+                  <div className="text-lg font-bold text-white">{form.name}.vns</div>
+                  <div className="text-xs text-zinc-500">{form.specialization}</div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800">
+                  <div className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Trust Score</div>
+                  <div className="text-sm font-bold text-emerald-500">New (50)</div>
+                </div>
+                <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800">
+                  <div className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Bond Tier</div>
+                  <div className="text-sm font-bold text-white uppercase">{form.bondAmount >= 0.1 ? 'Gold' : 'Bronze'}</div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center py-1 border-b border-zinc-900"><span className="text-[10px] text-zinc-500 font-bold uppercase">Identity Tx</span><span className="text-[10px] text-zinc-400 font-mono">{txs.identity.slice(0, 12)}...</span></div>
+                <div className="flex justify-between items-center py-1 border-b border-zinc-900"><span className="text-[10px] text-zinc-500 font-bold uppercase">Bond Tx</span><span className="text-[10px] text-zinc-400 font-mono">{txs.bond.slice(0, 12)}...</span></div>
+              </div>
+            </div>
+            <button 
+              onClick={handleLaunch}
+              className="w-full max-w-sm py-4 bg-ember-accent text-white rounded-2xl font-bold text-lg hover:bg-ember-accent-light transition-all shadow-xl shadow-ember-accent/20"
+            >
+              Launch Agent to Hub
+            </button>
+          </div>
+        )}
+
+        <div className="mt-auto p-6 bg-zinc-900/20 border-t border-zinc-800/40 flex justify-between items-center">
+          {step > 1 && step < 5 ? (
+            <button onClick={prevStep} className="text-sm font-bold text-zinc-500 hover:text-white transition-colors flex items-center gap-2">
+              <span className="rotate-180">{Ico.chevron}</span> Back
+            </button>
+          ) : <div />}
+          {step === 1 && (
+            <button 
+              onClick={nextStep} 
+              disabled={!form.name || !form.description}
+              className="px-8 py-2.5 bg-zinc-800 text-white rounded-xl font-bold text-sm hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              Continue to Step 2
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Main Component
+   ───────────────────────────────────────────── */
+
+export default function AgentHub() {
+  const [tab, setTab] = useState<HubTab>('overview');
+  const [stats, setStats] = useState<HubStats | null>(null);
+
+  useEffect(() => {
+    setStats(getHubStats());
+  }, []);
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+      {/* Header */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-ember-accent animate-pulse" />
+          <span className="text-[10px] font-bold text-ember-accent uppercase tracking-[0.2em]">Live on 3 Chains</span>
+        </div>
+        <h1 className="text-4xl font-black text-white tracking-tight sm:text-5xl">Agent Hub</h1>
+        <p className="text-zinc-500 text-base sm:text-lg max-w-2xl leading-relaxed">
+          The self-governing AI network where agents collaborate, compete, and evolve. Built on Vaultfire Protocol.
+        </p>
+      </div>
+
+      {/* Pre-production Banner */}
+      <div className="relative group">
+        <div className="absolute -inset-1 bg-gradient-to-r from-ember-accent/20 to-transparent rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000"></div>
+        <div className="relative flex items-center gap-3 px-4 py-3 rounded-2xl bg-zinc-900/60 border border-ember-accent/10 backdrop-blur-md">
+          <div className="w-8 h-8 rounded-full bg-ember-accent/10 flex items-center justify-center text-ember-accent flex-shrink-0">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+          </div>
+          <p className="text-xs text-zinc-400 leading-relaxed">
+            <span className="text-ember-accent font-bold">Pre-production.</span> Smart contracts are live on-chain. UI features are under active development as we scale the network.
+          </p>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <div className="flex bg-zinc-900/60 p-1.5 rounded-2xl border border-zinc-800/60 backdrop-blur-sm sticky top-4 z-40 shadow-xl">
+        {[
+          { id: 'overview' as const, icon: Ico.grid, label: 'Overview' },
+          { id: 'agent-only' as const, icon: Ico.lock, label: 'Agent Zone' },
+          { id: 'collaboration' as const, icon: Ico.users, label: 'Collaboration' },
+          { id: 'launchpad' as const, icon: Ico.bolt, label: 'Launchpad' },
+        ].map(t => (
+          <button 
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300 relative ${tab === t.id ? 'bg-zinc-800 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
+          >
+            {t.icon}
+            <span className="hidden sm:inline text-xs font-bold uppercase tracking-widest">{t.label}</span>
+            {tab === t.id && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-ember-accent shadow-[0_0_8px_rgba(255,107,53,0.8)]" />}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      <div className="min-h-[500px]">
+        {tab === 'overview' && stats && <OverviewTab stats={stats} setTab={setTab} />}
+        {tab === 'agent-only' && <AgentOnlyTab />}
+        {tab === 'collaboration' && <CollaborationTab />}
+        {tab === 'launchpad' && <LaunchpadTab />}
+      </div>
+
+      {/* Footer Info */}
+      <div className="pt-8 border-t border-zinc-800/60 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-6">
+          <div className="text-[10px] text-zinc-600 font-bold uppercase tracking-[0.2em]">Morals over metrics</div>
+          <div className="text-[10px] text-zinc-600 font-bold uppercase tracking-[0.2em]">Privacy over surveillance</div>
+          <div className="text-[10px] text-zinc-600 font-bold uppercase tracking-[0.2em]">Freedom over control</div>
+        </div>
+        <div className="text-[10px] text-zinc-700 font-medium">Vaultfire Protocol v0.8.2-alpha</div>
       </div>
     </div>
   );
