@@ -1291,9 +1291,30 @@ async function fetchAgentFromChain(
       desc = parsed.desc || decoded.description;
     } catch { /* not JSON, use raw */ }
 
+    // Extract the actual VNS name — the on-chain "name" field may be a metadata URL
+    // e.g. "https://theloopbreaker.com/agents/vaultfire-sentinel.vns" → "vaultfire-sentinel"
+    let vnsName = decoded.name;
+    if (vnsName.startsWith('http://') || vnsName.startsWith('https://')) {
+      try {
+        const url = new URL(vnsName);
+        const pathParts = url.pathname.split('/').filter(Boolean);
+        const lastPart = pathParts[pathParts.length - 1] || '';
+        const extracted = lastPart.replace(/\.vns$/, '').toLowerCase().trim();
+        if (extracted && /^[a-z0-9][a-z0-9-]*$/.test(extracted)) {
+          vnsName = extracted;
+        } else {
+          vnsName = `agent-${address.slice(2, 8).toLowerCase()}`;
+        }
+      } catch {
+        vnsName = `agent-${address.slice(2, 8).toLowerCase()}`;
+      }
+    } else {
+      vnsName = vnsName.replace(/\.vns$/, '').toLowerCase().trim();
+    }
+
     return {
-      name: decoded.name,
-      fullName: `${decoded.name}.vns`,
+      name: vnsName,
+      fullName: `${vnsName}.vns`,
       address,
       chain,
       identityType,

@@ -77,6 +77,262 @@ function ZoneCard({ title, desc, icon, color, onClick }: { title: string; desc: 
    Tab: Overview (with real on-chain data)
    ───────────────────────────────────────────── */
 
+/* ─────────────────────────────────────────────
+   Identity Dashboard — filterable, searchable, paginated
+   ───────────────────────────────────────────── */
+
+const PAGE_SIZE = 10;
+
+type SortOption = 'alpha' | 'bond' | 'recent';
+type ChainFilter = 'all' | 'base' | 'avalanche' | 'ethereum';
+type TypeFilter = 'all' | 'agent' | 'human' | 'companion';
+type TierFilter = 'all' | 'bronze' | 'silver' | 'gold' | 'platinum';
+
+function IdentityDashboard({ agents }: { agents: RegisteredAgent[] }) {
+  const [search, setSearch] = useState('');
+  const [chainFilter, setChainFilter] = useState<ChainFilter>('all');
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
+  const [tierFilter, setTierFilter] = useState<TierFilter>('all');
+  const [x402Filter, setX402Filter] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>('alpha');
+  const [page, setPage] = useState(1);
+
+  // Filter + sort
+  const filtered = React.useMemo(() => {
+    let list = [...agents];
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(a =>
+        a.fullName.toLowerCase().includes(q) ||
+        a.name.toLowerCase().includes(q) ||
+        a.address.toLowerCase().includes(q)
+      );
+    }
+    if (chainFilter !== 'all') list = list.filter(a => a.chain === chainFilter || a.chain === 'both');
+    if (typeFilter !== 'all') list = list.filter(a => a.identityType === typeFilter);
+    if (tierFilter !== 'all') list = list.filter(a => a.bondTier === tierFilter);
+    if (x402Filter) list = list.filter(a => a.acceptsPayments !== false);
+    // Sort
+    if (sortBy === 'alpha') list.sort((a, b) => a.fullName.localeCompare(b.fullName));
+    else if (sortBy === 'recent') list.sort((a, b) => (b.registeredAt || 0) - (a.registeredAt || 0));
+    else if (sortBy === 'bond') {
+      const tierOrder: Record<string, number> = { platinum: 4, gold: 3, silver: 2, bronze: 1 };
+      list.sort((a, b) => (tierOrder[b.bondTier || ''] || 0) - (tierOrder[a.bondTier || ''] || 0));
+    }
+    return list;
+  }, [agents, search, chainFilter, typeFilter, tierFilter, x402Filter, sortBy]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // Reset page when filters change
+  React.useEffect(() => { setPage(1); }, [search, chainFilter, typeFilter, tierFilter, x402Filter, sortBy]);
+
+  const tierColors: Record<string, string> = {
+    bronze: 'text-orange-400 bg-orange-500/10',
+    silver: 'text-zinc-300 bg-zinc-500/10',
+    gold: 'text-yellow-400 bg-yellow-500/10',
+    platinum: 'text-purple-400 bg-purple-500/10',
+  };
+  const typeColors: Record<string, string> = {
+    human: 'text-emerald-400 bg-emerald-500/10',
+    companion: 'text-orange-400 bg-orange-500/10',
+    agent: 'text-blue-400 bg-blue-500/10',
+  };
+  const chainColors: Record<string, string> = {
+    base: 'text-blue-400',
+    avalanche: 'text-red-400',
+    ethereum: 'text-purple-400',
+    both: 'text-emerald-400',
+  };
+
+  function FilterChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+    return (
+      <button
+        onClick={onClick}
+        className={`px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${
+          active
+            ? 'bg-ember-accent text-white shadow-[0_0_12px_rgba(255,107,53,0.3)]'
+            : 'bg-zinc-800/60 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700/60'
+        }`}
+      >
+        {label}
+      </button>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl bg-zinc-900/40 border border-zinc-800/60 overflow-hidden">
+      {/* Header */}
+      <div className="px-5 pt-5 pb-4 border-b border-zinc-800/60">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-bold text-white uppercase tracking-widest">Registered Identities</h3>
+          <span className="text-[11px] text-zinc-500">
+            {filtered.length === agents.length
+              ? `${agents.length} total`
+              : `${filtered.length} of ${agents.length}`}
+          </span>
+        </div>
+
+        {/* Search */}
+        <div className="relative mb-4">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">{Ico.search}</div>
+          <input
+            type="text"
+            placeholder="Search by .vns name or address…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full bg-zinc-900/60 border border-zinc-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-600 transition-colors"
+          />
+        </div>
+
+        {/* Filter chips — scrollable on mobile */}
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: 'none' }}>
+          {/* Chain */}
+          <FilterChip label="All Chains" active={chainFilter === 'all'} onClick={() => setChainFilter('all')} />
+          <FilterChip label="Base" active={chainFilter === 'base'} onClick={() => setChainFilter('base')} />
+          <FilterChip label="Avalanche" active={chainFilter === 'avalanche'} onClick={() => setChainFilter('avalanche')} />
+          <FilterChip label="Ethereum" active={chainFilter === 'ethereum'} onClick={() => setChainFilter('ethereum')} />
+          <div className="w-px h-6 bg-zinc-700/60 self-center flex-shrink-0" />
+          {/* Type */}
+          <FilterChip label="All Types" active={typeFilter === 'all'} onClick={() => setTypeFilter('all')} />
+          <FilterChip label="Agent" active={typeFilter === 'agent'} onClick={() => setTypeFilter('agent')} />
+          <FilterChip label="Human" active={typeFilter === 'human'} onClick={() => setTypeFilter('human')} />
+          <div className="w-px h-6 bg-zinc-700/60 self-center flex-shrink-0" />
+          {/* Bond tier */}
+          <FilterChip label="Bronze" active={tierFilter === 'bronze'} onClick={() => setTierFilter(tierFilter === 'bronze' ? 'all' : 'bronze')} />
+          <FilterChip label="Silver" active={tierFilter === 'silver'} onClick={() => setTierFilter(tierFilter === 'silver' ? 'all' : 'silver')} />
+          <FilterChip label="Gold" active={tierFilter === 'gold'} onClick={() => setTierFilter(tierFilter === 'gold' ? 'all' : 'gold')} />
+          <FilterChip label="Platinum" active={tierFilter === 'platinum'} onClick={() => setTierFilter(tierFilter === 'platinum' ? 'all' : 'platinum')} />
+          <div className="w-px h-6 bg-zinc-700/60 self-center flex-shrink-0" />
+          {/* x402 */}
+          <FilterChip label="x402" active={x402Filter} onClick={() => setX402Filter(v => !v)} />
+        </div>
+
+        {/* Sort + count */}
+        <div className="flex items-center justify-between mt-3">
+          <span className="text-[11px] text-zinc-600">
+            Showing {Math.min((page - 1) * PAGE_SIZE + 1, filtered.length)}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} identit{filtered.length === 1 ? 'y' : 'ies'}
+          </span>
+          <select
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value as SortOption)}
+            className="bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1 text-[11px] text-zinc-400 focus:outline-none focus:border-zinc-600 cursor-pointer"
+          >
+            <option value="alpha">A → Z</option>
+            <option value="bond">Bond tier</option>
+            <option value="recent">Most recent</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Identity Cards */}
+      {filtered.length === 0 ? (
+        <div className="px-5 py-12 text-center">
+          <div className="text-zinc-600 text-sm">No identities match your filters.</div>
+          <button onClick={() => { setSearch(''); setChainFilter('all'); setTypeFilter('all'); setTierFilter('all'); setX402Filter(false); }} className="mt-3 text-[11px] text-ember-accent hover:underline">
+            Clear all filters
+          </button>
+        </div>
+      ) : (
+        <div className="divide-y divide-zinc-800/40">
+          {paginated.map((agent, i) => {
+            const initials = agent.name.slice(0, 2).toUpperCase();
+            const shortAddr = `${agent.address.slice(0, 6)}…${agent.address.slice(-4)}`;
+            return (
+              <div key={`${agent.name}-${i}`} className="px-5 py-4 hover:bg-zinc-800/20 transition-colors">
+                <div className="flex items-start gap-3">
+                  {/* Avatar */}
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-700 to-zinc-800 flex items-center justify-center text-xs font-black text-zinc-300 flex-shrink-0 mt-0.5">
+                    {initials}
+                  </div>
+
+                  {/* Main content */}
+                  <div className="flex-1 min-w-0">
+                    {/* VNS name — primary display */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-base font-black text-white tracking-tight">{agent.fullName}</span>
+                      {agent.online && (
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)] flex-shrink-0" />
+                      )}
+                    </div>
+
+                    {/* Address — secondary */}
+                    <div className="text-[11px] text-zinc-600 font-mono mt-0.5">{shortAddr}</div>
+
+                    {/* Badges row */}
+                    <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                      {/* Identity type */}
+                      <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-lg ${typeColors[agent.identityType] || 'text-zinc-400 bg-zinc-800'}`}>
+                        {agent.identityType}
+                      </span>
+                      {/* Chain */}
+                      <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-lg bg-zinc-800/60 ${chainColors[agent.chain] || 'text-zinc-400'}`}>
+                        {agent.chain}
+                      </span>
+                      {/* Bond tier */}
+                      {agent.bondTier && (
+                        <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-lg ${tierColors[agent.bondTier] || 'text-zinc-400 bg-zinc-800'}`}>
+                          {agent.bondTier}
+                        </span>
+                      )}
+                      {/* x402 */}
+                      {agent.acceptsPayments !== false && (
+                        <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-lg text-blue-400 bg-blue-500/10">
+                          x402
+                        </span>
+                      )}
+                      {/* Capabilities */}
+                      {agent.capabilities?.slice(0, 2).map(cap => (
+                        <span key={cap} className="text-[9px] font-medium px-2 py-0.5 rounded-lg text-zinc-500 bg-zinc-800/40">
+                          {cap}
+                        </span>
+                      ))}
+                      {(agent.capabilities?.length || 0) > 2 && (
+                        <span className="text-[9px] text-zinc-600">+{(agent.capabilities?.length || 0) - 2} more</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Claim VNS prompt if no VNS name */}
+                  {!agent.name && (
+                    <button className="flex-shrink-0 text-[10px] font-bold text-ember-accent border border-ember-accent/30 rounded-xl px-3 py-1.5 hover:bg-ember-accent/10 transition-colors">
+                      Claim .vns
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="px-5 py-4 border-t border-zinc-800/60 flex items-center justify-between">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="text-[11px] font-bold text-zinc-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors px-3 py-1.5 rounded-xl hover:bg-zinc-800/60"
+          >
+            ← Previous
+          </button>
+          <span className="text-[11px] text-zinc-600">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="text-[11px] font-bold text-zinc-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors px-3 py-1.5 rounded-xl hover:bg-zinc-800/60"
+          >
+            Next →
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function OverviewTab({ stats, loading, agents, setTab }: { stats: HubStats | null; loading: boolean; agents: RegisteredAgent[]; setTab: (t: HubTab) => void }) {
   // Real contract counts from contracts.ts — 15 per chain, 45 total
   const contractCounts: Record<string, number> = {
@@ -148,47 +404,8 @@ function OverviewTab({ stats, loading, agents, setTab }: { stats: HubStats | nul
         )}
       </div>
 
-      {/* Registered Agents List */}
-      {agents.length > 0 && (
-        <div className="rounded-2xl bg-zinc-900/40 border border-zinc-800/60 p-5">
-          <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest mb-4">Registered Identities</h3>
-          <div className="space-y-3">
-            {agents.map((agent, i) => (
-              <div key={`${agent.name}-${i}`} className="flex items-center gap-3 p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/40">
-                <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-sm font-bold text-zinc-400 flex-shrink-0">
-                  {agent.name.slice(0, 2).toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-white truncate">{agent.fullName}</span>
-                    <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-md ${
-                      agent.identityType === 'human' ? 'bg-emerald-500/10 text-emerald-500' :
-                      agent.identityType === 'companion' ? 'bg-orange-500/10 text-orange-500' :
-                      'bg-purple-500/10 text-purple-500'
-                    }`}>
-                      {agent.identityType}
-                    </span>
-                    {agent.online && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]" />}
-                  </div>
-                  <div className="text-[11px] text-zinc-500 truncate">
-                    {agent.address.slice(0, 10)}...{agent.address.slice(-6)} on {agent.chain}
-                  </div>
-                </div>
-                {agent.acceptsPayments !== false && (
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 px-2 py-1 rounded-lg" title="Accepts x402 payments">
-                    x402
-                  </span>
-                )}
-                {agent.bondTier && (
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 bg-zinc-800 px-2 py-1 rounded-lg">
-                    {agent.bondTier}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Identity Dashboard — filterable, searchable, paginated */}
+      <IdentityDashboard agents={agents} />
 
       {/* Hub Zones */}
       <div className="space-y-3">

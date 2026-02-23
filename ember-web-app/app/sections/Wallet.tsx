@@ -236,7 +236,25 @@ function BaseIcon({ size = 40 }: { size?: number }) {
   return (<svg width={size} height={size} viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="16" fill="#0052FF"/><path d="M16 26c5.523 0 10-4.477 10-10S21.523 6 16 6c-5.2 0-9.473 3.97-9.95 9.04h13.1v1.92H6.05C6.527 22.03 10.8 26 16 26z" fill="#fff"/></svg>);
 }
 
-// ─── Token Letter Fallback ────────────────────────────────────────────────────
+// ─── // ─── Known Token Colors ────────────────────────────────────────────
+
+const TOKEN_COLORS: Record<string, string> = {
+  USDC: "#2775CA",   // USDC blue-green
+  USDT: "#26A17B",   // Tether green
+  DAI: "#F5AC37",    // DAI gold
+  WBTC: "#F7931A",   // Bitcoin orange
+  WETH: "#627EEA",   // Wrapped ETH blue
+  LINK: "#375BD2",   // Chainlink blue
+  UNI: "#FF007A",    // Uniswap pink
+  AAVE: "#B6509E",   // Aave purple
+  ASM: "#8B5CF6",    // Assemble AI purple
+  MATIC: "#8247E5",  // Polygon purple
+  OP: "#FF0420",     // Optimism red
+  ARB: "#28A0F0",    // Arbitrum blue
+  PEPE: "#4CAF50",   // Pepe green
+};
+
+// ─── Token Letter Fallback ────────────────────────────────────────────
 
 function TokenLetter({ symbol, color, size = 40 }: { symbol: string; color: string; size?: number }) {
   return (
@@ -268,7 +286,9 @@ function TokenAvatar({ item, size = 40 }: { item: AssetItem; size?: number }) {
     if (item.chain === "base") return <BaseIcon size={size} />;
     return <EthIcon size={size} />;
   }
-  return <TokenLetter symbol={item.symbol} color={item.logoColor || "#71717A"} size={size} />;
+  // Use known token color or fallback
+  const knownColor = TOKEN_COLORS[item.symbol.toUpperCase()];
+  return <TokenLetter symbol={item.symbol} color={knownColor || item.logoColor || "#71717A"} size={size} />;
 }
 
 function ChainBadge({ chain }: { chain: SupportedChain }) {
@@ -1190,8 +1210,9 @@ export default function Wallet() {
 
       {/* ── Hero: Total Portfolio Value ── */}
       <div style={{
-        padding: `${isMobile ? 28 : 40}px ${px} ${isMobile ? 24 : 32}px`,
-        background: "linear-gradient(180deg, rgba(249,115,22,0.05) 0%, transparent 100%)",
+        padding: `${isMobile ? 28 : 40}px ${px} ${isMobile ? 28 : 36}px`,
+        background: "linear-gradient(180deg, rgba(249,115,22,0.07) 0%, rgba(249,115,22,0.02) 60%, transparent 100%)",
+        borderBottom: "1px solid rgba(255,255,255,0.04)",
       }}>
         {/* VNS / Address pill */}
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
@@ -1224,19 +1245,25 @@ export default function Wallet() {
         </div>
 
         {/* Total USD Value */}
-        <div style={{ textAlign: "center", marginBottom: 28 }}>
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
           {loadingBals || pricesLoading ? (
-            <div className="skeleton" style={{ height: 52, width: 200, borderRadius: 12, margin: "0 auto 8px" }} />
+            <>
+              <div className="skeleton" style={{ height: 60, width: 220, borderRadius: 12, margin: "0 auto 10px" }} />
+              <div className="skeleton" style={{ height: 14, width: 140, borderRadius: 6, margin: "0 auto" }} />
+            </>
           ) : (
-            <h1 style={{
-              fontSize: isMobile ? 44 : 56, fontWeight: 800,
-              color: "#F4F4F5", letterSpacing: "-0.04em",
-              lineHeight: 1.1, marginBottom: 6, ...mono,
-            }}>
-              {formatUsd(totalUsd)}
-            </h1>
+            <>
+              <h1 style={{
+                fontSize: isMobile ? 52 : 64, fontWeight: 800,
+                color: "#F4F4F5", letterSpacing: "-0.05em",
+                lineHeight: 1.0, marginBottom: 8, ...mono,
+                textShadow: "0 0 40px rgba(249,115,22,0.15)",
+              }}>
+                {formatUsd(totalUsd)}
+              </h1>
+              <p style={{ fontSize: 13, color: "#71717A", fontWeight: 500, letterSpacing: "0.01em" }}>Total Portfolio Value</p>
+            </>
           )}
-          <p style={{ fontSize: 13, color: "#52525B", fontWeight: 500 }}>Total Portfolio Value</p>
         </div>
 
         {/* Embris Protocol badge */}
@@ -1262,8 +1289,8 @@ export default function Wallet() {
       </div>
 
       {/* ── Asset List ── */}
-      <div style={{ padding: `0 ${px}` }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, marginTop: 8 }}>
+      <div style={{ padding: `24px ${px} 0` }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
           <h3 style={{ fontSize: 17, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.02em" }}>Assets</h3>
           <button
             type="button"
@@ -1311,11 +1338,11 @@ export default function Wallet() {
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") openSend(asset); }}
                 style={{
                   display: "flex", alignItems: "center", justifyContent: "space-between",
-                  padding: "14px 16px",
-                  backgroundColor: "rgba(255,255,255,0.02)",
-                  border: "1px solid rgba(255,255,255,0.04)",
-                  borderRadius: 16,
-                  transition: "background-color 0.15s ease",
+                  padding: "16px 18px",
+                  backgroundColor: "rgba(255,255,255,0.025)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: 18,
+                  transition: "background-color 0.15s ease, border-color 0.15s ease",
                   cursor: "pointer",
                   WebkitTapHighlightColor: "transparent",
                   touchAction: "manipulation",
@@ -1327,18 +1354,18 @@ export default function Wallet() {
                     {asset.type === "erc20" && <ChainBadge chain={asset.chain} />}
                   </div>
                   <div>
-                    <p style={{ fontSize: 15, fontWeight: 600, color: "#F4F4F5", marginBottom: 2, letterSpacing: "-0.01em" }}>{asset.symbol}</p>
-                    <p style={{ fontSize: 11, color: "#52525B" }}>
+                    <p style={{ fontSize: 15, fontWeight: 700, color: "#F4F4F5", marginBottom: 3, letterSpacing: "-0.02em" }}>{asset.symbol}</p>
+                    <p style={{ fontSize: 11, color: "#71717A", fontWeight: 400 }}>
                       {asset.type === "native" ? asset.chainName : `${asset.name} · ${asset.chainName}`}
-                      {asset.pricePerToken > 0 && <span style={{ color: "#3F3F46" }}> · {formatPrice(asset.pricePerToken)}</span>}
+                      {asset.pricePerToken > 0 && <span style={{ color: "#52525B" }}> · {formatPrice(asset.pricePerToken)}</span>}
                     </p>
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <p style={{ fontSize: 15, fontWeight: 700, color: asset.error ? "#EF4444" : "#F4F4F5", ...mono, letterSpacing: "-0.02em", marginBottom: 2 }}>
+                  <p style={{ fontSize: 16, fontWeight: 700, color: asset.error ? "#EF4444" : "#F4F4F5", ...mono, letterSpacing: "-0.03em", marginBottom: 3 }}>
                     {asset.error ? "Error" : asset.balanceFormatted}
                   </p>
-                  <p style={{ fontSize: 12, color: "#52525B", ...mono }}>
+                  <p style={{ fontSize: 12, color: asset.usdValue > 0 ? "#71717A" : "#3F3F46", ...mono, fontWeight: 500 }}>
                     {asset.usdValue > 0 ? formatUsd(asset.usdValue) : "—"}
                   </p>
                 </div>
@@ -1349,9 +1376,12 @@ export default function Wallet() {
       </div>
 
       {/* ── Spending Limits ── */}
-      <div style={{ padding: `24px ${px} 0` }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-          <h3 style={{ fontSize: 17, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.02em" }}>Spending Limits</h3>
+      <div style={{ padding: `32px ${px} 0` }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <div>
+            <h3 style={{ fontSize: 17, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.02em", marginBottom: 2 }}>Spending Limits</h3>
+            <p style={{ fontSize: 11, color: "#52525B", fontWeight: 400 }}>Optional caps on outgoing payments</p>
+          </div>
           <button
             type="button"
             onClick={() => setShowAddLimit(!showAddLimit)}
@@ -1365,7 +1395,7 @@ export default function Wallet() {
           >
             <PlusIcon size={10} /> Add Limit
           </button>
-        </div>
+        </div>  {/* end header row */}
 
         {/* Add limit form */}
         {showAddLimit && (
@@ -1412,9 +1442,14 @@ export default function Wallet() {
 
         {/* Active limits with progress bars */}
         {limitStatuses.length === 0 ? (
-          <div style={{ padding: "24px 16px", textAlign: "center", backgroundColor: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16 }}>
-            <p style={{ fontSize: 13, color: "#52525B", marginBottom: 4 }}>No limits set — unlimited spending.</p>
-            <p style={{ fontSize: 11, color: "#3F3F46", lineHeight: 1.5 }}>Freedom over control. Tap &ldquo;Add Limit&rdquo; if you want to set a cap.</p>
+          <div style={{ padding: "20px 18px", backgroundColor: "rgba(255,255,255,0.015)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 18, display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "#A1A1AA", marginBottom: 3 }}>No limits — unlimited spending</p>
+              <p style={{ fontSize: 11, color: "#52525B", lineHeight: 1.5 }}>Freedom over control. Tap “Add Limit” to set a cap.</p>
+            </div>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1457,10 +1492,13 @@ export default function Wallet() {
       </div>
 
       {/* ── Trust Gating ── */}
-      <div style={{ padding: `24px ${px} 0` }}>
-        <h3 style={{ fontSize: 17, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.02em", marginBottom: 14 }}>Trust Gating</h3>
-        <div style={{ padding: "18px", backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20 }}>
-          <p style={{ fontSize: 12, color: "#71717A", marginBottom: 14, lineHeight: 1.6 }}>Optional: set a minimum bond tier for outgoing payments. Defaults to None — pay anyone freely. Opt in if you want trust-gating.</p>
+      <div style={{ padding: `32px ${px} 0` }}>
+        <div style={{ marginBottom: 16 }}>
+          <h3 style={{ fontSize: 17, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.02em", marginBottom: 2 }}>Trust Gating</h3>
+          <p style={{ fontSize: 11, color: "#52525B", fontWeight: 400 }}>Optional minimum bond tier for outgoing payments</p>
+        </div>
+        <div style={{ padding: "20px", backgroundColor: "rgba(255,255,255,0.015)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 20 }}>
+          <p style={{ fontSize: 12, color: "#71717A", marginBottom: 16, lineHeight: 1.65 }}>Defaults to None — pay anyone freely. Opt in if you want to restrict payments to verified agents only.</p>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {TRUST_GATE_LEVELS.map(level => (
               <button
@@ -1470,11 +1508,14 @@ export default function Wallet() {
                   setTrustGateLevelState(level.value);
                 }}
                 style={{
-                  fontSize: 11, fontWeight: 700, padding: "6px 12px", borderRadius: 8, cursor: "pointer",
-                  backgroundColor: trustGateLevel === level.value ? `${level.color}20` : "rgba(255,255,255,0.02)",
-                  border: `1.5px solid ${trustGateLevel === level.value ? `${level.color}60` : "rgba(255,255,255,0.06)"}`,
-                  color: trustGateLevel === level.value ? level.color : "#52525B",
+                  fontSize: 12, fontWeight: 700, padding: "8px 16px", borderRadius: 10, cursor: "pointer",
+                  backgroundColor: trustGateLevel === level.value ? `${level.color}18` : "rgba(255,255,255,0.025)",
+                  border: `1.5px solid ${trustGateLevel === level.value ? `${level.color}50` : "rgba(255,255,255,0.07)"}`,
+                  color: trustGateLevel === level.value ? level.color : "#71717A",
                   transition: "all 0.15s ease",
+                  WebkitTapHighlightColor: "transparent",
+                  touchAction: "manipulation",
+                  minHeight: 40,
                 }}
               >
                 {level.label}
@@ -1498,8 +1539,11 @@ export default function Wallet() {
       {/* ── Transaction History (x402 payments) ── */}
       <div style={{ padding: `32px ${px} 0` }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <h3 style={{ fontSize: 17, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.02em" }}>Transaction History</h3>
-          <span style={{ fontSize: 11, color: "#52525B", fontWeight: 500 }}>x402 Payments</span>
+          <div>
+            <h3 style={{ fontSize: 17, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.02em", marginBottom: 2 }}>Transaction History</h3>
+            <p style={{ fontSize: 11, color: "#52525B", fontWeight: 400 }}>x402 protocol payments</p>
+          </div>
+          <span style={{ fontSize: 10, fontWeight: 700, color: "#3B82F6", backgroundColor: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.15)", padding: "3px 8px", borderRadius: 6, letterSpacing: "0.04em", textTransform: "uppercase" }}>x402</span>
         </div>
         {txHistory.length === 0 ? (
           <div style={{ padding: "36px 24px", textAlign: "center", backgroundColor: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16 }}>
@@ -1512,7 +1556,7 @@ export default function Wallet() {
             </p>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {txHistory.slice(0, 20).map((tx) => {
               const isSent = tx.from.toLowerCase() === addr.toLowerCase();
               const counterparty = isSent ? (tx.recipientVNS || `${tx.payTo.slice(0, 8)}...${tx.payTo.slice(-4)}`) : (tx.senderVNS || `${tx.from.slice(0, 8)}...${tx.from.slice(-4)}`);
@@ -1528,7 +1572,7 @@ export default function Wallet() {
               })();
               const statusColor = tx.status === "settled" ? "#22C55E" : tx.status === "failed" ? "#EF4444" : "#EAB308";
               return (
-                <div key={tx.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", backgroundColor: "rgba(255,255,255,0.01)", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
+                <div key={tx.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <div style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: isSent ? "rgba(249,115,22,0.05)" : "rgba(34,197,94,0.05)", display: "flex", alignItems: "center", justifyContent: "center", color: isSent ? "#F97316" : "#22C55E" }}>
                       {isSent ? <SendIcon size={16} /> : <ReceiveIcon size={16} />}
