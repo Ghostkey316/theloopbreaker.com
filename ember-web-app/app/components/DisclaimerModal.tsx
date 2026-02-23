@@ -39,7 +39,7 @@ export default function DisclaimerModal() {
     "Nothing on this platform constitutes financial, investment, legal, or professional advice of any kind.",
     "Smart contracts deployed on Ethereum, Base, and Avalanche have not been formally audited. Use at your own risk.",
     "All on-chain transactions are irreversible. Embris by Vaultfire Protocol and its contributors are not liable for any losses or damages.",
-    "The Embris Hub and Marketplace are experimental platforms. Embris does not guarantee agent performance or reliability.",
+    "The Embris Hub and Embris Directory are experimental platforms. Embris does not guarantee agent performance or reliability.",
     "VNS names are permanent and immutable once registered on-chain.",
     "Embris is an AI companion. Responses may not always be accurate and are not a substitute for professional advice.",
   ];

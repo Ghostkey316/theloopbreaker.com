@@ -145,6 +145,14 @@ export default function Page() {
 
   const goToWallet = useCallback(() => handleSectionChange('wallet'), [handleSectionChange]);
 
+  // Expose navigation globally so sections can trigger cross-section navigation
+  useEffect(() => {
+    (window as unknown as { __setSection?: (s: string) => void }).__setSection = handleSectionChange;
+    return () => {
+      delete (window as unknown as { __setSection?: (s: string) => void }).__setSection;
+    };
+  }, [handleSectionChange]);
+
   const renderSection = () => {
     if (showSkeleton) {
       return displayedSection === 'chat' ? <ChatSkeleton /> : <SectionSkeleton />;

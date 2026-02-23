@@ -66,8 +66,8 @@ export const DISCLAIMERS: Record<DisclaimerKey, Disclaimer> = {
   },
   marketplace: {
     key: 'marketplace',
-    title: 'Marketplace Notice',
-    body: 'Agent and contributor ratings are based on on-chain data and peer reviews. Vaultfire does not endorse, guarantee, or take responsibility for any agent\'s or contributor\'s services, outputs, or conduct. All marketplace transactions are peer-to-peer and on-chain.',
+    title: 'Embris Directory Notice',
+    body: 'Agent and contributor ratings are based on on-chain data and peer reviews. Vaultfire does not endorse, guarantee, or take responsibility for any agent\'s or contributor\'s services, outputs, or conduct. All directory transactions are peer-to-peer and on-chain.',
     version: 1,
     requiresExplicitAck: false,
   },
@@ -141,4 +141,4 @@ export function getAcknowledgedCount(): number {
 export const GENERAL_DISCLAIMER_SHORT =
   'Experimental software. Not financial advice. On-chain transactions are irreversible. Use at your own risk.';
 
-export const GENERAL_DISCLAIMER_FULL = `Embris by Vaultfire Protocol is experimental software deployed on Ethereum, Base, and Avalanche networks. All on-chain transactions are irreversible. Smart contracts may contain bugs or vulnerabilities. This application does not constitute financial, legal, investment, or professional advice of any kind. Embris is a non-custodial wallet — you are solely responsible for your private keys. The Embris Hub and Marketplace are experimental platforms; Embris does not guarantee agent performance or reliability. VNS registrations are permanent and on-chain. By using Embris, you accept these terms and agree to use this software entirely at your own risk. © ${new Date().getFullYear()} Embris by Vaultfire Protocol.`;
+export const GENERAL_DISCLAIMER_FULL = `Embris by Vaultfire Protocol is experimental software deployed on Ethereum, Base, and Avalanche networks. All on-chain transactions are irreversible. Smart contracts may contain bugs or vulnerabilities. This application does not constitute financial, legal, investment, or professional advice of any kind. Embris is a non-custodial wallet — you are solely responsible for your private keys. The Embris Hub and Embris Directory are experimental platforms; Embris does not guarantee agent performance or reliability. VNS registrations are permanent and on-chain. By using Embris, you accept these terms and agree to use this software entirely at your own risk. © ${new Date().getFullYear()} Embris by Vaultfire Protocol.`;
