@@ -178,10 +178,10 @@ Vaultfire principle: monitoring should be **privacy-preserving** (protocol integ
 - contracts/ERC8004ValidationRegistry.sol:263 → ValidationResponseSubmitted
 - contracts/ERC8004ValidationRegistry.sol:319 → ValidationResponseSubmitted
 - contracts/ERC8004ValidationRegistry.sol:345 → ValidationCompleted
-- contracts/ERC8004ValidationRegistry.sol:371 → ValidatorSlashed
-- contracts/ERC8004ValidationRegistry.sol:377 → ValidatorSlashed
-- contracts/ERC8004ValidationRegistry.sol:396 → ValidatorStaked
-- contracts/ERC8004ValidationRegistry.sol:419 → ValidatorStakeWithdrawn
+- contracts/ERC8004ValidationRegistry.sol:376 → ValidatorSlashed
+- contracts/ERC8004ValidationRegistry.sol:383 → ValidatorSlashed
+- contracts/ERC8004ValidationRegistry.sol:401 → ValidatorStaked
+- contracts/ERC8004ValidationRegistry.sol:424 → ValidatorStakeWithdrawn
 - contracts/FlourishingMetricsOracle.sol:140 → OwnershipTransferred
 - contracts/FlourishingMetricsOracle.sol:156 → OracleAdded
 - contracts/FlourishingMetricsOracle.sol:178 → OracleRemoved
