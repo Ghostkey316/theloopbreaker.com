@@ -89,7 +89,7 @@ function saveSummaries(summaries: SessionSummary[]): void {
 
 /* ── Generate Summary via LLM ── */
 
-const API_URL = '/api/chat';
+const API_URL = 'https://api.manus.im/api/llm-proxy/v1/chat/completions';
 
 export async function generateSessionSummary(
   messages: Array<{ role: string; content: string }>,
@@ -123,7 +123,8 @@ If no clear decisions were made, use an empty array for decisions. Keep the summ
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'text/plain',
+        'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: 'gpt-4.1-nano',

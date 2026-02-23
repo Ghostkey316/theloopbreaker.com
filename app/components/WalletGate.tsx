@@ -13,7 +13,7 @@
  * persists the session to sessionStorage.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useWalletAuth } from '../lib/WalletAuthContext';
 import { isWalletCreated, unlockWallet, createWallet } from '../lib/wallet';
 

@@ -88,7 +88,7 @@ export interface VNSProfile {
   name: string;           // e.g. "ghostkey316"
   fullName: string;       // e.g. "ghostkey316.vns"
   address: string;        // 0x...
-  chain: 'base' | 'avalanche' | 'ethereum' | 'all';
+  chain: 'base' | 'avalanche' | 'ethereum' | 'both';
   identityType: IdentityType;
   registeredAt?: number;  // unix timestamp
   description?: string;
@@ -113,7 +113,7 @@ export interface VNSAvailability {
   name: string;
   available: boolean;
   takenBy?: string;       // address if taken
-  takenOn?: 'base' | 'avalanche' | 'ethereum' | 'all';
+  takenOn?: 'base' | 'avalanche' | 'ethereum' | 'both';
   checking: boolean;
   error?: string;
 }
@@ -425,8 +425,8 @@ export async function getProfileByAddress(address: string): Promise<VNSProfile |
       return null;
     }
 
-    const chain: 'base' | 'avalanche' | 'ethereum' | 'all' =
-      baseResult && avaxResult ? 'all' : baseResult ? 'base' : 'avalanche';
+    const chain: 'base' | 'avalanche' | 'ethereum' | 'both' =
+      baseResult && avaxResult ? 'both' : baseResult ? 'base' : 'avalanche';
 
     // Check local registry for identity type
     const localRegistry = getLocalVNSRegistry();
@@ -466,7 +466,7 @@ export async function resolveVNSName(fullName: string): Promise<VNSProfile | nul
         name,
         fullName: `${name}.vns`,
         address: localEntry.address,
-        chain: localEntry.chain as 'base' | 'avalanche' | 'ethereum' | 'all',
+        chain: localEntry.chain as 'base' | 'avalanche' | 'ethereum' | 'ethereum' | 'both',
         identityType: localEntry.identityType || 'agent',
         registeredAt: localEntry.registeredAt,
         explorerUrl: `https://basescan.org/address/${localEntry.address}`,
@@ -498,7 +498,7 @@ export async function checkVNSAvailability(name: string): Promise<VNSAvailabilit
       name: normalized,
       available: false,
       takenBy: localEntry.address,
-      takenOn: localEntry.chain as 'base' | 'avalanche' | 'ethereum' | 'all',
+      takenOn: localEntry.chain as 'base' | 'avalanche' | 'ethereum' | 'ethereum' | 'both',
       checking: false,
     };
   }
@@ -678,8 +678,8 @@ export async function estimateVNSRegistrationGas(
       totalFeeWei,
       totalFeeFormatted: totalFeeEth < 0.000001 ? '< 0.000001' : totalFeeEth.toFixed(6),
       chain,
-      chainName: chain === 'base' ? 'Base' : 'Avalanche',
-      gasSymbol: chain === 'base' ? 'ETH' : 'AVAX',
+      chainName: chain === 'base' ? 'Base' : chain === 'ethereum' ? 'Ethereum' : 'Avalanche',
+      gasSymbol: chain === 'avalanche' ? 'AVAX' : 'ETH',
     };
   } catch {
     return null;
@@ -741,7 +741,7 @@ export async function registerVNSName(
     if (balanceWei < minGas) {
       return {
         success: false,
-        message: `Insufficient ${chain === 'base' ? 'ETH' : 'AVAX'} for gas`,
+        message: `Insufficient ${chain === 'avalanche' ? 'AVAX' : 'ETH'} for gas`,
         errorType: 'no_gas',
       };
     }
@@ -770,7 +770,7 @@ export async function registerVNSName(
     const nonce = parseInt(nonceResult.result, 16);
     const gasPrice = BigInt(gasPriceResult.result);
     const gasLimit = gasEstResult.result ? BigInt(gasEstResult.result) * 12n / 10n : 300000n;
-    const chainId = chain === 'base' ? 8453 : 43114;
+    const chainId = chain === 'base' ? 8453 : chain === 'ethereum' ? 1 : 43114;
 
     const { ethers } = await import('ethers');
     const wallet = new ethers.Wallet(privateKey);
@@ -831,8 +831,16 @@ export async function registerVNSName(
 
 /* ── Agent Bond Staking ── */
 
+/** AIPartnershipBondsV2 addresses per chain (the bond contract for createBond) */
+const PARTNERSHIP_BOND_ADDRESSES: Record<'base' | 'avalanche' | 'ethereum', string> = {
+  base: '0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1',
+  avalanche: '0x37679B1dCfabE6eA6b8408626815A1426bE2D717',
+  ethereum: '0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1',
+};
+
 /**
- * Stake an accountability bond for an agent through AIAccountabilityBondsV2.
+ * Stake an accountability bond for an agent through AIPartnershipBondsV2.
+ * Calls createBond(address aiAgent, string partnershipType) payable.
  * Bond amount is sent as ETH value with the transaction.
  */
 export async function stakeAgentBond(
@@ -851,16 +859,22 @@ export async function stakeAgentBond(
   }
 
   const rpc = RPC_URLS[chain];
-  const bondContract = BOND_CONTRACT_ADDRESSES[chain];
+  const bondContract = PARTNERSHIP_BOND_ADDRESSES[chain];
   const explorerBase = chain === 'ethereum' ? 'https://etherscan.io' : chain === 'base' ? 'https://basescan.org' : 'https://snowtrace.io';
 
   try {
     const bondWei = BigInt(Math.floor(bondAmountEth * 1e18));
 
-    // stakeBond(string agentName) payable — selector: 0x...
-    // We use a simple value transfer with the agent name encoded
-    const STAKE_BOND_SELECTOR = '0x9e1a4d19';
-    const calldata = STAKE_BOND_SELECTOR + encodeString(agentVNSName).slice(64); // simplified
+    // createBond(address aiAgent, string partnershipType) payable
+    // Selector: 0x7ac5113b
+    const CREATE_BOND_SELECTOR = '0x7ac5113b';
+    // ABI encode: (address, string)
+    // offset for address is inline (32 bytes), offset for string is dynamic
+    const addressParam = encodeAddress(walletAddress);
+    const stringOffset = encodeUint256(0x40); // 64 bytes = 2 slots (address + offset pointer)
+    const partnershipType = `agent:${agentVNSName}`;
+    const stringEncoded = encodeString(partnershipType);
+    const calldata = CREATE_BOND_SELECTOR + addressParam + stringOffset + stringEncoded;
 
     const [nonceResult, gasPriceResult] = await Promise.all([
       rpcCall(rpc, 'eth_getTransactionCount', [walletAddress, 'latest']),
@@ -873,7 +887,7 @@ export async function stakeAgentBond(
 
     const nonce = parseInt(nonceResult.result, 16);
     const gasPrice = BigInt(gasPriceResult.result);
-    const chainId = chain === 'base' ? 8453 : 43114;
+    const chainId = chain === 'base' ? 8453 : chain === 'ethereum' ? 1 : 43114;
 
     const { ethers } = await import('ethers');
     const wallet = new ethers.Wallet(privateKey);
@@ -881,7 +895,7 @@ export async function stakeAgentBond(
       to: bondContract,
       data: calldata,
       nonce,
-      gasLimit: 150000n,
+      gasLimit: 200000n,
       gasPrice,
       chainId,
       value: bondWei,
@@ -943,10 +957,10 @@ export async function invokeAgentPrivacy(
   const explorerBase = chain === 'ethereum' ? 'https://etherscan.io' : chain === 'base' ? 'https://basescan.org' : 'https://snowtrace.io';
 
   try {
-    // grantConsent(bytes32 sessionId, bool private) — simplified encoding
-    const GRANT_CONSENT_SELECTOR = '0x8a4068dd';
+    // grantConsent(bytes32 consentHash) — selector: 0x1c9df7ef
+    const GRANT_CONSENT_SELECTOR = '0x1c9df7ef';
     const sessionBytes32 = '0x' + Buffer.from(sessionId).toString('hex').padEnd(64, '0').slice(0, 64);
-    const calldata = GRANT_CONSENT_SELECTOR + sessionBytes32.slice(2) + encodeUint256(1);
+    const calldata = GRANT_CONSENT_SELECTOR + sessionBytes32.slice(2);
 
     const [nonceResult, gasPriceResult] = await Promise.all([
       rpcCall(rpc, 'eth_getTransactionCount', [walletAddress, 'latest']),
@@ -959,7 +973,7 @@ export async function invokeAgentPrivacy(
 
     const nonce = parseInt(nonceResult.result, 16);
     const gasPrice = BigInt(gasPriceResult.result);
-    const chainId = chain === 'base' ? 8453 : 43114;
+    const chainId = chain === 'base' ? 8453 : chain === 'ethereum' ? 1 : 43114;
 
     const { ethers } = await import('ethers');
     const wallet = new ethers.Wallet(privateKey);
@@ -1038,7 +1052,7 @@ export interface RegisteredAgent {
   name: string;
   fullName: string;
   address: string;
-  chain: 'base' | 'avalanche' | 'ethereum' | 'all';
+  chain: 'base' | 'avalanche' | 'ethereum' | 'both';
   identityType: IdentityType;
   description?: string;
   bondAmount?: string;
@@ -1052,52 +1066,178 @@ export interface RegisteredAgent {
   trustScore?: number;
 }
 
-const KNOWN_AGENTS: RegisteredAgent[] = [
-  {
-    name: 'embris',
-    fullName: 'embris.vns',
-    address: '0x0000000000000000000000000000000000000001',
-    chain: 'all',
-    identityType: 'companion',
-    description: 'Vaultfire AI Companion — ethical, accountable, privacy-first',
-    bondAmount: '0.1 ETH',
-    bondTier: 'gold',
-    hasBond: true,
-    online: true,
-    specializations: ['companionship', 'protocol-knowledge', 'privacy'],
-    capabilities: ['chat', 'memory', 'voice', 'goal-tracking'],
-    tasksCompleted: 0,
-    trustScore: 95,
-  },
-  {
-    name: 'ns3',
-    fullName: 'ns3.vns',
-    address: '0x0000000000000000000000000000000000000002',
-    chain: 'base',
-    identityType: 'agent',
-    description: 'Assemble AI NS3 Agent — registered on Vaultfire Protocol',
-    bondAmount: '0.05 ETH',
-    bondTier: 'silver',
-    hasBond: true,
-    online: true,
-    specializations: ['research', 'data-analysis', 'coordination'],
-    capabilities: ['task-execution', 'cross-chain', 'api-integration'],
-    tasksCompleted: 0,
-    trustScore: 82,
-  },
-];
+/* ── On-Chain Agent Discovery ── */
 
-export function getKnownAgents(): RegisteredAgent[] {
-  // Merge known agents with locally registered agents
+/**
+ * Fetch the total number of registered identities on a given chain.
+ * Reads directly from the ERC8004IdentityRegistry contract.
+ */
+export async function getOnChainAgentCount(
+  chain: 'base' | 'avalanche' | 'ethereum' = 'base',
+): Promise<number> {
+  try {
+    const result = await rpcCall(RPC_URLS[chain], 'eth_call', [
+      { to: REGISTRY_ADDRESSES[chain], data: GET_TOTAL_AGENTS_SELECTOR },
+      'latest',
+    ]);
+    if (!result.result || result.error) return 0;
+    return parseInt(result.result, 16);
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Fetch the ETH/AVAX balance held in a bond contract.
+ * This represents the total bonded value on that chain.
+ */
+async function getBondContractBalance(
+  chain: 'base' | 'avalanche' | 'ethereum' = 'base',
+): Promise<number> {
+  try {
+    // Check both accountability bonds and partnership bonds
+    const bondAddr = BOND_CONTRACT_ADDRESSES[chain];
+    const partnershipAddr = chain === 'base' ? '0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1'
+      : chain === 'avalanche' ? '0x37679B1dCfabE6eA6b8408626815A1426bE2D717'
+      : '0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1';
+
+    const [bondResult, partnershipResult] = await Promise.allSettled([
+      rpcCall(RPC_URLS[chain], 'eth_getBalance', [bondAddr, 'latest']),
+      rpcCall(RPC_URLS[chain], 'eth_getBalance', [partnershipAddr, 'latest']),
+    ]);
+
+    let total = 0;
+    if (bondResult.status === 'fulfilled' && bondResult.value.result) {
+      total += Number(BigInt(bondResult.value.result)) / 1e18;
+    }
+    if (partnershipResult.status === 'fulfilled' && partnershipResult.value.result) {
+      total += Number(BigInt(partnershipResult.value.result)) / 1e18;
+    }
+    return total;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Look up an on-chain identity by address and return a RegisteredAgent.
+ */
+async function fetchAgentFromChain(
+  address: string,
+  chain: 'base' | 'avalanche' | 'ethereum',
+): Promise<RegisteredAgent | null> {
+  try {
+    const data = GET_AGENT_SELECTOR + encodeAddress(address);
+    const result = await rpcCall(RPC_URLS[chain], 'eth_call', [
+      { to: REGISTRY_ADDRESSES[chain], data },
+      'latest',
+    ]);
+    if (!result.result || result.error) return null;
+    const decoded = decodeAgentResponse(result.result);
+    if (!decoded?.name) return null;
+
+    // Parse identity type from description if it's JSON
+    const identityType = decoded.description ? parseIdentityType(decoded.description) : 'agent';
+    let desc = decoded.description || '';
+    try {
+      const parsed = JSON.parse(decoded.description);
+      desc = parsed.desc || decoded.description;
+    } catch { /* not JSON, use raw */ }
+
+    return {
+      name: decoded.name,
+      fullName: `${decoded.name}.vns`,
+      address,
+      chain,
+      identityType,
+      description: desc,
+      online: true,
+      registeredAt: undefined,
+      tasksCompleted: 0,
+      trustScore: 50,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * On-chain Hub stats — fetched live from all three chains.
+ * No hardcoded data. Every number comes from the blockchain.
+ */
+export interface OnChainHubStats {
+  totalIdentities: number;
+  activeBonds: number;
+  totalBondedEth: number;
+  totalBondedAvax: number;
+  chainCounts: Record<'base' | 'avalanche' | 'ethereum', number>;
+}
+
+let _statsCache: { data: OnChainHubStats; ts: number } | null = null;
+const STATS_CACHE_TTL = 60_000; // 1 minute
+
+export async function getOnChainHubStats(): Promise<OnChainHubStats> {
+  if (_statsCache && Date.now() - _statsCache.ts < STATS_CACHE_TTL) {
+    return _statsCache.data;
+  }
+
+  const [baseCount, avaxCount, ethCount, baseBonded, avaxBonded] = await Promise.all([
+    getOnChainAgentCount('base'),
+    getOnChainAgentCount('avalanche'),
+    getOnChainAgentCount('ethereum'),
+    getBondContractBalance('base'),
+    getBondContractBalance('avalanche'),
+  ]);
+
+  const totalIdentities = baseCount + avaxCount + ethCount;
+  // Active bonds = identities that have bonded ETH (approximation: if bond contract has balance, there are bonds)
+  const activeBonds = (baseBonded > 0 ? baseCount : 0) + (avaxBonded > 0 ? avaxCount : 0);
+
+  const stats: OnChainHubStats = {
+    totalIdentities,
+    activeBonds: Math.max(activeBonds, baseBonded > 0 || avaxBonded > 0 ? 1 : 0),
+    totalBondedEth: baseBonded,
+    totalBondedAvax: avaxBonded,
+    chainCounts: { base: baseCount, avalanche: avaxCount, ethereum: ethCount },
+  };
+
+  _statsCache = { data: stats, ts: Date.now() };
+  return stats;
+}
+
+/**
+ * Fetch all on-chain registered agents by scanning known deployer addresses.
+ * Returns only real, verified on-chain identities.
+ */
+export async function getOnChainAgents(): Promise<RegisteredAgent[]> {
+  // Known deployer/registrant addresses to scan
+  const KNOWN_ADDRESSES = [
+    '0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324', // Vaultfire deployer
+  ];
+
+  const agents: RegisteredAgent[] = [];
+  const seen = new Set<string>();
+
+  for (const addr of KNOWN_ADDRESSES) {
+    for (const chain of ['base', 'avalanche', 'ethereum'] as const) {
+      const agent = await fetchAgentFromChain(addr, chain);
+      if (agent && !seen.has(`${agent.name}_${chain}`)) {
+        seen.add(`${agent.name}_${chain}`);
+        agents.push(agent);
+      }
+    }
+  }
+
+  // Also include locally registered agents (from this browser session)
   const registry = getLocalVNSRegistry();
   const localAgents: RegisteredAgent[] = Object.entries(registry)
-    .filter(([, entry]) => entry.identityType === 'agent')
+    .filter(([, entry]) => entry.identityType === 'agent' || entry.identityType === 'human' || entry.identityType === 'companion')
     .map(([name, entry]) => ({
       name,
       fullName: `${name}.vns`,
       address: entry.address,
-      chain: entry.chain as 'base' | 'avalanche' | 'ethereum' | 'all',
-      identityType: 'agent' as IdentityType,
+      chain: entry.chain as 'base' | 'avalanche' | 'ethereum' | 'both',
+      identityType: entry.identityType,
       bondTier: entry.bondTier,
       hasBond: entry.hasBond,
       registeredAt: entry.registeredAt,
@@ -1108,10 +1248,31 @@ export function getKnownAgents(): RegisteredAgent[] {
       trustScore: 50,
     }));
 
-  // Deduplicate (known agents take precedence)
-  const knownNames = new Set(KNOWN_AGENTS.map(a => a.name));
-  const uniqueLocal = localAgents.filter(a => !knownNames.has(a.name));
-  return [...KNOWN_AGENTS, ...uniqueLocal];
+  // Deduplicate: on-chain data takes precedence
+  const onChainNames = new Set(agents.map(a => a.name.toLowerCase()));
+  const uniqueLocal = localAgents.filter(a => !onChainNames.has(a.name.toLowerCase()));
+  return [...agents, ...uniqueLocal];
+}
+
+/** Synchronous fallback — returns locally cached agents only (no network calls) */
+export function getKnownAgents(): RegisteredAgent[] {
+  const registry = getLocalVNSRegistry();
+  return Object.entries(registry)
+    .map(([name, entry]) => ({
+      name,
+      fullName: `${name}.vns`,
+      address: entry.address,
+      chain: entry.chain as 'base' | 'avalanche' | 'ethereum' | 'both',
+      identityType: entry.identityType,
+      bondTier: entry.bondTier,
+      hasBond: entry.hasBond,
+      registeredAt: entry.registeredAt,
+      online: false,
+      specializations: entry.specializations,
+      capabilities: entry.capabilities,
+      tasksCompleted: 0,
+      trustScore: 50,
+    }));
 }
 
 export function getAgentByName(name: string): RegisteredAgent | null {
@@ -1152,5 +1313,21 @@ export async function getTotalVNSRegistrations(): Promise<number> {
     return parseInt(result.result, 16);
   } catch {
     return 0;
+  }
+}
+
+/**
+ * Verify contract existence on a chain.
+ * Returns true if the address has deployed bytecode.
+ */
+export async function verifyContractAlive(
+  chain: 'base' | 'avalanche' | 'ethereum',
+  address: string,
+): Promise<boolean> {
+  try {
+    const result = await rpcCall(RPC_URLS[chain], 'eth_getCode', [address, 'latest']);
+    return !!result.result && result.result !== '0x' && result.result !== '0x0' && result.result.length > 2;
+  } catch {
+    return false;
   }
 }

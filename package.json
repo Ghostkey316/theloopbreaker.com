@@ -12,9 +12,10 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "Vaultfire Embris Web App — AI companion interface for the Vaultfire Protocol",
+  "description": "Vaultfire Ember Web App — AI companion interface for the Vaultfire Protocol",
   "devDependencies": {
     "@types/node": "^25.3.0",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.24",
@@ -31,7 +32,8 @@
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.2.0",
-    "@types/qrcode": "^1.5.6",
+    "@xmtp/agent-sdk": "^2.2.0",
+    "@xmtp/browser-sdk": "^6.2.0",
     "qrcode": "^1.5.4"
   }
 }

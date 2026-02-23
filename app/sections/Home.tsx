@@ -43,6 +43,9 @@ function ExternalLinkIcon({ size = 11 }: { size?: number }) {
 function ZapIcon({ size = 14 }: { size?: number }) {
   return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>);
 }
+function MessageIcon({ size = 20 }: { size?: number }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h.01"/><path d="M12 10h.01"/><path d="M16 10h.01"/></svg>);
+}
 
 /* ── Animated Counter ── */
 function AnimatedCounter({ value, loading }: { value: number | null; loading: boolean }) {
@@ -149,6 +152,12 @@ export default function Home() {
       title: 'On-Chain Trust',
       desc: `${totalContracts} verified smart contracts enforce transparency and accountability.`,
       color: '#22C55E',
+    },
+    {
+      icon: <MessageIcon />,
+      title: 'XMTP Messaging',
+      desc: 'Encrypted agent-to-agent communication via XMTP. Trust-gated messaging ensures only bonded agents can interact.',
+      color: '#8B5CF6',
     },
     {
       icon: <WalletIcon />,
@@ -611,14 +620,15 @@ export default function Home() {
         <h2 style={{ fontSize: 11, fontWeight: 600, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 20 }}>Protocol</h2>
         <div style={{
           display: 'grid',
-          gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
+          gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)',
           gap: isMobile ? 10 : 12,
         }}>
           {[
-            { label: 'Contracts', value: String(totalContracts), sub: `${BASE_CONTRACTS.length} per chain`, mono: true, color: '#F97316' },
+            { label: 'Contracts', value: String(totalContracts), sub: `15 per chain × 3 chains`, mono: true, color: '#F97316' },
             { label: 'Chains', value: '3', sub: 'ETH + Base + Avalanche', mono: true, color: '#38BDF8' },
             { label: 'Standard', value: 'ERC-8004', sub: 'AI Identity', mono: false, color: '#A78BFA' },
             { label: 'Bridge', value: 'Teleporter', sub: 'Cross-chain', mono: false, color: '#22C55E' },
+            { label: 'Messaging', value: 'XMTP', sub: 'Encrypted agent comms', mono: false, color: '#8B5CF6' },
           ].map((item) => (
             <div key={item.label} style={{
               padding: isMobile ? '16px 14px' : '18px 16px',
@@ -635,6 +645,89 @@ export default function Home() {
               <p style={{ fontSize: 11, color: '#3F3F46', marginTop: 4 }}>{item.sub}</p>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          AGENT INFRASTRUCTURE STACK — The key differentiator
+          ══════════════════════════════════════════════════════════════════════ */}
+      <div style={{ marginBottom: isMobile ? 40 : 56 }}>
+        <h2 style={{ fontSize: 11, fontWeight: 600, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Agent Infrastructure Stack</h2>
+        <p style={{ fontSize: 13, color: '#52525B', lineHeight: 1.6, marginBottom: 20, maxWidth: 520 }}>
+          Three protocols. One complete agent stack. This is how autonomous AI agents communicate, pay, and build trust.
+        </p>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+          gap: 12,
+        }}>
+          {[
+            {
+              protocol: 'XMTP',
+              role: 'How agents talk',
+              desc: 'Encrypted, decentralized messaging between agents. End-to-end encrypted by default — no central server can read agent conversations.',
+              color: '#8B5CF6',
+              icon: <MessageIcon size={18} />,
+            },
+            {
+              protocol: 'x402',
+              role: 'How agents pay',
+              desc: 'Coinbase\'s HTTP 402 payment protocol. Agents pay for services with stablecoins, natively in the request flow — no invoices, no accounts.',
+              color: '#0052FF',
+              icon: <WalletIcon size={18} />,
+            },
+            {
+              protocol: 'Vaultfire',
+              role: 'How agents trust',
+              desc: 'On-chain identity bonds and accountability. Before an agent acts, its bond is verified — misbehave and the bond is slashed.',
+              color: '#F97316',
+              icon: <ShieldIcon size={18} />,
+            },
+          ].map((item) => (
+            <div key={item.protocol} style={{
+              padding: isMobile ? '20px 18px' : '24px 22px',
+              backgroundColor: 'rgba(255,255,255,0.02)',
+              border: '1px solid rgba(255,255,255,0.05)',
+              borderRadius: 16,
+              borderTop: `2px solid ${item.color}40`,
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.035)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  backgroundColor: `${item.color}10`,
+                  border: `1px solid ${item.color}20`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: item.color, flexShrink: 0,
+                }}>
+                  {item.icon}
+                </div>
+                <div>
+                  <p style={{ fontSize: 16, fontWeight: 800, color: '#F4F4F5', letterSpacing: '-0.02em', lineHeight: 1.1 }}>{item.protocol}</p>
+                  <p style={{ fontSize: 11, color: item.color, fontWeight: 600, letterSpacing: '0.02em' }}>{item.role}</p>
+                </div>
+              </div>
+              <p style={{ fontSize: 13, color: '#71717A', lineHeight: 1.6 }}>{item.desc}</p>
+            </div>
+          ))}
+        </div>
+        <div style={{
+          marginTop: 16,
+          padding: '14px 18px',
+          backgroundColor: 'rgba(139,92,246,0.04)',
+          border: '1px solid rgba(139,92,246,0.12)',
+          borderRadius: 12,
+          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+        }}>
+          <span style={{ fontSize: 12, color: '#8B5CF6', fontWeight: 700 }}>XMTP</span>
+          <span style={{ fontSize: 11, color: '#3F3F46' }}>&rarr;</span>
+          <span style={{ fontSize: 12, color: '#0052FF', fontWeight: 700 }}>x402</span>
+          <span style={{ fontSize: 11, color: '#3F3F46' }}>&rarr;</span>
+          <span style={{ fontSize: 12, color: '#F97316', fontWeight: 700 }}>Vaultfire</span>
+          <span style={{ fontSize: 11, color: '#52525B', marginLeft: 8 }}>Talk &rarr; Pay &rarr; Trust — the complete agent stack</span>
         </div>
       </div>
 

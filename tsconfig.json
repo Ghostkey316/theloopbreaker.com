@@ -42,7 +42,6 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules",
-    "ghostkey-316-vaultfire-init"
+    "node_modules"
   ]
 }

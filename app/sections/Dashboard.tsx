@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { ALL_CONTRACTS, BASE_CONTRACTS, AVALANCHE_CONTRACTS, ETHEREUM_CONTRACTS, CHAINS } from "../lib/contracts";
+import { ALL_CONTRACTS, BASE_CONTRACTS, AVALANCHE_CONTRACTS, CHAINS } from "../lib/contracts";
 import { checkAllChains, getMultipleContractStatus, getGovernanceData, getTeleporterBridgeStats, type RPCResult, type GovernanceData, type BridgeStats } from "../lib/blockchain";
 import { SectionDisclaimer } from "../components/DisclaimerBanner";
 
@@ -68,14 +68,13 @@ export default function Dashboard() {
   const loadAll = async () => {
     if (!loading) setRefreshing(true);
     setLoading(true);
-    const [chains, ethStatus, baseStatus, avaxStatus] = await Promise.all([
+    const [chains, baseStatus, avaxStatus] = await Promise.all([
       checkAllChains(),
-      getMultipleContractStatus("ethereum", ETHEREUM_CONTRACTS.map((c) => c.address)),
       getMultipleContractStatus("base", BASE_CONTRACTS.map((c) => c.address)),
       getMultipleContractStatus("avalanche", AVALANCHE_CONTRACTS.map((c) => c.address)),
     ]);
     setChainStatus(chains);
-    setContractStatus({ ...ethStatus, ...baseStatus, ...avaxStatus });
+    setContractStatus({ ...baseStatus, ...avaxStatus });
 
     const baseGovContract = BASE_CONTRACTS.find((c) => c.name === "MultisigGovernance");
     const avaxGovContract = AVALANCHE_CONTRACTS.find((c) => c.name === "MultisigGovernance");
@@ -103,7 +102,6 @@ export default function Dashboard() {
     alive: contractStatus[c.address] ?? null,
   }));
 
-  const ethContracts = contractsWithStatus.filter((c) => c.chain === "ethereum");
   const baseContracts = contractsWithStatus.filter((c) => c.chain === "base");
   const avaxContracts = contractsWithStatus.filter((c) => c.chain === "avalanche");
   const aliveCount = Object.values(contractStatus).filter(Boolean).length;
@@ -115,10 +113,10 @@ export default function Dashboard() {
   const statCards = [
     { label: "Health", value: healthScore !== null ? `${healthScore}%` : "\u2014", color: healthScore !== null ? (healthScore >= 90 ? "#22C55E" : healthScore >= 70 ? "#EAB308" : "#EF4444") : "#3F3F46" },
     { label: "Contracts Live", value: `${aliveCount}/${totalChecked || ALL_CONTRACTS.length}`, color: "#F4F4F5" },
-    { label: "ETH Block", value: chainStatus.ethereum?.blockNumber?.toLocaleString() || "\u2014", color: "#F4F4F5" },
     { label: "Base Block", value: chainStatus.base?.blockNumber?.toLocaleString() || "\u2014", color: "#F4F4F5" },
     { label: "Avax Block", value: chainStatus.avalanche?.blockNumber?.toLocaleString() || "\u2014", color: "#F4F4F5" },
-    { label: "Chains Online", value: [chainStatus.ethereum, chainStatus.base, chainStatus.avalanche].filter(c => c?.blockNumber).length + "/3", color: "#A1A1AA" },
+    { label: "Base Latency", value: chainStatus.base?.latency ? `${chainStatus.base.latency}ms` : "\u2014", color: "#A1A1AA" },
+    { label: "Avax Latency", value: chainStatus.avalanche?.latency ? `${chainStatus.avalanche.latency}ms` : "\u2014", color: "#A1A1AA" },
   ];
 
   return (
@@ -267,7 +265,6 @@ export default function Dashboard() {
       {/* Contract Tables */}
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)", gap: isMobile ? 40 : 32 }}>
         {[
-          { title: "Ethereum", contracts: ethContracts, chain: "ethereum" as const },
           { title: "Base", contracts: baseContracts, chain: "base" as const },
           { title: "Avalanche", contracts: avaxContracts, chain: "avalanche" as const },
         ].map(({ title, contracts, chain }) => (

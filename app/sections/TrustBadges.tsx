@@ -4,7 +4,7 @@
  * ALL DATA IS REAL — no fake stats, no demo profiles.
  */
 import { useState, useEffect } from "react";
-import { BOND_TIERS, type BondTier, getBondTier, getBondTierInfo } from "../lib/vns";
+import { BOND_TIERS, getBondTier, getBondTierInfo } from "../lib/vns";
 import DisclaimerBanner from "../components/DisclaimerBanner";
 
 /* ── Badge Tier Card ── */

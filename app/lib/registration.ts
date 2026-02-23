@@ -1,18 +1,18 @@
 /**
  * Embris On-Chain Registration Gate — Multi-Chain
  *
- * Manages user registration on Ethereum, Base, and Avalanche via the ERC8004IdentityRegistry
- * contract deployed on all three chains. Users can register on one or more chains.
+ * Manages user registration on Base AND Avalanche via the ERC8004IdentityRegistry
+ * contract deployed on both chains. Users can register on one chain or both.
  *
  * Registration flow:
- * 1. User picks a chain (Ethereum, Base, Avalanche, or multiple)
+ * 1. User picks a chain (Base, Avalanche, or both)
  * 2. Pre-flight: validate address, check native token balance for gas
  * 3. Send registerAgent(string,string,bytes32) to the chosen chain(s)
  * 4. Wait for confirmation, store tx hash(es)
  * 5. Features unlock after the first successful chain registration
  *
  * Contract: registerAgent(string name, string description, bytes32 identityHash)
- * Selector: 0x2b3ce0bf — permissionless on all chains.
+ * Selector: 0x2b3ce0bf — permissionless on both chains.
  */
 
 import { CHAINS } from './contracts';
@@ -20,7 +20,7 @@ import { getWalletPrivateKey } from './wallet';
 
 /* ── Chain Registry Config ── */
 
-export type SupportedChain = 'base' | 'avalanche' | 'ethereum';
+export type SupportedChain = 'base' | 'avalanche';
 
 interface ChainRegistryConfig {
   chain: SupportedChain;
@@ -35,17 +35,6 @@ interface ChainRegistryConfig {
 }
 
 const CHAIN_REGISTRY: Record<SupportedChain, ChainRegistryConfig> = {
-  ethereum: {
-    chain: 'ethereum',
-    chainId: 1,
-    name: 'Ethereum',
-    rpc: CHAINS.ethereum.rpc,
-    registryAddress: '0xaCB59e0f0eA47B25b24390B71b877928E5842630',
-    explorerTxUrl: 'https://etherscan.io/tx/',
-    explorerName: 'Etherscan',
-    gasSymbol: 'ETH',
-    color: '#627EEA',
-  },
   base: {
     chain: 'base',
     chainId: 8453,
@@ -664,8 +653,7 @@ export async function registerWallet(
     if (targetChains.length === 1) {
       message = `Registration confirmed on ${CHAIN_REGISTRY[targetChains[0]].name}!`;
     } else {
-      const chainNames = successChains.map(r => CHAIN_REGISTRY[r.chain].name).join(', ');
-      message = `Registration confirmed on ${chainNames}!`;
+      message = `Registration confirmed on both Ethereum, Base, and Avalanche!`;
     }
   } else {
     const successNames = successChains.map(r => CHAIN_REGISTRY[r.chain].name).join(' and ');

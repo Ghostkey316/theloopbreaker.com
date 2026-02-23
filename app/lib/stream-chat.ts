@@ -31,8 +31,8 @@ function getCompanionName(): string {
   return localStorage.getItem('vaultfire_companion_name') || 'Embris';
 }
 
-const API_URL = '/api/chat';
-const API_KEY = '';
+const API_URL = 'https://api.manus.im/api/llm-proxy/v1/chat/completions';
+const API_KEY = process.env.NEXT_PUBLIC_OPENAI_API_KEY || '';
 
 export { API_KEY };
 
@@ -374,7 +374,8 @@ export async function streamChat({
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'text/plain',
+        'Authorization': `Bearer ${API_KEY}`,
       },
       body: JSON.stringify({
         model: 'gpt-4.1-mini',
@@ -386,10 +387,8 @@ export async function streamChat({
     });
 
     if (!response.ok) {
-      // Log the raw error for debugging but never show it to users
       const errorText = await response.text().catch(() => '');
-      console.error(`Chat API error (${response.status}):`, errorText);
-      onError('Embris is taking a moment to think. Please try again shortly.');
+      onError(`Chat service unavailable (${response.status}): ${errorText}`);
       return;
     }
 
@@ -406,7 +405,7 @@ export async function streamChat({
     onDone(content);
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') return;
-    console.error('Chat connection error:', error);
-    onError('Embris is taking a moment to think. Please try again shortly.');
+    const msg = error instanceof Error ? error.message : 'Connection failed';
+    onError(msg);
   }
 }

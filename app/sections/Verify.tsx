@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { BASE_CONTRACTS, AVALANCHE_CONTRACTS, ALL_CONTRACTS, CHAINS, type ContractInfo } from "../lib/contracts";
+import { ALL_CONTRACTS, CHAINS, type ContractInfo } from "../lib/contracts";
 import { checkContractAlive } from "../lib/blockchain";
 import { SectionDisclaimer } from "../components/DisclaimerBanner";
 

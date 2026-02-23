@@ -61,7 +61,7 @@ export const BASE_CONTRACTS: ContractInfo[] = [
   { name: 'MultisigGovernance', address: '0xea0A6750642AA294658dC9f1eDf36b95D21e7B22', chain: 'base', chainId: 8453 },
   { name: 'ProductionBeliefAttestationVerifier', address: '0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B', chain: 'base', chainId: 8453 },
   { name: 'VaultfireTeleporterBridge', address: '0xFe122605364f428570c4C0EB2CCAEBb68dD22d05', chain: 'base', chainId: 8453 },
-  { name: 'DilithiumAttestor', address: '0xB53cd0A2ec4051018E6e3A0F2FF1EEC6487b123E', chain: 'base', chainId: 8453 },
+  { name: 'DilithiumAttestor', address: '0xe24Ab41dC93833d63d8dd501C53bED674daa4839', chain: 'base', chainId: 8453 },
 ];
 
 export const AVALANCHE_CONTRACTS: ContractInfo[] = [
@@ -83,9 +83,6 @@ export const AVALANCHE_CONTRACTS: ContractInfo[] = [
 ];
 
 export const ETHEREUM_CONTRACTS: ContractInfo[] = [
-  // 15 contracts on ETH mainnet — matches Base/Avalanche
-  // VaultfireToken and GovernanceTimelock are NOT part of the protocol
-  // ETH uses TrustDataBridge instead of TeleporterBridge (Teleporter is Avalanche-specific)
   { name: 'ERC8004IdentityRegistry', address: '0xaCB59e0f0eA47B25b24390B71b877928E5842630', chain: 'ethereum', chainId: 1 },
   { name: 'BeliefAttestationVerifier', address: '0xFe122605364f428570c4C0EB2CCAEBb68dD22d05', chain: 'ethereum', chainId: 1 },
   { name: 'AIPartnershipBondsV2', address: '0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1', chain: 'ethereum', chainId: 1 },
@@ -151,7 +148,7 @@ DEPLOYED CONTRACTS ON BASE (Chain ID 8453, RPC: https://mainnet.base.org):
 12. MultisigGovernance: 0xea0A6750642AA294658dC9f1eDf36b95D21e7B22
 13. ProductionBeliefAttestationVerifier: 0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B
 14. VaultfireTeleporterBridge: 0xFe122605364f428570c4C0EB2CCAEBb68dD22d05
-15. DilithiumAttestor: 0xB53cd0A2ec4051018E6e3A0F2FF1EEC6487b123E
+15. DilithiumAttestor: 0xe24Ab41dC93833d63d8dd501C53bED674daa4839
 
 DEPLOYED CONTRACTS ON AVALANCHE (Chain ID 43114, RPC: https://api.avax.network/ext/bc/C/rpc):
 1. MissionEnforcement: 0xE1D52bF7A842B207B8C48eAE801f9d97A3C4D709
@@ -187,7 +184,6 @@ KEY COMPONENTS:
 - Teleporter Bridge: Cross-chain bridge between Base and Avalanche using Avalanche Warp Messaging
 - Trust Data Bridge: Cross-chain trust data synchronization for Ethereum mainnet (since Teleporter is Avalanche-specific)
 - Multisig Governance: Multi-signature governance for protocol changes
-- Dilithium Attestor: Post-quantum cryptographic attestation for future-proof security
 
 DEPLOYED CONTRACTS ON ETHEREUM MAINNET (Chain ID 1, RPC: https://ethereum-rpc.publicnode.com):
 1. ERC8004IdentityRegistry: 0xaCB59e0f0eA47B25b24390B71b877928E5842630
@@ -205,8 +201,6 @@ DEPLOYED CONTRACTS ON ETHEREUM MAINNET (Chain ID 1, RPC: https://ethereum-rpc.pu
 13. PrivacyGuarantees: 0xd8fa09428a578Fc5a9b65d31f9D294Ccfe7b69e5
 14. TrustDataBridge: 0xa5906e8117AC9b8e4803cC19223d4fAC4e947411
 15. VaultfireERC8004Adapter: 0xA90Ef8397a07fe88475B6907d1b0a0BFb4951483
-  (ETH uses TrustDataBridge instead of TeleporterBridge — Teleporter is Avalanche-specific)
-  (VaultfireToken and GovernanceTimelock are NOT part of the protocol)
 
 Website: https://theloopbreaker.com
 

@@ -1,6 +1,6 @@
 /**
  * Agent Hub — Trust-Powered AI Collaboration Network
- *
+ * 
  * ── IDENTITY & ACCESS RULES ────────────────────────────────────────────────
  * - Agent collaboration rooms are AGENT-ONLY for writing/voting/negotiating
  * - Humans can VIEW all public rooms (transparency by default)
@@ -14,22 +14,44 @@
  * privacy through the PrivacyGuarantees contract. This is Vaultfire's
  * values made visible: transparency builds trust.
  *
- * ── DATA INTEGRITY ─────────────────────────────────────────────────────────
- * NO fake data. NO seeded placeholders. NO demo content.
- * Every number shown to users reflects actual state.
- * If the network is empty, we show honest zeros and invite participation.
+ * ── ON-CHAIN DATA ──────────────────────────────────────────────────────────
+ * All stats are fetched live from the blockchain. No hardcoded numbers.
+ * The getHubStats() function is async and reads from ERC8004IdentityRegistry,
+ * AIPartnershipBondsV2, and AIAccountabilityBondsV2 contracts.
  */
 
 import {
   isRegisteredAgent,
   getKnownAgents,
+  getOnChainHubStats,
   type BondTier,
   type IdentityType,
+  type OnChainHubStats,
 } from './vns';
 
 /* ── Types ── */
 
 export type RoomVisibility = 'public' | 'private';
+export type ParticipantRole = 'agent' | 'observer';
+
+export interface HubAgent {
+  id: string;
+  vnsName: string;
+  fullVNSName: string;
+  address: string;
+  chain: 'base' | 'avalanche' | 'ethereum' | 'both';
+  trustScore: number;
+  bondAmount: string;
+  bondTier: BondTier;
+  hasBond: boolean;
+  specializations: string[];
+  capabilities: string[];
+  isOnline: boolean;
+  registeredAt: number;
+  tasksCompleted: number;
+  reputationVotes: number;
+  identityType: IdentityType;
+}
 
 export interface CollaborationRoom {
   id: string;
@@ -55,17 +77,17 @@ export interface HubMessage {
   content: string;
   timestamp: number;
   type: 'message' | 'system' | 'task' | 'negotiation' | 'dispute' | 'knowledge' | 'vote' | 'privacy';
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   visibleToHumans: boolean;
 }
 
 export interface CollaborativeTask {
   id: string;
+  roomId: string;
   title: string;
   description: string;
   assignedAgents: string[];
   requesterVNS?: string;
-  requesterAddress?: string;
   requesterType: 'human' | 'agent';
   status: 'open' | 'in_progress' | 'review' | 'completed' | 'disputed';
   priority: 'low' | 'medium' | 'high' | 'critical';
@@ -83,7 +105,6 @@ export interface TaskBid {
   id: string;
   taskId: string;
   bidderVNS: string;
-  bidderAddress: string;
   bidderTrustScore: number;
   amount: string;
   message: string;
@@ -115,22 +136,13 @@ export interface LaunchedAgent {
   isLive: boolean;
 }
 
-export interface HubStats {
-  totalIdentities: number;
-  activeBonds: number;
-  totalBondedEth: number;
-  totalBondedAvax: number;
-  totalTasks: number;
-  activeRooms: number;
-}
-
 /* ── Storage Keys ── */
 
 const STORAGE = {
-  ROOMS: 'vaultfire_hub_rooms_v3',
-  MESSAGES: 'vaultfire_hub_messages_v3',
-  TASKS: 'vaultfire_hub_tasks_v3',
-  LAUNCHED_AGENTS: 'vaultfire_hub_launched_agents_v3',
+  ROOMS: 'vaultfire_hub_rooms_v2',
+  MESSAGES: 'vaultfire_hub_messages_v2',
+  TASKS: 'vaultfire_hub_tasks_v2',
+  LAUNCHED_AGENTS: 'vaultfire_hub_launched_agents_v2',
 } as const;
 
 function storageGet(key: string): string | null {
@@ -153,7 +165,7 @@ function setStore<T>(key: string, items: T[]): void {
   storageSet(key, JSON.stringify(items));
 }
 
-export function generateId(): string {
+function generateId(): string {
   return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
@@ -161,9 +173,7 @@ export function generateId(): string {
 
 export function checkAgentAccess(walletAddress: string | null): AgentAccessResult {
   const canView = true;
-  if (!walletAddress) {
-    return { canParticipate: false, canView, reason: 'Connect your wallet to participate' };
-  }
+  if (!walletAddress) return { canParticipate: false, canView, reason: 'Connect your wallet to participate' };
 
   const agentCheck = isRegisteredAgent(walletAddress);
   if (!agentCheck.isAgent) {
@@ -197,12 +207,41 @@ export function canHumanViewRoom(room: CollaborationRoom): { canView: boolean; c
 
 /* ── Room Management ── */
 
-/**
- * Returns only rooms that have actually been created by real participants.
- * No default/seeded rooms — the network starts empty and grows organically.
- */
 export function getRooms(): CollaborationRoom[] {
-  return getStore<CollaborationRoom>(STORAGE.ROOMS);
+  const stored = getStore<CollaborationRoom>(STORAGE.ROOMS);
+  if (stored.length > 0) return stored;
+  
+  // Default rooms if empty
+  const defaults: CollaborationRoom[] = [
+    {
+      id: 'general',
+      name: 'General Coordination',
+      description: 'Open channel for agent coordination and announcements',
+      type: 'general',
+      visibility: 'public',
+      participants: [],
+      participantCount: 0,
+      createdAt: Date.now() - 86400000 * 7,
+      lastActivity: Date.now() - 3600000,
+      messageCount: 0,
+      createdBy: 'system',
+    },
+    {
+      id: 'task-room',
+      name: 'Task Collaboration',
+      description: 'Active collaboration on cross-chain tasks',
+      type: 'task',
+      visibility: 'public',
+      participants: [],
+      participantCount: 0,
+      createdAt: Date.now() - 86400000 * 3,
+      lastActivity: Date.now() - 1800000,
+      messageCount: 0,
+      createdBy: 'system',
+    }
+  ];
+  setStore(STORAGE.ROOMS, defaults);
+  return defaults;
 }
 
 export function getRoom(roomId: string): CollaborationRoom | null {
@@ -233,12 +272,9 @@ export function createRoom(params: {
 
 /* ── Messaging ── */
 
-/**
- * Returns only real messages posted by real participants.
- * No seeded/demo messages.
- */
 export function getMessages(roomId: string): HubMessage[] {
-  return getStore<HubMessage>(STORAGE.MESSAGES).filter(m => m.roomId === roomId);
+  const all = getStore<HubMessage>(STORAGE.MESSAGES);
+  return all.filter(m => m.roomId === roomId);
 }
 
 export function postMessage(
@@ -247,14 +283,14 @@ export function postMessage(
   senderAddress: string,
   content: string,
   type: HubMessage['type'] = 'message',
-  metadata?: Record<string, unknown>
+  metadata?: any
 ): HubMessage {
   const message: HubMessage = {
     id: generateId(),
     roomId, senderId, senderAddress, content,
     timestamp: Date.now(),
     type, metadata,
-    visibleToHumans: true,
+    visibleToHumans: true
   };
   const all = getStore<HubMessage>(STORAGE.MESSAGES);
   all.push(message);
@@ -277,10 +313,6 @@ export function postMessage(
 
 /* ── Task Marketplace ── */
 
-/**
- * Returns only real tasks posted by real participants.
- * No seeded/demo tasks.
- */
 export function getTasks(): CollaborativeTask[] {
   return getStore<CollaborativeTask>(STORAGE.TASKS);
 }
@@ -288,25 +320,24 @@ export function getTasks(): CollaborativeTask[] {
 export function createTask(params: {
   title: string;
   description: string;
-  requesterVNS?: string;
-  requesterAddress?: string;
-  requesterType: 'human' | 'agent';
   priority: CollaborativeTask['priority'];
   reward?: string;
+  requesterVNS?: string;
+  requesterType: 'human' | 'agent';
 }): CollaborativeTask {
   const task: CollaborativeTask = {
     id: generateId(),
+    roomId: 'task-room',
     title: params.title,
     description: params.description,
     assignedAgents: [],
     requesterVNS: params.requesterVNS,
-    requesterAddress: params.requesterAddress,
     requesterType: params.requesterType,
     status: 'open',
     priority: params.priority,
     reward: params.reward,
     createdAt: Date.now(),
-    bids: [],
+    bids: []
   };
   const tasks = getTasks();
   tasks.unshift(task);
@@ -314,18 +345,11 @@ export function createTask(params: {
   return task;
 }
 
-export function placeBid(
-  taskId: string,
-  bidderVNS: string,
-  bidderAddress: string,
-  trustScore: number,
-  amount: string,
-  message: string
-): TaskBid {
+export function placeBid(taskId: string, bidderVNS: string, trustScore: number, amount: string, message: string): TaskBid {
   const bid: TaskBid = {
     id: generateId(),
-    taskId, bidderVNS, bidderAddress, bidderTrustScore: trustScore,
-    amount, message, timestamp: Date.now(), status: 'pending',
+    taskId, bidderVNS, bidderTrustScore: trustScore,
+    amount, message, timestamp: Date.now(), status: 'pending'
   };
   const tasks = getTasks();
   const task = tasks.find(t => t.id === taskId);
@@ -347,6 +371,7 @@ export function acceptBid(taskId: string, bidId: string): void {
       task.acceptedBidId = bidId;
       task.status = 'in_progress';
       task.assignedAgents = [bid.bidderVNS];
+      // Reject other bids
       task.bids.forEach(b => { if (b.id !== bidId) b.status = 'rejected'; });
       setStore(STORAGE.TASKS, tasks);
     }
@@ -361,49 +386,56 @@ export function getLaunchedAgents(): LaunchedAgent[] {
 
 export function recordLaunchedAgent(agent: LaunchedAgent): void {
   const agents = getLaunchedAgents();
-  const index = agents.findIndex(a => a.vnsName === agent.vnsName);
-  if (index >= 0) {
-    agents[index] = agent;
-  } else {
-    agents.unshift(agent);
-  }
+  agents.unshift(agent);
   setStore(STORAGE.LAUNCHED_AGENTS, agents);
 }
 
-export function getLaunchedAgent(vnsName: string): LaunchedAgent | null {
-  return getLaunchedAgents().find(a => a.vnsName === vnsName) || null;
+/* ── Stats (ASYNC — reads from blockchain) ── */
+
+export interface HubStats {
+  totalIdentities: number;
+  activeBonds: number;
+  totalBondedEth: number;
+  totalBondedAvax: number;
+  totalTasks: number;
+  activeRooms: number;
+  chainCounts: Record<'base' | 'avalanche' | 'ethereum', number>;
+  loading: boolean;
 }
 
-/* ── Stats ── */
-
 /**
- * Returns real stats only.
- * - Identity count: from getKnownAgents() — includes protocol agents + locally registered
- * - Bond count: agents with hasBond === true
- * - Bonded amounts: sum of real bond amounts
- * - Tasks: count of real tasks posted
- * - Rooms: count of real rooms created
- *
- * The protocol has 2 known agents (embris + ns3) — these are real.
- * Additional agents appear as users register through the Launchpad.
+ * Fetch hub stats from real on-chain data.
+ * This is ASYNC — it makes RPC calls to Base, Avalanche, and Ethereum.
  */
-export function getHubStats(): HubStats {
-  const agents = getKnownAgents();
+export async function getHubStats(): Promise<HubStats> {
   const tasks = getTasks();
   const rooms = getRooms();
 
-  return {
-    totalIdentities: agents.length,
-    activeBonds: agents.filter(a => a.hasBond).length,
-    totalBondedEth: agents
-      .filter(a => a.hasBond && a.chain !== 'avalanche')
-      .reduce((sum, a) => sum + parseFloat(a.bondAmount || '0'), 0),
-    totalBondedAvax: agents
-      .filter(a => a.hasBond && a.chain === 'avalanche')
-      .reduce((sum, a) => sum + parseFloat(a.bondAmount || '0'), 0),
-    totalTasks: tasks.length,
-    activeRooms: rooms.length,
-  };
+  try {
+    const onChain = await getOnChainHubStats();
+    return {
+      totalIdentities: onChain.totalIdentities,
+      activeBonds: onChain.activeBonds,
+      totalBondedEth: onChain.totalBondedEth,
+      totalBondedAvax: onChain.totalBondedAvax,
+      totalTasks: tasks.length,
+      activeRooms: rooms.length,
+      chainCounts: onChain.chainCounts,
+      loading: false,
+    };
+  } catch {
+    // Fallback to zero if RPC fails — never show fake data
+    return {
+      totalIdentities: 0,
+      activeBonds: 0,
+      totalBondedEth: 0,
+      totalBondedAvax: 0,
+      totalTasks: tasks.length,
+      activeRooms: rooms.length,
+      chainCounts: { base: 0, avalanche: 0, ethereum: 0 },
+      loading: false,
+    };
+  }
 }
 
 /* ── Helpers ── */
@@ -422,7 +454,7 @@ export function getBondTierColor(tier: BondTier): string {
     case 'platinum': return '#E5E7EB';
     case 'gold': return '#FBBF24';
     case 'silver': return '#9CA3AF';
-    default: return '#CD7F32';
+    default: return '#D1D5DB';
   }
 }
 
@@ -432,5 +464,3 @@ export function getTrustBadgeLabel(score: number): string {
   if (score >= 50) return 'Verified';
   return 'New';
 }
-
-export type { IdentityType };

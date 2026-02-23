@@ -2,7 +2,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import {
   validateVNSName, checkVNSAvailability, resolveVNSName, getTotalVNSRegistrations,
-  registerVNSName, getMyVNSName, setMyVNSName, getMyIdentityType,
+  registerVNSName, getMyVNSName, getMyIdentityType,
   getHumanVNSForAddress, getCompanionVNSForAddress, getAgentVNSNamesForAddress,
   validateRegistrationRules, estimateVNSRegistrationGas, formatVNSName,
   getIdentityTypeLabel, getIdentityTypeColor, getBondTierInfo, getBondTier,

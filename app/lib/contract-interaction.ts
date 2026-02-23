@@ -76,9 +76,9 @@ export interface ContractQueryResult {
  */
 export async function checkRegistrationOnChain(
   address: string,
-  chain: 'base' | 'avalanche' | 'ethereum'
+  chain: 'base' | 'avalanche'
 ): Promise<{ registered: boolean; agentName: string | null }> {
-  const contracts = chain === 'base' ? BASE_CONTRACTS : chain === 'avalanche' ? AVALANCHE_CONTRACTS : ETHEREUM_CONTRACTS;
+  const contracts = chain === 'base' ? BASE_CONTRACTS : AVALANCHE_CONTRACTS;
   const registry = contracts.find(c => c.name === 'ERC8004IdentityRegistry');
   if (!registry) return { registered: false, agentName: null };
 
@@ -155,7 +155,7 @@ export async function getBlockNumber(chain: 'base' | 'avalanche' | 'ethereum'): 
 
 export interface EmbrisContractQuery {
   type: 'registration_check' | 'agent_count' | 'trust_score' | 'contract_status' | 'unknown';
-  chain?: 'base' | 'avalanche' | 'ethereum' | 'all';
+  chain?: 'base' | 'avalanche' | 'both';
 }
 
 /**
@@ -165,19 +165,19 @@ export function detectContractQuery(message: string): EmbrisContractQuery | null
   const lower = message.toLowerCase();
 
   if (/\b(am i registered|my registration|registration status|check.*(my|if).*(registered|registration))\b/.test(lower)) {
-    return { type: 'registration_check', chain: 'all' };
+    return { type: 'registration_check', chain: 'both' };
   }
 
   if (/\b(how many.*(agents?|users?|people|registered)|agent count|total.*(registered|agents?))\b/.test(lower)) {
-    return { type: 'agent_count', chain: 'all' };
+    return { type: 'agent_count', chain: 'both' };
   }
 
   if (/\b(trust score|my score|reputation|what('s| is) my.*(score|trust|reputation))\b/.test(lower)) {
-    return { type: 'trust_score', chain: 'all' };
+    return { type: 'trust_score', chain: 'both' };
   }
 
   if (/\b(contract.*(status|alive|live|active)|are.*(contracts?).*(live|active|deployed))\b/.test(lower)) {
-    return { type: 'contract_status', chain: 'all' };
+    return { type: 'contract_status', chain: 'both' };
   }
 
   return null;
@@ -211,13 +211,9 @@ export async function executeContractQuery(query: EmbrisContractQuery): Promise<
         }
 
         // Live on-chain check
-        for (const chain of ['ethereum', 'base', 'avalanche'] as const) {
-          try {
-            const onChain = await checkRegistrationOnChain(address, chain);
-            results.push(`Live ${chain} check: ${onChain.registered ? `Registered as "${onChain.agentName}"` : 'Not found on-chain'}`);
-          } catch {
-            results.push(`Live ${chain} check: Unable to query`);
-          }
+        for (const chain of ['base', 'avalanche'] as const) {
+          const onChain = await checkRegistrationOnChain(address, chain);
+          results.push(`Live ${chain} check: ${onChain.registered ? `Registered as "${onChain.agentName}"` : 'Not found on-chain'}`);
         }
 
         return results.join('\n');
@@ -244,15 +240,14 @@ export async function executeContractQuery(query: EmbrisContractQuery): Promise<
         const results: string[] = [`\n\n[ON-CHAIN DATA — Trust Score for ${address.slice(0, 6)}...${address.slice(-4)}]`];
         results.push(`Registration: ${localReg ? 'Verified' : 'Not registered'}`);
         results.push(`Chains: ${regChains.length > 0 ? regChains.join(', ') : 'None'}`);
-        results.push(`Protocol contracts verified: ${ETHEREUM_CONTRACTS.length + BASE_CONTRACTS.length + AVALANCHE_CONTRACTS.length}`);
-        results.push(`Active chains: 3 (Ethereum, Base & Avalanche)`);
+        results.push(`Protocol contracts verified: ${BASE_CONTRACTS.length + AVALANCHE_CONTRACTS.length + ETHEREUM_CONTRACTS.length}`);
+        results.push(`Active chains: 3 (Ethereum + Base + Avalanche)`);
 
         // Calculate a trust score based on available data
         let score = 0;
         if (localReg) score += 40;
-        if (regChains.includes('ethereum')) score += 10;
-        if (regChains.includes('base')) score += 10;
-        if (regChains.includes('avalanche')) score += 10;
+        if (regChains.includes('base')) score += 15;
+        if (regChains.includes('avalanche')) score += 15;
         if (address) score += 10;
         // Check live registration
         for (const chain of regChains) {
@@ -267,14 +262,14 @@ export async function executeContractQuery(query: EmbrisContractQuery): Promise<
 
       case 'contract_status': {
         const results: string[] = ['\n\n[ON-CHAIN DATA — Contract Status]'];
-        results.push(`Total contracts: ${ETHEREUM_CONTRACTS.length + BASE_CONTRACTS.length + AVALANCHE_CONTRACTS.length}`);
+        results.push(`Total contracts: ${BASE_CONTRACTS.length + AVALANCHE_CONTRACTS.length + ETHEREUM_CONTRACTS.length}`);
         results.push(`Ethereum: ${ETHEREUM_CONTRACTS.length} contracts`);
         results.push(`Base: ${BASE_CONTRACTS.length} contracts`);
         results.push(`Avalanche: ${AVALANCHE_CONTRACTS.length} contracts`);
 
         // Check a few key contracts
-        for (const chain of ['ethereum', 'base', 'avalanche'] as const) {
-          const contracts = chain === 'ethereum' ? ETHEREUM_CONTRACTS : chain === 'base' ? BASE_CONTRACTS : AVALANCHE_CONTRACTS;
+        for (const chain of ['base', 'avalanche', 'ethereum'] as const) {
+          const contracts = chain === 'base' ? BASE_CONTRACTS : chain === 'avalanche' ? AVALANCHE_CONTRACTS : ETHEREUM_CONTRACTS;
           const key = contracts.find(c => c.name === 'ERC8004IdentityRegistry');
           if (key) {
             const alive = await checkContractAlive(chain, key.address);

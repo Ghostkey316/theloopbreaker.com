@@ -15,7 +15,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   persistSession, restoreSession, clearSession,
-  getSessionPK, getSessionMnemonic, getSessionAddress, isSessionActive,
+  getSessionPK, getSessionMnemonic, getSessionAddress,
 } from './auth';
 import { setSessionKey, clearSession as clearWalletSession, isWalletCreated } from './wallet';
 

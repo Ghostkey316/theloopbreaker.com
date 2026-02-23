@@ -192,14 +192,15 @@ export function isPatternSynthesisDue(): boolean {
 
 /* ── LLM API for self-learning calls ── */
 
-const API_URL = '/api/chat';
+const API_URL = 'https://api.manus.im/api/llm-proxy/v1/chat/completions';
 
 async function llmCall(systemPrompt: string, userPrompt: string, apiKey: string, maxTokens = 1024): Promise<string> {
   try {
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'text/plain',
+        'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: 'gpt-4.1-nano',
