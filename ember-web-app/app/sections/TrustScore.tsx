@@ -44,6 +44,157 @@ function MetricSkeleton() {
   );
 }
 
+/* ── Trust Score Simulator ── */
+function TrustScoreSimulator({ currentScore }: { currentScore: number | null }) {
+  const actions = [
+    { id: 'register', label: 'Register on ERC-8004', delta: +15, category: 'identity', desc: 'Establishes your on-chain identity across all supported chains.' },
+    { id: 'bond_bronze', label: 'Post Bronze Bond (0.1 ETH)', delta: +10, category: 'bond', desc: 'Minimum accountability bond. Signals basic commitment.' },
+    { id: 'bond_silver', label: 'Post Silver Bond (0.5 ETH)', delta: +8, category: 'bond', desc: 'Incremental upgrade from Bronze. Increases trust weight.' },
+    { id: 'bond_gold', label: 'Post Gold Bond (2 ETH)', delta: +7, category: 'bond', desc: 'Significant bond. Unlocks higher-trust task categories.' },
+    { id: 'vns_name', label: 'Register .vns Name', delta: +12, category: 'identity', desc: 'Human-readable identity. Required for XMTP trust-gating.' },
+    { id: 'complete_task', label: 'Complete 10 Tasks Successfully', delta: +8, category: 'activity', desc: 'Demonstrated reliability through task completion history.' },
+    { id: 'zk_proof', label: 'Generate ZK Trust Proof', delta: +5, category: 'privacy', desc: 'Proves trust level without revealing private data.' },
+    { id: 'slash_event', label: 'Slashing Event (penalty)', delta: -20, category: 'penalty', desc: 'Bond slashed due to a verified misconduct report.' },
+    { id: 'dispute', label: 'Unresolved Dispute', delta: -10, category: 'penalty', desc: 'A task dispute was filed and not resolved within 7 days.' },
+  ];
+
+  const categoryColors: Record<string, string> = {
+    identity: '#8B5CF6',
+    bond: '#F59E0B',
+    activity: '#22C55E',
+    privacy: '#00D9FF',
+    penalty: '#EF4444',
+  };
+
+  const [selected, setSelected] = useState<string[]>([]);
+  const baseScore = currentScore ?? 60;
+
+  const simulatedScore = Math.max(0, Math.min(100,
+    baseScore + selected.reduce((sum, id) => {
+      const action = actions.find(a => a.id === id);
+      return sum + (action?.delta ?? 0);
+    }, 0)
+  ));
+
+  const delta = simulatedScore - baseScore;
+  const scoreColor = simulatedScore >= 80 ? '#22C55E' : simulatedScore >= 60 ? '#EAB308' : '#EF4444';
+
+  const toggle = (id: string) => {
+    setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  return (
+    <div style={{
+      marginTop: 32, padding: 20, borderRadius: 16,
+      background: 'rgba(255,255,255,0.02)',
+      border: '1px solid rgba(255,255,255,0.06)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#F4F4F5', marginBottom: 2 }}>Trust Score Simulator</h3>
+          <p style={{ fontSize: 11, color: '#52525B' }}>See how actions affect your trust score before committing on-chain.</p>
+        </div>
+        {selected.length > 0 && (
+          <button
+            onClick={() => setSelected([])}
+            style={{
+              fontSize: 10, color: '#52525B', background: 'none',
+              border: '1px solid rgba(255,255,255,0.06)', borderRadius: 6,
+              padding: '3px 8px', cursor: 'pointer',
+            }}
+          >
+            Reset
+          </button>
+        )}
+      </div>
+
+      {/* Score Preview */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 16,
+        padding: '14px 18px', borderRadius: 12, marginBottom: 16,
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(255,255,255,0.06)',
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 10, color: '#52525B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Current</div>
+          <div style={{ fontSize: 28, fontWeight: 800, color: '#71717A', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-0.04em' }}>{baseScore}</div>
+        </div>
+        <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#3F3F46" strokeWidth={2}><polyline points="9 18 15 12 9 6"/></svg>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 10, color: '#52525B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Simulated</div>
+          <div style={{ fontSize: 28, fontWeight: 800, color: scoreColor, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-0.04em', transition: 'color 0.3s ease' }}>{simulatedScore}</div>
+        </div>
+        {selected.length > 0 && (
+          <div style={{
+            marginLeft: 'auto',
+            fontSize: 14, fontWeight: 700,
+            color: delta > 0 ? '#22C55E' : '#EF4444',
+          }}>
+            {delta > 0 ? '+' : ''}{delta}
+          </div>
+        )}
+      </div>
+
+      {/* Score Bar */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ width: '100%', height: 4, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 2, overflow: 'hidden', position: 'relative' }}>
+          <div style={{ width: `${baseScore}%`, height: '100%', backgroundColor: '#3F3F46', borderRadius: 2 }} />
+          <div style={{
+            position: 'absolute', top: 0, left: 0,
+            width: `${simulatedScore}%`, height: '100%',
+            backgroundColor: scoreColor, borderRadius: 2,
+            transition: 'width 0.5s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease',
+            opacity: selected.length > 0 ? 1 : 0,
+          }} />
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {actions.map(action => {
+          const isSelected = selected.includes(action.id);
+          const color = categoryColors[action.category];
+          return (
+            <button
+              key={action.id}
+              onClick={() => toggle(action.id)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                background: isSelected ? `${color}08` : 'transparent',
+                border: `1px solid ${isSelected ? color + '30' : 'rgba(255,255,255,0.05)'}`,
+                textAlign: 'left', transition: 'all 0.15s ease',
+              }}
+            >
+              <div style={{
+                width: 20, height: 20, borderRadius: 5, flexShrink: 0,
+                backgroundColor: isSelected ? `${color}20` : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${isSelected ? color + '40' : 'rgba(255,255,255,0.06)'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {isSelected && (
+                  <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={3}><polyline points="20 6 9 17 4 12"/></svg>
+                )}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: isSelected ? '#F4F4F5' : '#A1A1AA' }}>{action.label}</div>
+                <div style={{ fontSize: 10, color: '#52525B', marginTop: 1 }}>{action.desc}</div>
+              </div>
+              <div style={{
+                fontSize: 12, fontWeight: 700,
+                color: action.delta > 0 ? '#22C55E' : '#EF4444',
+                flexShrink: 0,
+              }}>
+                {action.delta > 0 ? '+' : ''}{action.delta}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function TrustScore() {
   const [metrics, setMetrics] = useState<TrustMetrics | null>(null);
   const [loading, setLoading] = useState(true);
@@ -335,6 +486,9 @@ export default function TrustScore() {
         Trust score is calculated from live on-chain data including contract verification status,
         chain availability, protocol maturity, and your registration status. Score updates in real-time.
       </p>
+
+      {/* Trust Score Simulator */}
+      <TrustScoreSimulator currentScore={metrics?.trustScore ?? null} />
     </div>
   );
 }

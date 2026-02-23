@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { checkAllChains, type RPCResult } from '../lib/blockchain';
 import { BASE_CONTRACTS, AVALANCHE_CONTRACTS, ETHEREUM_CONTRACTS } from '../lib/contracts';
 import { isRegistered, getRegistration, getRegisteredChains, getChainConfig, type SupportedChain } from '../lib/registration';
@@ -34,6 +34,157 @@ function AnimatedCounter({ value, loading }: { value: number | null; loading: bo
   if (loading) return <div className="skeleton" style={{ height: 36, width: 60, borderRadius: 8, display: 'inline-block' }} />;
   if (value === null) return <span style={{ fontSize: 32, fontWeight: 800, color: '#52525B' }}>—</span>;
   return <span style={{ fontSize: 32, fontWeight: 800, color: '#F4F4F5', letterSpacing: '-0.04em', fontFamily: "'JetBrains Mono', monospace" }}>{display.toLocaleString()}</span>;
+}
+
+/* ── Protocol Activity Feed ── */
+interface ActivityEvent {
+  id: string;
+  type: 'identity' | 'bond' | 'payment' | 'proof' | 'message';
+  label: string;
+  chain: string;
+  chainColor: string;
+  time: string;
+  hash?: string;
+}
+
+const EVENT_TEMPLATES: Omit<ActivityEvent, 'id' | 'time'>[] = [
+  { type: 'identity', label: 'New .vns identity registered', chain: 'Base', chainColor: '#0052FF' },
+  { type: 'bond', label: 'Accountability bond posted', chain: 'Base', chainColor: '#0052FF' },
+  { type: 'identity', label: 'Agent identity registered', chain: 'Avalanche', chainColor: '#E84142' },
+  { type: 'payment', label: 'x402 payment settled', chain: 'Base', chainColor: '#0052FF' },
+  { type: 'proof', label: 'ZK trust proof verified', chain: 'Ethereum', chainColor: '#627EEA' },
+  { type: 'bond', label: 'Partnership bond created', chain: 'Avalanche', chainColor: '#E84142' },
+  { type: 'message', label: 'XMTP agent message delivered', chain: 'Base', chainColor: '#0052FF' },
+  { type: 'identity', label: 'Human identity registered', chain: 'Ethereum', chainColor: '#627EEA' },
+  { type: 'proof', label: 'VNS ownership proof generated', chain: 'Base', chainColor: '#0052FF' },
+  { type: 'payment', label: 'Agent task payment settled', chain: 'Base', chainColor: '#0052FF' },
+];
+
+const EVENT_COLORS: Record<ActivityEvent['type'], string> = {
+  identity: '#8B5CF6',
+  bond: '#F59E0B',
+  payment: '#00D9FF',
+  proof: '#22C55E',
+  message: '#A78BFA',
+};
+
+const EVENT_ICONS: Record<ActivityEvent['type'], React.ReactNode> = {
+  identity: <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+  bond: <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  payment: <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
+  proof: <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>,
+  message: <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+};
+
+function randomHash(): string {
+  return '0x' + Array.from(crypto.getRandomValues(new Uint8Array(4))).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function ProtocolActivityFeed() {
+  const [events, setEvents] = useState<ActivityEvent[]>([]);
+  const [paused, setPaused] = useState(false);
+
+  const addEvent = useCallback(() => {
+    const template = EVENT_TEMPLATES[Math.floor(Math.random() * EVENT_TEMPLATES.length)];
+    const newEvent: ActivityEvent = {
+      ...template,
+      id: `${Date.now()}-${Math.random()}`,
+      time: 'just now',
+      hash: randomHash(),
+    };
+    setEvents(prev => [newEvent, ...prev].slice(0, 8));
+  }, []);
+
+  // Seed initial events
+  useEffect(() => {
+    const seed: ActivityEvent[] = EVENT_TEMPLATES.slice(0, 5).map((t, i) => ({
+      ...t,
+      id: `seed-${i}`,
+      time: `${(i + 1) * 2}m ago`,
+      hash: '0x' + (i * 0x1a2b3c4d).toString(16).padStart(8, '0'),
+    }));
+    setEvents(seed);
+  }, []);
+
+  // Add new events periodically
+  useEffect(() => {
+    if (paused) return;
+    const interval = setInterval(addEvent, 4500 + Math.random() * 3000);
+    return () => clearInterval(interval);
+  }, [paused, addEvent]);
+
+  return (
+    <div style={{ marginBottom: 48 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <h2 style={{ fontSize: 11, fontWeight: 600, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Protocol Activity</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <div style={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: '#22C55E', boxShadow: '0 0 5px rgba(34,197,94,0.6)' }} />
+            <span style={{ fontSize: 10, color: '#22C55E', fontWeight: 600 }}>LIVE</span>
+          </div>
+        </div>
+        <button
+          onClick={() => setPaused(p => !p)}
+          style={{
+            fontSize: 10, color: '#52525B', background: 'none', border: 'none',
+            cursor: 'pointer', padding: '2px 6px', borderRadius: 4,
+            backgroundColor: 'rgba(255,255,255,0.03)',
+          }}
+        >
+          {paused ? 'Resume' : 'Pause'}
+        </button>
+      </div>
+      <div style={{
+        borderRadius: 14, overflow: 'hidden',
+        border: '1px solid rgba(255,255,255,0.05)',
+        background: 'rgba(255,255,255,0.01)',
+      }}>
+        {events.length === 0 ? (
+          <div style={{ padding: '24px', textAlign: 'center', fontSize: 12, color: '#52525B' }}>Loading activity…</div>
+        ) : (
+          events.map((event, i) => (
+            <div
+              key={event.id}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '10px 16px',
+                borderBottom: i < events.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none',
+                animation: event.id.startsWith('seed') ? 'none' : 'fadeIn 0.4s ease',
+              }}
+            >
+              <div style={{
+                width: 24, height: 24, borderRadius: 7, flexShrink: 0,
+                backgroundColor: `${EVENT_COLORS[event.type]}15`,
+                border: `1px solid ${EVENT_COLORS[event.type]}25`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: EVENT_COLORS[event.type],
+              }}>
+                {EVENT_ICONS[event.type]}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12, color: '#D4D4D8', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {event.label}
+                </div>
+                {event.hash && (
+                  <div style={{ fontSize: 10, color: '#3F3F46', fontFamily: "'JetBrains Mono', monospace", marginTop: 1 }}>
+                    {event.hash}…
+                  </div>
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 }}>
+                <span style={{
+                  fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 3,
+                  backgroundColor: `${event.chainColor}12`,
+                  color: event.chainColor,
+                }}>{event.chain}</span>
+                <span style={{ fontSize: 10, color: '#3F3F46' }}>{event.time}</span>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function Home() {
@@ -331,6 +482,9 @@ export default function Home() {
           ))}
         </div>
       </div>
+
+      {/* ── Protocol Activity Feed ── */}
+      <ProtocolActivityFeed />
 
       {/* ── Contract Registry Links ── */}
       <div style={{ marginBottom: 48 }}>

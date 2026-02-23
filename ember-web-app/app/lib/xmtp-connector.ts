@@ -314,7 +314,7 @@ export async function verifyVaultfireTrust(
     }
   } catch (err) {
     // Bond lookup failed — degrade gracefully
-    console.warn(`[Vaultfire] Bond verification failed for ${address} on ${chain}:`, err);
+    if (process.env.NODE_ENV !== 'production') console.warn(`[Vaultfire] Bond verification failed for ${address} on ${chain}:`, err);
   }
 
   const bondTier = calculateBondTier(bondAmount);
@@ -837,19 +837,19 @@ export async function createVaultfireAgent(config: VaultfireAgentConfig = {}) {
 
   agent.use(router.middleware());
 
-  // --- Lifecycle logging ---
+  // --- Lifecycle logging (development only) ---
+  const isDev = process.env.NODE_ENV !== 'production';
 
   agent.on('start', () => {
-    console.log(`[Vaultfire] Agent online: ${agent.address}`);
-    console.log(`[Vaultfire] Trust chain: ${chain} | Block untrusted: ${config.blockUntrusted ?? false}`);
+    if (isDev) console.debug(`[Vaultfire] Agent online: ${agent.address}`);
   });
 
   agent.on('stop', () => {
-    console.log('[Vaultfire] Agent stopped');
+    if (isDev) console.debug('[Vaultfire] Agent stopped');
   });
 
   agent.on('unhandledError', (error) => {
-    console.error('[Vaultfire] Unhandled error:', error);
+    if (isDev) console.error('[Vaultfire] Unhandled error:', error);
   });
 
   // --- Transaction reference handler (x402 payment verification) ---
