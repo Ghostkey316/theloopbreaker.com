@@ -1379,6 +1379,7 @@ export default function Wallet() {
                   <option value="USDC">USDC</option>
                   <option value="ETH">ETH</option>
                   <option value="AVAX">AVAX</option>
+                  <option value="ASM">ASM (Assemble AI)</option>
                 </select>
               </div>
               <div style={{ flex: 1, minWidth: 80 }}>

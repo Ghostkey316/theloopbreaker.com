@@ -307,6 +307,22 @@ export function initDefaultLimits(): void {
       enabled: true,
       createdAt: Date.now(),
     },
+    {
+      id: makeLimitId('AVAX', 'daily'),
+      token: 'AVAX',
+      period: 'daily',
+      maxAmount: '5.0',
+      enabled: true,
+      createdAt: Date.now(),
+    },
+    {
+      id: makeLimitId('ASM', 'daily'),
+      token: 'ASM',
+      period: 'daily',
+      maxAmount: '100',
+      enabled: true,
+      createdAt: Date.now(),
+    },
   ];
 
   saveSpendingLimits(defaults);
