@@ -5,7 +5,7 @@ import { getUnreadCount } from "../lib/notifications";
 import { useWalletAuth } from "../lib/WalletAuthContext";
 import { isWalletCreated } from "../lib/wallet";
 
-type Section = "home" | "chat" | "wallet" | "verify" | "bridge" | "dashboard" | "sync" | "trust" | "analytics" | "vns" | "agent-hub" | "marketplace" | "zk-proofs" | "trust-badges" | "earnings" | "agent-api";
+type Section = "home" | "chat" | "wallet" | "verify" | "bridge" | "sync" | "trust" | "analytics" | "vns" | "agent-hub" | "marketplace" | "zk-proofs" | "trust-badges" | "earnings" | "agent-api" | "settings";
 
 const Icons: Record<string, (props: { size?: number; color?: string }) => React.ReactElement> = {
   home: ({ size = 18, color = "currentColor" }) => (
@@ -33,9 +33,9 @@ const Icons: Record<string, (props: { size?: number; color?: string }) => React.
       <path d="M8 3v3a2 2 0 0 1-2 2H3" /><path d="M21 8h-3a2 2 0 0 1-2-2V3" /><path d="M3 16h3a2 2 0 0 1 2 2v3" /><path d="M16 21v-3a2 2 0 0 1 2-2h3" /><line x1="7" y1="12" x2="17" y2="12" /><polyline points="14 9 17 12 14 15" />
     </svg>
   ),
-  dashboard: ({ size = 18, color = "currentColor" }) => (
+  settings: ({ size = 18, color = "currentColor" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
+      <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
     </svg>
   ),
   sync: ({ size = 18, color = "currentColor" }) => (
@@ -103,11 +103,13 @@ const NAV_ITEMS: { id: Section; label: string; iconKey: string; group?: string }
   { id: "zk-proofs", label: "ZK Proofs", iconKey: "zkProofs" },
   { id: "verify", label: "Contracts", iconKey: "verify", group: "Protocol" },
   { id: "bridge", label: "Bridge", iconKey: "bridge" },
-  { id: "dashboard", label: "Dashboard", iconKey: "dashboard" },
   { id: "trust", label: "Trust Score", iconKey: "trust" },
   { id: "analytics", label: "Analytics", iconKey: "analytics" },
   { id: "sync", label: "Data", iconKey: "sync" },
 ];
+
+// Settings is rendered separately at the bottom of the sidebar
+const SETTINGS_ITEM = { id: "settings" as Section, label: "Settings", iconKey: "settings" };
 
 function EmbrisLogo({ size = 24 }: { size?: number }) {
   return (
@@ -387,13 +389,17 @@ export default function Sidebar({ activeSection, onSectionChange, mobileForceOpe
           })}
         </nav>
 
-        {/* Footer controls */}
-        <div style={{ padding: "12px 14px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
+        {/* Footer: Settings + notifications */}
+        <div style={{ padding: "8px 10px 12px", display: "flex", flexDirection: "column", gap: 4 }}>
+          {/* Subtle divider */}
+          <div style={{ height: 1, backgroundColor: "rgba(63,63,70,0.3)", margin: "0 4px 6px" }} />
+
           {unreadCount > 0 && (
             <div style={{
               display: "flex", alignItems: "center", gap: 8,
-              padding: "6px 10px", borderRadius: 6,
+              padding: "6px 14px", borderRadius: 8, marginBottom: 2,
               backgroundColor: "rgba(249,115,22,0.06)",
+              border: "1px solid rgba(249,115,22,0.1)",
             }}>
               <Icons.bell size={13} color="#F97316" />
               <span style={{ fontSize: 11, color: "#F97316", fontWeight: 500 }}>
@@ -402,28 +408,11 @@ export default function Sidebar({ activeSection, onSectionChange, mobileForceOpe
             </div>
           )}
 
-          <button
-            onClick={handleThemeToggle}
-            style={{
-              display: "flex", alignItems: "center", gap: 8,
-              padding: "6px 10px", borderRadius: 6,
-              backgroundColor: "transparent",
-              border: "none", cursor: "pointer",
-              color: "#52525B", width: "100%", textAlign: "left",
-              transition: "color 0.15s ease",
-              minHeight: 32,
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = '#A1A1AA'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = '#52525B'; }}
-          >
-            {theme === 'dark' ? <Icons.sun size={13} color="currentColor" /> : <Icons.moon size={13} color="currentColor" />}
-            <span style={{ fontSize: 11, fontWeight: 400 }}>
-              {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-            </span>
-          </button>
+          {/* Settings nav button */}
+          <NavButton item={SETTINGS_ITEM} />
 
-          <p style={{ fontSize: 10, color: "#27272A", fontWeight: 400, letterSpacing: "0.01em", padding: "0 4px" }}>
-            v2.0 · theloopbreaker.com
+          <p style={{ fontSize: 10, color: "#27272A", fontWeight: 400, letterSpacing: "0.01em", padding: "4px 14px 2px" }}>
+            v0.9.0 · Embris by Vaultfire
           </p>
         </div>
       </>
