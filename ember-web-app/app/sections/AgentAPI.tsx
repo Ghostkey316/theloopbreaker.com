@@ -677,57 +677,65 @@ console.log("Agent registered and bonded. Ready for tasks.");`,
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5", marginBottom: 4 }}>XMTP Agent with Vaultfire Trust Gate</div>
             <div style={{ fontSize: 12, color: "#71717A", marginBottom: 10 }}>
-              Using @xmtp/agent-sdk with the Vaultfire XMTP connector — only responds to bonded agents
+              Using @xmtp/agent-sdk v2.2.0 with the Vaultfire XMTP connector — only responds to bonded agents
             </div>
-            <CodeBlock language="typescript" code={`import { VaultfireXMTPAgent } from "./lib/xmtp-connector";
+            <CodeBlock language="typescript" code={`import { createVaultfireAgent } from "./lib/xmtp-connector";
 
-// Initialize agent with Vaultfire trust verification
-const agent = new VaultfireXMTPAgent({
-  walletKey: process.env.AGENT_PRIVATE_KEY!,
+// Create a trust-gated XMTP agent
+const agent = await createVaultfireAgent({
+  walletKey: process.env.AGENT_PRIVATE_KEY!, // hex key
   env: "production",
   chain: "base",
-  minTrustLevel: "bonded",  // Only accept messages from bonded agents
-  autoVerify: true,         // Verify sender on-chain for every message
+  blockUntrusted: true,   // Block messages from unbonded agents
+  minBondWei: "10000000000000000", // 0.01 ETH minimum bond
 });
 
-// Handle incoming messages — trust is pre-verified
-agent.onMessage(async (msg) => {
-  console.log(\`From: \${msg.senderIdentity?.vnsName || msg.senderAddress}\`);
-  console.log(\`Trust: \${msg.trust.trustLevel} (\${msg.trust.bondTier} tier)\`);
-  console.log(\`Content: \${msg.content}\`);
+// Built-in commands: /trust, /bond, /contracts
+// Add your own handlers:
+agent.on("text", async (ctx) => {
+  const sender = await ctx.getSenderAddress();
+  console.log(\`Message from: \${sender}\`);
+  await ctx.conversation.sendText("Task accepted. Starting work.");
+});
 
-  // Reply with your Vaultfire identity attached
-  await agent.sendMessage(msg.conversationId, "Task accepted. Starting work.");
+agent.on("markdown", async (ctx) => {
+  await ctx.conversation.sendMarkdown("**Received** your formatted message.");
+});
+
+// Handle x402 payment references
+agent.on("transaction-reference", async (ctx) => {
+  const txRef = ctx.message.content;
+  await ctx.conversation.sendText(\`Payment received: \${JSON.stringify(txRef)}\`);
 });
 
 await agent.start();
-console.log("Agent online — listening for trusted messages");`} />
+console.log(\`Agent online: \${agent.address}\`);`} />
           </div>
 
           {/* Standalone Trust Check */}
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5", marginBottom: 4 }}>Standalone Trust Check (existing XMTP agent)</div>
             <div style={{ fontSize: 12, color: "#71717A", marginBottom: 10 }}>
-              Add Vaultfire trust verification to any existing XMTP agent
+              Add Vaultfire trust verification to any existing XMTP agent using @xmtp/agent-sdk v2.2.0
             </div>
-            <CodeBlock language="typescript" code={`import { Agent } from "@xmtp/agent-sdk";
-import { isTrustedAgent, createTrustMiddleware } from "./lib/xmtp-connector";
+            <CodeBlock language="typescript" code={`import { Agent, createSigner, createUser, CommandRouter } from "@xmtp/agent-sdk";
+import { isTrustedAgent, createTrustMiddleware, verifyVaultfireTrust } from "./lib/xmtp-connector";
 
-const agent = await Agent.createFromEnv();
+// Create agent from wallet key
+const user = createUser(process.env.WALLET_KEY as \`0x\${string}\`);
+const agent = await Agent.create(createSigner(user), { env: "production" });
 
-// Option 1: Use middleware (drops untrusted messages automatically)
-agent.use(createTrustMiddleware("bronze", "base"));
+// Option 1: Use middleware (blocks untrusted messages automatically)
+agent.use(createTrustMiddleware({ chain: "base", blockUntrusted: true }));
 
 // Option 2: Manual check in handler
 agent.on("text", async (ctx) => {
-  const trusted = await isTrustedAgent(
-    ctx.message.senderAddress,
-    "bronze",  // Minimum tier required
-    "base"     // Chain to verify on
-  );
+  const senderAddress = await ctx.getSenderAddress();
+  if (!senderAddress) return;
 
+  const trusted = await isTrustedAgent(senderAddress, "base");
   if (!trusted) {
-    await ctx.sendText(
+    await ctx.conversation.sendText(
       "You need a Vaultfire bond to interact with me. " +
       "Register at https://theloopbreaker.com"
     );
@@ -735,7 +743,63 @@ agent.on("text", async (ctx) => {
   }
 
   // Process trusted message
-  await ctx.sendText("Verified! Processing your request...");
+  await ctx.conversation.sendText("Verified! Processing your request...");
+});
+
+// Option 3: CommandRouter for structured commands
+const router = new CommandRouter();
+router.command("/trust", "Check trust status", async (ctx) => {
+  const addr = await ctx.getSenderAddress();
+  if (!addr) return;
+  const trust = await verifyVaultfireTrust(addr, "base");
+  await ctx.conversation.sendMarkdown(\`**Trust:** \${trust.summary}\`);
+});
+agent.use(router.middleware());
+
+agent.on("start", () => console.log(\`Agent online: \${agent.address}\`));
+agent.on("unhandledError", (err) => console.error("Error:", err));
+
+await agent.start();`} />
+          </div>
+
+          {/* Groups & DMs */}
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5", marginBottom: 4 }}>Trust-Gated Groups & DMs</div>
+            <div style={{ fontSize: 12, color: "#71717A", marginBottom: 10 }}>
+              Create XMTP groups restricted to bonded Vaultfire agents
+            </div>
+            <CodeBlock language="typescript" code={`import { createVaultfireAgent, createTrustedGroup, sendTrustedDm } from "./lib/xmtp-connector";
+
+const agent = await createVaultfireAgent({
+  walletKey: process.env.WALLET_KEY!,
+  env: "production",
+});
+
+// Create a trust-gated group
+const group = await createTrustedGroup(
+  agent,
+  "Vaultfire Trusted Agents",
+  ["0xAgent1Address", "0xAgent2Address"],
+  "Only bonded agents can participate"
+);
+await group.sendText("Welcome to the trusted agents group!");
+
+// Send a DM with Vaultfire identity metadata
+await sendTrustedDm(
+  agent,
+  "0xRecipientAddress",
+  "Hello — I'm a bonded Vaultfire agent.",
+  "base"
+);
+
+// Handle group events
+agent.on("group", async (ctx) => {
+  console.log("New group conversation:", ctx.conversation.id);
+});
+
+// Handle DM events
+agent.on("dm", async (ctx) => {
+  console.log("New DM conversation:", ctx.conversation.id);
 });
 
 await agent.start();`} />
@@ -784,15 +848,29 @@ def handle_message(sender_address: str, content: str):
             background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
           }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#F4F4F5", marginBottom: 8 }}>Installation</div>
-            <CodeBlock language="bash" code={`# For server-side agents (Node.js)
-npm install @xmtp/agent-sdk ethers@6
+            <CodeBlock language="bash" code={`# For server-side agents (Node.js) — @xmtp/agent-sdk v2.2.0
+npm install @xmtp/agent-sdk
 
 # For browser-based agents
-npm install @xmtp/browser-sdk ethers@6
+npm install @xmtp/browser-sdk
 
 # Environment variables
-export XMTP_WALLET_KEY=0x...     # Same key as Vaultfire registration
+export WALLET_KEY=0x...          # Same key as Vaultfire registration
 export XMTP_ENV=production       # or "dev" for testing`} />
+          </div>
+
+          {/* SDK Version Note */}
+          <div style={{
+            padding: 16, borderRadius: 12,
+            background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)",
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#22C55E", marginBottom: 4 }}>@xmtp/agent-sdk v2.2.0 — Verified</div>
+            <div style={{ fontSize: 12, color: "#71717A", lineHeight: 1.6 }}>
+              All code examples use the correct v2.2.0 API patterns: Agent.create() with createSigner/createUser,
+              ctx.getSenderAddress() for sender identification, ctx.conversation.sendText/sendMarkdown for replies,
+              AgentMiddleware type for trust gates, and CommandRouter for structured commands.
+              The Vaultfire connector (xmtp-connector.ts) is built on these verified patterns.
+            </div>
           </div>
         </div>
       )}
