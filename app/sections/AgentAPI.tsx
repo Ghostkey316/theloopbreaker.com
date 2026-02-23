@@ -69,10 +69,38 @@ function CodeBlock({ code, language }: { code: string; language: string }) {
   );
 }
 
-/* ── Endpoint Card ── */
+/* ── Endpoint Card with Live Try-It ── */
 function EndpointCard({ endpoint, isMobile }: { endpoint: Endpoint; isMobile: boolean }) {
   const [expanded, setExpanded] = useState(false);
+  const [tryItOpen, setTryItOpen] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [liveResponse, setLiveResponse] = useState<string | null>(null);
+  const [liveError, setLiveError] = useState<string | null>(null);
   const methodColors: Record<string, string> = { GET: "#22C55E", POST: "#3B82F6", PUT: "#F59E0B" };
+
+  const handleTryIt = async () => {
+    setRunning(true);
+    setLiveResponse(null);
+    setLiveError(null);
+    try {
+      const res = await fetch(endpoint.path, {
+        method: endpoint.method,
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(15000),
+      });
+      const text = await res.text();
+      try {
+        const json = JSON.parse(text);
+        setLiveResponse(JSON.stringify(json, null, 2));
+      } catch {
+        setLiveResponse(text);
+      }
+    } catch (e) {
+      setLiveError(e instanceof Error ? e.message : 'Request failed');
+    }
+    setRunning(false);
+  };
+
   return (
     <div style={{
       borderRadius: 12, overflow: "hidden",
@@ -126,8 +154,62 @@ function EndpointCard({ endpoint, isMobile }: { endpoint: Endpoint; isMobile: bo
               </div>
             </>
           )}
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#52525B", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>Response</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#52525B", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>Expected Response</div>
           <CodeBlock code={endpoint.response} language="json" />
+
+          {/* Live Try-It */}
+          {endpoint.method === 'GET' && (
+            <div style={{ marginTop: 12 }}>
+              <button
+                onClick={() => { setTryItOpen(!tryItOpen); if (!tryItOpen) { setLiveResponse(null); setLiveError(null); } }}
+                style={{
+                  padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(34,197,94,0.25)",
+                  background: "rgba(34,197,94,0.08)", color: "#22C55E",
+                  fontSize: 11, fontWeight: 700, cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: 6,
+                }}
+              >
+                <svg width={10} height={10} viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                {tryItOpen ? 'Hide Live Test' : 'Try It Live'}
+              </button>
+              {tryItOpen && (
+                <div style={{
+                  marginTop: 10, padding: 14, borderRadius: 10,
+                  background: "rgba(34,197,94,0.04)", border: "1px solid rgba(34,197,94,0.12)",
+                }}>
+                  <div style={{ fontSize: 11, color: "#52525B", marginBottom: 8 }}>
+                    Calling <code style={{ color: "#22C55E", fontFamily: "'SF Mono', monospace" }}>{endpoint.method} {endpoint.path}</code> against the live server
+                  </div>
+                  <button
+                    onClick={handleTryIt}
+                    disabled={running}
+                    style={{
+                      padding: "7px 16px", borderRadius: 8, border: "none",
+                      background: running ? "rgba(255,255,255,0.05)" : "#22C55E",
+                      color: running ? "#52525B" : "#000",
+                      fontSize: 12, fontWeight: 700, cursor: running ? "not-allowed" : "pointer",
+                      display: "flex", alignItems: "center", gap: 6,
+                    }}
+                  >
+                    {running ? (
+                      <><svg className="animate-spin" width={12} height={12} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" opacity="0.75"/></svg>Sending…</>
+                    ) : 'Send Request'}
+                  </button>
+                  {liveResponse && (
+                    <div style={{ marginTop: 10 }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "#22C55E", marginBottom: 4, textTransform: "uppercase" }}>Live Response</div>
+                      <CodeBlock code={liveResponse} language="json" />
+                    </div>
+                  )}
+                  {liveError && (
+                    <div style={{ marginTop: 10, padding: "8px 12px", borderRadius: 8, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", fontSize: 12, color: "#EF4444" }}>
+                      {liveError}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

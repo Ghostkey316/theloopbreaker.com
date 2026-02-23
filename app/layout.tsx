@@ -3,8 +3,8 @@ import './globals.css';
 import { WalletAuthProvider } from './lib/WalletAuthContext';
 
 export const metadata: Metadata = {
-  title: 'Embris — Powered by Vaultfire Protocol',
-  description: 'Your ethical AI companion. Decentralized trust infrastructure across Ethereum, Base, and Avalanche.',
+  title: 'Embris by Vaultfire — Decentralized AI Trust Protocol',
+  description: 'Embris by Vaultfire: The unified AI trust protocol. XMTP messaging, x402 payments, VNS identity, and ZK proofs across Ethereum, Base, and Avalanche.',
   icons: {
     icon: '/favicon.ico',
   },
@@ -13,8 +13,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
+  userScalable: true,
   viewportFit: 'cover',
   themeColor: '#09090B',
 };

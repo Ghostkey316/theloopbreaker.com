@@ -254,7 +254,7 @@ export function syncFromPaymentHistory(
 
     existingLog.push({
       timestamp: payment.timestamp,
-      token: payment.asset === '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' ? 'USDC' : 'USDC',
+      token: payment.asset === '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' ? 'USDC' : payment.asset === '0x0000000000000000000000000000000000000000' ? 'ETH' : 'USDC',
       amount: payment.amountFormatted,
       description: `x402 payment to ${payment.recipientVNS || payment.payTo.slice(0, 10) + '...'}`,
     });
