@@ -1,6 +1,6 @@
 /**
  * Vaultfire Protocol — Contract Addresses
- * All 42 contracts (14 per chain × 3 chains) across Ethereum, Base, and Avalanche chains.
+ * All 45 contracts (15 per chain × 3 chains) across Ethereum, Base, and Avalanche chains.
  */
 
 export interface ContractInfo {
@@ -61,6 +61,7 @@ export const BASE_CONTRACTS: ContractInfo[] = [
   { name: 'MultisigGovernance', address: '0xea0A6750642AA294658dC9f1eDf36b95D21e7B22', chain: 'base', chainId: 8453 },
   { name: 'ProductionBeliefAttestationVerifier', address: '0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B', chain: 'base', chainId: 8453 },
   { name: 'VaultfireTeleporterBridge', address: '0xFe122605364f428570c4C0EB2CCAEBb68dD22d05', chain: 'base', chainId: 8453 },
+  { name: 'DilithiumAttestor', address: '0xB53cd0A2ec4051018E6e3A0F2FF1EEC6487b123E', chain: 'base', chainId: 8453 },
 ];
 
 export const AVALANCHE_CONTRACTS: ContractInfo[] = [
@@ -78,15 +79,10 @@ export const AVALANCHE_CONTRACTS: ContractInfo[] = [
   { name: 'ERC8004ValidationRegistry', address: '0x10180c8430cfD61d27F1d7a548Cff0C4D143bFEF', chain: 'avalanche', chainId: 43114 },
   { name: 'VaultfireERC8004Adapter', address: '0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1', chain: 'avalanche', chainId: 43114 },
   { name: 'MultisigGovernance', address: '0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1', chain: 'avalanche', chainId: 43114 },
+  { name: 'DilithiumAttestor', address: '0x5470d8189849675C043fFA7fc451e5F2f4e5532c', chain: 'avalanche', chainId: 43114 },
 ];
 
 export const ETHEREUM_CONTRACTS: ContractInfo[] = [
-  // 13 contracts on ETH mainnet — matches Base/Avalanche minus TeleporterBridge
-  // VaultfireToken and GovernanceTimelock are NOT part of the protocol
-  // TeleporterBridge is excluded — Avalanche Teleporter does not work on Ethereum mainnet
-  { name: 'MissionEnforcement', address: '0x5470d8189849675C043fFA7fc451e5F2f4e5532c', chain: 'ethereum', chainId: 1 },
-  { name: 'AntiSurveillance', address: '0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B', chain: 'ethereum', chainId: 1 },
-  { name: 'PrivacyGuarantees', address: '0xE1D52bF7A842B207B8C48eAE801f9d97A3C4D709', chain: 'ethereum', chainId: 1 },
   { name: 'ERC8004IdentityRegistry', address: '0xaCB59e0f0eA47B25b24390B71b877928E5842630', chain: 'ethereum', chainId: 1 },
   { name: 'BeliefAttestationVerifier', address: '0xFe122605364f428570c4C0EB2CCAEBb68dD22d05', chain: 'ethereum', chainId: 1 },
   { name: 'AIPartnershipBondsV2', address: '0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1', chain: 'ethereum', chainId: 1 },
@@ -94,9 +90,14 @@ export const ETHEREUM_CONTRACTS: ContractInfo[] = [
   { name: 'AIAccountabilityBondsV2', address: '0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5', chain: 'ethereum', chainId: 1 },
   { name: 'ERC8004ReputationRegistry', address: '0x37679B1dCfabE6eA6b8408626815A1426bE2D717', chain: 'ethereum', chainId: 1 },
   { name: 'ERC8004ValidationRegistry', address: '0x83b2D1a8e383c4239dE66b6614176636618c1c0A', chain: 'ethereum', chainId: 1 },
-  { name: 'VaultfireERC8004Adapter', address: '0xEF022Bdf55940491d4efeBDE61Ffa3f3fF81b192', chain: 'ethereum', chainId: 1 },
   { name: 'MultisigGovernance', address: '0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C', chain: 'ethereum', chainId: 1 },
   { name: 'ProductionBeliefAttestationVerifier', address: '0xDfc66395A4742b5168712a04942C90B99394aEEb', chain: 'ethereum', chainId: 1 },
+  { name: 'DilithiumAttestor', address: '0xE1b9817FC0F10d2676303C7732497E9B593a22de', chain: 'ethereum', chainId: 1 },
+  { name: 'MissionEnforcement', address: '0xe24Ab41dC93833d63d8dd501C53bED674daa4839', chain: 'ethereum', chainId: 1 },
+  { name: 'AntiSurveillance', address: '0x5aB7Ec586928f91e808009700fEE59635b141177', chain: 'ethereum', chainId: 1 },
+  { name: 'PrivacyGuarantees', address: '0xd8fa09428a578Fc5a9b65d31f9D294Ccfe7b69e5', chain: 'ethereum', chainId: 1 },
+  { name: 'TrustDataBridge', address: '0xa5906e8117AC9b8e4803cC19223d4fAC4e947411', chain: 'ethereum', chainId: 1 },
+  { name: 'VaultfireERC8004Adapter', address: '0xA90Ef8397a07fe88475B6907d1b0a0BFb4951483', chain: 'ethereum', chainId: 1 },
 ];
 
 export const ALL_CONTRACTS: ContractInfo[] = [...ETHEREUM_CONTRACTS, ...BASE_CONTRACTS, ...AVALANCHE_CONTRACTS];
@@ -147,6 +148,7 @@ DEPLOYED CONTRACTS ON BASE (Chain ID 8453, RPC: https://mainnet.base.org):
 12. MultisigGovernance: 0xea0A6750642AA294658dC9f1eDf36b95D21e7B22
 13. ProductionBeliefAttestationVerifier: 0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B
 14. VaultfireTeleporterBridge: 0xFe122605364f428570c4C0EB2CCAEBb68dD22d05
+15. DilithiumAttestor: 0xB53cd0A2ec4051018E6e3A0F2FF1EEC6487b123E
 
 DEPLOYED CONTRACTS ON AVALANCHE (Chain ID 43114, RPC: https://api.avax.network/ext/bc/C/rpc):
 1. MissionEnforcement: 0xE1D52bF7A842B207B8C48eAE801f9d97A3C4D709
@@ -163,6 +165,7 @@ DEPLOYED CONTRACTS ON AVALANCHE (Chain ID 43114, RPC: https://api.avax.network/e
 12. ERC8004ValidationRegistry: 0x10180c8430cfD61d27F1d7a548Cff0C4D143bFEF
 13. VaultfireERC8004Adapter: 0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1
 14. MultisigGovernance: 0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1
+15. DilithiumAttestor: 0x5470d8189849675C043fFA7fc451e5F2f4e5532c
 
 ERC-8004 STANDARD:
 ERC-8004 is a standard for AI identity and reputation on-chain. It defines registries for:
@@ -178,25 +181,26 @@ KEY COMPONENTS:
 - AI Partnership Bonds: Bonds between humans and AI agents
 - AI Accountability Bonds: Financial accountability for AI behavior
 - Belief Attestation: Verifies AI belief systems and value alignment
-- Teleporter Bridge: Cross-chain bridge between Ethereum, Base, and Avalanche ONLY (Avalanche Teleporter is not available on Ethereum mainnet)
+- Teleporter Bridge: Cross-chain bridge between Base and Avalanche using Avalanche Warp Messaging
+- Trust Data Bridge: Cross-chain trust data synchronization for Ethereum mainnet (since Teleporter is Avalanche-specific)
 - Multisig Governance: Multi-signature governance for protocol changes
 
 DEPLOYED CONTRACTS ON ETHEREUM MAINNET (Chain ID 1, RPC: https://ethereum-rpc.publicnode.com):
-1. PrivacyGuarantees: 0xE1D52bF7A842B207B8C48eAE801f9d97A3C4D709
-2. ERC8004IdentityRegistry: 0xaCB59e0f0eA47B25b24390B71b877928E5842630
-3. AIAccountabilityBondsV2: 0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5
-4. ERC8004ReputationRegistry: 0x37679B1dCfabE6eA6b8408626815A1426bE2D717
-5. ERC8004ValidationRegistry: 0x83b2D1a8e383c4239dE66b6614176636618c1c0A
-6. VaultfireERC8004Adapter: 0xEF022Bdf55940491d4efeBDE61Ffa3f3fF81b192
-7. AntiSurveillance: 0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B
-8. BeliefAttestationVerifier: 0xFe122605364f428570c4C0EB2CCAEBb68dD22d05
-9. AIPartnershipBondsV2: 0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1
-10. FlourishingMetricsOracle: 0x544B575431ECD927bA83E85008446fA1e100204a
-11. MultisigGovernance: 0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C
-12. ProductionBeliefAttestationVerifier: 0xDfc66395A4742b5168712a04942C90B99394aEEb
-13. MissionEnforcement: 0x5470d8189849675C043fFA7fc451e5F2f4e5532c
-  (TeleporterBridge excluded — Avalanche Teleporter does not work on Ethereum mainnet)
-  (VaultfireToken and GovernanceTimelock are NOT part of the protocol)
+1. ERC8004IdentityRegistry: 0xaCB59e0f0eA47B25b24390B71b877928E5842630
+2. BeliefAttestationVerifier: 0xFe122605364f428570c4C0EB2CCAEBb68dD22d05
+3. AIPartnershipBondsV2: 0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1
+4. FlourishingMetricsOracle: 0x544B575431ECD927bA83E85008446fA1e100204a
+5. AIAccountabilityBondsV2: 0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5
+6. ERC8004ReputationRegistry: 0x37679B1dCfabE6eA6b8408626815A1426bE2D717
+7. ERC8004ValidationRegistry: 0x83b2D1a8e383c4239dE66b6614176636618c1c0A
+8. MultisigGovernance: 0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C
+9. ProductionBeliefAttestationVerifier: 0xDfc66395A4742b5168712a04942C90B99394aEEb
+10. DilithiumAttestor: 0xE1b9817FC0F10d2676303C7732497E9B593a22de
+11. MissionEnforcement: 0xe24Ab41dC93833d63d8dd501C53bED674daa4839
+12. AntiSurveillance: 0x5aB7Ec586928f91e808009700fEE59635b141177
+13. PrivacyGuarantees: 0xd8fa09428a578Fc5a9b65d31f9D294Ccfe7b69e5
+14. TrustDataBridge: 0xa5906e8117AC9b8e4803cC19223d4fAC4e947411
+15. VaultfireERC8004Adapter: 0xA90Ef8397a07fe88475B6907d1b0a0BFb4951483
 
 Website: https://theloopbreaker.com
 
