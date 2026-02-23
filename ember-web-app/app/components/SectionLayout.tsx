@@ -27,7 +27,7 @@ export default function SectionLayout({
   title,
   subtitle,
   children,
-  accentColor,
+  accentColor: _accentColor,
   fullWidth = false,
   compact = false,
   headerRight,
