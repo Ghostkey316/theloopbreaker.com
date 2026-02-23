@@ -49,3 +49,4 @@ risc0/lib/
 risc0/out/
 risc0/cache/
 .manus-logs/
+ember-web-app/xmtp-production-*.db3*

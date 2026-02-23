@@ -28,14 +28,14 @@ const RPC_URLS: Record<string, string> = {
 
 const IDENTITY_REGISTRY: Record<string, string> = {
   base: '0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5',
-  avalanche: '0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5',
-  ethereum: '0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5',
+  avalanche: '0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5',
+  ethereum: '0xaCB59e0f0eA47B25b24390B71b877928E5842630',
 };
 
 const BOND_CONTRACT: Record<string, string> = {
   base: '0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1',
-  avalanche: '0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1',
-  ethereum: '0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1',
+  avalanche: '0x37679B1dCfabE6eA6b8408626815A1426bE2D717',
+  ethereum: '0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1',
 };
 
 /** getTotalAgents() → uint256 */
