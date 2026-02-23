@@ -75,8 +75,12 @@ export const MODULE_IDS = {
 } as const;
 
 /**
- * All 13 Vaultfire protocol contracts deployed on Base mainnet (chain ID 8453).
- * The first 10 are core protocol contracts; the last 3 are security enhancements.
+ * All 15 Vaultfire protocol contracts deployed on Base mainnet (chain ID 8453).
+ * The first 10 are core protocol contracts; the last 5 are security enhancements.
+ * DilithiumAttestor (contract #15) was part of the original deployment on all chains:
+ *   Base: 0xe24Ab41dC93833d63d8dd501C53bED674daa4839 (DilithiumAttestorV2 — working, 2 attestations)
+ *   Avalanche: 0x5470d8189849675C043fFA7fc451e5F2f4e5532c
+ *   Ethereum: 0xE1b9817FC0F10d2676303C7732497E9B593a22de
  */
 export const PROTOCOL_CONTRACTS = [
   // Core protocol contracts (original 10)
@@ -90,14 +94,15 @@ export const PROTOCOL_CONTRACTS = [
   { name: 'AIPartnershipBondsV2', address: '0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1', category: 'core' as const },
   { name: 'AIAccountabilityBondsV2', address: '0xDfc66395A4742b5168712a04942C90B99394aEEb', category: 'core' as const },
   { name: 'VaultfireERC8004Adapter', address: '0x5470d8189849675C043fFA7fc451e5F2f4e5532c', category: 'core' as const },
-  // Security enhancement contracts (new 3)
+  // Security enhancement contracts (original 5)
   { name: 'MultisigGovernance', address: '0xea0A6750642AA294658dC9f1eDf36b95D21e7B22', category: 'security' as const },
   { name: 'FlourishingMetricsOracle', address: '0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1', category: 'security' as const },
   { name: 'ProductionBeliefAttestationVerifier', address: '0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B', category: 'security' as const },
   { name: 'VaultfireTeleporterBridge', address: '0xFe122605364f428570c4C0EB2CCAEBb68dD22d05', category: 'security' as const },
+  { name: 'DilithiumAttestor', address: '0xe24Ab41dC93833d63d8dd501C53bED674daa4839', category: 'security' as const },
 ] as const;
 
-export const TOTAL_CONTRACTS = PROTOCOL_CONTRACTS.length; // 14
+export const TOTAL_CONTRACTS = PROTOCOL_CONTRACTS.length; // 15
 
 /**
  * Check if contracts are configured (not using zero addresses)

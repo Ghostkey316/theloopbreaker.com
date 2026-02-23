@@ -61,7 +61,7 @@ export const BASE_CONTRACTS: ContractInfo[] = [
   { name: 'MultisigGovernance', address: '0xea0A6750642AA294658dC9f1eDf36b95D21e7B22', chain: 'base', chainId: 8453 },
   { name: 'ProductionBeliefAttestationVerifier', address: '0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B', chain: 'base', chainId: 8453 },
   { name: 'VaultfireTeleporterBridge', address: '0xFe122605364f428570c4C0EB2CCAEBb68dD22d05', chain: 'base', chainId: 8453 },
-  { name: 'DilithiumAttestor', address: '0xB53cd0A2ec4051018E6e3A0F2FF1EEC6487b123E', chain: 'base', chainId: 8453 },
+  { name: 'DilithiumAttestor', address: '0xe24Ab41dC93833d63d8dd501C53bED674daa4839', chain: 'base', chainId: 8453 },
 ];
 
 export const AVALANCHE_CONTRACTS: ContractInfo[] = [
@@ -148,7 +148,7 @@ DEPLOYED CONTRACTS ON BASE (Chain ID 8453, RPC: https://mainnet.base.org):
 12. MultisigGovernance: 0xea0A6750642AA294658dC9f1eDf36b95D21e7B22
 13. ProductionBeliefAttestationVerifier: 0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B
 14. VaultfireTeleporterBridge: 0xFe122605364f428570c4C0EB2CCAEBb68dD22d05
-15. DilithiumAttestor: 0xB53cd0A2ec4051018E6e3A0F2FF1EEC6487b123E
+15. DilithiumAttestor: 0xe24Ab41dC93833d63d8dd501C53bED674daa4839
 
 DEPLOYED CONTRACTS ON AVALANCHE (Chain ID 43114, RPC: https://api.avax.network/ext/bc/C/rpc):
 1. MissionEnforcement: 0xE1D52bF7A842B207B8C48eAE801f9d97A3C4D709

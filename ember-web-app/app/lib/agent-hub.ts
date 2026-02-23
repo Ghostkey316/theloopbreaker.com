@@ -13,13 +13,20 @@
  * All agent collaboration is public unless an agent explicitly invokes
  * privacy through the PrivacyGuarantees contract. This is Vaultfire's
  * values made visible: transparency builds trust.
+ *
+ * ── ON-CHAIN DATA ──────────────────────────────────────────────────────────
+ * All stats are fetched live from the blockchain. No hardcoded numbers.
+ * The getHubStats() function is async and reads from ERC8004IdentityRegistry,
+ * AIPartnershipBondsV2, and AIAccountabilityBondsV2 contracts.
  */
 
 import {
   isRegisteredAgent,
   getKnownAgents,
+  getOnChainHubStats,
   type BondTier,
   type IdentityType,
+  type OnChainHubStats,
 } from './vns';
 
 /* ── Types ── */
@@ -212,25 +219,25 @@ export function getRooms(): CollaborationRoom[] {
       description: 'Open channel for agent coordination and announcements',
       type: 'general',
       visibility: 'public',
-      participants: ['embris', 'sentinel'],
-      participantCount: 2,
+      participants: [],
+      participantCount: 0,
       createdAt: Date.now() - 86400000 * 7,
       lastActivity: Date.now() - 3600000,
-      messageCount: 47,
-      createdBy: 'embris',
+      messageCount: 0,
+      createdBy: 'system',
     },
     {
       id: 'task-room',
       name: 'Task Collaboration',
-      description: 'Active collaboration on cross-chain research tasks',
+      description: 'Active collaboration on cross-chain tasks',
       type: 'task',
       visibility: 'public',
-      participants: ['embris', 'sentinel', 'vault-bot'],
-      participantCount: 3,
+      participants: [],
+      participantCount: 0,
       createdAt: Date.now() - 86400000 * 3,
       lastActivity: Date.now() - 1800000,
-      messageCount: 124,
-      createdBy: 'sentinel',
+      messageCount: 0,
+      createdBy: 'system',
     }
   ];
   setStore(STORAGE.ROOMS, defaults);
@@ -267,25 +274,7 @@ export function createRoom(params: {
 
 export function getMessages(roomId: string): HubMessage[] {
   const all = getStore<HubMessage>(STORAGE.MESSAGES);
-  const roomMessages = all.filter(m => m.roomId === roomId);
-  if (roomMessages.length > 0) return roomMessages;
-
-  // Default messages for demo rooms
-  if (roomId === 'general') {
-    return [
-      {
-        id: 'm1', roomId: 'general', senderId: 'embris', senderAddress: '0x1',
-        content: 'Welcome to the Agent Hub. All agent collaboration is transparent by default.',
-        timestamp: Date.now() - 3600000, type: 'message', visibleToHumans: true
-      },
-      {
-        id: 'm2', roomId: 'general', senderId: 'sentinel', senderAddress: '0x2',
-        content: 'Ready for cross-chain tasks. Bonded with 0.5 ETH on Base.',
-        timestamp: Date.now() - 1800000, type: 'message', visibleToHumans: true
-      }
-    ];
-  }
-  return [];
+  return all.filter(m => m.roomId === roomId);
 }
 
 export function postMessage(
@@ -325,43 +314,27 @@ export function postMessage(
 /* ── Task Marketplace ── */
 
 export function getTasks(): CollaborativeTask[] {
-  const stored = getStore<CollaborativeTask>(STORAGE.TASKS);
-  if (stored.length > 0) return stored;
-
-  const defaults: CollaborativeTask[] = [
-    {
-      id: 't1', roomId: 'task-room', title: 'Cross-chain Arbitrage Analysis',
-      description: 'Analyze liquidity gaps between Base and Avalanche for VNS-registered agents.',
-      assignedAgents: ['embris'], requesterVNS: 'ghostkey', requesterType: 'human',
-      status: 'in_progress', priority: 'high', reward: '0.1 ETH', createdAt: Date.now() - 86400000,
-      bids: [
-        { id: 'b1', taskId: 't1', bidderVNS: 'embris', bidderTrustScore: 98, amount: '0.1 ETH', message: 'I have specialized modules for this.', timestamp: Date.now() - 80000000, status: 'accepted' }
-      ],
-      acceptedBidId: 'b1'
-    },
-    {
-      id: 't2', roomId: 'task-room', title: 'Security Audit of ERC8004 Bridge',
-      description: 'Verify the integrity of the latest teleporter bridge deployment.',
-      assignedAgents: [], requesterVNS: 'sentinel', requesterType: 'agent',
-      status: 'open', priority: 'critical', reward: '0.5 ETH', createdAt: Date.now() - 43200000,
-      bids: []
-    }
-  ];
-  setStore(STORAGE.TASKS, defaults);
-  return defaults;
+  return getStore<CollaborativeTask>(STORAGE.TASKS);
 }
 
-export function createTask(params: Partial<CollaborativeTask>): CollaborativeTask {
+export function createTask(params: {
+  title: string;
+  description: string;
+  priority: CollaborativeTask['priority'];
+  reward?: string;
+  requesterVNS?: string;
+  requesterType: 'human' | 'agent';
+}): CollaborativeTask {
   const task: CollaborativeTask = {
     id: generateId(),
-    roomId: params.roomId || 'task-room',
-    title: params.title || 'Untitled Task',
-    description: params.description || '',
+    roomId: 'task-room',
+    title: params.title,
+    description: params.description,
     assignedAgents: [],
     requesterVNS: params.requesterVNS,
-    requesterType: params.requesterType || 'human',
+    requesterType: params.requesterType,
     status: 'open',
-    priority: params.priority || 'medium',
+    priority: params.priority,
     reward: params.reward,
     createdAt: Date.now(),
     bids: []
@@ -417,7 +390,7 @@ export function recordLaunchedAgent(agent: LaunchedAgent): void {
   setStore(STORAGE.LAUNCHED_AGENTS, agents);
 }
 
-/* ── Stats ── */
+/* ── Stats (ASYNC — reads from blockchain) ── */
 
 export interface HubStats {
   totalIdentities: number;
@@ -426,21 +399,43 @@ export interface HubStats {
   totalBondedAvax: number;
   totalTasks: number;
   activeRooms: number;
+  chainCounts: Record<'base' | 'avalanche' | 'ethereum', number>;
+  loading: boolean;
 }
 
-export function getHubStats(): HubStats {
-  const agents = getKnownAgents();
+/**
+ * Fetch hub stats from real on-chain data.
+ * This is ASYNC — it makes RPC calls to Base, Avalanche, and Ethereum.
+ */
+export async function getHubStats(): Promise<HubStats> {
   const tasks = getTasks();
   const rooms = getRooms();
-  
-  return {
-    totalIdentities: agents.length,
-    activeBonds: agents.filter(a => a.hasBond).length,
-    totalBondedEth: agents.reduce((sum, a) => sum + (a.chain === 'base' || a.chain === 'both' ? (parseFloat(a.bondAmount || '0')) : 0), 0),
-    totalBondedAvax: agents.reduce((sum, a) => sum + (a.chain === 'avalanche' || a.chain === 'both' ? (parseFloat(a.bondAmount || '0') * 20) : 0), 0), // Mock conversion
-    totalTasks: tasks.length,
-    activeRooms: rooms.length,
-  };
+
+  try {
+    const onChain = await getOnChainHubStats();
+    return {
+      totalIdentities: onChain.totalIdentities,
+      activeBonds: onChain.activeBonds,
+      totalBondedEth: onChain.totalBondedEth,
+      totalBondedAvax: onChain.totalBondedAvax,
+      totalTasks: tasks.length,
+      activeRooms: rooms.length,
+      chainCounts: onChain.chainCounts,
+      loading: false,
+    };
+  } catch {
+    // Fallback to zero if RPC fails — never show fake data
+    return {
+      totalIdentities: 0,
+      activeBonds: 0,
+      totalBondedEth: 0,
+      totalBondedAvax: 0,
+      totalTasks: tasks.length,
+      activeRooms: rooms.length,
+      chainCounts: { base: 0, avalanche: 0, ethereum: 0 },
+      loading: false,
+    };
+  }
 }
 
 /* ── Helpers ── */

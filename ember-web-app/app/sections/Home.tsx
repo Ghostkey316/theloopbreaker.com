@@ -615,7 +615,7 @@ export default function Home() {
           gap: isMobile ? 10 : 12,
         }}>
           {[
-            { label: 'Contracts', value: String(totalContracts), sub: `${BASE_CONTRACTS.length} per chain`, mono: true, color: '#F97316' },
+            { label: 'Contracts', value: String(totalContracts), sub: `15 per chain × 3 chains`, mono: true, color: '#F97316' },
             { label: 'Chains', value: '3', sub: 'ETH + Base + Avalanche', mono: true, color: '#38BDF8' },
             { label: 'Standard', value: 'ERC-8004', sub: 'AI Identity', mono: false, color: '#A78BFA' },
             { label: 'Bridge', value: 'Teleporter', sub: 'Cross-chain', mono: false, color: '#22C55E' },

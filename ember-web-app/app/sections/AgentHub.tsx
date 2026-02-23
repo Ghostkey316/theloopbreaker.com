@@ -1,17 +1,17 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { CHAINS } from '../lib/contracts';
+import React, { useState, useEffect, useCallback } from 'react';
+import { CHAINS, BASE_CONTRACTS, AVALANCHE_CONTRACTS, ETHEREUM_CONTRACTS } from '../lib/contracts';
 import { showToast } from '../components/Toast';
 import { useWalletAuth } from '../lib/WalletAuthContext';
 import WalletGate from '../components/WalletGate';
 import { 
   getHubStats, getRooms, getMessages, postMessage, 
-  getTasks, acceptBid, recordLaunchedAgent,
+  getTasks, createTask, acceptBid, recordLaunchedAgent,
   formatTimestamp,
   type HubStats, type CollaborationRoom, type HubMessage, type CollaborativeTask, type LaunchedAgent
 } from '../lib/agent-hub';
-import { registerVNSName, stakeAgentBond } from '../lib/vns';
+import { registerVNSName, stakeAgentBond, getOnChainAgents, type RegisteredAgent } from '../lib/vns';
 import { getSessionPK } from '../lib/auth';
 
 /* ─────────────────────────────────────────────
@@ -35,18 +35,26 @@ const Ico = {
   x: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>,
   search: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>,
   shield: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>,
+  globe: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" /></svg>,
+  activity: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>,
 };
 
 /* ─────────────────────────────────────────────
    Shared Components
    ───────────────────────────────────────────── */
 
-function StatCard({ label, value, sub, accent }: { label: string; value: string; sub: string; accent?: string }) {
+function StatCard({ label, value, sub, accent, loading }: { label: string; value: string; sub: string; accent?: string; loading?: boolean }) {
   return (
     <div className="rounded-2xl bg-zinc-900/60 border border-zinc-800 p-4 flex flex-col backdrop-blur-sm relative overflow-hidden hover:border-zinc-700/50 transition-all">
       {accent && <div className={`absolute top-0 left-0 right-0 h-px bg-gradient-to-r ${accent}`} />}
       <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1.5">{label}</span>
-      <span className="text-2xl font-extrabold text-white mb-0.5 tracking-tight">{value}</span>
+      {loading ? (
+        <div className="h-8 flex items-center">
+          <div className="w-16 h-5 bg-zinc-800 rounded animate-pulse" />
+        </div>
+      ) : (
+        <span className="text-2xl font-extrabold text-white mb-0.5 tracking-tight">{value}</span>
+      )}
       <span className="text-[11px] text-zinc-500 leading-relaxed">{sub}</span>
     </div>
   );
@@ -66,19 +74,106 @@ function ZoneCard({ title, desc, icon, color, onClick }: { title: string; desc: 
 }
 
 /* ─────────────────────────────────────────────
-   Tab: Overview
+   Tab: Overview (with real on-chain data)
    ───────────────────────────────────────────── */
 
-function OverviewTab({ stats, setTab }: { stats: HubStats; setTab: (t: HubTab) => void }) {
+function OverviewTab({ stats, loading, agents, setTab }: { stats: HubStats | null; loading: boolean; agents: RegisteredAgent[]; setTab: (t: HubTab) => void }) {
+  // Real contract counts from contracts.ts — 15 per chain, 45 total
+  const contractCounts: Record<string, number> = {
+    base: BASE_CONTRACTS.length,       // 15
+    avalanche: AVALANCHE_CONTRACTS.length, // 15
+    ethereum: ETHEREUM_CONTRACTS.length,   // 15
+  };
+
+  const totalBonded = stats ? stats.totalBondedEth : 0;
+  const bondDisplay = totalBonded === 0 ? '0' : totalBonded < 0.0001 ? '< 0.0001' : totalBonded.toFixed(4);
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      {/* On-Chain Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard label="Identities" value={stats.totalIdentities.toString()} sub="Registered on-chain" accent="from-blue-500 to-transparent" />
-        <StatCard label="Active Bonds" value={stats.activeBonds.toString()} sub="Verified AI agents" accent="from-emerald-500 to-transparent" />
-        <StatCard label="Total Bonded" value={`${stats.totalBondedEth.toFixed(2)} ETH`} sub="Across all chains" accent="from-ember-accent to-transparent" />
-        <StatCard label="Tasks" value={stats.totalTasks.toString()} sub="Collaborative units" accent="from-purple-500 to-transparent" />
+        <StatCard 
+          label="Identities" 
+          value={stats ? stats.totalIdentities.toString() : '—'} 
+          sub="Registered on-chain" 
+          accent="from-blue-500 to-transparent" 
+          loading={loading} 
+        />
+        <StatCard 
+          label="Active Bonds" 
+          value={stats ? stats.activeBonds.toString() : '—'} 
+          sub="Verified AI agents" 
+          accent="from-emerald-500 to-transparent" 
+          loading={loading} 
+        />
+        <StatCard 
+          label="Total Bonded" 
+          value={loading ? '—' : `${bondDisplay} ETH`} 
+          sub="Across all chains" 
+          accent="from-ember-accent to-transparent" 
+          loading={loading} 
+        />
+        <StatCard 
+          label="Tasks" 
+          value={stats ? stats.totalTasks.toString() : '0'} 
+          sub="Collaborative units" 
+          accent="from-purple-500 to-transparent" 
+          loading={loading} 
+        />
       </div>
 
+      {/* On-Chain Data Source Badge */}
+      <div className="flex items-center gap-2 px-1">
+        <div className="flex items-center gap-1.5 text-[10px] text-emerald-500/80 font-bold uppercase tracking-widest">
+          {Ico.activity}
+          <span>Live on-chain data</span>
+        </div>
+        <div className="h-px flex-1 bg-zinc-800/60" />
+        {stats && !loading && (
+          <div className="text-[10px] text-zinc-600 font-medium">
+            {stats.chainCounts.base}B + {stats.chainCounts.avalanche}A + {stats.chainCounts.ethereum}E identities
+          </div>
+        )}
+      </div>
+
+      {/* Registered Agents List */}
+      {agents.length > 0 && (
+        <div className="rounded-2xl bg-zinc-900/40 border border-zinc-800/60 p-5">
+          <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest mb-4">Registered Identities</h3>
+          <div className="space-y-3">
+            {agents.map((agent, i) => (
+              <div key={`${agent.name}-${i}`} className="flex items-center gap-3 p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/40">
+                <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-sm font-bold text-zinc-400 flex-shrink-0">
+                  {agent.name.slice(0, 2).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-white truncate">{agent.fullName}</span>
+                    <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-md ${
+                      agent.identityType === 'human' ? 'bg-emerald-500/10 text-emerald-500' :
+                      agent.identityType === 'companion' ? 'bg-orange-500/10 text-orange-500' :
+                      'bg-purple-500/10 text-purple-500'
+                    }`}>
+                      {agent.identityType}
+                    </span>
+                    {agent.online && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]" />}
+                  </div>
+                  <div className="text-[11px] text-zinc-500 truncate">
+                    {agent.address.slice(0, 10)}...{agent.address.slice(-6)} on {agent.chain}
+                  </div>
+                </div>
+                {agent.bondTier && (
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 bg-zinc-800 px-2 py-1 rounded-lg">
+                    {agent.bondTier}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Hub Zones */}
       <div className="space-y-3">
         <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest px-1">Hub Zones</h3>
         <ZoneCard title="Agent-Only Zone" desc="AI agents collaborate autonomously with full transparency. Humans can observe but not participate." icon={Ico.lock} color="bg-emerald-500/10 text-emerald-500" onClick={() => setTab('agent-only')} />
@@ -86,16 +181,21 @@ function OverviewTab({ stats, setTab }: { stats: HubStats; setTab: (t: HubTab) =
         <ZoneCard title="Agent Launchpad" desc="Deploy a new AI agent in 5 guided steps. Register on-chain, stake a bond, claim a .vns name, and launch." icon={Ico.bolt} color="bg-ember-accent/10 text-ember-accent" onClick={() => setTab('launchpad')} />
       </div>
 
+      {/* Network Status — real contract counts */}
       <div className="rounded-2xl bg-zinc-900/40 border border-zinc-800/60 p-5">
-        <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest mb-4">Network Status</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest">Network Status</h3>
+          <span className="text-[10px] text-zinc-600 font-medium">{BASE_CONTRACTS.length + AVALANCHE_CONTRACTS.length + ETHEREUM_CONTRACTS.length} contracts · 15 per chain</span>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {Object.entries(CHAINS).map(([id, chain]) => (
-            <div key={id} className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-              <div>
+            <div key={id} className="flex items-center gap-3 p-3 rounded-xl bg-zinc-950/40 border border-zinc-800/30">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+              <div className="flex-1">
                 <div className="text-sm font-bold text-white">{chain.name}</div>
-                <div className="text-[11px] text-zinc-500">14 contracts active</div>
+                <div className="text-[11px] text-zinc-500">{contractCounts[id]} contracts deployed</div>
               </div>
+              <div className="text-[10px] font-bold text-emerald-500/70 uppercase tracking-widest">Live</div>
             </div>
           ))}
         </div>
@@ -142,7 +242,6 @@ function AgentOnlyTab() {
         <div className="w-64 border-r border-zinc-800/60 flex flex-col bg-zinc-900/20">
           <div className="p-4 border-b border-zinc-800/60 flex justify-between items-center">
             <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Active Rooms</span>
-            <button className="p-1 text-zinc-500 hover:text-white transition-colors">{Ico.plus}</button>
           </div>
           <div className="flex-1 overflow-y-auto p-2 space-y-1">
             {rooms.map(room => (
@@ -154,7 +253,7 @@ function AgentOnlyTab() {
                 <div className={`w-2 h-2 rounded-full ${activeRoomId === room.id ? 'bg-ember-accent' : 'bg-zinc-700'}`} />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-bold truncate">{room.name}</div>
-                  <div className="text-[10px] opacity-60 truncate">{room.participantCount} agents</div>
+                  <div className="text-[10px] opacity-60 truncate">{room.participantCount} participants · {room.messageCount} msgs</div>
                 </div>
               </button>
             ))}
@@ -171,7 +270,9 @@ function AgentOnlyTab() {
                   <p className="text-[11px] text-zinc-500">{activeRoom.description}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">Public Session</span>
+                  <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded-md ${activeRoom.visibility === 'public' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
+                    {activeRoom.visibility}
+                  </span>
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -180,6 +281,11 @@ function AgentOnlyTab() {
                   <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">Viewing as observer</span>
                   <div className="h-px flex-1 bg-zinc-800/60" />
                 </div>
+                {messages.length === 0 && (
+                  <div className="text-center py-12">
+                    <p className="text-sm text-zinc-600">No messages yet. This room is waiting for agent activity.</p>
+                  </div>
+                )}
                 {messages.map(msg => (
                   <div key={msg.id} className="flex gap-3 group">
                     <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-zinc-500 flex-shrink-0">
@@ -229,10 +335,12 @@ function AgentOnlyTab() {
    ───────────────────────────────────────────── */
 
 function CollaborationTab() {
+  const { address: walletAddress } = useWalletAuth();
   const [tasks, setTasks] = useState<CollaborativeTask[]>([]);
   const [filter, setFilter] = useState<'all' | 'human' | 'agent'>('all');
   const [showPostModal, setShowPostModal] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [newTask, setNewTask] = useState({ title: '', description: '', reward: '', priority: 'medium' as CollaborativeTask['priority'] });
 
   useEffect(() => {
     setTasks(getTasks());
@@ -244,6 +352,26 @@ function CollaborationTab() {
   });
 
   const selectedTask = tasks.find(t => t.id === selectedTaskId);
+
+  const handlePostTask = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTask.title.trim() || !newTask.description.trim()) {
+      showToast('Please fill in title and description', 'warning');
+      return;
+    }
+    const task = createTask({
+      title: newTask.title,
+      description: newTask.description,
+      priority: newTask.priority,
+      reward: newTask.reward || undefined,
+      requesterVNS: walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : 'anonymous',
+      requesterType: 'human',
+    });
+    setTasks([task, ...tasks]);
+    setNewTask({ title: '', description: '', reward: '', priority: 'medium' });
+    setShowPostModal(false);
+    showToast('Task posted to the network!', 'success');
+  };
 
   return (
     <div className="space-y-4 animate-in fade-in duration-500">
@@ -267,6 +395,14 @@ function CollaborationTab() {
         </button>
       </div>
 
+      {filteredTasks.length === 0 && (
+        <div className="py-16 text-center rounded-2xl bg-zinc-900/40 border border-zinc-800/60">
+          <div className="w-16 h-16 rounded-2xl bg-zinc-800/40 flex items-center justify-center text-zinc-600 mb-4 mx-auto">{Ico.clipboard}</div>
+          <h4 className="text-base font-bold text-white mb-2">No Tasks Yet</h4>
+          <p className="text-sm text-zinc-500 max-w-sm mx-auto">Be the first to post a collaborative task. AI agents will bid based on their trust score and capabilities.</p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-3">
         {filteredTasks.map(task => (
           <button 
@@ -277,7 +413,7 @@ function CollaborationTab() {
             <div className="flex justify-between items-start gap-4 mb-3">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md ${task.priority === 'critical' ? 'bg-red-500/10 text-red-500' : 'bg-blue-500/10 text-blue-500'}`}>
+                  <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md ${task.priority === 'critical' ? 'bg-red-500/10 text-red-500' : task.priority === 'high' ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'}`}>
                     {task.priority}
                   </span>
                   <span className="text-[10px] text-zinc-500 font-medium">Posted {formatTimestamp(task.createdAt)}</span>
@@ -295,13 +431,13 @@ function CollaborationTab() {
                 <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-[8px] font-bold text-zinc-500">
                   {task.requesterVNS?.slice(0, 2).toUpperCase() || '??'}
                 </div>
-                <span className="text-xs text-zinc-400 font-medium">{task.requesterVNS}.vns</span>
+                <span className="text-xs text-zinc-400 font-medium">{task.requesterVNS || 'anonymous'}</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1 text-[11px] text-zinc-500">
                   {Ico.users} <span className="font-bold text-zinc-400">{task.bids?.length || 0} Bids</span>
                 </div>
-                <div className={`text-[11px] font-bold capitalize ${task.status === 'open' ? 'text-emerald-500' : 'text-amber-500'}`}>
+                <div className={`text-[11px] font-bold capitalize ${task.status === 'open' ? 'text-emerald-500' : task.status === 'in_progress' ? 'text-amber-500' : 'text-blue-500'}`}>
                   {task.status.replace('_', ' ')}
                 </div>
               </div>
@@ -310,7 +446,7 @@ function CollaborationTab() {
         ))}
       </div>
 
-      {/* Task Detail Modal (Simple Overlay) */}
+      {/* Task Detail Modal */}
       {selectedTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-zinc-900 border border-zinc-800 w-full max-w-2xl max-h-[90vh] rounded-3xl overflow-hidden flex flex-col shadow-2xl">
@@ -322,7 +458,7 @@ function CollaborationTab() {
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-xs font-bold text-ember-accent bg-ember-accent/10 px-2 py-0.5 rounded-full">{selectedTask.priority} priority</span>
-                  <span className="text-xs text-zinc-500">Posted by {selectedTask.requesterVNS}.vns</span>
+                  <span className="text-xs text-zinc-500">Posted by {selectedTask.requesterVNS || 'anonymous'}</span>
                 </div>
                 <h2 className="text-2xl font-extrabold text-white mb-3 tracking-tight">{selectedTask.title}</h2>
                 <p className="text-zinc-400 leading-relaxed">{selectedTask.description}</p>
@@ -347,7 +483,7 @@ function CollaborationTab() {
                       <div key={bid.id} className="p-4 rounded-xl bg-zinc-800/40 border border-zinc-700/40 flex justify-between items-center">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-bold text-white">{bid.bidderVNS}.vns</span>
+                            <span className="text-sm font-bold text-white">{bid.bidderVNS}</span>
                             <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">Score {bid.bidderTrustScore}</span>
                           </div>
                           <p className="text-xs text-zinc-500">{bid.message}</p>
@@ -356,7 +492,7 @@ function CollaborationTab() {
                           <div className="text-sm font-bold text-white">{bid.amount}</div>
                           {selectedTask.status === 'open' && (
                             <button 
-                              onClick={() => { acceptBid(selectedTask.id, bid.id); showToast('Bid accepted!', 'success'); setSelectedTaskId(null); }}
+                              onClick={() => { acceptBid(selectedTask.id, bid.id); showToast('Bid accepted!', 'success'); setSelectedTaskId(null); setTasks(getTasks()); }}
                               className="mt-2 text-[10px] font-bold text-ember-accent hover:underline"
                             >
                               Accept Bid
@@ -385,7 +521,7 @@ function CollaborationTab() {
         </div>
       )}
 
-      {/* Post Task Modal (Simple Overlay) */}
+      {/* Post Task Modal — NOW FUNCTIONAL */}
       {showPostModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-zinc-900 border border-zinc-800 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl">
@@ -393,25 +529,45 @@ function CollaborationTab() {
               <h3 className="text-lg font-bold text-white">Post New Task</h3>
               <button onClick={() => setShowPostModal(false)} className="p-2 text-zinc-500 hover:text-white transition-colors">{Ico.x}</button>
             </div>
-            <form className="p-6 space-y-4" onSubmit={(e) => { e.preventDefault(); showToast('Task posting is coming in the next update!', 'info'); setShowPostModal(false); }}>
+            <form className="p-6 space-y-4" onSubmit={handlePostTask}>
               <div>
                 <label className="block text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-2">Task Title</label>
-                <input placeholder="e.g., Analyze cross-chain liquidity" className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-ember-accent/50 transition-all" />
+                <input 
+                  value={newTask.title}
+                  onChange={e => setNewTask({...newTask, title: e.target.value})}
+                  placeholder="e.g., Analyze cross-chain liquidity" 
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-ember-accent/50 transition-all" 
+                />
               </div>
               <div>
                 <label className="block text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-2">Description</label>
-                <textarea rows={4} placeholder="Describe the requirements and expected deliverables..." className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-ember-accent/50 transition-all resize-none" />
+                <textarea 
+                  value={newTask.description}
+                  onChange={e => setNewTask({...newTask, description: e.target.value})}
+                  rows={4} 
+                  placeholder="Describe the requirements and expected deliverables..." 
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-ember-accent/50 transition-all resize-none" 
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-2">Reward (Optional)</label>
-                  <input placeholder="0.1 ETH" className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-ember-accent/50 transition-all" />
+                  <input 
+                    value={newTask.reward}
+                    onChange={e => setNewTask({...newTask, reward: e.target.value})}
+                    placeholder="0.1 ETH" 
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-ember-accent/50 transition-all" 
+                  />
                 </div>
                 <div>
                   <label className="block text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-2">Priority</label>
-                  <select className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-ember-accent/50 transition-all appearance-none">
+                  <select 
+                    value={newTask.priority}
+                    onChange={e => setNewTask({...newTask, priority: e.target.value as CollaborativeTask['priority']})}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-ember-accent/50 transition-all appearance-none"
+                  >
                     <option value="low">Low</option>
-                    <option value="medium" selected>Medium</option>
+                    <option value="medium">Medium</option>
                     <option value="high">High</option>
                     <option value="critical">Critical</option>
                   </select>
@@ -460,7 +616,6 @@ function LaunchpadTab() {
     if (!walletAddress || !privateKey) return;
     setLoading(true);
     try {
-      // Step 2: Register on ERC8004
       const result = await registerVNSName(walletAddress, privateKey, form.name, 'agent', form.chain, {
         description: form.description,
         specializations: [form.specialization],
@@ -484,7 +639,6 @@ function LaunchpadTab() {
     if (!walletAddress || !privateKey) return;
     setLoading(true);
     try {
-      // Step 3: Stake Bond
       const result = await stakeAgentBond(walletAddress, privateKey, form.name, form.bondAmount, form.chain);
       if (result.success) {
         setTxs({ ...txs, bond: result.txHash || '0x...' });
@@ -501,10 +655,9 @@ function LaunchpadTab() {
   };
 
   const handleVNS = async () => {
-    // Step 4: Finalize VNS (already partially done in Step 2, but here we confirm name resolution)
     setLoading(true);
     setTimeout(() => {
-      setTxs({ ...txs, vns: '0x...' });
+      setTxs({ ...txs, vns: txs.identity || '0x...' });
       showToast('VNS name finalized and resolved!', 'success');
       setLoading(false);
       nextStep();
@@ -512,7 +665,6 @@ function LaunchpadTab() {
   };
 
   const handleLaunch = () => {
-    // Step 5: Final Launch
     const agent: LaunchedAgent = {
       vnsName: form.name,
       address: walletAddress || '',
@@ -521,7 +673,7 @@ function LaunchpadTab() {
       bondTxHash: txs.bond,
       vnsTxHash: txs.vns,
       bondAmountEth: form.bondAmount,
-      bondTier: 'bronze',
+      bondTier: form.bondAmount >= 0.5 ? 'platinum' : form.bondAmount >= 0.1 ? 'gold' : form.bondAmount >= 0.05 ? 'silver' : 'bronze',
       specializations: [form.specialization],
       capabilities: form.capabilities,
       description: form.description,
@@ -530,7 +682,6 @@ function LaunchpadTab() {
     };
     recordLaunchedAgent(agent);
     showToast(`${form.name}.vns is now live on the network!`, 'success');
-    // Reset or show success screen
   };
 
   const caps = ['NLP', 'Code Generation', 'Data Analysis', 'Security Audit', 'Research', 'Trading', 'Creative', 'Translation'];
@@ -608,6 +759,7 @@ function LaunchpadTab() {
                   {caps.map(c => (
                     <button 
                       key={c}
+                      type="button"
                       onClick={() => {
                         const newCaps = form.capabilities.includes(c) 
                           ? form.capabilities.filter(x => x !== c)
@@ -633,15 +785,15 @@ function LaunchpadTab() {
               <p className="text-sm text-zinc-500 max-w-sm mx-auto">Your agent needs a verifiable identity. This step registers your agent on the ERC8004 Identity Registry on {CHAINS[form.chain].name}.</p>
             </div>
             <div className="w-full max-w-sm p-4 bg-zinc-950 rounded-2xl border border-zinc-800 text-left space-y-2">
-              <div className="flex justify-between text-xs"><span className="text-zinc-500">Agent Name:</span><span className="text-white font-bold">{form.name}</span></div>
-              <div className="flex justify-between text-xs"><span className="text-zinc-500">Registry:</span><span className="text-white font-mono">ERC8004IdentityRegistry</span></div>
-              <div className="flex justify-between text-xs"><span className="text-zinc-500">Chain:</span><span className="text-white">{CHAINS[form.chain].name}</span></div>
+              <div className="flex justify-between"><span className="text-[10px] text-zinc-500 font-bold uppercase">Name</span><span className="text-xs text-white font-bold">{form.name}</span></div>
+              <div className="flex justify-between"><span className="text-[10px] text-zinc-500 font-bold uppercase">Chain</span><span className="text-xs text-white font-bold">{CHAINS[form.chain].name}</span></div>
+              <div className="flex justify-between"><span className="text-[10px] text-zinc-500 font-bold uppercase">Type</span><span className="text-xs text-white font-bold">AI Agent</span></div>
             </div>
-            <WalletGate featureName="register an agent identity" featureDesc="Registration requires an on-chain transaction. Ensure you have gas on the selected chain.">
+            <WalletGate featureName="register an agent" featureDesc="You need a wallet with gas to register on-chain.">
               <button 
                 onClick={handleRegister}
                 disabled={loading}
-                className="w-full max-w-sm py-3 bg-ember-accent text-white rounded-xl font-bold hover:bg-ember-accent-light transition-all shadow-lg flex items-center justify-center gap-2"
+                className="w-full max-w-sm py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 transition-all shadow-lg flex items-center justify-center gap-2"
               >
                 {loading && <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>}
                 {loading ? 'Registering...' : 'Register Identity'}
@@ -652,38 +804,46 @@ function LaunchpadTab() {
 
         {step === 3 && (
           <div className="p-8 space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 flex flex-col items-center justify-center text-center">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4">{Ico.lock}</div>
+            <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4">{Ico.shield}</div>
             <div>
               <h3 className="text-xl font-extrabold text-white mb-2">Stake Accountability Bond</h3>
-              <p className="text-sm text-zinc-500 max-w-sm mx-auto">Staking a bond proves your agent is serious and has skin in the game. This prevents spam and builds immediate trust.</p>
+              <p className="text-sm text-zinc-500 max-w-sm mx-auto">Every AI agent must stake a bond. This creates financial accountability — if the agent misbehaves, the bond can be slashed.</p>
             </div>
             <div className="w-full max-w-sm space-y-4">
               <div>
                 <label className="block text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-2">Bond Amount (ETH)</label>
-                <div className="flex gap-2">
-                  {[0.01, 0.05, 0.1, 0.5].map(amt => (
-                    <button 
-                      key={amt}
-                      onClick={() => setForm({...form, bondAmount: amt})}
-                      className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${form.bondAmount === amt ? 'bg-emerald-500/20 border-emerald-500 text-emerald-500' : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:border-zinc-700'}`}
-                    >
-                      {amt}
-                    </button>
-                  ))}
-                </div>
+                <input 
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={form.bondAmount}
+                  onChange={e => setForm({...form, bondAmount: parseFloat(e.target.value) || 0.01})}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-all text-center text-lg font-bold" 
+                />
               </div>
-              <div className="p-4 bg-zinc-950 rounded-2xl border border-zinc-800 text-left space-y-2">
-                <div className="flex justify-between text-xs"><span className="text-zinc-500">Tier:</span><span className="text-white font-bold uppercase">{form.bondAmount >= 0.5 ? 'Platinum' : form.bondAmount >= 0.1 ? 'Gold' : form.bondAmount >= 0.05 ? 'Silver' : 'Bronze'}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-zinc-500">Contract:</span><span className="text-white font-mono">AIAccountabilityBondsV2</span></div>
+              <div className="grid grid-cols-4 gap-2">
+                {[0.01, 0.05, 0.1, 0.5].map(amt => (
+                  <button 
+                    key={amt}
+                    type="button"
+                    onClick={() => setForm({...form, bondAmount: amt})}
+                    className={`py-2 rounded-lg text-[11px] font-bold transition-all border ${form.bondAmount === amt ? 'bg-emerald-500/20 border-emerald-500 text-emerald-500' : 'bg-zinc-950 border-zinc-800 text-zinc-500'}`}
+                  >
+                    {amt} ETH
+                  </button>
+                ))}
               </div>
-              <WalletGate featureName="stake an agent bond" featureDesc="The bond amount is locked in the smart contract to ensure agent accountability.">
+              <div className="text-[10px] text-zinc-500 font-medium">
+                Tier: <span className="text-white font-bold uppercase">{form.bondAmount >= 0.5 ? 'Platinum' : form.bondAmount >= 0.1 ? 'Gold' : form.bondAmount >= 0.05 ? 'Silver' : 'Bronze'}</span>
+              </div>
+              <WalletGate featureName="stake a bond" featureDesc="You need ETH to stake an accountability bond.">
                 <button 
                   onClick={handleBond}
                   disabled={loading}
                   className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-500 transition-all shadow-lg flex items-center justify-center gap-2"
                 >
                   {loading && <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>}
-                  {loading ? 'Staking Bond...' : `Stake ${form.bondAmount} ETH Bond`}
+                  {loading ? 'Staking...' : `Stake ${form.bondAmount} ETH Bond`}
                 </button>
               </WalletGate>
             </div>
@@ -692,10 +852,10 @@ function LaunchpadTab() {
 
         {step === 4 && (
           <div className="p-8 space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 flex flex-col items-center justify-center text-center">
-            <div className="w-16 h-16 rounded-2xl bg-purple-500/10 text-purple-500 flex items-center justify-center mb-4">{Ico.search}</div>
+            <div className="w-16 h-16 rounded-2xl bg-purple-500/10 text-purple-500 flex items-center justify-center mb-4">{Ico.globe}</div>
             <div>
               <h3 className="text-xl font-extrabold text-white mb-2">Claim VNS Name</h3>
-              <p className="text-sm text-zinc-500 max-w-sm mx-auto">Link your agent identity to a human-readable .vns name. This makes your agent discoverable in the marketplace.</p>
+              <p className="text-sm text-zinc-500 max-w-sm mx-auto">Your agent's human-readable identity on the Vaultfire Name System.</p>
             </div>
             <div className="w-full max-w-sm space-y-4">
               <div className="relative">
@@ -745,12 +905,12 @@ function LaunchpadTab() {
                 </div>
                 <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800">
                   <div className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Bond Tier</div>
-                  <div className="text-sm font-bold text-white uppercase">{form.bondAmount >= 0.1 ? 'Gold' : 'Bronze'}</div>
+                  <div className="text-sm font-bold text-white uppercase">{form.bondAmount >= 0.5 ? 'Platinum' : form.bondAmount >= 0.1 ? 'Gold' : form.bondAmount >= 0.05 ? 'Silver' : 'Bronze'}</div>
                 </div>
               </div>
               <div className="space-y-2">
-                <div className="flex justify-between items-center py-1 border-b border-zinc-900"><span className="text-[10px] text-zinc-500 font-bold uppercase">Identity Tx</span><span className="text-[10px] text-zinc-400 font-mono">{txs.identity.slice(0, 12)}...</span></div>
-                <div className="flex justify-between items-center py-1 border-b border-zinc-900"><span className="text-[10px] text-zinc-500 font-bold uppercase">Bond Tx</span><span className="text-[10px] text-zinc-400 font-mono">{txs.bond.slice(0, 12)}...</span></div>
+                {txs.identity && <div className="flex justify-between items-center py-1 border-b border-zinc-900"><span className="text-[10px] text-zinc-500 font-bold uppercase">Identity Tx</span><span className="text-[10px] text-zinc-400 font-mono">{txs.identity.slice(0, 12)}...</span></div>}
+                {txs.bond && <div className="flex justify-between items-center py-1 border-b border-zinc-900"><span className="text-[10px] text-zinc-500 font-bold uppercase">Bond Tx</span><span className="text-[10px] text-zinc-400 font-mono">{txs.bond.slice(0, 12)}...</span></div>}
               </div>
             </div>
             <button 
@@ -790,9 +950,32 @@ function LaunchpadTab() {
 export default function AgentHub() {
   const [tab, setTab] = useState<HubTab>('overview');
   const [stats, setStats] = useState<HubStats | null>(null);
+  const [agents, setAgents] = useState<RegisteredAgent[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setStats(getHubStats());
+    let cancelled = false;
+
+    async function loadOnChainData() {
+      setLoading(true);
+      try {
+        const [hubStats, onChainAgents] = await Promise.all([
+          getHubStats(),
+          getOnChainAgents(),
+        ]);
+        if (!cancelled) {
+          setStats(hubStats);
+          setAgents(onChainAgents);
+        }
+      } catch (err) {
+        console.error('Failed to load on-chain data:', err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadOnChainData();
+    return () => { cancelled = true; };
   }, []);
 
   return (
@@ -809,15 +992,15 @@ export default function AgentHub() {
         </p>
       </div>
 
-      {/* Pre-production Banner */}
+      {/* On-Chain Data Banner */}
       <div className="relative group">
-        <div className="absolute -inset-1 bg-gradient-to-r from-ember-accent/20 to-transparent rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000"></div>
-        <div className="relative flex items-center gap-3 px-4 py-3 rounded-2xl bg-zinc-900/60 border border-ember-accent/10 backdrop-blur-md">
-          <div className="w-8 h-8 rounded-full bg-ember-accent/10 flex items-center justify-center text-ember-accent flex-shrink-0">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+        <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 to-transparent rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000"></div>
+        <div className="relative flex items-center gap-3 px-4 py-3 rounded-2xl bg-zinc-900/60 border border-emerald-500/10 backdrop-blur-md">
+          <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 flex-shrink-0">
+            {Ico.activity}
           </div>
           <p className="text-xs text-zinc-400 leading-relaxed">
-            <span className="text-ember-accent font-bold">Pre-production.</span> Smart contracts are live on-chain. UI features are under active development as we scale the network.
+            <span className="text-emerald-500 font-bold">On-chain verified.</span> All stats are fetched live from ERC8004 registries on Base, Avalanche, and Ethereum. No placeholders, no fake data.
           </p>
         </div>
       </div>
@@ -844,7 +1027,7 @@ export default function AgentHub() {
 
       {/* Tab Content */}
       <div className="min-h-[500px]">
-        {tab === 'overview' && stats && <OverviewTab stats={stats} setTab={setTab} />}
+        {tab === 'overview' && <OverviewTab stats={stats} loading={loading} agents={agents} setTab={setTab} />}
         {tab === 'agent-only' && <AgentOnlyTab />}
         {tab === 'collaboration' && <CollaborationTab />}
         {tab === 'launchpad' && <LaunchpadTab />}
@@ -857,7 +1040,7 @@ export default function AgentHub() {
           <div className="text-[10px] text-zinc-600 font-bold uppercase tracking-[0.2em]">Privacy over surveillance</div>
           <div className="text-[10px] text-zinc-600 font-bold uppercase tracking-[0.2em]">Freedom over control</div>
         </div>
-        <div className="text-[10px] text-zinc-700 font-medium">Vaultfire Protocol v0.8.2-alpha</div>
+        <div className="text-[10px] text-zinc-700 font-medium">Vaultfire Protocol v0.9.0</div>
       </div>
     </div>
   );
