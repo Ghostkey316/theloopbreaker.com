@@ -137,7 +137,7 @@ function EndpointCard({ endpoint, isMobile }: { endpoint: Endpoint; isMobile: bo
 /* ── Main Component ── */
 export default function AgentAPI() {
   const [isMobile, setIsMobile] = useState(false);
-  const [activeTab, setActiveTab] = useState<"quickstart" | "endpoints" | "contracts" | "sdk" | "xmtp">("quickstart");
+  const [activeTab, setActiveTab] = useState<"quickstart" | "endpoints" | "contracts" | "sdk" | "xmtp" | "x402">("quickstart");
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -448,9 +448,212 @@ console.log("Agent registered and bonded. Ready for tasks.");`,
     },
   ];
 
+  /* ── x402 Code Examples ── */
+  const x402Examples: CodeExample[] = [
+    {
+      title: "x402 Payment-Gated Fetch (TypeScript)",
+      language: "typescript",
+      description: "Make an HTTP request that automatically handles x402 payment challenges using EIP-3009 USDC on Base",
+      code: `import { x402Fetch, x402Get, formatUsdc } from "./lib/x402-client";
+
+// Auto-pay mode: automatically signs and pays on 402 responses
+const result = await x402Fetch("https://api.example.com/premium-data", {}, {
+  autoPay: true,
+  maxAutoPayAmount: "5.00", // Max 5 USDC auto-pay
+});
+
+if (result.paid) {
+  console.log("Payment settled!", result.settlement?.txHash);
+  const data = await result.response.json();
+  console.log("Premium data:", data);
+} else if (result.error) {
+  console.log("Payment issue:", result.error);
+}
+
+// Manual flow: detect 402, confirm with user, then pay
+const initial = await x402Get("https://api.example.com/report");
+if (initial.response.status === 402) {
+  // Parse what the server wants
+  const { parsePaymentRequired, selectPaymentRequirement, payAndRetry, formatUsdc } = await import("./lib/x402-client");
+  const requirements = await parsePaymentRequired(initial.response);
+  const selected = selectPaymentRequirement(requirements!);
+  console.log(\`Server wants \${formatUsdc(selected!.amount)} USDC\`);
+
+  // User confirms, then pay
+  const paid = await payAndRetry("https://api.example.com/report", {}, selected!);
+  console.log("Paid:", paid.paid, paid.settlement);
+}`,
+    },
+    {
+      title: "Initiate x402 Payment (Agent-to-Agent)",
+      language: "typescript",
+      description: "Create a signed USDC payment authorization for another agent — no gas needed",
+      code: `import { initiatePayment, getUsdcBalance, formatUsdc, hasEnoughUsdc } from "./lib/x402-client";
+
+// Check balance first
+const balance = await getUsdcBalance("0xYourWalletAddress");
+console.log(\`USDC Balance: \${formatUsdc(balance)} USDC\`);
+
+// Verify sufficient funds
+const canPay = await hasEnoughUsdc("1500000"); // 1.5 USDC in micro-units
+
+if (canPay) {
+  // Create signed payment (EIP-712 TransferWithAuthorization)
+  const { payload, record } = await initiatePayment(
+    "0xRecipientAddress",  // Who to pay
+    "1.50",               // Amount in USDC
+    "API access fee"      // Description
+  );
+
+  console.log("Payment ID:", record.id);
+  console.log("Signature:", payload.payload.signature);
+  console.log("Status:", record.status); // "signed"
+
+  // The payload can be:
+  // 1. Sent as X-PAYMENT header to an x402-enabled server
+  // 2. Submitted to a facilitator for on-chain settlement
+  // 3. Sent via XMTP as a transaction reference
+}`,
+    },
+    {
+      title: "Verify x402 Payment Signature",
+      language: "typescript",
+      description: "Verify that an x402 payment signature is valid and was signed by the claimed sender",
+      code: `import { verifyPaymentSignature, verifyPaymentViaFacilitator } from "./lib/x402-client";
+import type { X402PaymentPayload } from "./lib/x402-client";
+
+// Local verification (recovers signer from EIP-712 signature)
+const payload: X402PaymentPayload = receivedPayload; // from header or XMTP
+const { valid, recoveredAddress, error } = await verifyPaymentSignature(payload);
+
+if (valid) {
+  console.log(\`Valid payment from \${recoveredAddress}\`);
+  console.log(\`Amount: \${payload.accepted.amount} micro-USDC\`);
+} else {
+  console.log(\`Invalid signature: \${error}\`);
+}
+
+// Remote verification via Coinbase facilitator
+const facilitated = await verifyPaymentViaFacilitator(
+  payload,
+  payload.accepted,
+  "https://x402.org/facilitator"
+);
+console.log("Facilitator says:", facilitated.valid);`,
+    },
+    {
+      title: "x402 Payment via XMTP (Agent Command)",
+      language: "typescript",
+      description: "Send USDC payments through XMTP using the /pay command in the Vaultfire agent",
+      code: `import { createVaultfireAgent } from "./lib/xmtp-connector";
+
+const agent = await createVaultfireAgent({
+  walletKey: process.env.AGENT_PRIVATE_KEY!,
+  env: "production",
+  chain: "base",
+});
+
+// Built-in x402 commands:
+//   /pay <address> <amount> [reason]  — Send USDC via x402
+//   /x402                             — View payment stats
+//   /balance                          — Check USDC balance
+
+// Agent-to-agent auto-pay:
+// Send "x402:pay:0xRecipient:1.50:API fee" via XMTP
+// The receiving agent auto-signs if sender is a trusted Vaultfire agent
+
+// Handle payment verification in transaction references:
+agent.on("transaction-reference", async (ctx) => {
+  // The connector auto-verifies x402 payment signatures
+  // and reports whether the EIP-712 signature is valid
+});
+
+await agent.start();`,
+    },
+    {
+      title: "x402 Payment History & Stats",
+      language: "typescript",
+      description: "Access payment history stored in localStorage for the AgentEarnings dashboard",
+      code: `import {
+  getPaymentHistory,
+  getPaymentStats,
+  clearPaymentHistory,
+  formatUsdc,
+  parseUsdc,
+} from "./lib/x402-client";
+
+// Get all payment records
+const history = getPaymentHistory();
+for (const record of history) {
+  console.log(\`\${record.amountFormatted} USDC to \${record.payTo}\`);
+  console.log(\`  Status: \${record.status}, TX: \${record.txHash || "pending"}\`);
+}
+
+// Get aggregate stats
+const stats = getPaymentStats();
+console.log(\`Total payments: \${stats.totalPayments}\`);
+console.log(\`Total volume: \${stats.totalAmountUsdc} USDC\`);
+console.log(\`Settled: \${stats.settledCount}, Failed: \${stats.failedCount}\`);
+
+// Utility functions
+console.log(formatUsdc("1500000")); // "1.5"
+console.log(parseUsdc("1.50"));     // "1500000"`,
+    },
+    {
+      title: "x402 Server-Side (Python)",
+      language: "python",
+      description: "Return HTTP 402 from your API and verify x402 payments from Vaultfire agents",
+      code: `import json, base64
+from flask import Flask, request, jsonify, Response
+
+app = Flask(__name__)
+
+@app.route("/api/premium-data")
+def premium_data():
+    # Check for x402 payment header
+    payment_header = request.headers.get("X-PAYMENT")
+
+    if not payment_header:
+        # Return 402 with payment requirements
+        requirements = {
+            "x402Version": 2,
+            "accepts": [{
+                "scheme": "exact",
+                "network": "eip155:8453",  # Base mainnet
+                "amount": "100000",  # 0.10 USDC
+                "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                "payTo": "0xYourServerWallet",
+                "maxTimeoutSeconds": 60,
+                "extra": {
+                    "assetTransferMethod": "eip3009",
+                    "name": "USDC",
+                    "version": "2"
+                }
+            }],
+            "resource": {
+                "url": "/api/premium-data",
+                "description": "Premium market data",
+                "mimeType": "application/json"
+            }
+        }
+        encoded = base64.b64encode(json.dumps(requirements).encode()).decode()
+        return Response(
+            json.dumps({"error": "Payment required"}),
+            status=402,
+            headers={"X-PAYMENT-REQUIRED": encoded},
+            content_type="application/json"
+        )
+
+    # Verify payment via facilitator
+    # ... submit to https://x402.org/facilitator/verify
+    return jsonify({"data": "premium content here"})`,
+    },
+  ];
+
   const tabs = [
     { id: "quickstart" as const, label: "Quick Start" },
     { id: "endpoints" as const, label: "Endpoints" },
+    { id: "x402" as const, label: "x402" },
     { id: "xmtp" as const, label: "XMTP" },
     { id: "contracts" as const, label: "Contracts" },
     { id: "sdk" as const, label: "SDK" },
@@ -870,6 +1073,148 @@ export XMTP_ENV=production       # or "dev" for testing`} />
               ctx.getSenderAddress() for sender identification, ctx.conversation.sendText/sendMarkdown for replies,
               AgentMiddleware type for trust gates, and CommandRouter for structured commands.
               The Vaultfire connector (xmtp-connector.ts) is built on these verified patterns.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* x402 Payment Protocol */}
+      {activeTab === "x402" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {/* Overview */}
+          <div style={{
+            padding: isMobile ? 16 : 24, borderRadius: 14,
+            background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.15)",
+          }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#F4F4F5", marginBottom: 8 }}>x402 Payment Protocol</div>
+            <div style={{ fontSize: 13, color: "#A1A1AA", lineHeight: 1.7 }}>
+              x402 is Coinbase&apos;s open standard for internet-native payments using HTTP 402.
+              Vaultfire integrates x402 for USDC payments on Base using <strong style={{ color: "#3B82F6" }}>EIP-3009</strong> (transferWithAuthorization)
+              with <strong style={{ color: "#3B82F6" }}>EIP-712</strong> typed data signing. The facilitator settles on-chain — clients never pay gas.
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr 1fr 1fr", gap: 10, marginTop: 16 }}>
+              {[
+                { step: "1", title: "Request", desc: "Client fetches a resource" },
+                { step: "2", title: "402", desc: "Server returns payment requirements" },
+                { step: "3", title: "Sign", desc: "Client signs EIP-712 authorization" },
+                { step: "4", title: "Pay", desc: "Client resends with X-PAYMENT header" },
+                { step: "5", title: "Settle", desc: "Facilitator settles USDC on-chain" },
+              ].map(s => (
+                <div key={s.step} style={{ padding: 12, borderRadius: 10, background: "rgba(255,255,255,0.03)", textAlign: "center" }}>
+                  <div style={{
+                    width: 24, height: 24, borderRadius: 7, background: "#3B82F6",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 12, fontWeight: 800, color: "#fff", margin: "0 auto 8px",
+                  }}>
+                    {s.step}
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#F4F4F5" }}>{s.title}</div>
+                  <div style={{ fontSize: 10, color: "#71717A", marginTop: 4 }}>{s.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Protocol Details */}
+          <div style={{
+            padding: isMobile ? 16 : 20, borderRadius: 14,
+            background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
+          }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5", marginBottom: 12 }}>Protocol Details</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {[
+                { label: "Token", value: "USDC (0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)" },
+                { label: "Network", value: "Base Mainnet (Chain ID 8453, eip155:8453)" },
+                { label: "Scheme", value: "exact (EIP-3009 transferWithAuthorization)" },
+                { label: "Signing", value: "EIP-712 typed structured data" },
+                { label: "Decimals", value: "6 (1 USDC = 1,000,000 micro-units)" },
+                { label: "Headers", value: "X-PAYMENT-REQUIRED (402), X-PAYMENT (request), X-PAYMENT-RESPONSE" },
+                { label: "Facilitator", value: "https://x402.org/facilitator" },
+                { label: "Version", value: "x402 v2" },
+              ].map(item => (
+                <div key={item.label} style={{
+                  display: "flex", gap: 12, padding: "8px 0",
+                  borderBottom: "1px solid rgba(255,255,255,0.03)",
+                }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "#71717A", minWidth: 100 }}>{item.label}</span>
+                  <code style={{ fontSize: 11, color: "#A1A1AA", fontFamily: "'SF Mono', monospace", wordBreak: "break-all" }}>{item.value}</code>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* EIP-712 Type Reference */}
+          <div style={{
+            padding: isMobile ? 16 : 20, borderRadius: 14,
+            background: "rgba(34,197,94,0.04)", border: "1px solid rgba(34,197,94,0.15)",
+          }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#22C55E", marginBottom: 10 }}>EIP-712 Type Structure</div>
+            <div style={{ fontSize: 12, color: "#A1A1AA", marginBottom: 12, lineHeight: 1.6 }}>
+              The x402 client signs a TransferWithAuthorization message using EIP-712 typed data.
+              This authorizes the facilitator to call USDC&apos;s transferWithAuthorization() on-chain.
+            </div>
+            <CodeBlock language="json" code={`// EIP-712 Domain (Base USDC)
+{
+  "name": "USD Coin",
+  "version": "2",
+  "chainId": 8453,
+  "verifyingContract": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+}
+
+// EIP-712 Types
+{
+  "TransferWithAuthorization": [
+    { "name": "from", "type": "address" },
+    { "name": "to", "type": "address" },
+    { "name": "value", "type": "uint256" },
+    { "name": "validAfter", "type": "uint256" },
+    { "name": "validBefore", "type": "uint256" },
+    { "name": "nonce", "type": "bytes32" }
+  ]
+}`} />
+          </div>
+
+          {/* Code Examples */}
+          {x402Examples.map(example => (
+            <div key={example.title}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5", marginBottom: 4 }}>{example.title}</div>
+              <div style={{ fontSize: 12, color: "#71717A", marginBottom: 10 }}>{example.description}</div>
+              <CodeBlock code={example.code} language={example.language} />
+            </div>
+          ))}
+
+          {/* Install */}
+          <div style={{
+            padding: 16, borderRadius: 12,
+            background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#F4F4F5", marginBottom: 8 }}>Dependencies</div>
+            <CodeBlock language="bash" code={`# x402-client.ts uses ethers.js for EIP-712 signing
+npm install ethers@6
+
+# The x402 client is built into Embris at:
+# ember-web-app/app/lib/x402-client.ts
+
+# Key exports:
+# x402Fetch, x402Get, x402Post — Payment-gated HTTP
+# initiatePayment             — Direct payment signing
+# verifyPaymentSignature      — Local signature verification
+# getPaymentHistory, getPaymentStats — Payment records
+# formatUsdc, parseUsdc       — Amount formatting
+# getUsdcBalance, hasEnoughUsdc — Balance checks`} />
+          </div>
+
+          {/* Status */}
+          <div style={{
+            padding: 16, borderRadius: 12,
+            background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.15)",
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#3B82F6", marginBottom: 4 }}>x402 Integration: Live</div>
+            <div style={{ fontSize: 12, color: "#71717A", lineHeight: 1.6 }}>
+              The x402 client uses real EIP-3009 transferWithAuthorization signing on Base USDC.
+              Payment history is persisted in localStorage and displayed in the Agent Earnings dashboard.
+              XMTP commands (/pay, /x402, /balance) provide agent-to-agent payment capabilities.
+              All signatures use EIP-712 typed data with the correct USDC domain separator.
             </div>
           </div>
         </div>

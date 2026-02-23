@@ -12,6 +12,11 @@
  *   2. getBondsByParticipant(address)      → uint256[]
  *   3. getBond(uint256)                    → Bond struct
  *
+ * x402 Integration:
+ *   - /pay command for initiating USDC payments via x402 protocol
+ *   - Transaction reference handler verifies x402 payment signatures
+ *   - Auto-pay support for agent-to-agent payment requests
+ *
  * @module xmtp-connector
  */
 
@@ -20,6 +25,11 @@ import type {
   AgentMessageHandler,
   User,
 } from '@xmtp/agent-sdk';
+
+import type {
+  X402PaymentPayload,
+  X402PaymentRecord,
+} from './x402-client';
 
 // ---------------------------------------------------------------------------
 // Contract constants (verified on BaseScan)
@@ -648,6 +658,158 @@ export async function createVaultfireAgent(config: VaultfireAgentConfig = {}) {
     );
   });
 
+  // --- x402 Payment Commands ---
+
+  router.command('/pay', 'Send a USDC payment via x402 protocol — usage: /pay <address> <amount> [reason]', async (ctx) => {
+    const rawContent = ctx.message.content as string | { text?: string };
+    const text = (typeof rawContent === 'object' && rawContent !== null ? rawContent.text : rawContent) || '';
+    const parts = typeof text === 'string' ? text.replace('/pay', '').trim().split(/\s+/) : [];
+    const recipientAddress = parts[0] || '';
+    const amountUsdc = parts[1] || '';
+    const reason = parts.slice(2).join(' ') || 'XMTP agent payment';
+
+    if (!recipientAddress || !amountUsdc) {
+      await ctx.conversation.sendMarkdown(
+        '**x402 Payment — Usage**\n\n' +
+        '`/pay <address> <amount_usdc> [reason]`\n\n' +
+        'Example: `/pay 0x1234...5678 1.50 API access fee`\n\n' +
+        'Sends USDC on Base via the x402 protocol (EIP-3009 transferWithAuthorization).\n' +
+        'Token: USDC (`0x8335...2913`) on Base (Chain ID 8453)',
+      );
+      return;
+    }
+
+    // Validate address format
+    if (!/^0x[a-fA-F0-9]{40}$/.test(recipientAddress)) {
+      await ctx.conversation.sendText('Invalid recipient address. Must be a valid Ethereum address (0x...).');
+      return;
+    }
+
+    // Validate amount
+    const parsedAmount = parseFloat(amountUsdc);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      await ctx.conversation.sendText('Invalid amount. Must be a positive number (e.g., 1.50).');
+      return;
+    }
+
+    try {
+      // Dynamically import x402 client to avoid circular deps
+      const { initiatePayment, formatUsdc, getUsdcBalance } = await import('./x402-client');
+
+      // Check USDC balance first
+      const senderAddress = await ctx.getSenderAddress();
+      if (senderAddress) {
+        const balance = await getUsdcBalance(senderAddress);
+        const balanceFormatted = formatUsdc(balance);
+        const amountMicro = Math.floor(parsedAmount * 1_000_000);
+
+        if (BigInt(balance) < BigInt(amountMicro)) {
+          await ctx.conversation.sendMarkdown(
+            `**Insufficient USDC Balance**\n\n` +
+            `Required: ${amountUsdc} USDC\n` +
+            `Available: ${balanceFormatted} USDC\n\n` +
+            `Top up your USDC on Base to proceed.`,
+          );
+          return;
+        }
+      }
+
+      // Create the signed payment payload
+      const { payload, record } = await initiatePayment(
+        recipientAddress,
+        amountUsdc,
+        reason,
+      );
+
+      await ctx.conversation.sendMarkdown(
+        `**x402 Payment Signed**\n\n` +
+        `| Field | Value |\n` +
+        `|-------|-------|\n` +
+        `| To | \`${recipientAddress}\` |\n` +
+        `| Amount | ${amountUsdc} USDC |\n` +
+        `| Network | Base (EIP-155:8453) |\n` +
+        `| Scheme | exact (EIP-3009) |\n` +
+        `| Status | Signed |\n` +
+        `| Payment ID | \`${record.id}\` |\n\n` +
+        `> Authorization signed via EIP-712 TransferWithAuthorization.\n` +
+        `> Submit to a facilitator or x402-enabled server to settle on-chain.`,
+      );
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+      await ctx.conversation.sendMarkdown(
+        `**x402 Payment Failed**\n\n` +
+        `Error: ${errorMsg}\n\n` +
+        `Make sure your wallet is unlocked and has sufficient USDC on Base.`,
+      );
+    }
+  });
+
+  router.command('/x402', 'Show x402 payment protocol info and recent payments', async (ctx) => {
+    try {
+      const { getPaymentStats, getPaymentHistory, formatUsdc, BASE_USDC_ADDRESS } = await import('./x402-client');
+
+      const stats = getPaymentStats();
+      const recent = getPaymentHistory().slice(0, 5);
+
+      let report = `**x402 Payment Protocol — Status**\n\n` +
+        `| Metric | Value |\n` +
+        `|--------|-------|\n` +
+        `| Total Payments | ${stats.totalPayments} |\n` +
+        `| Total Volume | ${stats.totalAmountUsdc} USDC |\n` +
+        `| Settled | ${stats.settledCount} |\n` +
+        `| Failed | ${stats.failedCount} |\n\n` +
+        `**Protocol Details**\n\n` +
+        `- Token: USDC (\`${BASE_USDC_ADDRESS}\`)\n` +
+        `- Network: Base (Chain ID 8453)\n` +
+        `- Scheme: exact (EIP-3009 transferWithAuthorization)\n` +
+        `- Signing: EIP-712 typed data\n\n`;
+
+      if (recent.length > 0) {
+        report += `**Recent Payments**\n\n` +
+          `| Date | Amount | To | Status |\n` +
+          `|------|--------|----|--------|\n`;
+
+        for (const r of recent) {
+          const date = new Date(r.timestamp);
+          const dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
+          const toShort = `${r.payTo.slice(0, 6)}...${r.payTo.slice(-4)}`;
+          const statusIcon = r.status === 'settled' ? '✅' : r.status === 'failed' ? '❌' : '⏳';
+          report += `| ${dateStr} | ${r.amountFormatted} USDC | \`${toShort}\` | ${statusIcon} ${r.status} |\n`;
+        }
+      } else {
+        report += `_No payments yet. Use \`/pay <address> <amount>\` to send USDC via x402._`;
+      }
+
+      await ctx.conversation.sendMarkdown(report);
+    } catch (err) {
+      await ctx.conversation.sendText('x402 module not available. Ensure the x402-client is installed.');
+    }
+  });
+
+  router.command('/balance', 'Check your USDC balance on Base', async (ctx) => {
+    const senderAddress = await ctx.getSenderAddress();
+    if (!senderAddress) {
+      await ctx.conversation.sendText('Could not determine your address.');
+      return;
+    }
+
+    try {
+      const { getUsdcBalance, formatUsdc, BASE_USDC_ADDRESS } = await import('./x402-client');
+      const balance = await getUsdcBalance(senderAddress);
+      const formatted = formatUsdc(balance);
+
+      await ctx.conversation.sendMarkdown(
+        `**USDC Balance (Base)**\n\n` +
+        `Address: \`${senderAddress}\`\n` +
+        `Balance: **${formatted} USDC**\n` +
+        `Token: \`${BASE_USDC_ADDRESS}\`\n` +
+        `Network: Base (Chain ID 8453)`,
+      );
+    } catch {
+      await ctx.conversation.sendText('Failed to fetch USDC balance. Try again later.');
+    }
+  });
+
   agent.use(router.middleware());
 
   // --- Lifecycle logging ---
@@ -668,11 +830,103 @@ export async function createVaultfireAgent(config: VaultfireAgentConfig = {}) {
   // --- Transaction reference handler (x402 payment verification) ---
   agent.on('transaction-reference', async (ctx) => {
     const txRef = ctx.message.content;
-    await ctx.conversation.sendMarkdown(
-      `**Transaction Reference Received**\n\n` +
-      `Reference: \`${JSON.stringify(txRef)}\`\n\n` +
-      `Verify on-chain at the relevant block explorer.`,
-    );
+    let report = `**Transaction Reference Received**\n\n`;
+
+    // Attempt to parse as x402 payment payload
+    try {
+      const { verifyPaymentSignature, formatUsdc } = await import('./x402-client');
+
+      // Check if this looks like an x402 payment payload
+      const refData = typeof txRef === 'string' ? JSON.parse(txRef) : txRef;
+
+      if (refData && refData.x402Version && refData.payload?.signature) {
+        const paymentPayload = refData as X402PaymentPayload;
+        const verification = await verifyPaymentSignature(paymentPayload);
+
+        report += `**x402 Payment Verification**\n\n` +
+          `| Field | Value |\n` +
+          `|-------|-------|\n` +
+          `| Version | x402 v${paymentPayload.x402Version} |\n` +
+          `| Scheme | ${paymentPayload.accepted.scheme} |\n` +
+          `| Network | ${paymentPayload.accepted.network} |\n` +
+          `| Amount | ${formatUsdc(paymentPayload.accepted.amount)} USDC |\n` +
+          `| From | \`${paymentPayload.payload.authorization.from}\` |\n` +
+          `| To | \`${paymentPayload.payload.authorization.to}\` |\n` +
+          `| Signature Valid | ${verification.valid ? '✅ Yes' : '❌ No'} |\n` +
+          `| Recovered Signer | \`${verification.recoveredAddress}\` |\n`;
+
+        if (verification.error) {
+          report += `\n> ⚠️ Verification error: ${verification.error}`;
+        } else if (verification.valid) {
+          report += `\n> ✅ Payment signature verified. The authorization is cryptographically valid.`;
+        } else {
+          report += `\n> ❌ Signature mismatch. The recovered address does not match the claimed sender.`;
+        }
+      } else {
+        // Not an x402 payload — show raw reference
+        report += `Reference: \`${JSON.stringify(txRef)}\`\n\n` +
+          `Verify on-chain at the relevant block explorer.`;
+      }
+    } catch {
+      // Fallback: show raw reference
+      report += `Reference: \`${JSON.stringify(txRef)}\`\n\n` +
+        `Verify on-chain at the relevant block explorer.`;
+    }
+
+    await ctx.conversation.sendMarkdown(report);
+  });
+
+  // --- Auto-pay handler for x402 payment requests via XMTP ---
+  agent.on('text', async (ctx) => {
+    const rawText = ctx.message.content as string | { text?: string };
+    const text = typeof rawText === 'string'
+      ? rawText
+      : (rawText?.text || '');
+
+    // Detect x402 payment request messages from other agents
+    // Format: "x402:pay:<address>:<amount_usdc>:<reason>"
+    if (typeof text === 'string' && text.startsWith('x402:pay:')) {
+      const parts = text.split(':');
+      if (parts.length >= 4) {
+        const recipientAddress = parts[2];
+        const amountUsdc = parts[3];
+        const reason = parts.slice(4).join(':') || 'Agent payment request';
+
+        const senderAddress = await ctx.getSenderAddress();
+        if (!senderAddress) return;
+
+        // Verify the requesting agent's trust status before auto-paying
+        const trusted = await isTrustedAgent(senderAddress, chain, minBondWei);
+        if (!trusted) {
+          await ctx.conversation.sendMarkdown(
+            `**x402 Auto-Pay Declined**\n\n` +
+            `Requesting agent \`${senderAddress}\` is not a trusted Vaultfire agent.\n` +
+            `Only bonded agents can request auto-payments.`,
+          );
+          return;
+        }
+
+        try {
+          const { initiatePayment } = await import('./x402-client');
+          const { payload, record } = await initiatePayment(recipientAddress, amountUsdc, reason);
+
+          await ctx.conversation.sendMarkdown(
+            `**x402 Auto-Payment Processed**\n\n` +
+            `| Field | Value |\n` +
+            `|-------|-------|\n` +
+            `| Requested By | \`${senderAddress}\` (trusted) |\n` +
+            `| To | \`${recipientAddress}\` |\n` +
+            `| Amount | ${amountUsdc} USDC |\n` +
+            `| Payment ID | \`${record.id}\` |\n` +
+            `| Status | Signed |\n\n` +
+            `> Authorization signed. Submit to facilitator to settle.`,
+          );
+        } catch (err) {
+          const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+          await ctx.conversation.sendText(`x402 auto-pay failed: ${errorMsg}`);
+        }
+      }
+    }
   });
 
   return agent;
