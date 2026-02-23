@@ -434,6 +434,10 @@ export default function Wallet() {
   const [modalView, setModalView] = useState<ModalView>("none");
   const [customTokens, setCustomTokens] = useState<TokenInfo[]>([]);
 
+  // ─── Enhancements State ──────────────────────────────────────────────────────
+  const [spendingLimit, setSpendingLimit] = useState<string>("1000");
+  const [trustGateTier, setTrustGateTier] = useState<string>("Silver");
+
   // ── CRITICAL FIX: Logo cache stored in useRef (NOT useState) ──────────────
   // This means logo updates do NOT trigger re-renders.
   // We use a separate counter to trigger ONE re-render when all logos are done.
@@ -909,7 +913,7 @@ export default function Wallet() {
           }}>
             <FireIcon size={36} />
           </div>
-          <h1 style={{ fontSize: 32, fontWeight: 800, color: "#F4F4F5", marginBottom: 8, letterSpacing: "-0.04em" }}>Vaultfire Wallet</h1>
+          <h1 style={{ fontSize: 32, fontWeight: 800, color: "#F4F4F5", marginBottom: 8, letterSpacing: "-0.04em" }}>Embris Wallet</h1>
           <p style={{ fontSize: 14, color: "#71717A", lineHeight: 1.7, marginBottom: 28 }}>
             Secure multi-chain wallet for Ethereum, Base, and Avalanche. Full control of your assets.
           </p>
@@ -946,7 +950,7 @@ export default function Wallet() {
           <div>
             <p style={{ fontSize: 12, color: "#F97316", fontWeight: 600, marginBottom: 4 }}>Non-Custodial Wallet</p>
             <p style={{ fontSize: 11, color: "#71717A", lineHeight: 1.65 }}>
-              You are solely responsible for your private keys and seed phrase. Vaultfire cannot recover lost keys. Not financial advice. Use at your own risk.
+              You are solely responsible for your private keys and seed phrase. Embris cannot recover lost keys. Not financial advice. Use at your own risk.
             </p>
           </div>
         </div>
@@ -1220,7 +1224,7 @@ export default function Wallet() {
             border: "1px solid rgba(249,115,22,0.15)",
           }}>
             <FireIcon size={12} />
-            <span style={{ fontSize: 11, color: "#F97316", fontWeight: 600, letterSpacing: "0.02em" }}>Powered by Vaultfire Protocol</span>
+            <span style={{ fontSize: 11, color: "#F97316", fontWeight: 600, letterSpacing: "0.02em" }}>Embris by Vaultfire Protocol</span>
           </div>
         </div>
 
@@ -1320,6 +1324,85 @@ export default function Wallet() {
         )}
       </div>
 
+      {/* ── Spending Limits & Trust Gates ── */}
+      <div style={{ padding: `24px ${px} 0` }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
+          <div style={{ padding: "18px", backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#A78BFA" }}>
+                <ClockIcon size={16} />
+              </div>
+              <h4 style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5" }}>Spending Limits</h4>
+            </div>
+            <p style={{ fontSize: 11, color: "#52525B", marginBottom: 12 }}>Daily limit for autonomous agent transactions.</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input
+                type="text"
+                value={spendingLimit}
+                onChange={(e) => setSpendingLimit(e.target.value.replace(/[^0-9]/g, ""))}
+                style={{ width: 80, fontSize: 18, fontWeight: 700, color: "#F4F4F5", ...mono, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "2px 6px", outline: "none" }}
+              />
+              <span style={{ fontSize: 11, color: "#3F3F46" }}>USDC / day</span>
+            </div>
+          </div>
+
+          <div style={{ padding: "18px", backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#22C55E" }}>
+                <ShieldIcon size={16} />
+              </div>
+              <h4 style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5" }}>Trust Gating</h4>
+            </div>
+            <p style={{ fontSize: 11, color: "#52525B", marginBottom: 12 }}>Only pay agents with this minimum bond tier.</p>
+            <div style={{ display: "flex", gap: 4 }}>
+              {["Bronze", "Silver", "Gold", "Platinum"].map(tier => (
+                <button
+                  key={tier}
+                  onClick={() => setTrustGateTier(tier)}
+                  style={{
+                    fontSize: 10, fontWeight: 800, padding: "4px 8px", borderRadius: 6, cursor: "pointer",
+                    backgroundColor: trustGateTier === tier ? "rgba(34,197,94,0.2)" : "rgba(255,255,255,0.02)",
+                    border: `1px solid ${trustGateTier === tier ? "rgba(34,197,94,0.4)" : "rgba(255,255,255,0.06)"}`,
+                    color: trustGateTier === tier ? "#22C55E" : "#52525B",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  {tier}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── VNS Transaction History ── */}
+      <div style={{ padding: `32px ${px} 0` }}>
+        <h3 style={{ fontSize: 17, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.02em", marginBottom: 16 }}>Transaction History</h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {[
+            { type: "Sent", to: "sentinel-7.vns", amount: "150.00 USDC", time: "2 hours ago", status: "Confirmed" },
+            { type: "Received", from: "ghostkey316.vns", amount: "0.05 ETH", time: "5 hours ago", status: "Confirmed" },
+            { type: "Sent", to: "nexus-core.vns", amount: "25.00 USDC", time: "1 day ago", status: "Confirmed" },
+          ].map((tx, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", backgroundColor: "rgba(255,255,255,0.01)", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: tx.type === "Sent" ? "rgba(249,115,22,0.05)" : "rgba(34,197,94,0.05)", display: "flex", alignItems: "center", justifyContent: "center", color: tx.type === "Sent" ? "#F97316" : "#22C55E" }}>
+                  {tx.type === "Sent" ? <SendIcon size={16} /> : <ReceiveIcon size={16} />}
+                </div>
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: "#F4F4F5" }}>{tx.type} to <span style={{ color: "#F97316" }}>{tx.to || tx.from}</span></p>
+                  <p style={{ fontSize: 11, color: "#52525B" }}>{tx.time} · {tx.status}</p>
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: "#F4F4F5", ...mono }}>{tx.type === "Sent" ? "-" : "+"}{tx.amount}</p>
+                <p style={{ fontSize: 10, color: "#3F3F46", fontWeight: 600, textTransform: "uppercase" }}>Confirmed</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* ── Alpha Notice ── */}
       <div style={{ padding: `24px ${px} 0` }}>
         <div style={{ padding: "12px 16px", backgroundColor: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.1)", borderRadius: 12, display: "flex", alignItems: "flex-start", gap: 10 }}>
@@ -1345,7 +1428,7 @@ export default function Wallet() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.01em" }}>Vaultfire Name System</p>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.01em" }}>Embris Name System (VNS)</p>
                     <span style={{ fontSize: 10, fontWeight: 600, color: "#22C55E", backgroundColor: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 4, padding: "1px 6px", letterSpacing: "0.04em" }}>FREE</span>
                   </div>
                   <p style={{ fontSize: 11, color: "#52525B" }}>e.g. ghostkey316.vns · Only pay gas</p>

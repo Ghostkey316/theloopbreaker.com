@@ -80,11 +80,11 @@ function IdentityTypeCard({
   const icons = { human: UserIcon, companion: HeartIcon, agent: BotIcon };
   const Icon = icons[type];
   const color = getIdentityTypeColor(type);
-  const descriptions = {
-    human: "Your personal identity on Vaultfire. One per wallet.",
-    companion: "Your AI companion. One per human identity.",
-    agent: "AI agent with accountability bond. Unlimited per developer.",
-  };
+    const descriptions = {
+      human: "Your personal identity on Embris. One per wallet.",
+      companion: "Your AI companion. One per human identity.",
+      agent: "AI agent with accountability bond. Unlimited per developer.",
+    };
   const badges = {
     human: "1 per wallet",
     companion: "1 per human",
@@ -148,7 +148,7 @@ function IdentityTypeCard({
 /* ── Anti-Gaming Rules Panel ── */
 function AntiGamingRules() {
   const rules = [
-    { icon: "lock", title: "One Identity Per Wallet", desc: "Each wallet can register exactly one human or agent .vns identity." },
+    { icon: "lock", title: "One Identity Per Wallet", desc: "Each wallet can register exactly one human or agent .vns identity on Embris." },
     { icon: "handshake", title: "One Companion Per Human", desc: "Each human gets one AI companion, tied to their identity." },
     { icon: "cpu", title: "Unlimited AI Agents", desc: "Developers can register unlimited agents — each requires a bond." },
     { icon: "link", title: "On-Chain Registration", desc: "Every name backed by a real transaction. Gas = anti-bot." },
@@ -346,7 +346,7 @@ export default function VNS() {
           </div>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: "#F4F4F5", margin: 0 }}>
-              Vaultfire Name System
+              Embris Name System
             </h1>
             <p style={{ fontSize: 13, color: "#71717A", margin: 0 }}>
               Your on-chain identity — free, permanent, ungameable
@@ -394,7 +394,7 @@ export default function VNS() {
       {/* Stats Bar */}
       <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
         <div style={{ ...card, padding: "12px 16px", flex: 1, textAlign: "center" }}>
-          <div style={{ fontSize: 20, fontWeight: 700, color: "#F97316" }}>{totalRegistrations}</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: "#F97316" }}>{totalRegistrations > 0 ? totalRegistrations : "—"}</div>
           <div style={{ fontSize: 11, color: "#71717A" }}>On-Chain Names</div>
         </div>
         <div style={{ ...card, padding: "12px 16px", flex: 1, textAlign: "center" }}>
@@ -402,7 +402,7 @@ export default function VNS() {
           <div style={{ fontSize: 11, color: "#71717A" }}>Gas Only</div>
         </div>
         <div style={{ ...card, padding: "12px 16px", flex: 1, textAlign: "center" }}>
-          <div style={{ fontSize: 20, fontWeight: 700, color: "#8B5CF6" }}>2</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: "#8B5CF6" }}>3</div>
           <div style={{ fontSize: 11, color: "#71717A" }}>Chains</div>
         </div>
       </div>

@@ -146,7 +146,7 @@ export default function TrustScore() {
       }}>
         <div>
           <h1 style={{ fontSize: 28, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.04em", lineHeight: 1.25 }}>Trust Score</h1>
-          <p style={{ fontSize: 12, color: "#3F3F46", marginTop: 4, lineHeight: 1.5 }}>Vaultfire Protocol ecosystem health</p>
+          <p style={{ fontSize: 12, color: "#3F3F46", marginTop: 4, lineHeight: 1.5 }}>Embris by Vaultfire Protocol health</p>
         </div>
         <button
           onClick={loadMetrics}
@@ -220,7 +220,7 @@ export default function TrustScore() {
             </div>
           </div>
           <p style={{ fontSize: 12, color: "#3F3F46", marginTop: 12, lineHeight: 1.5 }}>
-            Vaultfire Protocol Trust Score
+            Embris Trust Score
           </p>
         </div>
       )}

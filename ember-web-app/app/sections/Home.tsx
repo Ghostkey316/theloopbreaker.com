@@ -1,4 +1,3 @@
-"use client";
 import { useEffect, useState, useRef } from 'react';
 import { checkAllChains, type RPCResult } from '../lib/blockchain';
 import { BASE_CONTRACTS, AVALANCHE_CONTRACTS, ETHEREUM_CONTRACTS } from '../lib/contracts';
@@ -40,9 +39,6 @@ function CheckCircleIcon({ size = 14 }: { size?: number }) {
 function ExternalLinkIcon({ size = 11 }: { size?: number }) {
   return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>);
 }
-function ZapIcon({ size = 14 }: { size?: number }) {
-  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>);
-}
 function MessageIcon({ size = 20 }: { size?: number }) {
   return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h.01"/><path d="M12 10h.01"/><path d="M16 10h.01"/></svg>);
 }
@@ -83,6 +79,99 @@ function AnimatedCounter({ value, loading }: { value: number | null; loading: bo
     <span style={{ fontSize: 28, fontWeight: 800, color: '#F4F4F5', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-0.04em' }}>
       {displayValue.toLocaleString()}
     </span>
+  );
+}
+
+/* ── Protocol Visualization ── */
+function ProtocolViz({ isMobile }: { isMobile: boolean }) {
+  return (
+    <div style={{
+      padding: isMobile ? '24px 20px' : '32px 36px',
+      background: 'rgba(255,255,255,0.01)',
+      border: '1px solid rgba(255,255,255,0.06)',
+      borderRadius: 24,
+      marginBottom: 48,
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
+      <div style={{ textAlign: 'center', marginBottom: 32 }}>
+        <h3 style={{ fontSize: 18, fontWeight: 800, color: '#F4F4F5', marginBottom: 8 }}>Embris Unified Protocol</h3>
+        <p style={{ fontSize: 13, color: '#71717A' }}>The intersection of Trust, Messaging, and Value · Powered by Vaultfire</p>
+      </div>
+
+      <div style={{
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: isMobile ? 40 : 20,
+        position: 'relative',
+      }}>
+        {/* XMTP Node */}
+        <div style={{
+          width: 120, height: 120, borderRadius: '50%',
+          background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.3)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          gap: 8, zIndex: 2, position: 'relative',
+        }}>
+          <div style={{ color: '#8B5CF6' }}><MessageIcon size={24} /></div>
+          <span style={{ fontSize: 12, fontWeight: 800, color: '#F4F4F5' }}>XMTP</span>
+          <span style={{ fontSize: 9, color: '#A78BFA', textTransform: 'uppercase' }}>Messaging</span>
+        </div>
+
+        {/* Connector Line 1 */}
+        {!isMobile && (
+          <div style={{ width: 60, height: 2, background: 'linear-gradient(90deg, #8B5CF6, #F97316)' }} />
+        )}
+
+        {/* Embris Node (Center) */}
+        <div style={{
+          width: 140, height: 140, borderRadius: '50%',
+          background: 'rgba(249,115,22,0.15)', border: '2px solid rgba(249,115,22,0.4)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          gap: 10, zIndex: 3, position: 'relative',
+          boxShadow: '0 0 30px rgba(249,115,22,0.1)',
+        }}>
+          <div style={{ color: '#F97316' }}><FireIcon size={32} /></div>
+          <span style={{ fontSize: 14, fontWeight: 900, color: '#F4F4F5' }}>EMBRIS</span>
+          <span style={{ fontSize: 10, color: '#FB923C', textTransform: 'uppercase', fontWeight: 700 }}>Unified Layer</span>
+        </div>
+
+        {/* Connector Line 2 */}
+        {!isMobile && (
+          <div style={{ width: 60, height: 2, background: 'linear-gradient(90deg, #F97316, #00D9FF)' }} />
+        )}
+
+        {/* x402 Node */}
+        <div style={{
+          width: 120, height: 120, borderRadius: '50%',
+          background: 'rgba(0,217,255,0.1)', border: '1px solid rgba(0,217,255,0.3)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          gap: 8, zIndex: 2, position: 'relative',
+        }}>
+          <div style={{ color: '#00D9FF' }}><WalletIcon size={24} /></div>
+          <span style={{ fontSize: 12, fontWeight: 800, color: '#F4F4F5' }}>x402</span>
+          <span style={{ fontSize: 9, color: '#00D9FF', textTransform: 'uppercase' }}>Payments</span>
+        </div>
+      </div>
+
+      <div style={{
+        marginTop: 40, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 16,
+      }}>
+        <div style={{ textAlign: 'center', padding: 12, borderRadius: 12, background: 'rgba(255,255,255,0.02)' }}>
+          <p style={{ fontSize: 11, color: '#A78BFA', fontWeight: 700, marginBottom: 4 }}>SECURE CHANNELS</p>
+          <p style={{ fontSize: 12, color: '#71717A' }}>Agents talk via XMTP using verified .vns names</p>
+        </div>
+        <div style={{ textAlign: 'center', padding: 12, borderRadius: 12, background: 'rgba(255,255,255,0.02)' }}>
+          <p style={{ fontSize: 11, color: '#FB923C', fontWeight: 700, marginBottom: 4 }}>ON-CHAIN BONDS</p>
+          <p style={{ fontSize: 12, color: '#71717A' }}>Accountability enforced by ERC-8004 smart contracts</p>
+        </div>
+        <div style={{ textAlign: 'center', padding: 12, borderRadius: 12, background: 'rgba(255,255,255,0.02)' }}>
+          <p style={{ fontSize: 11, color: '#00D9FF', fontWeight: 700, marginBottom: 4 }}>INSTANT SETTLEMENT</p>
+          <p style={{ fontSize: 12, color: '#71717A' }}>USDC payments on Base via x402 signing</p>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -161,8 +250,8 @@ export default function Home() {
     },
     {
       icon: <WalletIcon />,
-      title: 'Vaultfire Wallet',
-      desc: 'Multi-chain wallet for ETH, AVAX, and ERC-20 tokens. Your keys, your crypto.',
+      title: 'Embris Wallet',
+      desc: 'Multi-chain wallet with spending limits, trust-gated transactions, and VNS-powered history. Your keys, your crypto.',
       color: '#F97316',
     },
     {
@@ -226,7 +315,7 @@ export default function Home() {
             border: '1px solid rgba(34,197,94,0.15)',
           }}>
             <div style={{ color: '#22C55E' }}><CheckCircleIcon size={14} /></div>
-            <span style={{ fontSize: 12, color: '#22C55E', fontWeight: 600 }}>Registered on Vaultfire</span>
+            <span style={{ fontSize: 12, color: '#22C55E', fontWeight: 600 }}>Registered on Embris</span>
             <span style={{ fontSize: 11, color: '#71717A', fontFamily: "'JetBrains Mono', monospace" }}>
               {registrationAddress.slice(0, 6)}...{registrationAddress.slice(-4)}
             </span>
@@ -245,6 +334,9 @@ export default function Home() {
           </div>
         )}
       </div>
+
+      {/* Protocol Visualization */}
+      <ProtocolViz isMobile={isMobile} />
 
       {/* ══════════════════════════════════════════════════════════════════════
           EMBRIS — Featured AI Companion
@@ -574,7 +666,7 @@ export default function Home() {
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════
-          FEATURES — What Vaultfire offers
+          FEATURES — What Embris offers
           ══════════════════════════════════════════════════════════════════════ */}
       <div style={{ marginBottom: isMobile ? 40 : 56 }}>
         <h2 style={{ fontSize: 11, fontWeight: 600, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 20 }}>Features</h2>
@@ -599,199 +691,17 @@ export default function Home() {
                 <div style={{
                   width: 36, height: 36, borderRadius: 10,
                   backgroundColor: `${f.color}10`,
-                  border: `1px solid ${f.color}20`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: f.color, flexShrink: 0,
+                  color: f.color,
                 }}>
                   {f.icon}
                 </div>
-                <h3 style={{ fontSize: 14, fontWeight: 700, color: '#F4F4F5', letterSpacing: '-0.01em' }}>{f.title}</h3>
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: '#F4F4F5' }}>{f.title}</h3>
               </div>
-              <p style={{ fontSize: 13, color: '#71717A', lineHeight: 1.55, letterSpacing: '-0.005em' }}>{f.desc}</p>
+              <p style={{ fontSize: 13, color: '#71717A', lineHeight: 1.6 }}>{f.desc}</p>
             </div>
           ))}
         </div>
-      </div>
-
-      {/* ══════════════════════════════════════════════════════════════════════
-          PROTOCOL STATS — Real on-chain numbers
-          ══════════════════════════════════════════════════════════════════════ */}
-      <div style={{ marginBottom: isMobile ? 40 : 56 }}>
-        <h2 style={{ fontSize: 11, fontWeight: 600, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 20 }}>Protocol</h2>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)',
-          gap: isMobile ? 10 : 12,
-        }}>
-          {[
-            { label: 'Contracts', value: String(totalContracts), sub: `15 per chain × 3 chains`, mono: true, color: '#F97316' },
-            { label: 'Chains', value: '3', sub: 'ETH + Base + Avalanche', mono: true, color: '#38BDF8' },
-            { label: 'Standard', value: 'ERC-8004', sub: 'AI Identity', mono: false, color: '#A78BFA' },
-            { label: 'Bridge', value: 'Teleporter', sub: 'Cross-chain', mono: false, color: '#22C55E' },
-            { label: 'Messaging', value: 'XMTP', sub: 'Encrypted agent comms', mono: false, color: '#8B5CF6' },
-          ].map((item) => (
-            <div key={item.label} style={{
-              padding: isMobile ? '16px 14px' : '18px 16px',
-              backgroundColor: 'rgba(255,255,255,0.02)',
-              border: '1px solid rgba(255,255,255,0.05)',
-              borderRadius: 12,
-            }}>
-              <p style={{ fontSize: 10, color: '#52525B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>{item.label}</p>
-              <p style={{
-                fontSize: isMobile ? 18 : 22, fontWeight: 700, color: '#F4F4F5',
-                letterSpacing: '-0.03em', lineHeight: 1.1,
-                fontFamily: item.mono ? "'JetBrains Mono', monospace" : "'Inter', sans-serif",
-              }}>{item.value}</p>
-              <p style={{ fontSize: 11, color: '#3F3F46', marginTop: 4 }}>{item.sub}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ══════════════════════════════════════════════════════════════════════
-          AGENT INFRASTRUCTURE STACK — The key differentiator
-          ══════════════════════════════════════════════════════════════════════ */}
-      <div style={{ marginBottom: isMobile ? 40 : 56 }}>
-        <h2 style={{ fontSize: 11, fontWeight: 600, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Agent Infrastructure Stack</h2>
-        <p style={{ fontSize: 13, color: '#52525B', lineHeight: 1.6, marginBottom: 20, maxWidth: 520 }}>
-          Three protocols. One complete agent stack. This is how autonomous AI agents communicate, pay, and build trust.
-        </p>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
-          gap: 12,
-        }}>
-          {[
-            {
-              protocol: 'XMTP',
-              role: 'How agents talk',
-              desc: 'Encrypted, decentralized messaging between agents. End-to-end encrypted by default — no central server can read agent conversations.',
-              color: '#8B5CF6',
-              icon: <MessageIcon size={18} />,
-            },
-            {
-              protocol: 'x402',
-              role: 'How agents pay',
-              desc: 'Coinbase\'s HTTP 402 payment protocol. Agents pay for services with stablecoins, natively in the request flow — no invoices, no accounts.',
-              color: '#0052FF',
-              icon: <WalletIcon size={18} />,
-            },
-            {
-              protocol: 'Vaultfire',
-              role: 'How agents trust',
-              desc: 'On-chain identity bonds and accountability. Before an agent acts, its bond is verified — misbehave and the bond is slashed.',
-              color: '#F97316',
-              icon: <ShieldIcon size={18} />,
-            },
-          ].map((item) => (
-            <div key={item.protocol} style={{
-              padding: isMobile ? '20px 18px' : '24px 22px',
-              backgroundColor: 'rgba(255,255,255,0.02)',
-              border: '1px solid rgba(255,255,255,0.05)',
-              borderRadius: 16,
-              borderTop: `2px solid ${item.color}40`,
-              transition: 'all 0.15s ease',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.035)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  backgroundColor: `${item.color}10`,
-                  border: `1px solid ${item.color}20`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: item.color, flexShrink: 0,
-                }}>
-                  {item.icon}
-                </div>
-                <div>
-                  <p style={{ fontSize: 16, fontWeight: 800, color: '#F4F4F5', letterSpacing: '-0.02em', lineHeight: 1.1 }}>{item.protocol}</p>
-                  <p style={{ fontSize: 11, color: item.color, fontWeight: 600, letterSpacing: '0.02em' }}>{item.role}</p>
-                </div>
-              </div>
-              <p style={{ fontSize: 13, color: '#71717A', lineHeight: 1.6 }}>{item.desc}</p>
-            </div>
-          ))}
-        </div>
-        <div style={{
-          marginTop: 16,
-          padding: '14px 18px',
-          backgroundColor: 'rgba(139,92,246,0.04)',
-          border: '1px solid rgba(139,92,246,0.12)',
-          borderRadius: 12,
-          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-        }}>
-          <span style={{ fontSize: 12, color: '#8B5CF6', fontWeight: 700 }}>XMTP</span>
-          <span style={{ fontSize: 11, color: '#3F3F46' }}>&rarr;</span>
-          <span style={{ fontSize: 12, color: '#0052FF', fontWeight: 700 }}>x402</span>
-          <span style={{ fontSize: 11, color: '#3F3F46' }}>&rarr;</span>
-          <span style={{ fontSize: 12, color: '#F97316', fontWeight: 700 }}>Vaultfire</span>
-          <span style={{ fontSize: 11, color: '#52525B', marginLeft: 8 }}>Talk &rarr; Pay &rarr; Trust — the complete agent stack</span>
-        </div>
-      </div>
-
-      {/* ══════════════════════════════════════════════════════════════════════
-          PRINCIPLES — Core values
-          ══════════════════════════════════════════════════════════════════════ */}
-      <div style={{ marginBottom: isMobile ? 40 : 56 }}>
-        <h2 style={{ fontSize: 11, fontWeight: 600, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 20 }}>Core Principles</h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-          {[
-            { principle: 'Morals over metrics', desc: 'AI behavior guided by ethical principles, not engagement optimization.', icon: <HeartIcon size={14} />, color: '#F43F5E' },
-            { principle: 'Privacy over surveillance', desc: 'Cryptographic guarantees protect every interaction from unauthorized monitoring.', icon: <ShieldIcon size={14} />, color: '#22C55E' },
-            { principle: 'Freedom over control', desc: 'Users own their data, their keys, and their relationship with AI.', icon: <ZapIcon size={14} />, color: '#F97316' },
-          ].map((item, i) => (
-            <div key={item.principle} style={{
-              display: 'flex', alignItems: 'flex-start', gap: 14,
-              padding: '18px 0',
-              borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-            }}>
-              <div style={{
-                width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-                backgroundColor: `${item.color}10`,
-                border: `1px solid ${item.color}20`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: item.color, marginTop: 2,
-              }}>
-                {item.icon}
-              </div>
-              <div>
-                <p style={{ fontSize: 15, fontWeight: 700, color: '#F4F4F5', letterSpacing: '-0.01em', marginBottom: 4 }}>{item.principle}</p>
-                <p style={{ fontSize: 13, color: '#71717A', lineHeight: 1.55 }}>{item.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ══════════════════════════════════════════════════════════════════════
-          FOOTER
-          ══════════════════════════════════════════════════════════════════════ */}
-      <div style={{
-        textAlign: 'center',
-        paddingTop: 32,
-        borderTop: '1px solid rgba(255,255,255,0.04)',
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '5px 14px', borderRadius: 20,
-            backgroundColor: 'rgba(249,115,22,0.06)',
-            border: '1px solid rgba(249,115,22,0.12)',
-          }}>
-            <FireIcon size={12} />
-            <span style={{ fontSize: 11, color: '#F97316', fontWeight: 600, letterSpacing: '0.02em' }}>Powered by Vaultfire Protocol</span>
-          </div>
-        </div>
-        <p style={{ fontSize: 12, color: '#3F3F46', lineHeight: 1.6 }}>
-          {totalContracts} smart contracts across Ethereum, Base, and Avalanche.
-          <br />
-          All governance is on-chain and verifiable.
-        </p>
-        <p style={{ fontSize: 11, color: '#27272A', marginTop: 12, fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-          Vaultfire Protocol &middot; 2025–2026
-        </p>
       </div>
     </div>
   );

@@ -57,7 +57,7 @@ export default function AgentMarketplace() {
           <h4 className="text-sm font-semibold text-zinc-300 mb-3">How to Get Listed</h4>
           <div className="space-y-3">
             {[
-              { step: '1', title: 'Create Wallet', desc: 'Set up your Vaultfire wallet with AES-256-GCM encryption' },
+              { step: '1', title: 'Create Wallet', desc: 'Set up your Embris wallet with AES-256-GCM encryption' },
               { step: '2', title: 'Register Identity', desc: 'Choose Human or AI Agent identity type (immutable on-chain)' },
               { step: '3', title: 'Get a .vns Name', desc: 'Register your unique .vns identity through the VNS section' },
               { step: '4', title: 'Stake Bond', desc: 'Agents stake an accountability bond for trust verification' },
@@ -80,11 +80,11 @@ export default function AgentMarketplace() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mt-6">
         <div className="rounded-xl bg-zinc-800/40 border border-zinc-700/30 p-4 text-center">
-          <div className="text-xl font-bold text-white">0</div>
+          <div className="text-xl font-bold text-white">—</div>
           <div className="text-xs text-zinc-500 mt-1">AI Agents</div>
         </div>
         <div className="rounded-xl bg-zinc-800/40 border border-zinc-700/30 p-4 text-center">
-          <div className="text-xl font-bold text-white">0</div>
+          <div className="text-xl font-bold text-white">—</div>
           <div className="text-xs text-zinc-500 mt-1">Humans</div>
         </div>
         <div className="rounded-xl bg-zinc-800/40 border border-zinc-700/30 p-4 text-center">

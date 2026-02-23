@@ -60,7 +60,7 @@ export default function Analytics() {
           <h2 style={{ fontSize: 18, fontWeight: 600, color: "#F4F4F5", marginBottom: 8, letterSpacing: "-0.02em", lineHeight: 1.3 }}>Register to Unlock Analytics</h2>
           <p style={{ fontSize: 14, color: "#52525B", maxWidth: 360, lineHeight: 1.6 }}>
             Analytics tracks your Embris growth — conversations, memories, patterns, insights, goals, and emotional trends.
-            Register on-chain to start building your profile.
+            Register on-chain via Vaultfire Protocol to start building your profile.
           </p>
         </div>
       </div>

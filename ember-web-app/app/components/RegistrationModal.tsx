@@ -295,7 +295,7 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
                     }}
                     onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#FB923C'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#F97316'; }}
-                  >Connect Vaultfire Wallet</button>
+                  >Connect Embris Wallet</button>
                 )}
                 <button
                   onClick={() => { setUseManual(true); setStep('chain-select'); }}
@@ -324,7 +324,7 @@ export default function RegistrationModal({ isOpen, onClose, onRegistered }: Reg
                   marginBottom: 14,
                 }}>
                   <p style={{ fontSize: 11, color: '#52525B', margin: 0, marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 500 }}>
-                    Vaultfire Wallet
+                    Embris Wallet
                   </p>
                   <p style={{
                     fontSize: 12.5, color: '#D4D4D8', margin: 0,

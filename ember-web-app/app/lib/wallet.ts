@@ -1,5 +1,5 @@
 /**
- * Vaultfire Wallet — Browser-compatible wallet management.
+ * Embris Wallet — Browser-compatible wallet management. Powered by Vaultfire Protocol.
  * Uses ethers.js v6 for keypair generation.
  *
  * SECURITY: Private keys and mnemonics are encrypted with AES-256-GCM

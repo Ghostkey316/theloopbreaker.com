@@ -127,7 +127,7 @@ export default function Bridge() {
           Bridge
         </h1>
         <p style={{ fontSize: 14, color: "#71717A", marginTop: 6 }}>
-          Cross-chain trust data synchronisation across Ethereum, Base, and Avalanche
+          Cross-chain trust data synchronisation for Embris by Vaultfire Protocol
         </p>
       </div>
 

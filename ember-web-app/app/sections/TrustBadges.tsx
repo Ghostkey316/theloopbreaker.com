@@ -5,6 +5,8 @@
  */
 import { useState, useEffect } from "react";
 import { BOND_TIERS, getBondTier, getBondTierInfo } from "../lib/vns";
+import { getWalletAddress, isWalletCreated } from "../lib/wallet";
+import { isRegistered, getRegistration, getRegisteredChains } from "../lib/registration";
 import DisclaimerBanner from "../components/DisclaimerBanner";
 
 /* ── Badge Tier Card ── */
@@ -174,6 +176,17 @@ function TrustRing({ score, size = 120 }: { score: number; size?: number }) {
 export default function TrustBadges() {
   const [isMobile, setIsMobile] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "tiers" | "credentials">("overview");
+  const [walletConnected, setWalletConnected] = useState(false);
+  const [isReg, setIsReg] = useState(false);
+  const [stats, setStats] = useState({
+    bondAmount: 0,
+    trustScore: 0,
+    tasksCompleted: 0,
+    totalRatings: 0,
+    positiveRatings: 0,
+    accountAge: 0,
+    earnedCredentials: [] as string[],
+  });
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -182,19 +195,61 @@ export default function TrustBadges() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Real data: all zeros until actual on-chain activity occurs
-  const bondAmount = 0;
-  const trustScore = 0;
-  const tasksCompleted = 0;
-  const totalRatings = 0;
-  const positiveRatings = 0;
-  const accountAge = 0;
-  const currentTier = getBondTier(bondAmount);
-  const currentTierInfo = currentTier ? getBondTierInfo(currentTier) : null;
+  // Load real data from wallet and registration state
+  useEffect(() => {
+    const loadData = () => {
+      const address = getWalletAddress();
+      const connected = isWalletCreated();
+      const registered = isRegistered();
+      const regData = getRegistration();
+      const chains = getRegisteredChains();
 
-  // No credentials earned yet — all locked
-  const earnedCredentials: string[] = [];
-  const earnedCount = earnedCredentials.length;
+      setWalletConnected(connected);
+      setIsReg(registered);
+
+      if (connected && registered && regData) {
+        // Calculate trust score based on registration and chains
+        let score = 40; // Base for registration
+        score += chains.length * 15; // 15 per chain
+        if (score > 100) score = 100;
+
+        const credentials = ["vns-registered", "identity-verified"];
+        if (chains.length >= 2) credentials.push("multi-chain");
+
+        // Calculate account age
+        const ageMs = Date.now() - regData.registeredAt;
+        const ageDays = Math.floor(ageMs / (1000 * 60 * 60 * 24));
+
+        setStats({
+          bondAmount: 0, // Bonds are separate, keeping 0 for now until bond lib integrated
+          trustScore: score,
+          tasksCompleted: 0,
+          totalRatings: 0,
+          positiveRatings: 0,
+          accountAge: ageDays,
+          earnedCredentials: credentials,
+        });
+      } else {
+        setStats({
+          bondAmount: 0,
+          trustScore: 0,
+          tasksCompleted: 0,
+          totalRatings: 0,
+          positiveRatings: 0,
+          accountAge: 0,
+          earnedCredentials: [],
+        });
+      }
+    };
+
+    loadData();
+    const interval = setInterval(loadData, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const currentTier = getBondTier(stats.bondAmount);
+  const currentTierInfo = currentTier ? getBondTierInfo(currentTier) : null;
+  const earnedCount = stats.earnedCredentials.length;
 
   const tabs = [
     { id: "overview" as const, label: "Overview" },
@@ -244,11 +299,11 @@ export default function TrustBadges() {
             background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
           }}>
             <div style={{ display: "flex", alignItems: isMobile ? "flex-start" : "center", gap: 24, flexDirection: isMobile ? "column" : "row" }}>
-              <TrustRing score={trustScore} size={isMobile ? 100 : 120} />
+              <TrustRing score={stats.trustScore} size={isMobile ? 100 : 120} />
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 18, fontWeight: 700, color: "#A1A1AA" }}>
-                    {trustScore > 0 ? "Your Trust Profile" : "No Profile Yet"}
+                  <span style={{ fontSize: 18, fontWeight: 700, color: stats.trustScore > 0 ? "#F4F4F5" : "#A1A1AA" }}>
+                    {stats.trustScore > 0 ? "Your Trust Profile" : "No Profile Yet"}
                   </span>
                   {currentTierInfo && (
                     <span style={{
@@ -263,10 +318,10 @@ export default function TrustBadges() {
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr", gap: 12, marginTop: 12 }}>
                   {[
-                    { label: "Bond", value: bondAmount > 0 ? `${bondAmount} ETH` : "0 ETH" },
-                    { label: "Tasks", value: String(tasksCompleted) },
-                    { label: "Rating", value: totalRatings > 0 ? `${((positiveRatings / totalRatings) * 5).toFixed(1)}/5` : "--" },
-                    { label: "Age", value: accountAge > 0 ? `${accountAge}d` : "--" },
+                    { label: "Bond", value: stats.bondAmount > 0 ? `${stats.bondAmount} ETH` : "0 ETH" },
+                    { label: "Tasks", value: String(stats.tasksCompleted) },
+                    { label: "Rating", value: stats.totalRatings > 0 ? `${((stats.positiveRatings / stats.totalRatings) * 5).toFixed(1)}/5` : "--" },
+                    { label: "Age", value: stats.accountAge > 0 ? `${stats.accountAge}d` : "--" },
                   ].map(stat => (
                     <div key={stat.label} style={{
                       padding: 10, borderRadius: 8, background: "rgba(255,255,255,0.03)",
@@ -277,9 +332,14 @@ export default function TrustBadges() {
                     </div>
                   ))}
                 </div>
-                {trustScore === 0 && (
-                  <div style={{ fontSize: 12, color: "#52525B", marginTop: 12, lineHeight: 1.5 }}>
-                    Connect your wallet and register a .vns identity to start building your trust profile. Stake a bond, complete tasks, and earn credentials.
+                {!walletConnected && (
+                  <div style={{ fontSize: 12, color: "#F97316", marginTop: 12, fontWeight: 600 }}>
+                    Connect your wallet to load your trust profile.
+                  </div>
+                )}
+                {walletConnected && !isReg && (
+                  <div style={{ fontSize: 12, color: "#7C3AED", marginTop: 12, fontWeight: 600 }}>
+                    Register your identity to start building trust.
                   </div>
                 )}
               </div>
@@ -311,7 +371,7 @@ export default function TrustBadges() {
               </div>
             ) : (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {ALL_CREDENTIALS.filter(c => earnedCredentials.includes(c.id)).map(c => (
+                {ALL_CREDENTIALS.filter(c => stats.earnedCredentials.includes(c.id)).map(c => (
                   <span key={c.id} style={{
                     fontSize: 11, padding: "3px 8px", borderRadius: 6,
                     background: "rgba(124,58,237,0.1)", color: "#A78BFA",
@@ -333,11 +393,10 @@ export default function TrustBadges() {
               Trust Score Breakdown
             </div>
             {[
-              { label: "Bond Tier", weight: 25, score: 0, color: "#7C3AED" },
-              { label: "Task Completion", weight: 30, score: 0, color: "#3B82F6" },
-              { label: "Peer Ratings", weight: 25, score: 0, color: "#22C55E" },
-              { label: "Account Age", weight: 10, score: 0, color: "#F59E0B" },
-              { label: "Credentials", weight: 10, score: 0, color: "#EC4899" },
+              { label: "Identity & Chain Registry", weight: 40, score: isReg ? 100 : 0, color: "#7C3AED" },
+              { label: "Multi-Chain Activity", weight: 30, score: getRegisteredChains().length >= 2 ? 100 : getRegisteredChains().length >= 1 ? 50 : 0, color: "#3B82F6" },
+              { label: "Task Completion", weight: 15, score: stats.tasksCompleted > 0 ? 100 : 0, color: "#22C55E" },
+              { label: "Account Age", weight: 15, score: Math.min(stats.accountAge * 10, 100), color: "#F59E0B" },
             ].map(factor => (
               <div key={factor.label} style={{ marginBottom: 12 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
@@ -353,9 +412,6 @@ export default function TrustBadges() {
                 </div>
               </div>
             ))}
-            <div style={{ fontSize: 11, color: "#52525B", marginTop: 8, lineHeight: 1.5 }}>
-              Your trust score will increase as you stake bonds, complete tasks, receive positive ratings, and earn credentials.
-            </div>
           </div>
         </div>
       )}
@@ -391,7 +447,7 @@ export default function TrustBadges() {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {creds.map(c => (
-                    <CredentialCard key={c.id} credential={c} earned={earnedCredentials.includes(c.id)} isMobile={isMobile} />
+                    <CredentialCard key={c.id} credential={c} earned={stats.earnedCredentials.includes(c.id)} isMobile={isMobile} />
                   ))}
                 </div>
               </div>
