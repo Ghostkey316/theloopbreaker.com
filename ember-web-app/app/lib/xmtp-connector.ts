@@ -660,28 +660,39 @@ export async function createVaultfireAgent(config: VaultfireAgentConfig = {}) {
 
   // --- x402 Payment Commands ---
 
-  router.command('/pay', 'Send a USDC payment via x402 protocol — usage: /pay <address> <amount> [reason]', async (ctx) => {
+  router.command('/pay', 'Send a USDC payment via x402 protocol — usage: /pay <address_or_vns> <amount> [reason]', async (ctx) => {
     const rawContent = ctx.message.content as string | { text?: string };
     const text = (typeof rawContent === 'object' && rawContent !== null ? rawContent.text : rawContent) || '';
     const parts = typeof text === 'string' ? text.replace('/pay', '').trim().split(/\s+/) : [];
-    const recipientAddress = parts[0] || '';
+    const recipientInput = parts[0] || '';
     const amountUsdc = parts[1] || '';
     const reason = parts.slice(2).join(' ') || 'XMTP agent payment';
 
-    if (!recipientAddress || !amountUsdc) {
+    if (!recipientInput || !amountUsdc) {
       await ctx.conversation.sendMarkdown(
         '**x402 Payment — Usage**\n\n' +
-        '`/pay <address> <amount_usdc> [reason]`\n\n' +
-        'Example: `/pay 0x1234...5678 1.50 API access fee`\n\n' +
+        '`/pay <address_or_vns_name> <amount_usdc> [reason]`\n\n' +
+        'Examples:\n' +
+        '- `/pay 0x1234...5678 1.50 API access fee`\n' +
+        '- `/pay vaultfire-sentinel 2.00 Security audit`\n' +
+        '- `/pay sentinel-7.vns 0.50 Task completion`\n\n' +
+        'Accepts raw Ethereum addresses or `.vns` names.\n' +
         'Sends USDC on Base via the x402 protocol (EIP-3009 transferWithAuthorization).\n' +
         'Token: USDC (`0x8335...2913`) on Base (Chain ID 8453)',
       );
       return;
     }
 
-    // Validate address format
-    if (!/^0x[a-fA-F0-9]{40}$/.test(recipientAddress)) {
-      await ctx.conversation.sendText('Invalid recipient address. Must be a valid Ethereum address (0x...).');
+    // Validate: must be either a valid address or a plausible VNS name
+    const isAddress = /^0x[a-fA-F0-9]{40}$/.test(recipientInput);
+    const isVNS = /^[a-z0-9][a-z0-9-]*[a-z0-9](\.vns)?$/.test(recipientInput.toLowerCase()) || /^[a-z0-9]{1,2}(\.vns)?$/.test(recipientInput.toLowerCase());
+
+    if (!isAddress && !isVNS) {
+      await ctx.conversation.sendMarkdown(
+        '**Invalid Recipient**\n\n' +
+        'Must be a valid Ethereum address (`0x...`) or a `.vns` name (e.g., `sentinel-7` or `sentinel-7.vns`).\n\n' +
+        'Use `/pay` with no arguments to see usage examples.',
+      );
       return;
     }
 
@@ -693,7 +704,7 @@ export async function createVaultfireAgent(config: VaultfireAgentConfig = {}) {
     }
 
     try {
-      // Dynamically import x402 client to avoid circular deps
+      // Dynamically import x402 client and VNS resolver
       const { initiatePayment, formatUsdc, getUsdcBalance } = await import('./x402-client');
 
       // Check USDC balance first
@@ -714,23 +725,28 @@ export async function createVaultfireAgent(config: VaultfireAgentConfig = {}) {
         }
       }
 
-      // Create the signed payment payload
-      const { payload, record } = await initiatePayment(
-        recipientAddress,
+      // Create the signed payment payload (VNS resolution happens inside initiatePayment)
+      const { record, resolvedVNS } = await initiatePayment(
+        recipientInput,
         amountUsdc,
         reason,
       );
+
+      const recipientDisplay = resolvedVNS
+        ? `${resolvedVNS} (\`${record.payTo.slice(0, 10)}...\`)`
+        : `\`${record.payTo}\``;
 
       await ctx.conversation.sendMarkdown(
         `**x402 Payment Signed**\n\n` +
         `| Field | Value |\n` +
         `|-------|-------|\n` +
-        `| To | \`${recipientAddress}\` |\n` +
+        `| To | ${recipientDisplay} |\n` +
         `| Amount | ${amountUsdc} USDC |\n` +
         `| Network | Base (EIP-155:8453) |\n` +
         `| Scheme | exact (EIP-3009) |\n` +
         `| Status | Signed |\n` +
         `| Payment ID | \`${record.id}\` |\n\n` +
+        (resolvedVNS ? `> Resolved \`${recipientInput}\` → \`${record.payTo}\` via VNS\n` : '') +
         `> Authorization signed via EIP-712 TransferWithAuthorization.\n` +
         `> Submit to a facilitator or x402-enabled server to settle on-chain.`,
       );
@@ -739,17 +755,25 @@ export async function createVaultfireAgent(config: VaultfireAgentConfig = {}) {
       await ctx.conversation.sendMarkdown(
         `**x402 Payment Failed**\n\n` +
         `Error: ${errorMsg}\n\n` +
-        `Make sure your wallet is unlocked and has sufficient USDC on Base.`,
+        `Make sure your wallet is unlocked and has sufficient USDC on Base.\n` +
+        `If using a .vns name, ensure the identity is registered.`,
       );
     }
   });
 
   router.command('/x402', 'Show x402 payment protocol info and recent payments', async (ctx) => {
     try {
-      const { getPaymentStats, getPaymentHistory, formatUsdc, BASE_USDC_ADDRESS } = await import('./x402-client');
+      const { getPaymentStats, getPaymentHistory, formatUsdc, BASE_USDC_ADDRESS, getEnrichedPaymentHistory } = await import('./x402-client');
 
       const stats = getPaymentStats();
-      const recent = getPaymentHistory().slice(0, 5);
+
+      // Try to get VNS-enriched history; fall back to plain history
+      let recent: Awaited<ReturnType<typeof getEnrichedPaymentHistory>>;
+      try {
+        recent = (await getEnrichedPaymentHistory()).slice(0, 5);
+      } catch {
+        recent = getPaymentHistory().slice(0, 5);
+      }
 
       let report = `**x402 Payment Protocol — Status**\n\n` +
         `| Metric | Value |\n` +
@@ -762,7 +786,8 @@ export async function createVaultfireAgent(config: VaultfireAgentConfig = {}) {
         `- Token: USDC (\`${BASE_USDC_ADDRESS}\`)\n` +
         `- Network: Base (Chain ID 8453)\n` +
         `- Scheme: exact (EIP-3009 transferWithAuthorization)\n` +
-        `- Signing: EIP-712 typed data\n\n`;
+        `- Signing: EIP-712 typed data\n` +
+        `- VNS Integration: Enabled (pay by .vns name)\n\n`;
 
       if (recent.length > 0) {
         report += `**Recent Payments**\n\n` +
@@ -772,16 +797,16 @@ export async function createVaultfireAgent(config: VaultfireAgentConfig = {}) {
         for (const r of recent) {
           const date = new Date(r.timestamp);
           const dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
-          const toShort = `${r.payTo.slice(0, 6)}...${r.payTo.slice(-4)}`;
+          const toDisplay = r.recipientVNS || `${r.payTo.slice(0, 6)}...${r.payTo.slice(-4)}`;
           const statusIcon = r.status === 'settled' ? '✅' : r.status === 'failed' ? '❌' : '⏳';
-          report += `| ${dateStr} | ${r.amountFormatted} USDC | \`${toShort}\` | ${statusIcon} ${r.status} |\n`;
+          report += `| ${dateStr} | ${r.amountFormatted} USDC | ${toDisplay} | ${statusIcon} ${r.status} |\n`;
         }
       } else {
-        report += `_No payments yet. Use \`/pay <address> <amount>\` to send USDC via x402._`;
+        report += `_No payments yet. Use \`/pay <address_or_vns> <amount>\` to send USDC via x402._`;
       }
 
       await ctx.conversation.sendMarkdown(report);
-    } catch (err) {
+    } catch {
       await ctx.conversation.sendText('x402 module not available. Ensure the x402-client is installed.');
     }
   });

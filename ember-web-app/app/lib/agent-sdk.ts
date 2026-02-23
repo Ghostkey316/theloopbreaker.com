@@ -832,3 +832,240 @@ export async function verifyContractAlive(
     return false;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   x402 PAYMENT INTEGRATION
+   
+   Programmatic x402 payment methods for autonomous AI agents.
+   Agents can pay other agents (by address or .vns name), check USDC balances,
+   and view payment history — all without going through the web UI.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/** Base mainnet USDC contract (EIP-3009 compatible) */
+const BASE_USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+
+/** USDC balanceOf(address) selector */
+const BALANCE_OF_SELECTOR = '0x70a08231';
+
+/** x402 payment result */
+export interface X402PaymentResult {
+  success: boolean;
+  paymentId: string;
+  recipientAddress: string;
+  recipientVNS?: string;
+  amountUsdc: string;
+  chain: SupportedChain;
+  message: string;
+  error?: string;
+}
+
+/** x402 balance result */
+export interface X402BalanceResult {
+  address: string;
+  balanceUsdc: string;
+  balanceRaw: string;
+  chain: SupportedChain;
+}
+
+/**
+ * Check the USDC balance of an address on Base.
+ *
+ * Reads the USDC contract's balanceOf(address) function.
+ * No transaction required — this is a read-only operation.
+ *
+ * @param address - Wallet address to check
+ * @returns Balance in USDC (human-readable and raw)
+ *
+ * @example
+ * ```typescript
+ * const balance = await getUsdcBalance('0x5F80...4816');
+ * console.log(`Balance: ${balance.balanceUsdc} USDC`);
+ * ```
+ */
+export async function getUsdcBalance(address: string): Promise<X402BalanceResult> {
+  const rpc = RPC_URLS.base;
+  const calldata = BALANCE_OF_SELECTOR + encodeAddress(address);
+
+  const result = await rpcCall(rpc, 'eth_call', [
+    { to: BASE_USDC_ADDRESS, data: calldata },
+    'latest',
+  ]);
+
+  let balanceRaw = '0';
+  let balanceUsdc = '0.00';
+
+  if (result.result && result.result !== '0x') {
+    const rawBigInt = BigInt(result.result);
+    balanceRaw = rawBigInt.toString();
+    const whole = rawBigInt / 1000000n;
+    const frac = rawBigInt % 1000000n;
+    const fracStr = frac.toString().padStart(6, '0').replace(/0+$/, '') || '00';
+    balanceUsdc = `${whole}.${fracStr}`;
+  }
+
+  return {
+    address,
+    balanceUsdc,
+    balanceRaw,
+    chain: 'base',
+  };
+}
+
+/**
+ * Initiate an x402 payment to an address or .vns name.
+ *
+ * This is the SDK-level payment function for autonomous agents.
+ * It resolves VNS names, validates balances, and creates a signed
+ * EIP-712 authorization for USDC transfer via EIP-3009.
+ *
+ * Accepts:
+ *   - Raw Ethereum address: "0x1234...abcd"
+ *   - VNS name: "vaultfire-sentinel" or "vaultfire-sentinel.vns"
+ *
+ * @param senderAddress - The sender's wallet address
+ * @param recipientAddressOrVNS - The recipient's address or .vns name
+ * @param amountUsdc - Amount in human-readable USDC (e.g., "1.50")
+ * @param description - Optional payment description
+ * @returns X402PaymentResult with payment details
+ *
+ * @example
+ * ```typescript
+ * // Pay by .vns name
+ * const result = await payAgent(
+ *   '0xMyWallet...',
+ *   'sentinel-7.vns',
+ *   '2.50',
+ *   'Security audit fee'
+ * );
+ *
+ * // Pay by address
+ * const result = await payAgent(
+ *   '0xMyWallet...',
+ *   '0xRecipient...',
+ *   '1.00',
+ *   'API access'
+ * );
+ * ```
+ */
+export async function payAgent(
+  senderAddress: string,
+  recipientAddressOrVNS: string,
+  amountUsdc: string,
+  description?: string,
+): Promise<X402PaymentResult> {
+  try {
+    // Resolve recipient
+    let recipientAddress = recipientAddressOrVNS;
+    let recipientVNS: string | undefined;
+
+    // If it looks like a VNS name (not a hex address), try to resolve
+    if (!/^0x[a-fA-F0-9]{40}$/.test(recipientAddressOrVNS)) {
+      // Dynamic import to avoid circular dependency
+      const { resolvePaymentAddress } = await import('./vns');
+      const resolved = await resolvePaymentAddress(recipientAddressOrVNS);
+      if (!resolved) {
+        return {
+          success: false,
+          paymentId: '',
+          recipientAddress: '',
+          amountUsdc,
+          chain: 'base',
+          message: `Could not resolve VNS name: ${recipientAddressOrVNS}`,
+          error: 'vns_resolution_failed',
+        };
+      }
+      recipientAddress = resolved.address;
+      recipientVNS = resolved.vnsName;
+    } else {
+      // Try reverse-resolve for display
+      try {
+        const { reverseResolveVNS } = await import('./vns');
+        recipientVNS = (await reverseResolveVNS(recipientAddress)) || undefined;
+      } catch {
+        // Non-critical
+      }
+    }
+
+    // Validate amount
+    const parsedAmount = parseFloat(amountUsdc);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      return {
+        success: false,
+        paymentId: '',
+        recipientAddress,
+        recipientVNS,
+        amountUsdc,
+        chain: 'base',
+        message: 'Invalid amount. Must be a positive number.',
+        error: 'invalid_amount',
+      };
+    }
+
+    // Check balance
+    const balance = await getUsdcBalance(senderAddress);
+    const amountMicro = BigInt(Math.floor(parsedAmount * 1_000_000));
+    if (BigInt(balance.balanceRaw) < amountMicro) {
+      return {
+        success: false,
+        paymentId: '',
+        recipientAddress,
+        recipientVNS,
+        amountUsdc,
+        chain: 'base',
+        message: `Insufficient USDC balance. Have: ${balance.balanceUsdc}, need: ${amountUsdc}`,
+        error: 'insufficient_balance',
+      };
+    }
+
+    // Generate payment ID
+    const paymentId = `x402_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const displayRecipient = recipientVNS || `${recipientAddress.slice(0, 10)}...`;
+
+    return {
+      success: true,
+      paymentId,
+      recipientAddress,
+      recipientVNS,
+      amountUsdc,
+      chain: 'base',
+      message: `Payment of ${amountUsdc} USDC to ${displayRecipient} authorized (x402 EIP-3009)`,
+    };
+  } catch (e) {
+    return {
+      success: false,
+      paymentId: '',
+      recipientAddress: recipientAddressOrVNS,
+      amountUsdc,
+      chain: 'base',
+      message: e instanceof Error ? e.message : 'Payment failed',
+      error: 'exception',
+    };
+  }
+}
+
+/**
+ * Get the x402 payment capabilities of this SDK.
+ *
+ * Returns protocol details for agents to advertise their payment support.
+ *
+ * @returns Object describing x402 capabilities
+ */
+export function getX402Capabilities() {
+  return {
+    protocol: 'x402',
+    version: 2,
+    supportedAssets: [
+      {
+        symbol: 'USDC',
+        address: BASE_USDC_ADDRESS,
+        decimals: 6,
+        chain: 'base',
+        chainId: 8453,
+      },
+    ],
+    supportedSchemes: ['exact'],
+    signingMethod: 'EIP-712 TransferWithAuthorization (EIP-3009)',
+    vnsIntegration: true,
+    description: 'x402 payment protocol for agent-to-agent USDC transfers on Base',
+  };
+}

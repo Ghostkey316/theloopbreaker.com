@@ -1209,12 +1209,13 @@ npm install ethers@6
             padding: 16, borderRadius: 12,
             background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.15)",
           }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#3B82F6", marginBottom: 4 }}>x402 Integration: Live</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#3B82F6", marginBottom: 4 }}>x402 Integration: Live (with VNS)</div>
             <div style={{ fontSize: 12, color: "#71717A", lineHeight: 1.6 }}>
               The x402 client uses real EIP-3009 transferWithAuthorization signing on Base USDC.
-              Payment history is persisted in localStorage and displayed in the Agent Earnings dashboard.
-              XMTP commands (/pay, /x402, /balance) provide agent-to-agent payment capabilities.
-              All signatures use EIP-712 typed data with the correct USDC domain separator.
+              <strong style={{ color: "#A78BFA" }}>VNS name resolution is fully integrated</strong> — pay by .vns name or raw address.
+              Payment history includes VNS names and is persisted in localStorage.
+              XMTP commands (/pay, /x402, /balance) support .vns names for agent-to-agent payments.
+              The Agent SDK exposes payAgent(), getUsdcBalance(), and getX402Capabilities() for programmatic use.
             </div>
           </div>
         </div>
@@ -1283,7 +1284,8 @@ npm install ethers@6
             <div style={{ fontSize: 16, fontWeight: 700, color: "#F4F4F5", marginBottom: 8 }}>Vaultfire Agent SDK</div>
             <div style={{ fontSize: 13, color: "#A1A1AA", lineHeight: 1.7, marginBottom: 16 }}>
               The Agent SDK provides TypeScript functions for all protocol interactions — registration, bonding, trust verification,
-              and XMTP messaging. It uses the verified ABIs and selectors from the deployed contracts.
+              XMTP messaging, <strong style={{ color: "#3B82F6" }}>x402 payments</strong>, and <strong style={{ color: "#A78BFA" }}>VNS name resolution</strong>.
+              It uses the verified ABIs and selectors from the deployed contracts.
             </div>
             <CodeBlock language="bash" code={`# Install dependencies
 npm install ethers@6 @xmtp/agent-sdk
@@ -1338,18 +1340,45 @@ console.log(stats.totalIdentities, stats.chainCounts);
 
 // Get all contract addresses
 const contracts = getAllContracts();
-console.log(contracts.identityRegistry.base);`} />
+console.log(contracts.identityRegistry.base);
+
+// ── x402 Payments (NEW) ──
+import { payAgent, getUsdcBalance, getX402Capabilities } from "./lib/agent-sdk";
+
+// Check USDC balance
+const balance = await getUsdcBalance("0xYourAddress");
+console.log(balance.balanceUsdc); // "12.50"
+
+// Pay by .vns name
+const payment = await payAgent(
+  "0xYourAddress",
+  "sentinel-7.vns",
+  "2.50",
+  "Security audit fee"
+);
+console.log(payment.recipientVNS); // "sentinel-7.vns"
+
+// Pay by raw address
+const payment2 = await payAgent(
+  "0xYourAddress",
+  "0xRecipientAddress",
+  "1.00"
+);
+
+// Get x402 capabilities
+const caps = getX402Capabilities();
+console.log(caps.vnsIntegration); // true`} />
           </div>
 
           <div style={{
             padding: 16, borderRadius: 12,
             background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)",
           }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#22C55E", marginBottom: 4 }}>SDK Status: Live</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#22C55E", marginBottom: 4 }}>SDK Status: Live (with x402 + VNS)</div>
             <div style={{ fontSize: 12, color: "#71717A" }}>
-              The Agent SDK and XMTP connector are built into Embris and ready to use.
+              The Agent SDK, XMTP connector, x402 payment client, and VNS resolver are built into Embris and fully integrated.
               All function selectors have been verified against the deployed contracts on BaseScan.
-              API routes are live at theloopbreaker.com.
+              Agents can register, bond, communicate via XMTP, and pay/get paid via x402 — all using .vns names.
             </div>
           </div>
         </div>

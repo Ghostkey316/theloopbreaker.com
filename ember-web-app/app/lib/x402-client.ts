@@ -21,6 +21,7 @@
  */
 
 import { getWalletAddress, getWalletPrivateKey, isWalletUnlocked } from './wallet';
+import { resolvePaymentAddress, reverseResolveVNS } from './vns';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -173,6 +174,10 @@ export interface X402PaymentRecord {
   txHash?: string;
   status: 'signed' | 'settled' | 'failed';
   description?: string;
+  /** VNS name of the recipient (if resolved) */
+  recipientVNS?: string;
+  /** VNS name of the sender (if resolved) */
+  senderVNS?: string;
 }
 
 /** Configuration for the x402 client */
@@ -893,29 +898,52 @@ export async function hasEnoughUsdc(
 // ---------------------------------------------------------------------------
 
 /**
- * Initiate an x402 payment to a specific address for a given USDC amount.
+ * Initiate an x402 payment to a specific address OR .vns name.
  *
  * This creates a signed authorization that can be submitted to a facilitator
  * or sent as an XMTP transaction reference.
  *
- * @param recipientAddress - The address to pay
- * @param amountUsdc       - Amount in human-readable USDC (e.g., "1.50")
- * @param description      - Optional payment description
- * @param config           - Client configuration
- * @returns The signed payment payload and record
+ * Accepts:
+ *   - Raw Ethereum address: "0x1234...abcd"
+ *   - VNS name: "vaultfire-sentinel" or "vaultfire-sentinel.vns"
+ *
+ * @param recipientAddressOrVNS - The address or .vns name to pay
+ * @param amountUsdc            - Amount in human-readable USDC (e.g., "1.50")
+ * @param description           - Optional payment description
+ * @param config                - Client configuration
+ * @returns The signed payment payload, record, and resolved VNS info
  */
 export async function initiatePayment(
-  recipientAddress: string,
+  recipientAddressOrVNS: string,
   amountUsdc: string,
   description?: string,
   config: X402ClientConfig = {},
-): Promise<{ payload: X402PaymentPayload; record: X402PaymentRecord }> {
+): Promise<{ payload: X402PaymentPayload; record: X402PaymentRecord; resolvedVNS?: string }> {
   const amountMicro = parseUsdc(amountUsdc);
   const walletAddress = getWalletAddress();
 
   if (!walletAddress) {
     throw new Error('No wallet address available');
   }
+
+  // Resolve recipient: could be a .vns name or raw address
+  const resolved = await resolvePaymentAddress(recipientAddressOrVNS);
+  if (!resolved) {
+    throw new Error(`Could not resolve recipient: ${recipientAddressOrVNS}. If using a .vns name, ensure it is registered.`);
+  }
+
+  const recipientAddress = resolved.address;
+  const recipientVNS = resolved.vnsName;
+
+  // Try to resolve sender VNS name for the record
+  let senderVNS: string | undefined;
+  try {
+    senderVNS = (await reverseResolveVNS(walletAddress)) || undefined;
+  } catch {
+    // Non-critical — skip
+  }
+
+  const displayRecipient = recipientVNS || `${recipientAddress.slice(0, 10)}...`;
 
   // Build a synthetic requirement
   const requirement: X402PaymentRequirement = {
@@ -934,7 +962,7 @@ export async function initiatePayment(
 
   const resource: X402Resource = {
     url: `x402://payment/${recipientAddress}`,
-    description: description || `Payment of ${amountUsdc} USDC to ${recipientAddress.slice(0, 10)}...`,
+    description: description || `Payment of ${amountUsdc} USDC to ${displayRecipient}`,
   };
 
   const payload = await createPaymentPayload(requirement, resource, config);
@@ -951,9 +979,47 @@ export async function initiatePayment(
     from: walletAddress,
     status: 'signed',
     description: resource.description,
+    recipientVNS,
+    senderVNS,
   };
 
   savePaymentRecord(record);
 
-  return { payload, record };
+  return { payload, record, resolvedVNS: recipientVNS };
+}
+
+/**
+ * Enrich payment history with VNS names by reverse-resolving addresses.
+ * Returns a copy of the payment history with vnsName fields populated.
+ */
+export async function getEnrichedPaymentHistory(): Promise<X402PaymentRecord[]> {
+  const history = getPaymentHistory();
+  if (history.length === 0) return history;
+
+  // Collect unique addresses to resolve
+  const addressSet = new Set<string>();
+  for (const record of history) {
+    if (record.payTo && !record.recipientVNS) addressSet.add(record.payTo.toLowerCase());
+    if (record.from && !record.senderVNS) addressSet.add(record.from.toLowerCase());
+  }
+
+  // Resolve all addresses in parallel
+  const addressList = Array.from(addressSet);
+  const resolvedMap = new Map<string, string>();
+
+  const results = await Promise.allSettled(
+    addressList.map(async (addr) => {
+      const vns = await reverseResolveVNS(addr);
+      if (vns) resolvedMap.set(addr, vns);
+    }),
+  );
+  // results used only for side effects
+  void results;
+
+  // Enrich records
+  return history.map((record) => ({
+    ...record,
+    recipientVNS: record.recipientVNS || resolvedMap.get(record.payTo.toLowerCase()),
+    senderVNS: record.senderVNS || resolvedMap.get(record.from.toLowerCase()),
+  }));
 }

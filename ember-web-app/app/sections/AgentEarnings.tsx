@@ -47,6 +47,10 @@ interface X402PaymentRecord {
   txHash?: string;
   status: "signed" | "settled" | "failed";
   description?: string;
+  /** VNS name of the recipient (if resolved) */
+  recipientVNS?: string;
+  /** VNS name of the sender (if resolved) */
+  senderVNS?: string;
 }
 
 /* ── Load x402 payment history from localStorage ── */
@@ -323,6 +327,7 @@ function X402PaymentPanel({ payments }: { payments: X402PaymentRecord[] }) {
             const date = new Date(p.timestamp);
             const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, "0")}`;
             const statusColor = p.status === "settled" ? "#22C55E" : p.status === "failed" ? "#EF4444" : "#F59E0B";
+            const recipientDisplay = p.recipientVNS || `${p.payTo.slice(0, 8)}...${p.payTo.slice(-4)}`;
             return (
               <div key={p.id} style={{
                 display: "flex", alignItems: "center", gap: 8,
@@ -331,9 +336,9 @@ function X402PaymentPanel({ payments }: { payments: X402PaymentRecord[] }) {
                 <div style={{ width: 6, height: 6, borderRadius: "50%", background: statusColor, flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 12, color: "#A1A1AA", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {p.payTo.slice(0, 8)}...{p.payTo.slice(-4)}
+                    {recipientDisplay}
                   </div>
-                  <div style={{ fontSize: 10, color: "#52525B" }}>{dateStr}</div>
+                  <div style={{ fontSize: 10, color: "#52525B" }}>{dateStr}{p.recipientVNS && ` · ${p.payTo.slice(0, 6)}...`}</div>
                 </div>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "#3B82F6" }}>
                   {p.amountFormatted} USDC
@@ -528,11 +533,13 @@ export default function AgentEarnings() {
             padding: 16, borderRadius: 14,
             background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.15)",
           }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#3B82F6", marginBottom: 6 }}>x402 Payment Protocol</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#3B82F6", marginBottom: 6 }}>x402 Payment Protocol + VNS</div>
             <div style={{ fontSize: 12, color: "#A1A1AA", lineHeight: 1.6 }}>
               Payments use Coinbase&apos;s x402 protocol — USDC on Base via EIP-3009 transferWithAuthorization.
               Your wallet signs EIP-712 typed data to authorize payments without needing gas.
-              The facilitator settles on-chain. Use <code style={{ color: "#3B82F6" }}>/pay</code> in XMTP to send payments.
+              The facilitator settles on-chain. <strong style={{ color: "#3B82F6" }}>Pay by .vns name or raw address</strong> —
+              VNS names are automatically resolved to payment addresses.
+              Use <code style={{ color: "#3B82F6" }}>/pay sentinel-7.vns 2.00</code> in XMTP or the form below.
             </div>
           </div>
 
@@ -586,12 +593,25 @@ export default function AgentEarnings() {
                 }}
               />
               <button
-                onClick={() => {
+                onClick={async () => {
                   if (payAgent.vnsName && payAgent.amount) {
-                    showToast(`x402 payment of ${payAgent.amount} USDC to ${payAgent.vnsName} initiated. Signing EIP-712 authorization...`, "info");
-                    setPayAgent({ vnsName: "", amount: "", reason: "" });
-                    // Refresh payment history after a short delay
-                    setTimeout(loadPayments, 2000);
+                    try {
+                      showToast(`Resolving ${payAgent.vnsName} and signing x402 payment...`, "info");
+                      const { initiatePayment } = await import("../lib/x402-client");
+                      const { record, resolvedVNS } = await initiatePayment(
+                        payAgent.vnsName,
+                        payAgent.amount,
+                        payAgent.reason || undefined,
+                      );
+                      const displayTo = resolvedVNS || record.payTo.slice(0, 12) + "...";
+                      showToast(`x402 payment of ${payAgent.amount} USDC to ${displayTo} signed! ID: ${record.id}`, "success");
+                      setPayAgent({ vnsName: "", amount: "", reason: "" });
+                      // Refresh payment history
+                      setTimeout(loadPayments, 1000);
+                    } catch (err) {
+                      const msg = err instanceof Error ? err.message : "Payment failed";
+                      showToast(`Payment failed: ${msg}`, "warning");
+                    }
                   }
                 }}
                 style={{
