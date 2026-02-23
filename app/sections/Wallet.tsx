@@ -226,15 +226,88 @@ function FireIcon({ size = 16 }: { size?: number }) {
 
 // ─── Chain Token Icons ────────────────────────────────────────────────────────
 
+// ─── Native Chain Token Icons ────────────────────────────────────────────
 function EthIcon({ size = 40 }: { size?: number }) {
-  return (<svg width={size} height={size} viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="16" fill="#627EEA"/><path d="M16 4v8.87l7.5 3.35L16 4z" fill="#fff" opacity="0.6"/><path d="M16 4L8.5 16.22 16 12.87V4z" fill="#fff"/><path d="M16 21.97v6.03l7.5-10.38L16 21.97z" fill="#fff" opacity="0.6"/><path d="M16 28V21.97l-7.5-4.35L16 28z" fill="#fff"/><path d="M16 20.57l7.5-4.35L16 12.87v7.7z" fill="#fff" opacity="0.2"/><path d="M8.5 16.22l7.5 4.35v-7.7l-7.5 3.35z" fill="#fff" opacity="0.5"/></svg>);
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <circle cx="16" cy="16" r="16" fill="#627EEA"/>
+      <path d="M16 5v9.14l7.5 3.35L16 5z" fill="#fff" opacity="0.6"/>
+      <path d="M16 5L8.5 17.49 16 14.14V5z" fill="#fff"/>
+      <path d="M16 22.44v5.56l7.5-10.38L16 22.44z" fill="#fff" opacity="0.6"/>
+      <path d="M16 28v-5.56l-7.5-4.82L16 28z" fill="#fff"/>
+      <path d="M16 21.07l7.5-4.35-7.5-3.35v7.7z" fill="#fff" opacity="0.2"/>
+      <path d="M8.5 16.72l7.5 4.35v-7.7l-7.5 3.35z" fill="#fff" opacity="0.5"/>
+    </svg>
+  );
 }
 function AvaxIcon({ size = 40 }: { size?: number }) {
-  return (<svg width={size} height={size} viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="16" fill="#E84142"/><path d="M11.5 21h-3.2c-.5 0-.7-.3-.5-.7L15.5 8.5c.2-.4.7-.4.9 0l2 3.7c.1.2.1.5 0 .7l-5.4 7.7c-.2.3-.5.4-.8.4h-.7zm9.2 0h-3.5c-.5 0-.7-.3-.5-.7l3.5-5c.2-.4.7-.4.9 0l1.8 5c.2.4-.1.7-.5.7h-1.7z" fill="#fff"/></svg>);
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <circle cx="16" cy="16" r="16" fill="#E84142"/>
+      {/* Avalanche triangle logo */}
+      <path d="M20.5 21H11.5c-.55 0-.85-.6-.55-1.05l4.5-7.8c.3-.5 1-.5 1.3 0l4.5 7.8c.3.45 0 1.05-.55 1.05h-.2z" fill="#fff"/>
+      <path d="M11.2 21H8.5c-.55 0-.85-.6-.55-1.05l3-5.2c.3-.5 1-.5 1.3 0l1.5 2.6-2.05 3.65H11.2z" fill="#fff" opacity="0.7"/>
+    </svg>
+  );
 }
 function BaseIcon({ size = 40 }: { size?: number }) {
-  return (<svg width={size} height={size} viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="16" fill="#0052FF"/><path d="M16 26c5.523 0 10-4.477 10-10S21.523 6 16 6c-5.2 0-9.473 3.97-9.95 9.04h13.1v1.92H6.05C6.527 22.03 10.8 26 16 26z" fill="#fff"/></svg>);
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <circle cx="16" cy="16" r="16" fill="#0052FF"/>
+      <path d="M16 26c5.523 0 10-4.477 10-10S21.523 6 16 6c-5.2 0-9.473 3.97-9.95 9.04h13.1v1.92H6.05C6.527 22.03 10.8 26 16 26z" fill="#fff"/>
+    </svg>
+  );
 }
+
+// ─── Known ERC-20 Token SVG Logos ────────────────────────────────────────────
+function UsdcIcon({ size = 40 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <circle cx="16" cy="16" r="16" fill="#2775CA"/>
+      {/* USDC: white circle ring with dollar sign */}
+      <circle cx="16" cy="16" r="10" fill="none" stroke="#fff" strokeWidth="1.5" opacity="0.4"/>
+      <text x="16" y="21" textAnchor="middle" fontSize="12" fontWeight="800" fill="#fff" fontFamily="Arial, sans-serif">$</text>
+      <path d="M16 7.5v2M16 22.5v2" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+    </svg>
+  );
+}
+function AsmIcon({ size = 40 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <circle cx="16" cy="16" r="16" fill="#8B5CF6"/>
+      {/* ASM: stylized A mark */}
+      <path d="M10 22l6-12 6 12" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+      <path d="M12.5 18h7" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  );
+}
+function UsdtIcon({ size = 40 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <circle cx="16" cy="16" r="16" fill="#26A17B"/>
+      <text x="16" y="21" textAnchor="middle" fontSize="12" fontWeight="800" fill="#fff" fontFamily="Arial, sans-serif">₮</text>
+    </svg>
+  );
+}
+function WbtcIcon({ size = 40 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <circle cx="16" cy="16" r="16" fill="#F7931A"/>
+      <text x="16" y="21" textAnchor="middle" fontSize="11" fontWeight="800" fill="#fff" fontFamily="Arial, sans-serif">₿</text>
+    </svg>
+  );
+}
+
+// Map of symbol → SVG icon component
+const TOKEN_SVG_ICONS: Record<string, (props: { size?: number }) => React.ReactElement> = {
+  USDC: UsdcIcon,
+  ASM: AsmIcon,
+  USDT: UsdtIcon,
+  WBTC: WbtcIcon,
+  ETH: EthIcon,
+  WETH: EthIcon,
+  AVAX: AvaxIcon,
+};
 
 // ─── // ─── Known Token Colors ────────────────────────────────────────────
 
@@ -271,6 +344,7 @@ function TokenLetter({ symbol, color, size = 40 }: { symbol: string; color: stri
 }
 
 function TokenAvatar({ item, size = 40 }: { item: AssetItem; size?: number }) {
+  // 1. Use logoUrl if available (from on-chain metadata)
   if (item.logoUrl) {
     return (
       <img
@@ -281,12 +355,16 @@ function TokenAvatar({ item, size = 40 }: { item: AssetItem; size?: number }) {
       />
     );
   }
+  // 2. Native chain tokens get their chain icon
   if (item.type === "native") {
     if (item.chain === "avalanche") return <AvaxIcon size={size} />;
     if (item.chain === "base") return <BaseIcon size={size} />;
     return <EthIcon size={size} />;
   }
-  // Use known token color or fallback
+  // 3. Known tokens get proper SVG logos
+  const SvgIcon = TOKEN_SVG_ICONS[item.symbol.toUpperCase()];
+  if (SvgIcon) return <SvgIcon size={size} />;
+  // 4. Unknown tokens fall back to colored letter circle
   const knownColor = TOKEN_COLORS[item.symbol.toUpperCase()];
   return <TokenLetter symbol={item.symbol} color={knownColor || item.logoColor || "#71717A"} size={size} />;
 }
@@ -407,26 +485,34 @@ function ActionBtn({ icon, label, onClick, color }: { icon: React.ReactNode; lab
       type="button"
       onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClick(); }}
       onTouchStart={() => setPressed(true)}
-      onTouchEnd={() => { setPressed(false); }}
+      onTouchEnd={() => setPressed(false)}
       onMouseDown={() => setPressed(true)}
       onMouseUp={() => setPressed(false)}
       onMouseLeave={() => setPressed(false)}
       style={{
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
-        gap: 6, width: 76, height: 76, borderRadius: 22,
-        backgroundColor: pressed ? `${color}28` : `${color}18`,
-        border: `1.5px solid ${pressed ? color + "45" : color + "28"}`,
+        gap: 10, background: "none", border: "none",
         cursor: "pointer", padding: 0,
         userSelect: "none", WebkitUserSelect: "none",
-        transform: pressed ? "scale(0.94)" : "scale(1)",
-        transition: "transform 0.1s ease, background-color 0.1s ease",
+        transform: pressed ? "scale(0.9)" : "scale(1)",
+        transition: "transform 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
         WebkitTapHighlightColor: "transparent",
         touchAction: "manipulation",
       }}
     >
-      <div style={{ color, display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</div>
-      <span style={{ fontSize: 11, fontWeight: 600, color, letterSpacing: "0.01em" }}>{label}</span>
+      <div style={{
+        width: 56, height: 56, borderRadius: 18,
+        background: `linear-gradient(145deg, ${color}22, ${color}10)`,
+        border: `1.5px solid ${color}30`,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        color,
+        boxShadow: pressed ? `0 0 20px ${color}15` : `0 4px 16px ${color}08`,
+        transition: "box-shadow 0.15s ease, border-color 0.15s ease",
+      }}>
+        {icon}
+      </div>
+      <span style={{ fontSize: 11, fontWeight: 600, color: "#A1A1AA", letterSpacing: "0.02em" }}>{label}</span>
     </button>
   );
 }
@@ -1210,96 +1296,108 @@ export default function Wallet() {
 
       {/* ── Hero: Total Portfolio Value ── */}
       <div style={{
-        padding: `${isMobile ? 28 : 40}px ${px} ${isMobile ? 28 : 36}px`,
-        background: "linear-gradient(180deg, rgba(249,115,22,0.07) 0%, rgba(249,115,22,0.02) 60%, transparent 100%)",
-        borderBottom: "1px solid rgba(255,255,255,0.04)",
+        padding: `${isMobile ? 32 : 48}px ${px} ${isMobile ? 32 : 40}px`,
+        background: "linear-gradient(180deg, rgba(249,115,22,0.08) 0%, rgba(249,115,22,0.02) 40%, transparent 100%)",
+        position: "relative",
+        overflow: "hidden",
       }}>
+        {/* Subtle radial glow behind balance */}
+        <div style={{
+          position: "absolute", top: "-40%", left: "50%", transform: "translateX(-50%)",
+          width: 400, height: 400, borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(249,115,22,0.06) 0%, transparent 70%)",
+          pointerEvents: "none",
+        }} />
+
         {/* VNS / Address pill */}
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 24, position: "relative" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <button
               type="button"
               onClick={() => setShowFullAddress(!showFullAddress)}
               style={{
-                display: "inline-flex", alignItems: "center", gap: 6,
-                padding: "6px 14px", borderRadius: 20,
-                backgroundColor: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.06)",
+                display: "inline-flex", alignItems: "center", gap: 8,
+                padding: "8px 16px", borderRadius: 24,
+                background: "rgba(255,255,255,0.04)",
+                backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+                border: "1px solid rgba(255,255,255,0.08)",
                 color: "#A1A1AA", fontSize: 12, fontWeight: 500,
-                cursor: "pointer", ...mono, transition: "all 0.15s ease",
+                cursor: "pointer", ...mono, transition: "all 0.2s ease",
                 WebkitTapHighlightColor: "transparent", touchAction: "manipulation",
               }}
             >
-              <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#22C55E", flexShrink: 0 }} />
-              {vnsName ? <span style={{ color: "#F97316", fontWeight: 600 }}>{vnsName}</span> : null}
-              {showFullAddress ? addr : truncAddr}
+              <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#22C55E", flexShrink: 0, boxShadow: "0 0 8px rgba(34,197,94,0.4)" }} />
+              {vnsName ? <span style={{ color: "#F97316", fontWeight: 700 }}>{vnsName}</span> : null}
+              <span style={{ color: "#71717A" }}>{showFullAddress ? addr : truncAddr}</span>
             </button>
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); copyToClipboard(addr, "addr"); }}
-              style={{ background: "none", border: "none", cursor: "pointer", color: copied === "addr" ? "#22C55E" : "#52525B", padding: "4px", display: "flex", alignItems: "center", WebkitTapHighlightColor: "transparent" }}
+              style={{
+                background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: 10, cursor: "pointer",
+                color: copied === "addr" ? "#22C55E" : "#52525B",
+                padding: 8, display: "flex", alignItems: "center",
+                WebkitTapHighlightColor: "transparent",
+                transition: "all 0.15s ease",
+              }}
             >
-              {copied === "addr" ? <CheckIcon size={11} /> : <CopyIcon size={11} />}
+              {copied === "addr" ? <CheckIcon size={12} /> : <CopyIcon size={12} />}
             </button>
           </div>
         </div>
 
-        {/* Total USD Value */}
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
+        {/* Total USD Value — the star of the show */}
+        <div style={{ textAlign: "center", marginBottom: 36, position: "relative" }}>
           {loadingBals || pricesLoading ? (
             <>
-              <div className="skeleton" style={{ height: 60, width: 220, borderRadius: 12, margin: "0 auto 10px" }} />
-              <div className="skeleton" style={{ height: 14, width: 140, borderRadius: 6, margin: "0 auto" }} />
+              <div className="skeleton" style={{ height: 64, width: 240, borderRadius: 16, margin: "0 auto 12px" }} />
+              <div className="skeleton" style={{ height: 14, width: 160, borderRadius: 8, margin: "0 auto" }} />
             </>
           ) : (
             <>
+              <p style={{ fontSize: 12, fontWeight: 600, color: "#52525B", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Total Balance</p>
               <h1 style={{
-                fontSize: isMobile ? 52 : 64, fontWeight: 800,
-                color: "#F4F4F5", letterSpacing: "-0.05em",
-                lineHeight: 1.0, marginBottom: 8, ...mono,
-                textShadow: "0 0 40px rgba(249,115,22,0.15)",
+                fontSize: isMobile ? 48 : 60, fontWeight: 800,
+                color: "#FAFAFA", letterSpacing: "-0.04em",
+                lineHeight: 1.0, marginBottom: 10, ...mono,
+                textShadow: "0 0 60px rgba(249,115,22,0.12), 0 2px 4px rgba(0,0,0,0.3)",
               }}>
                 {formatUsd(totalUsd)}
               </h1>
-              <p style={{ fontSize: 13, color: "#71717A", fontWeight: 500, letterSpacing: "0.01em" }}>Total Portfolio Value</p>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 14px", borderRadius: 20, backgroundColor: "rgba(249,115,22,0.06)", border: "1px solid rgba(249,115,22,0.12)" }}>
+                <FireIcon size={11} />
+                <span style={{ fontSize: 11, color: "#F97316", fontWeight: 600, letterSpacing: "0.02em" }}>Embris by Vaultfire</span>
+              </div>
             </>
           )}
         </div>
 
-        {/* Embris Protocol badge */}
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: 6,
-            padding: "5px 14px", borderRadius: 20,
-            backgroundColor: "rgba(249,115,22,0.06)",
-            border: "1px solid rgba(249,115,22,0.15)",
-          }}>
-            <FireIcon size={12} />
-            <span style={{ fontSize: 11, color: "#F97316", fontWeight: 600, letterSpacing: "0.02em" }}>Embris by Vaultfire Protocol</span>
-          </div>
-        </div>
-
-        {/* Action Buttons — Coinbase-style */}
-        <div style={{ display: "flex", justifyContent: "center", gap: isMobile ? 20 : 28 }}>
+        {/* Action Buttons — Trust Wallet style */}
+        <div style={{ display: "flex", justifyContent: "center", gap: isMobile ? 24 : 36, position: "relative" }}>
           <ActionBtn icon={<SendIcon size={22} />} label="Send" onClick={() => openSend()} color="#F97316" />
           <ActionBtn icon={<ReceiveIcon size={22} />} label="Receive" onClick={() => setModalView("receive")} color="#22C55E" />
           <ActionBtn icon={<RefreshIcon size={18} />} label="Refresh" onClick={handleRefresh} color="#71717A" />
-          <ActionBtn icon={<ShieldIcon size={18} />} label="Settings" onClick={() => { setSecurityRevealInput(""); setSecurityRevealed(false); setModalView("security"); }} color="#A78BFA" />
+          <ActionBtn icon={<ShieldIcon size={18} />} label="Security" onClick={() => { setSecurityRevealInput(""); setSecurityRevealed(false); setModalView("security"); }} color="#A78BFA" />
         </div>
       </div>
 
+      {/* Divider */}
+      <div style={{ height: 1, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)" }} />
+
       {/* ── Asset List ── */}
-      <div style={{ padding: `24px ${px} 0` }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-          <h3 style={{ fontSize: 17, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.02em" }}>Assets</h3>
+      <div style={{ padding: `28px ${px} 0` }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+          <h3 style={{ fontSize: 18, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.02em" }}>Assets</h3>
           <button
             type="button"
             onClick={() => setModalView("add-token")}
             style={{
-              display: "inline-flex", alignItems: "center", gap: 5,
-              fontSize: 12, color: "#F97316", background: "none",
-              border: "1px solid rgba(249,115,22,0.2)", cursor: "pointer", fontWeight: 600,
-              padding: "5px 12px", borderRadius: 8, transition: "all 0.15s ease",
+              display: "inline-flex", alignItems: "center", gap: 6,
+              fontSize: 12, color: "#F97316",
+              background: "rgba(249,115,22,0.06)",
+              border: "1px solid rgba(249,115,22,0.15)", cursor: "pointer", fontWeight: 600,
+              padding: "8px 14px", borderRadius: 12, transition: "all 0.15s ease",
               WebkitTapHighlightColor: "transparent", touchAction: "manipulation",
             }}
           >
@@ -1308,27 +1406,35 @@ export default function Wallet() {
         </div>
 
         {loadingBals ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{
+            backgroundColor: "rgba(255,255,255,0.02)",
+            border: "1px solid rgba(255,255,255,0.06)",
+            borderRadius: 20, overflow: "hidden",
+          }}>
             {[0, 1, 2, 3, 4].map((i) => (
-              <div key={i} className="skeleton" style={{ height: 72, borderRadius: 16, border: "1px solid rgba(255,255,255,0.03)" }} />
+              <div key={i} className="skeleton" style={{ height: 72, borderBottom: i < 4 ? "1px solid rgba(255,255,255,0.03)" : "none" }} />
             ))}
           </div>
         ) : assets.length === 0 ? (
           <div style={{
             padding: "48px 24px", textAlign: "center",
-            backgroundColor: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)",
-            borderRadius: 16,
+            backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
+            borderRadius: 20,
           }}>
-            <div style={{ width: 48, height: 48, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
+            <div style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
               <ClockIcon size={24} />
             </div>
-            <p style={{ fontSize: 14, color: "#71717A", marginBottom: 12 }}>No assets yet</p>
-            <p style={{ fontSize: 12, color: "#52525B", lineHeight: 1.6 }}>
-              Send tokens to your address to get started, or add a custom token to track your holdings.
+            <p style={{ fontSize: 15, color: "#A1A1AA", fontWeight: 600, marginBottom: 8 }}>No assets yet</p>
+            <p style={{ fontSize: 13, color: "#52525B", lineHeight: 1.6 }}>
+              Send tokens to your address to get started.
             </p>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{
+            backgroundColor: "rgba(255,255,255,0.02)",
+            border: "1px solid rgba(255,255,255,0.06)",
+            borderRadius: 20, overflow: "hidden",
+          }}>
             {assets.map((asset, idx) => (
               <div
                 key={`${asset.chain}-${asset.symbol}-${asset.tokenAddress || "native"}-${idx}`}
@@ -1338,11 +1444,9 @@ export default function Wallet() {
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") openSend(asset); }}
                 style={{
                   display: "flex", alignItems: "center", justifyContent: "space-between",
-                  padding: "16px 18px",
-                  backgroundColor: "rgba(255,255,255,0.025)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  borderRadius: 18,
-                  transition: "background-color 0.15s ease, border-color 0.15s ease",
+                  padding: "16px 20px",
+                  borderBottom: idx < assets.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
+                  transition: "background-color 0.15s ease",
                   cursor: "pointer",
                   WebkitTapHighlightColor: "transparent",
                   touchAction: "manipulation",
@@ -1350,22 +1454,21 @@ export default function Wallet() {
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                   <div style={{ position: "relative", flexShrink: 0 }}>
-                    <TokenAvatar item={asset} size={42} />
+                    <TokenAvatar item={asset} size={44} />
                     {asset.type === "erc20" && <ChainBadge chain={asset.chain} />}
                   </div>
                   <div>
-                    <p style={{ fontSize: 15, fontWeight: 700, color: "#F4F4F5", marginBottom: 3, letterSpacing: "-0.02em" }}>{asset.symbol}</p>
-                    <p style={{ fontSize: 11, color: "#71717A", fontWeight: 400 }}>
-                      {asset.type === "native" ? asset.chainName : `${asset.name} · ${asset.chainName}`}
-                      {asset.pricePerToken > 0 && <span style={{ color: "#52525B" }}> · {formatPrice(asset.pricePerToken)}</span>}
+                    <p style={{ fontSize: 15, fontWeight: 700, color: "#F4F4F5", marginBottom: 2, letterSpacing: "-0.01em" }}>{asset.name || asset.symbol}</p>
+                    <p style={{ fontSize: 12, color: "#71717A", fontWeight: 500 }}>
+                      {asset.symbol}{asset.type !== "native" && <span style={{ color: "#3F3F46" }}> · {asset.chainName}</span>}
                     </p>
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <p style={{ fontSize: 16, fontWeight: 700, color: asset.error ? "#EF4444" : "#F4F4F5", ...mono, letterSpacing: "-0.03em", marginBottom: 3 }}>
+                  <p style={{ fontSize: 16, fontWeight: 700, color: asset.error ? "#EF4444" : "#F4F4F5", ...mono, letterSpacing: "-0.02em", marginBottom: 2 }}>
                     {asset.error ? "Error" : asset.balanceFormatted}
                   </p>
-                  <p style={{ fontSize: 12, color: asset.usdValue > 0 ? "#71717A" : "#3F3F46", ...mono, fontWeight: 500 }}>
+                  <p style={{ fontSize: 13, color: asset.usdValue > 0 ? "#71717A" : "#3F3F46", ...mono, fontWeight: 500 }}>
                     {asset.usdValue > 0 ? formatUsd(asset.usdValue) : "—"}
                   </p>
                 </div>
@@ -1377,25 +1480,43 @@ export default function Wallet() {
 
       {/* ── Spending Limits ── */}
       <div style={{ padding: `32px ${px} 0` }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <div>
-            <h3 style={{ fontSize: 17, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.02em", marginBottom: 2 }}>Spending Limits</h3>
-            <p style={{ fontSize: 11, color: "#52525B", fontWeight: 400 }}>Optional caps on outgoing payments</p>
+        <div style={{
+          backgroundColor: "rgba(255,255,255,0.02)",
+          border: "1px solid rgba(255,255,255,0.06)",
+          borderRadius: 20, overflow: "hidden",
+        }}>
+        {/* Section header inside card */}
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "18px 20px",
+          borderBottom: "1px solid rgba(255,255,255,0.04)",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 12, background: "linear-gradient(135deg, rgba(167,139,250,0.15), rgba(167,139,250,0.05))", border: "1px solid rgba(167,139,250,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <ShieldIcon size={16} />
+            </div>
+            <div>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.01em", marginBottom: 1 }}>Spending Limits</h3>
+              <p style={{ fontSize: 11, color: "#52525B", fontWeight: 400 }}>Optional caps on outgoing payments</p>
+            </div>
           </div>
           <button
             type="button"
             onClick={() => setShowAddLimit(!showAddLimit)}
             style={{
-              display: "inline-flex", alignItems: "center", gap: 5,
-              fontSize: 12, color: "#A78BFA", background: "none",
-              border: "1px solid rgba(167,139,250,0.2)", cursor: "pointer", fontWeight: 600,
-              padding: "5px 12px", borderRadius: 8, transition: "all 0.15s ease",
+              display: "inline-flex", alignItems: "center", gap: 6,
+              fontSize: 12, color: "#A78BFA",
+              background: "rgba(167,139,250,0.06)",
+              border: "1px solid rgba(167,139,250,0.15)", cursor: "pointer", fontWeight: 600,
+              padding: "8px 14px", borderRadius: 12, transition: "all 0.15s ease",
               WebkitTapHighlightColor: "transparent", touchAction: "manipulation",
             }}
           >
             <PlusIcon size={10} /> Add Limit
           </button>
-        </div>  {/* end header row */}
+        </div>
+        {/* Card body */}
+        <div style={{ padding: "16px 20px" }}>
 
         {/* Add limit form */}
         {showAddLimit && (
@@ -1489,75 +1610,115 @@ export default function Wallet() {
             })}
           </div>
         )}
+        </div>{/* end card body */}
+        </div>{/* end card wrapper */}
       </div>
 
       {/* ── Trust Gating ── */}
       <div style={{ padding: `32px ${px} 0` }}>
-        <div style={{ marginBottom: 16 }}>
-          <h3 style={{ fontSize: 17, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.02em", marginBottom: 2 }}>Trust Gating</h3>
-          <p style={{ fontSize: 11, color: "#52525B", fontWeight: 400 }}>Optional minimum bond tier for outgoing payments</p>
-        </div>
-        <div style={{ padding: "20px", backgroundColor: "rgba(255,255,255,0.015)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 20 }}>
-          <p style={{ fontSize: 12, color: "#71717A", marginBottom: 16, lineHeight: 1.65 }}>Defaults to None — pay anyone freely. Opt in if you want to restrict payments to verified agents only.</p>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {TRUST_GATE_LEVELS.map(level => (
-              <button
-                key={level.value}
-                onClick={() => {
-                  setTrustGateLevel(level.value);
-                  setTrustGateLevelState(level.value);
-                }}
-                style={{
-                  fontSize: 12, fontWeight: 700, padding: "8px 16px", borderRadius: 10, cursor: "pointer",
-                  backgroundColor: trustGateLevel === level.value ? `${level.color}18` : "rgba(255,255,255,0.025)",
-                  border: `1.5px solid ${trustGateLevel === level.value ? `${level.color}50` : "rgba(255,255,255,0.07)"}`,
-                  color: trustGateLevel === level.value ? level.color : "#71717A",
-                  transition: "all 0.15s ease",
-                  WebkitTapHighlightColor: "transparent",
-                  touchAction: "manipulation",
-                  minHeight: 40,
-                }}
-              >
-                {level.label}
-              </button>
-            ))}
-          </div>
-          <p style={{ fontSize: 11, color: "#52525B", marginTop: 10 }}>
-            {TRUST_GATE_LEVELS.find(l => l.value === trustGateLevel)?.description || "No trust requirement set."}
-          </p>
-          {trustGateLevel !== "none" && (
-            <div style={{ marginTop: 10, padding: "8px 12px", backgroundColor: `${TRUST_GATE_LEVELS.find(l => l.value === trustGateLevel)?.color || "#71717A"}08`, border: `1px solid ${TRUST_GATE_LEVELS.find(l => l.value === trustGateLevel)?.color || "#71717A"}20`, borderRadius: 10, display: "flex", alignItems: "center", gap: 8 }}>
-              <ShieldIcon size={14} />
-              <span style={{ fontSize: 11, color: TRUST_GATE_LEVELS.find(l => l.value === trustGateLevel)?.color || "#71717A", fontWeight: 600 }}>
-                Active — Payments to agents below {TRUST_GATE_LEVELS.find(l => l.value === trustGateLevel)?.label} tier will show a warning
-              </span>
+        <div style={{
+          backgroundColor: "rgba(255,255,255,0.02)",
+          border: "1px solid rgba(255,255,255,0.06)",
+          borderRadius: 20, overflow: "hidden",
+        }}>
+          {/* Header */}
+          <div style={{
+            display: "flex", alignItems: "center", gap: 12,
+            padding: "18px 20px",
+            borderBottom: "1px solid rgba(255,255,255,0.04)",
+          }}>
+            <div style={{ width: 36, height: 36, borderRadius: 12, background: "linear-gradient(135deg, rgba(34,197,94,0.15), rgba(34,197,94,0.05))", border: "1px solid rgba(34,197,94,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <LockIcon size={16} style={{ color: "#22C55E" }} />
             </div>
-          )}
+            <div>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.01em", marginBottom: 1 }}>Trust Gating</h3>
+              <p style={{ fontSize: 11, color: "#52525B", fontWeight: 400 }}>Require minimum bond tier for payments</p>
+            </div>
+          </div>
+          {/* Body */}
+          <div style={{ padding: "20px" }}>
+            <p style={{ fontSize: 12, color: "#71717A", marginBottom: 16, lineHeight: 1.65 }}>Defaults to None — pay anyone freely. Opt in to restrict payments to verified agents.</p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {TRUST_GATE_LEVELS.map(level => {
+                const isActive = trustGateLevel === level.value;
+                return (
+                  <button
+                    key={level.value}
+                    onClick={() => {
+                      setTrustGateLevel(level.value);
+                      setTrustGateLevelState(level.value);
+                    }}
+                    style={{
+                      fontSize: 13, fontWeight: 700, padding: "10px 18px", borderRadius: 14, cursor: "pointer",
+                      background: isActive ? `linear-gradient(135deg, ${level.color}20, ${level.color}08)` : "rgba(255,255,255,0.025)",
+                      border: `1.5px solid ${isActive ? `${level.color}50` : "rgba(255,255,255,0.07)"}`,
+                      color: isActive ? level.color : "#71717A",
+                      transition: "all 0.2s ease",
+                      WebkitTapHighlightColor: "transparent",
+                      touchAction: "manipulation",
+                      minHeight: 44,
+                      boxShadow: isActive ? `0 4px 16px ${level.color}12` : "none",
+                    }}
+                  >
+                    {level.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p style={{ fontSize: 12, color: "#52525B", marginTop: 12, lineHeight: 1.5 }}>
+              {TRUST_GATE_LEVELS.find(l => l.value === trustGateLevel)?.description || "No trust requirement set."}
+            </p>
+            {trustGateLevel !== "none" && (
+              <div style={{ marginTop: 12, padding: "10px 14px", backgroundColor: `${TRUST_GATE_LEVELS.find(l => l.value === trustGateLevel)?.color || "#71717A"}08`, border: `1px solid ${TRUST_GATE_LEVELS.find(l => l.value === trustGateLevel)?.color || "#71717A"}20`, borderRadius: 12, display: "flex", alignItems: "center", gap: 10 }}>
+                <ShieldIcon size={14} />
+                <span style={{ fontSize: 12, color: TRUST_GATE_LEVELS.find(l => l.value === trustGateLevel)?.color || "#71717A", fontWeight: 600 }}>
+                  Active — Payments below {TRUST_GATE_LEVELS.find(l => l.value === trustGateLevel)?.label} tier will show a warning
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* ── Transaction History (x402 payments) ── */}
       <div style={{ padding: `32px ${px} 0` }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <div>
-            <h3 style={{ fontSize: 17, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.02em", marginBottom: 2 }}>Transaction History</h3>
-            <p style={{ fontSize: 11, color: "#52525B", fontWeight: 400 }}>x402 protocol payments</p>
+        <div style={{
+          backgroundColor: "rgba(255,255,255,0.02)",
+          border: "1px solid rgba(255,255,255,0.06)",
+          borderRadius: 20, overflow: "hidden",
+        }}>
+          {/* Header */}
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "18px 20px",
+            borderBottom: "1px solid rgba(255,255,255,0.04)",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 12, background: "linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.05))", border: "1px solid rgba(59,130,246,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <ClockIcon size={16} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.01em", marginBottom: 1 }}>Transactions</h3>
+                <p style={{ fontSize: 11, color: "#52525B", fontWeight: 400 }}>x402 protocol payments</p>
+              </div>
+            </div>
+            <span style={{ fontSize: 10, fontWeight: 700, color: "#3B82F6", backgroundColor: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.15)", padding: "4px 10px", borderRadius: 8, letterSpacing: "0.04em", textTransform: "uppercase" }}>x402</span>
           </div>
-          <span style={{ fontSize: 10, fontWeight: 700, color: "#3B82F6", backgroundColor: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.15)", padding: "3px 8px", borderRadius: 6, letterSpacing: "0.04em", textTransform: "uppercase" }}>x402</span>
-        </div>
+          {/* Body */}
+          <div>
         {txHistory.length === 0 ? (
-          <div style={{ padding: "36px 24px", textAlign: "center", backgroundColor: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16 }}>
-            <div style={{ width: 48, height: 48, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
+          <div style={{ padding: "40px 24px", textAlign: "center" }}>
+            <div style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
               <ClockIcon size={24} />
             </div>
-            <p style={{ fontSize: 14, color: "#71717A", marginBottom: 6 }}>No transactions yet</p>
-            <p style={{ fontSize: 12, color: "#52525B", lineHeight: 1.6 }}>
-              x402 payment history will appear here once you make or receive payments through the Embris protocol.
+            <p style={{ fontSize: 15, color: "#A1A1AA", fontWeight: 600, marginBottom: 8 }}>No transactions yet</p>
+            <p style={{ fontSize: 13, color: "#52525B", lineHeight: 1.6 }}>
+              Payment history will appear here.
             </p>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {txHistory.slice(0, 20).map((tx) => {
+          <div>
+            {txHistory.slice(0, 20).map((tx, txIdx) => {
               const isSent = tx.from.toLowerCase() === addr.toLowerCase();
               const counterparty = isSent ? (tx.recipientVNS || `${tx.payTo.slice(0, 8)}...${tx.payTo.slice(-4)}`) : (tx.senderVNS || `${tx.from.slice(0, 8)}...${tx.from.slice(-4)}`);
               const timeAgo = (() => {
@@ -1572,13 +1733,17 @@ export default function Wallet() {
               })();
               const statusColor = tx.status === "settled" ? "#22C55E" : tx.status === "failed" ? "#EF4444" : "#EAB308";
               return (
-                <div key={tx.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: isSent ? "rgba(249,115,22,0.05)" : "rgba(34,197,94,0.05)", display: "flex", alignItems: "center", justifyContent: "center", color: isSent ? "#F97316" : "#22C55E" }}>
+                <div key={tx.id} style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  padding: "16px 20px",
+                  borderBottom: txIdx < Math.min(txHistory.length, 20) - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 12, background: isSent ? "linear-gradient(135deg, rgba(249,115,22,0.12), rgba(249,115,22,0.04))" : "linear-gradient(135deg, rgba(34,197,94,0.12), rgba(34,197,94,0.04))", border: `1px solid ${isSent ? "rgba(249,115,22,0.15)" : "rgba(34,197,94,0.15)"}`, display: "flex", alignItems: "center", justifyContent: "center", color: isSent ? "#F97316" : "#22C55E", flexShrink: 0 }}>
                       {isSent ? <SendIcon size={16} /> : <ReceiveIcon size={16} />}
                     </div>
                     <div>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: "#F4F4F5" }}>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: "#F4F4F5", marginBottom: 2 }}>
                         {isSent ? "Sent to" : "Received from"}{" "}
                         <span style={{ color: "#F97316" }}>{counterparty}</span>
                       </p>
@@ -1589,7 +1754,7 @@ export default function Wallet() {
                     </div>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: "#F4F4F5", ...mono }}>{isSent ? "-" : "+"}{tx.amountFormatted} USDC</p>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: isSent ? "#F4F4F5" : "#22C55E", ...mono, letterSpacing: "-0.02em", marginBottom: 2 }}>{isSent ? "-" : "+"}{tx.amountFormatted} USDC</p>
                     {tx.txHash && (
                       <p style={{ fontSize: 10, color: "#3F3F46", ...mono }}>{tx.txHash.slice(0, 8)}...</p>
                     )}
@@ -1599,14 +1764,18 @@ export default function Wallet() {
             })}
           </div>
         )}
+          </div>{/* end body */}
+        </div>{/* end card wrapper */}
       </div>
 
       {/* ── Alpha Notice ── */}
-      <div style={{ padding: `24px ${px} 0` }}>
-        <div style={{ padding: "12px 16px", backgroundColor: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.1)", borderRadius: 12, display: "flex", alignItems: "flex-start", gap: 10 }}>
-          <div style={{ color: "#F97316", flexShrink: 0, marginTop: 1 }}><AlertTriangleIcon size={13} /></div>
-          <p style={{ fontSize: 11, color: "#71717A", lineHeight: 1.6 }}>
-            <strong style={{ color: "#A1A1AA" }}>Alpha Software.</strong> Store funds at your own risk. No recovery possible — you are solely responsible for your seed phrase and private keys.
+      <div style={{ padding: `28px ${px} 0` }}>
+        <div style={{ padding: "14px 18px", backgroundColor: "rgba(249,115,22,0.03)", border: "1px solid rgba(249,115,22,0.08)", borderRadius: 16, display: "flex", alignItems: "flex-start", gap: 12 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: "rgba(249,115,22,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+            <AlertTriangleIcon size={13} />
+          </div>
+          <p style={{ fontSize: 12, color: "#71717A", lineHeight: 1.65 }}>
+            <strong style={{ color: "#A1A1AA" }}>Alpha Software.</strong> Store funds at your own risk. You are solely responsible for your seed phrase and private keys.
           </p>
         </div>
       </div>
