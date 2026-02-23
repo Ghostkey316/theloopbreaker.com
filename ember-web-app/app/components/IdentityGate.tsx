@@ -114,7 +114,7 @@ function UnlockScreen({ onUnlock }: { onUnlock: (wallet: WalletData) => void }) 
         </div>
 
         <h1 style={{ fontSize: 24, fontWeight: 700, color: "#F4F4F5", margin: "0 0 8px" }}>
-          Vaultfire Protocol
+          Embris by Vaultfire Protocol
         </h1>
         <p style={{ fontSize: 14, color: "#71717A", margin: "0 0 32px" }}>
           Enter your password to unlock

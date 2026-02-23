@@ -272,9 +272,9 @@ export function FooterDisclaimer() {
       textAlign: "center",
     }}>
       <p style={{ fontSize: 10, color: "#3F3F46", margin: 0, lineHeight: 1.6, maxWidth: 600, marginLeft: "auto", marginRight: "auto" }}>
-        Vaultfire Protocol is experimental software. Not financial advice. On-chain transactions are irreversible.
+        Embris by Vaultfire Protocol is experimental software. Not financial advice. On-chain transactions are irreversible.
         Smart contracts deployed on Ethereum, Base, and Avalanche. Use at your own risk.{" "}
-        <span style={{ color: "#52525B" }}>© {new Date().getFullYear()} Vaultfire Protocol.</span>
+        <span style={{ color: "#52525B" }}>© {new Date().getFullYear()} Embris by Vaultfire Protocol.</span>
       </p>
     </div>
   );

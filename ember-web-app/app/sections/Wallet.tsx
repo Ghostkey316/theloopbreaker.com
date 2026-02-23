@@ -21,6 +21,16 @@ import {
 import { DisclaimerModal, FooterDisclaimer } from "../components/DisclaimerBanner";
 import { isDisclaimerAcknowledged } from "../lib/disclaimers";
 import { useWalletAuth } from "../lib/WalletAuthContext";
+import {
+  getSpendingLimits, saveSpendingLimits, upsertSpendingLimit, removeSpendingLimit,
+  getAllLimitStatuses, initDefaultLimits, makeLimitId, getPeriodLabel,
+  type SpendingLimitConfig, type SpendingLimitStatus, type LimitPeriod,
+} from "../lib/spending-limits";
+import {
+  getTrustGateConfig, setTrustGateLevel, TRUST_GATE_LEVELS,
+  type TrustGateLevel,
+} from "../lib/trust-gate";
+import { getPaymentHistory, type X402PaymentRecord } from "../lib/x402-client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -434,9 +444,18 @@ export default function Wallet() {
   const [modalView, setModalView] = useState<ModalView>("none");
   const [customTokens, setCustomTokens] = useState<TokenInfo[]>([]);
 
-  // ─── Enhancements State ──────────────────────────────────────────────────────
-  const [spendingLimit, setSpendingLimit] = useState<string>("1000");
-  const [trustGateTier, setTrustGateTier] = useState<string>("Silver");
+  // ─── Spending Limits State ──────────────────────────────────────────────────
+  const [limitStatuses, setLimitStatuses] = useState<SpendingLimitStatus[]>([]);
+  const [showAddLimit, setShowAddLimit] = useState(false);
+  const [newLimitToken, setNewLimitToken] = useState("USDC");
+  const [newLimitPeriod, setNewLimitPeriod] = useState<LimitPeriod>("daily");
+  const [newLimitAmount, setNewLimitAmount] = useState("100");
+
+  // ─── Trust Gate State ──────────────────────────────────────────────────────
+  const [trustGateLevel, setTrustGateLevelState] = useState<TrustGateLevel>("none");
+
+  // ─── Transaction History State ──────────────────────────────────────────────
+  const [txHistory, setTxHistory] = useState<X402PaymentRecord[]>([]);
 
   // ── CRITICAL FIX: Logo cache stored in useRef (NOT useState) ──────────────
   // This means logo updates do NOT trigger re-renders.
@@ -498,6 +517,12 @@ export default function Wallet() {
     setCustomTokens(loadCustomTokens());
     setVnsName(getVNSName());
     setCompanionName(getCompanionName());
+    // Initialize spending limits, trust gate, and tx history
+    initDefaultLimits();
+    setLimitStatuses(getAllLimitStatuses());
+    const tgConfig = getTrustGateConfig();
+    setTrustGateLevelState(tgConfig.minimumTier);
+    setTxHistory(getPaymentHistory());
     if (isWalletCreated()) {
       const addr = getWalletAddress();
       if (addr) {
@@ -1215,7 +1240,7 @@ export default function Wallet() {
           <p style={{ fontSize: 13, color: "#52525B", fontWeight: 500 }}>Total Portfolio Value</p>
         </div>
 
-        {/* Vaultfire Protocol badge */}
+        {/* Embris Protocol badge */}
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
           <div style={{
             display: "inline-flex", alignItems: "center", gap: 6,
@@ -1324,83 +1349,211 @@ export default function Wallet() {
         )}
       </div>
 
-      {/* ── Spending Limits & Trust Gates ── */}
+      {/* ── Spending Limits ── */}
       <div style={{ padding: `24px ${px} 0` }}>
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
-          <div style={{ padding: "18px", backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#A78BFA" }}>
-                <ClockIcon size={16} />
-              </div>
-              <h4 style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5" }}>Spending Limits</h4>
-            </div>
-            <p style={{ fontSize: 11, color: "#52525B", marginBottom: 12 }}>Daily limit for autonomous agent transactions.</p>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <input
-                type="text"
-                value={spendingLimit}
-                onChange={(e) => setSpendingLimit(e.target.value.replace(/[^0-9]/g, ""))}
-                style={{ width: 80, fontSize: 18, fontWeight: 700, color: "#F4F4F5", ...mono, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "2px 6px", outline: "none" }}
-              />
-              <span style={{ fontSize: 11, color: "#3F3F46" }}>USDC / day</span>
-            </div>
-          </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <h3 style={{ fontSize: 17, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.02em" }}>Spending Limits</h3>
+          <button
+            type="button"
+            onClick={() => setShowAddLimit(!showAddLimit)}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 5,
+              fontSize: 12, color: "#A78BFA", background: "none",
+              border: "1px solid rgba(167,139,250,0.2)", cursor: "pointer", fontWeight: 600,
+              padding: "5px 12px", borderRadius: 8, transition: "all 0.15s ease",
+              WebkitTapHighlightColor: "transparent", touchAction: "manipulation",
+            }}
+          >
+            <PlusIcon size={10} /> Add Limit
+          </button>
+        </div>
 
-          <div style={{ padding: "18px", backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#22C55E" }}>
-                <ShieldIcon size={16} />
+        {/* Add limit form */}
+        {showAddLimit && (
+          <div style={{ padding: 16, backgroundColor: "rgba(167,139,250,0.04)", border: "1px solid rgba(167,139,250,0.12)", borderRadius: 16, marginBottom: 12 }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+              <div style={{ flex: 1, minWidth: 80 }}>
+                <label style={{ fontSize: 10, color: "#71717A", fontWeight: 600, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>Token</label>
+                <select value={newLimitToken} onChange={(e) => setNewLimitToken(e.target.value)}
+                  style={{ width: "100%", padding: "8px 10px", backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, color: "#F4F4F5", fontSize: 13, outline: "none" }}>
+                  <option value="USDC">USDC</option>
+                  <option value="ETH">ETH</option>
+                  <option value="AVAX">AVAX</option>
+                </select>
               </div>
-              <h4 style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5" }}>Trust Gating</h4>
+              <div style={{ flex: 1, minWidth: 80 }}>
+                <label style={{ fontSize: 10, color: "#71717A", fontWeight: 600, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>Period</label>
+                <select value={newLimitPeriod} onChange={(e) => setNewLimitPeriod(e.target.value as LimitPeriod)}
+                  style={{ width: "100%", padding: "8px 10px", backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, color: "#F4F4F5", fontSize: 13, outline: "none" }}>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+              <div style={{ flex: 1, minWidth: 80 }}>
+                <label style={{ fontSize: 10, color: "#71717A", fontWeight: 600, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>Max Amount</label>
+                <input type="text" value={newLimitAmount} onChange={(e) => setNewLimitAmount(e.target.value.replace(/[^0-9.]/g, ""))}
+                  style={{ width: "100%", padding: "8px 10px", backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, color: "#F4F4F5", fontSize: 13, ...mono, outline: "none", boxSizing: "border-box" }}
+                />
+              </div>
             </div>
-            <p style={{ fontSize: 11, color: "#52525B", marginBottom: 12 }}>Only pay agents with this minimum bond tier.</p>
-            <div style={{ display: "flex", gap: 4 }}>
-              {["Bronze", "Silver", "Gold", "Platinum"].map(tier => (
-                <button
-                  key={tier}
-                  onClick={() => setTrustGateTier(tier)}
-                  style={{
-                    fontSize: 10, fontWeight: 800, padding: "4px 8px", borderRadius: 6, cursor: "pointer",
-                    backgroundColor: trustGateTier === tier ? "rgba(34,197,94,0.2)" : "rgba(255,255,255,0.02)",
-                    border: `1px solid ${trustGateTier === tier ? "rgba(34,197,94,0.4)" : "rgba(255,255,255,0.06)"}`,
-                    color: trustGateTier === tier ? "#22C55E" : "#52525B",
-                    transition: "all 0.15s ease",
-                  }}
-                >
-                  {tier}
-                </button>
-              ))}
-            </div>
+            <button type="button" onClick={() => {
+              const id = makeLimitId(newLimitToken, newLimitPeriod);
+              upsertSpendingLimit({ id, token: newLimitToken, period: newLimitPeriod, maxAmount: newLimitAmount, enabled: true, createdAt: Date.now() });
+              setLimitStatuses(getAllLimitStatuses());
+              setShowAddLimit(false);
+              setNewLimitAmount("100");
+            }} style={{
+              width: "100%", padding: "10px", background: "rgba(167,139,250,0.15)", border: "1px solid rgba(167,139,250,0.3)",
+              borderRadius: 10, color: "#A78BFA", fontSize: 13, fontWeight: 600, cursor: "pointer",
+            }}>Save Limit</button>
           </div>
+        )}
+
+        {/* Active limits with progress bars */}
+        {limitStatuses.length === 0 ? (
+          <div style={{ padding: "24px 16px", textAlign: "center", backgroundColor: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16 }}>
+            <p style={{ fontSize: 13, color: "#52525B" }}>No spending limits configured. Add one to control agent spending.</p>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {limitStatuses.map((status) => {
+              const barColor = status.exceeded ? "#EF4444" : status.percentUsed > 75 ? "#EAB308" : "#22C55E";
+              return (
+                <div key={status.config.id} style={{ padding: "14px 16px", backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5" }}>{status.config.token}</span>
+                      <span style={{ fontSize: 10, fontWeight: 600, color: "#52525B", backgroundColor: "rgba(255,255,255,0.04)", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                        {getPeriodLabel(status.config.period)}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 12, color: barColor, fontWeight: 600, ...mono }}>
+                        {status.spent.toFixed(2)} / {status.limit.toFixed(2)}
+                      </span>
+                      <button type="button" onClick={() => {
+                        removeSpendingLimit(status.config.id);
+                        setLimitStatuses(getAllLimitStatuses());
+                      }} style={{ background: "none", border: "none", color: "#3F3F46", cursor: "pointer", padding: 2, display: "flex" }}>
+                        <XIcon size={10} />
+                      </button>
+                    </div>
+                  </div>
+                  {/* Progress bar */}
+                  <div style={{ width: "100%", height: 6, backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 3, overflow: "hidden" }}>
+                    <div style={{ width: `${Math.min(status.percentUsed, 100)}%`, height: "100%", backgroundColor: barColor, borderRadius: 3, transition: "width 0.3s ease" }} />
+                  </div>
+                  <p style={{ fontSize: 10, color: "#3F3F46", marginTop: 4 }}>
+                    {status.percentUsed.toFixed(0)}% used this {getPeriodLabel(status.config.period)}
+                    {status.exceeded && <span style={{ color: "#EF4444", fontWeight: 700 }}> — LIMIT EXCEEDED</span>}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── Trust Gating ── */}
+      <div style={{ padding: `24px ${px} 0` }}>
+        <h3 style={{ fontSize: 17, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.02em", marginBottom: 14 }}>Trust Gating</h3>
+        <div style={{ padding: "18px", backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20 }}>
+          <p style={{ fontSize: 12, color: "#71717A", marginBottom: 14, lineHeight: 1.6 }}>Minimum bond tier required for outgoing payments. Agents below this threshold will trigger a warning.</p>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {TRUST_GATE_LEVELS.map(level => (
+              <button
+                key={level.value}
+                onClick={() => {
+                  setTrustGateLevel(level.value);
+                  setTrustGateLevelState(level.value);
+                }}
+                style={{
+                  fontSize: 11, fontWeight: 700, padding: "6px 12px", borderRadius: 8, cursor: "pointer",
+                  backgroundColor: trustGateLevel === level.value ? `${level.color}20` : "rgba(255,255,255,0.02)",
+                  border: `1.5px solid ${trustGateLevel === level.value ? `${level.color}60` : "rgba(255,255,255,0.06)"}`,
+                  color: trustGateLevel === level.value ? level.color : "#52525B",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                {level.label}
+              </button>
+            ))}
+          </div>
+          <p style={{ fontSize: 11, color: "#52525B", marginTop: 10 }}>
+            {TRUST_GATE_LEVELS.find(l => l.value === trustGateLevel)?.description || "No trust requirement set."}
+          </p>
+          {trustGateLevel !== "none" && (
+            <div style={{ marginTop: 10, padding: "8px 12px", backgroundColor: `${TRUST_GATE_LEVELS.find(l => l.value === trustGateLevel)?.color || "#71717A"}08`, border: `1px solid ${TRUST_GATE_LEVELS.find(l => l.value === trustGateLevel)?.color || "#71717A"}20`, borderRadius: 10, display: "flex", alignItems: "center", gap: 8 }}>
+              <ShieldIcon size={14} />
+              <span style={{ fontSize: 11, color: TRUST_GATE_LEVELS.find(l => l.value === trustGateLevel)?.color || "#71717A", fontWeight: 600 }}>
+                Active — Payments to agents below {TRUST_GATE_LEVELS.find(l => l.value === trustGateLevel)?.label} tier will show a warning
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ── VNS Transaction History ── */}
+      {/* ── Transaction History (x402 payments) ── */}
       <div style={{ padding: `32px ${px} 0` }}>
-        <h3 style={{ fontSize: 17, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.02em", marginBottom: 16 }}>Transaction History</h3>
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          {[
-            { type: "Sent", to: "sentinel-7.vns", amount: "150.00 USDC", time: "2 hours ago", status: "Confirmed" },
-            { type: "Received", from: "ghostkey316.vns", amount: "0.05 ETH", time: "5 hours ago", status: "Confirmed" },
-            { type: "Sent", to: "nexus-core.vns", amount: "25.00 USDC", time: "1 day ago", status: "Confirmed" },
-          ].map((tx, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", backgroundColor: "rgba(255,255,255,0.01)", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: tx.type === "Sent" ? "rgba(249,115,22,0.05)" : "rgba(34,197,94,0.05)", display: "flex", alignItems: "center", justifyContent: "center", color: tx.type === "Sent" ? "#F97316" : "#22C55E" }}>
-                  {tx.type === "Sent" ? <SendIcon size={16} /> : <ReceiveIcon size={16} />}
-                </div>
-                <div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: "#F4F4F5" }}>{tx.type} to <span style={{ color: "#F97316" }}>{tx.to || tx.from}</span></p>
-                  <p style={{ fontSize: 11, color: "#52525B" }}>{tx.time} · {tx.status}</p>
-                </div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: "#F4F4F5", ...mono }}>{tx.type === "Sent" ? "-" : "+"}{tx.amount}</p>
-                <p style={{ fontSize: 10, color: "#3F3F46", fontWeight: 600, textTransform: "uppercase" }}>Confirmed</p>
-              </div>
-            </div>
-          ))}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <h3 style={{ fontSize: 17, fontWeight: 700, color: "#F4F4F5", letterSpacing: "-0.02em" }}>Transaction History</h3>
+          <span style={{ fontSize: 11, color: "#52525B", fontWeight: 500 }}>x402 Payments</span>
         </div>
+        {txHistory.length === 0 ? (
+          <div style={{ padding: "36px 24px", textAlign: "center", backgroundColor: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16 }}>
+            <div style={{ width: 48, height: 48, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
+              <ClockIcon size={24} />
+            </div>
+            <p style={{ fontSize: 14, color: "#71717A", marginBottom: 6 }}>No transactions yet</p>
+            <p style={{ fontSize: 12, color: "#52525B", lineHeight: 1.6 }}>
+              x402 payment history will appear here once you make or receive payments through the Embris protocol.
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {txHistory.slice(0, 20).map((tx) => {
+              const isSent = tx.from.toLowerCase() === addr.toLowerCase();
+              const counterparty = isSent ? (tx.recipientVNS || `${tx.payTo.slice(0, 8)}...${tx.payTo.slice(-4)}`) : (tx.senderVNS || `${tx.from.slice(0, 8)}...${tx.from.slice(-4)}`);
+              const timeAgo = (() => {
+                const diff = Date.now() - tx.timestamp;
+                const mins = Math.floor(diff / 60000);
+                if (mins < 1) return "Just now";
+                if (mins < 60) return `${mins}m ago`;
+                const hrs = Math.floor(mins / 60);
+                if (hrs < 24) return `${hrs}h ago`;
+                const days = Math.floor(hrs / 24);
+                return `${days}d ago`;
+              })();
+              const statusColor = tx.status === "settled" ? "#22C55E" : tx.status === "failed" ? "#EF4444" : "#EAB308";
+              return (
+                <div key={tx.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", backgroundColor: "rgba(255,255,255,0.01)", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: isSent ? "rgba(249,115,22,0.05)" : "rgba(34,197,94,0.05)", display: "flex", alignItems: "center", justifyContent: "center", color: isSent ? "#F97316" : "#22C55E" }}>
+                      {isSent ? <SendIcon size={16} /> : <ReceiveIcon size={16} />}
+                    </div>
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "#F4F4F5" }}>
+                        {isSent ? "Sent to" : "Received from"}{" "}
+                        <span style={{ color: "#F97316" }}>{counterparty}</span>
+                      </p>
+                      <p style={{ fontSize: 11, color: "#52525B" }}>
+                        {timeAgo} · <span style={{ color: statusColor }}>{tx.status}</span>
+                        {tx.network && <> · {tx.network}</>}
+                      </p>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: "#F4F4F5", ...mono }}>{isSent ? "-" : "+"}{tx.amountFormatted} USDC</p>
+                    {tx.txHash && (
+                      <p style={{ fontSize: 10, color: "#3F3F46", ...mono }}>{tx.txHash.slice(0, 8)}...</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ── Alpha Notice ── */}

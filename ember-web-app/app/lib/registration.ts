@@ -404,7 +404,7 @@ async function registerOnChain(
     const identityHash = ethers.keccak256(ethers.getBytes(walletAddress.padEnd(66, '0').slice(0, 42)));
     const calldata = encodeRegisterAgent(
       'Embris User',
-      `Registered via Vaultfire Protocol — theloopbreaker.com`,
+      `Registered via Embris by Vaultfire Protocol — theloopbreaker.com`,
       identityHash,
     );
 
@@ -514,7 +514,7 @@ async function registerManualOnChain(
     const identityHash = ethers.keccak256(ethers.getBytes(manualAddress.padEnd(66, '0').slice(0, 42)));
     const calldata = encodeRegisterAgent(
       `Embris:${manualAddress}`,
-      'Registered via Vaultfire Protocol — theloopbreaker.com',
+      'Registered via Embris by Vaultfire Protocol — theloopbreaker.com',
       identityHash,
     );
 
