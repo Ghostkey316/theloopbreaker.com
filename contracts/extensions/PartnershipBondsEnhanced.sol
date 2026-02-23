@@ -255,13 +255,6 @@ contract PartnershipBondsEnhanced is AIPartnershipBondsV2 {
         return (true, "Ready to distribute");
     }
 
-    /**
-     * @notice Get protocol-wide statistics
-     * @return totalBonds Total bonds created
-     * @return activeBonds Active bonds count
-     * @return totalStaked Total ETH staked
-     * @return totalDistributed Total ETH distributed
-     */
     // ✅ MEDIUM-002 FIX: Cached counters updated on each state-changing operation
     // These replace the unbounded O(n²) loop in the original getProtocolStats.
     // NOTE: Requires the parent AIPartnershipBondsV2 to call _updateStatsOnCreate(),
@@ -271,8 +264,14 @@ contract PartnershipBondsEnhanced is AIPartnershipBondsV2 {
     uint256 public cachedTotalStaked;
     uint256 public cachedTotalDistributed;
 
-    /// @custom:audit-fix MEDIUM-002 — O(1) stats via cached counters (2026-02-23)
-    /// @notice Get protocol-wide statistics in O(1) gas using cached counters.
+    /**
+     * @notice Get protocol-wide statistics in O(1) gas using cached counters.
+     * @custom:audit-fix MEDIUM-002 - O(1) stats via cached counters (2026-02-23)
+     * @return totalBonds Total bonds created
+     * @return activeBonds Active bonds count
+     * @return totalStaked Total ETH staked
+     * @return totalDistributed Total ETH distributed
+     */
     function getProtocolStats()
         external
         view

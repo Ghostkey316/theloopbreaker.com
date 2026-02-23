@@ -225,7 +225,7 @@ contract ERC8004ValidationRegistry is PrivacyGuarantees, ReentrancyGuard {
         bool approved,
         string calldata evidenceURI,
         bytes calldata zkProof
-    ) external payable {
+    ) external payable nonReentrant {
         ValidationRequest storage request = validationRequests[requestId];
         require(request.status == ValidationStatus.PENDING, "Request not pending");
         require(validatorStakes[msg.sender] >= MIN_VALIDATOR_STAKE, "Insufficient validator stake");
@@ -284,7 +284,7 @@ contract ERC8004ValidationRegistry is PrivacyGuarantees, ReentrancyGuard {
         string calldata evidenceURI,
         bytes calldata proofBytes,
         uint256[] calldata publicInputs
-    ) external payable {
+    ) external payable nonReentrant {
         ValidationRequest storage request = validationRequests[requestId];
         require(request.status == ValidationStatus.PENDING, "Request not pending");
         require(request.validationType == ValidationType.ZK_PROOF, "Not a ZK validation request");
@@ -355,32 +355,37 @@ contract ERC8004ValidationRegistry is PrivacyGuarantees, ReentrancyGuard {
      * @param requestId Validation request ID
      * @param approved Whether validation was approved
      */
+    // slither-disable-next-line reentrancy-eth
     function _distributeRewards(uint256 requestId, bool approved) internal {
         ValidationRequest storage request = validationRequests[requestId];
         uint256[] memory responses = requestResponses[requestId];
 
         for (uint256 i = 0; i < responses.length; i++) {
             ValidationResponse storage response = validationResponses[responses[i]];
+            address validator = response.validator;
 
             // Reward validators who voted with the majority
             if (response.approved == approved) {
+                // ✅ CEI FIX (CRITICAL-005): Update state BEFORE external call to prevent reentrancy
+                // Slither reentrancy-eth: validatorActiveValidations was written after .call{}
+                validatorActiveValidations[validator] -= 1;
                 // ✅ HIGH-001 FIX: Use .call{} instead of deprecated .transfer()
-                (bool rewardSuccess, ) = payable(response.validator).call{value: VALIDATION_REWARD}("");
+                (bool rewardSuccess, ) = payable(validator).call{value: VALIDATION_REWARD}("");
                 if (!rewardSuccess) {
                     // Do not revert — log and continue to avoid DoS on reward distribution
-                    emit ValidatorSlashed(response.validator, 0, "Reward transfer failed — skipped", block.timestamp);
+                    emit ValidatorSlashed(validator, 0, "Reward transfer failed - skipped", block.timestamp);
                 }
-                validatorActiveValidations[response.validator] -= 1;
             } else {
                 // Slash validators who voted against majority
-                validatorStakes[response.validator] -= VALIDATION_REWARD;
+                // ✅ CEI FIX (CRITICAL-005): Update all state BEFORE any external interactions
+                validatorStakes[validator] -= VALIDATION_REWARD;
+                validatorActiveValidations[validator] -= 1;
                 emit ValidatorSlashed(
-                    response.validator,
+                    validator,
                     VALIDATION_REWARD,
                     "Voted against majority",
                     block.timestamp
                 );
-                validatorActiveValidations[response.validator] -= 1;
             }
         }
     }
@@ -416,7 +421,7 @@ contract ERC8004ValidationRegistry is PrivacyGuarantees, ReentrancyGuard {
         // ✅ HIGH-001 FIX: Use .call{} instead of deprecated .transfer()
         (bool success, ) = payable(msg.sender).call{value: amount}("");
         require(success, "Stake withdrawal failed");
-        emit ValidatorStakeWithdrawn((
+        emit ValidatorStakeWithdrawn(
             msg.sender,
             amount,
             validatorStakes[msg.sender],

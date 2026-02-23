@@ -57,6 +57,16 @@ Vaultfire principle: privileged power must be **explicit, reviewable, and minima
 - `function proposeImageIdChange(bytes32 _newImageId) external onlyOwner`
 - `function transferOwnership(address _newOwner) external onlyOwner`
 
+## TrustPortabilityExtension
+
+- `function addRelayer(address relayer) external onlyOwner`
+- `function pause() external onlyOwner`
+- `function removeRelayer(address relayer) external onlyOwner`
+- `function setRequiredGasLimit(uint256 _gasLimit) external onlyOwner`
+- `function setTeleporterMessenger(address _messenger) external onlyOwner`
+- `function transferOwnership(address newOwner) external onlyOwner`
+- `function unpause() external onlyOwner`
+
 ## VaultfireTeleporterBridge
 
 - `function addRelayer(address relayer) external onlyOwner`

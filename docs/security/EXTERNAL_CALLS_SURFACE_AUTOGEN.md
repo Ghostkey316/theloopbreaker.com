@@ -14,8 +14,10 @@ Vaultfire principle: external call sites are part of the attack surface and shou
 - contracts/AIPartnershipBondsV2.sol:483 [call{value:}] (bool successHuman, ) = payable(bond.human).call{value: humanShare}("");
 - contracts/AIPartnershipBondsV2.sol:488 [call{value:}] (bool successAI, ) = payable(bond.aiAgent).call{value: aiShare}("");
 - contracts/BaseYieldPoolBond.sol:112 [call{value:}] (bool success, ) = payable(owner).call{value: amount}("");
-- contracts/BeliefAttestationVerifierProduction.sol:178 [try-call] try riscZeroVerifier.verify(
+- contracts/BeliefAttestationVerifierProduction.sol:184 [try-call] try riscZeroVerifier.verify(
 - contracts/BeliefOracle.sol:99 [try-call] try rewardStream.updateMultiplier(msg.sender, BONUS_MULTIPLIER) {
+- contracts/ERC8004ValidationRegistry.sol:368 [call{value:}] (bool rewardSuccess, ) = payable(response.validator).call{value: VALIDATION_REWARD}("");
+- contracts/ERC8004ValidationRegistry.sol:417 [call{value:}] (bool success, ) = payable(msg.sender).call{value: amount}("");
 - contracts/MultiOracleConsensus.sol:281 [call{value:}] (bool success, ) = payable(msg.sender).call{value: withdrawAmount}("");
 - contracts/MultisigGovernance.sol:235 [call{value:}] (bool success, ) = txn.target.call{value: txn.value}(txn.data);
 - contracts/ProductionBeliefAttestationVerifier.sol:256 [try-call] try riscZeroVerifier.verify(seal, imageId, journalDigest) returns (bool) {

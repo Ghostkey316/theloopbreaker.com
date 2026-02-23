@@ -1,6 +1,19 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
 
+// ─── Helper: sha256 of ABI-encoded data (matches BeliefAttestationVerifierProduction) ───────────
+// The production contract uses sha256(abi.encode(...)) for journalDigest, per RISC Zero spec:
+// https://dev.risczero.com/api/blockchain-integration/contracts/verifier
+// @custom:audit-fix CRITICAL-004 — Test updated to use sha256 to match production contract (2026-02-23)
+function computeJournalDigest(beliefHash, proverAddress, epoch, moduleID) {
+  const abi = ethers.AbiCoder.defaultAbiCoder();
+  const encoded = abi.encode(
+    ['bytes32', 'address', 'uint256', 'uint256'],
+    [beliefHash, proverAddress, epoch, moduleID]
+  );
+  return ethers.sha256(encoded);
+}
+
 describe('BeliefAttestationVerifierProduction (RISC0 journalDigest binding)', function () {
   it('returns true when mock verifier sees the expected journalDigest', async function () {
     const [prover] = await ethers.getSigners();
@@ -11,10 +24,8 @@ describe('BeliefAttestationVerifierProduction (RISC0 journalDigest binding)', fu
     const epoch = 1;
     const moduleID = 2;
 
-    const abi = ethers.AbiCoder.defaultAbiCoder();
-    const expectedJournalDigest = ethers.keccak256(
-      abi.encode(['bytes32', 'address', 'uint256', 'uint256'], [beliefHash, prover.address, epoch, moduleID])
-    );
+    // ✅ CRITICAL-004 FIX: Use sha256 (not keccak256) — matches production contract
+    const expectedJournalDigest = computeJournalDigest(beliefHash, prover.address, epoch, moduleID);
 
     const imageId = ethers.keccak256(ethers.toUtf8Bytes('belief-attestation-image-id-fixture'));
 
@@ -50,10 +61,8 @@ describe('BeliefAttestationVerifierProduction (RISC0 journalDigest binding)', fu
     const epoch = 1;
     const moduleID = 2;
 
-    const abi = ethers.AbiCoder.defaultAbiCoder();
-    const expectedJournalDigest = ethers.keccak256(
-      abi.encode(['bytes32', 'address', 'uint256', 'uint256'], [beliefHash, prover.address, epoch, moduleID])
-    );
+    // ✅ CRITICAL-004 FIX: Use sha256 (not keccak256) — matches production contract
+    const expectedJournalDigest = computeJournalDigest(beliefHash, prover.address, epoch, moduleID);
 
     const imageId = ethers.keccak256(ethers.toUtf8Bytes('belief-attestation-image-id-fixture'));
 

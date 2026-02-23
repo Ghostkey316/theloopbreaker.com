@@ -92,6 +92,13 @@ Vaultfire principle: monitoring should be **privacy-preserving** (protocol integ
 - `event DataDeletionRequested(address indexed user, uint256 effectiveAt);`
 - `event DataPermanentlyDeleted(address indexed user, uint256 timestamp);`
 
+### TrustPortabilityExtension
+- `event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);`
+- `event Paused(address indexed by);`
+- `event RelayerAdded(address indexed relayer);`
+- `event RelayerRemoved(address indexed relayer);`
+- `event Unpaused(address indexed by);`
+
 ### VaultfireTeleporterBridge
 - `event AccountabilityBondSynced(uint256 indexed bondId, address aiCompany, uint256 sourceChainId);`
 - `event AgentSynced(address indexed agentAddress, string agentType, uint256 sourceChainId);`
@@ -155,8 +162,8 @@ Vaultfire principle: monitoring should be **privacy-preserving** (protocol integ
 - contracts/BeliefAttestationVerifier.sol:176 → DevVerifierUsed
 - contracts/BeliefAttestationVerifierProduction.sol:133 → ProofVerified
 - contracts/BeliefAttestationVerifierProduction.sol:135 → ProofVerificationFailed
-- contracts/BeliefAttestationVerifierProduction.sol:186 → ProofVerificationFailed
-- contracts/BeliefAttestationVerifierProduction.sol:190 → ProofVerificationFailed
+- contracts/BeliefAttestationVerifierProduction.sol:192 → ProofVerificationFailed
+- contracts/BeliefAttestationVerifierProduction.sol:196 → ProofVerificationFailed
 - contracts/BeliefOracle.sol:71 → ResonanceDriftSet
 - contracts/BeliefOracle.sol:81 → GuardianUpdated
 - contracts/BeliefOracle.sol:107 → ResonanceQueried
@@ -166,14 +173,15 @@ Vaultfire principle: monitoring should be **privacy-preserving** (protocol integ
 - contracts/ERC8004IdentityRegistry.sol:123 → AgentDeactivated
 - contracts/ERC8004ReputationRegistry.sol:164 → FeedbackSubmitted
 - contracts/ERC8004ReputationRegistry.sol:208 → FeedbackSubmittedHashed
-- contracts/ERC8004ReputationRegistry.sol:246 → ReputationUpdated
-- contracts/ERC8004ValidationRegistry.sol:204 → ValidationRequested
-- contracts/ERC8004ValidationRegistry.sol:261 → ValidationResponseSubmitted
-- contracts/ERC8004ValidationRegistry.sol:317 → ValidationResponseSubmitted
-- contracts/ERC8004ValidationRegistry.sol:343 → ValidationCompleted
-- contracts/ERC8004ValidationRegistry.sol:370 → ValidatorSlashed
-- contracts/ERC8004ValidationRegistry.sol:389 → ValidatorStaked
-- contracts/ERC8004ValidationRegistry.sol:409 → ValidatorStakeWithdrawn
+- contracts/ERC8004ReputationRegistry.sol:258 → ReputationUpdated
+- contracts/ERC8004ValidationRegistry.sol:206 → ValidationRequested
+- contracts/ERC8004ValidationRegistry.sol:263 → ValidationResponseSubmitted
+- contracts/ERC8004ValidationRegistry.sol:319 → ValidationResponseSubmitted
+- contracts/ERC8004ValidationRegistry.sol:345 → ValidationCompleted
+- contracts/ERC8004ValidationRegistry.sol:371 → ValidatorSlashed
+- contracts/ERC8004ValidationRegistry.sol:377 → ValidatorSlashed
+- contracts/ERC8004ValidationRegistry.sol:396 → ValidatorStaked
+- contracts/ERC8004ValidationRegistry.sol:419 → ValidatorStakeWithdrawn
 - contracts/FlourishingMetricsOracle.sol:140 → OwnershipTransferred
 - contracts/FlourishingMetricsOracle.sol:156 → OracleAdded
 - contracts/FlourishingMetricsOracle.sol:178 → OracleRemoved
@@ -225,19 +233,29 @@ Vaultfire principle: monitoring should be **privacy-preserving** (protocol integ
 - contracts/ProductionBeliefAttestationVerifier.sol:454 → ImageIdChangeCancelled
 - contracts/ProductionBeliefAttestationVerifier.sol:464 → OwnershipTransferred
 - contracts/teleporter/mocks/MockTeleporterMessenger.sol:56 → SendCrossChainMessage
+- contracts/teleporter/TrustPortabilityExtension.sol:272 → OwnershipTransferred
+- contracts/teleporter/TrustPortabilityExtension.sol:299 → RelayerAdded
+- contracts/teleporter/TrustPortabilityExtension.sol:305 → RelayerRemoved
+- contracts/teleporter/TrustPortabilityExtension.sol:310 → Paused
+- contracts/teleporter/TrustPortabilityExtension.sol:315 → Unpaused
+- contracts/teleporter/TrustPortabilityExtension.sol:623 → TrustMessageSent
+- contracts/teleporter/TrustPortabilityExtension.sol:657 → TrustMessageReceived
+- contracts/teleporter/TrustPortabilityExtension.sol:672 → TrustTierSynced
+- contracts/teleporter/TrustPortabilityExtension.sol:688 → VNSIdentitySynced
+- contracts/teleporter/TrustPortabilityExtension.sol:703 → ZKAttestationSynced
 - contracts/teleporter/VaultfireTeleporterBridge.sol:277 → OwnershipTransferred
 - contracts/teleporter/VaultfireTeleporterBridge.sol:297 → RemoteConfigured
 - contracts/teleporter/VaultfireTeleporterBridge.sol:315 → RelayerAdded
 - contracts/teleporter/VaultfireTeleporterBridge.sol:329 → RelayerRemoved
 - contracts/teleporter/VaultfireTeleporterBridge.sol:340 → BridgePaused
 - contracts/teleporter/VaultfireTeleporterBridge.sol:345 → BridgeUnpaused
-- contracts/teleporter/VaultfireTeleporterBridge.sol:570 → MessageSent
-- contracts/teleporter/VaultfireTeleporterBridge.sol:617 → MessageReceived
-- contracts/teleporter/VaultfireTeleporterBridge.sol:639 → AgentSynced
-- contracts/teleporter/VaultfireTeleporterBridge.sol:650 → PartnershipBondSynced
-- contracts/teleporter/VaultfireTeleporterBridge.sol:661 → AccountabilityBondSynced
-- contracts/teleporter/VaultfireTeleporterBridge.sol:673 → ReputationSynced
-- contracts/teleporter/VaultfireTeleporterBridge.sol:684 → ValidationSynced
+- contracts/teleporter/VaultfireTeleporterBridge.sol:575 → MessageSent
+- contracts/teleporter/VaultfireTeleporterBridge.sol:622 → MessageReceived
+- contracts/teleporter/VaultfireTeleporterBridge.sol:644 → AgentSynced
+- contracts/teleporter/VaultfireTeleporterBridge.sol:655 → PartnershipBondSynced
+- contracts/teleporter/VaultfireTeleporterBridge.sol:666 → AccountabilityBondSynced
+- contracts/teleporter/VaultfireTeleporterBridge.sol:678 → ReputationSynced
+- contracts/teleporter/VaultfireTeleporterBridge.sol:689 → ValidationSynced
 - contracts/VaultfireERC8004Adapter.sol:121 → AgentAutoRegistered
 - contracts/VaultfireERC8004Adapter.sol:164 → PartnershipReputationSynced
 
