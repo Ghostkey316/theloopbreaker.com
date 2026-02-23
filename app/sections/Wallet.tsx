@@ -23,7 +23,7 @@ import { isDisclaimerAcknowledged } from "../lib/disclaimers";
 import { useWalletAuth } from "../lib/WalletAuthContext";
 import {
   getSpendingLimits, saveSpendingLimits, upsertSpendingLimit, removeSpendingLimit,
-  getAllLimitStatuses, makeLimitId, getPeriodLabel,
+  getAllLimitStatuses, makeLimitId, getPeriodLabel, clearOldDefaultLimits,
   type SpendingLimitConfig, type SpendingLimitStatus, type LimitPeriod,
 } from "../lib/spending-limits";
 import {
@@ -369,6 +369,18 @@ function TokenAvatar({ item, size = 40 }: { item: AssetItem; size?: number }) {
   return <TokenLetter symbol={item.symbol} color={knownColor || item.logoColor || "#71717A"} size={size} />;
 }
 
+// ─── Small token icon for spending limit rows and other compact contexts ────
+function TokenIconSmall({ symbol, size = 22 }: { symbol: string; size?: number }) {
+  const SvgIcon = TOKEN_SVG_ICONS[symbol.toUpperCase()];
+  if (SvgIcon) return <SvgIcon size={size} />;
+  // Native chain tokens
+  if (symbol === 'ETH' || symbol === 'WETH') return <EthIcon size={size} />;
+  if (symbol === 'AVAX') return <AvaxIcon size={size} />;
+  // Colored letter fallback
+  const knownColor = TOKEN_COLORS[symbol.toUpperCase()];
+  return <TokenLetter symbol={symbol} color={knownColor || '#71717A'} size={size} />;
+}
+
 function ChainBadge({ chain }: { chain: SupportedChain }) {
   const colors: Record<SupportedChain, string> = { ethereum: "#627EEA", base: "#0052FF", avalanche: "#E84142" };
   const labels: Record<SupportedChain, string> = { ethereum: "E", base: "B", avalanche: "A" };
@@ -623,7 +635,8 @@ export default function Wallet() {
     setCustomTokens(loadCustomTokens());
     setVnsName(getVNSName());
     setCompanionName(getCompanionName());
-    // Initialize trust gate and tx history — spending limits start empty (user opts in)
+    // Clear any old default limits from previous app versions — spending limits start empty (user opts in)
+    clearOldDefaultLimits();
     setLimitStatuses(getAllLimitStatuses());
     const tgConfig = getTrustGateConfig();
     setTrustGateLevelState(tgConfig.minimumTier);
@@ -1523,7 +1536,10 @@ export default function Wallet() {
           <div style={{ padding: 16, backgroundColor: "rgba(167,139,250,0.04)", border: "1px solid rgba(167,139,250,0.12)", borderRadius: 16, marginBottom: 12 }}>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
               <div style={{ flex: 1, minWidth: 80 }}>
-                <label style={{ fontSize: 10, color: "#71717A", fontWeight: 600, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>Token</label>
+                <label style={{ fontSize: 10, color: "#71717A", fontWeight: 600, display: "flex", alignItems: "center", gap: 6, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  <TokenIconSmall symbol={newLimitToken} size={14} />
+                  Token
+                </label>
                 <select value={newLimitToken} onChange={(e) => setNewLimitToken(e.target.value)}
                   style={{ width: "100%", padding: "8px 10px", backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, color: "#F4F4F5", fontSize: 13, outline: "none" }}>
                   <option value="USDC">USDC</option>
@@ -1579,7 +1595,8 @@ export default function Wallet() {
               return (
                 <div key={status.config.id} style={{ padding: "14px 16px", backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <TokenIconSmall symbol={status.config.token} size={24} />
                       <span style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5" }}>{status.config.token}</span>
                       <span style={{ fontSize: 10, fontWeight: 600, color: "#52525B", backgroundColor: "rgba(255,255,255,0.04)", padding: "2px 8px", borderRadius: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
                         {getPeriodLabel(status.config.period)}

@@ -278,52 +278,33 @@ export function syncFromPaymentHistory(
  * Initialize default spending limits if none exist.
  * Called once on first wallet setup.
  */
+/** @deprecated - do not call. Kept for reference only. */
 export function initDefaultLimits(): void {
+  // No-op: spending limits start empty. Freedom over control.
+}
+
+/**
+ * Clears any pre-loaded default limits that were set by old versions of the app.
+ * Runs once per browser session using a versioned localStorage flag.
+ * Safe to call on every wallet load — only acts once.
+ */
+export function clearOldDefaultLimits(): void {
+  if (typeof window === 'undefined') return;
+  const CLEANED_KEY = 'vaultfire_limits_cleaned_v3';
+  if (localStorage.getItem(CLEANED_KEY)) return; // already cleaned
+
+  // IDs of the old default limits that were auto-created
+  const OLD_DEFAULT_IDS = new Set([
+    makeLimitId('USDC', 'daily'),
+    makeLimitId('USDC', 'monthly'),
+    makeLimitId('ETH', 'daily'),
+    makeLimitId('AVAX', 'daily'),
+    makeLimitId('ASM', 'daily'),
+  ]);
+
   const existing = getSpendingLimits();
-  if (existing.length > 0) return;
-
-  const defaults: SpendingLimitConfig[] = [
-    {
-      id: makeLimitId('USDC', 'daily'),
-      token: 'USDC',
-      period: 'daily',
-      maxAmount: '100',
-      enabled: true,
-      createdAt: Date.now(),
-    },
-    {
-      id: makeLimitId('USDC', 'monthly'),
-      token: 'USDC',
-      period: 'monthly',
-      maxAmount: '2000',
-      enabled: true,
-      createdAt: Date.now(),
-    },
-    {
-      id: makeLimitId('ETH', 'daily'),
-      token: 'ETH',
-      period: 'daily',
-      maxAmount: '0.5',
-      enabled: true,
-      createdAt: Date.now(),
-    },
-    {
-      id: makeLimitId('AVAX', 'daily'),
-      token: 'AVAX',
-      period: 'daily',
-      maxAmount: '5.0',
-      enabled: true,
-      createdAt: Date.now(),
-    },
-    {
-      id: makeLimitId('ASM', 'daily'),
-      token: 'ASM',
-      period: 'daily',
-      maxAmount: '100',
-      enabled: true,
-      createdAt: Date.now(),
-    },
-  ];
-
-  saveSpendingLimits(defaults);
+  // Remove any limits that match the old defaults (by ID)
+  const userLimits = existing.filter(l => !OLD_DEFAULT_IDS.has(l.id));
+  saveSpendingLimits(userLimits);
+  localStorage.setItem(CLEANED_KEY, '1');
 }
