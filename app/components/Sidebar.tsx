@@ -225,8 +225,8 @@ export default function Sidebar({ activeSection, onSectionChange, mobileForceOpe
           color: isActive ? "#F4F4F5" : "#71717A",
           transition: "background-color 0.12s ease, color 0.12s ease",
           position: "relative",
-          // Minimum touch target
-          minHeight: 40,
+          // Minimum touch target for iOS (44px)
+          minHeight: 44,
         }}
         aria-current={isActive ? 'page' : undefined}
       >
@@ -438,7 +438,7 @@ export default function Sidebar({ activeSection, onSectionChange, mobileForceOpe
           onClick={() => setMobileOpen(!mobileOpen)}
           style={{
             position: "fixed", top: 12, left: 12, zIndex: 1000,
-            width: 40, height: 40, borderRadius: 10,
+            width: 44, height: 44, borderRadius: 10,
             background: "rgba(9,9,11,0.92)",
             backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
             border: "1px solid rgba(255,255,255,0.04)",
@@ -471,12 +471,16 @@ export default function Sidebar({ activeSection, onSectionChange, mobileForceOpe
         <aside
           style={{
             position: "fixed", top: 0, left: 0,
-            width: 248, height: "100vh",
+            width: 260, height: "100dvh",
             background: "#0C0C0E",
             zIndex: 1002, display: "flex", flexDirection: "column",
-            transform: mobileOpen ? 'translateX(0)' : 'translateX(-260px)',
+            transform: mobileOpen ? 'translateX(0)' : 'translateX(-280px)',
             transition: "transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)",
             willChange: 'transform',
+            /* Safe area insets for iPhone notch and home indicator */
+            paddingTop: 'env(safe-area-inset-top)',
+            paddingBottom: 'env(safe-area-inset-bottom)',
+            paddingLeft: 'env(safe-area-inset-left)',
           }}
         >
           {/* Close button inside sidebar */}

@@ -1,40 +1,333 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@import "tailwindcss";
+
+/* ─── Tailwind v4 Theme Configuration ─────────────────────────────────────── */
+
+@theme {
+  /* Ember/Fire color palette */
+  --color-ember-bg: #0A0A0C;
+  --color-ember-surface: #1A1A1E;
+  --color-ember-surface-light: #2A2A2E;
+  --color-ember-text: #ECEDEE;
+  --color-ember-text-muted: #9BA1A6;
+  --color-ember-accent: #FF6B35;
+  --color-ember-accent-dark: #E55A24;
+  --color-ember-accent-light: #FF8C5A;
+  --color-base-accent: #00D9FF;
+  --color-avalanche-accent: #E84142;
+
+  /* Zinc palette (used by AgentHub Tailwind classes) */
+  --color-zinc-50: #fafafa;
+  --color-zinc-100: #f4f4f5;
+  --color-zinc-200: #e4e4e7;
+  --color-zinc-300: #d4d4d8;
+  --color-zinc-400: #a1a1aa;
+  --color-zinc-500: #71717a;
+  --color-zinc-600: #52525b;
+  --color-zinc-700: #3f3f46;
+  --color-zinc-800: #27272a;
+  --color-zinc-900: #18181b;
+  --color-zinc-950: #09090b;
+
+  /* Emerald */
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+
+  /* Blue */
+  --color-blue-400: #60a5fa;
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2563eb;
+
+  /* Purple */
+  --color-purple-400: #c084fc;
+  --color-purple-500: #a855f7;
+
+  /* Orange */
+  --color-orange-500: #f97316;
+
+  /* Font families */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+
+  /* Animation keyframes */
+  --animate-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-spin: spin 1s linear infinite;
+  --animate-fade-in: fade-in 0.5s ease forwards;
+  --animate-slide-in-from-bottom-2: slide-in-from-bottom-2 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-slide-in-from-right-4: slide-in-from-right-4 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-html {
-  scroll-behavior: smooth;
+/* ─── Keyframe Definitions ─────────────────────────────────────────────────── */
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
-body {
-  background-color: #0A0A0C;
-  color: #ECEDEE;
-  font-family: system-ui, -apple-system, sans-serif;
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-::-webkit-scrollbar-track {
-  background-color: #1A1A1E;
+@keyframes slide-in-from-bottom-2 {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-::-webkit-scrollbar-thumb {
-  background-color: #2A2A2E;
+@keyframes slide-in-from-right-4 {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ─── Base Layer ───────────────────────────────────────────────────────────── */
+/* CRITICAL: Use @layer base so these NEVER override Tailwind utility classes   */
+
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* Prevent horizontal overflow on mobile */
+    overflow-x: hidden;
+  }
+
+  body {
+    background-color: #0A0A0C;
+    color: #ECEDEE;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+    padding: 0;
+    /* Prevent horizontal overflow on mobile */
+    overflow-x: hidden;
+    max-width: 100vw;
+    /* Safari momentum scrolling */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  input, select, textarea {
+    font-family: inherit;
+    color: inherit;
+  }
+
+  /* Prevent Safari auto-zoom on focus — font-size must be >= 16px on mobile */
+  @media (max-width: 768px) {
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+  }
+
+  button {
+    -webkit-tap-highlight-color: transparent;
+    cursor: pointer;
+  }
+
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  ::selection {
+    background-color: rgba(255, 107, 53, 0.3);
+    color: #F4F4F5;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgba(249, 115, 22, 0.5);
+    outline-offset: 2px;
+  }
+
+  /* Prevent text size adjustment on orientation change in Safari */
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+}
+
+/* ─── Page Transitions ─────────────────────────────────────────────────────── */
+
+.page-enter {
+  animation: fadeInUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.page-exit {
+  animation: fade-in 0.15s ease reverse forwards;
+  pointer-events: none;
+}
+
+/* ─── animate-in utilities — used by AgentHub ─────────────────────────────── */
+
+.animate-in {
+  animation-fill-mode: both;
+  animation-duration: 0.5s;
+}
+
+.fade-in {
+  animation-name: fade-in;
+}
+
+.slide-in-from-bottom-2 {
+  animation-name: slide-in-from-bottom-2;
+}
+
+.slide-in-from-right-4 {
+  animation-name: slide-in-from-right-4;
+}
+
+.duration-300 {
+  animation-duration: 0.3s !important;
+}
+
+.duration-500 {
+  animation-duration: 0.5s !important;
+}
+
+/* ─── Skeleton Loading ─────────────────────────────────────────────────────── */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0.07) 50%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+.skeleton-title {
+  height: 28px;
+  border-radius: 6px;
+}
+
+.skeleton-text {
+  height: 14px;
   border-radius: 4px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background-color: #9BA1A6;
+.skeleton-text-sm {
+  height: 12px;
+  border-radius: 4px;
 }
 
-/* Selection */
-::selection {
-  background-color: #FF6B35;
-  color: #0A0A0C;
+.skeleton-text-lg {
+  height: 20px;
+  border-radius: 4px;
+}
+
+.skeleton-circle {
+  border-radius: 50%;
+}
+
+.skeleton-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+}
+
+/* ─── Scrollbar Styling ────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.14);
+}
+
+/* ─── Responsive text wrapping ─────────────────────────────────────────────── */
+
+p, span, h1, h2, h3, h4, h5, h6 {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  /* Prevent text from causing horizontal overflow */
+  max-width: 100%;
+}
+
+/* ─── Smooth Transitions ───────────────────────────────────────────────────── */
+
+.transition-all {
+  transition: all 0.2s ease;
+}
+
+.transition-colors {
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+/* ─── Appearance None ──────────────────────────────────────────────────────── */
+
+.appearance-none {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* ─── Resize None ──────────────────────────────────────────────────────────── */
+
+.resize-none {
+  resize: none;
+}
+
+/* ─── Shadow utilities ─────────────────────────────────────────────────────── */
+
+.shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.2);
+}
+
+.shadow-xl {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+}
+
+/* ─── Backdrop blur ────────────────────────────────────────────────────────── */
+
+.backdrop-blur-sm {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.backdrop-blur-md {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ─── Mobile-specific safe area utilities ──────────────────────────────────── */
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* ─── Prevent iOS bounce/overscroll on fixed elements ──────────────────────── */
+
+.no-bounce {
+  overscroll-behavior: none;
 }

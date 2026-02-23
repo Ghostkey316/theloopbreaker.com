@@ -190,44 +190,6 @@ function OverviewTab({ stats, loading, agents, setTab }: { stats: HubStats | nul
         </div>
       )}
 
-      {/* Unified Protocol Stack */}
-      <div className="rounded-2xl bg-zinc-900/40 border border-zinc-800/60 p-5">
-        <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest mb-4">Unified Protocol Stack</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-purple-500/5 border border-purple-500/10">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 flex-shrink-0">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>
-            </div>
-            <div className="flex-1">
-              <div className="text-sm font-bold text-white">XMTP</div>
-              <div className="text-[11px] text-zinc-500">Encrypted messaging</div>
-            </div>
-            <span className="text-[9px] font-bold uppercase tracking-widest text-purple-400 bg-purple-500/10 px-2 py-1 rounded-lg">Active</span>
-          </div>
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 flex-shrink-0">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            </div>
-            <div className="flex-1">
-              <div className="text-sm font-bold text-white">x402</div>
-              <div className="text-[11px] text-zinc-500">USDC payments</div>
-            </div>
-            <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 px-2 py-1 rounded-lg">Active</span>
-          </div>
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-ember-accent/5 border border-ember-accent/10">
-            <div className="w-10 h-10 rounded-xl bg-ember-accent/10 flex items-center justify-center text-ember-accent flex-shrink-0">
-              {Ico.shield}
-            </div>
-            <div className="flex-1">
-              <div className="text-sm font-bold text-white">Vaultfire</div>
-              <div className="text-[11px] text-zinc-500">Trust & identity</div>
-            </div>
-            <span className="text-[9px] font-bold uppercase tracking-widest text-ember-accent bg-ember-accent/10 px-2 py-1 rounded-lg">Active</span>
-          </div>
-        </div>
-        <p className="text-[11px] text-zinc-600 mt-3 leading-relaxed">Agents communicate via XMTP, pay via x402 (EIP-3009 USDC on Base), and verify trust via Vaultfire bonds — all unified under Embris.</p>
-      </div>
-
       {/* Hub Zones */}
       <div className="space-y-3">
         <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest px-1">Hub Zones</h3>
@@ -291,10 +253,10 @@ function AgentOnlyTab() {
   const activeRoom = rooms.find(r => r.id === activeRoomId);
 
   return (
-    <div className="h-[600px] flex flex-col rounded-2xl bg-zinc-900/40 border border-zinc-800/60 overflow-hidden animate-in fade-in duration-500">
-      <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar */}
-        <div className="w-64 border-r border-zinc-800/60 flex flex-col bg-zinc-900/20">
+    <div className="flex flex-col rounded-2xl bg-zinc-900/40 border border-zinc-800/60 overflow-hidden animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row sm:h-[560px] overflow-hidden">
+        {/* Room List */}
+        <div className="sm:w-56 border-b sm:border-b-0 sm:border-r border-zinc-800/60 flex flex-col bg-zinc-900/20">
           <div className="p-4 border-b border-zinc-800/60 flex flex-col gap-2">
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Active Rooms</span>
@@ -305,17 +267,17 @@ function AgentOnlyTab() {
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse ml-auto" />
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+          <div className="flex overflow-x-auto sm:flex-col sm:overflow-y-auto sm:overflow-x-hidden p-2 gap-1">
             {rooms.map(room => (
               <button 
                 key={room.id} 
                 onClick={() => setActiveRoomId(room.id)}
-                className={`w-full text-left px-3 py-2.5 rounded-xl transition-all flex items-center gap-3 ${activeRoomId === room.id ? 'bg-ember-accent/10 text-ember-accent' : 'text-zinc-400 hover:bg-zinc-800/40 hover:text-zinc-200'}`}
+                className={`flex-shrink-0 sm:flex-shrink text-left px-3 py-2.5 rounded-xl transition-all flex items-center gap-3 ${activeRoomId === room.id ? 'bg-ember-accent/10 text-ember-accent' : 'text-zinc-400 hover:bg-zinc-800/40 hover:text-zinc-200'}`}
               >
-                <div className={`w-2 h-2 rounded-full ${activeRoomId === room.id ? 'bg-ember-accent' : 'bg-zinc-700'}`} />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-bold truncate">{room.name}</div>
-                  <div className="text-[10px] opacity-60 truncate">{room.participantCount} participants · {room.messageCount} msgs</div>
+                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${activeRoomId === room.id ? 'bg-ember-accent' : 'bg-zinc-700'}`} />
+                <div className="min-w-0">
+                  <div className="text-sm font-bold whitespace-nowrap sm:whitespace-normal sm:truncate">{room.name}</div>
+                  <div className="text-[10px] opacity-60 whitespace-nowrap sm:whitespace-normal">{room.participantCount} agents</div>
                 </div>
               </button>
             ))}
@@ -323,7 +285,7 @@ function AgentOnlyTab() {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col bg-zinc-900/40">
+        <div className="flex-1 flex flex-col bg-zinc-900/40 min-h-[400px] sm:min-h-0">
           {activeRoom ? (
             <>
               <div className="p-4 border-b border-zinc-800/60 flex items-center justify-between">
@@ -779,8 +741,8 @@ function LaunchpadTab() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Progress Indicator */}
-      <div className="relative flex justify-between items-center px-4">
-        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-zinc-800 -translate-y-1/2 z-0" />
+      <div className="relative flex justify-between items-start px-4 pt-2">
+        <div className="absolute top-5 left-0 right-0 h-0.5 bg-zinc-800 z-0" />
         {[1, 2, 3, 4, 5].map(s => (
           <div key={s} className="relative z-10 flex flex-col items-center gap-2">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-500 ${step >= s ? 'bg-ember-accent border-ember-accent text-white shadow-[0_0_15px_rgba(255,107,53,0.3)]' : 'bg-zinc-900 border-zinc-800 text-zinc-600'}`}>

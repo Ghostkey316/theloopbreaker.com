@@ -195,9 +195,13 @@ export default function Page() {
         style={{
           display: 'flex',
           flexDirection: 'column',
-          height: '100vh',
+          /* Use dvh (dynamic viewport height) for Safari — accounts for browser chrome */
+          height: '100dvh',
           backgroundColor: '#09090B',
           overflow: 'hidden',
+          /* Prevent horizontal overflow on mobile */
+          maxWidth: '100vw',
+          overscrollBehavior: 'none',
         }}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
@@ -215,13 +219,15 @@ export default function Page() {
               overflowY: isChat ? 'hidden' : 'auto',
               overflowX: 'hidden',
               backgroundColor: '#09090B',
+              /* Mobile: account for the top nav bar height */
               paddingTop: isMobile ? 52 : 0,
+              /* Mobile: account for iPhone home indicator / safe area */
+              paddingBottom: isMobile ? 'env(safe-area-inset-bottom)' : 0,
               width: '100%',
               minWidth: 0,
               display: isChat ? 'flex' : 'block',
               flexDirection: 'column',
-              // Smooth scroll
-              scrollBehavior: 'smooth',
+              /* Safari momentum scrolling */
               WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'],
             }}
           >
