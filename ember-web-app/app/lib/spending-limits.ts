@@ -275,15 +275,6 @@ export function syncFromPaymentHistory(
 // ─── Default Limits ──────────────────────────────────────────────────────────
 
 /**
- * Initialize default spending limits if none exist.
- * Called once on first wallet setup.
- */
-/** @deprecated - do not call. Kept for reference only. */
-export function initDefaultLimits(): void {
-  // No-op: spending limits start empty. Freedom over control.
-}
-
-/**
  * Clears any pre-loaded default limits that were set by old versions of the app.
  * Runs once per browser session using a versioned localStorage flag.
  * Safe to call on every wallet load — only acts once.

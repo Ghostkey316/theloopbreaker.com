@@ -224,29 +224,33 @@ function FireIcon({ size = 16 }: { size?: number }) {
   return (<svg width={size} height={size} viewBox="0 0 32 32" fill="none"><path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9"/><path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C"/><path d="M16 14c-.7 1-1.4 2.2-1.4 3.2 0 .77.63 1.4 1.4 1.4s1.4-.63 1.4-1.4c0-1-.7-2.2-1.4-3.2z" fill="#FDE68A" opacity="0.6"/></svg>);
 }
 
-// ─── Chain Token Icons ────────────────────────────────────────────────────────
-
-// ─── Native Chain Token Icons ────────────────────────────────────────────
+// ─── Token Icons (official SVG paths) ────────────────────────────
 function EthIcon({ size = 40 }: { size?: number }) {
+  // Official Ethereum diamond logo from ethereum.org brand assets
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-      <circle cx="16" cy="16" r="16" fill="#627EEA"/>
-      <path d="M16 5v9.14l7.5 3.35L16 5z" fill="#fff" opacity="0.6"/>
-      <path d="M16 5L8.5 17.49 16 14.14V5z" fill="#fff"/>
-      <path d="M16 22.44v5.56l7.5-10.38L16 22.44z" fill="#fff" opacity="0.6"/>
-      <path d="M16 28v-5.56l-7.5-4.82L16 28z" fill="#fff"/>
-      <path d="M16 21.07l7.5-4.35-7.5-3.35v7.7z" fill="#fff" opacity="0.2"/>
-      <path d="M8.5 16.72l7.5 4.35v-7.7l-7.5 3.35z" fill="#fff" opacity="0.5"/>
+    <svg width={size} height={size} viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <g fill="none" fillRule="evenodd">
+        <circle cx="16" cy="16" r="16" fill="#627EEA"/>
+        <g fill="#FFF" fillRule="nonzero">
+          <path fillOpacity=".602" d="M16.498 4v8.87l7.497 3.35z"/>
+          <path d="M16.498 4L9 16.22l7.498-3.35z"/>
+          <path fillOpacity=".602" d="M16.498 21.968v6.027L24 17.616z"/>
+          <path d="M16.498 27.995v-6.028L9 17.616z"/>
+          <path fillOpacity=".2" d="M16.498 20.573l7.497-4.353-7.497-3.348z"/>
+          <path fillOpacity=".602" d="M9 16.22l7.498 4.353v-7.701z"/>
+        </g>
+      </g>
     </svg>
   );
 }
 function AvaxIcon({ size = 40 }: { size?: number }) {
+  // Official Avalanche logo from avax.network brand assets
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-      <circle cx="16" cy="16" r="16" fill="#E84142"/>
-      {/* Avalanche triangle logo */}
-      <path d="M20.5 21H11.5c-.55 0-.85-.6-.55-1.05l4.5-7.8c.3-.5 1-.5 1.3 0l4.5 7.8c.3.45 0 1.05-.55 1.05h-.2z" fill="#fff"/>
-      <path d="M11.2 21H8.5c-.55 0-.85-.6-.55-1.05l3-5.2c.3-.5 1-.5 1.3 0l1.5 2.6-2.05 3.65H11.2z" fill="#fff" opacity="0.7"/>
+    <svg width={size} height={size} viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <g fill="none" fillRule="evenodd">
+        <circle fill="#E84142" fillRule="nonzero" cx="16" cy="16" r="16"/>
+        <path d="M11.518 22.75H8.49c-.636 0-.95 0-1.142-.123A.77.77 0 017 22.025c-.012-.226.145-.503.46-1.055l7.472-13.193c.318-.56.48-.84.682-.944a.77.77 0 01.698 0c.203.104.364.384.682.944l1.536 2.686.008.014c.343.6.517.906.593 1.226a2.26 2.26 0 010 1.066c-.076.323-.249.63-.597 1.24l-3.926 6.95-.01.017c-.346.606-.52.913-.764 1.145a2.284 2.284 0 01-.93.54c-.319.089-.675.089-1.387.089zm7.643 0h4.336c.64 0 .962 0 1.154-.126a.768.768 0 00.348-.607c.011-.219-.142-.484-.443-1.005l-.032-.054-2.172-3.722-.025-.042c-.305-.517-.46-.778-.657-.879a.762.762 0 00-.693 0c-.2.104-.36.377-.678.925l-2.165 3.722-.007.013c-.317.548-.476.821-.464 1.046a.777.777 0 00.348.606c.188.123.51.123 1.15.123z" fill="#FFF"/>
+      </g>
     </svg>
   );
 }
@@ -259,25 +263,36 @@ function BaseIcon({ size = 40 }: { size?: number }) {
   );
 }
 
-// ─── Known ERC-20 Token SVG Logos ────────────────────────────────────────────
+// ─── Known ERC-20 Token SVG Logos (official paths) ──────────────────────────────
 function UsdcIcon({ size = 40 }: { size?: number }) {
+  // Official USDC logo from Circle (CC BY-SA 4.0)
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-      <circle cx="16" cy="16" r="16" fill="#2775CA"/>
-      {/* USDC: white circle ring with dollar sign */}
-      <circle cx="16" cy="16" r="10" fill="none" stroke="#fff" strokeWidth="1.5" opacity="0.4"/>
-      <text x="16" y="21" textAnchor="middle" fontSize="12" fontWeight="800" fill="#fff" fontFamily="Arial, sans-serif">$</text>
-      <path d="M16 7.5v2M16 22.5v2" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+    <svg width={size} height={size} viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <g fill="none">
+        <circle fill="#3E73C4" cx="16" cy="16" r="16"/>
+        <g fill="#FFF">
+          <path d="M20.022 18.124c0-2.124-1.28-2.852-3.84-3.156-1.828-.243-2.193-.728-2.193-1.578 0-.85.61-1.396 1.828-1.396 1.097 0 1.707.364 2.011 1.275a.458.458 0 00.427.303h.975a.416.416 0 00.427-.425v-.06a3.04 3.04 0 00-2.743-2.489V9.142c0-.243-.183-.425-.487-.486h-.915c-.243 0-.426.182-.487.486v1.396c-1.829.242-2.986 1.456-2.986 2.974 0 2.002 1.218 2.791 3.778 3.095 1.707.303 2.255.668 2.255 1.639 0 .97-.853 1.638-2.011 1.638-1.585 0-2.133-.667-2.316-1.578-.06-.242-.244-.364-.427-.364h-1.036a.416.416 0 00-.426.425v.06c.243 1.518 1.219 2.61 3.23 2.914v1.457c0 .242.183.425.487.485h.915c.243 0 .426-.182.487-.485V21.34c1.829-.303 3.047-1.578 3.047-3.217z"/>
+          <path d="M12.892 24.497c-4.754-1.7-7.192-6.98-5.424-11.653.914-2.55 2.925-4.491 5.424-5.402.244-.121.365-.303.365-.607v-.85c0-.242-.121-.424-.365-.485-.061 0-.183 0-.244.06a10.895 10.895 0 00-7.13 13.717c1.096 3.4 3.717 6.01 7.13 7.102.244.121.488 0 .548-.243.061-.06.061-.122.061-.243v-.85c0-.182-.182-.424-.365-.546zm6.46-18.936c-.244-.122-.488 0-.548.242-.061.061-.061.122-.061.243v.85c0 .243.182.485.365.607 4.754 1.7 7.192 6.98 5.424 11.653-.914 2.55-2.925 4.491-5.424 5.402-.244.121-.365.303-.365.607v.85c0 .242.121.424.365.485.061 0 .183 0 .244-.06a10.895 10.895 0 007.13-13.717c-1.096-3.46-3.778-6.07-7.13-7.162z"/>
+        </g>
+      </g>
     </svg>
   );
 }
 function AsmIcon({ size = 40 }: { size?: number }) {
+  // ASM (Assemble AI) logo: stylized "N" mark — two verticals + diagonal, white on purple circle
+  // Based on the Assemble Protocol mark visible at assembleprotocol.io
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-      <circle cx="16" cy="16" r="16" fill="#8B5CF6"/>
-      {/* ASM: stylized A mark */}
-      <path d="M10 22l6-12 6 12" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-      <path d="M12.5 18h7" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
+    <svg width={size} height={size} viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="16" cy="16" r="16" fill="#7C3AED"/>
+      {/* Stylized N: left vertical, diagonal from top-left to bottom-right, right vertical */}
+      <path
+        d="M10 22V10l12 12V10"
+        stroke="#FFFFFF"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
     </svg>
   );
 }
