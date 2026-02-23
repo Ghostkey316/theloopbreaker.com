@@ -96,7 +96,7 @@ const NAV_ITEMS: { id: Section; label: string; iconKey: string; group?: string }
   { id: "wallet", label: "Embris Wallet", iconKey: "wallet" },
   { id: "vns", label: "VNS Identity", iconKey: "vns", group: "Identity" },
   { id: "agent-hub", label: "Embris Hub", iconKey: "agentHub", group: "Agents" },
-  { id: "marketplace", label: "Marketplace", iconKey: "marketplace" },
+  { id: "marketplace", label: "Embris Directory", iconKey: "marketplace" },
   { id: "trust-badges", label: "Trust Badges", iconKey: "trust" },
   { id: "earnings", label: "Earnings", iconKey: "wallet" },
   { id: "agent-api", label: "API / SDK", iconKey: "verify" },

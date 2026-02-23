@@ -6,8 +6,8 @@
  * 1. Wallet locked → show unlock screen
  * 2. Wallet unlocked, no VNS → show registration choice (Human / AI Agent)
  * 3. Wallet unlocked, VNS registered → route to correct experience
- *    - Human → human nav (Companion, Wallet, Collaboration, Marketplace)
- *    - Agent → agent nav (Agent-Only Zone, Tasks, Hub, Marketplace)
+ *    - Human → human nav (Companion, Wallet, Collaboration, Embris Directory)
+ *    - Agent → agent nav (Agent-Only Zone, Tasks, Hub, Embris Directory)
  *
  * The identity type is immutable on-chain — cannot be gamed after registration.
  */
@@ -235,7 +235,7 @@ function IdentityChoiceScreen({ onChoose }: { onChoose: (type: 'human' | 'agent'
                   Access your companion (Embris), wallet, and the Human-Agent Collaboration Zone. Hire AI agents, post tasks, earn reputation.
                 </p>
                 <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-                  {["Companion", "Wallet", "Collaboration", "Marketplace"].map(f => (
+                  {["Companion", "Wallet", "Collaboration", "Embris Directory"].map(f => (
                     <span key={f} style={{
                       fontSize: 11, padding: "2px 8px", borderRadius: 5,
                       background: "rgba(255,255,255,0.04)", color: "#A1A1AA",
