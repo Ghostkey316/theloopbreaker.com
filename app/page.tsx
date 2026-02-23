@@ -7,7 +7,7 @@ import Chat from './sections/Chat';
 import Wallet from './sections/Wallet';
 import Verify from './sections/Verify';
 import Bridge from './sections/Bridge';
-import Dashboard from './sections/Dashboard';
+import Settings from './sections/Settings';
 import Sync from './sections/Sync';
 import TrustScore from './sections/TrustScore';
 import Analytics from './sections/Analytics';
@@ -24,7 +24,7 @@ import OnboardingModal from './components/OnboardingModal';
 import ToastContainer from './components/Toast';
 import WalletGate from './components/WalletGate';
 
-type Section = 'home' | 'chat' | 'wallet' | 'verify' | 'bridge' | 'dashboard' | 'sync' | 'trust' | 'analytics' | 'vns' | 'agent-hub' | 'marketplace' | 'zk-proofs' | 'trust-badges' | 'earnings' | 'agent-api';
+type Section = 'home' | 'chat' | 'wallet' | 'verify' | 'bridge' | 'sync' | 'trust' | 'analytics' | 'vns' | 'agent-hub' | 'marketplace' | 'zk-proofs' | 'trust-badges' | 'earnings' | 'agent-api' | 'settings';
 
 // Skeleton placeholder for section loading
 function SectionSkeleton() {
@@ -108,7 +108,7 @@ export default function Page() {
     setIsTransitioning(true);
 
     // Show skeleton briefly for heavier sections
-    const heavySections = ['dashboard', 'analytics', 'trust', 'verify', 'bridge', 'agent-hub', 'marketplace', 'zk-proofs', 'vns', 'trust-badges', 'earnings', 'agent-api'];
+    const heavySections = ['analytics', 'trust', 'verify', 'bridge', 'agent-hub', 'marketplace', 'zk-proofs', 'vns', 'trust-badges', 'earnings', 'agent-api'];
     if (heavySections.includes(newSection)) {
       skeletonTimeout.current = setTimeout(() => {
         setShowSkeleton(false);
@@ -168,7 +168,7 @@ export default function Page() {
       case 'wallet': return <Wallet />;
       case 'verify': return <Verify />;
       case 'bridge': return <Bridge />;
-      case 'dashboard': return <Dashboard />;
+      case 'settings': return <Settings />;
       case 'sync': return <Sync />;
       case 'trust': return <TrustScore />;
       case 'analytics': return <Analytics />;
