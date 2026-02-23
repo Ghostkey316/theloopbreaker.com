@@ -7,6 +7,11 @@
  *
  * Stack: XMTP (messaging) + x402 (payments) + Vaultfire (trust/accountability)
  *
+ * Trust verification uses the correct AIPartnershipBondsV2 ABI:
+ *   1. getBondsByParticipantCount(address) → uint256
+ *   2. getBondsByParticipant(address)      → uint256[]
+ *   3. getBond(uint256)                    → Bond struct
+ *
  * @module xmtp-connector
  */
 
@@ -41,12 +46,43 @@ const BOND_CONTRACT: Record<string, string> = {
 /** getTotalAgents() → uint256 */
 const GET_TOTAL_AGENTS_SELECTOR = '0x3731a16f';
 
-/** getBondInfo(address) → (uint256 amount, bool active, uint256 timestamp) */
-const GET_BOND_INFO_SELECTOR = '0x96d02099';
+// ---------------------------------------------------------------------------
+// AIPartnershipBondsV2 selectors (verified on-chain)
+// ---------------------------------------------------------------------------
+
+/** getBondsByParticipantCount(address) → uint256 */
+const GET_BONDS_BY_PARTICIPANT_COUNT_SELECTOR = '0x67ff6265';
+
+/** getBondsByParticipant(address) → uint256[] */
+const GET_BONDS_BY_PARTICIPANT_SELECTOR = '0xde4c4e4c';
+
+/** getBond(uint256) → Bond struct */
+const GET_BOND_SELECTOR = '0xd8fe7642';
+
+/** nextBondId() → uint256 */
+const NEXT_BOND_ID_SELECTOR = '0xee53a423';
+
+/**
+ * Bond struct layout returned by getBond(uint256):
+ *   offset 0: tuple header (0x20 = 32, pointer to start of struct data)
+ *   offset 1: id (uint256)
+ *   offset 2: human address (address, left-padded)
+ *   offset 3: aiAgent address (address, left-padded)
+ *   offset 4: string data offset
+ *   offset 5: stakeAmount (uint256)
+ *   offset 6: timestamp (uint256)
+ *   offset 7-8: other fields
+ *   offset 9: active (bool, 1 = true)
+ */
+const BOND_STRUCT_STAKE_OFFSET = 5;
+const BOND_STRUCT_ACTIVE_OFFSET = 9;
 
 // ---------------------------------------------------------------------------
 // Trust types
 // ---------------------------------------------------------------------------
+
+/** Bond tier based on stakeAmount */
+export type BondTier = 'none' | 'bronze' | 'silver' | 'gold' | 'platinum';
 
 /** On-chain trust profile for a Vaultfire agent */
 export interface VaultfireTrustProfile {
@@ -55,9 +91,20 @@ export interface VaultfireTrustProfile {
   hasBond: boolean;
   bondAmount: string;
   bondActive: boolean;
+  bondId: number;
+  bondTier: BondTier;
   chain: string;
   /** Human-readable summary */
   summary: string;
+}
+
+/** Multi-chain trust result aggregating all chains */
+export interface MultiChainTrustProfile {
+  address: string;
+  bestProfile: VaultfireTrustProfile;
+  allChains: Record<string, VaultfireTrustProfile>;
+  /** The chain with the highest active bond */
+  bestChain: string;
 }
 
 /** Configuration for a Vaultfire XMTP agent */
@@ -77,14 +124,94 @@ export interface VaultfireAgentConfig {
 }
 
 // ---------------------------------------------------------------------------
+// Trust cache (5-minute TTL)
+// ---------------------------------------------------------------------------
+
+const TRUST_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+interface CacheEntry<T> {
+  value: T;
+  expiresAt: number;
+}
+
+const trustCache = new Map<string, CacheEntry<VaultfireTrustProfile>>();
+const multiChainCache = new Map<string, CacheEntry<MultiChainTrustProfile>>();
+
+function getCached<T>(cache: Map<string, CacheEntry<T>>, key: string): T | null {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    cache.delete(key);
+    return null;
+  }
+  return entry.value;
+}
+
+function setCache<T>(cache: Map<string, CacheEntry<T>>, key: string, value: T): void {
+  cache.set(key, { value, expiresAt: Date.now() + TRUST_CACHE_TTL_MS });
+}
+
+/** Clear all trust caches (useful for testing or forced refresh) */
+export function clearTrustCache(): void {
+  trustCache.clear();
+  multiChainCache.clear();
+}
+
+// ---------------------------------------------------------------------------
+// Bond tier calculation
+// ---------------------------------------------------------------------------
+
+const TIER_THRESHOLDS = {
+  bronze: 0n,                           // > 0 and < 0.01 ETH
+  silver: 10000000000000000n,            // 0.01 ETH
+  gold: 100000000000000000n,             // 0.1 ETH
+  platinum: 1000000000000000000n,        // 1.0 ETH
+};
+
+/**
+ * Calculate bond tier from stakeAmount in wei.
+ *
+ * | Tier     | Stake Range          |
+ * |----------|----------------------|
+ * | none     | 0                    |
+ * | bronze   | > 0 and < 0.01 ETH  |
+ * | silver   | >= 0.01 and < 0.1   |
+ * | gold     | >= 0.1 and < 1.0    |
+ * | platinum | >= 1.0 ETH          |
+ */
+export function calculateBondTier(stakeWei: string | bigint): BondTier {
+  const amount = typeof stakeWei === 'string' ? BigInt(stakeWei) : stakeWei;
+  if (amount <= 0n) return 'none';
+  if (amount < TIER_THRESHOLDS.silver) return 'bronze';
+  if (amount < TIER_THRESHOLDS.gold) return 'silver';
+  if (amount < TIER_THRESHOLDS.platinum) return 'gold';
+  return 'platinum';
+}
+
+/** Emoji badge for a bond tier */
+function tierBadge(tier: BondTier): string {
+  switch (tier) {
+    case 'platinum': return '💎';
+    case 'gold': return '🥇';
+    case 'silver': return '🥈';
+    case 'bronze': return '🥉';
+    default: return '⬜';
+  }
+}
+
+// ---------------------------------------------------------------------------
 // On-chain trust verification (pure fetch — no ethers dependency)
 // ---------------------------------------------------------------------------
 
 /**
  * Verify an address's Vaultfire trust profile by reading on-chain state.
  *
- * Calls `getTotalAgents()` on ERC8004IdentityRegistry and `getBondInfo(address)`
- * on AIPartnershipBondsV2 via JSON-RPC `eth_call`.
+ * Uses the correct AIPartnershipBondsV2 flow:
+ *   1. getBondsByParticipantCount(address) — check if any bonds exist
+ *   2. getBondsByParticipant(address) — get the bond ID array
+ *   3. getBond(bondId) — read stakeAmount and active flag from the Bond struct
+ *
+ * Also calls `getTotalAgents()` on ERC8004IdentityRegistry as a liveness check.
  *
  * @param address - Ethereum address to verify
  * @param chain   - Chain to query (default: 'base')
@@ -94,64 +221,237 @@ export async function verifyVaultfireTrust(
   address: string,
   chain: string = 'base',
 ): Promise<VaultfireTrustProfile> {
+  // Check cache first
+  const cacheKey = `${chain}:${address.toLowerCase()}`;
+  const cached = getCached(trustCache, cacheKey);
+  if (cached) return cached;
+
   const rpc = RPC_URLS[chain] ?? RPC_URLS.base;
   const identityAddr = IDENTITY_REGISTRY[chain] ?? IDENTITY_REGISTRY.base;
   const bondAddr = BOND_CONTRACT[chain] ?? BOND_CONTRACT.base;
-  const paddedAddress = '0x' + address.replace(/^0x/, '').toLowerCase().padStart(64, '0');
+  const paddedAddress = address.replace(/^0x/, '').toLowerCase().padStart(64, '0');
 
-  // --- Check registration (getTotalAgents as a proxy) ---
+  // --- Check registration (getTotalAgents as a liveness proxy) ---
   let isRegistered = false;
   try {
     const regResult = await ethCall(rpc, identityAddr, GET_TOTAL_AGENTS_SELECTOR);
-    // If the call succeeds the contract is alive; we assume the address is
-    // registered if it has a bond (more reliable than parsing the full registry).
+    // If the call succeeds the contract is alive; we refine registration
+    // status below based on bond data.
     isRegistered = regResult !== '0x' && regResult.length > 2;
   } catch {
     // Contract call failed — assume not registered
   }
 
-  // --- Check bond ---
+  // --- Check bond via correct 2-step flow ---
   let hasBond = false;
   let bondActive = false;
   let bondAmount = '0';
+  let bondId = 0;
+
   try {
-    const bondCalldata = GET_BOND_INFO_SELECTOR + paddedAddress.slice(2);
-    const bondResult = await ethCall(rpc, bondAddr, bondCalldata);
-    if (bondResult && bondResult.length >= 194) {
-      const raw = bondResult.slice(2);
-      bondAmount = BigInt('0x' + raw.slice(0, 64)).toString();
-      bondActive = BigInt('0x' + raw.slice(64, 128)) === 1n;
-      hasBond = BigInt('0x' + raw.slice(0, 64)) > 0n;
-      // If the agent has an active bond, consider them registered
-      if (hasBond && bondActive) isRegistered = true;
+    // Step 1: Get bond count for this address
+    const countCalldata = GET_BONDS_BY_PARTICIPANT_COUNT_SELECTOR + paddedAddress;
+    const countResult = await ethCall(rpc, bondAddr, countCalldata);
+
+    const bondCount = countResult && countResult.length > 2
+      ? BigInt(countResult)
+      : 0n;
+
+    if (bondCount > 0n) {
+      // Step 2: Get the bond IDs array
+      const bondsCalldata = GET_BONDS_BY_PARTICIPANT_SELECTOR + paddedAddress;
+      const bondsResult = await ethCall(rpc, bondAddr, bondsCalldata);
+
+      if (bondsResult && bondsResult.length > 2) {
+        // The result is an ABI-encoded dynamic uint256[] array:
+        //   word 0: offset to array data (0x20)
+        //   word 1: array length
+        //   word 2+: array elements (bond IDs)
+        const raw = bondsResult.slice(2); // strip 0x
+        const arrayLength = Number(BigInt('0x' + raw.slice(64, 128)));
+
+        if (arrayLength > 0) {
+          // Take the first bond ID
+          const firstBondId = BigInt('0x' + raw.slice(128, 192));
+          bondId = Number(firstBondId);
+
+          // Step 3: Get the Bond struct for this bond ID
+          const bondIdPadded = firstBondId.toString(16).padStart(64, '0');
+          const getBondCalldata = GET_BOND_SELECTOR + bondIdPadded;
+          const bondResult = await ethCall(rpc, bondAddr, getBondCalldata);
+
+          if (bondResult && bondResult.length > 2) {
+            const bondRaw = bondResult.slice(2); // strip 0x
+            // Each word is 64 hex chars (32 bytes)
+            // Offset 0 = tuple header, then struct fields follow
+            // stakeAmount is at offset 5, active is at offset 9
+            const stakeHex = bondRaw.slice(BOND_STRUCT_STAKE_OFFSET * 64, (BOND_STRUCT_STAKE_OFFSET + 1) * 64);
+            const activeHex = bondRaw.slice(BOND_STRUCT_ACTIVE_OFFSET * 64, (BOND_STRUCT_ACTIVE_OFFSET + 1) * 64);
+
+            if (stakeHex.length === 64) {
+              bondAmount = BigInt('0x' + stakeHex).toString();
+              hasBond = BigInt('0x' + stakeHex) > 0n;
+            }
+            if (activeHex.length === 64) {
+              bondActive = BigInt('0x' + activeHex) === 1n;
+            }
+
+            // If the agent has an active bond, consider them registered
+            if (hasBond && bondActive) isRegistered = true;
+          }
+        }
+      }
     }
-  } catch {
-    // Bond lookup failed
+  } catch (err) {
+    // Bond lookup failed — degrade gracefully
+    console.warn(`[Vaultfire] Bond verification failed for ${address} on ${chain}:`, err);
   }
 
+  const bondTier = calculateBondTier(bondAmount);
+
   const summary = hasBond && bondActive
-    ? `Trusted agent — active bond of ${formatWei(bondAmount)} ETH on ${chain}`
+    ? `${tierBadge(bondTier)} Trusted agent — active ${bondTier} bond of ${formatWei(bondAmount)} ETH on ${chain} (bond #${bondId})`
     : hasBond
-      ? `Agent has bond (${formatWei(bondAmount)} ETH) but it is inactive`
+      ? `Agent has bond #${bondId} (${formatWei(bondAmount)} ETH) but it is inactive`
       : isRegistered
         ? 'Registered agent — no bond staked'
         : 'Unknown agent — not registered on Vaultfire';
 
-  return { address, isRegistered, hasBond, bondAmount, bondActive, chain, summary };
+  const profile: VaultfireTrustProfile = {
+    address,
+    isRegistered,
+    hasBond,
+    bondAmount,
+    bondActive,
+    bondId,
+    bondTier,
+    chain,
+    summary,
+  };
+
+  // Cache the result
+  setCache(trustCache, cacheKey, profile);
+
+  return profile;
+}
+
+// ---------------------------------------------------------------------------
+// Multi-chain trust verification
+// ---------------------------------------------------------------------------
+
+/**
+ * Verify trust across all supported chains and return the best result.
+ *
+ * Queries Base, Avalanche, and Ethereum in parallel. The "best" profile is
+ * the one with the highest active bond amount. If no active bonds exist on
+ * any chain, the first chain with any bond data is returned.
+ *
+ * @param address - Ethereum address to verify
+ * @returns Multi-chain trust profile with per-chain results and best chain
+ */
+export async function verifyMultiChainTrust(
+  address: string,
+): Promise<MultiChainTrustProfile> {
+  // Check cache first
+  const cacheKey = `multi:${address.toLowerCase()}`;
+  const cached = getCached(multiChainCache, cacheKey);
+  if (cached) return cached;
+
+  const chains = Object.keys(RPC_URLS); // ['base', 'avalanche', 'ethereum']
+
+  const results = await Promise.allSettled(
+    chains.map((chain) => verifyVaultfireTrust(address, chain)),
+  );
+
+  const allChains: Record<string, VaultfireTrustProfile> = {};
+  let bestProfile: VaultfireTrustProfile | null = null;
+  let bestAmount = 0n;
+
+  for (let i = 0; i < chains.length; i++) {
+    const result = results[i];
+    if (result.status === 'fulfilled') {
+      const profile = result.value;
+      allChains[chains[i]] = profile;
+
+      // Pick the best: prefer active bonds, then highest amount
+      if (profile.hasBond && profile.bondActive) {
+        const amount = BigInt(profile.bondAmount);
+        if (amount > bestAmount) {
+          bestAmount = amount;
+          bestProfile = profile;
+        }
+      }
+    } else {
+      // Chain query failed — create a degraded profile
+      allChains[chains[i]] = {
+        address,
+        isRegistered: false,
+        hasBond: false,
+        bondAmount: '0',
+        bondActive: false,
+        bondId: 0,
+        bondTier: 'none',
+        chain: chains[i],
+        summary: `Chain query failed: ${result.reason}`,
+      };
+    }
+  }
+
+  // If no active bond found, fall back to any chain with data
+  if (!bestProfile) {
+    bestProfile = Object.values(allChains).find((p) => p.hasBond) ??
+      allChains[chains[0]] ??
+      {
+        address,
+        isRegistered: false,
+        hasBond: false,
+        bondAmount: '0',
+        bondActive: false,
+        bondId: 0,
+        bondTier: 'none',
+        chain: 'base',
+        summary: 'No trust data found on any chain',
+      };
+  }
+
+  const multiProfile: MultiChainTrustProfile = {
+    address,
+    bestProfile,
+    allChains,
+    bestChain: bestProfile.chain,
+  };
+
+  // Cache the result
+  setCache(multiChainCache, cacheKey, multiProfile);
+
+  return multiProfile;
 }
 
 /**
  * Quick boolean check: is this address a trusted Vaultfire agent?
  *
- * @param address  - Ethereum address
- * @param chain    - Chain to check (default: 'base')
- * @param minBond  - Minimum bond in wei (default: '0')
+ * Checks the specified chain first. If `multiChain` is true, checks all
+ * chains and returns true if any chain has an active bond meeting the minimum.
+ *
+ * @param address    - Ethereum address
+ * @param chain      - Chain to check (default: 'base')
+ * @param minBond    - Minimum bond in wei (default: '0')
+ * @param multiChain - Check all chains (default: false)
  */
 export async function isTrustedAgent(
   address: string,
   chain: string = 'base',
   minBond: string = '0',
+  multiChain: boolean = false,
 ): Promise<boolean> {
+  if (multiChain) {
+    const multi = await verifyMultiChainTrust(address);
+    const best = multi.bestProfile;
+    if (!best.hasBond || !best.bondActive) return false;
+    if (BigInt(best.bondAmount) < BigInt(minBond)) return false;
+    return true;
+  }
+
   const trust = await verifyVaultfireTrust(address, chain);
   if (!trust.hasBond || !trust.bondActive) return false;
   if (BigInt(trust.bondAmount) < BigInt(minBond)) return false;
@@ -256,10 +556,74 @@ export async function createVaultfireAgent(config: VaultfireAgentConfig = {}) {
       `Address: \`${trust.address}\`\n` +
       `Registered: ${trust.isRegistered ? '✅' : '❌'}\n` +
       `Bond: ${trust.hasBond ? formatWei(trust.bondAmount) + ' ETH' : 'None'}\n` +
+      `Bond ID: ${trust.bondId > 0 ? `#${trust.bondId}` : 'N/A'}\n` +
       `Active: ${trust.bondActive ? '✅' : '❌'}\n` +
+      `Tier: ${tierBadge(trust.bondTier)} ${trust.bondTier.toUpperCase()}\n` +
       `Chain: ${trust.chain}\n\n` +
       `> ${trust.summary}`,
     );
+  });
+
+  router.command('/trust-all', 'Check trust across all chains', async (ctx) => {
+    const senderAddress = await ctx.getSenderAddress();
+    if (!senderAddress) {
+      await ctx.conversation.sendText('Could not determine your address.');
+      return;
+    }
+    const multi = await verifyMultiChainTrust(senderAddress);
+    let report = `**Multi-Chain Trust Report**\n\nAddress: \`${multi.address}\`\n` +
+      `Best Chain: **${multi.bestChain}**\n\n`;
+
+    for (const [chainName, profile] of Object.entries(multi.allChains)) {
+      const badge = profile.hasBond && profile.bondActive
+        ? `${tierBadge(profile.bondTier)} Active`
+        : profile.hasBond ? '⚠️ Inactive' : '❌ None';
+      report += `**${chainName}**: ${badge}`;
+      if (profile.hasBond) {
+        report += ` — ${formatWei(profile.bondAmount)} ETH (bond #${profile.bondId})`;
+      }
+      report += '\n';
+    }
+
+    report += `\n> ${multi.bestProfile.summary}`;
+    await ctx.conversation.sendMarkdown(report);
+  });
+
+  router.command('/status', 'Show this agent\'s own trust profile', async (ctx) => {
+    const agentAddress = agent.address;
+    if (!agentAddress) {
+      await ctx.conversation.sendText('Agent address not available.');
+      return;
+    }
+
+    const multi = await verifyMultiChainTrust(agentAddress);
+    const best = multi.bestProfile;
+
+    let statusReport = `**Agent Status**\n\n` +
+      `Agent Address: \`${agentAddress}\`\n` +
+      `XMTP Env: ${config.env ?? 'production'}\n` +
+      `Trust Gate: ${config.blockUntrusted ? 'Enabled' : 'Disabled'}\n` +
+      `Min Bond: ${minBondWei === '0' ? 'Any' : formatWei(minBondWei) + ' ETH'}\n\n` +
+      `**On-Chain Trust Profile**\n\n` +
+      `Best Chain: **${multi.bestChain}**\n` +
+      `Bond Tier: ${tierBadge(best.bondTier)} ${best.bondTier.toUpperCase()}\n` +
+      `Bond Amount: ${best.hasBond ? formatWei(best.bondAmount) + ' ETH' : 'None'}\n` +
+      `Bond Active: ${best.bondActive ? '✅' : '❌'}\n` +
+      `Bond ID: ${best.bondId > 0 ? `#${best.bondId}` : 'N/A'}\n\n`;
+
+    statusReport += `**Per-Chain Status**\n\n` +
+      `| Chain | Bond | Amount | Tier | Active |\n` +
+      `|-------|------|--------|------|--------|\n`;
+
+    for (const [chainName, profile] of Object.entries(multi.allChains)) {
+      statusReport += `| ${chainName} | ${profile.hasBond ? `#${profile.bondId}` : 'None'} | ` +
+        `${profile.hasBond ? formatWei(profile.bondAmount) + ' ETH' : '—'} | ` +
+        `${tierBadge(profile.bondTier)} ${profile.bondTier} | ` +
+        `${profile.bondActive ? '✅' : '❌'} |\n`;
+    }
+
+    statusReport += `\n> ${best.summary}`;
+    await ctx.conversation.sendMarkdown(statusReport);
   });
 
   router.command('/bond', 'Learn how to stake a Vaultfire bond', async (ctx) => {
@@ -276,18 +640,18 @@ export async function createVaultfireAgent(config: VaultfireAgentConfig = {}) {
 
   router.command('/contracts', 'Show Vaultfire contract addresses', async (ctx) => {
     await ctx.conversation.sendMarkdown(
-      '**Vaultfire Contracts (Base)**\n\n' +
-      '| Contract | Address |\n' +
-      '|---|---|\n' +
-      '| ERC8004IdentityRegistry | `0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5` |\n' +
-      '| AIPartnershipBondsV2 | `0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1` |\n' +
-      '| DilithiumAttestor V2 | `0xe24Ab41dC93833d63d8dd501C53bED674daa4839` |',
+      '**Vaultfire Contracts**\n\n' +
+      '| Contract | Base | Avalanche | Ethereum |\n' +
+      '|---|---|---|---|\n' +
+      '| IdentityRegistry | `0x63a3...d1D5` | `0x0161...c1b5` | `0xaCB5...2630` |\n' +
+      '| BondsV2 | `0x5cd7...9BB1` | `0x3767...2D717` | `0x4FAf...7aC1` |\n',
     );
   });
 
   agent.use(router.middleware());
 
-  // --- Lifecycle events ---
+  // --- Lifecycle logging ---
+
   agent.on('start', () => {
     console.log(`[Vaultfire] Agent online: ${agent.address}`);
     console.log(`[Vaultfire] Trust chain: ${chain} | Block untrusted: ${config.blockUntrusted ?? false}`);
@@ -419,7 +783,7 @@ export async function sendTrustedDm(
   if (agentAddress) {
     const selfTrust = await verifyVaultfireTrust(agentAddress, chain);
     if (selfTrust.hasBond && selfTrust.bondActive) {
-      trustLine = `\n\n---\n_Sent by bonded Vaultfire agent (${formatWei(selfTrust.bondAmount)} ETH bond on ${chain})_`;
+      trustLine = `\n\n---\n_Sent by bonded Vaultfire agent (${tierBadge(selfTrust.bondTier)} ${formatWei(selfTrust.bondAmount)} ETH bond on ${chain})_`;
     }
   }
 
@@ -481,19 +845,26 @@ export function decodeVaultfireMeta(message: string): VaultfireMessageMeta | nul
 
 /** Execute a raw eth_call via JSON-RPC */
 async function ethCall(rpcUrl: string, to: string, data: string): Promise<string> {
-  const res = await fetch(rpcUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'eth_call',
-      params: [{ to, data }, 'latest'],
-    }),
-  });
-  const json = await res.json();
-  if (json.error) throw new Error(json.error.message);
-  return json.result ?? '0x';
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10_000);
+  try {
+    const res = await fetch(rpcUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'eth_call',
+        params: [{ to, data }, 'latest'],
+      }),
+      signal: controller.signal,
+    });
+    const json = await res.json();
+    if (json.error) throw new Error(json.error.message);
+    return json.result ?? '0x';
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 /** Format wei to ETH with 4 decimal places */
