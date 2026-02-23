@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { ALL_CONTRACTS, BASE_CONTRACTS, AVALANCHE_CONTRACTS, CHAINS } from "../lib/contracts";
 import { checkAllChains, getMultipleContractStatus, getGovernanceData, getTeleporterBridgeStats, type RPCResult, type GovernanceData, type BridgeStats } from "../lib/blockchain";
-import { SectionDisclaimer } from "../components/DisclaimerBanner";
+import { SectionDisclaimer, AlphaBanner } from "../components/DisclaimerBanner";
 
 interface ContractWithStatus {
   name: string;
@@ -121,6 +121,7 @@ export default function Dashboard() {
 
   return (
     <div className="page-enter" style={{ padding: isMobile ? "24px 16px 48px" : "48px 40px", maxWidth: 720, margin: "0 auto" }}>
+      <AlphaBanner />
       {/* Header */}
       <div style={{
         display: "flex", alignItems: isMobile ? "flex-start" : "center",

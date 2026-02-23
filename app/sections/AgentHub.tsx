@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { AlphaBanner } from '../components/DisclaimerBanner';
 import { CHAINS, BASE_CONTRACTS, AVALANCHE_CONTRACTS, ETHEREUM_CONTRACTS } from '../lib/contracts';
 import { showToast } from '../components/Toast';
 import { useWalletAuth } from '../lib/WalletAuthContext';
@@ -1009,6 +1010,7 @@ export default function AgentHub() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+      <AlphaBanner />
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">

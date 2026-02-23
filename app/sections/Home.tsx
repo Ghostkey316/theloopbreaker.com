@@ -4,6 +4,7 @@ import { checkAllChains, type RPCResult } from '../lib/blockchain';
 import { BASE_CONTRACTS, AVALANCHE_CONTRACTS, ETHEREUM_CONTRACTS } from '../lib/contracts';
 import { isRegistered, getRegistration, getRegisteredChains, getChainConfig, type SupportedChain } from '../lib/registration';
 import { getAgentCount } from '../lib/contract-interaction';
+import { AlphaBanner } from '../components/DisclaimerBanner';
 
 interface ChainStatus {
   name: string;
@@ -91,6 +92,7 @@ export default function Home() {
   return (
     <div className="page-enter" style={{ padding: `${isMobile ? 32 : 48}px ${px}px 64px`, maxWidth: 640, margin: '0 auto' }}>
 
+      <AlphaBanner />
       {/* ── Hero ── */}
       <div style={{ marginBottom: 48, textAlign: 'center' }}>
         {/* Brand pill */}

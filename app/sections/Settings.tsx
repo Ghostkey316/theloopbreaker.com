@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getThemePreference, toggleTheme, type ThemeMode } from '../lib/theme';
+import { AlphaBanner } from '../components/DisclaimerBanner';
 
 /* ─────────────────────────────────────────────
    Settings Section
@@ -162,6 +163,7 @@ export default function Settings() {
       padding: isMobile ? '24px 16px 80px' : '40px 24px 60px',
       display: 'flex', flexDirection: 'column', gap: 24,
     }}>
+      <AlphaBanner />
       {/* Header */}
       <div>
         <h1 style={{

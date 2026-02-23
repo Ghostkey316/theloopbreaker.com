@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { AlphaBanner } from "./DisclaimerBanner";
 
 interface SectionLayoutProps {
   title: string;
@@ -13,6 +14,8 @@ interface SectionLayoutProps {
   compact?: boolean;
   /** Optional right-side header content (e.g., chain selector, status badge) */
   headerRight?: React.ReactNode;
+  /** If true, hides the alpha banner (for sections that render their own) */
+  hideAlphaBanner?: boolean;
 }
 
 /**
@@ -31,6 +34,7 @@ export default function SectionLayout({
   fullWidth = false,
   compact = false,
   headerRight,
+  hideAlphaBanner = false,
 }: SectionLayoutProps) {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -53,6 +57,9 @@ export default function SectionLayout({
         width: "100%",
       }}
     >
+      {/* Alpha Banner — shown at top of every section */}
+      {!hideAlphaBanner && <AlphaBanner />}
+
       {/* Header with hamburger clearance on mobile */}
       <div
         style={{

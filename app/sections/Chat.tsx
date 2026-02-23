@@ -46,7 +46,7 @@ import {
 } from '../lib/registration';
 import RegistrationModal from '../components/RegistrationModal';
 import RegistrationBanner from '../components/RegistrationBanner';
-import DisclaimerBanner from '../components/DisclaimerBanner';
+import DisclaimerBanner, { AlphaBanner } from '../components/DisclaimerBanner';
 
 // Voice Mode imports
 import {
@@ -1041,8 +1041,9 @@ export default function Chat() {
   const suggestedPrompts = registered ? SUGGESTED_PROMPTS_REGISTERED : SUGGESTED_PROMPTS_UNREGISTERED;
 
   return (
-    <div style={{ display: 'flex', height: '100%', backgroundColor: '#09090B', overflow: 'hidden' }}>
-
+    <div style={{ display: 'flex', height: '100%', backgroundColor: '#09090B', overflow: 'hidden', flexDirection: 'column' }}>
+      <AlphaBanner />
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
       {/* ── Conversation Sidebar ── */}
       <ConversationSidebar
         conversations={conversations}
@@ -1618,6 +1619,7 @@ export default function Chat() {
         </div>
       </div>
 
+      </div>
       {/* ── Registration Modal ── */}
       <RegistrationModal
         isOpen={showRegistrationModal}

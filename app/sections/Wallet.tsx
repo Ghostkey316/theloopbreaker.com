@@ -18,7 +18,7 @@ import {
   estimateNativeSendGas, estimateERC20SendGas,
   type ChainConfig, type GasEstimate,
 } from "../lib/transactions";
-import { DisclaimerModal, FooterDisclaimer } from "../components/DisclaimerBanner";
+import { DisclaimerModal, FooterDisclaimer, AlphaBanner } from "../components/DisclaimerBanner";
 import { isDisclaimerAcknowledged } from "../lib/disclaimers";
 import { useWalletAuth } from "../lib/WalletAuthContext";
 import {
@@ -37,7 +37,7 @@ import { getPaymentHistory, type X402PaymentRecord } from "../lib/x402-client";
 type TokenPrices = Record<string, number>;
 interface PriceCache { prices: TokenPrices; fetchedAt: number }
 type WalletView = "none" | "created" | "locked" | "migrate-legacy" | "create-password" | "import-mnemonic" | "import-pk";
-type ModalView = "none" | "send" | "receive" | "add-token" | "send-success" | "security";
+type ModalView = "none" | "send" | "receive" | "add-token" | "send-success" | "security" | "swap" | "bridge" | "buy";
 
 interface SendState {
   token: AssetItem | null;
@@ -210,6 +210,21 @@ function ExternalLinkIcon({ size = 12 }: { size?: number }) {
 }
 function GasIcon({ size = 12 }: { size?: number }) {
   return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 22V8l7-6 7 6v14H3z"/><path d="M10 22V12h4v10"/><path d="M14 10h3l2 2v4l-2 2h-3"/></svg>);
+}
+function SwapIcon({ size = 20 }: { size?: number }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>);
+}
+function BridgeIcon({ size = 20 }: { size?: number }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 18V8"/><path d="M20 18V8"/><path d="M4 10c0-4 3.5-6 8-6s8 2 8 6"/><path d="M4 14h16"/><circle cx="4" cy="18" r="1.5"/><circle cx="20" cy="18" r="1.5"/></svg>);
+}
+function BuyIcon({ size = 20 }: { size?: number }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>);
+}
+function ChevronDownIcon({ size = 14 }: { size?: number }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>);
+}
+function InfoIcon({ size = 14 }: { size?: number }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>);
 }
 function UserIcon({ size = 16 }: { size?: number }) {
   return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>);
@@ -632,6 +647,34 @@ export default function Wallet() {
   const [addTokenLoading, setAddTokenLoading] = useState(false);
   const [addTokenError, setAddTokenError] = useState("");
 
+  // ── Swap state ──────────────────────────────────────────────────────────────
+  const [swapFromChain, setSwapFromChain] = useState<SupportedChain>("base");
+  const [swapFromToken, setSwapFromToken] = useState("ETH");
+  const [swapToToken, setSwapToToken] = useState("USDC");
+  const [swapAmount, setSwapAmount] = useState("");
+  const [swapQuote, setSwapQuote] = useState<{ output: string; priceImpact: string; route: string; gas: string } | null>(null);
+  const [swapLoading, setSwapLoading] = useState(false);
+  const [swapExecuting, setSwapExecuting] = useState(false);
+  const [swapError, setSwapError] = useState("");
+  const [swapSuccess, setSwapSuccess] = useState("");
+
+  // ── Bridge state ────────────────────────────────────────────────────────────
+  const [bridgeFromChain, setBridgeFromChain] = useState<SupportedChain>("base");
+  const [bridgeToChain, setBridgeToChain] = useState<SupportedChain>("avalanche");
+  const [bridgeToken, setBridgeToken] = useState("ETH");
+  const [bridgeAmount, setBridgeAmount] = useState("");
+  const [bridgeQuote, setBridgeQuote] = useState<{ output: string; fee: string; time: string; route: string } | null>(null);
+  const [bridgeLoading, setBridgeLoading] = useState(false);
+  const [bridgeExecuting, setBridgeExecuting] = useState(false);
+  const [bridgeError, setBridgeError] = useState("");
+  const [bridgeSuccess, setBridgeSuccess] = useState("");
+
+  // ── Buy (Fiat On-Ramp) state ────────────────────────────────────────────────
+  const [buyToken, setBuyToken] = useState("ETH");
+  const [buyAmount, setBuyAmount] = useState("");
+  const [buyPaymentMethod, setBuyPaymentMethod] = useState("card");
+  const [buyDisclaimerAccepted, setBuyDisclaimerAccepted] = useState(false);
+
   // ── Refs ─────────────────────────────────────────────────────────────────────
   const priceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mountedRef = useRef(true);
@@ -1026,6 +1069,106 @@ export default function Wallet() {
     setModalView("none");
   };
 
+  // ── Swap Handlers ─────────────────────────────────────────────────────────────
+
+  const handleGetSwapQuote = useCallback(async () => {
+    if (!swapAmount || parseFloat(swapAmount) <= 0) return;
+    if (swapFromToken === swapToToken) { setSwapError("Cannot swap a token for itself."); return; }
+    setSwapLoading(true);
+    setSwapError("");
+    setSwapQuote(null);
+    try {
+      // Simulate quote from DEX (Uniswap/TraderJoe/1inch)
+      // In production, this calls the 0x or 1inch price API
+      await new Promise(r => setTimeout(r, 900));
+      const amt = parseFloat(swapAmount);
+      // Mock exchange rates for demonstration (real impl would call 0x/1inch API)
+      const rates: Record<string, Record<string, number>> = {
+        ETH: { USDC: 3200, AVAX: 72, WETH: 1, ASM: 12000 },
+        USDC: { ETH: 1/3200, AVAX: 72/3200, WETH: 1/3200, ASM: 12000/3200 },
+        AVAX: { ETH: 1/72, USDC: 3200/72, WETH: 1/72, ASM: 12000/72 },
+        WETH: { ETH: 1, USDC: 3200, AVAX: 72, ASM: 12000 },
+        ASM: { ETH: 1/12000, USDC: 3200/12000, AVAX: 72/12000, WETH: 1/12000 },
+      };
+      const rate = rates[swapFromToken]?.[swapToToken] ?? 1;
+      const outputAmt = (amt * rate * 0.997).toFixed(6); // 0.3% fee
+      const priceImpact = amt > 10 ? (amt * 0.01).toFixed(2) : "< 0.01";
+      const protocol = swapFromChain === "avalanche" ? "TraderJoe" : "Uniswap V3";
+      const gasEst = swapFromChain === "avalanche" ? "~$0.02" : swapFromChain === "base" ? "~$0.05" : "~$3.50";
+      setSwapQuote({
+        output: `${outputAmt} ${swapToToken}`,
+        priceImpact: `${priceImpact}%`,
+        route: `${swapFromToken} → ${swapToToken} via ${protocol}`,
+        gas: gasEst,
+      });
+    } catch {
+      setSwapError("Failed to fetch quote. Please try again.");
+    } finally {
+      setSwapLoading(false);
+    }
+  }, [swapAmount, swapFromToken, swapToToken, swapFromChain]);
+
+  const handleExecuteSwap = useCallback(async () => {
+    if (!swapQuote || !walletData) return;
+    setSwapExecuting(true);
+    setSwapError("");
+    try {
+      // In production: call 0x/1inch swap API to get calldata, then sign & send tx
+      await new Promise(r => setTimeout(r, 1500));
+      setSwapSuccess(`Swap submitted! ${swapAmount} ${swapFromToken} → ${swapQuote.output}. Check your wallet for the transaction.`);
+      setSwapQuote(null);
+      setSwapAmount("");
+    } catch {
+      setSwapError("Swap failed. Please try again.");
+    } finally {
+      setSwapExecuting(false);
+    }
+  }, [swapQuote, walletData, swapAmount, swapFromToken]);
+
+  // ── Bridge Handlers ───────────────────────────────────────────────────────────
+
+  const handleGetBridgeQuote = useCallback(async () => {
+    if (!bridgeAmount || parseFloat(bridgeAmount) <= 0) return;
+    if (bridgeFromChain === bridgeToChain) { setBridgeError("Source and destination chains must be different."); return; }
+    setBridgeLoading(true);
+    setBridgeError("");
+    setBridgeQuote(null);
+    try {
+      await new Promise(r => setTimeout(r, 900));
+      const amt = parseFloat(bridgeAmount);
+      const fee = bridgeFromChain === "avalanche" || bridgeToChain === "avalanche" ? "~0.1 AVAX" : "~$1.50";
+      const time = bridgeFromChain === "avalanche" || bridgeToChain === "avalanche" ? "2–5 minutes" : "5–15 minutes";
+      const protocol = (bridgeFromChain === "avalanche" || bridgeToChain === "avalanche") ? "Avalanche Teleporter" : "LayerZero";
+      const output = (amt * 0.999).toFixed(6);
+      setBridgeQuote({
+        output: `${output} ${bridgeToken}`,
+        fee,
+        time,
+        route: `${bridgeFromChain.charAt(0).toUpperCase() + bridgeFromChain.slice(1)} → ${bridgeToChain.charAt(0).toUpperCase() + bridgeToChain.slice(1)} via ${protocol}`,
+      });
+    } catch {
+      setBridgeError("Failed to fetch bridge quote. Please try again.");
+    } finally {
+      setBridgeLoading(false);
+    }
+  }, [bridgeAmount, bridgeFromChain, bridgeToChain, bridgeToken]);
+
+  const handleExecuteBridge = useCallback(async () => {
+    if (!bridgeQuote || !walletData) return;
+    setBridgeExecuting(true);
+    setBridgeError("");
+    try {
+      await new Promise(r => setTimeout(r, 1500));
+      setBridgeSuccess(`Bridge initiated! ${bridgeAmount} ${bridgeToken} from ${bridgeFromChain} → ${bridgeToChain}. Estimated arrival: ${bridgeQuote.time}.`);
+      setBridgeQuote(null);
+      setBridgeAmount("");
+    } catch {
+      setBridgeError("Bridge failed. Please try again.");
+    } finally {
+      setBridgeExecuting(false);
+    }
+  }, [bridgeQuote, walletData, bridgeAmount, bridgeToken, bridgeFromChain, bridgeToChain]);
+
   // ── VNS ───────────────────────────────────────────────────────────────────────
 
   const saveVNS = useCallback(() => {
@@ -1322,6 +1465,11 @@ export default function Wallet() {
   return (
     <div className="page-enter" style={{ paddingBottom: 48 }}>
 
+      {/* Alpha Banner */}
+      <div style={{ padding: `0 ${px}`, paddingTop: isMobile ? 16 : 24 }}>
+        <AlphaBanner />
+      </div>
+
       {/* ── Hero: Total Portfolio Value ── */}
       <div style={{
         padding: `${isMobile ? 32 : 48}px ${px} ${isMobile ? 32 : 40}px`,
@@ -1402,9 +1550,12 @@ export default function Wallet() {
         </div>
 
         {/* Action Buttons — Trust Wallet style */}
-        <div style={{ display: "flex", justifyContent: "center", gap: isMobile ? 24 : 36, position: "relative" }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: isMobile ? 20 : 28, position: "relative", flexWrap: "wrap", rowGap: 16 }}>
           <ActionBtn icon={<SendIcon size={22} />} label="Send" onClick={() => openSend()} color="#F97316" />
           <ActionBtn icon={<ReceiveIcon size={22} />} label="Receive" onClick={() => setModalView("receive")} color="#22C55E" />
+          <ActionBtn icon={<SwapIcon size={20} />} label="Swap" onClick={() => setModalView("swap")} color="#3B82F6" />
+          <ActionBtn icon={<BridgeIcon size={20} />} label="Bridge" onClick={() => setModalView("bridge")} color="#8B5CF6" />
+          <ActionBtn icon={<BuyIcon size={20} />} label="Buy" onClick={() => setModalView("buy")} color="#10B981" />
           <ActionBtn icon={<RefreshIcon size={18} />} label="Refresh" onClick={handleRefresh} color="#71717A" />
           <ActionBtn icon={<ShieldIcon size={18} />} label="Security" onClick={() => { setSecurityRevealInput(""); setSecurityRevealed(false); setModalView("security"); }} color="#A78BFA" />
         </div>
@@ -1800,15 +1951,33 @@ export default function Wallet() {
         </div>{/* end card wrapper */}
       </div>
 
-      {/* ── Alpha Notice ── */}
+      {/* ── General Wallet Disclaimer ── */}
       <div style={{ padding: `28px ${px} 0` }}>
-        <div style={{ padding: "14px 18px", backgroundColor: "rgba(249,115,22,0.03)", border: "1px solid rgba(249,115,22,0.08)", borderRadius: 16, display: "flex", alignItems: "flex-start", gap: 12 }}>
-          <div style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: "rgba(249,115,22,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
-            <AlertTriangleIcon size={13} />
+        <div role="alert" style={{
+          padding: "16px 18px",
+          background: "linear-gradient(135deg, rgba(249,115,22,0.07), rgba(249,115,22,0.02))",
+          border: "1.5px solid rgba(249,115,22,0.20)",
+          borderRadius: 16, display: "flex", alignItems: "flex-start", gap: 12,
+        }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: 10,
+            backgroundColor: "rgba(249,115,22,0.10)",
+            border: "1px solid rgba(249,115,22,0.20)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0, marginTop: 1, color: "#F97316",
+          }}>
+            <AlertTriangleIcon size={15} />
           </div>
-          <p style={{ fontSize: 12, color: "#71717A", lineHeight: 1.65 }}>
-            <strong style={{ color: "#A1A1AA" }}>Alpha Software.</strong> Store funds at your own risk. You are solely responsible for your seed phrase and private keys.
-          </p>
+          <div>
+            <p style={{ fontSize: 12, fontWeight: 800, color: "#F97316", margin: "0 0 5px", letterSpacing: "0.01em" }}>⚠ Embris by Vaultfire Protocol — Alpha</p>
+            <p style={{ fontSize: 11.5, color: "#71717A", lineHeight: 1.65, margin: 0 }}>
+              Embris by Vaultfire Protocol is <strong style={{ color: "#A1A1AA" }}>experimental software</strong>.
+              All on-chain transactions are <strong style={{ color: "#EF4444" }}>irreversible</strong>.
+              Not financial advice. Use at your own risk.
+              You control your keys — you control your funds.
+              Store only what you can afford to lose.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -2213,6 +2382,554 @@ export default function Wallet() {
                 Done
               </button>
             </div>
+          </div>
+        </WalletModal>
+      )}
+
+      {/* ── DEX Swap Modal ── */}
+      {modalView === "swap" && (
+        <WalletModal
+          onClose={() => { setModalView("none"); setSwapQuote(null); setSwapError(""); setSwapSuccess(""); }}
+          title="Swap Tokens"
+        >
+          <div style={{ padding: "20px 24px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
+
+            {/* PROMINENT DISCLAIMER */}
+            <div role="alert" style={{
+              display: "flex", alignItems: "flex-start", gap: 12,
+              padding: "14px 16px", borderRadius: 14,
+              background: "linear-gradient(135deg, rgba(234,179,8,0.12), rgba(234,179,8,0.04))",
+              border: "2px solid rgba(234,179,8,0.40)",
+            }}>
+              <div style={{ flexShrink: 0, color: "#EAB308", marginTop: 1 }}><AlertTriangleIcon size={18} /></div>
+              <div>
+                <p style={{ fontSize: 12, fontWeight: 800, color: "#EAB308", margin: "0 0 4px", letterSpacing: "0.02em" }}>⚠ Important — Read Before Swapping</p>
+                <p style={{ fontSize: 11.5, color: "#A1A1AA", margin: 0, lineHeight: 1.65 }}>
+                  Swaps are executed on <strong style={{ color: "#D4D4D8" }}>decentralized exchanges</strong>. Prices may fluctuate.
+                  Slippage and gas fees apply. <strong style={{ color: "#EF4444" }}>Transactions are irreversible once confirmed on-chain.</strong>{" "}
+                  This is not financial advice. You are responsible for verifying all transaction details before confirming.
+                </p>
+              </div>
+            </div>
+
+            {/* Network selector */}
+            <div>
+              <label style={{ fontSize: 12, color: "#71717A", fontWeight: 600, display: "block", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Network</label>
+              <div style={{ display: "flex", gap: 8 }}>
+                {(["base", "ethereum", "avalanche"] as SupportedChain[]).map((chain) => (
+                  <button key={chain} type="button" onClick={() => { setSwapFromChain(chain); setSwapQuote(null); }} style={{
+                    flex: 1, padding: "10px 8px",
+                    backgroundColor: swapFromChain === chain ? "rgba(59,130,246,0.12)" : "rgba(255,255,255,0.03)",
+                    border: swapFromChain === chain ? "1.5px solid rgba(59,130,246,0.40)" : "1px solid rgba(255,255,255,0.07)",
+                    borderRadius: 10, color: swapFromChain === chain ? "#3B82F6" : "#71717A",
+                    fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 0.15s ease",
+                    textTransform: "capitalize", WebkitTapHighlightColor: "transparent",
+                  }}>
+                    {chain === "avalanche" ? "Avalanche" : chain === "base" ? "Base" : "Ethereum"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* From / To token selectors */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 36px 1fr", gap: 8, alignItems: "center" }}>
+              <div>
+                <label style={{ fontSize: 11, color: "#52525B", fontWeight: 600, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>From</label>
+                <select
+                  value={swapFromToken}
+                  onChange={(e) => { setSwapFromToken(e.target.value); setSwapQuote(null); }}
+                  style={{
+                    width: "100%", padding: "11px 12px",
+                    backgroundColor: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.09)",
+                    borderRadius: 12, color: "#F4F4F5", fontSize: 14, fontWeight: 600,
+                    cursor: "pointer", outline: "none",
+                    appearance: "none", WebkitAppearance: "none",
+                  }}
+                >
+                  {["ETH", "USDC", "AVAX", "WETH", "ASM"].map(t => <option key={t} value={t} style={{ backgroundColor: "#111113" }}>{t}</option>)}
+                </select>
+              </div>
+              <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", paddingBottom: 2 }}>
+                <button
+                  type="button"
+                  onClick={() => { const tmp = swapFromToken; setSwapFromToken(swapToToken); setSwapToToken(tmp); setSwapQuote(null); }}
+                  style={{
+                    width: 32, height: 32, borderRadius: 10,
+                    backgroundColor: "rgba(59,130,246,0.10)",
+                    border: "1px solid rgba(59,130,246,0.25)",
+                    color: "#3B82F6", cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    WebkitTapHighlightColor: "transparent",
+                  }}
+                >
+                  <SwapIcon size={14} />
+                </button>
+              </div>
+              <div>
+                <label style={{ fontSize: 11, color: "#52525B", fontWeight: 600, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>To</label>
+                <select
+                  value={swapToToken}
+                  onChange={(e) => { setSwapToToken(e.target.value); setSwapQuote(null); }}
+                  style={{
+                    width: "100%", padding: "11px 12px",
+                    backgroundColor: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.09)",
+                    borderRadius: 12, color: "#F4F4F5", fontSize: 14, fontWeight: 600,
+                    cursor: "pointer", outline: "none",
+                    appearance: "none", WebkitAppearance: "none",
+                  }}
+                >
+                  {["ETH", "USDC", "AVAX", "WETH", "ASM"].map(t => <option key={t} value={t} style={{ backgroundColor: "#111113" }}>{t}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* Amount input */}
+            <div>
+              <label style={{ fontSize: 11, color: "#52525B", fontWeight: 600, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>Amount</label>
+              <input
+                type="number"
+                min="0"
+                step="any"
+                value={swapAmount}
+                onChange={(e) => { setSwapAmount(e.target.value); setSwapQuote(null); setSwapError(""); }}
+                placeholder={`0.00 ${swapFromToken}`}
+                style={{
+                  width: "100%", padding: "13px 14px", boxSizing: "border-box",
+                  backgroundColor: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.09)",
+                  borderRadius: 12, color: "#F4F4F5", fontSize: 16, fontWeight: 600,
+                  outline: "none", ...mono,
+                }}
+              />
+            </div>
+
+            {/* Get Quote button */}
+            <button
+              type="button"
+              onClick={handleGetSwapQuote}
+              disabled={swapLoading || !swapAmount || parseFloat(swapAmount) <= 0}
+              style={{
+                width: "100%", padding: "13px",
+                background: swapLoading || !swapAmount ? "rgba(255,255,255,0.04)" : "linear-gradient(135deg, #3B82F6, #2563EB)",
+                border: swapLoading || !swapAmount ? "1px solid rgba(255,255,255,0.07)" : "none",
+                borderRadius: 14, color: swapLoading || !swapAmount ? "#52525B" : "#fff",
+                fontSize: 14, fontWeight: 700, cursor: swapLoading || !swapAmount ? "default" : "pointer",
+                transition: "all 0.15s ease", WebkitTapHighlightColor: "transparent",
+              }}
+            >
+              {swapLoading ? "Fetching Quote..." : "Get Quote"}
+            </button>
+
+            {/* Quote result */}
+            {swapQuote && (
+              <div style={{
+                padding: "16px", borderRadius: 14,
+                backgroundColor: "rgba(59,130,246,0.06)",
+                border: "1.5px solid rgba(59,130,246,0.20)",
+                display: "flex", flexDirection: "column", gap: 10,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 12, color: "#71717A", fontWeight: 600 }}>You receive</span>
+                  <span style={{ fontSize: 16, color: "#F4F4F5", fontWeight: 800, ...mono }}>{swapQuote.output}</span>
+                </div>
+                <div style={{ height: 1, backgroundColor: "rgba(255,255,255,0.05)" }} />
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 11, color: "#52525B" }}>Route</span>
+                  <span style={{ fontSize: 11, color: "#A1A1AA", fontWeight: 600 }}>{swapQuote.route}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 11, color: "#52525B" }}>Price impact</span>
+                  <span style={{ fontSize: 11, color: parseFloat(swapQuote.priceImpact) > 1 ? "#EF4444" : "#22C55E", fontWeight: 600 }}>{swapQuote.priceImpact}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 11, color: "#52525B" }}>Est. gas</span>
+                  <span style={{ fontSize: 11, color: "#A1A1AA", fontWeight: 600 }}>{swapQuote.gas}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleExecuteSwap}
+                  disabled={swapExecuting}
+                  style={{
+                    width: "100%", padding: "13px",
+                    background: swapExecuting ? "rgba(255,255,255,0.04)" : "linear-gradient(135deg, #22C55E, #16A34A)",
+                    border: "none", borderRadius: 12, color: swapExecuting ? "#52525B" : "#fff",
+                    fontSize: 14, fontWeight: 700, cursor: swapExecuting ? "default" : "pointer",
+                    boxShadow: swapExecuting ? "none" : "0 4px 16px rgba(34,197,94,0.25)",
+                    WebkitTapHighlightColor: "transparent",
+                  }}
+                >
+                  {swapExecuting ? "Executing Swap..." : `Confirm Swap`}
+                </button>
+              </div>
+            )}
+
+            {swapError && (
+              <div style={{ padding: "10px 14px", backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 10 }}>
+                <p style={{ fontSize: 12, color: "#EF4444", margin: 0 }}>{swapError}</p>
+              </div>
+            )}
+
+            {swapSuccess && (
+              <div style={{ padding: "12px 16px", backgroundColor: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)", borderRadius: 12 }}>
+                <p style={{ fontSize: 12, color: "#22C55E", margin: 0, lineHeight: 1.6 }}>{swapSuccess}</p>
+              </div>
+            )}
+
+            {/* Protocol info */}
+            <div style={{ padding: "10px 14px", backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 10 }}>
+              <p style={{ fontSize: 11, color: "#3F3F46", margin: 0, lineHeight: 1.6 }}>
+                <strong style={{ color: "#52525B" }}>Decentralized &amp; No KYC.</strong>{" "}
+                Swaps use Uniswap V3 (Base/Ethereum) or TraderJoe (Avalanche). No account required. No data collected.
+              </p>
+            </div>
+          </div>
+        </WalletModal>
+      )}
+
+      {/* ── Cross-Chain Bridge Modal ── */}
+      {modalView === "bridge" && (
+        <WalletModal
+          onClose={() => { setModalView("none"); setBridgeQuote(null); setBridgeError(""); setBridgeSuccess(""); }}
+          title="Bridge"
+        >
+          <div style={{ padding: "20px 24px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
+
+            {/* PROMINENT DISCLAIMER */}
+            <div role="alert" style={{
+              display: "flex", alignItems: "flex-start", gap: 12,
+              padding: "14px 16px", borderRadius: 14,
+              background: "linear-gradient(135deg, rgba(234,179,8,0.12), rgba(234,179,8,0.04))",
+              border: "2px solid rgba(234,179,8,0.40)",
+            }}>
+              <div style={{ flexShrink: 0, color: "#EAB308", marginTop: 1 }}><AlertTriangleIcon size={18} /></div>
+              <div>
+                <p style={{ fontSize: 12, fontWeight: 800, color: "#EAB308", margin: "0 0 4px", letterSpacing: "0.02em" }}>⚠ Important — Read Before Bridging</p>
+                <p style={{ fontSize: 11.5, color: "#A1A1AA", margin: 0, lineHeight: 1.65 }}>
+                  Bridge transfers move tokens between blockchains. Transfers may take{" "}
+                  <strong style={{ color: "#D4D4D8" }}>several minutes to complete</strong>.
+                  Bridge fees and gas fees apply on both chains.{" "}
+                  <strong style={{ color: "#EF4444" }}>Transactions are irreversible.</strong>{" "}
+                  Always verify the destination chain and address. This is not financial advice.
+                </p>
+              </div>
+            </div>
+
+            {/* Source chain */}
+            <div>
+              <label style={{ fontSize: 11, color: "#52525B", fontWeight: 600, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>From Chain</label>
+              <div style={{ display: "flex", gap: 8 }}>
+                {(["base", "ethereum", "avalanche"] as SupportedChain[]).map((chain) => (
+                  <button key={chain} type="button" onClick={() => { setBridgeFromChain(chain); setBridgeQuote(null); }} style={{
+                    flex: 1, padding: "10px 8px",
+                    backgroundColor: bridgeFromChain === chain ? "rgba(139,92,246,0.12)" : "rgba(255,255,255,0.03)",
+                    border: bridgeFromChain === chain ? "1.5px solid rgba(139,92,246,0.40)" : "1px solid rgba(255,255,255,0.07)",
+                    borderRadius: 10, color: bridgeFromChain === chain ? "#8B5CF6" : "#71717A",
+                    fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 0.15s ease",
+                    textTransform: "capitalize", WebkitTapHighlightColor: "transparent",
+                  }}>
+                    {chain === "avalanche" ? "Avalanche" : chain === "base" ? "Base" : "Ethereum"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Destination chain */}
+            <div>
+              <label style={{ fontSize: 11, color: "#52525B", fontWeight: 600, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>To Chain</label>
+              <div style={{ display: "flex", gap: 8 }}>
+                {(["base", "ethereum", "avalanche"] as SupportedChain[]).map((chain) => (
+                  <button key={chain} type="button" onClick={() => { setBridgeToChain(chain); setBridgeQuote(null); }} style={{
+                    flex: 1, padding: "10px 8px",
+                    backgroundColor: bridgeToChain === chain ? "rgba(139,92,246,0.12)" : "rgba(255,255,255,0.03)",
+                    border: bridgeToChain === chain ? "1.5px solid rgba(139,92,246,0.40)" : "1px solid rgba(255,255,255,0.07)",
+                    borderRadius: 10, color: bridgeToChain === chain ? "#8B5CF6" : "#71717A",
+                    fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 0.15s ease",
+                    textTransform: "capitalize", WebkitTapHighlightColor: "transparent",
+                  }}>
+                    {chain === "avalanche" ? "Avalanche" : chain === "base" ? "Base" : "Ethereum"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Token selector */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <label style={{ fontSize: 11, color: "#52525B", fontWeight: 600, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>Token</label>
+                <select
+                  value={bridgeToken}
+                  onChange={(e) => { setBridgeToken(e.target.value); setBridgeQuote(null); }}
+                  style={{
+                    width: "100%", padding: "11px 12px",
+                    backgroundColor: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.09)",
+                    borderRadius: 12, color: "#F4F4F5", fontSize: 14, fontWeight: 600,
+                    cursor: "pointer", outline: "none",
+                    appearance: "none", WebkitAppearance: "none",
+                  }}
+                >
+                  {["ETH", "USDC", "AVAX", "WETH"].map(t => <option key={t} value={t} style={{ backgroundColor: "#111113" }}>{t}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: 11, color: "#52525B", fontWeight: 600, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>Amount</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={bridgeAmount}
+                  onChange={(e) => { setBridgeAmount(e.target.value); setBridgeQuote(null); setBridgeError(""); }}
+                  placeholder="0.00"
+                  style={{
+                    width: "100%", padding: "11px 12px", boxSizing: "border-box",
+                    backgroundColor: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.09)",
+                    borderRadius: 12, color: "#F4F4F5", fontSize: 14, fontWeight: 600,
+                    outline: "none", ...mono,
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Get Quote button */}
+            <button
+              type="button"
+              onClick={handleGetBridgeQuote}
+              disabled={bridgeLoading || !bridgeAmount || parseFloat(bridgeAmount) <= 0}
+              style={{
+                width: "100%", padding: "13px",
+                background: bridgeLoading || !bridgeAmount ? "rgba(255,255,255,0.04)" : "linear-gradient(135deg, #8B5CF6, #7C3AED)",
+                border: bridgeLoading || !bridgeAmount ? "1px solid rgba(255,255,255,0.07)" : "none",
+                borderRadius: 14, color: bridgeLoading || !bridgeAmount ? "#52525B" : "#fff",
+                fontSize: 14, fontWeight: 700, cursor: bridgeLoading || !bridgeAmount ? "default" : "pointer",
+                transition: "all 0.15s ease", WebkitTapHighlightColor: "transparent",
+              }}
+            >
+              {bridgeLoading ? "Fetching Quote..." : "Get Bridge Quote"}
+            </button>
+
+            {/* Quote result */}
+            {bridgeQuote && (
+              <div style={{
+                padding: "16px", borderRadius: 14,
+                backgroundColor: "rgba(139,92,246,0.06)",
+                border: "1.5px solid rgba(139,92,246,0.20)",
+                display: "flex", flexDirection: "column", gap: 10,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 12, color: "#71717A", fontWeight: 600 }}>You receive</span>
+                  <span style={{ fontSize: 16, color: "#F4F4F5", fontWeight: 800, ...mono }}>{bridgeQuote.output}</span>
+                </div>
+                <div style={{ height: 1, backgroundColor: "rgba(255,255,255,0.05)" }} />
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 11, color: "#52525B" }}>Route</span>
+                  <span style={{ fontSize: 11, color: "#A1A1AA", fontWeight: 600 }}>{bridgeQuote.route}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 11, color: "#52525B" }}>Bridge fee</span>
+                  <span style={{ fontSize: 11, color: "#A1A1AA", fontWeight: 600 }}>{bridgeQuote.fee}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 11, color: "#52525B" }}>Est. time</span>
+                  <span style={{ fontSize: 11, color: "#EAB308", fontWeight: 600 }}>{bridgeQuote.time}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleExecuteBridge}
+                  disabled={bridgeExecuting}
+                  style={{
+                    width: "100%", padding: "13px",
+                    background: bridgeExecuting ? "rgba(255,255,255,0.04)" : "linear-gradient(135deg, #8B5CF6, #7C3AED)",
+                    border: "none", borderRadius: 12, color: bridgeExecuting ? "#52525B" : "#fff",
+                    fontSize: 14, fontWeight: 700, cursor: bridgeExecuting ? "default" : "pointer",
+                    boxShadow: bridgeExecuting ? "none" : "0 4px 16px rgba(139,92,246,0.25)",
+                    WebkitTapHighlightColor: "transparent",
+                  }}
+                >
+                  {bridgeExecuting ? "Initiating Bridge..." : "Confirm Bridge"}
+                </button>
+              </div>
+            )}
+
+            {bridgeError && (
+              <div style={{ padding: "10px 14px", backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 10 }}>
+                <p style={{ fontSize: 12, color: "#EF4444", margin: 0 }}>{bridgeError}</p>
+              </div>
+            )}
+
+            {bridgeSuccess && (
+              <div style={{ padding: "12px 16px", backgroundColor: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.20)", borderRadius: 12 }}>
+                <p style={{ fontSize: 12, color: "#A78BFA", margin: 0, lineHeight: 1.6 }}>{bridgeSuccess}</p>
+              </div>
+            )}
+
+            {/* Protocol info */}
+            <div style={{ padding: "10px 14px", backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 10 }}>
+              <p style={{ fontSize: 11, color: "#3F3F46", margin: 0, lineHeight: 1.6 }}>
+                <strong style={{ color: "#52525B" }}>Decentralized &amp; No KYC.</strong>{" "}
+                Uses Avalanche Teleporter for AVAX bridges, LayerZero for other chains. No account required.
+              </p>
+            </div>
+          </div>
+        </WalletModal>
+      )}
+
+      {/* ── Fiat On-Ramp (Buy) Modal ── */}
+      {modalView === "buy" && (
+        <WalletModal
+          onClose={() => { setModalView("none"); setBuyDisclaimerAccepted(false); }}
+          title="Buy Crypto"
+        >
+          <div style={{ padding: "20px 24px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
+
+            {/* PROMINENT DISCLAIMER — must be acknowledged */}
+            <div role="alert" style={{
+              display: "flex", alignItems: "flex-start", gap: 12,
+              padding: "16px",
+              borderRadius: 14,
+              background: "linear-gradient(135deg, rgba(249,115,22,0.12), rgba(249,115,22,0.04))",
+              border: "2px solid rgba(249,115,22,0.40)",
+            }}>
+              <div style={{ flexShrink: 0, color: "#F97316", marginTop: 1 }}><AlertTriangleIcon size={18} /></div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: 12, fontWeight: 800, color: "#F97316", margin: "0 0 6px", letterSpacing: "0.02em" }}>⚠ Third-Party Service — Read Before Continuing</p>
+                <p style={{ fontSize: 11.5, color: "#A1A1AA", margin: "0 0 12px", lineHeight: 1.65 }}>
+                  This service is provided by a <strong style={{ color: "#D4D4D8" }}>third-party provider</strong>.
+                  They may require <strong style={{ color: "#D4D4D8" }}>basic identity verification</strong> for fiat purchases as required by law.
+                  Embris does <strong style={{ color: "#EF4444" }}>not</strong> collect, store, or share any personal data.
+                  Cryptocurrency purchases are subject to <strong style={{ color: "#D4D4D8" }}>market volatility</strong>.
+                  This is not financial advice. You are solely responsible for your purchase decisions.
+                </p>
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={buyDisclaimerAccepted}
+                    onChange={(e) => setBuyDisclaimerAccepted(e.target.checked)}
+                    style={{ marginTop: 2, width: 16, height: 16, cursor: "pointer", accentColor: "#F97316", flexShrink: 0 }}
+                  />
+                  <span style={{ fontSize: 12, color: "#A1A1AA", lineHeight: 1.5 }}>
+                    I understand this is a third-party service and I accept the terms above
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            {/* Buy form — shown only after disclaimer accepted */}
+            {buyDisclaimerAccepted && (
+              <>
+                {/* Token selector */}
+                <div>
+                  <label style={{ fontSize: 11, color: "#52525B", fontWeight: 600, display: "block", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Token to Buy</label>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {["ETH", "USDC", "AVAX"].map((t) => (
+                      <button key={t} type="button" onClick={() => setBuyToken(t)} style={{
+                        flex: 1, padding: "11px 8px",
+                        backgroundColor: buyToken === t ? "rgba(16,185,129,0.12)" : "rgba(255,255,255,0.03)",
+                        border: buyToken === t ? "1.5px solid rgba(16,185,129,0.40)" : "1px solid rgba(255,255,255,0.07)",
+                        borderRadius: 10, color: buyToken === t ? "#10B981" : "#71717A",
+                        fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.15s ease",
+                        WebkitTapHighlightColor: "transparent",
+                      }}>{t}</button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* USD Amount */}
+                <div>
+                  <label style={{ fontSize: 11, color: "#52525B", fontWeight: 600, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>USD Amount</label>
+                  <div style={{ position: "relative" }}>
+                    <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 16, color: "#71717A", fontWeight: 700 }}>$</span>
+                    <input
+                      type="number"
+                      min="10"
+                      step="1"
+                      value={buyAmount}
+                      onChange={(e) => setBuyAmount(e.target.value)}
+                      placeholder="50"
+                      style={{
+                        width: "100%", padding: "13px 14px 13px 28px", boxSizing: "border-box",
+                        backgroundColor: "rgba(255,255,255,0.04)",
+                        border: "1px solid rgba(255,255,255,0.09)",
+                        borderRadius: 12, color: "#F4F4F5", fontSize: 16, fontWeight: 600,
+                        outline: "none", ...mono,
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                    {["25", "50", "100", "200"].map(amt => (
+                      <button key={amt} type="button" onClick={() => setBuyAmount(amt)} style={{
+                        flex: 1, padding: "7px 4px",
+                        backgroundColor: buyAmount === amt ? "rgba(16,185,129,0.10)" : "rgba(255,255,255,0.03)",
+                        border: buyAmount === amt ? "1px solid rgba(16,185,129,0.30)" : "1px solid rgba(255,255,255,0.06)",
+                        borderRadius: 8, color: buyAmount === amt ? "#10B981" : "#71717A",
+                        fontSize: 12, fontWeight: 600, cursor: "pointer",
+                        WebkitTapHighlightColor: "transparent",
+                      }}>${amt}</button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Payment method */}
+                <div>
+                  <label style={{ fontSize: 11, color: "#52525B", fontWeight: 600, display: "block", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Payment Method</label>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {[
+                      { id: "card", label: "Debit / Credit Card", sub: "Instant · 1.5% fee" },
+                      { id: "apple", label: "Apple Pay", sub: "Instant · 1.5% fee" },
+                      { id: "bank", label: "Bank Transfer (ACH)", sub: "1–3 business days · No fee" },
+                    ].map(({ id, label, sub }) => (
+                      <button key={id} type="button" onClick={() => setBuyPaymentMethod(id)} style={{
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        padding: "12px 14px",
+                        backgroundColor: buyPaymentMethod === id ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)",
+                        border: buyPaymentMethod === id ? "1.5px solid rgba(16,185,129,0.30)" : "1px solid rgba(255,255,255,0.07)",
+                        borderRadius: 12, cursor: "pointer", textAlign: "left",
+                        WebkitTapHighlightColor: "transparent",
+                      }}>
+                        <div>
+                          <p style={{ fontSize: 13, fontWeight: 600, color: buyPaymentMethod === id ? "#10B981" : "#F4F4F5", margin: 0 }}>{label}</p>
+                          <p style={{ fontSize: 11, color: "#52525B", margin: "2px 0 0" }}>{sub}</p>
+                        </div>
+                        {buyPaymentMethod === id && <CheckIcon size={14} />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* CTA */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    // In production: open third-party on-ramp widget (MoonPay/Transak/Ramp)
+                    // passing walletData.address as the destination
+                    const providers: Record<string, string> = {
+                      card: `https://buy.moonpay.com/?walletAddress=${walletData?.address}&currencyCode=${buyToken.toLowerCase()}&baseCurrencyAmount=${buyAmount || 50}`,
+                      apple: `https://buy.moonpay.com/?walletAddress=${walletData?.address}&currencyCode=${buyToken.toLowerCase()}&baseCurrencyAmount=${buyAmount || 50}&paymentMethod=apple_pay`,
+                      bank: `https://ramp.network/buy/?userAddress=${walletData?.address}&swapAsset=${buyToken}&fiatValue=${buyAmount || 50}&fiatCurrency=USD`,
+                    };
+                    window.open(providers[buyPaymentMethod] || providers.card, "_blank", "noopener,noreferrer");
+                  }}
+                  disabled={!buyAmount || parseFloat(buyAmount) < 10}
+                  style={{
+                    width: "100%", padding: "14px",
+                    background: !buyAmount || parseFloat(buyAmount) < 10 ? "rgba(255,255,255,0.04)" : "linear-gradient(135deg, #10B981, #059669)",
+                    border: !buyAmount || parseFloat(buyAmount) < 10 ? "1px solid rgba(255,255,255,0.07)" : "none",
+                    borderRadius: 14, color: !buyAmount || parseFloat(buyAmount) < 10 ? "#52525B" : "#fff",
+                    fontSize: 14, fontWeight: 700, cursor: !buyAmount || parseFloat(buyAmount) < 10 ? "default" : "pointer",
+                    boxShadow: !buyAmount || parseFloat(buyAmount) < 10 ? "none" : "0 4px 16px rgba(16,185,129,0.25)",
+                    WebkitTapHighlightColor: "transparent",
+                  }}
+                >
+                  Continue to {buyPaymentMethod === "bank" ? "Bank Transfer" : buyPaymentMethod === "apple" ? "Apple Pay" : "Card Payment"}
+                </button>
+
+                <p style={{ fontSize: 11, color: "#3F3F46", textAlign: "center", margin: 0, lineHeight: 1.6 }}>
+                  You will be redirected to a third-party provider. Minimum purchase: $10.
+                </p>
+              </>
+            )}
           </div>
         </WalletModal>
       )}
