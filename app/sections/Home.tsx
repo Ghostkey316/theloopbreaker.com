@@ -119,8 +119,8 @@ function ProtocolActivityFeed() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <h2 style={{ fontSize: 11, fontWeight: 600, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Protocol Activity</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div style={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: '#22C55E', boxShadow: '0 0 5px rgba(34,197,94,0.6)' }} />
-            <span style={{ fontSize: 10, color: '#22C55E', fontWeight: 600 }}>LIVE</span>
+            <div style={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: '#F59E0B', boxShadow: '0 0 5px rgba(245,158,11,0.6)' }} />
+            <span style={{ fontSize: 10, color: '#F59E0B', fontWeight: 600 }}>SIMULATED</span>
           </div>
         </div>
         <button
@@ -257,7 +257,7 @@ export default function Home() {
           <svg width={12} height={12} viewBox="0 0 32 32" fill="none">
             <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9"/>
           </svg>
-          <span style={{ fontSize: 11, color: '#F97316', fontWeight: 600, letterSpacing: '0.06em' }}>VAULTFIRE PROTOCOL</span>
+          <span style={{ fontSize: 11, color: '#F97316', fontWeight: 600, letterSpacing: '0.06em' }}>EMBRIS BY VAULTFIRE</span>
         </div>
 
         <h1 style={{
@@ -359,7 +359,7 @@ export default function Home() {
               <h2 style={{ fontSize: 17, fontWeight: 700, color: '#F4F4F5', letterSpacing: '-0.02em' }}>Meet Embris</h2>
               <span style={{ fontSize: 10, color: '#A78BFA', backgroundColor: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.2)', borderRadius: 4, padding: '2px 7px', fontWeight: 600 }}>AI COMPANION</span>
             </div>
-            <p style={{ fontSize: 12, color: '#52525B', marginTop: 2 }}>On-chain · ERC-8004 · Vaultfire Protocol</p>
+            <p style={{ fontSize: 12, color: '#52525B', marginTop: 2 }}>On-chain · ERC-8004 · Embris by Vaultfire</p>
           </div>
         </div>
 
