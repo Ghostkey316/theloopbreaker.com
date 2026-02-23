@@ -128,7 +128,7 @@ export async function getAgentCount(chain: 'base' | 'avalanche' | 'ethereum'): P
 /**
  * Check if a contract is alive (has code deployed)
  */
-export async function checkContractAlive(chain: 'base' | 'avalanche', address: string): Promise<boolean> {
+export async function checkContractAlive(chain: 'base' | 'avalanche' | 'ethereum', address: string): Promise<boolean> {
   const rpc = CHAINS[chain].rpc;
   try {
     const code = (await jsonRpc(rpc, 'eth_getCode', [address, 'latest'])) as string;
@@ -141,7 +141,7 @@ export async function checkContractAlive(chain: 'base' | 'avalanche', address: s
 /**
  * Get current block number for a chain
  */
-export async function getBlockNumber(chain: 'base' | 'avalanche'): Promise<number | null> {
+export async function getBlockNumber(chain: 'base' | 'avalanche' | 'ethereum'): Promise<number | null> {
   const rpc = CHAINS[chain].rpc;
   try {
     const result = (await jsonRpc(rpc, 'eth_blockNumber')) as string;
@@ -240,8 +240,8 @@ export async function executeContractQuery(query: EmbrisContractQuery): Promise<
         const results: string[] = [`\n\n[ON-CHAIN DATA — Trust Score for ${address.slice(0, 6)}...${address.slice(-4)}]`];
         results.push(`Registration: ${localReg ? 'Verified' : 'Not registered'}`);
         results.push(`Chains: ${regChains.length > 0 ? regChains.join(', ') : 'None'}`);
-        results.push(`Protocol contracts verified: ${BASE_CONTRACTS.length + AVALANCHE_CONTRACTS.length}`);
-        results.push(`Active chains: 2 (Base + Avalanche)`);
+        results.push(`Protocol contracts verified: ${BASE_CONTRACTS.length + AVALANCHE_CONTRACTS.length + ETHEREUM_CONTRACTS.length}`);
+        results.push(`Active chains: 3 (Ethereum + Base + Avalanche)`);
 
         // Calculate a trust score based on available data
         let score = 0;
@@ -262,13 +262,14 @@ export async function executeContractQuery(query: EmbrisContractQuery): Promise<
 
       case 'contract_status': {
         const results: string[] = ['\n\n[ON-CHAIN DATA — Contract Status]'];
-        results.push(`Total contracts: ${BASE_CONTRACTS.length + AVALANCHE_CONTRACTS.length}`);
+        results.push(`Total contracts: ${BASE_CONTRACTS.length + AVALANCHE_CONTRACTS.length + ETHEREUM_CONTRACTS.length}`);
+        results.push(`Ethereum: ${ETHEREUM_CONTRACTS.length} contracts`);
         results.push(`Base: ${BASE_CONTRACTS.length} contracts`);
         results.push(`Avalanche: ${AVALANCHE_CONTRACTS.length} contracts`);
 
         // Check a few key contracts
-        for (const chain of ['base', 'avalanche'] as const) {
-          const contracts = chain === 'base' ? BASE_CONTRACTS : AVALANCHE_CONTRACTS;
+        for (const chain of ['base', 'avalanche', 'ethereum'] as const) {
+          const contracts = chain === 'base' ? BASE_CONTRACTS : chain === 'avalanche' ? AVALANCHE_CONTRACTS : ETHEREUM_CONTRACTS;
           const key = contracts.find(c => c.name === 'ERC8004IdentityRegistry');
           if (key) {
             const alive = await checkContractAlive(chain, key.address);

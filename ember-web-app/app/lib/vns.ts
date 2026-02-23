@@ -678,8 +678,8 @@ export async function estimateVNSRegistrationGas(
       totalFeeWei,
       totalFeeFormatted: totalFeeEth < 0.000001 ? '< 0.000001' : totalFeeEth.toFixed(6),
       chain,
-      chainName: chain === 'base' ? 'Base' : 'Avalanche',
-      gasSymbol: chain === 'base' ? 'ETH' : 'AVAX',
+      chainName: chain === 'base' ? 'Base' : chain === 'ethereum' ? 'Ethereum' : 'Avalanche',
+      gasSymbol: chain === 'avalanche' ? 'AVAX' : 'ETH',
     };
   } catch {
     return null;
@@ -741,7 +741,7 @@ export async function registerVNSName(
     if (balanceWei < minGas) {
       return {
         success: false,
-        message: `Insufficient ${chain === 'base' ? 'ETH' : 'AVAX'} for gas`,
+        message: `Insufficient ${chain === 'avalanche' ? 'AVAX' : 'ETH'} for gas`,
         errorType: 'no_gas',
       };
     }
@@ -770,7 +770,7 @@ export async function registerVNSName(
     const nonce = parseInt(nonceResult.result, 16);
     const gasPrice = BigInt(gasPriceResult.result);
     const gasLimit = gasEstResult.result ? BigInt(gasEstResult.result) * 12n / 10n : 300000n;
-    const chainId = chain === 'base' ? 8453 : 43114;
+    const chainId = chain === 'base' ? 8453 : chain === 'ethereum' ? 1 : 43114;
 
     const { ethers } = await import('ethers');
     const wallet = new ethers.Wallet(privateKey);
@@ -831,8 +831,16 @@ export async function registerVNSName(
 
 /* ── Agent Bond Staking ── */
 
+/** AIPartnershipBondsV2 addresses per chain (the bond contract for createBond) */
+const PARTNERSHIP_BOND_ADDRESSES: Record<'base' | 'avalanche' | 'ethereum', string> = {
+  base: '0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1',
+  avalanche: '0x37679B1dCfabE6eA6b8408626815A1426bE2D717',
+  ethereum: '0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1',
+};
+
 /**
- * Stake an accountability bond for an agent through AIAccountabilityBondsV2.
+ * Stake an accountability bond for an agent through AIPartnershipBondsV2.
+ * Calls createBond(address aiAgent, string partnershipType) payable.
  * Bond amount is sent as ETH value with the transaction.
  */
 export async function stakeAgentBond(
@@ -851,16 +859,22 @@ export async function stakeAgentBond(
   }
 
   const rpc = RPC_URLS[chain];
-  const bondContract = BOND_CONTRACT_ADDRESSES[chain];
+  const bondContract = PARTNERSHIP_BOND_ADDRESSES[chain];
   const explorerBase = chain === 'ethereum' ? 'https://etherscan.io' : chain === 'base' ? 'https://basescan.org' : 'https://snowtrace.io';
 
   try {
     const bondWei = BigInt(Math.floor(bondAmountEth * 1e18));
 
-    // stakeBond(string agentName) payable — selector: 0x...
-    // We use a simple value transfer with the agent name encoded
-    const STAKE_BOND_SELECTOR = '0x9e1a4d19';
-    const calldata = STAKE_BOND_SELECTOR + encodeString(agentVNSName).slice(64); // simplified
+    // createBond(address aiAgent, string partnershipType) payable
+    // Selector: 0x7ac5113b
+    const CREATE_BOND_SELECTOR = '0x7ac5113b';
+    // ABI encode: (address, string)
+    // offset for address is inline (32 bytes), offset for string is dynamic
+    const addressParam = encodeAddress(walletAddress);
+    const stringOffset = encodeUint256(0x40); // 64 bytes = 2 slots (address + offset pointer)
+    const partnershipType = `agent:${agentVNSName}`;
+    const stringEncoded = encodeString(partnershipType);
+    const calldata = CREATE_BOND_SELECTOR + addressParam + stringOffset + stringEncoded;
 
     const [nonceResult, gasPriceResult] = await Promise.all([
       rpcCall(rpc, 'eth_getTransactionCount', [walletAddress, 'latest']),
@@ -873,7 +887,7 @@ export async function stakeAgentBond(
 
     const nonce = parseInt(nonceResult.result, 16);
     const gasPrice = BigInt(gasPriceResult.result);
-    const chainId = chain === 'base' ? 8453 : 43114;
+    const chainId = chain === 'base' ? 8453 : chain === 'ethereum' ? 1 : 43114;
 
     const { ethers } = await import('ethers');
     const wallet = new ethers.Wallet(privateKey);
@@ -881,7 +895,7 @@ export async function stakeAgentBond(
       to: bondContract,
       data: calldata,
       nonce,
-      gasLimit: 150000n,
+      gasLimit: 200000n,
       gasPrice,
       chainId,
       value: bondWei,
@@ -943,10 +957,10 @@ export async function invokeAgentPrivacy(
   const explorerBase = chain === 'ethereum' ? 'https://etherscan.io' : chain === 'base' ? 'https://basescan.org' : 'https://snowtrace.io';
 
   try {
-    // grantConsent(bytes32 sessionId, bool private) — simplified encoding
-    const GRANT_CONSENT_SELECTOR = '0x8a4068dd';
+    // grantConsent(bytes32 consentHash) — selector: 0x1c9df7ef
+    const GRANT_CONSENT_SELECTOR = '0x1c9df7ef';
     const sessionBytes32 = '0x' + Buffer.from(sessionId).toString('hex').padEnd(64, '0').slice(0, 64);
-    const calldata = GRANT_CONSENT_SELECTOR + sessionBytes32.slice(2) + encodeUint256(1);
+    const calldata = GRANT_CONSENT_SELECTOR + sessionBytes32.slice(2);
 
     const [nonceResult, gasPriceResult] = await Promise.all([
       rpcCall(rpc, 'eth_getTransactionCount', [walletAddress, 'latest']),
@@ -959,7 +973,7 @@ export async function invokeAgentPrivacy(
 
     const nonce = parseInt(nonceResult.result, 16);
     const gasPrice = BigInt(gasPriceResult.result);
-    const chainId = chain === 'base' ? 8453 : 43114;
+    const chainId = chain === 'base' ? 8453 : chain === 'ethereum' ? 1 : 43114;
 
     const { ethers } = await import('ethers');
     const wallet = new ethers.Wallet(privateKey);

@@ -22,7 +22,7 @@ const KNOWN_SELECTORS: Record<string, string> = {
   'paused()': '0x5c975abb',
   'totalSupply()': '0x18160ddd',
   'name()': '0x06fdde03',
-  'getAgentCount()': '0x0f755a56',
+  'getTotalAgents()': '0x3731a16f',
   'getEntryCount()': '0x6f3c25fb',
   'getRegistryCount()': '0x4a6c9db6',
   'getValidatorCount()': '0x79e5a123',
@@ -208,7 +208,7 @@ export async function getRegistryData(chain: 'base' | 'avalanche' | 'ethereum', 
   if (!isAlive) return { isAlive: false, entryCount: null };
 
   const countResult = await (
-    safeEthCall(rpc, address, getSelector('getAgentCount()')) ||
+    safeEthCall(rpc, address, getSelector('getTotalAgents()')) ||
     safeEthCall(rpc, address, getSelector('getEntryCount()')) ||
     safeEthCall(rpc, address, getSelector('totalSupply()'))
   );

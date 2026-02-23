@@ -32,6 +32,8 @@
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.2.0",
+    "@xmtp/agent-sdk": "^2.2.0",
+    "@xmtp/browser-sdk": "^6.2.0",
     "qrcode": "^1.5.4"
   }
 }
