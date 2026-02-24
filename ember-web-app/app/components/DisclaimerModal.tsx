@@ -54,21 +54,38 @@ export default function DisclaimerModal() {
         WebkitBackdropFilter: "blur(12px)",
       }} />
 
-      {/* Modal */}
+      {/* Outer centering wrapper — full viewport, flex center */}
       <div style={{
         position: "fixed", inset: 0, zIndex: 9001,
         display: "flex", alignItems: "center", justifyContent: "center",
         padding: "16px",
+        /* Ensure the wrapper itself never overflows the viewport */
+        overflow: "hidden",
       }}>
-        <div className="fade-in" style={{
-          width: "100%", maxWidth: 420,
-          background: "#0C0C0E",
-          borderRadius: 16,
-          overflow: "hidden",
-          boxShadow: "0 24px 48px rgba(0,0,0,0.4)",
-        }}>
-          {/* Content */}
-          <div style={{ padding: "32px 28px 28px" }}>
+        {/* Modal card — flex column, capped height so it never overflows */}
+        <div
+          className="fade-in"
+          style={{
+            width: "100%",
+            maxWidth: 420,
+            /* Cap at 85% of the viewport height on all devices */
+            maxHeight: "85vh",
+            background: "#0C0C0E",
+            borderRadius: 16,
+            boxShadow: "0 24px 48px rgba(0,0,0,0.4)",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
+        >
+          {/* ── Scrollable content area ── */}
+          <div style={{
+            flex: 1,
+            overflowY: "auto",
+            /* Smooth momentum scrolling on iOS Safari */
+            WebkitOverflowScrolling: "touch",
+            padding: "32px 28px 0",
+          }}>
             {/* Header */}
             <div style={{ marginBottom: 24 }}>
               <h2 style={{
@@ -85,7 +102,7 @@ export default function DisclaimerModal() {
             {/* Items */}
             <div style={{
               display: "flex", flexDirection: "column",
-              marginBottom: 24,
+              marginBottom: 8,
             }}>
               {items.map((text, i) => (
                 <div key={i} style={{
@@ -107,11 +124,19 @@ export default function DisclaimerModal() {
                 </div>
               ))}
             </div>
+          </div>
 
+          {/* ── Sticky footer: checkbox + accept button — always visible ── */}
+          <div style={{
+            flexShrink: 0,
+            padding: "20px 28px 28px",
+            borderTop: "1px solid rgba(255,255,255,0.05)",
+            background: "#0C0C0E",
+          }}>
             {/* Checkbox */}
             <label style={{
               display: "flex", alignItems: "flex-start", gap: 10,
-              cursor: "pointer", marginBottom: 20, userSelect: "none",
+              cursor: "pointer", marginBottom: 16, userSelect: "none",
             }}>
               <div
                 onClick={() => setChecked(!checked)}
