@@ -1639,14 +1639,12 @@ export default function Chat() {
           </div>
         </div>
       </div>
-
-      {/* ── Companion Agent Panel ── */}
+      {/* ── Companion Agent Panel (right sidebar inside flex row) ── */}
       <CompanionPanel
         isOpen={companionPanelOpen}
         onClose={() => setCompanionPanelOpen(false)}
         isMobile={isMobile}
       />
-
       </div>
       {/* ── Registration Modal ── */}
       <RegistrationModal

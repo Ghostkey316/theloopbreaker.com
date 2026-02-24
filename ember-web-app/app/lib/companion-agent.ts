@@ -31,6 +31,8 @@ const COMPANION_KEYS = {
   BOND_TX: 'embris_companion_bond_tx',
   BOND_CHAIN: 'embris_companion_bond_chain',
   BOND_ACTIVE: 'embris_companion_bond_active',
+  BOND_TIER: 'embris_companion_bond_tier',
+  BOND_AMOUNT: 'embris_companion_bond_amount_eth',
   REGISTERED: 'embris_companion_registered',
   REGISTERED_CHAIN: 'embris_companion_registered_chain',
   REGISTERED_TX: 'embris_companion_registered_tx',
@@ -423,12 +425,15 @@ export async function companionSendNative(
 ): Promise<{ success: boolean; txHash?: string; error?: string }> {
   if (!_sessionPK) return { success: false, error: 'Companion wallet is locked' };
 
-  // Check spending limit
-  const limit = getCompanionSpendingLimit();
-  if (limit > 0) {
+  // Check spending limit (limit is in USD; use a conservative 1 ETH = $3000 estimate
+  // for a soft cap — the user can always adjust the limit)
+  const limitUsd = getCompanionSpendingLimit();
+  if (limitUsd > 0) {
     const amount = parseFloat(amountEth);
-    if (isNaN(amount) || amount > limit) {
-      return { success: false, error: `Amount exceeds companion spending limit of ${limit}` };
+    const ETH_USD_ESTIMATE = 3000; // conservative estimate for limit enforcement
+    const amountUsd = amount * ETH_USD_ESTIMATE;
+    if (isNaN(amount) || amountUsd > limitUsd) {
+      return { success: false, error: `Amount (~$${amountUsd.toFixed(2)}) exceeds companion spending limit of $${limitUsd.toFixed(2)}` };
     }
   }
 
@@ -631,6 +636,8 @@ export async function createPartnershipBond(
     sSet(COMPANION_KEYS.BOND_TX, sendResult.result);
     sSet(COMPANION_KEYS.BOND_CHAIN, chain);
     sSet(COMPANION_KEYS.BOND_ACTIVE, 'true');
+    sSet(COMPANION_KEYS.BOND_TIER, tier);
+    sSet(COMPANION_KEYS.BOND_AMOUNT, amountEth.toString());
 
     return { success: true, txHash: sendResult.result, tier };
   } catch (e) {
@@ -655,11 +662,16 @@ export function getCompanionBondStatus(): CompanionBondStatus {
   const active = sGet(COMPANION_KEYS.BOND_ACTIVE) === 'true';
   const txHash = sGet(COMPANION_KEYS.BOND_TX);
   const chain = sGet(COMPANION_KEYS.BOND_CHAIN) as SupportedChain | null;
+  const storedTier = sGet(COMPANION_KEYS.BOND_TIER) as BondTier | null;
+  const storedAmount = sGet(COMPANION_KEYS.BOND_AMOUNT);
+  const tier: BondTier | null = active
+    ? (storedTier || (storedAmount ? getBondTier(parseFloat(storedAmount)) : 'bronze'))
+    : null;
   return {
     active,
     txHash,
     chain,
-    tier: active ? 'bronze' : null, // Default; real tier from on-chain query
+    tier,
     createdAt: active ? Date.now() : null,
   };
 }
@@ -677,16 +689,33 @@ export async function verifyCompanionBond(chain: SupportedChain = 'base'): Promi
 
   try {
     const bondContract = PARTNERSHIP_BONDS[chain];
-    const balanceResult = await rpcCall(RPC_URLS[chain], 'eth_getBalance', [bondContract, 'latest']);
-    const balance = balanceResult.result ? Number(BigInt(balanceResult.result)) / 1e18 : 0;
+    // getBondsByParticipantCount(address) → selector 0x5e6d1b8a
+    const countCalldata = '0x5e6d1b8a' + encodeAddress(companionAddr);
+    const countResult = await rpcCall(RPC_URLS[chain], 'eth_call', [
+      { to: bondContract, data: countCalldata }, 'latest',
+    ]);
+    const bondCount = countResult.result && countResult.result !== '0x'
+      ? Number(BigInt(countResult.result))
+      : 0;
+
+    // Also check the stored bond amount for staked value
+    const storedAmount = sGet(COMPANION_KEYS.BOND_AMOUNT);
+    const totalStaked = storedAmount ? parseFloat(storedAmount).toFixed(6) : '0';
 
     return {
-      verified: balance > 0,
-      bondCount: balance > 0 ? 1 : 0,
-      totalStaked: balance.toFixed(6),
+      verified: bondCount > 0,
+      bondCount,
+      totalStaked,
     };
   } catch {
-    return { verified: false, bondCount: 0, totalStaked: '0' };
+    // Fallback: check if we have a stored bond tx
+    const hasBond = sGet(COMPANION_KEYS.BOND_ACTIVE) === 'true';
+    const storedAmount = sGet(COMPANION_KEYS.BOND_AMOUNT);
+    return {
+      verified: hasBond,
+      bondCount: hasBond ? 1 : 0,
+      totalStaked: storedAmount ? parseFloat(storedAmount).toFixed(6) : '0',
+    };
   }
 }
 
