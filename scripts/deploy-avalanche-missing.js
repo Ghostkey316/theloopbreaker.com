@@ -17,8 +17,8 @@ const COMPROMISED_WALLET = "0xf6A677de83c407875c9a9115cf100f121f9c4816";
 
 // Existing Avalanche addresses from earlier deployment
 const EXISTING = {
-  ERC8004IdentityRegistry: "0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5",
-  AIPartnershipBondsV2: "0x37679B1dCfabE6eA6b8408626815A1426bE2D717",
+  ERC8004IdentityRegistry: "0x57741F4116925341d8f7Eb3F381d98e07C73B4a3",
+  AIPartnershipBondsV2: "0xea6B504827a746d781f867441364C7A732AA4b07",
 };
 
 async function deployContract(name, args = []) {

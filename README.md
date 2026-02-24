@@ -139,67 +139,69 @@ Together, AI Partnership Bonds and AI Accountability Bonds provide **economic pr
 
 Vaultfire Protocol is deployed across multiple EVM-compatible chains, establishing a robust, multi-chain infrastructure for verifiable trust. All contracts are open-source and verified on their respective block explorers, ensuring transparency and auditability. The protocol utilizes Solidity version `^0.8.25`.
 
-**Deployer Address:** `0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324`
+**Deployer Address:** `0xA054f831B562e729F8D268291EBde1B2EDcFb84F`
+
+> **Note:** All contracts were redeployed on 2026-02-24 from a new deployer wallet following a wallet compromise. The previous deployer address `0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324` is deprecated. All new addresses are canonical.
 
 ### 5.1. Base Mainnet (Chain ID: 8453) — 15 Contracts
 
-| Contract Name                       | Address                                    |
-| :---------------------------------- | :----------------------------------------- |
-| MissionEnforcement                  | `0x38165D2D7a8584985CCa5640f4b32b1f3347CC83` |
-| AntiSurveillance                    | `0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C` |
-| PrivacyGuarantees                   | `0xBdB6c89f5cb86f4d44F7E01d9393b29D83e3DB55` |
-| ERC8004IdentityRegistry             | `0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5` |
-| BeliefAttestationVerifier           | `0x10180c8430cfD61d27F1d7a548Cff0C4D143bFEF` |
-| AIPartnershipBondsV2                | `0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1` |
-| FlourishingMetricsOracle            | `0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1` |
-| AIAccountabilityBondsV2             | `0xDfc66395A4742b5168712a04942C90B99394aEEb` |
-| ERC8004ReputationRegistry           | `0x544B575431ECD927bA83E85008446fA1e100204a` |
-| ERC8004ValidationRegistry           | `0x501fE0f960c1e061C4d295Af241f9F1512775556` |
-| VaultfireERC8004Adapter             | `0x5470d8189849675C043fFA7fc451e5F2f4e5532c` |
-| MultisigGovernance                  | `0xea0A6750642AA294658dC9f1eDf36b95D21e7B22` |
-| ProductionBeliefAttestationVerifier | `0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B` |
-| VaultfireTeleporterBridge           | `0xFe122605364f428570c4C0EB2CCAEBb68dD22d05` |
-| DilithiumAttestor                   | `0xB53cd0A2ec4051018E6e3A0F2FF1EEC6487b123E` |
+| Contract Name                       | Address                                      | Explorer |
+| :---------------------------------- | :------------------------------------------- | :------- |
+| MissionEnforcement                  | `0x8568F4020FCD55915dB3695558dD6D2532599e56` | [BaseScan](https://basescan.org/address/0x8568F4020FCD55915dB3695558dD6D2532599e56) |
+| AntiSurveillance                    | `0x722E37A7D6f27896C688336AaaFb0dDA80D25E57` | [BaseScan](https://basescan.org/address/0x722E37A7D6f27896C688336AaaFb0dDA80D25E57) |
+| PrivacyGuarantees                   | `0xE2f75A4B14ffFc1f9C2b1ca22Fdd6877E5BD5045` | [BaseScan](https://basescan.org/address/0xE2f75A4B14ffFc1f9C2b1ca22Fdd6877E5BD5045) |
+| ERC8004IdentityRegistry             | `0x35978DB675576598F0781dA2133E94cdCf4858bC` | [BaseScan](https://basescan.org/address/0x35978DB675576598F0781dA2133E94cdCf4858bC) |
+| BeliefAttestationVerifier           | `0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba` | [BaseScan](https://basescan.org/address/0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba) |
+| AIPartnershipBondsV2                | `0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4` | [BaseScan](https://basescan.org/address/0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4) |
+| FlourishingMetricsOracle            | `0x83dd216449B3F0574E39043ECFE275946fa492e9` | [BaseScan](https://basescan.org/address/0x83dd216449B3F0574E39043ECFE275946fa492e9) |
+| AIAccountabilityBondsV2             | `0xf92baef9523BC264144F80F9c31D5c5C017c6Da8` | [BaseScan](https://basescan.org/address/0xf92baef9523BC264144F80F9c31D5c5C017c6Da8) |
+| ERC8004ReputationRegistry           | `0xdB54B8925664816187646174bdBb6Ac658A55a5F` | [BaseScan](https://basescan.org/address/0xdB54B8925664816187646174bdBb6Ac658A55a5F) |
+| ERC8004ValidationRegistry           | `0x54e00081978eE2C8d9Ada8e9975B0Bb543D06A55` | [BaseScan](https://basescan.org/address/0x54e00081978eE2C8d9Ada8e9975B0Bb543D06A55) |
+| VaultfireERC8004Adapter             | `0xef3A944f4d7bb376699C83A29d7Cb42C90D9B6F0` | [BaseScan](https://basescan.org/address/0xef3A944f4d7bb376699C83A29d7Cb42C90D9B6F0) |
+| MultisigGovernance                  | `0x8B8Ba34F8AAB800F0Ba8391fb1388c6EFb911F92` | [BaseScan](https://basescan.org/address/0x8B8Ba34F8AAB800F0Ba8391fb1388c6EFb911F92) |
+| ProductionBeliefAttestationVerifier | `0xa5CEC47B48999EB398707838E3A18dd20A1ae272` | [BaseScan](https://basescan.org/address/0xa5CEC47B48999EB398707838E3A18dd20A1ae272) |
+| DilithiumAttestor                   | `0xBBC0EFdEE23854e7cb7C4c0f56fF7670BB0530A4` | [BaseScan](https://basescan.org/address/0xBBC0EFdEE23854e7cb7C4c0f56fF7670BB0530A4) |
+| VaultfireTeleporterBridge           | `0x94F54c849692Cc64C35468D0A87D2Ab9D7Cb6Fb2` | [BaseScan](https://basescan.org/address/0x94F54c849692Cc64C35468D0A87D2Ab9D7Cb6Fb2) |
 
 ### 5.2. Avalanche C-Chain (Chain ID: 43114) — 15 Contracts
 
-| Contract Name                       | Address                                    |
-| :---------------------------------- | :----------------------------------------- |
-| MissionEnforcement                  | `0xE1D52bF7A842B207B8C48eAE801f9d97A3C4D709` |
-| AntiSurveillance                    | `0xaCB59e0f0eA47B25b24390B71b877928E5842630` |
-| ERC8004IdentityRegistry             | `0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5` |
-| AIPartnershipBondsV2                | `0x37679B1dCfabE6eA6b8408626815A1426bE2D717` |
-| FlourishingMetricsOracle            | `0x83b2D1a8e383c4239dE66b6614176636618c1c0A` |
-| AIAccountabilityBondsV2             | `0xEF022Bdf55940491d4efeBDE61Ffa3f3fF81b192` |
-| ProductionBeliefAttestationVerifier | `0x20E8CDFae485F0E8E90D24c9E071957A53eE0cB1` |
-| VaultfireTeleporterBridge           | `0x964562f712c5690465B0AA2F8fA16d9dDAc6eCdf` |
-| PrivacyGuarantees                   | `0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C` |
-| BeliefAttestationVerifier           | `0xBdB6c89f5cb86f4d44F7E01d9393b29D83e3DB55` |
-| ERC8004ReputationRegistry           | `0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5` |
-| ERC8004ValidationRegistry           | `0x10180c8430cfD61d27F1d7a548Cff0C4D143bFEF` |
-| VaultfireERC8004Adapter             | `0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1` |
-| MultisigGovernance                  | `0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1` |
-| DilithiumAttestor                   | `0x5470d8189849675C043fFA7fc451e5F2f4e5532c` |
+| Contract Name                       | Address                                      | Explorer |
+| :---------------------------------- | :------------------------------------------- | :------- |
+| MissionEnforcement                  | `0xcf64D815F5424B7937aB226bC733Ed35ab6CaDcB` | [Snowtrace](https://snowtrace.io/address/0xcf64D815F5424B7937aB226bC733Ed35ab6CaDcB) |
+| AntiSurveillance                    | `0x281814eF92062DA8049Fe5c4743c4Aef19a17380` | [Snowtrace](https://snowtrace.io/address/0x281814eF92062DA8049Fe5c4743c4Aef19a17380) |
+| PrivacyGuarantees                   | `0xc09F0e06690332eD9b490E1040BdE642f11F3937` | [Snowtrace](https://snowtrace.io/address/0xc09F0e06690332eD9b490E1040BdE642f11F3937) |
+| ERC8004IdentityRegistry             | `0x57741F4116925341d8f7Eb3F381d98e07C73B4a3` | [Snowtrace](https://snowtrace.io/address/0x57741F4116925341d8f7Eb3F381d98e07C73B4a3) |
+| BeliefAttestationVerifier           | `0x227e27e7776d3ee14128BC66216354495E113B19` | [Snowtrace](https://snowtrace.io/address/0x227e27e7776d3ee14128BC66216354495E113B19) |
+| AIPartnershipBondsV2                | `0xea6B504827a746d781f867441364C7A732AA4b07` | [Snowtrace](https://snowtrace.io/address/0xea6B504827a746d781f867441364C7A732AA4b07) |
+| FlourishingMetricsOracle            | `0x490c51c2fAd743C288D65A6006f6B0ae9e6a8695` | [Snowtrace](https://snowtrace.io/address/0x490c51c2fAd743C288D65A6006f6B0ae9e6a8695) |
+| AIAccountabilityBondsV2             | `0xaeFEa985E0C52f92F73606657B9dA60db2798af3` | [Snowtrace](https://snowtrace.io/address/0xaeFEa985E0C52f92F73606657B9dA60db2798af3) |
+| ERC8004ReputationRegistry           | `0x11C267C8A75B13A4D95357CEF6027c42F8e7bA24` | [Snowtrace](https://snowtrace.io/address/0x11C267C8A75B13A4D95357CEF6027c42F8e7bA24) |
+| ERC8004ValidationRegistry           | `0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b` | [Snowtrace](https://snowtrace.io/address/0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b) |
+| VaultfireERC8004Adapter             | `0x6B7dC022edC41EBE41400319C6fDcCeab05Ea053` | [Snowtrace](https://snowtrace.io/address/0x6B7dC022edC41EBE41400319C6fDcCeab05Ea053) |
+| MultisigGovernance                  | `0xCc7300F39aF4cc2A924f82a5Facd7049436157Ee` | [Snowtrace](https://snowtrace.io/address/0xCc7300F39aF4cc2A924f82a5Facd7049436157Ee) |
+| ProductionBeliefAttestationVerifier | `0xb3d8063e67bdA1a869721D0F6c346f1Af0469D2F` | [Snowtrace](https://snowtrace.io/address/0xb3d8063e67bdA1a869721D0F6c346f1Af0469D2F) |
+| DilithiumAttestor                   | `0x211554bd46e3D4e064b51a31F61927ae9c7bCF1f` | [Snowtrace](https://snowtrace.io/address/0x211554bd46e3D4e064b51a31F61927ae9c7bCF1f) |
+| VaultfireTeleporterBridge           | `0x0dF0523aF5aF2Aef180dB052b669Bea97fee3d31` | [Snowtrace](https://snowtrace.io/address/0x0dF0523aF5aF2Aef180dB052b669Bea97fee3d31) |
 
 ### 5.3. Ethereum Mainnet (Chain ID: 1) — 15 Contracts
 
-| Contract Name                       | Address                                    |
-| :---------------------------------- | :----------------------------------------- |
-| ERC8004IdentityRegistry             | `0xaCB59e0f0eA47B25b24390B71b877928E5842630` |
-| BeliefAttestationVerifier           | `0xFe122605364f428570c4C0EB2CCAEBb68dD22d05` |
-| AIPartnershipBondsV2                | `0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1` |
-| FlourishingMetricsOracle            | `0x544B575431ECD927bA83E85008446fA1e100204a` |
-| AIAccountabilityBondsV2             | `0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5` |
-| ERC8004ReputationRegistry           | `0x37679B1dCfabE6eA6b8408626815A1426bE2D717` |
-| ERC8004ValidationRegistry           | `0x83b2D1a8e383c4239dE66b6614176636618c1c0A` |
-| MultisigGovernance                  | `0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C` |
-| ProductionBeliefAttestationVerifier | `0xDfc66395A4742b5168712a04942C90B99394aEEb` |
-| DilithiumAttestor                   | `0xE1b9817FC0F10d2676303C7732497E9B593a22de` |
-| MissionEnforcement                  | `0xe24Ab41dC93833d63d8dd501C53bED674daa4839` |
-| AntiSurveillance                    | `0x5aB7Ec586928f91e808009700fEE59635b141177` |
-| PrivacyGuarantees                   | `0xd8fa09428a578Fc5a9b65d31f9D294Ccfe7b69e5` |
-| TrustDataBridge                     | `0xa5906e8117AC9b8e4803cC19223d4fAC4e947411` |
-| VaultfireERC8004Adapter             | `0xA90Ef8397a07fe88475B6907d1b0a0BFb4951483` |
+| Contract Name                       | Address                                      | Explorer |
+| :---------------------------------- | :------------------------------------------- | :------- |
+| MissionEnforcement                  | `0x0E777878C5b5248E1b52b09Ab5cdEb2eD6e7Da58` | [Etherscan](https://etherscan.io/address/0x0E777878C5b5248E1b52b09Ab5cdEb2eD6e7Da58) |
+| AntiSurveillance                    | `0xfDdd2B1597c87577543176AB7f49D587876563D2` | [Etherscan](https://etherscan.io/address/0xfDdd2B1597c87577543176AB7f49D587876563D2) |
+| PrivacyGuarantees                   | `0x8aceF0Bc7e07B2dE35E9069663953f41B5422218` | [Etherscan](https://etherscan.io/address/0x8aceF0Bc7e07B2dE35E9069663953f41B5422218) |
+| ERC8004IdentityRegistry             | `0x1A80F77e12f1bd04538027aed6d056f5DCcDCD3C` | [Etherscan](https://etherscan.io/address/0x1A80F77e12f1bd04538027aed6d056f5DCcDCD3C) |
+| BeliefAttestationVerifier           | `0x613585B786af2d5ecb1c3e712CE5ffFB8f53f155` | [Etherscan](https://etherscan.io/address/0x613585B786af2d5ecb1c3e712CE5ffFB8f53f155) |
+| AIPartnershipBondsV2                | `0x247F31bB2b5a0d28E68bf24865AA242965FF99cd` | [Etherscan](https://etherscan.io/address/0x247F31bB2b5a0d28E68bf24865AA242965FF99cd) |
+| FlourishingMetricsOracle            | `0x690411685278548157409FA7AC8279A5B1Fb6F78` | [Etherscan](https://etherscan.io/address/0x690411685278548157409FA7AC8279A5B1Fb6F78) |
+| AIAccountabilityBondsV2             | `0x11C267C8A75B13A4D95357CEF6027c42F8e7bA24` | [Etherscan](https://etherscan.io/address/0x11C267C8A75B13A4D95357CEF6027c42F8e7bA24) |
+| ERC8004ReputationRegistry           | `0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b` | [Etherscan](https://etherscan.io/address/0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b) |
+| ERC8004ValidationRegistry           | `0x6B7dC022edC41EBE41400319C6fDcCeab05Ea053` | [Etherscan](https://etherscan.io/address/0x6B7dC022edC41EBE41400319C6fDcCeab05Ea053) |
+| VaultfireERC8004Adapter             | `0xCc7300F39aF4cc2A924f82a5Facd7049436157Ee` | [Etherscan](https://etherscan.io/address/0xCc7300F39aF4cc2A924f82a5Facd7049436157Ee) |
+| MultisigGovernance                  | `0x227e27e7776d3ee14128BC66216354495E113B19` | [Etherscan](https://etherscan.io/address/0x227e27e7776d3ee14128BC66216354495E113B19) |
+| ProductionBeliefAttestationVerifier | `0xea6B504827a746d781f867441364C7A732AA4b07` | [Etherscan](https://etherscan.io/address/0xea6B504827a746d781f867441364C7A732AA4b07) |
+| DilithiumAttestor                   | `0x490c51c2fAd743C288D65A6006f6B0ae9e6a8695` | [Etherscan](https://etherscan.io/address/0x490c51c2fAd743C288D65A6006f6B0ae9e6a8695) |
+| TrustDataBridge                     | `0xb3d8063e67bdA1a869721D0F6c346f1Af0469D2F` | [Etherscan](https://etherscan.io/address/0xb3d8063e67bdA1a869721D0F6c346f1Af0469D2F) |
 
 ### 5.4. Cross-Chain Bridges
 
@@ -207,12 +209,12 @@ Vaultfire's multi-chain architecture is supported by robust bridging solutions, 
 
 *   **Base <-> Avalanche: VaultfireTeleporterBridge**
     *   This bidirectional bridge utilizes Avalanche Warp Messaging to facilitate secure and efficient cross-chain communication between Base and Avalanche.
-    *   Base side address: `0xFe122605364f428570c4C0EB2CCAEBb68dD22d05` (remoteChainId: `43114`)
-    *   Avalanche side address: `0x964562f712c5690465B0AA2F8fA16d9dDAc6eCdf` (remoteChainId: `8453`)
+    *   Base side address: `0x94F54c849692Cc64C35468D0A87D2Ab9D7Cb6Fb2` (remoteChainId: `43114`)
+    *   Avalanche side address: `0x0dF0523aF5aF2Aef180dB052b669Bea97fee3d31` (remoteChainId: `8453`)
 
 *   **Ethereum: TrustDataBridge**
     *   The `TrustDataBridge` on Ethereum supports data synchronization with chains `8453` (Base) and `43114` (Avalanche).
-    *   Ethereum address: `0xa5906e8117AC9b8e4803cC19223d4fAC4e947411`
+    *   Ethereum address: `0xb3d8063e67bdA1a869721D0F6c346f1Af0469D2F`
 
 ### 5.5. ZK Proof System Integration
 
@@ -222,7 +224,142 @@ The protocol integrates advanced Zero-Knowledge Proof (ZKP) capabilities to ensu
 
 ---
 
-## 6. Partner Integration Guide
+## 6. XMTP Messaging Integration and Trust Verification
+
+Embris by Vaultfire integrates [XMTP](https://xmtp.org) (Extensible Message Transport Protocol) as the secure, decentralized messaging layer for AI agent communication. XMTP provides end-to-end encrypted messaging between agents and users, with Vaultfire's bond contracts serving as the on-chain trust layer that governs which agents are permitted to communicate.
+
+### 6.1. Trust Verification Flow
+
+When an agent initiates an XMTP conversation with a user, the following trust verification sequence occurs:
+
+1.  **Identity Check** — The agent's wallet address is looked up in `ERC8004IdentityRegistry` via `getTotalAgents()` to confirm the agent has a registered on-chain identity.
+2.  **Bond Discovery** — The connector calls `getBondsByParticipantCount(agentAddress)` on `AIPartnershipBondsV2` to retrieve the number of bonds the agent has established.
+3.  **Bond Retrieval** — For each bond index `i`, the connector calls `getBond(agentAddress, i)` to retrieve the full bond record, including the counterparty address, bond amount, creation timestamp, and active status.
+4.  **Trust Score Computation** — The connector aggregates the bond data to compute a trust score: the number of active bonds, total staked value, and the oldest bond age. Agents with higher bond counts and larger stakes receive higher trust scores.
+5.  **Greeting Message** — The agent sends a structured XMTP greeting that includes its on-chain identity, trust score, and a compact address table showing its contract addresses across all three chains:
+
+```
+| Contract          | Base          | Avalanche     | Ethereum      |
+|-------------------|---------------|---------------|---------------|
+| IdentityRegistry  | 0x3597...58bC | 0x5774...B4a3 | 0x1A80...CD3C |
+| BondsV2           | 0xC574...b4b4 | 0xea6B...4b07 | 0x247F...99cd |
+```
+
+### 6.2. Bond-Based Trust Model
+
+The XMTP trust model is built on the principle that economic commitment signals genuine intent. An AI agent that has staked bonds with multiple human partners has demonstrated real accountability — it has put economic value at risk in exchange for the right to communicate with trust.
+
+The `getBondsByParticipantCount → getBond` flow is the canonical pattern for trust verification:
+
+```javascript
+import { ethers } from "ethers";
+
+const PARTNERSHIP_BONDS = {
+  base:      '0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4',
+  avalanche: '0xea6B504827a746d781f867441364C7A732AA4b07',
+  ethereum:  '0x247F31bB2b5a0d28E68bf24865AA242965FF99cd',
+};
+
+const BONDS_ABI = [
+  "function getBondsByParticipantCount(address participant) view returns (uint256)",
+  "function getBond(address participant, uint256 index) view returns (address counterparty, uint256 amount, uint256 createdAt, bool active)",
+];
+
+async function verifyAgentTrust(agentAddress, chainKey = 'base') {
+  const provider = new ethers.JsonRpcProvider(RPC_URLS[chainKey]);
+  const bonds = new ethers.Contract(PARTNERSHIP_BONDS[chainKey], BONDS_ABI, provider);
+
+  const count = await bonds.getBondsByParticipantCount(agentAddress);
+  const bondDetails = [];
+
+  for (let i = 0; i < count; i++) {
+    const [counterparty, amount, createdAt, active] = await bonds.getBond(agentAddress, i);
+    if (active) {
+      bondDetails.push({ counterparty, amount: ethers.formatEther(amount), createdAt: Number(createdAt) });
+    }
+  }
+
+  return {
+    agentAddress,
+    activeBonds: bondDetails.length,
+    totalStaked: bondDetails.reduce((sum, b) => sum + parseFloat(b.amount), 0),
+    bonds: bondDetails,
+  };
+}
+```
+
+### 6.3. XMTP Message Filtering
+
+The XMTP connector uses the trust verification result to filter incoming messages. Agents with zero active bonds are flagged as unverified and their messages are quarantined. Agents with at least one active bond and a registered identity are granted standard trust. Agents with multiple bonds and high total stake are granted elevated trust and may access additional protocol features.
+
+---
+
+## 7. x402 Payment Protocol Integration
+
+Embris by Vaultfire implements the [x402 payment protocol](https://x402.org) for micropayment-gated API access. x402 is an HTTP-native payment standard that uses EIP-712 signed USDC authorizations to enable machine-to-machine payments without requiring prior account setup or API keys.
+
+### 7.1. Payment Authorization Flow
+
+The x402 flow for Vaultfire API access proceeds as follows:
+
+1.  **Request** — A client sends an HTTP request to a Vaultfire API endpoint (e.g., `POST /api/hub/query`).
+2.  **402 Response** — If the client has not included a payment header, the server responds with HTTP `402 Payment Required` and a `X-Payment-Required` header describing the payment terms: amount, token contract, recipient, and network.
+3.  **EIP-712 Signing** — The client constructs an EIP-712 typed data payload for a USDC `transferWithAuthorization` call and signs it with their wallet private key. No on-chain transaction is sent at this stage.
+4.  **Payment Header** — The client re-sends the original request with an `X-Payment` header containing the base64-encoded signed authorization.
+5.  **Verification** — The server verifies the EIP-712 signature, confirms the USDC allowance, and processes the payment by submitting the `transferWithAuthorization` transaction on Base mainnet.
+6.  **Response** — The server returns the requested data with an `X-Payment-Receipt` header confirming the transaction hash.
+
+### 7.2. USDC Contract and EIP-712 Details
+
+All x402 payments use native USDC on Base mainnet. The USDC contract address is not a Vaultfire contract and is not redeployed — it is the canonical Circle-issued USDC:
+
+*   **USDC on Base:** `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` (Circle canonical — immutable)
+
+The EIP-712 domain for USDC `transferWithAuthorization` on Base is:
+
+```javascript
+const domain = {
+  name: 'USD Coin',
+  version: '2',
+  chainId: 8453,
+  verifyingContract: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+};
+
+const types = {
+  TransferWithAuthorization: [
+    { name: 'from',        type: 'address' },
+    { name: 'to',          type: 'address' },
+    { name: 'value',       type: 'uint256' },
+    { name: 'validAfter',  type: 'uint256' },
+    { name: 'validBefore', type: 'uint256' },
+    { name: 'nonce',       type: 'bytes32' },
+  ],
+};
+
+// Sign the authorization
+const signature = await wallet.signTypedData(domain, types, {
+  from:        wallet.address,
+  to:          VAULTFIRE_PAYMENT_RECIPIENT,
+  value:       ethers.parseUnits('0.01', 6),  // 0.01 USDC (6 decimals)
+  validAfter:  0n,
+  validBefore: BigInt(Math.floor(Date.now() / 1000) + 3600),  // 1 hour
+  nonce:       ethers.hexlify(ethers.randomBytes(32)),
+});
+```
+
+### 7.3. Payment-Gated Endpoints
+
+The following Vaultfire API endpoints require x402 payment:
+
+| Endpoint | Price | Description |
+| :------- | :---- | :---------- |
+| `POST /api/hub/query` | 0.01 USDC | Query agent trust scores and bond data |
+| `POST /api/hub/attest` | 0.05 USDC | Submit a belief attestation |
+| `GET /api/hub/stats` | Free | Public protocol statistics |
+
+---
+
+## 8. Partner Integration Guide
 
 Vaultfire is designed as infrastructure for AI companies, developers, and partners to build upon. Integrating with Vaultfire allows partners to leverage verifiable trust, sovereign identity, and economic alignment, ensuring their AI agents and services operate within a framework that prioritizes human flourishing, privacy, and freedom. All three chains — Base, Avalanche, and Ethereum — are **partner-ready**.
 
@@ -250,11 +387,11 @@ import { ethers } from "ethers";
 const provider = new ethers.JsonRpcProvider("https://mainnet.base.org"); // Or Avalanche RPC
 const wallet = new ethers.Wallet("YOUR_PRIVATE_KEY", provider);
 
-// Base Mainnet Contract Addresses (use the correct addresses from Section 5.1)
-const identityRegistryAddress = "0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5";
-const partnershipBondsAddress = "0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1";
-const reputationRegistryAddress = "0x544B575431ECD927bA83E85008446fA1e100204a";
-const attestationVerifierAddress = "0x10180c8430cfD61d27F1d7a548Cff0C4D143bFEF";
+// Base Mainnet Contract Addresses (canonical — redeployed 2026-02-24)
+const identityRegistryAddress = "0x35978DB675576598F0781dA2133E94cdCf4858bC";
+const partnershipBondsAddress = "0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4";
+const reputationRegistryAddress = "0xdB54B8925664816187646174bdBb6Ac658A55a5F";
+const attestationVerifierAddress = "0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba";
 
 // --- ABIs (simplified for example; obtain full ABIs from repo) ---
 const identityRegistryABI = [
@@ -328,7 +465,7 @@ async function submitAgentAttestation(schemaId, attestationHash, data) {
 
 ---
 
-## 7. Current Status and Disclaimers
+## 9. Current Status and Disclaimers
 
 Vaultfire Protocol is currently in its **ALPHA stage**. While the core protocol is deployed and functional on Base Mainnet and Avalanche C-Chain, and has undergone internal functional audits, it is important to note the following:
 
@@ -347,7 +484,7 @@ A multi-chain functional audit (2026-02-22) confirmed that the Vaultfire Protoco
 
 ---
 
-## 8. Quickstart (bash)
+## 10. Quickstart (bash)
 
 To get started with Vaultfire Protocol locally, follow these steps. This will run preflight checks, tests, and generate a tamper-evident verification receipt, demonstrating the protocol's integrity and verifiability.
 
@@ -433,7 +570,7 @@ npm run start:api
 
 ---
 
-## 9. Documentation and Resources
+## 11. Documentation and Resources
 
 For deeper insights into the Vaultfire Protocol, its design, and operational guidelines, please refer to the following documentation:
 
@@ -451,7 +588,7 @@ For deeper insights into the Vaultfire Protocol, its design, and operational gui
 
 ---
 
-## 10. References
+## 12. References
 
 [1] Manus AI. (2026, February 22). *Vaultfire Protocol: Final Multi-Chain Functional Audit Report*. Internal Document.
 [2] Manus AI. (2026, February 22). *Vaultfire Protocol Ethereum Mainnet Deployment and Verification Report*. Internal Document.

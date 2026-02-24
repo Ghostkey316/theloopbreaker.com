@@ -493,9 +493,9 @@ export default function Home() {
         </h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {[
-            { label: 'ERC-8004 Registry · Ethereum', href: 'https://etherscan.io/address/0xaCB59e0f0eA47B25b24390B71b877928E5842630', color: '#627EEA', count: ETHEREUM_CONTRACTS.length },
-            { label: 'ERC-8004 Registry · Base', href: 'https://basescan.org/address/0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5', color: '#0052FF', count: BASE_CONTRACTS.length },
-            { label: 'ERC-8004 Registry · Avalanche', href: 'https://snowtrace.io/address/0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5', color: '#E84142', count: AVALANCHE_CONTRACTS.length },
+            { label: 'ERC-8004 Registry · Ethereum', href: 'https://etherscan.io/address/0x1A80F77e12f1bd04538027aed6d056f5DCcDCD3C', color: '#627EEA', count: ETHEREUM_CONTRACTS.length },
+            { label: 'ERC-8004 Registry · Base', href: 'https://basescan.org/address/0x35978DB675576598F0781dA2133E94cdCf4858bC', color: '#0052FF', count: BASE_CONTRACTS.length },
+            { label: 'ERC-8004 Registry · Avalanche', href: 'https://snowtrace.io/address/0x57741F4116925341d8f7Eb3F381d98e07C73B4a3', color: '#E84142', count: AVALANCHE_CONTRACTS.length },
           ].map(item => (
             <a key={item.label} href={item.href} target="_blank" rel="noopener noreferrer" style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',

@@ -56,20 +56,21 @@ function intEnv(key: string, fallback: number): number {
 // ---------------------------------------------------------------------------
 
 export const CONTRACTS = {
-  ERC8004IdentityRegistry: '0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5',
-  AIPartnershipBondsV2: '0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1',
-  AIAccountabilityBondsV2: '0xDfc66395A4742b5168712a04942C90B99394aEEb',
-  FlourishingMetricsOracle: '0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1',
-  ProductionBeliefAttestationVerifier: '0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B',
-  ERC8004ReputationRegistry: '0x544B575431ECD927bA83E85008446fA1e100204a',
-  ERC8004ValidationRegistry: '0x501fE0f960c1e061C4d295Af241f9F1512775556',
-  VaultfireERC8004Adapter: '0x5470d8189849675C043fFA7fc451e5F2f4e5532c',
-  MultisigGovernance: '0xea0A6750642AA294658dC9f1eDf36b95D21e7B22',
-  PrivacyGuarantees: '0xBdB6c89f5cb86f4d44F7E01d9393b29D83e3DB55',
-  MissionEnforcement: '0x38165D2D7a8584985CCa5640f4b32b1f3347CC83',
-  AntiSurveillance: '0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C',
-  BeliefAttestationVerifier: '0x10180c8430cfD61d27F1d7a548Cff0C4D143bFEF',
-  VaultfireTeleporterBridge: '0xFe122605364f428570c4C0EB2CCAEBb68dD22d05',
+  ERC8004IdentityRegistry: '0x35978DB675576598F0781dA2133E94cdCf4858bC',
+  AIPartnershipBondsV2: '0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4',
+  AIAccountabilityBondsV2: '0xf92baef9523BC264144F80F9c31D5c5C017c6Da8',
+  FlourishingMetricsOracle: '0x83dd216449B3F0574E39043ECFE275946fa492e9',
+  ProductionBeliefAttestationVerifier: '0xa5CEC47B48999EB398707838E3A18dd20A1ae272',
+  ERC8004ReputationRegistry: '0xdB54B8925664816187646174bdBb6Ac658A55a5F',
+  ERC8004ValidationRegistry: '0x54e00081978eE2C8d9Ada8e9975B0Bb543D06A55',
+  VaultfireERC8004Adapter: '0xef3A944f4d7bb376699C83A29d7Cb42C90D9B6F0',
+  MultisigGovernance: '0x8B8Ba34F8AAB800F0Ba8391fb1388c6EFb911F92',
+  PrivacyGuarantees: '0xE2f75A4B14ffFc1f9C2b1ca22Fdd6877E5BD5045',
+  MissionEnforcement: '0x8568F4020FCD55915dB3695558dD6D2532599e56',
+  AntiSurveillance: '0x722E37A7D6f27896C688336AaaFb0dDA80D25E57',
+  BeliefAttestationVerifier: '0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba',
+  DilithiumAttestor: '0xBBC0EFdEE23854e7cb7C4c0f56fF7670BB0530A4',
+  VaultfireTeleporterBridge: '0x94F54c849692Cc64C35468D0A87D2Ab9D7Cb6Fb2',
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -118,20 +119,20 @@ export const SUPPORTED_CHAINS: Record<string, ChainDefinition> = {
  * All 14 contracts deployed and verified on Snowtrace — Feb 18, 2026.
  */
 export const AVALANCHE_CONTRACTS: Record<string, string> = {
-  ERC8004IdentityRegistry: '0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5',
-  AIPartnershipBondsV2: '0x37679B1dCfabE6eA6b8408626815A1426bE2D717',
-  AIAccountabilityBondsV2: '0xEF022Bdf55940491d4efeBDE61Ffa3f3fF81b192',
-  FlourishingMetricsOracle: '0x83b2D1a8e383c4239dE66b6614176636618c1c0A',
-  ProductionBeliefAttestationVerifier: '0x20E8CDFae485F0E8E90D24c9E071957A53eE0cB1',
-  ERC8004ReputationRegistry: '0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5',
-  ERC8004ValidationRegistry: '0x10180c8430cfD61d27F1d7a548Cff0C4D143bFEF',
-  VaultfireERC8004Adapter: '0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1',
-  MultisigGovernance: '0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1',
-  PrivacyGuarantees: '0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C',
-  MissionEnforcement: '0xE1D52bF7A842B207B8C48eAE801f9d97A3C4D709',
-  AntiSurveillance: '0xaCB59e0f0eA47B25b24390B71b877928E5842630',
-  BeliefAttestationVerifier: '0xBdB6c89f5cb86f4d44F7E01d9393b29D83e3DB55',
-  VaultfireTeleporterBridge: '0x964562f712c5690465B0AA2F8fA16d9dDAc6eCdf',
+  ERC8004IdentityRegistry: '0x57741F4116925341d8f7Eb3F381d98e07C73B4a3',
+  AIPartnershipBondsV2: '0xea6B504827a746d781f867441364C7A732AA4b07',
+  AIAccountabilityBondsV2: '0xaeFEa985E0C52f92F73606657B9dA60db2798af3',
+  FlourishingMetricsOracle: '0x490c51c2fAd743C288D65A6006f6B0ae9e6a8695',
+  ProductionBeliefAttestationVerifier: '0xb3d8063e67bdA1a869721D0F6c346f1Af0469D2F',
+  ERC8004ReputationRegistry: '0x11C267C8A75B13A4D95357CEF6027c42F8e7bA24',
+  ERC8004ValidationRegistry: '0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b',
+  VaultfireERC8004Adapter: '0x6B7dC022edC41EBE41400319C6fDcCeab05Ea053',
+  MultisigGovernance: '0xCc7300F39aF4cc2A924f82a5Facd7049436157Ee',
+  PrivacyGuarantees: '0xc09F0e06690332eD9b490E1040BdE642f11F3937',
+  MissionEnforcement: '0xcf64D815F5424B7937aB226bC733Ed35ab6CaDcB',
+  AntiSurveillance: '0x281814eF92062DA8049Fe5c4743c4Aef19a17380',
+  BeliefAttestationVerifier: '0x227e27e7776d3ee14128BC66216354495E113B19',
+  VaultfireTeleporterBridge: '0x0dF0523aF5aF2Aef180dB052b669Bea97fee3d31',
 };
 
 /**

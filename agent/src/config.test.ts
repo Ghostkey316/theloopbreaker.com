@@ -6,19 +6,19 @@ import { CONTRACTS, METRIC_IDS, loadConfig, DEMO_MODE, isDemoActive } from './co
 
 describe('CONTRACTS', () => {
   it('should have all required contract addresses', () => {
-    expect(CONTRACTS.ERC8004IdentityRegistry).toBe('0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5');
-    expect(CONTRACTS.AIPartnershipBondsV2).toBe('0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1');
-    expect(CONTRACTS.AIAccountabilityBondsV2).toBe('0xDfc66395A4742b5168712a04942C90B99394aEEb');
-    expect(CONTRACTS.FlourishingMetricsOracle).toBe('0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1');
-    expect(CONTRACTS.ERC8004ReputationRegistry).toBe('0x544B575431ECD927bA83E85008446fA1e100204a');
-    expect(CONTRACTS.ERC8004ValidationRegistry).toBe('0x501fE0f960c1e061C4d295Af241f9F1512775556');
-    expect(CONTRACTS.BeliefAttestationVerifier).toBe('0x10180c8430cfD61d27F1d7a548Cff0C4D143bFEF');
-    expect(CONTRACTS.PrivacyGuarantees).toBe('0xBdB6c89f5cb86f4d44F7E01d9393b29D83e3DB55');
-    expect(CONTRACTS.MissionEnforcement).toBe('0x38165D2D7a8584985CCa5640f4b32b1f3347CC83');
-    expect(CONTRACTS.AntiSurveillance).toBe('0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C');
-    expect(CONTRACTS.MultisigGovernance).toBe('0xea0A6750642AA294658dC9f1eDf36b95D21e7B22');
-    expect(CONTRACTS.VaultfireERC8004Adapter).toBe('0x5470d8189849675C043fFA7fc451e5F2f4e5532c');
-    expect(CONTRACTS.ProductionBeliefAttestationVerifier).toBe('0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B');
+    expect(CONTRACTS.ERC8004IdentityRegistry).toBe('0x35978DB675576598F0781dA2133E94cdCf4858bC');
+    expect(CONTRACTS.AIPartnershipBondsV2).toBe('0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4');
+    expect(CONTRACTS.AIAccountabilityBondsV2).toBe('0xf92baef9523BC264144F80F9c31D5c5C017c6Da8');
+    expect(CONTRACTS.FlourishingMetricsOracle).toBe('0x83dd216449B3F0574E39043ECFE275946fa492e9');
+    expect(CONTRACTS.ERC8004ReputationRegistry).toBe('0xdB54B8925664816187646174bdBb6Ac658A55a5F');
+    expect(CONTRACTS.ERC8004ValidationRegistry).toBe('0x54e00081978eE2C8d9Ada8e9975B0Bb543D06A55');
+    expect(CONTRACTS.BeliefAttestationVerifier).toBe('0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba');
+    expect(CONTRACTS.PrivacyGuarantees).toBe('0x227e27e7776d3ee14128BC66216354495E113B19');
+    expect(CONTRACTS.MissionEnforcement).toBe('0x8568F4020FCD55915dB3695558dD6D2532599e56');
+    expect(CONTRACTS.AntiSurveillance).toBe('0x722E37A7D6f27896C688336AaaFb0dDA80D25E57');
+    expect(CONTRACTS.MultisigGovernance).toBe('0x8B8Ba34F8AAB800F0Ba8391fb1388c6EFb911F92');
+    expect(CONTRACTS.VaultfireERC8004Adapter).toBe('0xef3A944f4d7bb376699C83A29d7Cb42C90D9B6F0');
+    expect(CONTRACTS.ProductionBeliefAttestationVerifier).toBe('0xa5CEC47B48999EB398707838E3A18dd20A1ae272');
     // Verify all 13 contracts are present
     expect(Object.keys(CONTRACTS)).toHaveLength(13);
   });

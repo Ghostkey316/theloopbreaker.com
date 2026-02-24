@@ -58,3 +58,4 @@ ember-web-app/xmtp-production-*.db3*
 .env.*.local
 *.key
 *.pem
+*.log

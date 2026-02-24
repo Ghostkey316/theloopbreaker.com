@@ -44,18 +44,18 @@ const CONFIG = {
   // Existing Vaultfire contract addresses
   contracts: {
     base: {
-      ERC8004IdentityRegistry: "0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5",
+      ERC8004IdentityRegistry: "0x35978DB675576598F0781dA2133E94cdCf4858bC",
       AIPartnershipBondsV2: "0x895a550B351B58352e10659232b2254b15E8152c",
       AIAccountabilityBondsV2: "0x9c316d3a436F73957b1263150752533C05341C6A",
-      ERC8004ReputationRegistry: "0x544B575431ECD927bA83E85008446fA1e100204a",
-      ERC8004ValidationRegistry: "0x501fE0f960c1e061C4d295Af241f9F1512775556",
+      ERC8004ReputationRegistry: "0xdB54B8925664816187646174bdBb6Ac658A55a5F",
+      ERC8004ValidationRegistry: "0x54e00081978eE2C8d9Ada8e9975B0Bb543D06A55",
     },
     avalanche: {
-      ERC8004IdentityRegistry: "0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5",
-      AIPartnershipBondsV2: "0x37679B1dCfabE6eA6b8408626815A1426bE2D717",
-      AIAccountabilityBondsV2: "0xEF022Bdf55940491d4efeBDE61Ffa3f3fF81b192",
-      ERC8004ReputationRegistry: "0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5",
-      ERC8004ValidationRegistry: "0x10180c8430cfD61d27F1d7a548Cff0C4D143bFEF",
+      ERC8004IdentityRegistry: "0x57741F4116925341d8f7Eb3F381d98e07C73B4a3",
+      AIPartnershipBondsV2: "0xea6B504827a746d781f867441364C7A732AA4b07",
+      AIAccountabilityBondsV2: "0xaeFEa985E0C52f92F73606657B9dA60db2798af3",
+      ERC8004ReputationRegistry: "0x35978DB675576598F0781dA2133E94cdCf4858bC",
+      ERC8004ValidationRegistry: "0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba",
     },
   },
 };

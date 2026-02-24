@@ -53,15 +53,23 @@ module.exports = {
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 43113,
     },
+    ethereum: {
+      url: 'https://ethereum-rpc.publicnode.com',
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      chainId: 1,
+    },
   },
   etherscan: {
-    apiKey: {
-      baseSepolia: process.env.BASESCAN_API_KEY || "",
-      baseMainnet: process.env.BASESCAN_API_KEY || "",
-      avalanche: process.env.SNOWTRACE_API_KEY || "snowtrace",
-      avalancheFuji: process.env.SNOWTRACE_API_KEY || "snowtrace",
-    },
+    apiKey: process.env.ETHERSCAN_API_KEY || process.env.BASESCAN_API_KEY || "",
     customChains: [
+      {
+        network: "baseMainnet",
+        chainId: 8453,
+        urls: {
+          apiURL: "https://api.basescan.org/api",
+          browserURL: "https://basescan.org",
+        },
+      },
       {
         network: "avalanche",
         chainId: 43114,
@@ -71,11 +79,11 @@ module.exports = {
         },
       },
       {
-        network: "avalancheFuji",
-        chainId: 43113,
+        network: "ethereum",
+        chainId: 1,
         urls: {
-          apiURL: "https://api.routescan.io/v2/network/testnet/evm/43113/etherscan",
-          browserURL: "https://testnet.snowtrace.io",
+          apiURL: "https://api.etherscan.io/api",
+          browserURL: "https://etherscan.io",
         },
       },
     ],

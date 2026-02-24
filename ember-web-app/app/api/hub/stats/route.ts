@@ -10,21 +10,21 @@
 import { NextResponse } from 'next/server';
 
 const REGISTRY: Record<string, string> = {
-  base: '0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5',
-  avalanche: '0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5',
-  ethereum: '0xaCB59e0f0eA47B25b24390B71b877928E5842630',
+  base: '0x35978DB675576598F0781dA2133E94cdCf4858bC',
+  avalanche: '0x57741F4116925341d8f7Eb3F381d98e07C73B4a3',
+  ethereum: '0x1A80F77e12f1bd04538027aed6d056f5DCcDCD3C',
 };
 
 const ACCOUNTABILITY_BONDS: Record<string, string> = {
-  base: '0xDfc66395A4742b5168712a04942C90B99394aEEb',
-  avalanche: '0xEF022Bdf55940491d4efeBDE61Ffa3f3fF81b192',
-  ethereum: '0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5',
+  base: '0xf92baef9523BC264144F80F9c31D5c5C017c6Da8',
+  avalanche: '0xaeFEa985E0C52f92F73606657B9dA60db2798af3',
+  ethereum: '0x11C267C8A75B13A4D95357CEF6027c42F8e7bA24',
 };
 
 const PARTNERSHIP_BONDS: Record<string, string> = {
-  base: '0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1',
-  avalanche: '0x37679B1dCfabE6eA6b8408626815A1426bE2D717',
-  ethereum: '0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1',
+  base: '0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4',
+  avalanche: '0xea6B504827a746d781f867441364C7A732AA4b07',
+  ethereum: '0x247F31bB2b5a0d28E68bf24865AA242965FF99cd',
 };
 
 const RPC_URLS: Record<string, string> = {

@@ -9,11 +9,11 @@
   "deploymentTimeMinutes": "2.71",
   "contracts": {
     "MissionEnforcement": "0xE1D52bF7A842B207B8C48eAE801f9d97A3C4D709",
-    "AntiSurveillance": "0xaCB59e0f0eA47B25b24390B71b877928E5842630",
-    "ERC8004IdentityRegistry": "0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5",
-    "AIPartnershipBondsV2": "0x37679B1dCfabE6eA6b8408626815A1426bE2D717",
+    "AntiSurveillance": "0x1A80F77e12f1bd04538027aed6d056f5DCcDCD3C",
+    "ERC8004IdentityRegistry": "0x57741F4116925341d8f7Eb3F381d98e07C73B4a3",
+    "AIPartnershipBondsV2": "0xea6B504827a746d781f867441364C7A732AA4b07",
     "FlourishingMetricsOracle": "0x83b2D1a8e383c4239dE66b6614176636618c1c0A",
-    "AIAccountabilityBondsV2": "0xEF022Bdf55940491d4efeBDE61Ffa3f3fF81b192",
+    "AIAccountabilityBondsV2": "0xaeFEa985E0C52f92F73606657B9dA60db2798af3",
     "ProductionBeliefAttestationVerifier": "0x20E8CDFae485F0E8E90D24c9E071957A53eE0cB1",
     "VaultfireTeleporterBridge": "0x964562f712c5690465B0AA2F8fA16d9dDAc6eCdf"
   },

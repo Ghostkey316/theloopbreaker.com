@@ -22,9 +22,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const BOND_CONTRACTS: Record<string, string> = {
-  base: '0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1',
-  avalanche: '0x37679B1dCfabE6eA6b8408626815A1426bE2D717',
-  ethereum: '0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1',
+  base: '0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4',
+  avalanche: '0xea6B504827a746d781f867441364C7A732AA4b07',
+  ethereum: '0x83dd216449B3F0574E39043ECFE275946fa492e9',
 };
 
 const CHAIN_IDS: Record<string, number> = { ethereum: 1, base: 8453, avalanche: 43114 };

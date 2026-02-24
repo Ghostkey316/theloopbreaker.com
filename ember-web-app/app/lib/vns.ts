@@ -56,21 +56,21 @@ export type IdentityType = 'human' | 'companion' | 'agent';
 export type BondTier = 'bronze' | 'silver' | 'gold' | 'platinum';
 
 const REGISTRY_ADDRESSES: Record<'base' | 'avalanche' | 'ethereum', string> = {
-  ethereum: '0xaCB59e0f0eA47B25b24390B71b877928E5842630',
-  base: '0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5',
-  avalanche: '0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5',
+  ethereum: '0x1A80F77e12f1bd04538027aed6d056f5DCcDCD3C',
+  base: '0x35978DB675576598F0781dA2133E94cdCf4858bC',
+  avalanche: '0x57741F4116925341d8f7Eb3F381d98e07C73B4a3',
 };
 
 const BOND_CONTRACT_ADDRESSES: Record<'base' | 'avalanche' | 'ethereum', string> = {
-  ethereum: '0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5',
-  base: '0xDfc66395A4742b5168712a04942C90B99394aEEb',
-  avalanche: '0xEF022Bdf55940491d4efeBDE61Ffa3f3fF81b192',
+  ethereum: '0x57741F4116925341d8f7Eb3F381d98e07C73B4a3',
+  base: '0xf92baef9523BC264144F80F9c31D5c5C017c6Da8',
+  avalanche: '0xaeFEa985E0C52f92F73606657B9dA60db2798af3',
 };
 
 const PRIVACY_CONTRACT_ADDRESSES: Record<'base' | 'avalanche' | 'ethereum', string> = {
-  ethereum: '0xE1D52bF7A842B207B8C48eAE801f9d97A3C4D709',
-  base: '0xBdB6c89f5cb86f4d44F7E01d9393b29D83e3DB55',
-  avalanche: '0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C',
+  ethereum: '0x8aceF0Bc7e07B2dE35E9069663953f41B5422218',
+  base: '0xE2f75A4B14ffFc1f9C2b1ca22Fdd6877E5BD5045',
+  avalanche: '0xc09F0e06690332eD9b490E1040BdE642f11F3937',
 };
 
 const RPC_URLS: Record<'base' | 'avalanche' | 'ethereum', string> = {
@@ -974,9 +974,9 @@ export async function registerVNSName(
 
 /** AIPartnershipBondsV2 addresses per chain (the bond contract for createBond) */
 const PARTNERSHIP_BOND_ADDRESSES: Record<'base' | 'avalanche' | 'ethereum', string> = {
-  base: '0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1',
-  avalanche: '0x37679B1dCfabE6eA6b8408626815A1426bE2D717',
-  ethereum: '0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1',
+  base: '0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4',
+  avalanche: '0xea6B504827a746d781f867441364C7A732AA4b07',
+  ethereum: '0x83dd216449B3F0574E39043ECFE275946fa492e9',
 };
 
 /**
@@ -1244,9 +1244,9 @@ async function getBondContractBalance(
   try {
     // Check both accountability bonds and partnership bonds
     const bondAddr = BOND_CONTRACT_ADDRESSES[chain];
-    const partnershipAddr = chain === 'base' ? '0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1'
-      : chain === 'avalanche' ? '0x37679B1dCfabE6eA6b8408626815A1426bE2D717'
-      : '0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1';
+    const partnershipAddr = chain === 'base' ? '0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4'
+      : chain === 'avalanche' ? '0xea6B504827a746d781f867441364C7A732AA4b07'
+      : '0x83dd216449B3F0574E39043ECFE275946fa492e9';
 
     const [bondResult, partnershipResult] = await Promise.allSettled([
       rpcCall(RPC_URLS[chain], 'eth_getBalance', [bondAddr, 'latest']),
