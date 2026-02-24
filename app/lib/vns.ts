@@ -67,6 +67,13 @@ const BOND_CONTRACT_ADDRESSES: Record<'base' | 'avalanche' | 'ethereum', string>
   avalanche: '0xaeFEa985E0C52f92F73606657B9dA60db2798af3',
 };
 
+/** AIPartnershipBondsV2 addresses per chain */
+const PARTNERSHIP_BOND_ADDRESSES: Record<'base' | 'avalanche' | 'ethereum', string> = {
+  base: '0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4',
+  avalanche: '0xea6B504827a746d781f867441364C7A732AA4b07',
+  ethereum: '0x247F31bB2b5a0d28E68bf24865AA242965FF99cd',
+};
+
 const PRIVACY_CONTRACT_ADDRESSES: Record<'base' | 'avalanche' | 'ethereum', string> = {
   ethereum: '0x8aceF0Bc7e07B2dE35E9069663953f41B5422218',
   base: '0xE2f75A4B14ffFc1f9C2b1ca22Fdd6877E5BD5045',
@@ -972,13 +979,6 @@ export async function registerVNSName(
 
 /* ── Agent Bond Staking ── */
 
-/** AIPartnershipBondsV2 addresses per chain (the bond contract for createBond) */
-const PARTNERSHIP_BOND_ADDRESSES: Record<'base' | 'avalanche' | 'ethereum', string> = {
-  base: '0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4',
-  avalanche: '0xea6B504827a746d781f867441364C7A732AA4b07',
-  ethereum: '0x247F31bB2b5a0d28E68bf24865AA242965FF99cd',
-};
-
 /**
  * Stake an accountability bond for an agent through AIPartnershipBondsV2.
  * Calls createBond(address aiAgent, string partnershipType) payable.
@@ -1246,7 +1246,7 @@ async function getBondContractBalance(
     const bondAddr = BOND_CONTRACT_ADDRESSES[chain];
     const partnershipAddr = chain === 'base' ? '0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4'
       : chain === 'avalanche' ? '0xea6B504827a746d781f867441364C7A732AA4b07'
-      : '0x247F31bB2b5a0d28E68bf24865AA242965FF99cd';
+      : '0x83dd216449B3F0574E39043ECFE275946fa492e9';
 
     const [bondResult, partnershipResult] = await Promise.allSettled([
       rpcCall(RPC_URLS[chain], 'eth_getBalance', [bondAddr, 'latest']),
@@ -1380,7 +1380,7 @@ export async function getOnChainHubStats(): Promise<OnChainHubStats> {
 export async function getOnChainAgents(): Promise<RegisteredAgent[]> {
   // Known deployer/registrant addresses to scan
   const KNOWN_ADDRESSES = [
-    '0xA054f831B562e729F8D268291EBde1B2EDcFb84F', // Vaultfire deployer
+    '0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324', // Vaultfire deployer
   ];
 
   const agents: RegisteredAgent[] = [];
