@@ -144,7 +144,12 @@ function decodeVaultfireMeta(message) {
 // Test runner
 // ---------------------------------------------------------------------------
 
-const WALLET_KEY = '0x99ae90bc98ba507a1e390556c17e399de7fa6ad5ce496663561837eb933607dc';
+const WALLET_KEY = process.env.DEPLOYER_PRIVATE_KEY;
+if (!WALLET_KEY) {
+  console.error('ERROR: DEPLOYER_PRIVATE_KEY environment variable is not set.');
+  console.error('Set it before running this test: export DEPLOYER_PRIVATE_KEY=0x...');
+  process.exit(1);
+}
 const EXPECTED_ADDRESS = '0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324';
 
 let passed = 0;

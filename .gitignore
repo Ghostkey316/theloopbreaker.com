@@ -50,3 +50,11 @@ risc0/out/
 risc0/cache/
 .manus-logs/
 ember-web-app/xmtp-production-*.db3*
+
+# ── Secret / credential files (Vaultfire Embris Protocol) ────────────────────
+.env
+.env.local
+.env.production
+.env.*.local
+*.key
+*.pem
