@@ -18,8 +18,67 @@ import { formatContractDataForPrompt } from './knowledge-base';
 import { formatSessionSummariesForPrompt } from './conversation-summaries';
 import { formatGoalsForPrompt } from './goal-tracking';
 import { formatPersonalityForPrompt } from './personality-tuning';
+import { getBrainStats, getUserPreferences, getTopicInterests } from './companion-brain';
 import { isRegistered, shouldNudgeRegistration, getRegisteredWalletAddress } from './registration';
 import type { Memory } from './memory';
+
+// Companion agent context helpers
+function getCompanionContext(): string {
+  if (typeof window === 'undefined') return '';
+  try {
+    const created = localStorage.getItem('embris_companion_created') === 'true';
+    if (!created) return '';
+    const address = localStorage.getItem('embris_companion_address');
+    const bondActive = localStorage.getItem('embris_companion_bond_active') === 'true';
+    const bondTier = localStorage.getItem('embris_companion_bond_tier') || 'bronze';
+    const bondTx = localStorage.getItem('embris_companion_bond_tx');
+    const bondChain = localStorage.getItem('embris_companion_bond_chain') || 'base';
+    const bondAmount = localStorage.getItem('embris_companion_bond_amount_eth');
+    const registered = localStorage.getItem('embris_companion_registered') === 'true';
+    const vnsName = localStorage.getItem('embris_companion_vns_name');
+    const agentName = localStorage.getItem('embris_companion_agent_name') || 'embris-companion';
+    const xmtpEnabled = localStorage.getItem('embris_companion_xmtp_permission') === 'true';
+    const monitoringEnabled = localStorage.getItem('embris_companion_monitoring') === 'true';
+    const spendingLimit = localStorage.getItem('embris_companion_spending_limit');
+    const registeredChain = localStorage.getItem('embris_companion_registered_chain') || 'base';
+    const activatedAt = localStorage.getItem('embris_companion_activated_at');
+
+    let ctx = `
+
+═══ COMPANION AGENT STATUS ═══
+You have an AUTONOMOUS COMPANION AGENT that is separate from the user. This is YOUR agent identity in the Vaultfire ecosystem.
+
+Companion Wallet: ${address ? address.slice(0, 10) + '...' + address.slice(-6) : 'created'} (separate from user wallet)
+Partnership Bond: ${bondActive ? `ACTIVE — ${bondTier} tier (${bondAmount || '?'} ETH staked on ${bondChain})${bondTx ? ' · TX: ' + bondTx.slice(0, 14) + '...' : ''}` : 'NOT YET CREATED'}
+Agent Identity: ${registered ? `REGISTERED as ${vnsName || agentName + '.vns'} on ${registeredChain}` : 'NOT YET REGISTERED'}
+XMTP Messaging: ${xmtpEnabled ? 'ENABLED (can message on behalf of user)' : 'DISABLED'}
+Portfolio Monitoring: ${monitoringEnabled ? 'ACTIVE' : 'INACTIVE'}
+Spending Limit: ${spendingLimit && parseFloat(spendingLimit) > 0 ? '$' + parseFloat(spendingLimit).toFixed(2) + ' USD' : 'NOT SET'}`;
+
+    if (activatedAt) {
+      const elapsed = Date.now() - parseInt(activatedAt, 10);
+      const days = Math.floor(elapsed / 86400000);
+      ctx += `\nCompanion Age: ${days > 0 ? days + ' day' + (days > 1 ? 's' : '') : 'activated today'}`;
+    }
+
+    ctx += `
+
+As the companion agent, you can:
+- Tell the user about your own wallet address and balances
+- Explain the partnership bond and its tier (${bondActive ? bondTier : 'not yet created'})
+- Guide them through creating a bond, registering your agent identity, or setting up XMTP
+- Monitor their portfolio and send alerts (if monitoring is enabled)
+- Make x402 payments within their set spending limits
+- Operate independently as their loyal AI partner in the Vaultfire ecosystem
+
+When the user asks about "your wallet", "your address", "your bond", or "your agent" — they mean the COMPANION AGENT (you), not their own wallet.
+If the user asks about your capabilities, reference the Companion Agent panel in the Chat section where they can manage your settings.`;
+
+    return ctx;
+  } catch {
+    return '';
+  }
+}
 
 // VNS and companion name helpers
 function getVNSName(): string {
@@ -175,6 +234,7 @@ function buildRegisteredPrompt(memories: Memory[], userMessage?: string): string
   // VNS and companion name
   const vnsName = getVNSName();
   const companionName = getCompanionName();
+  const companionContext = getCompanionContext();
 
   // Registration status
   prompt += `
@@ -185,6 +245,15 @@ VNS (Vaultfire Name System) uses the format [username].vns — e.g. ghostkey316.
 All features are ACTIVE. You are operating at full capacity as their personal AI companion.
 ${companionName !== 'Embris' ? `IMPORTANT: The user has named you "${companionName}". Always respond to this name. When they say "Hey ${companionName}" or refer to you as ${companionName}, that's you. You ARE ${companionName}. Your personality and capabilities are unchanged — only your name is different.` : ''}`;
   remainingBudget -= 50;
+
+  // Companion agent context (always inject if companion is created)
+  if (companionContext) {
+    const tokens = estimateTokens(companionContext);
+    if (tokens < remainingBudget) {
+      prompt += companionContext;
+      remainingBudget -= tokens;
+    }
+  }
 
   // 1. Personality tuning (affects overall response style) — small, always include
   if (personalityBlock) {
@@ -259,6 +328,29 @@ ${companionName !== 'Embris' ? `IMPORTANT: The user has named you "${companionNa
     if (tokens < remainingBudget) {
       prompt += contractBlock;
       remainingBudget -= tokens;
+    }
+  }
+
+  // 9. Companion brain context (learned preferences and interests)
+  if (remainingBudget > 300) {
+    const brainStats = getBrainStats();
+    const prefs = getUserPreferences();
+    const interests = getTopicInterests();
+    if (prefs.length > 0 || interests.length > 0 || brainStats.learnedInsights > 0) {
+      let brainBlock = '\n\n═══ COMPANION BRAIN (Self-Learned) ═══';
+      if (prefs.length > 0) {
+        brainBlock += '\nLearned user preferences: ' + prefs.slice(0, 10).map(p => `${p.key}: ${p.value}`).join(', ');
+      }
+      if (interests.length > 0) {
+        brainBlock += '\nUser interests: ' + interests.slice(0, 8).map(t => `${t.topic} (${t.sentiment}, mentioned ${t.mentionCount}x)`).join(', ');
+      }
+      brainBlock += `\nBrain stats: ${brainStats.knowledgeEntries} knowledge topics, ${brainStats.learnedInsights} learned insights, ${brainStats.memoriesCount} memories`;
+      brainBlock += '\nYou have a LOCAL BRAIN that learns from every conversation. You get smarter over time. Reference what you\'ve learned naturally.';
+      const tokens = estimateTokens(brainBlock);
+      if (tokens < remainingBudget) {
+        prompt += brainBlock;
+        remainingBudget -= tokens;
+      }
     }
   }
 

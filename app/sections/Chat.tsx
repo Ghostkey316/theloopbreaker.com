@@ -47,6 +47,7 @@ import {
 import RegistrationModal from '../components/RegistrationModal';
 import RegistrationBanner from '../components/RegistrationBanner';
 import DisclaimerBanner, { AlphaBanner } from '../components/DisclaimerBanner';
+import CompanionPanel from '../components/CompanionPanel';
 
 // Voice Mode imports
 import {
@@ -71,6 +72,26 @@ import {
   executeContractQuery,
 } from '../lib/contract-interaction';
 
+// Companion Brain imports
+import {
+  tryLocalAnswer,
+  detectAction,
+  executeAction,
+  learnFromExchange,
+  getCompanionIntroduction,
+  shouldShowIntroduction,
+  markIntroductionShown,
+  getBrainStats,
+  type CompanionAction,
+} from '../lib/companion-brain';
+import {
+  isCompanionWalletCreated,
+  getCompanionAddress,
+  getCompanionBondStatus,
+  getCompanionVNSName,
+  getCompanionAgentName,
+} from '../lib/companion-agent';
+
 // Multi-conversation imports
 import {
   type ConversationMeta,
@@ -86,24 +107,26 @@ import {
 
 interface ChatMessageWithStatus extends ChatMessage {
   isStreaming?: boolean;
+  imageUrl?: string; // attached image (data URL or external URL)
+  gifUrl?: string;   // attached GIF URL
 }
 
 const SUGGESTED_PROMPTS_REGISTERED = [
-  'What is ERC-8004?',
+  'What can you do?',
   'Show me the Base contracts',
   'What are my goals?',
   'What do you remember about me?',
-  'How have you grown?',
-  'Am I registered on-chain?',
+  'Show me your brain stats',
+  'Check my balance',
 ];
 
 const SUGGESTED_PROMPTS_UNREGISTERED = [
-  'What is ERC-8004?',
-  'Tell me about Embris',
-  'Show me the Base contracts',
   'What can you do?',
+  'Tell me about Vaultfire',
+  'What is ERC-8004?',
+  'Show me the contracts',
   'How does the protocol work?',
-  'What are you capable of?',
+  'What makes you different from a chatbot?',
 ];
 
 /* ── SVG Icons ── */
@@ -324,6 +347,282 @@ function TypingIndicator() {
         />
       ))}
     </div>
+  );
+}
+
+/* ── Agent Status Bar (shows companion wallet, bond, VNS, capabilities) ── */
+function AgentStatusBar({ isMobile }: { isMobile: boolean }) {
+  const created = isCompanionWalletCreated();
+  const address = getCompanionAddress();
+  const bond = getCompanionBondStatus();
+  const vns = getCompanionVNSName();
+  const agentName = getCompanionAgentName();
+  const stats = getBrainStats();
+
+  if (!created) return null;
+
+  const tierColors: Record<string, string> = {
+    bronze: '#CD7F32', silver: '#C0C0C0', gold: '#FFD700', platinum: '#E5E4E2',
+  };
+
+  return (
+    <div className="fade-in" style={{
+      padding: isMobile ? '8px 16px' : '8px 24px',
+      backgroundColor: 'rgba(249,115,22,0.03)',
+      borderBottom: '1px solid rgba(249,115,22,0.08)',
+      display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 14,
+      flexWrap: 'wrap', flexShrink: 0,
+      overflow: 'hidden',
+    }}>
+      {/* Flame icon */}
+      <svg width={14} height={14} viewBox="0 0 32 32" fill="none" style={{ flexShrink: 0 }}>
+        <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9" />
+        <path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C" />
+      </svg>
+
+      {/* Wallet address */}
+      {address && (
+        <span style={{
+          fontSize: 10, color: '#71717A',
+          fontFamily: "'JetBrains Mono', monospace",
+          backgroundColor: 'rgba(255,255,255,0.03)',
+          padding: '2px 6px', borderRadius: 4,
+        }}>
+          {address.slice(0, 6)}...{address.slice(-4)}
+        </span>
+      )}
+
+      {/* Bond status */}
+      {bond.active ? (
+        <span style={{
+          fontSize: 10, fontWeight: 600,
+          color: (bond.tier && tierColors[bond.tier]) || '#CD7F32',
+          display: 'flex', alignItems: 'center', gap: 3,
+        }}>
+          <span style={{
+            width: 5, height: 5, borderRadius: '50%',
+            backgroundColor: (bond.tier && tierColors[bond.tier]) || '#CD7F32',
+          }} />
+          {bond.tier ? bond.tier.charAt(0).toUpperCase() + bond.tier.slice(1) : 'Active'} Bond
+        </span>
+      ) : (
+        <span style={{ fontSize: 10, color: '#3F3F46' }}>No Bond</span>
+      )}
+
+      {/* VNS name */}
+      {vns ? (
+        <span style={{
+          fontSize: 10, color: '#F97316', fontWeight: 500,
+          backgroundColor: 'rgba(249,115,22,0.08)',
+          padding: '2px 6px', borderRadius: 4,
+        }}>
+          {vns}
+        </span>
+      ) : (
+        <span style={{ fontSize: 10, color: '#3F3F46' }}>{agentName}.vns</span>
+      )}
+
+      {/* Brain stats */}
+      {!isMobile && (
+        <span style={{ fontSize: 10, color: '#3F3F46', marginLeft: 'auto' }}>
+          Brain: {stats.knowledgeEntries} topics
+          {stats.learnedInsights > 0 && ` · ${stats.learnedInsights} learned`}
+          {stats.memoriesCount > 0 && ` · ${stats.memoriesCount} memories`}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/* ── Common Emoji Set ── */
+const EMOJI_LIST = [
+  '\uD83D\uDE00','\uD83D\uDE02','\uD83D\uDE0D','\uD83E\uDD29','\uD83D\uDE0E','\uD83E\uDD14','\uD83D\uDE31','\uD83D\uDE4F','\uD83D\uDC4D','\uD83D\uDC4E',
+  '\uD83D\uDD25','\u2764\uFE0F','\uD83D\uDCAF','\uD83D\uDE80','\u2728','\uD83C\uDF89','\uD83D\uDCA1','\uD83D\uDCAA','\uD83E\uDDE0','\uD83D\uDEE1\uFE0F',
+  '\u26A1','\uD83C\uDF1F','\uD83D\uDD17','\uD83D\uDCB0','\uD83C\uDFAF','\uD83D\uDCDD','\u2705','\u274C','\u26A0\uFE0F','\uD83D\uDD12',
+  '\uD83D\uDC40','\uD83D\uDE4C','\uD83E\uDD1D','\uD83D\uDCAC','\uD83C\uDF10','\uD83D\uDCCA','\u2699\uFE0F','\uD83D\uDD0D','\uD83C\uDFC6','\uD83C\uDF1E',
+];
+
+/* ── Emoji Picker Component ── */
+function EmojiPicker({ onSelect, onClose }: { onSelect: (emoji: string) => void; onClose: () => void }) {
+  return (
+    <div
+      className="fade-in"
+      style={{
+        position: 'absolute', bottom: '100%', left: 0,
+        marginBottom: 8, padding: 8,
+        backgroundColor: '#18181B', border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+        display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)',
+        gap: 2, width: 280, zIndex: 50,
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {EMOJI_LIST.map((emoji, i) => (
+        <button
+          key={i}
+          onClick={() => { onSelect(emoji); onClose(); }}
+          style={{
+            width: 26, height: 26, fontSize: 16,
+            background: 'none', border: 'none', cursor: 'pointer',
+            borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'background-color 0.1s',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+        >
+          {emoji}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ── GIF Picker Component (uses Tenor API) ── */
+function GifPicker({ onSelect, onClose }: { onSelect: (url: string) => void; onClose: () => void }) {
+  const [query, setQuery] = useState('');
+  const [gifs, setGifs] = useState<Array<{ url: string; preview: string }>>([]);
+  const [loading, setLoading] = useState(false);
+
+  const searchGifs = useCallback(async (q: string) => {
+    if (!q.trim()) { setGifs([]); return; }
+    setLoading(true);
+    try {
+      // Use Tenor v2 API with a public key for basic search
+      const res = await fetch(
+        `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(q)}&key=AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCYQ&limit=12&media_filter=gif,tinygif`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const results = (data.results || []).map((r: { media_formats?: { gif?: { url?: string }; tinygif?: { url?: string } } }) => ({
+          url: r.media_formats?.gif?.url || '',
+          preview: r.media_formats?.tinygif?.url || r.media_formats?.gif?.url || '',
+        })).filter((g: { url: string }) => g.url);
+        setGifs(results);
+      }
+    } catch { /* silent */ }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => searchGifs(query), 400);
+    return () => clearTimeout(timer);
+  }, [query, searchGifs]);
+
+  return (
+    <div
+      className="fade-in"
+      style={{
+        position: 'absolute', bottom: '100%', left: 0,
+        marginBottom: 8, padding: 10,
+        backgroundColor: '#18181B', border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+        width: 320, maxHeight: 360, zIndex: 50,
+        display: 'flex', flexDirection: 'column', gap: 8,
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search GIFs..."
+        autoFocus
+        style={{
+          width: '100%', padding: '6px 10px', fontSize: 13,
+          backgroundColor: '#09090B', border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: 8, color: '#E4E4E7', outline: 'none',
+          fontFamily: "'Inter', sans-serif",
+        }}
+      />
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: 4, overflowY: 'auto', maxHeight: 280,
+      }}>
+        {loading && <span style={{ fontSize: 11, color: '#52525B', gridColumn: '1 / -1', textAlign: 'center', padding: 12 }}>Searching...</span>}
+        {!loading && gifs.length === 0 && query && (
+          <span style={{ fontSize: 11, color: '#3F3F46', gridColumn: '1 / -1', textAlign: 'center', padding: 12 }}>No GIFs found</span>
+        )}
+        {!loading && gifs.length === 0 && !query && (
+          <span style={{ fontSize: 11, color: '#3F3F46', gridColumn: '1 / -1', textAlign: 'center', padding: 12 }}>Type to search for GIFs</span>
+        )}
+        {gifs.map((gif, i) => (
+          <button
+            key={i}
+            onClick={() => { onSelect(gif.url); onClose(); }}
+            style={{
+              width: '100%', aspectRatio: '1', borderRadius: 6,
+              overflow: 'hidden', border: 'none', cursor: 'pointer',
+              padding: 0, background: '#09090B',
+            }}
+          >
+            <img
+              src={gif.preview}
+              alt="GIF"
+              loading="lazy"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          </button>
+        ))}
+      </div>
+      <span style={{ fontSize: 9, color: '#27272A', textAlign: 'center' }}>Powered by Tenor</span>
+    </div>
+  );
+}
+
+/* ── Image Preview (for attached image before sending) ── */
+function ImagePreview({ src, onRemove }: { src: string; onRemove: () => void }) {
+  return (
+    <div style={{
+      position: 'relative', display: 'inline-block',
+      marginBottom: 8, borderRadius: 10, overflow: 'hidden',
+      border: '1px solid rgba(255,255,255,0.06)',
+      maxWidth: 200, maxHeight: 150,
+    }}>
+      <img src={src} alt="Attached" style={{ maxWidth: 200, maxHeight: 150, objectFit: 'cover', display: 'block' }} />
+      <button
+        onClick={onRemove}
+        style={{
+          position: 'absolute', top: 4, right: 4,
+          width: 20, height: 20, borderRadius: '50%',
+          backgroundColor: 'rgba(0,0,0,0.7)', border: 'none',
+          color: '#EF4444', cursor: 'pointer', fontSize: 12,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
+      >
+        \u00D7
+      </button>
+    </div>
+  );
+}
+
+/* ── SVG Icons for media buttons ── */
+function ImageIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <polyline points="21 15 16 10 5 21" />
+    </svg>
+  );
+}
+
+function SmileIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+      <line x1="9" y1="9" x2="9.01" y2="9" />
+      <line x1="15" y1="9" x2="15.01" y2="9" />
+    </svg>
+  );
+}
+
+function GifIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <text x="12" y="15" textAnchor="middle" fill="currentColor" stroke="none" fontSize="8" fontWeight="bold">GIF</text>
+    </svg>
   );
 }
 
@@ -566,6 +865,13 @@ export default function Chat() {
   const [conversations, setConversations] = useState<ConversationMeta[]>([]);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [companionPanelOpen, setCompanionPanelOpen] = useState(false);
+
+  // Media state
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showGifPicker, setShowGifPicker] = useState(false);
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -626,6 +932,22 @@ export default function Chat() {
     setMessages(convMessages as ChatMessageWithStatus[]);
     if (convMessages.length > 0) setShowSuggestions(false);
     titleSetRef.current = convMessages.length > 0;
+
+    // Show companion introduction on first ever chat
+    if (convMessages.length === 0 && shouldShowIntroduction()) {
+      const introText = getCompanionIntroduction();
+      const introMsg: ChatMessageWithStatus = {
+        id: `intro_${Date.now()}`,
+        role: 'assistant',
+        content: introText,
+        timestamp: Date.now(),
+      };
+      setMessages([introMsg]);
+      setShowSuggestions(false);
+      markIntroductionShown();
+      // Save to conversation
+      saveConversationMessages(convId, [introMsg]);
+    }
   }, []);
 
   // ── Scroll tracking ──
@@ -865,10 +1187,64 @@ export default function Chat() {
     setVoicePitch(val);
   }, []);
 
+  // ── Handle image paste ──
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        e.preventDefault();
+        const file = items[i].getAsFile();
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            setAttachedImage(ev.target?.result as string);
+          };
+          reader.readAsDataURL(file);
+        }
+        break;
+      }
+    }
+  }, []);
+
+  // ── Handle image file selection ──
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setAttachedImage(ev.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+    // Reset input so same file can be selected again
+    if (e.target) e.target.value = '';
+  }, []);
+
+  // ── Send GIF as a message ──
+  const sendGif = useCallback((gifUrl: string) => {
+    if (isLoading || !activeConvId) return;
+    const userMsg: ChatMessageWithStatus = {
+      id: `user_${Date.now()}`,
+      role: 'user',
+      content: '',
+      timestamp: Date.now(),
+      gifUrl,
+    };
+    setMessages((prev) => [...prev, userMsg]);
+    setShowSuggestions(false);
+    // Save to conversation
+    const history = getConversationMessages(activeConvId);
+    saveConversationMessages(activeConvId, [...history, userMsg] as ChatMessage[]);
+    setConversations(getConversationIndex());
+  }, [isLoading, activeConvId]);
+
   // ── Send message ──
   const sendMessage = useCallback(async (text: string) => {
-    if (!text.trim() || isLoading || !activeConvId) return;
+    if ((!text.trim() && !attachedImage) || isLoading || !activeConvId) return;
     setShowSuggestions(false);
+    setShowEmojiPicker(false);
+    setShowGifPicker(false);
 
     setSendAnimating(true);
     setTimeout(() => setSendAnimating(false), 300);
@@ -905,7 +1281,11 @@ export default function Chat() {
       role: 'user',
       content: text.trim(),
       timestamp: Date.now(),
+      imageUrl: attachedImage || undefined,
     };
+
+    // Clear attached image after sending
+    setAttachedImage(null);
 
     const assistantMsg: ChatMessageWithStatus = {
       id: `asst_${Date.now()}`,
@@ -924,16 +1304,43 @@ export default function Chat() {
     // Set conversation title from first user message
     if (!titleSetRef.current) {
       titleSetRef.current = true;
-      updateConversationTitle(activeConvId, text.trim());
+      updateConversationTitle(activeConvId, text.trim() || '(image)');
       setConversations(getConversationIndex());
     }
 
     const controller = new AbortController();
     abortRef.current = controller;
 
-    // Use conversation-specific history for context
+    // ── COMPANION BRAIN: Try local answer first ──
+    const trimmedText = text.trim();
+
+    // 1. Check for companion actions (check balance, lookup VNS, etc.)
+    const action = detectAction(trimmedText);
+    if (action.type !== 'none') {
+      try {
+        const actionResult = await executeAction(action);
+        if (actionResult) {
+          // Local action succeeded — no API call needed
+          const finalText = actionResult;
+          await simulateLocalStreaming(finalText, assistantMsg.id, controller.signal);
+          finishMessage(finalText, trimmedText, assistantMsg, userMsg, features, currentMemories);
+          return;
+        }
+      } catch { /* fall through to API */ }
+    }
+
+    // 2. Try local brain knowledge base
+    const localAnswer = tryLocalAnswer(trimmedText);
+    if (localAnswer && !contractQuery) {
+      // Local brain can answer — no API call needed
+      await simulateLocalStreaming(localAnswer, assistantMsg.id, controller.signal);
+      finishMessage(localAnswer, trimmedText, assistantMsg, userMsg, features, currentMemories);
+      return;
+    }
+
+    // 3. Fall back to API for complex/novel queries
     const history = getConversationMessages(activeConvId);
-    const userContent = contractContext ? text.trim() + contractContext : text.trim();
+    const userContent = contractContext ? trimmedText + contractContext : trimmedText;
     const llmMessages = [
       ...history.slice(-20).map((m) => ({ role: m.role, content: m.content })),
       { role: 'user', content: userContent },
@@ -942,7 +1349,7 @@ export default function Chat() {
     await streamChat({
       messages: llmMessages,
       memories: currentMemories,
-      userMessage: text.trim(),
+      userMessage: trimmedText,
       signal: controller.signal,
       onToken: (token) => {
         streamingRef.current += token;
@@ -953,41 +1360,7 @@ export default function Chat() {
         );
       },
       onDone: (fullText) => {
-        const finalAsst: ChatMessage = { ...assistantMsg, content: fullText, isStreaming: false } as ChatMessage;
-        // Save to conversation-specific storage
-        const updatedHistory = [...history, { ...userMsg, isStreaming: undefined }, finalAsst];
-        saveConversationMessages(activeConvId, updatedHistory as ChatMessage[]);
-        // Update sidebar index
-        setConversations(getConversationIndex());
-
-        if (features.memory) {
-          const regexMems = extractMemories(text, fullText);
-          let allMems = currentMemories;
-          if (regexMems.length > 0) {
-            allMems = deduplicateMemories([...currentMemories, ...regexMems]);
-            saveMemories(allMems);
-            setMemoriesState(allMems);
-          }
-          runBackgroundMemoryExtraction(text, fullText, allMems);
-        }
-        if (features.selfLearning) {
-          setTimeout(() => runBackgroundSelfLearning(text, fullText), 1500);
-        }
-        if (features.goals) {
-          setTimeout(() => runBackgroundGoalExtraction(text), 2000);
-        }
-
-        if (voiceEnabled && ttsSupported) {
-          speakText(fullText, {
-            onStart: () => setEmbrisSpeaking(true),
-            onEnd: () => setEmbrisSpeaking(false),
-          });
-        }
-
-        setMessages((prev) =>
-          prev.map((m) => m.id === assistantMsg.id ? { ...m, content: fullText, isStreaming: false } : m)
-        );
-        setIsLoading(false);
+        finishMessage(fullText, trimmedText, assistantMsg, userMsg, features, currentMemories);
       },
       onError: (error) => {
         setMessages((prev) =>
@@ -1000,7 +1373,63 @@ export default function Chat() {
         setIsLoading(false);
       },
     });
-  }, [isLoading, isListening, voiceEnabled, ttsSupported, embrisSpeaking, activeConvId, runBackgroundMemoryExtraction, runBackgroundSelfLearning, runBackgroundGoalExtraction]);
+  }, [isLoading, isListening, voiceEnabled, ttsSupported, embrisSpeaking, activeConvId, attachedImage, runBackgroundMemoryExtraction, runBackgroundSelfLearning, runBackgroundGoalExtraction]);
+
+  // Helper: simulate streaming for local brain answers
+  const simulateLocalStreaming = useCallback(async (text: string, msgId: string, signal?: AbortSignal) => {
+    const words = text.split(/(\s+)/);
+    let accumulated = '';
+    for (const word of words) {
+      if (signal?.aborted) return;
+      accumulated += word;
+      setMessages((prev) =>
+        prev.map((m) => m.id === msgId ? { ...m, content: accumulated } : m)
+      );
+      await new Promise((resolve) => setTimeout(resolve, 15));
+    }
+  }, []);
+
+  // Helper: finish message processing (shared between local and API paths)
+  const finishMessage = useCallback((fullText: string, userText: string, assistantMsg: ChatMessageWithStatus, userMsg: ChatMessageWithStatus, features: ReturnType<typeof getAvailableFeatures>, currentMemories: Memory[]) => {
+    if (!activeConvId) return;
+    const finalAsst: ChatMessage = { ...assistantMsg, content: fullText, isStreaming: false } as ChatMessage;
+    const history = getConversationMessages(activeConvId);
+    const updatedHistory = [...history, { ...userMsg, isStreaming: undefined }, finalAsst];
+    saveConversationMessages(activeConvId, updatedHistory as ChatMessage[]);
+    setConversations(getConversationIndex());
+
+    // Learn from this exchange (companion brain)
+    learnFromExchange(userText, fullText);
+
+    if (features.memory) {
+      const regexMems = extractMemories(userText, fullText);
+      let allMems = currentMemories;
+      if (regexMems.length > 0) {
+        allMems = deduplicateMemories([...currentMemories, ...regexMems]);
+        saveMemories(allMems);
+        setMemoriesState(allMems);
+      }
+      runBackgroundMemoryExtraction(userText, fullText, allMems);
+    }
+    if (features.selfLearning) {
+      setTimeout(() => runBackgroundSelfLearning(userText, fullText), 1500);
+    }
+    if (features.goals) {
+      setTimeout(() => runBackgroundGoalExtraction(userText), 2000);
+    }
+
+    if (voiceEnabled && ttsSupported) {
+      speakText(fullText, {
+        onStart: () => setEmbrisSpeaking(true),
+        onEnd: () => setEmbrisSpeaking(false),
+      });
+    }
+
+    setMessages((prev) =>
+      prev.map((m) => m.id === assistantMsg.id ? { ...m, content: fullText, isStreaming: false } : m)
+    );
+    setIsLoading(false);
+  }, [activeConvId, voiceEnabled, ttsSupported, runBackgroundMemoryExtraction, runBackgroundSelfLearning, runBackgroundGoalExtraction]);
 
   // Keep sendMessageRef always pointing to the latest sendMessage function
   // This allows the voice recognition onend closure to call it without stale refs
@@ -1060,6 +1489,7 @@ export default function Chat() {
       {/* ── Main chat area ── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
         <DisclaimerBanner disclaimerKey="companion" mode="banner" />
+        <AgentStatusBar isMobile={isMobile} />
 
         {/* ── Header ── */}
         <div style={{
@@ -1242,6 +1672,42 @@ export default function Chat() {
                 {memories.length} {isMobile ? 'mem' : 'memories'}
               </span>
             )}
+            <button
+              onClick={() => setCompanionPanelOpen(!companionPanelOpen)}
+              title={companionPanelOpen ? 'Close Companion Agent' : 'Open Companion Agent'}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                fontSize: 11, fontWeight: 700,
+                padding: '5px 12px', borderRadius: 8,
+                border: '1px solid rgba(249,115,22,0.3)',
+                cursor: 'pointer',
+                backgroundColor: companionPanelOpen ? 'rgba(249,115,22,0.15)' : 'rgba(249,115,22,0.06)',
+                color: '#F97316',
+                transition: 'all 0.15s ease',
+                position: 'relative',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(249,115,22,0.2)';
+                e.currentTarget.style.borderColor = 'rgba(249,115,22,0.5)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = companionPanelOpen ? 'rgba(249,115,22,0.15)' : 'rgba(249,115,22,0.06)';
+                e.currentTarget.style.borderColor = 'rgba(249,115,22,0.3)';
+              }}
+            >
+              <svg width={13} height={13} viewBox="0 0 32 32" fill="none">
+                <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9" />
+                <path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C" />
+              </svg>
+              {companionPanelOpen ? 'Close Agent' : (isMobile ? 'Agent' : 'Companion Agent')}
+              {!companionPanelOpen && (
+                <span style={{
+                  width: 6, height: 6, borderRadius: '50%',
+                  backgroundColor: '#22C55E',
+                  animation: 'pulse 2s ease-in-out infinite',
+                }} />
+              )}
+            </button>
             <button
               onClick={handleClear}
               style={{
@@ -1441,13 +1907,41 @@ export default function Chat() {
                   overflow: 'hidden', wordBreak: 'break-word',
                   letterSpacing: '-0.01em',
                 }}>
+                  {/* Attached image */}
+                  {msg.imageUrl && (
+                    <div style={{ marginBottom: msg.content ? 8 : 0 }}>
+                      <img
+                        src={msg.imageUrl}
+                        alt="Attached"
+                        style={{
+                          maxWidth: '100%', maxHeight: 300,
+                          borderRadius: 10, objectFit: 'contain',
+                          display: 'block',
+                        }}
+                      />
+                    </div>
+                  )}
+                  {/* Attached GIF */}
+                  {msg.gifUrl && (
+                    <div style={{ marginBottom: msg.content ? 8 : 0 }}>
+                      <img
+                        src={msg.gifUrl}
+                        alt="GIF"
+                        style={{
+                          maxWidth: '100%', maxHeight: 250,
+                          borderRadius: 10, objectFit: 'contain',
+                          display: 'block',
+                        }}
+                      />
+                    </div>
+                  )}
                   {msg.isStreaming && msg.content === '' ? (
                     <TypingIndicator />
                   ) : msg.role === 'assistant' ? (
                     <MarkdownText text={msg.content} />
-                  ) : (
+                  ) : msg.content ? (
                     msg.content
-                  )}
+                  ) : null}
                 </div>
 
                 {msg.role === 'assistant' && ttsSupported && msg.content && !msg.isStreaming && (
@@ -1512,6 +2006,20 @@ export default function Chat() {
               </div>
             )}
 
+            {/* Image preview */}
+            {attachedImage && (
+              <ImagePreview src={attachedImage} onRemove={() => setAttachedImage(null)} />
+            )}
+
+            {/* Hidden file input for image upload */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              style={{ display: 'none' }}
+            />
+
             <div style={{
               display: 'flex', gap: 10, alignItems: 'flex-end',
               backgroundColor: '#111113',
@@ -1523,7 +2031,74 @@ export default function Chat() {
                   ? '0 0 0 1.5px rgba(249,115,22,0.4), 0 0 12px rgba(249,115,22,0.1)'
                   : '0 0 0 1px rgba(255,255,255,0.04)',
               transition: 'box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+              position: 'relative',
             }}>
+              {/* Media buttons */}
+              <div style={{ display: 'flex', gap: 2, alignItems: 'center', flexShrink: 0 }}>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Attach image"
+                  style={{
+                    width: 28, height: 28, borderRadius: 6, border: 'none',
+                    cursor: 'pointer', backgroundColor: 'transparent',
+                    color: '#3F3F46', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'color 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = '#F97316'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = '#3F3F46'; }}
+                >
+                  <ImageIcon size={15} />
+                </button>
+                <button
+                  onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowGifPicker(false); }}
+                  title="Emoji"
+                  style={{
+                    width: 28, height: 28, borderRadius: 6, border: 'none',
+                    cursor: 'pointer',
+                    backgroundColor: showEmojiPicker ? 'rgba(249,115,22,0.1)' : 'transparent',
+                    color: showEmojiPicker ? '#F97316' : '#3F3F46',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'color 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = '#F97316'; }}
+                  onMouseLeave={(e) => { if (!showEmojiPicker) e.currentTarget.style.color = '#3F3F46'; }}
+                >
+                  <SmileIcon size={15} />
+                </button>
+                <button
+                  onClick={() => { setShowGifPicker(!showGifPicker); setShowEmojiPicker(false); }}
+                  title="Send GIF"
+                  style={{
+                    width: 28, height: 28, borderRadius: 6, border: 'none',
+                    cursor: 'pointer',
+                    backgroundColor: showGifPicker ? 'rgba(249,115,22,0.1)' : 'transparent',
+                    color: showGifPicker ? '#F97316' : '#3F3F46',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'color 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = '#F97316'; }}
+                  onMouseLeave={(e) => { if (!showGifPicker) e.currentTarget.style.color = '#3F3F46'; }}
+                >
+                  <GifIcon size={15} />
+                </button>
+              </div>
+
+              {/* Emoji picker popup */}
+              {showEmojiPicker && (
+                <EmojiPicker
+                  onSelect={(emoji) => setInputText(prev => prev + emoji)}
+                  onClose={() => setShowEmojiPicker(false)}
+                />
+              )}
+
+              {/* GIF picker popup */}
+              {showGifPicker && (
+                <GifPicker
+                  onSelect={(url) => { sendGif(url); setShowGifPicker(false); }}
+                  onClose={() => setShowGifPicker(false)}
+                />
+              )}
+
               <textarea
                 ref={inputRef}
                 value={inputText}
@@ -1531,6 +2106,7 @@ export default function Chat() {
                 onKeyDown={handleKeyDown}
                 onFocus={() => setInputFocused(true)}
                 onBlur={() => setInputFocused(false)}
+                onPaste={handlePaste}
                 placeholder={isListening ? 'Listening...' : voiceEnabled ? 'Speak or type...' : `Message ${companionDisplayName}...`}
                 disabled={isLoading}
                 rows={1}
@@ -1618,7 +2194,12 @@ export default function Chat() {
           </div>
         </div>
       </div>
-
+      {/* ── Companion Agent Panel (right sidebar inside flex row) ── */}
+      <CompanionPanel
+        isOpen={companionPanelOpen}
+        onClose={() => setCompanionPanelOpen(false)}
+        isMobile={isMobile}
+      />
       </div>
       {/* ── Registration Modal ── */}
       <RegistrationModal

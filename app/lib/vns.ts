@@ -61,10 +61,11 @@ const REGISTRY_ADDRESSES: Record<'base' | 'avalanche' | 'ethereum', string> = {
   avalanche: '0x57741F4116925341d8f7Eb3F381d98e07C73B4a3',
 };
 
+// AIAccountabilityBondsV2 per chain — source of truth: contracts.ts
 const BOND_CONTRACT_ADDRESSES: Record<'base' | 'avalanche' | 'ethereum', string> = {
-  ethereum: '0x11C267C8A75B13A4D95357CEF6027c42F8e7bA24',
-  base: '0xf92baef9523BC264144F80F9c31D5c5C017c6Da8',
-  avalanche: '0xaeFEa985E0C52f92F73606657B9dA60db2798af3',
+  ethereum: '0x11C267C8A75B13A4D95357CEF6027c42F8e7bA24', // AIAccountabilityBondsV2 on Ethereum
+  base: '0xf92baef9523BC264144F80F9c31D5c5C017c6Da8',     // AIAccountabilityBondsV2 on Base
+  avalanche: '0xaeFEa985E0C52f92F73606657B9dA60db2798af3', // AIAccountabilityBondsV2 on Avalanche
 };
 
 /** AIPartnershipBondsV2 addresses per chain */
@@ -1244,13 +1245,9 @@ async function getBondContractBalance(
   try {
     // Check both accountability bonds and partnership bonds
     const bondAddr = BOND_CONTRACT_ADDRESSES[chain];
-    const partnershipAddr = chain === 'base' ? '0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4'
-      : chain === 'avalanche' ? '0xea6B504827a746d781f867441364C7A732AA4b07'
-      : '0x83dd216449B3F0574E39043ECFE275946fa492e9';
-
     const [bondResult, partnershipResult] = await Promise.allSettled([
       rpcCall(RPC_URLS[chain], 'eth_getBalance', [bondAddr, 'latest']),
-      rpcCall(RPC_URLS[chain], 'eth_getBalance', [partnershipAddr, 'latest']),
+      rpcCall(RPC_URLS[chain], 'eth_getBalance', [PARTNERSHIP_BOND_ADDRESSES[chain], 'latest']),
     ]);
 
     let total = 0;
@@ -1380,7 +1377,7 @@ export async function getOnChainHubStats(): Promise<OnChainHubStats> {
 export async function getOnChainAgents(): Promise<RegisteredAgent[]> {
   // Known deployer/registrant addresses to scan
   const KNOWN_ADDRESSES = [
-    '0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324', // Vaultfire deployer
+    '0xA054f831B562e729F8D268291EBde1B2EDcFb84F', // Vaultfire deployer
   ];
 
   const agents: RegisteredAgent[] = [];
