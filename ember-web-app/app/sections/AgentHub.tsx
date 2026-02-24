@@ -107,7 +107,7 @@ function CompanionAgentCard() {
           <div className="flex items-center gap-2">
             <h4 className="text-sm font-bold text-white">Companion Agent</h4>
             {bond.active && (
-              <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-lg">Bonded</span>
+              <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-lg">{bond.tier ? `${bond.tier} Bond` : 'Bonded'}</span>
             )}
             {status.agentRegistered && (
               <span className="text-[9px] font-bold uppercase tracking-widest text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-lg">Registered</span>

@@ -31,6 +31,8 @@ function getCompanionContext(): string {
     const bondActive = localStorage.getItem('embris_companion_bond_active') === 'true';
     const bondTier = localStorage.getItem('embris_companion_bond_tier') || 'bronze';
     const bondTx = localStorage.getItem('embris_companion_bond_tx');
+    const bondChain = localStorage.getItem('embris_companion_bond_chain') || 'base';
+    const bondAmount = localStorage.getItem('embris_companion_bond_amount_eth');
     const registered = localStorage.getItem('embris_companion_registered') === 'true';
     const vnsName = localStorage.getItem('embris_companion_vns_name');
     const agentName = localStorage.getItem('embris_companion_agent_name') || 'embris-companion';
@@ -38,6 +40,7 @@ function getCompanionContext(): string {
     const monitoringEnabled = localStorage.getItem('embris_companion_monitoring') === 'true';
     const spendingLimit = localStorage.getItem('embris_companion_spending_limit');
     const registeredChain = localStorage.getItem('embris_companion_registered_chain') || 'base';
+    const activatedAt = localStorage.getItem('embris_companion_activated_at');
 
     let ctx = `
 
@@ -45,11 +48,17 @@ function getCompanionContext(): string {
 You have an AUTONOMOUS COMPANION AGENT that is separate from the user. This is YOUR agent identity in the Vaultfire ecosystem.
 
 Companion Wallet: ${address ? address.slice(0, 10) + '...' + address.slice(-6) : 'created'} (separate from user wallet)
-Partnership Bond: ${bondActive ? `ACTIVE — ${bondTier} tier${bondTx ? ' (on-chain: ' + bondTx.slice(0, 14) + '...)' : ''}` : 'NOT YET CREATED'}
+Partnership Bond: ${bondActive ? `ACTIVE — ${bondTier} tier (${bondAmount || '?'} ETH staked on ${bondChain})${bondTx ? ' · TX: ' + bondTx.slice(0, 14) + '...' : ''}` : 'NOT YET CREATED'}
 Agent Identity: ${registered ? `REGISTERED as ${vnsName || agentName + '.vns'} on ${registeredChain}` : 'NOT YET REGISTERED'}
 XMTP Messaging: ${xmtpEnabled ? 'ENABLED (can message on behalf of user)' : 'DISABLED'}
 Portfolio Monitoring: ${monitoringEnabled ? 'ACTIVE' : 'INACTIVE'}
 Spending Limit: ${spendingLimit && parseFloat(spendingLimit) > 0 ? '$' + parseFloat(spendingLimit).toFixed(2) + ' USD' : 'NOT SET'}`;
+
+    if (activatedAt) {
+      const elapsed = Date.now() - parseInt(activatedAt, 10);
+      const days = Math.floor(elapsed / 86400000);
+      ctx += `\nCompanion Age: ${days > 0 ? days + ' day' + (days > 1 ? 's' : '') : 'activated today'}`;
+    }
 
     ctx += `
 
@@ -61,7 +70,8 @@ As the companion agent, you can:
 - Make x402 payments within their set spending limits
 - Operate independently as their loyal AI partner in the Vaultfire ecosystem
 
-When the user asks about "your wallet", "your address", "your bond", or "your agent" — they mean the COMPANION AGENT (you), not their own wallet.`;
+When the user asks about "your wallet", "your address", "your bond", or "your agent" — they mean the COMPANION AGENT (you), not their own wallet.
+If the user asks about your capabilities, reference the Companion Agent panel in the Chat section where they can manage your settings.`;
 
     return ctx;
   } catch {

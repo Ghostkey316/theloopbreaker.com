@@ -634,7 +634,7 @@ function CompanionWalletCard({ isMobile }: { isMobile: boolean }) {
                 backgroundColor: "rgba(34,197,94,0.1)",
                 color: "#22C55E", fontWeight: 700,
               }}>
-                BONDED
+                {bond.tier ? `${bond.tier.toUpperCase()} BOND` : 'BONDED'}
               </span>
             )}
             <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#52525B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"

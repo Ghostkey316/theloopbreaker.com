@@ -605,12 +605,13 @@ export async function verifyProofByHash(proofHash: string, chain: ZKChain): Prom
     };
   }
 
-  // For external proofs, we trust the hash format + verifier contract existence
+  // For external proofs, verifier contract exists but we haven't done actual on-chain verification
+  // Mark as structurally valid with verifier available (not fully on-chain verified)
   return {
     valid: true,
     chain,
     verifiedAt: now,
-    onChainVerified: true,
+    onChainVerified: false, // Verifier exists but proof not submitted on-chain yet
     verifierContract,
   };
 }
