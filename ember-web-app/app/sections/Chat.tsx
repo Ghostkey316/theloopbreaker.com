@@ -47,6 +47,7 @@ import {
 import RegistrationModal from '../components/RegistrationModal';
 import RegistrationBanner from '../components/RegistrationBanner';
 import DisclaimerBanner, { AlphaBanner } from '../components/DisclaimerBanner';
+import CompanionPanel from '../components/CompanionPanel';
 
 // Voice Mode imports
 import {
@@ -566,6 +567,7 @@ export default function Chat() {
   const [conversations, setConversations] = useState<ConversationMeta[]>([]);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [companionPanelOpen, setCompanionPanelOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -1243,6 +1245,25 @@ export default function Chat() {
               </span>
             )}
             <button
+              onClick={() => setCompanionPanelOpen(!companionPanelOpen)}
+              title={companionPanelOpen ? 'Close Companion Agent' : 'Open Companion Agent'}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                fontSize: 11, fontWeight: 600,
+                padding: '5px 8px', borderRadius: 7,
+                border: companionPanelOpen ? '1px solid rgba(249,115,22,0.3)' : '1px solid rgba(255,255,255,0.06)',
+                cursor: 'pointer',
+                backgroundColor: companionPanelOpen ? 'rgba(249,115,22,0.12)' : 'transparent',
+                color: companionPanelOpen ? '#F97316' : '#52525B',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <svg width={12} height={12} viewBox="0 0 32 32" fill="none">
+                <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="currentColor" opacity="0.9" />
+              </svg>
+              {!isMobile && 'Agent'}
+            </button>
+            <button
               onClick={handleClear}
               style={{
                 display: 'flex', alignItems: 'center', gap: 5,
@@ -1618,6 +1639,13 @@ export default function Chat() {
           </div>
         </div>
       </div>
+
+      {/* ── Companion Agent Panel ── */}
+      <CompanionPanel
+        isOpen={companionPanelOpen}
+        onClose={() => setCompanionPanelOpen(false)}
+        isMobile={isMobile}
+      />
 
       </div>
       {/* ── Registration Modal ── */}

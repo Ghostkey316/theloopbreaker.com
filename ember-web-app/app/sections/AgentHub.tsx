@@ -14,6 +14,11 @@ import {
 } from '../lib/agent-hub';
 import { registerVNSName, stakeAgentBond, getOnChainAgents, getMyVNSName, type RegisteredAgent } from '../lib/vns';
 import { getSessionPK } from '../lib/auth';
+import {
+  isCompanionWalletCreated, getCompanionAddress,
+  getCompanionBondStatus, getCompanionVNSName,
+  getCompanionAgentName, getCompanionStatus,
+} from '../lib/companion-agent';
 
 /* ─────────────────────────────────────────────
    Types & Constants
@@ -71,6 +76,70 @@ function ZoneCard({ title, desc, icon, color, onClick }: { title: string; desc: 
       </div>
       <div className="text-zinc-700 group-hover:text-zinc-500 mt-1 transition-colors">{Ico.chevron}</div>
     </button>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Companion Agent Card (Hub Overview)
+   ───────────────────────────────────────────── */
+
+function CompanionAgentCard() {
+  const created = isCompanionWalletCreated();
+  if (!created) return null;
+
+  const address = getCompanionAddress();
+  const bond = getCompanionBondStatus();
+  const vns = getCompanionVNSName();
+  const agentName = getCompanionAgentName();
+  const status = getCompanionStatus();
+  const truncAddr = address ? `${address.slice(0, 8)}...${address.slice(-6)}` : '';
+
+  return (
+    <div className="rounded-2xl bg-gradient-to-r from-orange-500/5 to-transparent border border-orange-500/15 p-4">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-10 h-10 rounded-2xl bg-orange-500/10 flex items-center justify-center flex-shrink-0">
+          <svg width={20} height={20} viewBox="0 0 32 32" fill="none">
+            <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9" />
+            <path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C" />
+          </svg>
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h4 className="text-sm font-bold text-white">Companion Agent</h4>
+            {bond.active && (
+              <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-lg">Bonded</span>
+            )}
+            {status.agentRegistered && (
+              <span className="text-[9px] font-bold uppercase tracking-widest text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-lg">Registered</span>
+            )}
+          </div>
+          <p className="text-[11px] text-zinc-500 font-mono">
+            {vns || `${agentName}.vns`} · {truncAddr}
+          </p>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {[
+          { label: 'Wallet', active: true },
+          { label: 'Bond', active: bond.active },
+          { label: 'Identity', active: status.agentRegistered },
+          { label: 'XMTP', active: status.xmtpPermission },
+          { label: 'x402', active: status.spendingLimitUsd > 0 },
+          { label: 'Monitoring', active: status.monitoringEnabled },
+        ].map((cap) => (
+          <span
+            key={cap.label}
+            className={`text-[9px] font-bold px-2 py-0.5 rounded-md ${
+              cap.active
+                ? 'bg-emerald-500/10 text-emerald-500'
+                : 'bg-zinc-800/40 text-zinc-600'
+            }`}
+          >
+            {cap.label}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -167,6 +236,9 @@ function OverviewTab({ stats, loading, agents, setTab }: { stats: HubStats | nul
         </div>
         <svg className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
       </button>
+
+      {/* Companion Agent Status */}
+      <CompanionAgentCard />
 
       {/* Hub Zones */}
       <div className="space-y-3">
