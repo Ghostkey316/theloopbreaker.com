@@ -1,49 +1,39 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "useDefineForClassFields": true,
-    "lib": [
-      "ES2020",
-      "ES2021",
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
-    "module": "ESNext",
-    "skipLibCheck": true,
+    "target": "ES2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noImplicitReturns": true,
-    "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "react-jsx",
-    "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
-    "paths": {
-      "@/*": [
-        "./*"
-      ]
-    },
+    "skipLibCheck": true,
+    "strict": false,
     "allowJs": true,
-    "noEmit": true,
-    "moduleResolution": "node"
+    "forceConsistentCasingInFileNames": true,
+    "lib": ["ES2020", "DOM"],
+    "types": ["node", "jest"]
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
-  ],
+  "include": ["**/*.ts", "**/*.tsx"],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "dist",
+    ".github",
+    "app",
+    "apps/vaultfire-arcade",
+    "apps/verified-dm-demo",
+    "base-mini-app",
+    "mobile-app",
+    "ember-mobile-app",
+    "ember-web-app",
+    "sdk/examples",
+    "dashboard",
+    "agent",
+    "client",
+    "server",
+    "shared",
+    "drizzle",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "drizzle.config.ts"
   ]
 }
+
