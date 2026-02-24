@@ -32,8 +32,8 @@ const path = require("path");
 
 const BASE_MAINNET_CONTRACTS = {
   PrivacyGuarantees: "0x227e27e7776d3ee14128BC66216354495E113B19",
-  MissionEnforcement: "0x38165D2D7a8584985CCa5640f4b32b1f3347CC83",
-  AntiSurveillance: "0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C",
+  MissionEnforcement: "0x8568F4020FCD55915dB3695558dD6D2532599e56",
+  AntiSurveillance: "0x722E37A7D6f27896C688336AaaFb0dDA80D25E57",
   ERC8004IdentityRegistry: "0x35978DB675576598F0781dA2133E94cdCf4858bC",
   BeliefAttestationVerifier: "0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba",
   ERC8004ReputationRegistry: "0xdB54B8925664816187646174bdBb6Ac658A55a5F",
@@ -43,7 +43,7 @@ const BASE_MAINNET_CONTRACTS = {
   VaultfireERC8004Adapter: "0xef3A944f4d7bb376699C83A29d7Cb42C90D9B6F0",
   MultisigGovernance: "0x8B8Ba34F8AAB800F0Ba8391fb1388c6EFb911F92",
   FlourishingMetricsOracle: "0x83dd216449B3F0574E39043ECFE275946fa492e9",
-  ProductionBeliefAttestationVerifier: "0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B",
+  ProductionBeliefAttestationVerifier: "0xa5CEC47B48999EB398707838E3A18dd20A1ae272",
 };
 
 function loadFujiContracts() {

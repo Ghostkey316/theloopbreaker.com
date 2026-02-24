@@ -7,7 +7,7 @@ const hre = require("hardhat");
 const fs = require("fs");
 const path = require("path");
 
-const COMPROMISED_WALLET = "0xf6A677de83c407875c9a9115cf100f121f9c4816";
+const COMPROMISED_WALLET = "0xA054f831B562e729F8D268291EBde1B2EDcFb84F";
 const TELEPORTER_MESSENGER = "0x253b2784c75e510dD0fF1da844684a1aC0aa5fcf";
 const REQUIRED_GAS_LIMIT = 500000;
 

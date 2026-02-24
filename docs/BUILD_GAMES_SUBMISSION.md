@@ -72,20 +72,20 @@ All 14 contracts are deployed and verified on Base mainnet (Chain ID 8453).
 
 | # | Contract | Address |
 |---|---|---|
-| 1 | PrivacyGuarantees | [0x1dCbeD76E05Eaf829c8BDf10a9511504cDa8EB1e](https://basescan.org/address/0x1dCbeD76E05Eaf829c8BDf10a9511504cDa8EB1e) |
-| 2 | MissionEnforcement | [0x6EC0440e1601558024f285903F0F4577B109B609](https://basescan.org/address/0x6EC0440e1601558024f285903F0F4577B109B609) |
-| 3 | AntiSurveillance | [0x2baE308ddCfc6a270d6dFCeeF947bd8B77b9d3Ac](https://basescan.org/address/0x2baE308ddCfc6a270d6dFCeeF947bd8B77b9d3Ac) |
-| 4 | ERC8004IdentityRegistry | [0x206265EAbDE04E15ebeb6E27Cad64D9BfDB470DD](https://basescan.org/address/0x206265EAbDE04E15ebeb6E27Cad64D9BfDB470DD) |
-| 5 | BeliefAttestationVerifier | [0x5657DA7E68CBbA1B529F74e2137CBA7bf3663B4a](https://basescan.org/address/0x5657DA7E68CBbA1B529F74e2137CBA7bf3663B4a) |
-| 6 | ERC8004ReputationRegistry | [0x1043A9fBeAEDD401735c46Aa17B4a2FA1193B06C](https://basescan.org/address/0x1043A9fBeAEDD401735c46Aa17B4a2FA1193B06C) |
-| 7 | ERC8004ValidationRegistry | [0x50E4609991691D5104016c4a2F6D2875234d4B06](https://basescan.org/address/0x50E4609991691D5104016c4a2F6D2875234d4B06) |
-| 8 | AIPartnershipBondsV2 | [0xd167A4F5eb428766Fc14C074e9f0C979c5CB4855](https://basescan.org/address/0xd167A4F5eb428766Fc14C074e9f0C979c5CB4855) |
-| 9 | AIAccountabilityBondsV2 | [0x956a99C8f50bAc8b8b69dA934AEaBFEaCF41B140](https://basescan.org/address/0x956a99C8f50bAc8b8b69dA934AEaBFEaCF41B140) |
-| 10 | VaultfireERC8004Adapter | [0x02Cb2bFBeC479Cb1EA109E4C92744e08d5A5B361](https://basescan.org/address/0x02Cb2bFBeC479Cb1EA109E4C92744e08d5A5B361) |
-| 11 | MultisigGovernance | [0xd979025D0384Ea4F1b2562b9855d8Be7Eb89856D](https://basescan.org/address/0xd979025D0384Ea4F1b2562b9855d8Be7Eb89856D) |
-| 12 | FlourishingMetricsOracle | [0xb751abb1158908114662b254567b8135C460932C](https://basescan.org/address/0xb751abb1158908114662b254567b8135C460932C) |
-| 13 | ProductionBeliefAttestationVerifier | [0xBDB5d85B3a84C773113779be89A166Ed515A7fE2](https://basescan.org/address/0xBDB5d85B3a84C773113779be89A166Ed515A7fE2) |
-| 14 | VaultfireTeleporterBridge | [0xaD8D7aE60805B6e5d4BF6b70248AD8B46DEE9528](https://basescan.org/address/0xaD8D7aE60805B6e5d4BF6b70248AD8B46DEE9528) |
+| 1 | PrivacyGuarantees | [0xE2f75A4B14ffFc1f9C2b1ca22Fdd6877E5BD5045](https://basescan.org/address/0xE2f75A4B14ffFc1f9C2b1ca22Fdd6877E5BD5045) |
+| 2 | MissionEnforcement | [0x8568F4020FCD55915dB3695558dD6D2532599e56](https://basescan.org/address/0x8568F4020FCD55915dB3695558dD6D2532599e56) |
+| 3 | AntiSurveillance | [0x722E37A7D6f27896C688336AaaFb0dDA80D25E57](https://basescan.org/address/0x722E37A7D6f27896C688336AaaFb0dDA80D25E57) |
+| 4 | ERC8004IdentityRegistry | [0x35978DB675576598F0781dA2133E94cdCf4858bC](https://basescan.org/address/0x35978DB675576598F0781dA2133E94cdCf4858bC) |
+| 5 | BeliefAttestationVerifier | [0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba](https://basescan.org/address/0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba) |
+| 6 | ERC8004ReputationRegistry | [0xdB54B8925664816187646174bdBb6Ac658A55a5F](https://basescan.org/address/0xdB54B8925664816187646174bdBb6Ac658A55a5F) |
+| 7 | ERC8004ValidationRegistry | [0x54e00081978eE2C8d9Ada8e9975B0Bb543D06A55](https://basescan.org/address/0x54e00081978eE2C8d9Ada8e9975B0Bb543D06A55) |
+| 8 | AIPartnershipBondsV2 | [0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4](https://basescan.org/address/0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4) |
+| 9 | AIAccountabilityBondsV2 | [0xf92baef9523BC264144F80F9c31D5c5C017c6Da8](https://basescan.org/address/0xf92baef9523BC264144F80F9c31D5c5C017c6Da8) |
+| 10 | VaultfireERC8004Adapter | [0xef3A944f4d7bb376699C83A29d7Cb42C90D9B6F0](https://basescan.org/address/0xef3A944f4d7bb376699C83A29d7Cb42C90D9B6F0) |
+| 11 | MultisigGovernance | [0x8B8Ba34F8AAB800F0Ba8391fb1388c6EFb911F92](https://basescan.org/address/0x8B8Ba34F8AAB800F0Ba8391fb1388c6EFb911F92) |
+| 12 | FlourishingMetricsOracle | [0x83dd216449B3F0574E39043ECFE275946fa492e9](https://basescan.org/address/0x83dd216449B3F0574E39043ECFE275946fa492e9) |
+| 13 | ProductionBeliefAttestationVerifier | [0xa5CEC47B48999EB398707838E3A18dd20A1ae272](https://basescan.org/address/0xa5CEC47B48999EB398707838E3A18dd20A1ae272) |
+| 14 | VaultfireTeleporterBridge | [0x94F54c849692Cc64C35468D0A87D2Ab9D7Cb6Fb2](https://basescan.org/address/0x94F54c849692Cc64C35468D0A87D2Ab9D7Cb6Fb2) |
 
 ## Deployed Contracts — Avalanche C-Chain Mainnet (Secondary)
 
@@ -93,20 +93,20 @@ All 14 contracts are deployed and verified on Avalanche C-Chain (Chain ID 43114)
 
 | # | Contract | Address |
 |---|---|---|
-| 1 | PrivacyGuarantees | [0x7Fc0fb687f86DdF5b026a24F2DC77852358712F1](https://snowtrace.io/address/0x7Fc0fb687f86DdF5b026a24F2DC77852358712F1) |
-| 2 | MissionEnforcement | [0xfC479CBC997Ab605d506e5326E5063b0821202C6](https://snowtrace.io/address/0xfC479CBC997Ab605d506e5326E5063b0821202C6) |
-| 3 | AntiSurveillance | [0xeF72b60DB38D41c6752ebf093C15A2AFA718ecE1](https://snowtrace.io/address/0xeF72b60DB38D41c6752ebf093C15A2AFA718ecE1) |
-| 4 | ERC8004IdentityRegistry | [0x5dcD3022fBa187346b9cA9f4fFAF6C42f9839e13](https://snowtrace.io/address/0x5dcD3022fBa187346b9cA9f4fFAF6C42f9839e13) |
-| 5 | BeliefAttestationVerifier | [0xF9dBC97997136cA7C9Ab02E03579D8a33CD02617](https://snowtrace.io/address/0xF9dBC97997136cA7C9Ab02E03579D8a33CD02617) |
-| 6 | AIPartnershipBondsV2 | [0x3d10A72490aDc57F1718a5917E101AD7562950C9](https://snowtrace.io/address/0x3d10A72490aDc57F1718a5917E101AD7562950C9) |
-| 7 | FlourishingMetricsOracle | [0xCe6D8BBd45B03C88C273f0bE79955d3c3E8F35c6](https://snowtrace.io/address/0xCe6D8BBd45B03C88C273f0bE79955d3c3E8F35c6) |
-| 8 | ERC8004ReputationRegistry | [0xe8EBf0a9Cd9f87F2e2f4CBd2e47b26BB61BbAb57](https://snowtrace.io/address/0xe8EBf0a9Cd9f87F2e2f4CBd2e47b26BB61BbAb57) |
-| 9 | ERC8004ValidationRegistry | [0x6f3D378E7751233A344F1BFAc4d37ED621D5F7A5](https://snowtrace.io/address/0x6f3D378E7751233A344F1BFAc4d37ED621D5F7A5) |
-| 10 | AIAccountabilityBondsV2 | [0x2100872b5d1880eC03dcea79e16FDE00f9df656a](https://snowtrace.io/address/0x2100872b5d1880eC03dcea79e16FDE00f9df656a) |
-| 11 | VaultfireERC8004Adapter | [0xC9CF6df488AFE919a58482d9d18305E2DfF29470](https://snowtrace.io/address/0xC9CF6df488AFE919a58482d9d18305E2DfF29470) |
-| 12 | MultisigGovernance | [0x4D6249BE0293fC148e6341BbD49E4B41785C49e4](https://snowtrace.io/address/0x4D6249BE0293fC148e6341BbD49E4B41785C49e4) |
-| 13 | ProductionBeliefAttestationVerifier | [0xd83503756878e6C0A5f806f9Cd35E6cA590622c5](https://snowtrace.io/address/0xd83503756878e6C0A5f806f9Cd35E6cA590622c5) |
-| 14 | VaultfireTeleporterBridge | [0x75de435Acc5dec0f612408f02Ae169528ce3a91b](https://snowtrace.io/address/0x75de435Acc5dec0f612408f02Ae169528ce3a91b) |
+| 1 | PrivacyGuarantees | [0xc09F0e06690332eD9b490E1040BdE642f11F3937](https://snowtrace.io/address/0xc09F0e06690332eD9b490E1040BdE642f11F3937) |
+| 2 | MissionEnforcement | [0xcf64D815F5424B7937aB226bC733Ed35ab6CaDcB](https://snowtrace.io/address/0xcf64D815F5424B7937aB226bC733Ed35ab6CaDcB) |
+| 3 | AntiSurveillance | [0x281814eF92062DA8049Fe5c4743c4Aef19a17380](https://snowtrace.io/address/0x281814eF92062DA8049Fe5c4743c4Aef19a17380) |
+| 4 | ERC8004IdentityRegistry | [0x57741F4116925341d8f7Eb3F381d98e07C73B4a3](https://snowtrace.io/address/0x57741F4116925341d8f7Eb3F381d98e07C73B4a3) |
+| 5 | BeliefAttestationVerifier | [0x227e27e7776d3ee14128BC66216354495E113B19](https://snowtrace.io/address/0x227e27e7776d3ee14128BC66216354495E113B19) |
+| 6 | AIPartnershipBondsV2 | [0xea6B504827a746d781f867441364C7A732AA4b07](https://snowtrace.io/address/0xea6B504827a746d781f867441364C7A732AA4b07) |
+| 7 | FlourishingMetricsOracle | [0x490c51c2fAd743C288D65A6006f6B0ae9e6a8695](https://snowtrace.io/address/0x490c51c2fAd743C288D65A6006f6B0ae9e6a8695) |
+| 8 | ERC8004ReputationRegistry | [0x11C267C8A75B13A4D95357CEF6027c42F8e7bA24](https://snowtrace.io/address/0x11C267C8A75B13A4D95357CEF6027c42F8e7bA24) |
+| 9 | ERC8004ValidationRegistry | [0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b](https://snowtrace.io/address/0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b) |
+| 10 | AIAccountabilityBondsV2 | [0xaeFEa985E0C52f92F73606657B9dA60db2798af3](https://snowtrace.io/address/0xaeFEa985E0C52f92F73606657B9dA60db2798af3) |
+| 11 | VaultfireERC8004Adapter | [0x6B7dC022edC41EBE41400319C6fDcCeab05Ea053](https://snowtrace.io/address/0x6B7dC022edC41EBE41400319C6fDcCeab05Ea053) |
+| 12 | MultisigGovernance | [0xCc7300F39aF4cc2A924f82a5Facd7049436157Ee](https://snowtrace.io/address/0xCc7300F39aF4cc2A924f82a5Facd7049436157Ee) |
+| 13 | ProductionBeliefAttestationVerifier | [0xb3d8063e67bdA1a869721D0F6c346f1Af0469D2F](https://snowtrace.io/address/0xb3d8063e67bdA1a869721D0F6c346f1Af0469D2F) |
+| 14 | VaultfireTeleporterBridge | [0x0dF0523aF5aF2Aef180dB052b669Bea97fee3d31](https://snowtrace.io/address/0x0dF0523aF5aF2Aef180dB052b669Bea97fee3d31) |
 
 ## Avalanche Demo Transactions
 
@@ -133,7 +133,7 @@ npx hardhat run scripts/deploy-fuji-ready.js --network avalancheFuji
 | Protocol GitHub | [github.com/Ghostkey316/ghostkey-316-vaultfire-init](https://github.com/Ghostkey316/ghostkey-316-vaultfire-init) |
 | Dashboard GitHub | [github.com/Ghostkey316/theloopbreaker.com](https://github.com/Ghostkey316/theloopbreaker.com) |
 | Live Dashboard | [theloopbreaker.com](https://theloopbreaker.com) |
-| Deployer Wallet | [0xf6A677de83C407875C9A9115Cf100F121f9c4816](https://basescan.org/address/0xf6A677de83C407875C9A9115Cf100F121f9c4816) |
+| Deployer Wallet | [0xA054f831B562e729F8D268291EBde1B2EDcFb84F](https://basescan.org/address/0xA054f831B562e729F8D268291EBde1B2EDcFb84F) |
 
 ## How to Run the Demo
 

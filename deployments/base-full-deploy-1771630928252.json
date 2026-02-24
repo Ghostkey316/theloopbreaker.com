@@ -2,17 +2,17 @@
   "protocol": "Vaultfire",
   "chain": "base",
   "chainId": 8453,
-  "deployer": "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324",
-  "secureWallet": "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324",
-  "compromisedWallet": "0xf6A677de83c407875c9a9115cf100f121f9c4816 (DO NOT USE)",
+  "deployer": "0xA054f831B562e729F8D268291EBde1B2EDcFb84F",
+  "secureWallet": "0xA054f831B562e729F8D268291EBde1B2EDcFb84F",
+  "compromisedWallet": "0xA054f831B562e729F8D268291EBde1B2EDcFb84F (DO NOT USE)",
   "timestamp": "2026-02-20T23:42:08.252Z",
   "contracts": {
-    "MissionEnforcement": "0x20E8CDFae485F0E8E90D24c9E071957A53eE0cB1",
-    "AIAccountabilityBondsV2": "0x964562f712c5690465B0AA2F8fA16d9dDAc6eCdf"
+    "MissionEnforcement": "0xb3d8063e67bdA1a869721D0F6c346f1Af0469D2F",
+    "AIAccountabilityBondsV2": "0x0dF0523aF5aF2Aef180dB052b669Bea97fee3d31"
   },
   "constructorArgs": {
     "AIAccountabilityBondsV2": [
-      "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324"
+      "0xA054f831B562e729F8D268291EBde1B2EDcFb84F"
     ],
     "VaultfireERC8004Adapter": [
       null,
@@ -21,12 +21,12 @@
     ],
     "MultisigGovernance": [
       [
-        "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324"
+        "0xA054f831B562e729F8D268291EBde1B2EDcFb84F"
       ],
       1
     ],
     "ProductionBeliefAttestationVerifier": [
-      "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324",
+      "0xA054f831B562e729F8D268291EBde1B2EDcFb84F",
       "0x0000000000000000000000000000000000000000000000000000000000000001"
     ],
     "VaultfireTeleporterBridge": [

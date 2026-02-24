@@ -95,7 +95,7 @@ async function main() {
   
   deployed.MultisigGovernance = await deploy("MultisigGovernance", "MultisigGovernance", [[deployer.address], 1]);
   
-  let riscZeroRouter = "0x0b144e07a0826182b6b59788c34b32bfa86fb711";
+  let riscZeroRouter = "0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b";
   if (chainId !== 8453) riscZeroRouter = deployer.address;
   const imageId = "0x" + "f".repeat(64);
   deployed.ProductionBeliefAttestationVerifier = await deploy("ProductionBeliefAttestationVerifier", "ProductionBeliefAttestationVerifier", [riscZeroRouter, imageId]);

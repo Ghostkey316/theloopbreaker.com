@@ -2,11 +2,11 @@
   "protocol": "Vaultfire",
   "chain": "base",
   "chainId": 8453,
-  "deployer": "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324",
+  "deployer": "0xA054f831B562e729F8D268291EBde1B2EDcFb84F",
   "timestamp": "2026-02-20T23:44:00.020Z",
   "contracts": {
-    "MissionEnforcement": "0x38165D2D7a8584985CCa5640f4b32b1f3347CC83",
-    "AntiSurveillance": "0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C",
+    "MissionEnforcement": "0x8568F4020FCD55915dB3695558dD6D2532599e56",
+    "AntiSurveillance": "0x722E37A7D6f27896C688336AaaFb0dDA80D25E57",
     "PrivacyGuarantees": "0x227e27e7776d3ee14128BC66216354495E113B19",
     "ERC8004IdentityRegistry": "0x35978DB675576598F0781dA2133E94cdCf4858bC",
     "BeliefAttestationVerifier": "0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba",
@@ -17,19 +17,19 @@
     "ERC8004ValidationRegistry": "0x54e00081978eE2C8d9Ada8e9975B0Bb543D06A55",
     "VaultfireERC8004Adapter": "0xef3A944f4d7bb376699C83A29d7Cb42C90D9B6F0",
     "MultisigGovernance": "0x8B8Ba34F8AAB800F0Ba8391fb1388c6EFb911F92",
-    "ProductionBeliefAttestationVerifier": "0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B",
+    "ProductionBeliefAttestationVerifier": "0xa5CEC47B48999EB398707838E3A18dd20A1ae272",
     "VaultfireTeleporterBridge": "0x613585B786af2d5ecb1c3e712CE5ffFB8f53f155"
   },
   "constructorArgs": {
     "AIAccountabilityBondsV2": [
-      "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324"
+      "0xA054f831B562e729F8D268291EBde1B2EDcFb84F"
     ],
     "ERC8004ReputationRegistry": [
       "0x35978DB675576598F0781dA2133E94cdCf4858bC"
     ],
     "ERC8004ValidationRegistry": [
       "0x35978DB675576598F0781dA2133E94cdCf4858bC",
-      "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324"
+      "0xA054f831B562e729F8D268291EBde1B2EDcFb84F"
     ],
     "VaultfireERC8004Adapter": [
       "0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4",
@@ -39,12 +39,12 @@
     ],
     "MultisigGovernance": [
       [
-        "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324"
+        "0xA054f831B562e729F8D268291EBde1B2EDcFb84F"
       ],
       1
     ],
     "ProductionBeliefAttestationVerifier": [
-      "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324",
+      "0xA054f831B562e729F8D268291EBde1B2EDcFb84F",
       "0x0000000000000000000000000000000000000000000000000000000000000001"
     ],
     "VaultfireTeleporterBridge": [

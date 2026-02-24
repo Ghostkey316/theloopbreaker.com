@@ -8,7 +8,7 @@ As of February 20, 2026, the Vaultfire Protocol is deployed across two chains. O
 
 ### Base Mainnet (Canonical — Chain ID 8453)
 
-Contract addresses will be populated after deployment. The deployer wallet `0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324` is the initial owner of all contracts prior to ownership transfer to `MultisigGovernance`.
+Contract addresses will be populated after deployment. The deployer wallet `0xA054f831B562e729F8D268291EBde1B2EDcFb84F` is the initial owner of all contracts prior to ownership transfer to `MultisigGovernance`.
 
 | Contract | Owner | Notes |
 |---|---|---|
@@ -31,19 +31,19 @@ Contract addresses will be populated after deployment. The deployer wallet `0x5F
 
 | Contract | Address | Notes |
 |---|---|---|
-| `PrivacyGuarantees` | `0x7Fc0fb687f86DdF5b026a24F2DC77852358712F1` | |
-| `MissionEnforcement` | `0xfC479CBC997Ab605d506e5326E5063b0821202C6` | |
-| `AntiSurveillance` | `0xeF72b60DB38D41c6752ebf093C15A2AFA718ecE1` | |
-| `ERC8004IdentityRegistry` | `0x5dcD3022fBa187346b9cA9f4fFAF6C42f9839e13` | |
-| `BeliefAttestationVerifier` | `0xF9dBC97997136cA7C9Ab02E03579D8a33CD02617` | |
-| `AIPartnershipBondsV2` | `0x3d10A72490aDc57F1718a5917E101AD7562950C9` | |
-| `FlourishingMetricsOracle` | `0xCe6D8BBd45B03C88C273f0bE79955d3c3E8F35c6` | |
-| `AIAccountabilityBondsV2` | `0x2100872b5d1880eC03dcea79e16FDE00f9df656a` | |
-| `ERC8004ReputationRegistry` | `0xe8EBf0a9Cd9f87F2e2f4CBd2e47b26BB61BbAb57` | |
-| `ERC8004ValidationRegistry` | `0x6f3D378E7751233A344F1BFAc4d37ED621D5F7A5` | |
-| `VaultfireERC8004Adapter` | `0xC9CF6df488AFE919a58482d9d18305E2DfF29470` | |
-| `MultisigGovernance` | `0x4D6249BE0293fC148e6341BbD49E4B41785C49e4` | |
-| `ProductionBeliefAttestationVerifier` | `0xd83503756878e6C0A5f806f9Cd35E6cA590622c5` | |
+| `PrivacyGuarantees` | `0xc09F0e06690332eD9b490E1040BdE642f11F3937` | |
+| `MissionEnforcement` | `0xcf64D815F5424B7937aB226bC733Ed35ab6CaDcB` | |
+| `AntiSurveillance` | `0x281814eF92062DA8049Fe5c4743c4Aef19a17380` | |
+| `ERC8004IdentityRegistry` | `0x57741F4116925341d8f7Eb3F381d98e07C73B4a3` | |
+| `BeliefAttestationVerifier` | `0x227e27e7776d3ee14128BC66216354495E113B19` | |
+| `AIPartnershipBondsV2` | `0xea6B504827a746d781f867441364C7A732AA4b07` | |
+| `FlourishingMetricsOracle` | `0x490c51c2fAd743C288D65A6006f6B0ae9e6a8695` | |
+| `AIAccountabilityBondsV2` | `0xaeFEa985E0C52f92F73606657B9dA60db2798af3` | |
+| `ERC8004ReputationRegistry` | `0x11C267C8A75B13A4D95357CEF6027c42F8e7bA24` | |
+| `ERC8004ValidationRegistry` | `0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b` | |
+| `VaultfireERC8004Adapter` | `0x6B7dC022edC41EBE41400319C6fDcCeab05Ea053` | |
+| `MultisigGovernance` | `0xCc7300F39aF4cc2A924f82a5Facd7049436157Ee` | |
+| `ProductionBeliefAttestationVerifier` | `0xb3d8063e67bdA1a869721D0F6c346f1Af0469D2F` | |
 | `VaultfireTeleporterBridge` | *Pending deployment* | Deploy with `deploy-avalanche-missing.js` |
 
 ## 2. Owner Powers

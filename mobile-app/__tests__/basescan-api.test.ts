@@ -10,7 +10,7 @@ describe("BaseScan API Key Validation", () => {
 
   it("should reach BaseScan API endpoint", async () => {
     const apiKey = process.env.BASESCAN_API_KEY;
-    const testAddress = "0x206265EAbDE04E15ebeb6E27Cad64D9BfDB470DD";
+    const testAddress = "0x35978DB675576598F0781dA2133E94cdCf4858bC";
     const url = `https://api.basescan.org/api?module=account&action=txlist&address=${testAddress}&startblock=0&endblock=99999999&page=1&offset=1&sort=desc&apikey=${apiKey}`;
 
     const response = await fetch(url);

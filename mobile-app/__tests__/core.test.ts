@@ -5,24 +5,24 @@ import { ethers } from "ethers";
 
 describe("Contract Configuration", () => {
   const CONTRACTS: Record<string, string> = {
-    ERC8004IdentityRegistry: "0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5",
-    ERC8004ReputationRegistry: "0x544B575431ECD927bA83E85008446fA1e100204a",
-    ERC8004ValidationRegistry: "0x501fE0f960c1e061C4d295Af241f9F1512775556",
-    AIPartnershipBondsV2: "0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1",
-    AIAccountabilityBondsV2: "0xDfc66395A4742b5168712a04942C90B99394aEEb",
-    VaultfireERC8004Adapter: "0x5470d8189849675C043fFA7fc451e5F2f4e5532c",
-    MultisigGovernance: "0xea0A6750642AA294658dC9f1eDf36b95D21e7B22",
-    FlourishingMetricsOracle: "0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1",
-    ProductionBeliefAttestationVerifier: "0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B",
-    VaultfireTeleporterBridge: "0xFe122605364f428570c4C0EB2CCAEBb68dD22d05",
-    BeliefAttestationVerifier: "0x10180c8430cfD61d27F1d7a548Cff0C4D143bFEF",
-    PrivacyGuarantees: "0xBdB6c89f5cb86f4d44F7E01d9393b29D83e3DB55",
-    MissionEnforcement: "0x38165D2D7a8584985CCa5640f4b32b1f3347CC83",
-    AntiSurveillance: "0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C",
+    ERC8004IdentityRegistry: "0x35978DB675576598F0781dA2133E94cdCf4858bC",
+    ERC8004ReputationRegistry: "0xdB54B8925664816187646174bdBb6Ac658A55a5F",
+    ERC8004ValidationRegistry: "0x54e00081978eE2C8d9Ada8e9975B0Bb543D06A55",
+    AIPartnershipBondsV2: "0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4",
+    AIAccountabilityBondsV2: "0xf92baef9523BC264144F80F9c31D5c5C017c6Da8",
+    VaultfireERC8004Adapter: "0xef3A944f4d7bb376699C83A29d7Cb42C90D9B6F0",
+    MultisigGovernance: "0x8B8Ba34F8AAB800F0Ba8391fb1388c6EFb911F92",
+    FlourishingMetricsOracle: "0x83dd216449B3F0574E39043ECFE275946fa492e9",
+    ProductionBeliefAttestationVerifier: "0xa5CEC47B48999EB398707838E3A18dd20A1ae272",
+    VaultfireTeleporterBridge: "0x94F54c849692Cc64C35468D0A87D2Ab9D7Cb6Fb2",
+    BeliefAttestationVerifier: "0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba",
+    PrivacyGuarantees: "0xE2f75A4B14ffFc1f9C2b1ca22Fdd6877E5BD5045",
+    MissionEnforcement: "0x8568F4020FCD55915dB3695558dD6D2532599e56",
+    AntiSurveillance: "0x722E37A7D6f27896C688336AaaFb0dDA80D25E57",
   };
 
   const AVAX_CONTRACTS: Record<string, string> = {
-    VaultfireTeleporterBridge: "0x964562f712c5690465B0AA2F8fA16d9dDAc6eCdf",
+    VaultfireTeleporterBridge: "0x0dF0523aF5aF2Aef180dB052b669Bea97fee3d31",
   };
 
   it("should have 14 Base contracts", () => {
@@ -72,7 +72,7 @@ describe("Capabilities Hash", () => {
 
 describe("Address Validation", () => {
   it("should validate correct Ethereum addresses", () => {
-    expect(ethers.isAddress("0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5")).toBe(true);
+    expect(ethers.isAddress("0x35978DB675576598F0781dA2133E94cdCf4858bC")).toBe(true);
     expect(ethers.isAddress("0x0000000000000000000000000000000000000000")).toBe(true);
   });
 
@@ -83,9 +83,9 @@ describe("Address Validation", () => {
   });
 
   it("should checksum addresses correctly", () => {
-    const address = "0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5";
+    const address = "0x35978DB675576598F0781dA2133E94cdCf4858bC";
     const checksummed = ethers.getAddress(address);
-    expect(checksummed).toBe("0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5");
+    expect(checksummed).toBe("0x35978DB675576598F0781dA2133E94cdCf4858bC");
   });
 });
 
@@ -141,7 +141,7 @@ describe("Transaction Building", () => {
     const iface = new ethers.Interface([
       "function approve(address spender, uint256 amount)",
     ]);
-    const spender = "0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5";
+    const spender = "0x35978DB675576598F0781dA2133E94cdCf4858bC";
     const data = iface.encodeFunctionData("approve", [spender, 0]);
     expect(data).toMatch(/^0x/);
     // approve selector is 0x095ea7b3
@@ -153,7 +153,7 @@ describe("Transaction Building", () => {
       "function createBond(address aiAgent, string partnershipType)",
     ]);
     const data = iface.encodeFunctionData("createBond", [
-      "0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5",
+      "0x35978DB675576598F0781dA2133E94cdCf4858bC",
       "research",
     ]);
     expect(data).toMatch(/^0x/);
@@ -165,7 +165,7 @@ describe("Transaction Building", () => {
       "function submitFeedback(address agent, uint256 rating, string comment)",
     ]);
     const data = iface.encodeFunctionData("submitFeedback", [
-      "0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5",
+      "0x35978DB675576598F0781dA2133E94cdCf4858bC",
       5,
       "Excellent agent",
     ]);

@@ -13,20 +13,20 @@ interface ContractEntry {
 
 const contracts: ContractEntry[] = [
   // Original 10 core contracts
-  { name: 'PrivacyGuarantees', address: '0xBdB6c89f5cb86f4d44F7E01d9393b29D83e3DB55', category: 'core' },
-  { name: 'MissionEnforcement', address: '0x38165D2D7a8584985CCa5640f4b32b1f3347CC83', category: 'core' },
-  { name: 'AntiSurveillance', address: '0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C', category: 'core' },
-  { name: 'ERC8004IdentityRegistry', address: '0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5', category: 'core' },
-  { name: 'BeliefAttestationVerifier', address: '0x10180c8430cfD61d27F1d7a548Cff0C4D143bFEF', category: 'core' },
-  { name: 'ERC8004ReputationRegistry', address: '0x544B575431ECD927bA83E85008446fA1e100204a', category: 'core' },
-  { name: 'ERC8004ValidationRegistry', address: '0x501fE0f960c1e061C4d295Af241f9F1512775556', category: 'core' },
-  { name: 'AIPartnershipBondsV2', address: '0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1', category: 'core' },
-  { name: 'AIAccountabilityBondsV2', address: '0xDfc66395A4742b5168712a04942C90B99394aEEb', category: 'core' },
-  { name: 'VaultfireERC8004Adapter', address: '0x5470d8189849675C043fFA7fc451e5F2f4e5532c', category: 'core' },
+  { name: 'PrivacyGuarantees', address: '0xE2f75A4B14ffFc1f9C2b1ca22Fdd6877E5BD5045', category: 'core' },
+  { name: 'MissionEnforcement', address: '0x8568F4020FCD55915dB3695558dD6D2532599e56', category: 'core' },
+  { name: 'AntiSurveillance', address: '0x722E37A7D6f27896C688336AaaFb0dDA80D25E57', category: 'core' },
+  { name: 'ERC8004IdentityRegistry', address: '0x35978DB675576598F0781dA2133E94cdCf4858bC', category: 'core' },
+  { name: 'BeliefAttestationVerifier', address: '0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba', category: 'core' },
+  { name: 'ERC8004ReputationRegistry', address: '0xdB54B8925664816187646174bdBb6Ac658A55a5F', category: 'core' },
+  { name: 'ERC8004ValidationRegistry', address: '0x54e00081978eE2C8d9Ada8e9975B0Bb543D06A55', category: 'core' },
+  { name: 'AIPartnershipBondsV2', address: '0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4', category: 'core' },
+  { name: 'AIAccountabilityBondsV2', address: '0xf92baef9523BC264144F80F9c31D5c5C017c6Da8', category: 'core' },
+  { name: 'VaultfireERC8004Adapter', address: '0xef3A944f4d7bb376699C83A29d7Cb42C90D9B6F0', category: 'core' },
   // 3 new security contracts
-  { name: 'MultisigGovernance', address: '0xea0A6750642AA294658dC9f1eDf36b95D21e7B22', category: 'security' },
-  { name: 'FlourishingMetricsOracle', address: '0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1', category: 'security' },
-  { name: 'ProductionBeliefAttestationVerifier', address: '0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B', category: 'security' },
+  { name: 'MultisigGovernance', address: '0x8B8Ba34F8AAB800F0Ba8391fb1388c6EFb911F92', category: 'security' },
+  { name: 'FlourishingMetricsOracle', address: '0x83dd216449B3F0574E39043ECFE275946fa492e9', category: 'security' },
+  { name: 'ProductionBeliefAttestationVerifier', address: '0xa5CEC47B48999EB398707838E3A18dd20A1ae272', category: 'security' },
 ];
 
 export function ProtocolContracts() {

@@ -29,7 +29,7 @@ The `scripts/deploy-multichain.js` script is the master script for deploying the
 ### Prerequisites
 
 1.  **Install Dependencies:** Ensure all project dependencies are installed by running `npm install` in the root directory.
-2.  **Environment Variables:** Set the `PRIVATE_KEY` environment variable to the private key of the deployer wallet (`0xf6A677de83C407875C9A9115Cf100F121f9c4816`).
+2.  **Environment Variables:** Set the `PRIVATE_KEY` environment variable to the private key of the deployer wallet (`0xA054f831B562e729F8D268291EBde1B2EDcFb84F`).
 
     ```bash
     export PRIVATE_KEY="0x..."

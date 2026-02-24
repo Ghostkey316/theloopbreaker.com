@@ -2,10 +2,10 @@
   "protocol": "Vaultfire",
   "chain": "avalanche",
   "chainId": 43114,
-  "deployer": "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324",
+  "deployer": "0xA054f831B562e729F8D268291EBde1B2EDcFb84F",
   "timestamp": "2026-02-20T23:46:06.329Z",
   "contracts": {
-    "PrivacyGuarantees": "0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C",
+    "PrivacyGuarantees": "0x722E37A7D6f27896C688336AaaFb0dDA80D25E57",
     "BeliefAttestationVerifier": "0x227e27e7776d3ee14128BC66216354495E113B19",
     "ERC8004ReputationRegistry": "0x35978DB675576598F0781dA2133E94cdCf4858bC",
     "ERC8004ValidationRegistry": "0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba",
@@ -18,7 +18,7 @@
     ],
     "ERC8004ValidationRegistry": [
       "0x57741F4116925341d8f7Eb3F381d98e07C73B4a3",
-      "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324"
+      "0xA054f831B562e729F8D268291EBde1B2EDcFb84F"
     ],
     "VaultfireERC8004Adapter": [
       "0xea6B504827a746d781f867441364C7A732AA4b07",
@@ -28,7 +28,7 @@
     ],
     "MultisigGovernance": [
       [
-        "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324"
+        "0xA054f831B562e729F8D268291EBde1B2EDcFb84F"
       ],
       1
     ]

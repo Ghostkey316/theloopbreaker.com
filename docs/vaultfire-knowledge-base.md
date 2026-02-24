@@ -83,43 +83,43 @@ These three contracts form the ethical bedrock of the protocol. They are inherit
 
 These three contracts implement the **ERC-8004 standard** for AI agent identity, ensuring that reputation and capabilities are portable across platforms and ecosystems.
 
-**`ERC8004IdentityRegistry`** (`0x206265EAbDE04E15ebeb6E27Cad64D9BfDB470DD` on Base) allows any wallet to register as an AI agent without KYC. The agent provides a URI to an off-chain agent card, an agent type string, and a capabilities hash. Agents can be discovered by capability, and the contract owner can deactivate malicious agents.
+**`ERC8004IdentityRegistry`** (`0x35978DB675576598F0781dA2133E94cdCf4858bC` on Base) allows any wallet to register as an AI agent without KYC. The agent provides a URI to an off-chain agent card, an agent type string, and a capabilities hash. Agents can be discovered by capability, and the contract owner can deactivate malicious agents.
 
-**`ERC8004ReputationRegistry`** (`0x1043A9fBeAEDD401735c46Aa17B4a2FA1193B06C` on Base) enables users to submit feedback and ratings for AI agents. It supports both plaintext and privacy-hardened (hashed) feedback. The registry calculates an average rating and tracks the percentage of verified feedbacks, building a portable, on-chain reputation score.
+**`ERC8004ReputationRegistry`** (`0xdB54B8925664816187646174bdBb6Ac658A55a5F` on Base) enables users to submit feedback and ratings for AI agents. It supports both plaintext and privacy-hardened (hashed) feedback. The registry calculates an average rating and tracks the percentage of verified feedbacks, building a portable, on-chain reputation score.
 
-**`ERC8004ValidationRegistry`** (`0x50E4609991691D5104016c4a2F6D2875234d4B06` on Base) provides a system for agents to submit claims and have them independently verified. It supports five validation types: staker re-run, ZK proof, Trusted Execution Environment (TEE) oracle, trusted human judge, and multi-validator consensus. Validators must stake a minimum of **1 ETH** to participate, and they are rewarded **0.1 ETH** for successful validations. Dishonest validators are slashed.
+**`ERC8004ValidationRegistry`** (`0x54e00081978eE2C8d9Ada8e9975B0Bb543D06A55` on Base) provides a system for agents to submit claims and have them independently verified. It supports five validation types: staker re-run, ZK proof, Trusted Execution Environment (TEE) oracle, trusted human judge, and multi-validator consensus. Validators must stake a minimum of **1 ETH** to participate, and they are rewarded **0.1 ETH** for successful validations. Dishonest validators are slashed.
 
 ### Layer 3: Bond System
 
 These two contracts are the economic heart of the protocol.
 
-**`AIPartnershipBondsV2`** (`0xd167A4F5eb428766Fc14C074e9f0C979c5CB4855` on Base) manages the creation, metric submission, human verification, and distribution of individual AI-human partnership bonds. It inherits from `BaseYieldPoolBond`, which in turn inherits from `BaseDignityBond`, providing reentrancy protection, pausability, two-step ownership transfer, and a yield pool with a minimum 50% reserve ratio.
+**`AIPartnershipBondsV2`** (`0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4` on Base) manages the creation, metric submission, human verification, and distribution of individual AI-human partnership bonds. It inherits from `BaseYieldPoolBond`, which in turn inherits from `BaseDignityBond`, providing reentrancy protection, pausability, two-step ownership transfer, and a yield pool with a minimum 50% reserve ratio.
 
-**`AIAccountabilityBondsV2`** (`0x956a99C8f50bAc8b8b69dA934AEaBFEaCF41B140` on Base) manages the global accountability bonds for AI companies. It includes a full oracle integration system, peer-to-peer AI verification, community challenges, and profit-locking mechanisms tied to the Global Flourishing Score.
+**`AIAccountabilityBondsV2`** (`0xf92baef9523BC264144F80F9c31D5c5C017c6Da8` on Base) manages the global accountability bonds for AI companies. It includes a full oracle integration system, peer-to-peer AI verification, community challenges, and profit-locking mechanisms tied to the Global Flourishing Score.
 
 ### Layer 4: Zero-Knowledge Proofs
 
 These two contracts enable privacy-preserving verification.
 
-**`BeliefAttestationVerifier`** (`0x5657DA7E68CBbA1B529F74e2137CBA7bf3663B4a` on Base) is the development-mode ZK verifier. It defines the interface for verifying STARK proofs of belief attestations. It is restricted to local chains (chain ID 31337/1337) and serves as the reference implementation.
+**`BeliefAttestationVerifier`** (`0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba` on Base) is the development-mode ZK verifier. It defines the interface for verifying STARK proofs of belief attestations. It is restricted to local chains (chain ID 31337/1337) and serves as the reference implementation.
 
-**`ProductionBeliefAttestationVerifier`** (`0xBDB5d85B3a84C773113779be89A166Ed515A7fE2` on Base) is the production-grade verifier integrated with **RISC Zero's Boundless proving network**. It calls the `RiscZeroVerifierRouter` (deployed at `0x0b14...fb711` on Base) to verify Groth16 SNARKs that wrap STARK execution traces. It includes a **48-hour timelock** on any changes to the guest program's image ID, preventing malicious instant upgrades.
+**`ProductionBeliefAttestationVerifier`** (`0xa5CEC47B48999EB398707838E3A18dd20A1ae272` on Base) is the production-grade verifier integrated with **RISC Zero's Boundless proving network**. It calls the `RiscZeroVerifierRouter` (deployed at `0x0b14...fb711` on Base) to verify Groth16 SNARKs that wrap STARK execution traces. It includes a **48-hour timelock** on any changes to the guest program's image ID, preventing malicious instant upgrades.
 
 ### Layer 5: Governance and Oracles
 
 These two contracts provide decentralized control and data aggregation.
 
-**`MultisigGovernance`** (`0xd979025D0384Ea4F1b2562b9855d8Be7Eb89856D` on Base) is an M-of-N multisignature contract that controls critical protocol functions. Any signer can propose a transaction, and it executes only when the confirmation threshold is met. Transactions expire after **7 days**. Signers can be added or removed, but only through the multisig itself.
+**`MultisigGovernance`** (`0x8B8Ba34F8AAB800F0Ba8391fb1388c6EFb911F92` on Base) is an M-of-N multisignature contract that controls critical protocol functions. Any signer can propose a transaction, and it executes only when the confirmation threshold is met. Transactions expire after **7 days**. Signers can be added or removed, but only through the multisig itself.
 
-**`FlourishingMetricsOracle`** (`0xb751abb1158908114662b254567b8135C460932C` on Base) aggregates real-world data from multiple independent oracles to calculate the Global Flourishing Score. It requires a minimum of **3 oracles** to submit data for any consensus round and uses a **median** calculation (insertion sort) to determine the consensus value, making it resistant to outlier manipulation.
+**`FlourishingMetricsOracle`** (`0x83dd216449B3F0574E39043ECFE275946fa492e9` on Base) aggregates real-world data from multiple independent oracles to calculate the Global Flourishing Score. It requires a minimum of **3 oracles** to submit data for any consensus round and uses a **median** calculation (insertion sort) to determine the consensus value, making it resistant to outlier manipulation.
 
 ### Layer 6: Adapters and Bridges
 
 These two contracts connect Vaultfire to external standards and other blockchains.
 
-**`VaultfireERC8004Adapter`** (`0x02Cb2bFBeC479Cb1EA109E4C92744e08d5A5B361` on Base) is the glue between Vaultfire's bond systems and the ERC-8004 standard. It allows agents to register for partnerships, syncs partnership reputation to the ERC-8004 registry, requests validation of partnership claims, and provides cross-platform reputation queries.
+**`VaultfireERC8004Adapter`** (`0xef3A944f4d7bb376699C83A29d7Cb42C90D9B6F0` on Base) is the glue between Vaultfire's bond systems and the ERC-8004 standard. It allows agents to register for partnerships, syncs partnership reputation to the ERC-8004 registry, requests validation of partnership claims, and provides cross-platform reputation queries.
 
-**`VaultfireTeleporterBridge`** (`0xaD8D7aE60805B6e5d4BF6b70248AD8B46DEE9528` on Base) is the cross-chain bridge that synchronizes an agent's trust state between Ethereum, Base, and Avalanche using Avalanche's native **Teleporter (ICM)** protocol. It supports five message types: agent registration sync, partnership bond sync, accountability bond sync, reputation sync, and validation sync. It includes nonce-based replay protection, source-chain verification, message hash deduplication, and an emergency pause function.
+**`VaultfireTeleporterBridge`** (`0x94F54c849692Cc64C35468D0A87D2Ab9D7Cb6Fb2` on Base) is the cross-chain bridge that synchronizes an agent's trust state between Ethereum, Base, and Avalanche using Avalanche's native **Teleporter (ICM)** protocol. It supports five message types: agent registration sync, partnership bond sync, accountability bond sync, reputation sync, and validation sync. It includes nonce-based replay protection, source-chain verification, message hash deduplication, and an emergency pause function.
 
 ---
 
@@ -129,39 +129,39 @@ These two contracts connect Vaultfire to external standards and other blockchain
 
 | Contract | Address |
 | :--- | :--- |
-| `PrivacyGuarantees` | `0x1dCbeD76E05Eaf829c8BDf10a9511504cDa8EB1e` |
-| `MissionEnforcement` | `0x6EC0440e1601558024f285903F0F4577B109B609` |
-| `AntiSurveillance` | `0x2baE308ddCfc6a270d6dFCeeF947bd8B77b9d3Ac` |
-| `ERC8004IdentityRegistry` | `0x206265EAbDE04E15ebeb6E27Cad64D9BfDB470DD` |
-| `BeliefAttestationVerifier` | `0x5657DA7E68CBbA1B529F74e2137CBA7bf3663B4a` |
-| `ERC8004ReputationRegistry` | `0x1043A9fBeAEDD401735c46Aa17B4a2FA1193B06C` |
-| `ERC8004ValidationRegistry` | `0x50E4609991691D5104016c4a2F6D2875234d4B06` |
-| `AIPartnershipBondsV2` | `0xd167A4F5eb428766Fc14C074e9f0C979c5CB4855` |
-| `AIAccountabilityBondsV2` | `0x956a99C8f50bAc8b8b69dA934AEaBFEaCF41B140` |
-| `VaultfireERC8004Adapter` | `0x02Cb2bFBeC479Cb1EA109E4C92744e08d5A5B361` |
-| `MultisigGovernance` | `0xd979025D0384Ea4F1b2562b9855d8Be7Eb89856D` |
-| `FlourishingMetricsOracle` | `0xb751abb1158908114662b254567b8135C460932C` |
-| `ProductionBeliefAttestationVerifier` | `0xBDB5d85B3a84C773113779be89A166Ed515A7fE2` |
-| `VaultfireTeleporterBridge` | `0xaD8D7aE60805B6e5d4BF6b70248AD8B46DEE9528` |
+| `PrivacyGuarantees` | `0xE2f75A4B14ffFc1f9C2b1ca22Fdd6877E5BD5045` |
+| `MissionEnforcement` | `0x8568F4020FCD55915dB3695558dD6D2532599e56` |
+| `AntiSurveillance` | `0x722E37A7D6f27896C688336AaaFb0dDA80D25E57` |
+| `ERC8004IdentityRegistry` | `0x35978DB675576598F0781dA2133E94cdCf4858bC` |
+| `BeliefAttestationVerifier` | `0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba` |
+| `ERC8004ReputationRegistry` | `0xdB54B8925664816187646174bdBb6Ac658A55a5F` |
+| `ERC8004ValidationRegistry` | `0x54e00081978eE2C8d9Ada8e9975B0Bb543D06A55` |
+| `AIPartnershipBondsV2` | `0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4` |
+| `AIAccountabilityBondsV2` | `0xf92baef9523BC264144F80F9c31D5c5C017c6Da8` |
+| `VaultfireERC8004Adapter` | `0xef3A944f4d7bb376699C83A29d7Cb42C90D9B6F0` |
+| `MultisigGovernance` | `0x8B8Ba34F8AAB800F0Ba8391fb1388c6EFb911F92` |
+| `FlourishingMetricsOracle` | `0x83dd216449B3F0574E39043ECFE275946fa492e9` |
+| `ProductionBeliefAttestationVerifier` | `0xa5CEC47B48999EB398707838E3A18dd20A1ae272` |
+| `VaultfireTeleporterBridge` | `0x94F54c849692Cc64C35468D0A87D2Ab9D7Cb6Fb2` |
 
 ### Avalanche C-Chain (Chain ID: 43114)
 
 | Contract | Address |
 | :--- | :--- |
-| `PrivacyGuarantees` | `0x7Fc0fb687f86DdF5b026a24F2DC77852358712F1` |
-| `MissionEnforcement` | `0xfC479CBC997Ab605d506e5326E5063b0821202C6` |
-| `AntiSurveillance` | `0xeF72b60DB38D41c6752ebf093C15A2AFA718ecE1` |
-| `ERC8004IdentityRegistry` | `0x5dcD3022fBa187346b9cA9f4fFAF6C42f9839e13` |
-| `BeliefAttestationVerifier` | `0xF9dBC97997136cA7C9Ab02E03579D8a33CD02617` |
-| `AIPartnershipBondsV2` | `0x3d10A72490aDc57F1718a5917E101AD7562950C9` |
-| `AIAccountabilityBondsV2` | `0x2100872b5d1880eC03dcea79e16FDE00f9df656a` |
-| `FlourishingMetricsOracle` | `0xCe6D8BBd45B03C88C273f0bE79955d3c3E8F35c6` |
-| `ERC8004ReputationRegistry` | `0xe8EBf0a9Cd9f87F2e2f4CBd2e47b26BB61BbAb57` |
-| `ERC8004ValidationRegistry` | `0x6f3D378E7751233A344F1BFAc4d37ED621D5F7A5` |
-| `VaultfireERC8004Adapter` | `0xC9CF6df488AFE919a58482d9d18305E2DfF29470` |
-| `MultisigGovernance` | `0x4D6249BE0293fC148e6341BbD49E4B41785C49e4` |
-| `ProductionBeliefAttestationVerifier` | `0xd83503756878e6C0A5f806f9Cd35E6cA590622c5` |
-| `VaultfireTeleporterBridge` | `0x75de435Acc5dec0f612408f02Ae169528ce3a91b` |
+| `PrivacyGuarantees` | `0xc09F0e06690332eD9b490E1040BdE642f11F3937` |
+| `MissionEnforcement` | `0xcf64D815F5424B7937aB226bC733Ed35ab6CaDcB` |
+| `AntiSurveillance` | `0x281814eF92062DA8049Fe5c4743c4Aef19a17380` |
+| `ERC8004IdentityRegistry` | `0x57741F4116925341d8f7Eb3F381d98e07C73B4a3` |
+| `BeliefAttestationVerifier` | `0x227e27e7776d3ee14128BC66216354495E113B19` |
+| `AIPartnershipBondsV2` | `0xea6B504827a746d781f867441364C7A732AA4b07` |
+| `AIAccountabilityBondsV2` | `0xaeFEa985E0C52f92F73606657B9dA60db2798af3` |
+| `FlourishingMetricsOracle` | `0x490c51c2fAd743C288D65A6006f6B0ae9e6a8695` |
+| `ERC8004ReputationRegistry` | `0x11C267C8A75B13A4D95357CEF6027c42F8e7bA24` |
+| `ERC8004ValidationRegistry` | `0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b` |
+| `VaultfireERC8004Adapter` | `0x6B7dC022edC41EBE41400319C6fDcCeab05Ea053` |
+| `MultisigGovernance` | `0xCc7300F39aF4cc2A924f82a5Facd7049436157Ee` |
+| `ProductionBeliefAttestationVerifier` | `0xb3d8063e67bdA1a869721D0F6c346f1Af0469D2F` |
+| `VaultfireTeleporterBridge` | `0x0dF0523aF5aF2Aef180dB052b669Bea97fee3d31` |
 
 ---
 
@@ -258,7 +258,7 @@ A: The protocol is designed for purpose, not for profit. A portion of the yield 
 
 **Q: What is the role of the deployer wallet?**
 
-A: The deployer wallet (`0xf6A677de83C407875C9A9115Cf100F121f9c4816`) was used to initially deploy the protocol contracts. Critical administrative functions are now controlled by the `MultisigGovernance` contract, requiring multiple signers to approve any changes.
+A: The deployer wallet (`0xA054f831B562e729F8D268291EBde1B2EDcFb84F`) was used to initially deploy the protocol contracts. Critical administrative functions are now controlled by the `MultisigGovernance` contract, requiring multiple signers to approve any changes.
 
 **Q: Can the ethical rules be changed?**
 

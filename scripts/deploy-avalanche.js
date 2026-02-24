@@ -14,7 +14,7 @@
  *   PRIVATE_KEY          — deployer wallet private key
  *   SNOWTRACE_API_KEY    — (optional) Snowtrace / Routescan API key for verification
  *
- * Deployer wallet: 0xf6A677de83C407875C9A9115Cf100F121f9c4816
+ * Deployer wallet: 0xA054f831B562e729F8D268291EBde1B2EDcFb84F
  */
 const hre = require("hardhat");
 const fs = require("fs");
@@ -23,7 +23,7 @@ const path = require("path");
 // ---------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------
-const DEPLOYER_EXPECTED = "0xf6A677de83C407875C9A9115Cf100F121f9c4816";
+const DEPLOYER_EXPECTED = "0xA054f831B562e729F8D268291EBde1B2EDcFb84F";
 
 // MultisigGovernance initial signers — same as Base deployment
 const MULTISIG_SIGNERS = [DEPLOYER_EXPECTED];

@@ -64,7 +64,7 @@ const CHAINS = {
 // ---------------------------------------------------------------------------
 // Deployment configuration
 // ---------------------------------------------------------------------------
-const DEPLOYER_EXPECTED = "0xf6A677de83C407875C9A9115Cf100F121f9c4816";
+const DEPLOYER_EXPECTED = "0xA054f831B562e729F8D268291EBde1B2EDcFb84F";
 const MULTISIG_SIGNERS = [DEPLOYER_EXPECTED];
 const MULTISIG_THRESHOLD = 1;
 const RISC_ZERO_VERIFIER_PLACEHOLDER = DEPLOYER_EXPECTED;

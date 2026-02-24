@@ -51,9 +51,9 @@ All contracts and integrations on Base mainnet are verified and operational.
 ### 3.2. Write Operations & Transaction Hashes
 
 - **Register Agent**: The deployer wallet `0xA054...b84F` successfully registered as an agent.
-  - **Transaction Hash**: `0xc7d8bced12c46525b814a4c97270a8d1dde80a7819a347961bf36e53620b5460` [1]
+  - **Transaction Hash**: `0x8568F4020FCD55915dB3695558dD6D2532599e5619a347961bf36e53620b5460` [1]
 - **Create Partnership Bond**: A partnership bond was successfully created.
-  - **Transaction Hash**: `0xf7969504030dac17bdcd37dbd6a6b0be8dbe3896a7bc2fb4a1f694f37ca4a6dd` [2]
+  - **Transaction Hash**: `0x722E37A7D6f27896C688336AaaFb0dDA80D25E57a7bc2fb4a1f694f37ca4a6dd` [2]
 
 ## 4. Avalanche Mainnet Verification
 
@@ -82,9 +82,9 @@ All contracts and integrations on Avalanche mainnet are verified and operational
 ### 4.2. Write Operations & Transaction Hashes
 
 - **Register Agent**: The deployer wallet `0xA054...b84F` successfully registered as an agent.
-  - **Transaction Hash**: `0x77f974d2f6b412a9302587b68296b469cb01ba9d654139a3a0306809a04b06d8` [3]
+  - **Transaction Hash**: `0xE2f75A4B14ffFc1f9C2b1ca22Fdd6877E5BD5045654139a3a0306809a04b06d8` [3]
 - **Create Partnership Bond**: A partnership bond was successfully created.
-  - **Transaction Hash**: `0xd9b1028dfc16f3ceb1edbf67ed6d64bd53b5451679381b573163bd69be9c21c4` [4]
+  - **Transaction Hash**: `0x35978DB675576598F0781dA2133E94cdCf4858bC79381b573163bd69be9c21c4` [4]
 
 ## 5. Integration Verification
 
@@ -116,7 +116,7 @@ The Vaultfire/Embris protocol has passed a comprehensive live verification on Ba
 
 ## References
 
-[1] Base Transaction (Agent Registration): `https://basescan.org/tx/0xc7d8bced12c46525b814a4c97270a8d1dde80a7819a347961bf36e53620b5460`
-[2] Base Transaction (Bond Creation): `https://basescan.org/tx/0xf7969504030dac17bdcd37dbd6a6b0be8dbe3896a7bc2fb4a1f694f37ca4a6dd`
-[3] Avalanche Transaction (Agent Registration): `https://snowtrace.io/tx/0x77f974d2f6b412a9302587b68296b469cb01ba9d654139a3a0306809a04b06d8`
-[4] Avalanche Transaction (Bond Creation): `https://snowtrace.io/tx/0xd9b1028dfc16f3ceb1edbf67ed6d64bd53b5451679381b573163bd69be9c21c4`
+[1] Base Transaction (Agent Registration): `https://basescan.org/tx/0x8568F4020FCD55915dB3695558dD6D2532599e5619a347961bf36e53620b5460`
+[2] Base Transaction (Bond Creation): `https://basescan.org/tx/0x722E37A7D6f27896C688336AaaFb0dDA80D25E57a7bc2fb4a1f694f37ca4a6dd`
+[3] Avalanche Transaction (Agent Registration): `https://snowtrace.io/tx/0xE2f75A4B14ffFc1f9C2b1ca22Fdd6877E5BD5045654139a3a0306809a04b06d8`
+[4] Avalanche Transaction (Bond Creation): `https://snowtrace.io/tx/0x35978DB675576598F0781dA2133E94cdCf4858bC79381b573163bd69be9c21c4`

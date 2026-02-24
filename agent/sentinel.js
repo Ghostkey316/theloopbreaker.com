@@ -43,7 +43,7 @@ const CONFIG = {
   },
 
   // ── Deployer / Operator ───────────────────────────────────────────────────
-  deployerAddress: "0x2fAd5B3E4E2883c6b42a22a1943Dc6e3Ccc72A0b",
+  deployerAddress: "0xA054f831B562e729F8D268291EBde1B2EDcFb84F",
   deployerKey: process.env.DEPLOYER_KEY || "",
 
   // ── Timing ────────────────────────────────────────────────────────────────

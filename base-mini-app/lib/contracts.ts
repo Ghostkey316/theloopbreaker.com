@@ -78,28 +78,28 @@ export const MODULE_IDS = {
  * All 15 Vaultfire protocol contracts deployed on Base mainnet (chain ID 8453).
  * The first 10 are core protocol contracts; the last 5 are security enhancements.
  * DilithiumAttestor (contract #15) was part of the original deployment on all chains:
- *   Base: 0xe24Ab41dC93833d63d8dd501C53bED674daa4839 (DilithiumAttestorV2 — working, 2 attestations)
- *   Avalanche: 0x5470d8189849675C043fFA7fc451e5F2f4e5532c
- *   Ethereum: 0xE1b9817FC0F10d2676303C7732497E9B593a22de
+ *   Base: 0xBBC0EFdEE23854e7cb7C4c0f56fF7670BB0530A4 (DilithiumAttestorV2 — working, 2 attestations)
+ *   Avalanche: 0x211554bd46e3D4e064b51a31F61927ae9c7bCF1f
+ *   Ethereum: 0x490c51c2fAd743C288D65A6006f6B0ae9e6a8695
  */
 export const PROTOCOL_CONTRACTS = [
   // Core protocol contracts (original 10)
-  { name: 'PrivacyGuarantees', address: '0xBdB6c89f5cb86f4d44F7E01d9393b29D83e3DB55', category: 'core' as const },
-  { name: 'MissionEnforcement', address: '0x38165D2D7a8584985CCa5640f4b32b1f3347CC83', category: 'core' as const },
-  { name: 'AntiSurveillance', address: '0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C', category: 'core' as const },
-  { name: 'ERC8004IdentityRegistry', address: '0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5', category: 'core' as const },
-  { name: 'BeliefAttestationVerifier', address: '0x10180c8430cfD61d27F1d7a548Cff0C4D143bFEF', category: 'core' as const },
-  { name: 'ERC8004ReputationRegistry', address: '0x544B575431ECD927bA83E85008446fA1e100204a', category: 'core' as const },
-  { name: 'ERC8004ValidationRegistry', address: '0x501fE0f960c1e061C4d295Af241f9F1512775556', category: 'core' as const },
-  { name: 'AIPartnershipBondsV2', address: '0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1', category: 'core' as const },
-  { name: 'AIAccountabilityBondsV2', address: '0xDfc66395A4742b5168712a04942C90B99394aEEb', category: 'core' as const },
-  { name: 'VaultfireERC8004Adapter', address: '0x5470d8189849675C043fFA7fc451e5F2f4e5532c', category: 'core' as const },
+  { name: 'PrivacyGuarantees', address: '0xE2f75A4B14ffFc1f9C2b1ca22Fdd6877E5BD5045', category: 'core' as const },
+  { name: 'MissionEnforcement', address: '0x8568F4020FCD55915dB3695558dD6D2532599e56', category: 'core' as const },
+  { name: 'AntiSurveillance', address: '0x722E37A7D6f27896C688336AaaFb0dDA80D25E57', category: 'core' as const },
+  { name: 'ERC8004IdentityRegistry', address: '0x35978DB675576598F0781dA2133E94cdCf4858bC', category: 'core' as const },
+  { name: 'BeliefAttestationVerifier', address: '0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba', category: 'core' as const },
+  { name: 'ERC8004ReputationRegistry', address: '0xdB54B8925664816187646174bdBb6Ac658A55a5F', category: 'core' as const },
+  { name: 'ERC8004ValidationRegistry', address: '0x54e00081978eE2C8d9Ada8e9975B0Bb543D06A55', category: 'core' as const },
+  { name: 'AIPartnershipBondsV2', address: '0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4', category: 'core' as const },
+  { name: 'AIAccountabilityBondsV2', address: '0xf92baef9523BC264144F80F9c31D5c5C017c6Da8', category: 'core' as const },
+  { name: 'VaultfireERC8004Adapter', address: '0xef3A944f4d7bb376699C83A29d7Cb42C90D9B6F0', category: 'core' as const },
   // Security enhancement contracts (original 5)
-  { name: 'MultisigGovernance', address: '0xea0A6750642AA294658dC9f1eDf36b95D21e7B22', category: 'security' as const },
-  { name: 'FlourishingMetricsOracle', address: '0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1', category: 'security' as const },
-  { name: 'ProductionBeliefAttestationVerifier', address: '0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B', category: 'security' as const },
-  { name: 'VaultfireTeleporterBridge', address: '0xFe122605364f428570c4C0EB2CCAEBb68dD22d05', category: 'security' as const },
-  { name: 'DilithiumAttestor', address: '0xe24Ab41dC93833d63d8dd501C53bED674daa4839', category: 'security' as const },
+  { name: 'MultisigGovernance', address: '0x8B8Ba34F8AAB800F0Ba8391fb1388c6EFb911F92', category: 'security' as const },
+  { name: 'FlourishingMetricsOracle', address: '0x83dd216449B3F0574E39043ECFE275946fa492e9', category: 'security' as const },
+  { name: 'ProductionBeliefAttestationVerifier', address: '0xa5CEC47B48999EB398707838E3A18dd20A1ae272', category: 'security' as const },
+  { name: 'VaultfireTeleporterBridge', address: '0x94F54c849692Cc64C35468D0A87D2Ab9D7Cb6Fb2', category: 'security' as const },
+  { name: 'DilithiumAttestor', address: '0xBBC0EFdEE23854e7cb7C4c0f56fF7670BB0530A4', category: 'security' as const },
 ] as const;
 
 export const TOTAL_CONTRACTS = PROTOCOL_CONTRACTS.length; // 15

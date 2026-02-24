@@ -45,8 +45,8 @@ const CONFIG = {
   contracts: {
     base: {
       ERC8004IdentityRegistry: "0x35978DB675576598F0781dA2133E94cdCf4858bC",
-      AIPartnershipBondsV2: "0x895a550B351B58352e10659232b2254b15E8152c",
-      AIAccountabilityBondsV2: "0x9c316d3a436F73957b1263150752533C05341C6A",
+      AIPartnershipBondsV2: "0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4",
+      AIAccountabilityBondsV2: "0xf92baef9523BC264144F80F9c31D5c5C017c6Da8",
       ERC8004ReputationRegistry: "0xdB54B8925664816187646174bdBb6Ac658A55a5F",
       ERC8004ValidationRegistry: "0x54e00081978eE2C8d9Ada8e9975B0Bb543D06A55",
     },

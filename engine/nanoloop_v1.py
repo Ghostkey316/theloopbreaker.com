@@ -21,7 +21,7 @@ MODULE_INFO = {
     "module_name": "NanoLoop v1.0",
     "activation_tag": "/phasecell/alpha",
     "owner": OWNER,
-    "verification_address": "0xf6A677de83C407875C9A9115Cf100F121f9c4816",
+    "verification_address": "0xA054f831B562e729F8D268291EBde1B2EDcFb84F",
     "deployment_status": "dormant",
     "domain": "BioSovereignty, Nanomedicine, Ethical Healing Systems",
     "codex_layer": "Vaultfire Sovereign Ethics Protocol",

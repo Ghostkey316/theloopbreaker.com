@@ -46,7 +46,7 @@ jobs:
       - name: Deploy smoke (local hardhat)
         run: npx hardhat run scripts/deploy-covenant.js
         env:
-          GHOSTKEY_ECHO: "0xF891c5E6B60a9c07B7f2A2f1fF8B7FF9aE0F0000"
+          GHOSTKEY_ECHO: "0xA054f831B562e729F8D268291EBde1B2EDcFb84F"
 
       - name: Setup Python 3.11
         uses: actions/setup-python@v5

@@ -37,7 +37,7 @@ MULTISIG_SIGNERS="0xSigner1Address,0xSigner2Address,0xSigner3Address"
 MULTISIG_THRESHOLD=2
 
 # For ProductionBeliefAttestationVerifier deployment
-RISC_ZERO_VERIFIER_BASE="0x0b144e07a0826182b6b59788c34b32bfa86fb711"
+RISC_ZERO_VERIFIER_BASE="0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b"
 BELIEF_CIRCUIT_IMAGE_ID="0x..." # Get this from the RISC Zero build output
 
 # (Optional) For FlourishingMetricsOracle initial configuration
@@ -76,10 +76,10 @@ The following table details the contracts that require ownership transfer and th
 |---|---|---|---|
 | **ProductionBeliefAttestationVerifier** | (New) | One-Step | `transferOwnership(multisigAddress)` |
 | **FlourishingMetricsOracle** | (New) | One-Step | `transferOwnership(multisigAddress)` |
-| **MissionEnforcement** | `0x6EC0440e1601558024f285903F0F4577B109B609` | Two-Step | 1. `transferOwnership(multisigAddress)`<br>2. Multisig must execute `acceptOwnership()` |
-| **AntiSurveillance** | `0x2baE308ddCfc6a270d6dFCeeF947bd8B77b9d3Ac` | One-Step | `transferOwnership(multisigAddress)` |
-| **AIPartnershipBondsV2** | `0xd167A4F5eb428766Fc14C074e9f0C979c5CB4855` | Two-Step | 1. `transferOwnership(multisigAddress)`<br>2. Multisig must execute `acceptOwnership()` |
-| **AIAccountabilityBondsV2** | `0x956a99C8f50bAc8b8b69dA934AEaBFEaCF41B140` | Two-Step | 1. `transferOwnership(multisigAddress)`<br>2. Multisig must execute `acceptOwnership()` |
+| **MissionEnforcement** | `0x8568F4020FCD55915dB3695558dD6D2532599e56` | Two-Step | 1. `transferOwnership(multisigAddress)`<br>2. Multisig must execute `acceptOwnership()` |
+| **AntiSurveillance** | `0x722E37A7D6f27896C688336AaaFb0dDA80D25E57` | One-Step | `transferOwnership(multisigAddress)` |
+| **AIPartnershipBondsV2** | `0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4` | Two-Step | 1. `transferOwnership(multisigAddress)`<br>2. Multisig must execute `acceptOwnership()` |
+| **AIAccountabilityBondsV2** | `0xf92baef9523BC264144F80F9c31D5c5C017c6Da8` | Two-Step | 1. `transferOwnership(multisigAddress)`<br>2. Multisig must execute `acceptOwnership()` |
 
 > **Note:** Contracts using the two-step `Ownable` pattern (`transferOwnership` followed by `acceptOwnership`) require an additional transaction to be executed by the `MultisigGovernance` contract to claim ownership. This is a security feature to prevent accidental loss of ownership.
 

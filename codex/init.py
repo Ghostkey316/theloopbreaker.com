@@ -14,9 +14,9 @@ class CodexMetadata:
     """Structured metadata for the Ghostkey-316 Vaultfire Codex."""
 
     ens: str = "ghostkey316.eth"
-    eth_address: str = "0xf6A677de83C407875C9A9115Cf100F121f9c4816"
+    eth_address: str = "0xA054f831B562e729F8D268291EBde1B2EDcFb84F"
     wallet_alias: str = "bpow20.cb.id"
-    nft_attach: str = "0xdd0983784ddfbf9c1551065aac693d08918a03b2:0"
+    nft_attach: str = "0xcf64D815F5424B7937aB226bC733Ed35ab6CaDcB:0"
     codex_hash: str = "sha256"
     signature: str = "Ghostkey316"
     source_repo: str = (
@@ -70,7 +70,7 @@ class CodexMetadata:
     )
     compensation_routing: str = (
         "eth, usdc, asm, or wld to wallet "
-        "0xf6A677de83C407875C9A9115Cf100F121f9c4816"
+        "0xA054f831B562e729F8D268291EBde1B2EDcFb84F"
     )
     notes: str = (
         "This is Decision Night locked protocol. Implied Acceptance clause in effect: "

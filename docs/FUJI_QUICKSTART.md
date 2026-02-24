@@ -17,12 +17,12 @@ Visit the official Avalanche faucet and request testnet AVAX for your deployer w
 
 > **Faucet URL:** [https://core.app/tools/testnet-faucet/](https://core.app/tools/testnet-faucet/)
 
-Enter your wallet address (`0xf6A677de83C407875C9A9115Cf100F121f9c4816`) and request AVAX. The faucet typically dispenses 2 AVAX, which is more than enough for a full deployment. If the faucet requires a coupon code, check the Avalanche Discord for community-shared codes.
+Enter your wallet address (`0xA054f831B562e729F8D268291EBde1B2EDcFb84F`) and request AVAX. The faucet typically dispenses 2 AVAX, which is more than enough for a full deployment. If the faucet requires a coupon code, check the Avalanche Discord for community-shared codes.
 
 You can verify your balance on the Fuji explorer:
 
 ```
-https://testnet.snowtrace.io/address/0xf6A677de83C407875C9A9115Cf100F121f9c4816
+https://testnet.snowtrace.io/address/0xA054f831B562e729F8D268291EBde1B2EDcFb84F
 ```
 
 ## Step 2: Set Up Environment Variables
@@ -127,7 +127,7 @@ A successful deployment produces output similar to:
 ================================================================================
 
   [OK] Network : avalancheFuji (Chain ID 43113)
-  [OK] Deployer: 0xf6A677de83C407875C9A9115Cf100F121f9c4816
+  [OK] Deployer: 0xA054f831B562e729F8D268291EBde1B2EDcFb84F
   [OK] Balance : 2.0 AVAX
 
   All pre-flight checks passed.
@@ -174,7 +174,7 @@ The deployment saves a JSON manifest at `deployments/fuji-deployment.json`:
   "chain": "avalancheFuji",
   "chainId": 43113,
   "canonical": false,
-  "deployer": "0xf6A677de83C407875C9A9115Cf100F121f9c4816",
+  "deployer": "0xA054f831B562e729F8D268291EBde1B2EDcFb84F",
   "timestamp": "2026-02-20T...",
   "deploymentTimeMinutes": "3.50",
   "contracts": {

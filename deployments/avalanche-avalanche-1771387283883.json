@@ -3,22 +3,22 @@
   "chain": "avalanche",
   "chainId": 43114,
   "canonical": false,
-  "deployer": "0xf6A677de83C407875C9A9115Cf100F121f9c4816",
+  "deployer": "0xA054f831B562e729F8D268291EBde1B2EDcFb84F",
   "timestamp": "2026-02-18T04:01:23.882Z",
   "deploymentTimeMinutes": "3.73",
   "contracts": {
-    "PrivacyGuarantees": "0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C",
-    "MissionEnforcement": "0xE1D52bF7A842B207B8C48eAE801f9d97A3C4D709",
+    "PrivacyGuarantees": "0x722E37A7D6f27896C688336AaaFb0dDA80D25E57",
+    "MissionEnforcement": "0xcf64D815F5424B7937aB226bC733Ed35ab6CaDcB",
     "AntiSurveillance": "0x1A80F77e12f1bd04538027aed6d056f5DCcDCD3C",
     "ERC8004IdentityRegistry": "0x57741F4116925341d8f7Eb3F381d98e07C73B4a3",
     "BeliefAttestationVerifier": "0x227e27e7776d3ee14128BC66216354495E113B19",
     "AIPartnershipBondsV2": "0xea6B504827a746d781f867441364C7A732AA4b07",
-    "FlourishingMetricsOracle": "0x83b2D1a8e383c4239dE66b6614176636618c1c0A",
+    "FlourishingMetricsOracle": "0x490c51c2fAd743C288D65A6006f6B0ae9e6a8695",
     "ERC8004ReputationRegistry": "0x35978DB675576598F0781dA2133E94cdCf4858bC",
     "ERC8004ValidationRegistry": "0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba",
     "AIAccountabilityBondsV2": "0xaeFEa985E0C52f92F73606657B9dA60db2798af3",
     "VaultfireERC8004Adapter": "0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4",
     "MultisigGovernance": "0x83dd216449B3F0574E39043ECFE275946fa492e9",
-    "ProductionBeliefAttestationVerifier": "0x20E8CDFae485F0E8E90D24c9E071957A53eE0cB1"
+    "ProductionBeliefAttestationVerifier": "0xb3d8063e67bdA1a869721D0F6c346f1Af0469D2F"
   }
 }

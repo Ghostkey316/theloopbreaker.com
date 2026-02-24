@@ -16,7 +16,7 @@
  *
  * Environment variables:
  *   RISC_ZERO_VERIFIER_BASE — Address of RiscZeroVerifierRouter on Base Mainnet
- *                              (default: 0x0b144e07a0826182b6b59788c34b32bfa86fb711)
+ *                              (default: 0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b)
  *   BELIEF_CIRCUIT_IMAGE_ID  — Image ID from `cargo risczero build` output
  *
  * Usage:
@@ -32,7 +32,7 @@ const path = require("path");
 const RISC_ZERO_VERIFIERS = {
   base:
     process.env.RISC_ZERO_VERIFIER_BASE ||
-    "0x0b144e07a0826182b6b59788c34b32bfa86fb711",
+    "0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b",
   baseSepolia:
     process.env.RISC_ZERO_VERIFIER_BASE_SEPOLIA ||
     "0x0000000000000000000000000000000000000000",

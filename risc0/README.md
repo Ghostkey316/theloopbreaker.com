@@ -130,7 +130,7 @@ cargo build --release
 cargo run --release -- \
   --guest-elf ../guest/target/riscv-guest/riscv32im-risc0-zkvm-elf/release/vaultfire-belief-attestation-guest \
   --belief-message "I believe in decentralised identity and human agency" \
-  --attester 0xf6A677de83C407875C9A9115Cf100F121f9c4816 \
+  --attester 0xA054f831B562e729F8D268291EBde1B2EDcFb84F \
   --epoch 1 \
   --module-id 1 \
   --loyalty-score 9000
@@ -139,7 +139,7 @@ cargo run --release -- \
 cargo run --release -- \
   --guest-elf ../guest/target/riscv-guest/riscv32im-risc0-zkvm-elf/release/vaultfire-belief-attestation-guest \
   --belief-message "I believe in decentralised identity and human agency" \
-  --attester 0xf6A677de83C407875C9A9115Cf100F121f9c4816 \
+  --attester 0xA054f831B562e729F8D268291EBde1B2EDcFb84F \
   --epoch 1 \
   --module-id 1 \
   --loyalty-score 9000 \
@@ -243,22 +243,22 @@ The **image ID** is the cryptographic hash of the guest program. It ensures that
 
 The RISC Zero verifier router on Base mainnet is at:
 ```
-0x0b144e07a0826182b6b59788c34b32bfa86fb711
+0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b
 ```
 
 This address is hardcoded in the deployment script. Verify it matches the official RISC Zero deployment before using.
 
 ### Ownership
 
-The `ProductionBeliefAttestationVerifier` is owned by the `MultisigGovernance` contract at `0xd979025D0384Ea4F1b2562b9855d8Be7Eb89856D`. All privileged operations (image ID changes, ownership transfers) must go through the multisig governance flow.
+The `ProductionBeliefAttestationVerifier` is owned by the `MultisigGovernance` contract at `0x8B8Ba34F8AAB800F0Ba8391fb1388c6EFb911F92`. All privileged operations (image ID changes, ownership transfers) must go through the multisig governance flow.
 
 ## Deployed Contracts
 
 | Contract | Address | Network |
 |----------|---------|--------|
-| ProductionBeliefAttestationVerifier | `0xBDB5d85B3a84C773113779be89A166Ed515A7fE2` | Base Mainnet |
-| MultisigGovernance | `0xd979025D0384Ea4F1b2562b9855d8Be7Eb89856D` | Base Mainnet |
-| RISC Zero Verifier Router | `0x0b144e07a0826182b6b59788c34b32bfa86fb711` | Base Mainnet |
+| ProductionBeliefAttestationVerifier | `0xa5CEC47B48999EB398707838E3A18dd20A1ae272` | Base Mainnet |
+| MultisigGovernance | `0x8B8Ba34F8AAB800F0Ba8391fb1388c6EFb911F92` | Base Mainnet |
+| RISC Zero Verifier Router | `0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b` | Base Mainnet |
 
 ---
 

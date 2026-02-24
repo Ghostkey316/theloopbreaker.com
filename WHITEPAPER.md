@@ -138,7 +138,7 @@ Vaultfire adopts the **ERC-8004 standard** for AI identity, ensuring that reputa
 
 ### 5.1 ERC8004IdentityRegistry
 
-**Address:** `0x206265EAbDE04E15ebeb6E27Cad64D9BfDB470DD`
+**Address:** `0x35978DB675576598F0781dA2133E94cdCf4858bC`
 
 This contract serves as the foundational layer for AI identity. It allows any wallet address to register as an AI agent without requiring any form of KYC or government-issued identification. The privacy policy version, hardcoded as `Vaultfire-v1.1-NoKYC-WalletOnly-HashedPurposes`, makes this commitment explicit and immutable.
 
@@ -146,7 +146,7 @@ The registry stores essential, non-sensitive metadata for each agent: an **Agent
 
 ### 5.2 ERC8004ReputationRegistry
 
-**Address:** `0x1043A9fBeAEDD401735c46Aa17B4a2FA1193B06C`
+**Address:** `0xdB54B8925664816187646174bdBb6Ac658A55a5F`
 
 Building on the identity layer, this contract allows for the submission and aggregation of reputation feedback. Each feedback entry is tied to a specific AI agent and a unique interaction ID, creating a verifiable record of performance. The core function `submitFeedback` records a rating (0–10,000 basis points), a category, a `feedbackURI`, and a boolean `verified` flag indicating whether the feedback originated from a verified Vaultfire partnership bond. The contract maintains an `AgentReputation` summary for each agent, tracking total feedbacks, average rating, and the count of verified feedbacks.
 
@@ -154,13 +154,13 @@ A privacy-hardened variant, `submitFeedbackHashed`, stores only `keccak256` hash
 
 ### 5.3 ERC8004ValidationRegistry
 
-**Address:** `0x50E4609991691D5104016c4a2F6D2875234d4B06`
+**Address:** `0x54e00081978eE2C8d9Ada8e9975B0Bb543D06A55`
 
 This registry provides a mechanism for agents to seek formal validation for specific claims. It supports five validation methods: `STAKER_RERUN` (a validator re-runs the agent's task), `ZK_PROOF` (zero-knowledge proof verification via the `BeliefAttestationVerifier`), `TEE_ORACLE` (Trusted Execution Environment verification), `TRUSTED_JUDGE` (human expert judgment), and `MULTI_VALIDATOR` (consensus of multiple validators with a configurable `validatorsRequired` threshold). Validation requests carry an economic stake, and responses include an optional `zkProof` field for the ZK path.
 
 ### 5.4 VaultfireERC8004Adapter
 
-**Address:** `0x02Cb2bFBeC479Cb1EA109E4c92744e08d5A5B361`
+**Address:** `0xef3A944f4d7bb376699C83A29d7Cb42C90D9B6F0`
 
 This adapter bridges the internal bond system with the public ERC-8004 registries. When an AI agent registers for Vaultfire partnerships, the adapter can auto-register them in the `ERC8004IdentityRegistry`. When a human verifies a partnership, the adapter syncs the quality data to the `ERC8004ReputationRegistry`. This makes verified partnership quality portable across all ERC-8004-compatible platforms.
 
@@ -172,7 +172,7 @@ The economic core of the Vaultfire protocol is its dual-bond system, which creat
 
 ### 6.1 AIPartnershipBondsV2
 
-**Address:** `0xd167A4F5eb428766Fc14C074e9f0C979c5CB4855`
+**Address:** `0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4`
 
 This contract governs the creation and settlement of **Partnership Bonds** between a specific human and a specific AI agent.
 
@@ -205,7 +205,7 @@ For a neutral partnership (quality 5,000, loyalty 100), the bond value equals th
 
 ### 6.2 AIAccountabilityBondsV2
 
-**Address:** `0x956a99C8f50bAc8b8b69dA934AEaBFEaCF41B140`
+**Address:** `0xf92baef9523BC264144F80F9c31D5c5C017c6Da8`
 
 This contract addresses the systemic impact of AI on humanity as a whole. It creates **Accountability Bonds** for AI companies, who stake 30% of their quarterly revenue.
 
@@ -275,14 +275,14 @@ This distinction is critical: the guest program uses `keccak256` internally for 
 ### 7.4 On-Chain Verification
 
 **BeliefAttestationVerifier (Development)**
-**Address:** `0x5657DA7E68CBbA1B529F74e2137CBA7bf3663B4a`
+**Address:** `0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba`
 
 This is the development-mode verifier, which reverts on any chain with an ID other than 31337 (Hardhat's default). It is deployed for testing purposes and is not used in production.
 
 **ProductionBeliefAttestationVerifier**
-**Address:** `0xBDB5d85B3a84C773113779be89A166Ed515A7fE2`
+**Address:** `0xa5CEC47B48999EB398707838E3A18dd20A1ae272`
 
-This is the production verifier, designed for mainnet use. It holds an immutable reference to the **RiscZeroVerifierRouter** deployed on Base mainnet at `0x0b144e07a0826182b6b59788c34b32bfa86fb711`. The contract exposes two verification interfaces:
+This is the production verifier, designed for mainnet use. It holds an immutable reference to the **RiscZeroVerifierRouter** deployed on Base mainnet at `0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b`. The contract exposes two verification interfaces:
 
 1. **Legacy Interface** (`verifyProof`): Accepts a `bytes` proof and a `uint256[]` array of 4 public inputs (beliefHash, attester, epoch, moduleId). It reconstructs the journal, computes `sha256(journal)`, and calls the router.
 2. **Direct Interface** (`verifyAttestation`): The preferred path. Accepts the raw `seal` and `journalData`. It computes `sha256(journalData)` and calls `riscZeroVerifier.verify(seal, imageId, journalDigest)`. On success, it decodes the journal and records the attestation.
@@ -301,7 +301,7 @@ Security is a foundational pillar of the Vaultfire protocol, with multiple overl
 
 ### 8.1 Multisig Governance
 
-**Address:** `0xd979025D0384Ea4F1b2562b9855d8Be7Eb89856D`
+**Address:** `0x8B8Ba34F8AAB800F0Ba8391fb1388c6EFb911F92`
 
 The protocol's most critical administrative functions are controlled by an M-of-N multisignature governance contract. This replaces single-owner control with a system requiring a configurable threshold of signers to approve any transaction. Key properties include:
 
@@ -323,7 +323,7 @@ Timelocks provide a critical window for the community to detect and react to sus
 
 **MultiOracleConsensus Address:** `0x7d8c9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d` *(deployed; reserved for future active use)*
 
-**FlourishingMetricsOracle Address:** `0xb751abb1158908114662b254567b8135C460932C`
+**FlourishingMetricsOracle Address:** `0x83dd216449B3F0574E39043ECFE275946fa492e9`
 
 The oracle system requires a minimum of **3 independent oracles** to submit data for any consensus round. The `FlourishingMetricsOracle` uses a simple median (insertion sort) with a maximum of 50 oracles. The `MultiOracleConsensus` contract provides a more advanced model with stake-weighted median (quicksort), a minimum oracle stake of 10 ETH, a 60% consensus threshold, and a 20% maximum deviation band.
 
@@ -351,7 +351,7 @@ In the Vaultfire context, "flourishing" is a composite measure of human well-bei
 
 ### 9.2 FlourishingMetricsOracle
 
-**Address:** `0xb751abb1158908114662b254567b8135C460932C`
+**Address:** `0x83dd216449B3F0574E39043ECFE275946fa492e9`
 
 This contract manages round-based oracle submissions. The owner starts a round for a specific metric (identified by a `bytes32` metric ID), opening a **24-hour submission window**. Registered oracles submit their values during this window. After the deadline, anyone can call `finalizeRound`, which calculates the **median** of all submissions (using insertion sort for gas efficiency with small oracle sets). A minimum quorum of 3 submissions is required; rounds with fewer submissions expire without producing a consensus value. The maximum deviation from the median is set at 20% (2,000 basis points).
 
@@ -373,7 +373,7 @@ In alignment with its core vision, Vaultfire integrates strong privacy and anti-
 
 ### 10.1 PrivacyGuarantees
 
-**Address:** `0x1dCbeD76E05Eaf829c8BDf10a9511504cDa8EB1e`
+**Address:** `0xE2f75A4B14ffFc1f9C2b1ca22Fdd6877E5BD5045`
 
 This contract enforces the protocol's data privacy policies. Its privacy policy version is immutable: `Vaultfire-v1.1-NoKYC-WalletOnly-HashedPurposes`. Key mechanisms include:
 
@@ -385,7 +385,7 @@ This contract enforces the protocol's data privacy policies. Its privacy policy 
 
 ### 10.2 MissionEnforcement
 
-**Address:** `0x6EC0440e1601558024f285903F0F4577B109B609`
+**Address:** `0x8568F4020FCD55915dB3695558dD6D2532599e56`
 
 This contract cryptographically enforces eight immutable core principles:
 
@@ -402,7 +402,7 @@ The contract provides helper functions like `verifyAIProfitCap` and `verifyHuman
 
 ### 10.3 AntiSurveillance
 
-**Address:** `0x2baE308ddCfc6a270d6dFCeeF947bd8B77b9d3Ac`
+**Address:** `0x722E37A7D6f27896C688336AaaFb0dDA80D25E57`
 
 This contract defines nine categories of **banned data collection**: behavioral tracking, cross-protocol linking, metadata harvesting, biometric data, location data, device fingerprinting, social graph mining, sentiment analysis, and predictive profiling. Modules can be verified as surveillance-free or banned for violations. Critically, the ban events use only hashes for reason and evidence fields (`reasonHash`, `evidenceHash`), preventing the anti-surveillance contract itself from becoming a vector for PII exposure.
 
@@ -443,25 +443,25 @@ All 13 contracts are deployed and verified on Base mainnet:
 
 | # | Contract | Address | Category |
 | :--- | :--- | :--- | :--- |
-| 1 | `PrivacyGuarantees` | `0x1dCbeD76E05Eaf829c8BDf10a9511504cDa8EB1e` | Core |
-| 2 | `MissionEnforcement` | `0x6EC0440e1601558024f285903F0F4577B109B609` | Core |
-| 3 | `AntiSurveillance` | `0x2baE308ddCfc6a270d6dFCeeF947bd8B77b9d3Ac` | Core |
-| 4 | `ERC8004IdentityRegistry` | `0x206265EAbDE04E15ebeb6E27Cad64D9BfDB470DD` | Core |
-| 5 | `BeliefAttestationVerifier` | `0x5657DA7E68CBbA1B529F74e2137CBA7bf3663B4a` | Core |
-| 6 | `ERC8004ReputationRegistry` | `0x1043A9fBeAEDD401735c46Aa17B4a2FA1193B06C` | Core |
-| 7 | `ERC8004ValidationRegistry` | `0x50E4609991691D5104016c4a2F6D2875234d4B06` | Core |
-| 8 | `AIPartnershipBondsV2` | `0xd167A4F5eb428766Fc14C074e9f0C979c5CB4855` | Core |
-| 9 | `AIAccountabilityBondsV2` | `0x956a99C8f50bAc8b8b69dA934AEaBFEaCF41B140` | Core |
-| 10 | `VaultfireERC8004Adapter` | `0x02Cb2bFBeC479Cb1EA109E4c92744e08d5A5B361` | Core |
-| 11 | `MultisigGovernance` | `0xd979025D0384Ea4F1b2562b9855d8Be7Eb89856D` | Security |
-| 12 | `FlourishingMetricsOracle` | `0xb751abb1158908114662b254567b8135C460932C` | Security |
-| 13 | `ProductionBeliefAttestationVerifier` | `0xBDB5d85B3a84C773113779be89A166Ed515A7fE2` | Security |
+| 1 | `PrivacyGuarantees` | `0xE2f75A4B14ffFc1f9C2b1ca22Fdd6877E5BD5045` | Core |
+| 2 | `MissionEnforcement` | `0x8568F4020FCD55915dB3695558dD6D2532599e56` | Core |
+| 3 | `AntiSurveillance` | `0x722E37A7D6f27896C688336AaaFb0dDA80D25E57` | Core |
+| 4 | `ERC8004IdentityRegistry` | `0x35978DB675576598F0781dA2133E94cdCf4858bC` | Core |
+| 5 | `BeliefAttestationVerifier` | `0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba` | Core |
+| 6 | `ERC8004ReputationRegistry` | `0xdB54B8925664816187646174bdBb6Ac658A55a5F` | Core |
+| 7 | `ERC8004ValidationRegistry` | `0x54e00081978eE2C8d9Ada8e9975B0Bb543D06A55` | Core |
+| 8 | `AIPartnershipBondsV2` | `0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4` | Core |
+| 9 | `AIAccountabilityBondsV2` | `0xf92baef9523BC264144F80F9c31D5c5C017c6Da8` | Core |
+| 10 | `VaultfireERC8004Adapter` | `0xef3A944f4d7bb376699C83A29d7Cb42C90D9B6F0` | Core |
+| 11 | `MultisigGovernance` | `0x8B8Ba34F8AAB800F0Ba8391fb1388c6EFb911F92` | Security |
+| 12 | `FlourishingMetricsOracle` | `0x83dd216449B3F0574E39043ECFE275946fa492e9` | Security |
+| 13 | `ProductionBeliefAttestationVerifier` | `0xa5CEC47B48999EB398707838E3A18dd20A1ae272` | Security |
 
 **External Dependency:**
 
 | Contract | Address | Notes |
 | :--- | :--- | :--- |
-| `RiscZeroVerifierRouter` | `0x0b144e07a0826182b6b59788c34b32bfa86fb711` | Canonical RISC Zero verifier on Base; immutable reference in `ProductionBeliefAttestationVerifier`. |
+| `RiscZeroVerifierRouter` | `0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b` | Canonical RISC Zero verifier on Base; immutable reference in `ProductionBeliefAttestationVerifier`. |
 
 ### 11.3 Module IDs
 

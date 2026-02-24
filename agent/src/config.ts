@@ -240,7 +240,7 @@ export function loadConfig(): AgentConfig {
 
     humanPartnerAddress: optionalEnv(
       'HUMAN_PARTNER_ADDRESS',
-      '0xf6A677de83C407875C9A9115Cf100F121f9c4816',
+      '0xA054f831B562e729F8D268291EBde1B2EDcFb84F',
     ),
 
     dryRun: boolEnv('DRY_RUN', true),
