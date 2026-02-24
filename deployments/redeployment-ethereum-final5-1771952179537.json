@@ -1,0 +1,73 @@
+{
+  "network": "ethereum",
+  "chainId": 1,
+  "deployer": "0xA054f831B562e729F8D268291EBde1B2EDcFb84F",
+  "timestamp": "2026-02-24T16:54:30.296Z",
+  "contracts": {
+    "MissionEnforcement": {
+      "address": "0x0E777878C5b5248E1b52b09Ab5cdEb2eD6e7Da58",
+      "status": "previously_deployed"
+    },
+    "AntiSurveillance": {
+      "address": "0xfDdd2B1597c87577543176AB7f49D587876563D2",
+      "status": "previously_deployed"
+    },
+    "PrivacyGuarantees": {
+      "address": "0x8aceF0Bc7e07B2dE35E9069663953f41B5422218",
+      "status": "previously_deployed"
+    },
+    "ERC8004IdentityRegistry": {
+      "address": "0x1A80F77e12f1bd04538027aed6d056f5DCcDCD3C",
+      "status": "previously_deployed"
+    },
+    "BeliefAttestationVerifier": {
+      "address": "0x613585B786af2d5ecb1c3e712CE5ffFB8f53f155",
+      "status": "previously_deployed"
+    },
+    "AIPartnershipBondsV2": {
+      "address": "0x247F31bB2b5a0d28E68bf24865AA242965FF99cd",
+      "status": "previously_deployed"
+    },
+    "FlourishingMetricsOracle": {
+      "address": "0x690411685278548157409FA7AC8279A5B1Fb6F78",
+      "status": "previously_deployed"
+    },
+    "MultisigGovernance": {
+      "address": "0x227e27e7776d3ee14128BC66216354495E113B19",
+      "status": "previously_deployed"
+    },
+    "ProductionBeliefAttestationVerifier": {
+      "address": "0xea6B504827a746d781f867441364C7A732AA4b07",
+      "status": "previously_deployed"
+    },
+    "DilithiumAttestor": {
+      "address": "0x490c51c2fAd743C288D65A6006f6B0ae9e6a8695",
+      "status": "previously_deployed"
+    },
+    "AIAccountabilityBondsV2": {
+      "address": "0x11C267C8A75B13A4D95357CEF6027c42F8e7bA24",
+      "transactionHash": "0xee9e3210cb04592fd3bf0b6aad58957f75913a2806549412851fdf0059595d9e",
+      "gasUsed": "4643924"
+    },
+    "ERC8004ReputationRegistry": {
+      "address": "0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b",
+      "transactionHash": "0xfb21ffc8897b17c2fcee350f074cae2d87e7e8fade3cdfb48d6f086d403afc99",
+      "gasUsed": "1579481"
+    },
+    "ERC8004ValidationRegistry": {
+      "address": "0x6B7dC022edC41EBE41400319C6fDcCeab05Ea053",
+      "transactionHash": "0xc529381242b88f151a6828a8b22d420636027beff8e609e022a72ed8aaf7dd07",
+      "gasUsed": "2388736"
+    },
+    "VaultfireERC8004Adapter": {
+      "address": "0xCc7300F39aF4cc2A924f82a5Facd7049436157Ee",
+      "transactionHash": "0xd146e8b8a762255720a490e94b4bd83a9d814a8545ba912026ee5ae609dc6ea2",
+      "gasUsed": "1084975"
+    },
+    "TrustDataBridge": {
+      "address": "0xb3d8063e67bdA1a869721D0F6c346f1Af0469D2F",
+      "transactionHash": "0x1ab4da0c3bf65ea40d0ac92c13124281ed551c22874b6b6badd948143c8a878b",
+      "gasUsed": "2775538"
+    }
+  }
+}

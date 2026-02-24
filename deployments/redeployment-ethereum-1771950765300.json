@@ -1,0 +1,59 @@
+{
+  "network": "ethereum",
+  "chainId": 1,
+  "deployer": "0xA054f831B562e729F8D268291EBde1B2EDcFb84F",
+  "timestamp": "2026-02-24T16:27:52.930Z",
+  "contracts": {
+    "MissionEnforcement": {
+      "address": "0x0E777878C5b5248E1b52b09Ab5cdEb2eD6e7Da58",
+      "transactionHash": "0xe7f0bb701ea9f985ba6ecdcde1c48cca884f89c3640da5da2b177de140c1ab40"
+    },
+    "AntiSurveillance": {
+      "address": "0xfDdd2B1597c87577543176AB7f49D587876563D2",
+      "transactionHash": "0xa772db53a137c670f06a1faa35c3f5d0945a9dbdf761afbf7b3a032e63315e3a"
+    },
+    "PrivacyGuarantees": {
+      "address": "0x8aceF0Bc7e07B2dE35E9069663953f41B5422218",
+      "transactionHash": "0x8fd390739fab67478eff998264367feea085223d5c707b540524d55d52f1791b"
+    },
+    "ERC8004IdentityRegistry": {
+      "address": "0x1A80F77e12f1bd04538027aed6d056f5DCcDCD3C",
+      "transactionHash": "0xf70f5dcff3bb5c84fff5bb65baf4cd7df73ee98666cc9cd738afe7136b99f54e"
+    },
+    "BeliefAttestationVerifier": {
+      "address": "0x613585B786af2d5ecb1c3e712CE5ffFB8f53f155",
+      "transactionHash": "0x81efdc54fea7ae66fcc5e385e20f7a549190b742fc4cabdd06e76982e0a12078"
+    },
+    "AIPartnershipBondsV2": {
+      "address": "0x247F31bB2b5a0d28E68bf24865AA242965FF99cd",
+      "transactionHash": "0xe5ae2a64c09ef9b0a77168b0da536ca0db726b23baadc5df7fcb72d672a5fccd"
+    },
+    "FlourishingMetricsOracle": {
+      "error": "Insufficient funds for gas * price + value: have 3827556536737899 want 4426247085000000"
+    },
+    "AIAccountabilityBondsV2": {
+      "error": "Insufficient funds for gas * price + value: have 3827556536737899 want 4426247085000000"
+    },
+    "ERC8004ReputationRegistry": {
+      "error": "Insufficient funds for gas * price + value: have 3827556536737899 want 4426247085000000"
+    },
+    "ERC8004ValidationRegistry": {
+      "error": "Insufficient funds for gas * price + value: have 3827556536737899 want 4426247085000000"
+    },
+    "VaultfireERC8004Adapter": {
+      "error": "Insufficient funds for gas * price + value: have 3827556536737899 want 4426247085000000"
+    },
+    "MultisigGovernance": {
+      "error": "Insufficient funds for gas * price + value: have 3827556536737899 want 4932927750000000"
+    },
+    "ProductionBeliefAttestationVerifier": {
+      "error": "Insufficient funds for gas * price + value: have 3827556536737899 want 4932927750000000"
+    },
+    "DilithiumAttestor": {
+      "error": "Insufficient funds for gas * price + value: have 3827556536737899 want 4932927750000000"
+    },
+    "TrustDataBridge": {
+      "error": "Insufficient funds for gas * price + value: have 3827556536737899 want 4932927750000000"
+    }
+  }
+}

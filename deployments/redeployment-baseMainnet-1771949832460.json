@@ -1,0 +1,61 @@
+{
+  "network": "baseMainnet",
+  "chainId": 8453,
+  "deployer": "0xA054f831B562e729F8D268291EBde1B2EDcFb84F",
+  "timestamp": "2026-02-24T16:16:44.438Z",
+  "contracts": {
+    "MissionEnforcement": {
+      "address": "0x0E777878C5b5248E1b52b09Ab5cdEb2eD6e7Da58",
+      "transactionHash": "0xcbb95076fa1b60b5476e8b55c36ff268da543f6735fab85023a52b1f3aadbc68"
+    },
+    "AntiSurveillance": {
+      "address": "0xfDdd2B1597c87577543176AB7f49D587876563D2",
+      "transactionHash": "0xb561da14acf203a41c9888136c9c37d7f7b9831ca48b97bccd557fae76da69ce"
+    },
+    "PrivacyGuarantees": {
+      "address": "0x8aceF0Bc7e07B2dE35E9069663953f41B5422218",
+      "transactionHash": "0x2ae06df51540949ea34e96eafcbd9b35e184aae4fe743dda5c93bfa3bfd1ee6f"
+    },
+    "ERC8004IdentityRegistry": {
+      "error": "nonce too low: next nonce 4, tx nonce 3"
+    },
+    "BeliefAttestationVerifier": {
+      "address": "0x1A80F77e12f1bd04538027aed6d056f5DCcDCD3C",
+      "transactionHash": "0x1ddea993d0a0b52dcd17f5e7404473354e38cffd54df8fc2ff5014bf250ad832"
+    },
+    "AIPartnershipBondsV2": {
+      "address": "0x613585B786af2d5ecb1c3e712CE5ffFB8f53f155",
+      "transactionHash": "0xa16fe86622bb65d492dab60e50fda777db8c15dba0ea3a85c41ee58e2c529cd1"
+    },
+    "FlourishingMetricsOracle": {
+      "address": "0x247F31bB2b5a0d28E68bf24865AA242965FF99cd",
+      "transactionHash": "0x2ba894d3ef239a85e80d41aeec77e96e98b1d48874fc4f6e6d26b7532ea510e4"
+    },
+    "AIAccountabilityBondsV2": {
+      "error": "nonce too low: next nonce 7, tx nonce 6"
+    },
+    "ERC8004ReputationRegistry": {
+      "error": "execution reverted: Invalid identity registry"
+    },
+    "ERC8004ValidationRegistry": {
+      "error": "execution reverted: Invalid identity registry"
+    },
+    "VaultfireERC8004Adapter": {
+      "error": "execution reverted: Invalid identity registry"
+    },
+    "MultisigGovernance": {
+      "address": "0x630C43F763a332793C421C788B8b1CCC5A3122E7",
+      "transactionHash": "0xecb5db0f26c33472678d52d0277f277b55aa023c4126fb9c5861aaac9ef64ba4"
+    },
+    "ProductionBeliefAttestationVerifier": {
+      "error": "execution reverted"
+    },
+    "DilithiumAttestor": {
+      "error": "nonce too low: next nonce 8, tx nonce 7"
+    },
+    "VaultfireTeleporterBridge": {
+      "address": "0x889f5cfb142Bb6E72CB0C633800324C335eED9A4",
+      "transactionHash": "0xacf5df5aabc8bd635926786b7b1a58e56eea77c0dd3d791879192b501337a281"
+    }
+  }
+}

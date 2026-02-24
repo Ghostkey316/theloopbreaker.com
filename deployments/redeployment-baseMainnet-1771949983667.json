@@ -1,0 +1,67 @@
+{
+  "network": "baseMainnet",
+  "chainId": 8453,
+  "deployer": "0xA054f831B562e729F8D268291EBde1B2EDcFb84F",
+  "timestamp": "2026-02-24T16:18:01.985Z",
+  "contracts": {
+    "MissionEnforcement": {
+      "address": "0xc09F0e06690332eD9b490E1040BdE642f11F3937",
+      "transactionHash": "0x20073b015e63cc3c7b295577a60e317d68d088fcd5c96ef765eb566b9398a47f"
+    },
+    "AntiSurveillance": {
+      "address": "0x57741F4116925341d8f7Eb3F381d98e07C73B4a3",
+      "transactionHash": "0x24c5dd26d08bef88956d2cf35d5a88e0a4547992d592e73b28314dafbb369f57"
+    },
+    "PrivacyGuarantees": {
+      "address": "0x227e27e7776d3ee14128BC66216354495E113B19",
+      "transactionHash": "0xe92d0eec04945c965c511d7b50b020c679a83eb54af1d273943f1917892bbf6c"
+    },
+    "ERC8004IdentityRegistry": {
+      "address": "0xea6B504827a746d781f867441364C7A732AA4b07",
+      "transactionHash": "0xd2a6509d9c0f90fa095e641b07e9d981cfc104cc49c4259fd4951ca486cc7e5e"
+    },
+    "BeliefAttestationVerifier": {
+      "address": "0x490c51c2fAd743C288D65A6006f6B0ae9e6a8695",
+      "transactionHash": "0xbf7ccd03de67e1179a97ec0be6576566781b996d808e6571e3e12d590ba66d75"
+    },
+    "AIPartnershipBondsV2": {
+      "address": "0xaeFEa985E0C52f92F73606657B9dA60db2798af3",
+      "transactionHash": "0x7097f46333674dfb42d9656f8664ed6cb3d80c3adeaa94518f7c161aaa4bd2ab"
+    },
+    "FlourishingMetricsOracle": {
+      "address": "0x11C267C8A75B13A4D95357CEF6027c42F8e7bA24",
+      "transactionHash": "0xa348a07a86c00869e15eb41f7abcb1a3ba6afaa1b4b971cd9e3c293e481ba58d"
+    },
+    "AIAccountabilityBondsV2": {
+      "address": "0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b",
+      "transactionHash": "0xc2105f7d86e26394dc0ef2cdea8fedaaa5220fd9a0d128f5ef2abeb1fab44d77"
+    },
+    "ERC8004ReputationRegistry": {
+      "address": "0x6B7dC022edC41EBE41400319C6fDcCeab05Ea053",
+      "transactionHash": "0x6d9251cc3cc70aba14afe253ce8b7bbd49271e87a93ef1265fed06a33ec10048"
+    },
+    "ERC8004ValidationRegistry": {
+      "address": "0xCc7300F39aF4cc2A924f82a5Facd7049436157Ee",
+      "transactionHash": "0x4a8313dfb526d40edfe42ec7c809c2121f153a3f824582136518fa2084f359f1"
+    },
+    "VaultfireERC8004Adapter": {
+      "address": "0xb3d8063e67bdA1a869721D0F6c346f1Af0469D2F",
+      "transactionHash": "0x06f36c7a17abead14a757d49d96042cff06135490da2f03c8f1dbc65b4a99ff4"
+    },
+    "MultisigGovernance": {
+      "address": "0x211554bd46e3D4e064b51a31F61927ae9c7bCF1f",
+      "transactionHash": "0xd77c0aef6f8e521b56b6d7ef6a8717cdc1c91cd3d1ea56942a3cc55c546ab861"
+    },
+    "ProductionBeliefAttestationVerifier": {
+      "error": "execution reverted"
+    },
+    "DilithiumAttestor": {
+      "address": "0x0dF0523aF5aF2Aef180dB052b669Bea97fee3d31",
+      "transactionHash": "0xb5b2a202bf6903ac63953e58f2807190c6b143f7af5b432963ce866112f20ee4"
+    },
+    "VaultfireTeleporterBridge": {
+      "address": "0x7548Efe8323602dA8eB3eEd8CB312B1d488750d8",
+      "transactionHash": "0x828a58a6b98029146cf59d0fc05c6b626032eb4de9f46e7de31c5654db685152"
+    }
+  }
+}

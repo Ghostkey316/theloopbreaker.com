@@ -1,0 +1,55 @@
+{
+  "network": "ethereum",
+  "chainId": 1,
+  "deployer": "0xA054f831B562e729F8D268291EBde1B2EDcFb84F",
+  "timestamp": "2026-02-24T16:39:19.827Z",
+  "contracts": {
+    "MissionEnforcement": {
+      "address": "0x630C43F763a332793C421C788B8b1CCC5A3122E7",
+      "transactionHash": "0xa9a751c01b1febaf87080303c458c270573af582cfe27fdaed9017a464f3b080"
+    },
+    "AntiSurveillance": {
+      "address": "0x889f5cfb142Bb6E72CB0C633800324C335eED9A4",
+      "transactionHash": "0xef3f0197eb0e363e0c1f1e86fdd8cc1b9c59a848c498ad0033e361f2d88d71f2"
+    },
+    "PrivacyGuarantees": {
+      "error": "Headers Timeout Error"
+    },
+    "ERC8004IdentityRegistry": {
+      "error": "Nonce too low"
+    },
+    "BeliefAttestationVerifier": {
+      "error": "Nonce too low"
+    },
+    "AIPartnershipBondsV2": {
+      "error": "Nonce too low"
+    },
+    "FlourishingMetricsOracle": {
+      "error": "Nonce too low"
+    },
+    "AIAccountabilityBondsV2": {
+      "error": "Nonce too low"
+    },
+    "ERC8004ReputationRegistry": {
+      "error": "Nonce too low"
+    },
+    "ERC8004ValidationRegistry": {
+      "error": "Nonce too low"
+    },
+    "VaultfireERC8004Adapter": {
+      "error": "Nonce too low"
+    },
+    "MultisigGovernance": {
+      "error": "Nonce too low"
+    },
+    "ProductionBeliefAttestationVerifier": {
+      "error": "Nonce too low"
+    },
+    "DilithiumAttestor": {
+      "error": "Nonce too low"
+    },
+    "TrustDataBridge": {
+      "error": "Nonce too low"
+    }
+  }
+}

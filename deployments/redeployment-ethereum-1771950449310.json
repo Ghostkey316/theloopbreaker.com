@@ -1,0 +1,54 @@
+{
+  "network": "ethereum",
+  "chainId": 1,
+  "deployer": "0xA054f831B562e729F8D268291EBde1B2EDcFb84F",
+  "timestamp": "2026-02-24T16:26:57.012Z",
+  "contracts": {
+    "MissionEnforcement": {
+      "error": "out of gas: gas required exceeds: 1000000"
+    },
+    "AntiSurveillance": {
+      "address": "0x6298c62FDA57276DC60de9E716fbBAc23d06D5F1",
+      "transactionHash": "0x36d9f99547a4d55b65893d3dfe6d034b1fea0ab6cd9413d993d4faab03f88cbe"
+    },
+    "PrivacyGuarantees": {
+      "error": "Too Many Requests error received from eth.llamarpc.com"
+    },
+    "ERC8004IdentityRegistry": {
+      "error": "Too Many Requests error received from eth.llamarpc.com"
+    },
+    "BeliefAttestationVerifier": {
+      "error": "Too Many Requests error received from eth.llamarpc.com"
+    },
+    "AIPartnershipBondsV2": {
+      "error": "Too Many Requests error received from eth.llamarpc.com"
+    },
+    "FlourishingMetricsOracle": {
+      "error": "Too Many Requests error received from eth.llamarpc.com"
+    },
+    "AIAccountabilityBondsV2": {
+      "error": "Too Many Requests error received from eth.llamarpc.com"
+    },
+    "ERC8004ReputationRegistry": {
+      "error": "Too Many Requests error received from eth.llamarpc.com"
+    },
+    "ERC8004ValidationRegistry": {
+      "error": "Too Many Requests error received from eth.llamarpc.com"
+    },
+    "VaultfireERC8004Adapter": {
+      "error": "Too Many Requests error received from eth.llamarpc.com"
+    },
+    "MultisigGovernance": {
+      "error": "Too Many Requests error received from eth.llamarpc.com"
+    },
+    "ProductionBeliefAttestationVerifier": {
+      "error": "Too Many Requests error received from eth.llamarpc.com"
+    },
+    "DilithiumAttestor": {
+      "error": "Too Many Requests error received from eth.llamarpc.com"
+    },
+    "TrustDataBridge": {
+      "error": "Too Many Requests error received from eth.llamarpc.com"
+    }
+  }
+}

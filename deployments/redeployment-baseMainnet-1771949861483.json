@@ -1,0 +1,60 @@
+{
+  "network": "baseMainnet",
+  "chainId": 8453,
+  "deployer": "0xA054f831B562e729F8D268291EBde1B2EDcFb84F",
+  "timestamp": "2026-02-24T16:17:27.517Z",
+  "contracts": {
+    "MissionEnforcement": {
+      "address": "0xe2aDfe84703dd6B5e421c306861Af18F962fDA91",
+      "transactionHash": "0xc3fda6cec7350657c1a2e788d058ac8ac051d6933f42ee8a32117624abf07345"
+    },
+    "AntiSurveillance": {
+      "error": "nonce too low: next nonce 10, tx nonce 9"
+    },
+    "PrivacyGuarantees": {
+      "address": "0xc2F789d82ef55bAbb9Df38f61E606cD34628dB38",
+      "transactionHash": "0x3408606b4021a0f705184e4f022eee5355042996b547419c6b45f1e2e477ab87"
+    },
+    "ERC8004IdentityRegistry": {
+      "error": "nonce too low: next nonce 11, tx nonce 10"
+    },
+    "BeliefAttestationVerifier": {
+      "address": "0xe0B709511438D0aCfD5D2d69F40b90C4c27eC760",
+      "transactionHash": "0x152250e837347ccb2f0fba483f1421a043c45058b107ccb192f0e8800a99f3ba"
+    },
+    "AIPartnershipBondsV2": {
+      "error": "nonce too low: next nonce 12, tx nonce 11"
+    },
+    "FlourishingMetricsOracle": {
+      "address": "0xaEBD3d62DF9bF5A5b99c289756c4cd203AC879e5",
+      "transactionHash": "0x6340b8bc658073df36f31c6f8f7bcf4d46c369f13378f534fd1228d087739f5e"
+    },
+    "AIAccountabilityBondsV2": {
+      "error": "nonce too low: next nonce 13, tx nonce 12"
+    },
+    "ERC8004ReputationRegistry": {
+      "error": "execution reverted: Invalid identity registry"
+    },
+    "ERC8004ValidationRegistry": {
+      "error": "execution reverted: Invalid identity registry"
+    },
+    "VaultfireERC8004Adapter": {
+      "error": "execution reverted: Invalid partnership bonds"
+    },
+    "MultisigGovernance": {
+      "address": "0x690411685278548157409FA7AC8279A5B1Fb6F78",
+      "transactionHash": "0x42a0a078700aeec9f522c150bbd33f332169e029eda68d200c69712d52acafad"
+    },
+    "ProductionBeliefAttestationVerifier": {
+      "error": "execution reverted"
+    },
+    "DilithiumAttestor": {
+      "address": "0xcf64D815F5424B7937aB226bC733Ed35ab6CaDcB",
+      "transactionHash": "0xdac242d0ee7d05d294358e3034afaabbe30dec3b9b9274df2f05bab3b25e2163"
+    },
+    "VaultfireTeleporterBridge": {
+      "address": "0x281814eF92062DA8049Fe5c4743c4Aef19a17380",
+      "transactionHash": "0x55565321defa42ec31b1a7494944949a4e68c756dcb34c08532da81f4ff85d18"
+    }
+  }
+}

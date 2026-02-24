@@ -1,0 +1,53 @@
+{
+  "network": "ethereum",
+  "chainId": 1,
+  "deployer": "0xA054f831B562e729F8D268291EBde1B2EDcFb84F",
+  "timestamp": "2026-02-24T16:38:31.079Z",
+  "contracts": {
+    "MissionEnforcement": {
+      "error": "Insufficient funds for gas * price + value: have 3827556536737899 want 3961414875000000"
+    },
+    "AntiSurveillance": {
+      "error": "Insufficient funds for gas * price + value: have 3827556536737899 want 3961414875000000"
+    },
+    "PrivacyGuarantees": {
+      "error": "Insufficient funds for gas * price + value: have 3827556536737899 want 3867640920000000"
+    },
+    "ERC8004IdentityRegistry": {
+      "error": "Insufficient funds for gas * price + value: have 3827556536737899 want 3867640920000000"
+    },
+    "BeliefAttestationVerifier": {
+      "error": "Insufficient funds for gas * price + value: have 3827556536737899 want 3867640920000000"
+    },
+    "AIPartnershipBondsV2": {
+      "error": "Insufficient funds for gas * price + value: have 3827556536737899 want 3867640920000000"
+    },
+    "FlourishingMetricsOracle": {
+      "error": "Insufficient funds for gas * price + value: have 3827556536737899 want 3867640920000000"
+    },
+    "AIAccountabilityBondsV2": {
+      "error": "Insufficient funds for gas * price + value: have 3827556536737899 want 3867640920000000"
+    },
+    "ERC8004ReputationRegistry": {
+      "error": "Insufficient funds for gas * price + value: have 3827556536737899 want 4222230645000000"
+    },
+    "ERC8004ValidationRegistry": {
+      "error": "Insufficient funds for gas * price + value: have 3827556536737899 want 4222230645000000"
+    },
+    "VaultfireERC8004Adapter": {
+      "error": "Insufficient funds for gas * price + value: have 3827556536737899 want 4222230645000000"
+    },
+    "MultisigGovernance": {
+      "error": "Insufficient funds for gas * price + value: have 3827556536737899 want 4222230645000000"
+    },
+    "ProductionBeliefAttestationVerifier": {
+      "error": "Insufficient funds for gas * price + value: have 3827556536737899 want 4357455360000000"
+    },
+    "DilithiumAttestor": {
+      "error": "Insufficient funds for gas * price + value: have 3827556536737899 want 4357455360000000"
+    },
+    "TrustDataBridge": {
+      "error": "Insufficient funds for gas * price + value: have 3827556536737899 want 4357455360000000"
+    }
+  }
+}

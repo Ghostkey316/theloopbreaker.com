@@ -1,0 +1,63 @@
+{
+  "network": "ethereum",
+  "chainId": 1,
+  "deployer": "0xA054f831B562e729F8D268291EBde1B2EDcFb84F",
+  "timestamp": "2026-02-24T16:44:38.548Z",
+  "contracts": {
+    "MissionEnforcement": {
+      "address": "0x0E777878C5b5248E1b52b09Ab5cdEb2eD6e7Da58",
+      "status": "previously_deployed"
+    },
+    "AntiSurveillance": {
+      "address": "0xfDdd2B1597c87577543176AB7f49D587876563D2",
+      "status": "previously_deployed"
+    },
+    "PrivacyGuarantees": {
+      "address": "0x8aceF0Bc7e07B2dE35E9069663953f41B5422218",
+      "status": "previously_deployed"
+    },
+    "ERC8004IdentityRegistry": {
+      "address": "0x1A80F77e12f1bd04538027aed6d056f5DCcDCD3C",
+      "status": "previously_deployed"
+    },
+    "BeliefAttestationVerifier": {
+      "address": "0x613585B786af2d5ecb1c3e712CE5ffFB8f53f155",
+      "status": "previously_deployed"
+    },
+    "AIPartnershipBondsV2": {
+      "address": "0x247F31bB2b5a0d28E68bf24865AA242965FF99cd",
+      "status": "previously_deployed"
+    },
+    "FlourishingMetricsOracle": {
+      "address": "0x690411685278548157409FA7AC8279A5B1Fb6F78",
+      "transactionHash": "0xcbb613a568c15986726c13b30e271c1c88d8e746e90f93c0d4d65b22dff9ed0b"
+    },
+    "AIAccountabilityBondsV2": {
+      "error": "transaction execution reverted (action=\"sendTransaction\", data=null, reason=null, invocation=null, revert=null, transaction={ \"data\": \"\", \"from\": \"0xA054f831B562e729F8D268291EBde1B2EDcFb84F\", \"to\": null }, receipt={ \"_type\": \"TransactionReceipt\", \"blobGasPrice\": null, \"blobGasUsed\": null, \"blockHash\": \"0x02c40db5c318278a1e75cc549d11513c0bfe7b1ebf006cec81a1123a6ce705a8\", \"blockNumber\": 24528041, \"contractAddress\": \"0xcf64D815F5424B7937aB226bC733Ed35ab6CaDcB\", \"cumulativeGasUsed\": \"30757824\", \"from\": \"0xA054f831B562e729F8D268291EBde1B2EDcFb84F\", \"gasPrice\": \"292613483\", \"gasUsed\": \"1500000\", \"hash\": \"0xb206e8c4ab20274f0a759b64ce133316c5a88ba613dadbdc9aae1b3d4034bf0e\", \"index\": 236, \"logs\": [  ], \"logsBloom\": \"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\", \"root\": null, \"status\": 0, \"to\": null }, code=CALL_EXCEPTION, version=6.15.0)"
+    },
+    "ERC8004ReputationRegistry": {
+      "error": "transaction execution reverted (action=\"sendTransaction\", data=null, reason=null, invocation=null, revert=null, transaction={ \"data\": \"\", \"from\": \"0xA054f831B562e729F8D268291EBde1B2EDcFb84F\", \"to\": null }, receipt={ \"_type\": \"TransactionReceipt\", \"blobGasPrice\": null, \"blobGasUsed\": null, \"blockHash\": \"0x729cada96c8157ccb34b8dc9e776a089cf6392dcef3dd50d78a962e1f2c3fd93\", \"blockNumber\": 24528042, \"contractAddress\": \"0x281814eF92062DA8049Fe5c4743c4Aef19a17380\", \"cumulativeGasUsed\": \"25330795\", \"from\": \"0xA054f831B562e729F8D268291EBde1B2EDcFb84F\", \"gasPrice\": \"300525669\", \"gasUsed\": \"1500000\", \"hash\": \"0x7af3a924048400c3829388df065edbbf7f4606d29635dd6ceff7c6b9e69af6ac\", \"index\": 297, \"logs\": [  ], \"logsBloom\": \"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\", \"root\": null, \"status\": 0, \"to\": null }, code=CALL_EXCEPTION, version=6.15.0)"
+    },
+    "ERC8004ValidationRegistry": {
+      "error": "transaction execution reverted (action=\"sendTransaction\", data=null, reason=null, invocation=null, revert=null, transaction={ \"data\": \"\", \"from\": \"0xA054f831B562e729F8D268291EBde1B2EDcFb84F\", \"to\": null }, receipt={ \"_type\": \"TransactionReceipt\", \"blobGasPrice\": null, \"blobGasUsed\": null, \"blockHash\": \"0xd646b551a7e37245371636c7ab93d76ffe9d4201b9ad9424888e09b747146d0e\", \"blockNumber\": 24528044, \"contractAddress\": \"0xc09F0e06690332eD9b490E1040BdE642f11F3937\", \"cumulativeGasUsed\": \"33503101\", \"from\": \"0xA054f831B562e729F8D268291EBde1B2EDcFb84F\", \"gasPrice\": \"277022031\", \"gasUsed\": \"1500000\", \"hash\": \"0x323382d6c5da5f9393cc2b7d79e076f0d57ee24cd548577aa55f61e305b1f6b9\", \"index\": 353, \"logs\": [  ], \"logsBloom\": \"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\", \"root\": null, \"status\": 0, \"to\": null }, code=CALL_EXCEPTION, version=6.15.0)"
+    },
+    "VaultfireERC8004Adapter": {
+      "error": "transaction execution reverted (action=\"sendTransaction\", data=null, reason=null, invocation=null, revert=null, transaction={ \"data\": \"\", \"from\": \"0xA054f831B562e729F8D268291EBde1B2EDcFb84F\", \"to\": null }, receipt={ \"_type\": \"TransactionReceipt\", \"blobGasPrice\": null, \"blobGasUsed\": null, \"blockHash\": \"0x0135a23fa9685fa3b27f9e0fd6379ebbb34d0a1125882f7446b523fa34496e4a\", \"blockNumber\": 24528045, \"contractAddress\": \"0x57741F4116925341d8f7Eb3F381d98e07C73B4a3\", \"cumulativeGasUsed\": \"34136017\", \"from\": \"0xA054f831B562e729F8D268291EBde1B2EDcFb84F\", \"gasPrice\": \"290161675\", \"gasUsed\": \"222140\", \"hash\": \"0x04de18cbd50b697dccbeeea545b29786c33cf7dbd612bc806f866ee90cd285b8\", \"index\": 393, \"logs\": [  ], \"logsBloom\": \"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\", \"root\": null, \"status\": 0, \"to\": null }, code=CALL_EXCEPTION, version=6.15.0)"
+    },
+    "MultisigGovernance": {
+      "address": "0x227e27e7776d3ee14128BC66216354495E113B19",
+      "transactionHash": "0xf46408710790490206f2a0183feb6400f3fa6dd388d41d97a23fe4eb705cbd04"
+    },
+    "ProductionBeliefAttestationVerifier": {
+      "address": "0xea6B504827a746d781f867441364C7A732AA4b07",
+      "transactionHash": "0xe405af0e750ad709ea2a9e4413b22a9a237a2fa4202b98901a95c803e1542480"
+    },
+    "DilithiumAttestor": {
+      "address": "0x490c51c2fAd743C288D65A6006f6B0ae9e6a8695",
+      "transactionHash": "0x342e4570ce18feebed58f2eff0856970fdd6b987cc8ba204f4b1cb7f82c480b2"
+    },
+    "TrustDataBridge": {
+      "error": "transaction execution reverted (action=\"sendTransaction\", data=null, reason=null, invocation=null, revert=null, transaction={ \"data\": \"\", \"from\": \"0xA054f831B562e729F8D268291EBde1B2EDcFb84F\", \"to\": null }, receipt={ \"_type\": \"TransactionReceipt\", \"blobGasPrice\": null, \"blobGasUsed\": null, \"blockHash\": \"0x5c0b1db6c51bdc1476fb4a3e4e5b548e298e696277a6bca508ac60100ddcdd38\", \"blockNumber\": 24528049, \"contractAddress\": \"0xaeFEa985E0C52f92F73606657B9dA60db2798af3\", \"cumulativeGasUsed\": \"22919555\", \"from\": \"0xA054f831B562e729F8D268291EBde1B2EDcFb84F\", \"gasPrice\": \"307631645\", \"gasUsed\": \"1500000\", \"hash\": \"0xac91d913a59be51da86198ffbf65edd4526d2aa219df5f3d3ddcfd703ab61f48\", \"index\": 209, \"logs\": [  ], \"logsBloom\": \"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\", \"root\": null, \"status\": 0, \"to\": null }, code=CALL_EXCEPTION, version=6.15.0)"
+    }
+  }
+}

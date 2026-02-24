@@ -1,0 +1,54 @@
+{
+  "network": "baseMainnet",
+  "chainId": 8453,
+  "deployer": "0xA054f831B562e729F8D268291EBde1B2EDcFb84F",
+  "timestamp": "2026-02-24T16:16:25.322Z",
+  "contracts": {
+    "MissionEnforcement": {
+      "address": "0x6298c62FDA57276DC60de9E716fbBAc23d06D5F1",
+      "transactionHash": "0x6be783845345a8490e17434f274098022d0fcbd2c3e7c948bb9494ffd21786f1"
+    },
+    "AntiSurveillance": {
+      "error": "replacement transaction underpriced"
+    },
+    "PrivacyGuarantees": {
+      "error": "replacement transaction underpriced"
+    },
+    "ERC8004IdentityRegistry": {
+      "error": "replacement transaction underpriced"
+    },
+    "BeliefAttestationVerifier": {
+      "error": "replacement transaction underpriced"
+    },
+    "AIPartnershipBondsV2": {
+      "error": "replacement transaction underpriced"
+    },
+    "FlourishingMetricsOracle": {
+      "error": "replacement transaction underpriced"
+    },
+    "AIAccountabilityBondsV2": {
+      "error": "replacement transaction underpriced"
+    },
+    "ERC8004ReputationRegistry": {
+      "error": "execution reverted: Invalid identity registry"
+    },
+    "ERC8004ValidationRegistry": {
+      "error": "execution reverted: Invalid identity registry"
+    },
+    "VaultfireERC8004Adapter": {
+      "error": "execution reverted: Invalid partnership bonds"
+    },
+    "MultisigGovernance": {
+      "error": "nonce too low: next nonce 1, tx nonce 0"
+    },
+    "ProductionBeliefAttestationVerifier": {
+      "error": "execution reverted"
+    },
+    "DilithiumAttestor": {
+      "error": "nonce too low: next nonce 1, tx nonce 0"
+    },
+    "VaultfireTeleporterBridge": {
+      "error": "nonce too low: next nonce 1, tx nonce 0"
+    }
+  }
+}
