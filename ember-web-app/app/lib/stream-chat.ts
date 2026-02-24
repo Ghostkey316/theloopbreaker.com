@@ -34,6 +34,8 @@ function getCompanionName(): string {
 const API_URL = 'https://api.manus.im/api/llm-proxy/v1/chat/completions';
 const API_KEY = process.env.NEXT_PUBLIC_OPENAI_API_KEY || '';
 
+// API_KEY is consumed by Chat.tsx for LLM-powered features (memory extraction, self-learning, etc.)
+// The value comes from NEXT_PUBLIC_OPENAI_API_KEY env var and defaults to empty string.
 export { API_KEY };
 
 export interface StreamChatParams {

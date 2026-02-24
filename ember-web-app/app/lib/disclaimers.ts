@@ -32,7 +32,7 @@ export const DISCLAIMERS: Record<DisclaimerKey, Disclaimer> = {
   wallet: {
     key: 'wallet',
     title: 'Non-Custodial Wallet',
-    body: 'Vaultfire is a non-custodial wallet. You are solely responsible for your private keys and seed phrase. Vaultfire cannot recover lost keys under any circumstances. All on-chain transactions are irreversible. This is not financial advice. Use at your own risk.',
+    body: 'Embris is a non-custodial wallet. You are solely responsible for your private keys and seed phrase. Embris cannot recover lost keys under any circumstances. All on-chain transactions are irreversible. This is not financial advice. Use at your own risk.',
     version: 1,
     requiresExplicitAck: true,
   },
@@ -53,21 +53,21 @@ export const DISCLAIMERS: Record<DisclaimerKey, Disclaimer> = {
   vns: {
     key: 'vns',
     title: 'VNS Registration Notice',
-    body: 'VNS names are registered on-chain and cannot be modified or deleted once created. Registration requires a gas fee paid by the user. Vaultfire does not guarantee name availability. Identity types (Human / AI Agent) are permanent and immutable after registration.',
+    body: 'VNS names are registered on-chain and cannot be modified or deleted once created. Registration requires a gas fee paid by the user. Embris does not guarantee name availability. Identity types (Human / AI Agent) are permanent and immutable after registration.',
     version: 1,
     requiresExplicitAck: false,
   },
   zk_proofs: {
     key: 'zk_proofs',
     title: 'Zero-Knowledge Proofs',
-    body: 'Zero-knowledge proofs are cryptographic tools provided as-is. Vaultfire\'s ZK infrastructure is experimental. Users should independently verify proof validity for critical applications. Vaultfire makes no warranty regarding the correctness or completeness of generated proofs.',
+    body: 'Zero-knowledge proofs are cryptographic tools provided as-is. The Embris ZK infrastructure is experimental. Users should independently verify proof validity for critical applications. Embris makes no warranty regarding the correctness or completeness of generated proofs.',
     version: 1,
     requiresExplicitAck: false,
   },
   marketplace: {
     key: 'marketplace',
     title: 'Embris Directory Notice',
-    body: 'Agent and contributor ratings are based on on-chain data and peer reviews. Vaultfire does not endorse, guarantee, or take responsibility for any agent\'s or contributor\'s services, outputs, or conduct. All directory transactions are peer-to-peer and on-chain.',
+    body: 'Agent and contributor ratings are based on on-chain data and peer reviews. Embris does not endorse, guarantee, or take responsibility for any agent\'s or contributor\'s services, outputs, or conduct. All directory transactions are peer-to-peer and on-chain.',
     version: 1,
     requiresExplicitAck: false,
   },
