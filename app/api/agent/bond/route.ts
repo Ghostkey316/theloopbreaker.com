@@ -20,24 +20,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-
-const BOND_CONTRACTS: Record<string, string> = {
-  base: '0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4',
-  avalanche: '0xea6B504827a746d781f867441364C7A732AA4b07',
-  ethereum: '0x247F31bB2b5a0d28E68bf24865AA242965FF99cd',
-};
-
-const CHAIN_IDS: Record<string, number> = { ethereum: 1, base: 8453, avalanche: 43114 };
-const RPC_URLS: Record<string, string> = {
-  ethereum: 'https://eth.llamarpc.com',
-  base: 'https://mainnet.base.org',
-  avalanche: 'https://api.avax.network/ext/bc/C/rpc',
-};
-const EXPLORER_URLS: Record<string, string> = {
-  ethereum: 'https://etherscan.io',
-  base: 'https://basescan.org',
-  avalanche: 'https://snowtrace.io',
-};
+import {
+  PARTNERSHIP_BONDS,
+  CHAIN_IDS,
+  RPC_URLS,
+  EXPLORER_URLS,
+  type SupportedChain,
+} from '../../../lib/contracts';
 
 function encodeAddress(address: string): string {
   return address.replace('0x', '').toLowerCase().padStart(64, '0');
@@ -96,14 +85,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Minimum bond is 0.01 ETH' }, { status: 400 });
     }
 
-    const validChains = ['base', 'avalanche', 'ethereum'];
+    const validChains: SupportedChain[] = ['base', 'avalanche', 'ethereum'];
     if (!validChains.includes(chain)) {
       return NextResponse.json({ error: 'Invalid chain' }, { status: 400 });
     }
 
-    const rpc = RPC_URLS[chain];
-    const bondContract = BOND_CONTRACTS[chain];
-    const chainId = CHAIN_IDS[chain];
+    const rpc = RPC_URLS[chain as SupportedChain];
+    const bondContract = PARTNERSHIP_BONDS[chain as SupportedChain];
+    const chainId = CHAIN_IDS[chain as SupportedChain];
     const bondWei = BigInt(Math.floor(amountEth * 1e18));
 
     // Encode calldata: createBond(address, string) → 0x7ac5113b
@@ -151,7 +140,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       txHash: sendResult.result,
-      explorerUrl: `${EXPLORER_URLS[chain]}/tx/${sendResult.result}`,
+      explorerUrl: `${EXPLORER_URLS[chain as SupportedChain]}/tx/${sendResult.result}`,
       chain,
       tier,
       amountEth,

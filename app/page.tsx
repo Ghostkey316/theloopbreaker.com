@@ -23,6 +23,7 @@ import FooterDisclaimer from './components/FooterDisclaimer';
 import OnboardingModal from './components/OnboardingModal';
 import ToastContainer from './components/Toast';
 import WalletGate from './components/WalletGate';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 type Section = 'home' | 'chat' | 'wallet' | 'verify' | 'bridge' | 'sync' | 'trust' | 'analytics' | 'vns' | 'agent-hub' | 'marketplace' | 'zk-proofs' | 'trust-badges' | 'earnings' | 'agent-api' | 'settings';
 
@@ -158,37 +159,45 @@ export default function Page() {
       return displayedSection === 'chat' ? <ChatSkeleton /> : <SectionSkeleton />;
     }
 
-    switch (displayedSection) {
-      case 'home': return <Home />;
-      case 'chat': return (
-        <WalletGate featureName="Embris" featureDesc="Chat with your AI companion. Your wallet is your identity — no account needed." onGoToWallet={goToWallet}>
-          <Chat />
-        </WalletGate>
-      );
-      case 'wallet': return <Wallet />;
-      case 'verify': return <Verify />;
-      case 'bridge': return <Bridge />;
-      case 'settings': return <Settings />;
-      case 'sync': return <Sync />;
-      case 'trust': return <TrustScore />;
-      case 'analytics': return <Analytics />;
-      case 'vns': return (
-        <WalletGate featureName="VNS Identity" featureDesc="Register your .vns name on-chain. Requires a connected wallet to sign the transaction." onGoToWallet={goToWallet}>
-          <VNS />
-        </WalletGate>
-      );
-      case 'agent-hub': return <AgentHub />;
-      case 'marketplace': return <AgentMarketplace />;
-      case 'zk-proofs': return <ZKProofs />;
-      case 'trust-badges': return <TrustBadges />;
-      case 'earnings': return (
-        <WalletGate featureName="Agent Earnings" featureDesc="View and withdraw your on-chain earnings. Requires a connected wallet." onGoToWallet={goToWallet}>
-          <AgentEarnings />
-        </WalletGate>
-      );
-      case 'agent-api': return <AgentAPI />;
-      default: return <Home />;
-    }
+    const sectionContent = (() => {
+      switch (displayedSection) {
+        case 'home': return <Home />;
+        case 'chat': return (
+          <WalletGate featureName="Embris" featureDesc="Chat with your AI companion. Your wallet is your identity — no account needed." onGoToWallet={goToWallet}>
+            <Chat />
+          </WalletGate>
+        );
+        case 'wallet': return <Wallet />;
+        case 'verify': return <Verify />;
+        case 'bridge': return <Bridge />;
+        case 'settings': return <Settings />;
+        case 'sync': return <Sync />;
+        case 'trust': return <TrustScore />;
+        case 'analytics': return <Analytics />;
+        case 'vns': return (
+          <WalletGate featureName="VNS Identity" featureDesc="Register your .vns name on-chain. Requires a connected wallet to sign the transaction." onGoToWallet={goToWallet}>
+            <VNS />
+          </WalletGate>
+        );
+        case 'agent-hub': return <AgentHub />;
+        case 'marketplace': return <AgentMarketplace />;
+        case 'zk-proofs': return <ZKProofs />;
+        case 'trust-badges': return <TrustBadges />;
+        case 'earnings': return (
+          <WalletGate featureName="Agent Earnings" featureDesc="View and withdraw your on-chain earnings. Requires a connected wallet." onGoToWallet={goToWallet}>
+            <AgentEarnings />
+          </WalletGate>
+        );
+        case 'agent-api': return <AgentAPI />;
+        default: return <Home />;
+      }
+    })();
+
+    return (
+      <ErrorBoundary key={displayedSection} sectionName={displayedSection}>
+        {sectionContent}
+      </ErrorBoundary>
+    );
   };
 
   const isChat = displayedSection === 'chat';

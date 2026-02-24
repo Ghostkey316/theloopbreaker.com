@@ -90,7 +90,7 @@ function getCompanionName(): string {
   return localStorage.getItem('vaultfire_companion_name') || 'Embris';
 }
 
-const API_URL = 'https://api.manus.im/api/llm-proxy/v1/chat/completions';
+const API_URL = process.env.NEXT_PUBLIC_LLM_API_URL || 'https://api.openai.com/v1/chat/completions';
 const API_KEY = process.env.NEXT_PUBLIC_OPENAI_API_KEY || '';
 
 // API_KEY is consumed by Chat.tsx for LLM-powered features (memory extraction, self-learning, etc.)

@@ -18,25 +18,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-
-/* ── Contract addresses ── */
-const REGISTRY: Record<string, string> = {
-  base: '0x35978DB675576598F0781dA2133E94cdCf4858bC',
-  avalanche: '0x57741F4116925341d8f7Eb3F381d98e07C73B4a3',
-  ethereum: '0x1A80F77e12f1bd04538027aed6d056f5DCcDCD3C',
-};
-
-const CHAIN_IDS: Record<string, number> = { ethereum: 1, base: 8453, avalanche: 43114 };
-const RPC_URLS: Record<string, string> = {
-  ethereum: 'https://eth.llamarpc.com',
-  base: 'https://mainnet.base.org',
-  avalanche: 'https://api.avax.network/ext/bc/C/rpc',
-};
-const EXPLORER_URLS: Record<string, string> = {
-  ethereum: 'https://etherscan.io',
-  base: 'https://basescan.org',
-  avalanche: 'https://snowtrace.io',
-};
+import {
+  IDENTITY_REGISTRY,
+  CHAIN_IDS,
+  RPC_URLS,
+  EXPLORER_URLS,
+  type SupportedChain,
+} from '../../../lib/contracts';
 
 /* ── ABI helpers ── */
 function encodeUint256(n: number | bigint): string {
@@ -93,14 +81,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid name format' }, { status: 400 });
     }
 
-    const validChains = ['base', 'avalanche', 'ethereum'];
+    const validChains: SupportedChain[] = ['base', 'avalanche', 'ethereum'];
     if (!validChains.includes(chain)) {
       return NextResponse.json({ error: 'Invalid chain. Use: base, avalanche, ethereum' }, { status: 400 });
     }
 
-    const rpc = RPC_URLS[chain];
-    const registry = REGISTRY[chain];
-    const chainId = CHAIN_IDS[chain];
+    const rpc = RPC_URLS[chain as SupportedChain];
+    const registry = IDENTITY_REGISTRY[chain as SupportedChain];
+    const chainId = CHAIN_IDS[chain as SupportedChain];
 
     // Build description metadata
     const meta: Record<string, unknown> = { type: identityType, v: 1 };
@@ -167,7 +155,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       txHash: sendResult.result,
-      explorerUrl: `${EXPLORER_URLS[chain]}/tx/${sendResult.result}`,
+      explorerUrl: `${EXPLORER_URLS[chain as SupportedChain]}/tx/${sendResult.result}`,
       chain,
       name: `${name}.vns`,
       message: `Agent "${name}.vns" registered on ${chain}`,

@@ -415,3 +415,61 @@ You have advanced systems that make you more than a chatbot:
 - PERSONALITY TUNING: Users can adjust your communication style (formality, verbosity, technicality, humor, directness) and you respect those preferences permanently.
 - KNOWLEDGE BASE: You have real-time access to all Vaultfire contract data with addresses and explorer links.
 All of these are provided in the context below when available. Use them naturally.`
+
+
+/* ═══════════════════════════════════════════════════════
+   HELPER LOOKUPS — Single source of truth for API routes
+   ═══════════════════════════════════════════════════════ */
+
+export type SupportedChain = 'base' | 'avalanche' | 'ethereum';
+
+function findAddress(
+  contracts: Contract[],
+  name: string,
+): string {
+  const c = contracts.find(c => c.name === name);
+  if (!c) throw new Error(`Contract "${name}" not found`);
+  return c.address;
+}
+
+/** Identity Registry addresses by chain */
+export const IDENTITY_REGISTRY: Record<SupportedChain, string> = {
+  base: findAddress(BASE_CONTRACTS, 'ERC8004IdentityRegistry'),
+  avalanche: findAddress(AVALANCHE_CONTRACTS, 'ERC8004IdentityRegistry'),
+  ethereum: findAddress(ETHEREUM_CONTRACTS, 'ERC8004IdentityRegistry'),
+};
+
+/** Partnership Bonds addresses by chain */
+export const PARTNERSHIP_BONDS: Record<SupportedChain, string> = {
+  base: findAddress(BASE_CONTRACTS, 'AIPartnershipBondsV2'),
+  avalanche: findAddress(AVALANCHE_CONTRACTS, 'AIPartnershipBondsV2'),
+  ethereum: findAddress(ETHEREUM_CONTRACTS, 'AIPartnershipBondsV2'),
+};
+
+/** Accountability Bonds addresses by chain */
+export const ACCOUNTABILITY_BONDS: Record<SupportedChain, string> = {
+  base: findAddress(BASE_CONTRACTS, 'AIAccountabilityBondsV2'),
+  avalanche: findAddress(AVALANCHE_CONTRACTS, 'AIAccountabilityBondsV2'),
+  ethereum: findAddress(ETHEREUM_CONTRACTS, 'AIAccountabilityBondsV2'),
+};
+
+/** Chain IDs */
+export const CHAIN_IDS: Record<SupportedChain, number> = {
+  ethereum: 1,
+  base: 8453,
+  avalanche: 43114,
+};
+
+/** RPC URLs */
+export const RPC_URLS: Record<SupportedChain, string> = {
+  ethereum: CHAINS.ethereum.rpcUrls.default.http[0],
+  base: CHAINS.base.rpcUrls.default.http[0],
+  avalanche: CHAINS.avalanche.rpcUrls.default.http[0],
+};
+
+/** Explorer URLs */
+export const EXPLORER_URLS: Record<SupportedChain, string> = {
+  ethereum: CHAINS.ethereum.explorerUrl,
+  base: CHAINS.base.explorerUrl,
+  avalanche: CHAINS.avalanche.explorerUrl,
+};

@@ -8,30 +8,13 @@
  */
 
 import { NextResponse } from 'next/server';
-
-const REGISTRY: Record<string, string> = {
-  base: '0x35978DB675576598F0781dA2133E94cdCf4858bC',
-  avalanche: '0x57741F4116925341d8f7Eb3F381d98e07C73B4a3',
-  ethereum: '0x1A80F77e12f1bd04538027aed6d056f5DCcDCD3C',
-};
-
-const ACCOUNTABILITY_BONDS: Record<string, string> = {
-  base: '0xf92baef9523BC264144F80F9c31D5c5C017c6Da8',
-  avalanche: '0xaeFEa985E0C52f92F73606657B9dA60db2798af3',
-  ethereum: '0x11C267C8A75B13A4D95357CEF6027c42F8e7bA24',
-};
-
-const PARTNERSHIP_BONDS: Record<string, string> = {
-  base: '0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4',
-  avalanche: '0xea6B504827a746d781f867441364C7A732AA4b07',
-  ethereum: '0x247F31bB2b5a0d28E68bf24865AA242965FF99cd',
-};
-
-const RPC_URLS: Record<string, string> = {
-  ethereum: 'https://eth.llamarpc.com',
-  base: 'https://mainnet.base.org',
-  avalanche: 'https://api.avax.network/ext/bc/C/rpc',
-};
+import {
+  IDENTITY_REGISTRY,
+  PARTNERSHIP_BONDS,
+  ACCOUNTABILITY_BONDS,
+  RPC_URLS,
+  type SupportedChain,
+} from '../../../lib/contracts';
 
 async function rpcCall(rpcUrl: string, method: string, params: unknown[]) {
   const res = await fetch(rpcUrl, {
@@ -43,10 +26,10 @@ async function rpcCall(rpcUrl: string, method: string, params: unknown[]) {
   return res.json();
 }
 
-async function getAgentCount(chain: string): Promise<number> {
+async function getAgentCount(chain: SupportedChain): Promise<number> {
   try {
     const result = await rpcCall(RPC_URLS[chain], 'eth_call', [
-      { to: REGISTRY[chain], data: '0x3731a16f' }, // getTotalAgents()
+      { to: IDENTITY_REGISTRY[chain], data: '0x3731a16f' }, // getTotalAgents()
       'latest',
     ]);
     if (!result.result || result.error) return 0;
@@ -56,7 +39,7 @@ async function getAgentCount(chain: string): Promise<number> {
   }
 }
 
-async function getBondBalance(chain: string): Promise<number> {
+async function getBondBalance(chain: SupportedChain): Promise<number> {
   try {
     const [bondResult, partnershipResult] = await Promise.allSettled([
       rpcCall(RPC_URLS[chain], 'eth_getBalance', [ACCOUNTABILITY_BONDS[chain], 'latest']),
@@ -113,7 +96,7 @@ export async function GET() {
         ethereum: ethBonded,
       },
       contracts: {
-        identityRegistry: REGISTRY,
+        identityRegistry: IDENTITY_REGISTRY,
         partnershipBonds: PARTNERSHIP_BONDS,
         accountabilityBonds: ACCOUNTABILITY_BONDS,
       },
