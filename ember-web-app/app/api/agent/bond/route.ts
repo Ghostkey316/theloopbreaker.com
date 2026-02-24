@@ -24,7 +24,7 @@ import { NextRequest, NextResponse } from 'next/server';
 const BOND_CONTRACTS: Record<string, string> = {
   base: '0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4',
   avalanche: '0xea6B504827a746d781f867441364C7A732AA4b07',
-  ethereum: '0x83dd216449B3F0574E39043ECFE275946fa492e9',
+  ethereum: '0x247F31bB2b5a0d28E68bf24865AA242965FF99cd',
 };
 
 const CHAIN_IDS: Record<string, number> = { ethereum: 1, base: 8453, avalanche: 43114 };
