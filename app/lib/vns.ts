@@ -62,7 +62,7 @@ const REGISTRY_ADDRESSES: Record<'base' | 'avalanche' | 'ethereum', string> = {
 };
 
 const BOND_CONTRACT_ADDRESSES: Record<'base' | 'avalanche' | 'ethereum', string> = {
-  ethereum: '0x57741F4116925341d8f7Eb3F381d98e07C73B4a3',
+  ethereum: '0x11C267C8A75B13A4D95357CEF6027c42F8e7bA24',
   base: '0xf92baef9523BC264144F80F9c31D5c5C017c6Da8',
   avalanche: '0xaeFEa985E0C52f92F73606657B9dA60db2798af3',
 };
@@ -976,7 +976,7 @@ export async function registerVNSName(
 const PARTNERSHIP_BOND_ADDRESSES: Record<'base' | 'avalanche' | 'ethereum', string> = {
   base: '0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4',
   avalanche: '0xea6B504827a746d781f867441364C7A732AA4b07',
-  ethereum: '0x83dd216449B3F0574E39043ECFE275946fa492e9',
+  ethereum: '0x247F31bB2b5a0d28E68bf24865AA242965FF99cd',
 };
 
 /**
@@ -1246,7 +1246,7 @@ async function getBondContractBalance(
     const bondAddr = BOND_CONTRACT_ADDRESSES[chain];
     const partnershipAddr = chain === 'base' ? '0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4'
       : chain === 'avalanche' ? '0xea6B504827a746d781f867441364C7A732AA4b07'
-      : '0x83dd216449B3F0574E39043ECFE275946fa492e9';
+      : '0x247F31bB2b5a0d28E68bf24865AA242965FF99cd';
 
     const [bondResult, partnershipResult] = await Promise.allSettled([
       rpcCall(RPC_URLS[chain], 'eth_getBalance', [bondAddr, 'latest']),

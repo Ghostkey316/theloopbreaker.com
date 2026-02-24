@@ -74,7 +74,7 @@ export const ACCOUNTABILITY_BONDS: Record<SupportedChain, string> = {
 /** BeliefAttestationVerifier — belief attestation */
 export const BELIEF_ATTESTATION: Record<SupportedChain, string> = {
   base: '0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba',
-  avalanche: '0xE2f75A4B14ffFc1f9C2b1ca22Fdd6877E5BD5045',
+  avalanche: '0x227e27e7776d3ee14128BC66216354495E113B19',
   ethereum: '0x613585B786af2d5ecb1c3e712CE5ffFB8f53f155',
 };
 
