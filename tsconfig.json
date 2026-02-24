@@ -17,6 +17,7 @@
     "node_modules",
     "dist",
     ".github",
+    "app",
     "apps/vaultfire-arcade",
     "apps/verified-dm-demo",
     "base-mini-app",
