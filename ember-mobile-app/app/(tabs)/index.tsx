@@ -17,6 +17,8 @@ import {
   CHAINS,
   BASE_CONTRACTS,
   AVALANCHE_CONTRACTS,
+  ETHEREUM_CONTRACTS,
+  ALL_CONTRACTS,
   CORE_VALUES,
   VAULTFIRE_WEBSITE,
 } from "@/constants/contracts";
@@ -28,6 +30,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 function NetworkCard({
   label,
   chainId,
+  color,
   result,
   loading,
   contractCount,
@@ -35,6 +38,7 @@ function NetworkCard({
 }: {
   label: string;
   chainId: number;
+  color: string;
   result: RPCResult | null;
   loading: boolean;
   contractCount: number;
@@ -42,7 +46,7 @@ function NetworkCard({
 }) {
   const colors = useColors();
   const isConnected = !loading && result?.success;
-  const borderColor = loading ? colors.border : isConnected ? colors.success : colors.error;
+  const borderColor = loading ? colors.border : isConnected ? color : colors.error;
 
   return (
     <Animated.View entering={FadeInDown.delay(delay).duration(300)}>
@@ -59,7 +63,7 @@ function NetworkCard({
                 backgroundColor: loading
                   ? `${colors.warning}20`
                   : isConnected
-                    ? `${colors.success}20`
+                    ? `${color}20`
                     : `${colors.error}20`,
               },
             ]}
@@ -70,13 +74,13 @@ function NetworkCard({
               <View
                 style={[
                   styles.statusDot,
-                  { backgroundColor: isConnected ? colors.success : colors.error },
+                  { backgroundColor: isConnected ? color : colors.error },
                 ]}
               />
             )}
             <Text
               style={{
-                color: loading ? colors.warning : isConnected ? colors.success : colors.error,
+                color: loading ? colors.warning : isConnected ? color : colors.error,
                 fontSize: 11,
                 fontWeight: "600",
               }}
@@ -88,19 +92,19 @@ function NetworkCard({
         {isConnected && result && (
           <View style={styles.cardStats}>
             <View style={styles.cardStat}>
-              <Text style={[styles.statValue, { color: colors.primary }]}>
+              <Text style={[styles.statValue, { color }]}>
                 #{result.blockNumber?.toLocaleString()}
               </Text>
               <Text style={[styles.statLabel, { color: colors.muted }]}>Block</Text>
             </View>
             <View style={[styles.cardStatDivider, { backgroundColor: colors.border }]} />
             <View style={styles.cardStat}>
-              <Text style={[styles.statValue, { color: colors.primary }]}>{result.latency}ms</Text>
+              <Text style={[styles.statValue, { color }]}>{result.latency}ms</Text>
               <Text style={[styles.statLabel, { color: colors.muted }]}>Latency</Text>
             </View>
             <View style={[styles.cardStatDivider, { backgroundColor: colors.border }]} />
             <View style={styles.cardStat}>
-              <Text style={[styles.statValue, { color: colors.primary }]}>{contractCount}</Text>
+              <Text style={[styles.statValue, { color }]}>{contractCount}</Text>
               <Text style={[styles.statLabel, { color: colors.muted }]}>Contracts</Text>
             </View>
           </View>
@@ -115,6 +119,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const [baseResult, setBaseResult] = useState<RPCResult | null>(null);
   const [avaxResult, setAvaxResult] = useState<RPCResult | null>(null);
+  const [ethResult, setEthResult] = useState<RPCResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [registrationCount, setRegistrationCount] = useState<number | null>(null);
@@ -123,12 +128,14 @@ export default function HomeScreen() {
   const checkNetworks = useCallback(async () => {
     setLoading(true);
     try {
-      const [base, avax] = await Promise.all([
+      const [base, avax, eth] = await Promise.all([
         checkChainConnectivity("base"),
         checkChainConnectivity("avalanche"),
+        checkChainConnectivity("ethereum"),
       ]);
       setBaseResult(base);
       setAvaxResult(avax);
+      setEthResult(eth);
       // Fetch live registration count from ERC8004IdentityRegistry
       const registryAddr = BASE_CONTRACTS.find(c => c.name === 'ERC8004IdentityRegistry');
       if (registryAddr) {
@@ -153,11 +160,19 @@ export default function HomeScreen() {
     checkNetworks();
   }, [checkNetworks]);
 
-  const quickActions = [
-    { icon: "bubble.left.fill" as const, label: `Chat with ${companionDisplayName}`, route: "/chat" as const },
-    { icon: "shield.checkered" as const, label: "Trust Verification", route: "/verify" as const },
-    { icon: "arrow.left.arrow.right" as const, label: "Cross-Chain Bridge", route: "/bridge" as const },
-    { icon: "chart.bar.fill" as const, label: "Dashboard", route: "/dashboard" as const },
+  const featureGrid: { icon: string; label: string; route: string; color: string }[] = [
+    { icon: "bubble.left.fill", label: `Chat with ${companionDisplayName}`, route: "/chat", color: colors.primary },
+    { icon: "wallet.pass.fill", label: "Wallet", route: "/wallet", color: "#22C55E" },
+    { icon: "person.3.fill", label: "Agent Hub", route: "/agent-hub", color: "#8B5CF6" },
+    { icon: "link", label: "VNS Names", route: "/vns", color: "#3B82F6" },
+    { icon: "lock.shield.fill", label: "ZK Proofs", route: "/zk-proofs", color: "#F59E0B" },
+    { icon: "arrow.left.arrow.right", label: "Bridge", route: "/bridge", color: "#E84142" },
+    { icon: "chart.line.uptrend.xyaxis", label: "Earnings", route: "/earnings", color: "#00D9FF" },
+    { icon: "terminal.fill", label: "API Reference", route: "/agent-api", color: "#A78BFA" },
+    { icon: "shield.checkered", label: "Trust Verify", route: "/verify", color: "#22C55E" },
+    { icon: "chart.pie.fill", label: "Analytics", route: "/analytics", color: "#F59E0B" },
+    { icon: "chart.bar.fill", label: "Dashboard", route: "/dashboard", color: "#3B82F6" },
+    { icon: "checkmark.seal.fill", label: "Trust Score", route: "/trust", color: "#CD7F32" },
   ];
 
   return (
@@ -179,36 +194,48 @@ export default function HomeScreen() {
           <Text style={[styles.coreValues, { color: colors.muted }]}>{CORE_VALUES}</Text>
         </Animated.View>
 
-        {/* Network Status */}
+        {/* Network Status — 3 Chains */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Network Status</Text>
           <NetworkCard
+            label="Ethereum"
+            chainId={CHAINS.ethereum.chainId}
+            color={CHAINS.ethereum.color}
+            result={ethResult}
+            loading={loading}
+            contractCount={ETHEREUM_CONTRACTS.length}
+            delay={100}
+          />
+          <View style={{ height: 8 }} />
+          <NetworkCard
             label="Base"
             chainId={CHAINS.base.chainId}
+            color={CHAINS.base.color}
             result={baseResult}
             loading={loading}
             contractCount={BASE_CONTRACTS.length}
-            delay={150}
+            delay={200}
           />
-          <View style={{ height: 10 }} />
+          <View style={{ height: 8 }} />
           <NetworkCard
             label="Avalanche"
             chainId={CHAINS.avalanche.chainId}
+            color={CHAINS.avalanche.color}
             result={avaxResult}
             loading={loading}
             contractCount={AVALANCHE_CONTRACTS.length}
-            delay={250}
+            delay={300}
           />
         </View>
 
         {/* Quick Stats */}
-        <Animated.View entering={FadeInDown.delay(350).duration(300)} style={styles.section}>
+        <Animated.View entering={FadeInDown.delay(400).duration(300)} style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Protocol Overview</Text>
           <View style={styles.statsRow}>
             {[
               { value: registrationCount !== null ? registrationCount.toString() : "—", label: "Registered" },
-              { value: (BASE_CONTRACTS.length + AVALANCHE_CONTRACTS.length).toString(), label: "Contracts" },
-              { value: "2", label: "Chains" },
+              { value: ALL_CONTRACTS.length.toString(), label: "Contracts" },
+              { value: "3", label: "Chains" },
             ].map((stat, idx) => (
               <View
                 key={idx}
@@ -224,24 +251,26 @@ export default function HomeScreen() {
           </View>
         </Animated.View>
 
-        {/* Quick Actions */}
-        <Animated.View entering={FadeInDown.delay(450).duration(300)} style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Quick Actions</Text>
+        {/* Feature Grid */}
+        <Animated.View entering={FadeInDown.delay(500).duration(300)} style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Features</Text>
           <View style={styles.actionsGrid}>
-            {quickActions.map((action, idx) => (
+            {featureGrid.map((action, idx) => (
               <Pressable
                 key={idx}
-                onPress={() => router.push(action.route)}
+                onPress={() => router.push(action.route as any)}
                 style={({ pressed }) => [
                   styles.actionBtn,
                   {
                     backgroundColor: colors.surface,
-                    borderColor: pressed ? colors.primary : colors.border,
+                    borderColor: pressed ? action.color : colors.border,
                     transform: [{ scale: pressed ? 0.97 : 1 }],
                   },
                 ]}
               >
-                <IconSymbol name={action.icon} size={22} color={colors.primary} />
+                <View style={[styles.actionIconBg, { backgroundColor: `${action.color}15` }]}>
+                  <IconSymbol name={action.icon as any} size={20} color={action.color} />
+                </View>
                 <Text style={[styles.actionLabel, { color: colors.foreground }]}>{action.label}</Text>
               </Pressable>
             ))}
@@ -249,7 +278,7 @@ export default function HomeScreen() {
         </Animated.View>
 
         {/* Website Link */}
-        <Animated.View entering={FadeInDown.delay(550).duration(300)}>
+        <Animated.View entering={FadeInDown.delay(600).duration(300)}>
           <Pressable
             onPress={() => Linking.openURL(VAULTFIRE_WEBSITE)}
             style={({ pressed }) => [
@@ -333,12 +362,19 @@ const styles = StyleSheet.create({
   actionBtn: {
     width: "48%",
     borderRadius: 12,
-    padding: 16,
+    padding: 14,
     alignItems: "center",
     gap: 8,
     borderWidth: 1,
     flexGrow: 1,
     flexBasis: "45%",
+  },
+  actionIconBg: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
   },
   actionLabel: { fontSize: 12, fontWeight: "600", textAlign: "center" },
   websiteLink: {

@@ -32,6 +32,7 @@ export default function TabLayout() {
         },
       }}
     >
+      {/* ── Primary Tabs (visible in tab bar) ── */}
       <Tabs.Screen
         name="index"
         options={{
@@ -54,10 +55,27 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="agent-hub"
+        options={{
+          title: "Hub",
+          tabBarIcon: ({ color }) => <IconSymbol size={22} name="person.3.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: "More",
+          tabBarIcon: ({ color }) => <IconSymbol size={22} name="ellipsis.circle.fill" color={color} />,
+        }}
+      />
+
+      {/* ── Secondary Screens (hidden from tab bar, accessible via navigation) ── */}
+      <Tabs.Screen
         name="trust"
         options={{
           title: "Trust",
           tabBarIcon: ({ color }) => <IconSymbol size={22} name="checkmark.seal.fill" color={color} />,
+          href: null,
         }}
       />
       <Tabs.Screen
@@ -65,6 +83,7 @@ export default function TabLayout() {
         options={{
           title: "Analytics",
           tabBarIcon: ({ color }) => <IconSymbol size={22} name="chart.pie.fill" color={color} />,
+          href: null,
         }}
       />
       <Tabs.Screen
@@ -72,7 +91,7 @@ export default function TabLayout() {
         options={{
           title: "Verify",
           tabBarIcon: ({ color }) => <IconSymbol size={22} name="shield.checkered" color={color} />,
-          href: null, // Hidden from tab bar — accessible via navigation
+          href: null,
         }}
       />
       <Tabs.Screen
@@ -80,7 +99,7 @@ export default function TabLayout() {
         options={{
           title: "Bridge",
           tabBarIcon: ({ color }) => <IconSymbol size={22} name="arrow.left.arrow.right" color={color} />,
-          href: null, // Hidden from tab bar — accessible via navigation
+          href: null,
         }}
       />
       <Tabs.Screen
@@ -88,7 +107,39 @@ export default function TabLayout() {
         options={{
           title: "Dashboard",
           tabBarIcon: ({ color }) => <IconSymbol size={22} name="chart.bar.fill" color={color} />,
-          href: null, // Hidden from tab bar — accessible via navigation
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="vns"
+        options={{
+          title: "VNS",
+          tabBarIcon: ({ color }) => <IconSymbol size={22} name="link" color={color} />,
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="zk-proofs"
+        options={{
+          title: "ZK Proofs",
+          tabBarIcon: ({ color }) => <IconSymbol size={22} name="lock.shield.fill" color={color} />,
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="earnings"
+        options={{
+          title: "Earnings",
+          tabBarIcon: ({ color }) => <IconSymbol size={22} name="chart.line.uptrend.xyaxis" color={color} />,
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="agent-api"
+        options={{
+          title: "API",
+          tabBarIcon: ({ color }) => <IconSymbol size={22} name="terminal.fill" color={color} />,
+          href: null,
         }}
       />
     </Tabs>

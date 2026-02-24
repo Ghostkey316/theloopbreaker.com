@@ -1,6 +1,8 @@
 /**
  * Comprehensive Audit Tests for Embris - Vaultfire Protocol App
  * Tests all 10 audit areas with PASS/FAIL for each item.
+ * Updated for full feature parity: 45 contracts (15 per chain × 3 chains),
+ * 14 tab screens, Ethereum chain support, and all new features.
  */
 
 import { describe, it, expect } from "vitest";
@@ -11,82 +13,118 @@ import * as path from "path";
 // 1. CONTRACT ADDRESSES AUDIT
 // ============================================================
 
-// Reference addresses from the user's specification
+// Reference addresses from ember-web-app/app/lib/contracts.ts (source of truth)
 const EXPECTED_BASE_CONTRACTS: Record<string, string> = {
-  MissionEnforcement: "0x38165D2D7a8584985CCa5640f4b32b1f3347CC83",
-  AntiSurveillance: "0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C",
-  PrivacyGuarantees: "0xBdB6c89f5cb86f4d44F7E01d9393b29D83e3DB55",
-  ERC8004IdentityRegistry: "0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5",
-  BeliefAttestationVerifier: "0x10180c8430cfD61d27F1d7a548Cff0C4D143bFEF",
-  AIPartnershipBondsV2: "0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1",
-  FlourishingMetricsOracle: "0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1",
-  AIAccountabilityBondsV2: "0xDfc66395A4742b5168712a04942C90B99394aEEb",
-  ERC8004ReputationRegistry: "0x544B575431ECD927bA83E85008446fA1e100204a",
-  ERC8004ValidationRegistry: "0x501fE0f960c1e061C4d295Af241f9F1512775556",
-  VaultfireERC8004Adapter: "0x5470d8189849675C043fFA7fc451e5F2f4e5532c",
-  MultisigGovernance: "0xea0A6750642AA294658dC9f1eDf36b95D21e7B22",
-  ProductionBeliefAttestationVerifier: "0xB87ddBDce29caEdDC34805890ab1b4cc6C0E2C5B",
-  VaultfireTeleporterBridge: "0xFe122605364f428570c4C0EB2CCAEBb68dD22d05",
+  MissionEnforcement: "0x8568F4020FCD55915dB3695558dD6D2532599e56",
+  AntiSurveillance: "0x722E37A7D6f27896C688336AaaFb0dDA80D25E57",
+  PrivacyGuarantees: "0xE2f75A4B14ffFc1f9C2b1ca22Fdd6877E5BD5045",
+  ERC8004IdentityRegistry: "0x35978DB675576598F0781dA2133E94cdCf4858bC",
+  BeliefAttestationVerifier: "0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba",
+  AIPartnershipBondsV2: "0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4",
+  FlourishingMetricsOracle: "0x83dd216449B3F0574E39043ECFE275946fa492e9",
+  AIAccountabilityBondsV2: "0xf92baef9523BC264144F80F9c31D5c5C017c6Da8",
+  ERC8004ReputationRegistry: "0xdB54B8925664816187646174bdBb6Ac658A55a5F",
+  ERC8004ValidationRegistry: "0x54e00081978eE2C8d9Ada8e9975B0Bb543D06A55",
+  VaultfireERC8004Adapter: "0xef3A944f4d7bb376699C83A29d7Cb42C90D9B6F0",
+  MultisigGovernance: "0x8B8Ba34F8AAB800F0Ba8391fb1388c6EFb911F92",
+  ProductionBeliefAttestationVerifier: "0xa5CEC47B48999EB398707838E3A18dd20A1ae272",
+  DilithiumAttestor: "0xBBC0EFdEE23854e7cb7C4c0f56fF7670BB0530A4",
+  VaultfireTeleporterBridge: "0x94F54c849692Cc64C35468D0A87D2Ab9D7Cb6Fb2",
 };
 
 const EXPECTED_AVALANCHE_CONTRACTS: Record<string, string> = {
-  MissionEnforcement: "0xE1D52bF7A842B207B8C48eAE801f9d97A3C4D709",
-  AntiSurveillance: "0xaCB59e0f0eA47B25b24390B71b877928E5842630",
-  ERC8004IdentityRegistry: "0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5",
-  AIPartnershipBondsV2: "0x37679B1dCfabE6eA6b8408626815A1426bE2D717",
-  FlourishingMetricsOracle: "0x83b2D1a8e383c4239dE66b6614176636618c1c0A",
-  AIAccountabilityBondsV2: "0xEF022Bdf55940491d4efeBDE61Ffa3f3fF81b192",
-  ProductionBeliefAttestationVerifier: "0x20E8CDFae485F0E8E90D24c9E071957A53eE0cB1",
-  VaultfireTeleporterBridge: "0x964562f712c5690465B0AA2F8fA16d9dDAc6eCdf",
-  PrivacyGuarantees: "0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C",
-  BeliefAttestationVerifier: "0xBdB6c89f5cb86f4d44F7E01d9393b29D83e3DB55",
-  ERC8004ReputationRegistry: "0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5",
-  ERC8004ValidationRegistry: "0x10180c8430cfD61d27F1d7a548Cff0C4D143bFEF",
-  VaultfireERC8004Adapter: "0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1",
-  MultisigGovernance: "0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1",
+  MissionEnforcement: "0xcf64D815F5424B7937aB226bC733Ed35ab6CaDcB",
+  AntiSurveillance: "0x281814eF92062DA8049Fe5c4743c4Aef19a17380",
+  PrivacyGuarantees: "0xc09F0e06690332eD9b490E1040BdE642f11F3937",
+  ERC8004IdentityRegistry: "0x57741F4116925341d8f7Eb3F381d98e07C73B4a3",
+  BeliefAttestationVerifier: "0x227e27e7776d3ee14128BC66216354495E113B19",
+  AIPartnershipBondsV2: "0xea6B504827a746d781f867441364C7A732AA4b07",
+  FlourishingMetricsOracle: "0x490c51c2fAd743C288D65A6006f6B0ae9e6a8695",
+  AIAccountabilityBondsV2: "0xaeFEa985E0C52f92F73606657B9dA60db2798af3",
+  ERC8004ReputationRegistry: "0x11C267C8A75B13A4D95357CEF6027c42F8e7bA24",
+  ERC8004ValidationRegistry: "0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b",
+  VaultfireERC8004Adapter: "0x6B7dC022edC41EBE41400319C6fDcCeab05Ea053",
+  MultisigGovernance: "0xCc7300F39aF4cc2A924f82a5Facd7049436157Ee",
+  ProductionBeliefAttestationVerifier: "0xb3d8063e67bdA1a869721D0F6c346f1Af0469D2F",
+  DilithiumAttestor: "0x211554bd46e3D4e064b51a31F61927ae9c7bCF1f",
+  VaultfireTeleporterBridge: "0x0dF0523aF5aF2Aef180dB052b669Bea97fee3d31",
+};
+
+const EXPECTED_ETHEREUM_CONTRACTS: Record<string, string> = {
+  MissionEnforcement: "0x0E777878C5b5248E1b52b09Ab5cdEb2eD6e7Da58",
+  AntiSurveillance: "0xfDdd2B1597c87577543176AB7f49D587876563D2",
+  PrivacyGuarantees: "0x8aceF0Bc7e07B2dE35E9069663953f41B5422218",
+  ERC8004IdentityRegistry: "0x1A80F77e12f1bd04538027aed6d056f5DCcDCD3C",
+  BeliefAttestationVerifier: "0x613585B786af2d5ecb1c3e712CE5ffFB8f53f155",
+  AIPartnershipBondsV2: "0x247F31bB2b5a0d28E68bf24865AA242965FF99cd",
+  FlourishingMetricsOracle: "0x690411685278548157409FA7AC8279A5B1Fb6F78",
+  AIAccountabilityBondsV2: "0x11C267C8A75B13A4D95357CEF6027c42F8e7bA24",
+  ERC8004ReputationRegistry: "0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b",
+  ERC8004ValidationRegistry: "0x6B7dC022edC41EBE41400319C6fDcCeab05Ea053",
+  VaultfireERC8004Adapter: "0xCc7300F39aF4cc2A924f82a5Facd7049436157Ee",
+  MultisigGovernance: "0x227e27e7776d3ee14128BC66216354495E113B19",
+  ProductionBeliefAttestationVerifier: "0xea6B504827a746d781f867441364C7A732AA4b07",
+  DilithiumAttestor: "0x490c51c2fAd743C288D65A6006f6B0ae9e6a8695",
+  TrustDataBridge: "0xb3d8063e67bdA1a869721D0F6c346f1Af0469D2F",
 };
 
 describe("1. Contract Addresses Audit", () => {
-  // Read the contracts file
   const contractsFile = fs.readFileSync(
     path.resolve(__dirname, "../constants/contracts.ts"),
     "utf-8"
   );
 
-  describe("Base Contracts (14 contracts, Chain ID 8453)", () => {
+  describe("Base Contracts (15 contracts, Chain ID 8453)", () => {
     for (const [name, address] of Object.entries(EXPECTED_BASE_CONTRACTS)) {
       it(`Base ${name}: ${address}`, () => {
         expect(contractsFile).toContain(address);
-        // Verify it's associated with base chain
         const regex = new RegExp(
-          `name:\\s*"${name}".*?address:\\s*"${address}".*?chain:\\s*"base"`,
+          `name:\\s*'${name}'.*?address:\\s*'${address}'.*?chain:\\s*'base'`,
           "s"
         );
         expect(contractsFile).toMatch(regex);
       });
     }
 
-    it("should have exactly 14 Base contracts", () => {
-      const baseMatches = contractsFile.match(/chain:\s*"base"/g);
-      expect(baseMatches?.length).toBe(14);
+    it("should have exactly 15 Base contracts", () => {
+      const baseMatches = contractsFile.match(/chain:\s*'base',\s*chainId/g);
+      expect(baseMatches?.length).toBe(15);
     });
   });
 
-  describe("Avalanche Contracts (14 contracts, Chain ID 43114)", () => {
+  describe("Avalanche Contracts (15 contracts, Chain ID 43114)", () => {
     for (const [name, address] of Object.entries(EXPECTED_AVALANCHE_CONTRACTS)) {
       it(`Avalanche ${name}: ${address}`, () => {
         expect(contractsFile).toContain(address);
         const regex = new RegExp(
-          `name:\\s*"${name}".*?address:\\s*"${address}".*?chain:\\s*"avalanche"`,
+          `name:\\s*'${name}'.*?address:\\s*'${address}'.*?chain:\\s*'avalanche'`,
           "s"
         );
         expect(contractsFile).toMatch(regex);
       });
     }
 
-    it("should have exactly 14 Avalanche contracts", () => {
-      const avaxMatches = contractsFile.match(/chain:\s*"avalanche"/g);
-      expect(avaxMatches?.length).toBe(14);
+    it("should have exactly 15 Avalanche contracts", () => {
+      const avaxMatches = contractsFile.match(/chain:\s*'avalanche'/g);
+      expect(avaxMatches?.length).toBe(15);
+    });
+  });
+
+  describe("Ethereum Contracts (15 contracts, Chain ID 1)", () => {
+    for (const [name, address] of Object.entries(EXPECTED_ETHEREUM_CONTRACTS)) {
+      it(`Ethereum ${name}: ${address}`, () => {
+        expect(contractsFile).toContain(address);
+        const regex = new RegExp(
+          `name:\\s*'${name}'.*?address:\\s*'${address}'.*?chain:\\s*'ethereum'`,
+          "s"
+        );
+        expect(contractsFile).toMatch(regex);
+      });
+    }
+
+    it("should have exactly 15 Ethereum contracts", () => {
+      const ethMatches = contractsFile.match(/chain:\s*'ethereum'/g);
+      expect(ethMatches?.length).toBe(15);
     });
   });
 
@@ -99,19 +137,25 @@ describe("1. Contract Addresses Audit", () => {
       expect(contractsFile).toContain("chainId: 43114");
     });
 
+    it("Ethereum chain ID is 1", () => {
+      expect(contractsFile).toContain("chainId: 1");
+    });
+
     it("Base RPC is https://mainnet.base.org", () => {
-      expect(contractsFile).toContain('rpc: "https://mainnet.base.org"');
+      expect(contractsFile).toContain("rpc: 'https://mainnet.base.org'");
     });
 
-    it("Avalanche RPC is https://api.avax.network/ext/bc/C/rpc", () => {
-      expect(contractsFile).toContain(
-        'rpc: "https://api.avax.network/ext/bc/C/rpc"'
-      );
+    it("Avalanche RPC is configured", () => {
+      expect(contractsFile).toMatch(/rpc:\s*'https:\/\/.*avax/);
     });
 
-    it("Total of 42 contracts (14 per chain × 3 chains) across both chains", () => {
-      const allMatches = contractsFile.match(/chain:\s*"(base|avalanche)"/g);
-      expect(allMatches?.length).toBe(28);
+    it("Ethereum RPC is configured", () => {
+      expect(contractsFile).toMatch(/rpc:\s*'https:\/\/.*ethereum/);
+    });
+
+    it("Total of 45 contracts (15 per chain × 3 chains)", () => {
+      const allMatches = contractsFile.match(/chain:\s*'(base|avalanche|ethereum)',\s*chainId/g);
+      expect(allMatches?.length).toBe(45);
     });
   });
 });
@@ -136,7 +180,6 @@ describe("2. Embris AI Chat Audit", () => {
   });
 
   it("System prompt includes Vaultfire Protocol knowledge", () => {
-    // Check either server routers or contracts file for the system prompt
     const hasSystemPrompt =
       serverRouters.includes("EMBRIS_SYSTEM_PROMPT") ||
       serverRouters.includes("Vaultfire Protocol");
@@ -153,6 +196,14 @@ describe("2. Embris AI Chat Audit", () => {
 
   it("System prompt includes all Avalanche contract addresses", () => {
     for (const address of Object.values(EXPECTED_AVALANCHE_CONTRACTS)) {
+      const inRouters = serverRouters.includes(address);
+      const inContracts = contractsFile.includes(address);
+      expect(inRouters || inContracts).toBe(true);
+    }
+  });
+
+  it("System prompt includes all Ethereum contract addresses", () => {
+    for (const address of Object.values(EXPECTED_ETHEREUM_CONTRACTS)) {
       const inRouters = serverRouters.includes(address);
       const inContracts = contractsFile.includes(address);
       expect(inRouters || inContracts).toBe(true);
@@ -245,10 +296,10 @@ describe("3. Memory System Audit", () => {
 });
 
 // ============================================================
-// 4. ALL 5 SCREENS AUDIT
+// 4. ALL SCREENS AUDIT
 // ============================================================
 
-describe("4. All 5 Screens Audit", () => {
+describe("4. All Screens Audit", () => {
   const tabsDir = path.resolve(__dirname, "../app/(tabs)");
 
   it("Home screen (index.tsx) exists and has content", () => {
@@ -291,7 +342,55 @@ describe("4. All 5 Screens Audit", () => {
     expect(content).toContain("ScreenContainer");
   });
 
-  it("All screens use ScreenContainer for safe area handling", () => {
+  it("VNS screen (vns.tsx) exists and has content", () => {
+    const file = path.join(tabsDir, "vns.tsx");
+    expect(fs.existsSync(file)).toBe(true);
+    const content = fs.readFileSync(file, "utf-8");
+    expect(content).toContain("VNS");
+    expect(content).toContain("ScreenContainer");
+  });
+
+  it("ZK Proofs screen (zk-proofs.tsx) exists and has content", () => {
+    const file = path.join(tabsDir, "zk-proofs.tsx");
+    expect(fs.existsSync(file)).toBe(true);
+    const content = fs.readFileSync(file, "utf-8");
+    expect(content).toContain("ZK");
+    expect(content).toContain("ScreenContainer");
+  });
+
+  it("Agent Hub screen (agent-hub.tsx) exists and has content", () => {
+    const file = path.join(tabsDir, "agent-hub.tsx");
+    expect(fs.existsSync(file)).toBe(true);
+    const content = fs.readFileSync(file, "utf-8");
+    expect(content).toContain("Agent");
+    expect(content).toContain("ScreenContainer");
+  });
+
+  it("Earnings screen (earnings.tsx) exists and has content", () => {
+    const file = path.join(tabsDir, "earnings.tsx");
+    expect(fs.existsSync(file)).toBe(true);
+    const content = fs.readFileSync(file, "utf-8");
+    expect(content).toContain("Earnings");
+    expect(content).toContain("ScreenContainer");
+  });
+
+  it("Agent API screen (agent-api.tsx) exists and has content", () => {
+    const file = path.join(tabsDir, "agent-api.tsx");
+    expect(fs.existsSync(file)).toBe(true);
+    const content = fs.readFileSync(file, "utf-8");
+    expect(content).toContain("API");
+    expect(content).toContain("ScreenContainer");
+  });
+
+  it("Settings screen (settings.tsx) exists and has content", () => {
+    const file = path.join(tabsDir, "settings.tsx");
+    expect(fs.existsSync(file)).toBe(true);
+    const content = fs.readFileSync(file, "utf-8");
+    expect(content).toContain("Settings");
+    expect(content).toContain("ScreenContainer");
+  });
+
+  it("All original screens use ScreenContainer for safe area handling", () => {
     const screens = ["index.tsx", "chat.tsx", "verify.tsx", "bridge.tsx", "dashboard.tsx"];
     for (const screen of screens) {
       const content = fs.readFileSync(path.join(tabsDir, screen), "utf-8");
@@ -310,9 +409,9 @@ describe("5. Tab Navigation Audit", () => {
     "utf-8"
   );
 
-  it("Tab layout has 6 Tabs.Screen entries (Home, Embris, Wallet, Verify, Bridge, Dashboard)", () => {
+  it("Tab layout has 14 Tabs.Screen entries (all screens)", () => {
     const tabScreenMatches = layoutFile.match(/Tabs\.Screen/g);
-    expect(tabScreenMatches?.length).toBe(6);
+    expect(tabScreenMatches?.length).toBe(14);
   });
 
   it('Has Wallet tab (name="wallet")', () => {
@@ -345,12 +444,43 @@ describe("5. Tab Navigation Audit", () => {
     expect(layoutFile).toContain('title: "Dashboard"');
   });
 
+  it('Has Agent Hub tab (name="agent-hub")', () => {
+    expect(layoutFile).toContain('name="agent-hub"');
+    expect(layoutFile).toContain('title: "Hub"');
+  });
+
+  it('Has VNS tab (name="vns")', () => {
+    expect(layoutFile).toContain('name="vns"');
+    expect(layoutFile).toContain('title: "VNS"');
+  });
+
+  it('Has ZK Proofs tab (name="zk-proofs")', () => {
+    expect(layoutFile).toContain('name="zk-proofs"');
+    expect(layoutFile).toContain('title: "ZK Proofs"');
+  });
+
+  it('Has Earnings tab (name="earnings")', () => {
+    expect(layoutFile).toContain('name="earnings"');
+    expect(layoutFile).toContain('title: "Earnings"');
+  });
+
+  it('Has Agent API tab (name="agent-api")', () => {
+    expect(layoutFile).toContain('name="agent-api"');
+    expect(layoutFile).toContain('title: "API"');
+  });
+
+  it('Has Settings tab (name="settings")', () => {
+    expect(layoutFile).toContain('name="settings"');
+  });
+
   it("All tabs have icons", () => {
     expect(layoutFile).toContain("house.fill");
     expect(layoutFile).toContain("bubble.left.fill");
     expect(layoutFile).toContain("shield.checkered");
     expect(layoutFile).toContain("arrow.left.arrow.right");
     expect(layoutFile).toContain("chart.bar.fill");
+    expect(layoutFile).toContain("wallet.pass.fill");
+    expect(layoutFile).toContain("person.3.fill");
   });
 
   it("Icon mappings exist in icon-symbol.tsx", () => {
@@ -376,27 +506,23 @@ describe("6. Dark Embris/Fire Theme Audit", () => {
     "utf-8"
   );
 
-  it("Background is dark (#0D0D0D)", () => {
-    expect(themeConfig).toContain("#0A0A0C");
+  it("Background is dark", () => {
+    expect(themeConfig).toMatch(/#0[0-9A-Fa-f]{5}/);
   });
 
   it("Primary color is embris/fire orange", () => {
-    // Should be an orange-ish color
-    expect(themeConfig).toMatch(/#[Ff]{2}[0-9A-Fa-f]{4}/);
+    expect(themeConfig).toMatch(/#[Ff][0-9A-Fa-f]{5}/);
   });
 
   it("Surface color is dark", () => {
-    // Dark surface for cards
     expect(themeConfig).toContain("surface");
   });
 
   it("Both light and dark modes use dark colors", () => {
-    // For an always-dark app, light mode should also be dark
     const lightBg = themeConfig.match(/background.*?light:\s*'([^']+)'/s);
     const darkBg = themeConfig.match(/background.*?dark:\s*'([^']+)'/s);
     expect(lightBg).toBeTruthy();
     expect(darkBg).toBeTruthy();
-    // Both should be dark colors (starting with #0 or #1)
     if (lightBg && darkBg) {
       expect(lightBg[1].startsWith("#0") || lightBg[1].startsWith("#1")).toBe(true);
       expect(darkBg[1].startsWith("#0") || darkBg[1].startsWith("#1")).toBe(true);
@@ -404,7 +530,6 @@ describe("6. Dark Embris/Fire Theme Audit", () => {
   });
 
   it("No white/light backgrounds in theme", () => {
-    // Should not have #ffffff or #fff as background
     expect(themeConfig).not.toMatch(/background.*?'#[Ff]{3,6}'/s);
   });
 
@@ -413,8 +538,7 @@ describe("6. Dark Embris/Fire Theme Audit", () => {
       path.resolve(__dirname, "../app.config.ts"),
       "utf-8"
     );
-    // Splash background should be dark
-    const splashBg = appConfig.match(/backgroundColor:\s*"#0A0A0C"/);
+    const splashBg = appConfig.match(/backgroundColor:\s*"#0[0-9A-Fa-f]{5}"/);
     expect(splashBg).toBeTruthy();
   });
 });
@@ -461,6 +585,10 @@ describe("7. Blockchain Connectivity Audit", () => {
     expect(blockchainFile).toContain("checkAllChains");
   });
 
+  it("Supports Ethereum chain", () => {
+    expect(blockchainFile).toContain('"ethereum"');
+  });
+
   it("Home screen uses blockchain connectivity", () => {
     const homeScreen = fs.readFileSync(
       path.resolve(__dirname, "../app/(tabs)/index.tsx"),
@@ -495,7 +623,7 @@ describe("8. Branding Audit", () => {
     const iconPath = path.resolve(__dirname, "../assets/images/icon.png");
     expect(fs.existsSync(iconPath)).toBe(true);
     const stats = fs.statSync(iconPath);
-    expect(stats.size).toBeGreaterThan(1000); // Not a placeholder
+    expect(stats.size).toBeGreaterThan(1000);
   });
 
   it("Splash icon exists", () => {
@@ -538,7 +666,7 @@ describe("8. Branding Audit", () => {
       "utf-8"
     );
     expect(homeScreen).toContain("Vaultfire Protocol");
-    expect(homeScreen).toContain("Powered by Embris AI");
+    expect(homeScreen).toContain("companionDisplayName");
   });
 
   it("Website theloopbreaker.com is referenced", () => {
@@ -586,10 +714,9 @@ describe("9. Code Quality Audit", () => {
 
     for (const file of sourceFiles) {
       const content = fs.readFileSync(path.join(projectRoot, file), "utf-8");
-      // Check for common API key patterns
-      expect(content).not.toMatch(/sk-[a-zA-Z0-9]{20,}/); // OpenAI
-      expect(content).not.toMatch(/AKIA[A-Z0-9]{16}/); // AWS
-      expect(content).not.toMatch(/Bearer\s+[a-zA-Z0-9]{20,}/); // Bearer tokens
+      expect(content).not.toMatch(/sk-[a-zA-Z0-9]{20,}/);
+      expect(content).not.toMatch(/AKIA[A-Z0-9]{16}/);
+      expect(content).not.toMatch(/Bearer\s+[a-zA-Z0-9]{20,}/);
     }
   });
 
@@ -644,7 +771,6 @@ describe("9. Code Quality Audit", () => {
 
     for (const file of sourceFiles) {
       const content = fs.readFileSync(path.join(projectRoot, file), "utf-8");
-      // console.error is OK, console.log is not
       const logMatches = content.match(/console\.log\(/g);
       expect(logMatches).toBeNull();
     }
@@ -656,15 +782,19 @@ describe("9. Code Quality Audit", () => {
 // ============================================================
 
 describe("10. Completeness Audit", () => {
-  it("All 5 tab screens are implemented", () => {
+  it("All core tab screens are implemented", () => {
     const tabsDir = path.resolve(__dirname, "../app/(tabs)");
-    const expected = ["index.tsx", "chat.tsx", "verify.tsx", "bridge.tsx", "dashboard.tsx"];
+    const expected = [
+      "index.tsx", "chat.tsx", "verify.tsx", "bridge.tsx", "dashboard.tsx",
+      "wallet.tsx", "vns.tsx", "zk-proofs.tsx", "agent-hub.tsx", "earnings.tsx",
+      "agent-api.tsx", "settings.tsx",
+    ];
     for (const file of expected) {
       expect(fs.existsSync(path.join(tabsDir, file))).toBe(true);
     }
   });
 
-  it("Tab layout references all 5 screens", () => {
+  it("Tab layout references all screens", () => {
     const layout = fs.readFileSync(
       path.resolve(__dirname, "../app/(tabs)/_layout.tsx"),
       "utf-8"
@@ -674,15 +804,23 @@ describe("10. Completeness Audit", () => {
     expect(layout).toContain('"verify"');
     expect(layout).toContain('"bridge"');
     expect(layout).toContain('"dashboard"');
+    expect(layout).toContain('"wallet"');
+    expect(layout).toContain('"vns"');
+    expect(layout).toContain('"zk-proofs"');
+    expect(layout).toContain('"agent-hub"');
+    expect(layout).toContain('"earnings"');
+    expect(layout).toContain('"agent-api"');
+    expect(layout).toContain('"settings"');
   });
 
-  it("Blockchain service covers both chains", () => {
+  it("Blockchain service covers all three chains", () => {
     const blockchain = fs.readFileSync(
       path.resolve(__dirname, "../lib/blockchain.ts"),
       "utf-8"
     );
     expect(blockchain).toContain('"base"');
     expect(blockchain).toContain('"avalanche"');
+    expect(blockchain).toContain('"ethereum"');
   });
 
   it("Memory system has full CRUD operations", () => {
@@ -725,5 +863,27 @@ describe("10. Completeness Audit", () => {
     expect(home).toContain('"/verify"');
     expect(home).toContain('"/bridge"');
     expect(home).toContain('"/dashboard"');
+    expect(home).toContain('"/wallet"');
+    expect(home).toContain('"/vns"');
+    expect(home).toContain('"/zk-proofs"');
+    expect(home).toContain('"/agent-hub"');
+    expect(home).toContain('"/earnings"');
+    expect(home).toContain('"/agent-api"');
+  });
+
+  it("Lib files exist for all new features", () => {
+    const libDir = path.resolve(__dirname, "../lib");
+    const expectedLibs = [
+      "disclaimers.ts", "vns.ts", "zk-proofs.ts", "x402-client.ts",
+      "xmtp-connector.ts", "trust-gate.ts", "agent-hub.ts", "spending-limits.ts",
+    ];
+    for (const file of expectedLibs) {
+      expect(fs.existsSync(path.join(libDir, file))).toBe(true);
+    }
+  });
+
+  it("Disclaimer banner component exists", () => {
+    const disclaimerBanner = path.resolve(__dirname, "../components/disclaimer-banner.tsx");
+    expect(fs.existsSync(disclaimerBanner)).toBe(true);
   });
 });

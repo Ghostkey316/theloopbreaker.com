@@ -125,7 +125,7 @@ function decodeBool(hex: string): boolean {
 // ─── Public API ────────────────────────────────────────────────────────
 
 export async function checkContractAlive(
-  chain: "base" | "avalanche",
+  chain: "base" | "avalanche" | "ethereum",
   address: string
 ): Promise<boolean> {
   const rpc = CHAINS[chain].rpc;
@@ -138,7 +138,7 @@ export async function checkContractAlive(
 }
 
 export async function getMultipleContractStatus(
-  chain: "base" | "avalanche",
+  chain: "base" | "avalanche" | "ethereum",
   addresses: string[]
 ): Promise<Record<string, boolean>> {
   const results: Record<string, boolean> = {};
@@ -160,7 +160,7 @@ export async function getMultipleContractStatus(
 }
 
 export async function getContractBalance(
-  chain: "base" | "avalanche",
+  chain: "base" | "avalanche" | "ethereum",
   address: string
 ): Promise<{ balance: string; balanceEth: string }> {
   const rpc = CHAINS[chain].rpc;
@@ -209,7 +209,7 @@ async function tryReadUint256(
  * Tries multiple common function signatures.
  */
 export async function getGovernanceData(
-  chain: "base" | "avalanche",
+  chain: "base" | "avalanche" | "ethereum",
   governanceAddress: string
 ): Promise<{
   isAlive: boolean;
@@ -259,7 +259,7 @@ export async function getGovernanceData(
  * Tries multiple function signatures for message counts.
  */
 export async function getTeleporterBridgeStats(
-  chain: "base" | "avalanche",
+  chain: "base" | "avalanche" | "ethereum",
   bridgeAddress: string
 ): Promise<{
   isAlive: boolean;
@@ -299,7 +299,7 @@ export async function getTeleporterBridgeStats(
  * Tries multiple function signatures for entry counts.
  */
 export async function getRegistryData(
-  chain: "base" | "avalanche",
+  chain: "base" | "avalanche" | "ethereum",
   registryAddress: string
 ): Promise<{
   isAlive: boolean;
@@ -339,7 +339,7 @@ export async function getRegistryData(
  * Read owner() from a contract — useful for verifying governance ownership.
  */
 export async function getContractOwner(
-  chain: "base" | "avalanche",
+  chain: "base" | "avalanche" | "ethereum",
   contractAddress: string
 ): Promise<string | null> {
   const rpc = CHAINS[chain].rpc;
@@ -356,7 +356,7 @@ export async function getContractOwner(
  * Batch read all contract data for a chain — used by Dashboard.
  */
 export async function getChainContractData(
-  chain: "base" | "avalanche",
+  chain: "base" | "avalanche" | "ethereum",
   contracts: Array<{ name: string; address: string }>
 ): Promise<
   Array<{

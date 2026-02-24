@@ -141,7 +141,7 @@ describe("Wallet Screen (app/(tabs)/wallet.tsx)", () => {
 
   it("has Receive button with copy address", () => {
     expect(walletScreenSrc).toContain("Receive");
-    expect(walletScreenSrc).toContain("copy");
+    expect(walletScreenSrc).toContain("Copy");
   });
 
   it("has Send button (placeholder)", () => {
@@ -183,9 +183,9 @@ describe("Wallet Tab Navigation", () => {
     expect(iconSymbolSrc).toContain("wallet.pass.fill");
   });
 
-  it("now has 6 tabs total", () => {
+  it("now has 14 tabs total (5 visible + 9 hidden)", () => {
     const tabScreenMatches = tabLayoutSrc.match(/Tabs\.Screen/g);
-    expect(tabScreenMatches?.length).toBe(6);
+    expect(tabScreenMatches?.length).toBe(14);
   });
 });
 

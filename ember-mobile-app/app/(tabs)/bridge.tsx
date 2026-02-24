@@ -10,13 +10,14 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
-import { BASE_CONTRACTS, AVALANCHE_CONTRACTS } from "@/constants/contracts";
+import { BASE_CONTRACTS, AVALANCHE_CONTRACTS, ETHEREUM_CONTRACTS } from "@/constants/contracts";
+import { DisclaimerBanner, AlphaBanner } from '@/components/disclaimer-banner';
 import { getTeleporterBridgeStats } from "@/lib/contract-reader";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 interface BridgeStatus {
-  chain: "base" | "avalanche";
+  chain: "base" | "avalanche" | "ethereum";
   chainName: string;
   chainId: number;
   isAlive: boolean;
@@ -30,7 +31,9 @@ export default function BridgeScreen() {
   const colors = useColors();
   const [baseStatus, setBaseStatus] = useState<BridgeStatus | null>(null);
   const [avaxStatus, setAvaxStatus] = useState<BridgeStatus | null>(null);
-  const [selectedChain, setSelectedChain] = useState<"base" | "avalanche">("base");
+  const [selectedChain, setSelectedChain] = useState<"base" | "avalanche" | "ethereum">("base");
+  const [ethStatus, setEthStatus] = useState<BridgeStatus | null>(null);
+  const ethBridge = ETHEREUM_CONTRACTS.find((c) => c.name === "TrustDataBridge");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -46,12 +49,23 @@ export default function BridgeScreen() {
       setAvaxStatus(initAvax);
 
       if (baseBridge && avaxBridge) {
-        const [baseStats, avaxStats] = await Promise.all([
+        const initEth: BridgeStatus = { chain: "ethereum", chainName: "Ethereum", chainId: 1, isAlive: false, messageCount: null, nonce: null, paused: null, loading: true };
+        setEthStatus(initEth);
+
+        const promises: Promise<any>[] = [
           getTeleporterBridgeStats("base", baseBridge.address),
           getTeleporterBridgeStats("avalanche", avaxBridge.address),
-        ]);
+        ];
+        if (ethBridge) promises.push(getTeleporterBridgeStats("ethereum", ethBridge.address));
+
+        const results = await Promise.all(promises);
+        const [baseStats, avaxStats] = results;
         setBaseStatus({ ...initBase, isAlive: baseStats.isAlive, messageCount: baseStats.messageCount, nonce: baseStats.nonce, paused: baseStats.paused, loading: false });
         setAvaxStatus({ ...initAvax, isAlive: avaxStats.isAlive, messageCount: avaxStats.messageCount, nonce: avaxStats.nonce, paused: avaxStats.paused, loading: false });
+        if (results[2]) {
+          const ethStats = results[2];
+          setEthStatus({ ...initEth, isAlive: ethStats.isAlive, messageCount: ethStats.messageCount, nonce: ethStats.nonce, paused: ethStats.paused, loading: false });
+        }
       }
     } catch (error) {
       console.error("Bridge status check failed:", error);
@@ -59,7 +73,7 @@ export default function BridgeScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [baseBridge, avaxBridge]);
+  }, [baseBridge, avaxBridge, ethBridge]);
 
   useEffect(() => { loadBridgeStatus(); }, [loadBridgeStatus]);
 
@@ -68,7 +82,7 @@ export default function BridgeScreen() {
     await loadBridgeStatus();
   };
 
-  const currentStatus = selectedChain === "base" ? baseStatus : avaxStatus;
+  const currentStatus = selectedChain === "base" ? baseStatus : selectedChain === "avalanche" ? avaxStatus : ethStatus;
 
   return (
     <ScreenContainer>
@@ -88,10 +102,13 @@ export default function BridgeScreen() {
           </View>
         </Animated.View>
 
+        <AlphaBanner />
+        <DisclaimerBanner disclaimerKey="bridge" />
+
         {/* Chain Selector */}
         <Animated.View entering={FadeInDown.delay(150).duration(300)}>
           <View style={[styles.chainSelector, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            {(["base", "avalanche"] as const).map((chain) => (
+            {(["base", "avalanche", "ethereum"] as const).map((chain) => (
               <Pressable
                 key={chain}
                 onPress={() => setSelectedChain(chain)}
@@ -110,7 +127,7 @@ export default function BridgeScreen() {
                     fontSize: 13,
                   }}
                 >
-                  {chain === "base" ? "Base" : "Avalanche"}
+                  {chain === "base" ? "Base" : chain === "avalanche" ? "Avalanche" : "Ethereum"}
                 </Text>
               </Pressable>
             ))}
@@ -203,7 +220,7 @@ export default function BridgeScreen() {
         {/* Network Overview */}
         <Animated.View entering={FadeInDown.delay(400).duration(300)} style={styles.overviewSection}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Network Overview</Text>
-          {[baseStatus, avaxStatus].map(
+          {[ethStatus, baseStatus, avaxStatus].map(
             (status) =>
               status && (
                 <View

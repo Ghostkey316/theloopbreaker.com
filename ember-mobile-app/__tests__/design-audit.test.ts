@@ -44,7 +44,7 @@ describe("Design Audit — Chat Experience", () => {
     expect(chatCode).toContain("What is ERC-8004?");
     expect(chatCode).toContain("Show me the Base contracts");
     expect(chatCode).toContain("showWelcome");
-    expect(chatCode).toContain("Welcome to Embris");
+    expect(chatCode).toContain("Welcome to");
   });
 
   it("has clear chat functionality", () => {
@@ -77,11 +77,13 @@ describe("Design Audit — Chat Experience", () => {
   });
 
   it("has message input with placeholder", () => {
-    expect(chatCode).toContain("Message Embris...");
+    // Placeholder is dynamic: `Message ${companionDisplayName}...`
+    expect(chatCode).toMatch(/Message.*\.\.\./);
   });
 
   it("has disclaimer about AI accuracy", () => {
-    expect(chatCode).toContain("Embris can make mistakes");
+    // Disclaimer uses dynamic companionDisplayName: `${companionDisplayName} can make mistakes`
+    expect(chatCode).toContain("can make mistakes");
   });
 });
 
@@ -207,7 +209,9 @@ describe("Design Audit — Branding Elements", () => {
   });
 
   it("Home: has Powered by Embris AI tagline", () => {
-    expect(homeCode).toContain("Powered by Embris AI");
+    // Uses dynamic companionDisplayName: `Powered by ${companionDisplayName} AI`
+    expect(homeCode).toContain("Powered by");
+    expect(homeCode).toContain("companionDisplayName");
   });
 
   it("Home: has flame icon", () => {

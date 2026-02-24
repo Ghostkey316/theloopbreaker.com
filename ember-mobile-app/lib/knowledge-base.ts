@@ -7,6 +7,7 @@
 import {
   BASE_CONTRACTS,
   AVALANCHE_CONTRACTS,
+  ETHEREUM_CONTRACTS,
   ALL_CONTRACTS,
   CHAINS,
 } from "@/constants/contracts";
@@ -56,9 +57,9 @@ export function formatContractDataForPrompt(userMessage: string): string {
     });
 
     relevant.forEach((c) => {
-      const explorer =
-        c.chain === "base" ? CHAINS.base.explorer : CHAINS.avalanche.explorer;
-      block += `- ${c.name} (${c.chain}): ${c.address}\n  Explorer: ${explorer}/address/${c.address}\n`;
+      const chain = CHAINS[c.chain as keyof typeof CHAINS];
+      const explorerUrl = chain?.explorerUrl ?? 'https://etherscan.io';
+      block += `- ${c.name} (${c.chain}): ${c.address}\n  Explorer: ${explorerUrl}/address/${c.address}\n`;
     });
   } else {
     // General query — show all
@@ -68,6 +69,10 @@ export function formatContractDataForPrompt(userMessage: string): string {
     });
     block += "\nAVALANCHE CONTRACTS:\n";
     AVALANCHE_CONTRACTS.forEach((c) => {
+      block += `- ${c.name}: ${c.address}\n`;
+    });
+    block += "\nETHEREUM CONTRACTS:\n";
+    ETHEREUM_CONTRACTS.forEach((c) => {
       block += `- ${c.name}: ${c.address}\n`;
     });
   }

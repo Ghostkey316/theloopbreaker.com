@@ -61,7 +61,7 @@ export async function checkContractExists(rpcUrl: string, address: string): Prom
   }
 }
 
-export async function checkChainConnectivity(chain: "base" | "avalanche"): Promise<RPCResult> {
+export async function checkChainConnectivity(chain: "base" | "avalanche" | "ethereum"): Promise<RPCResult> {
   const chainConfig = CHAINS[chain];
   const start = Date.now();
 
@@ -87,10 +87,11 @@ export async function checkChainConnectivity(chain: "base" | "avalanche"): Promi
 }
 
 export async function checkAllChains(): Promise<Record<string, RPCResult>> {
-  const [base, avalanche] = await Promise.all([
+  const [ethereum, base, avalanche] = await Promise.all([
+    checkChainConnectivity("ethereum"),
     checkChainConnectivity("base"),
     checkChainConnectivity("avalanche"),
   ]);
 
-  return { base, avalanche };
+  return { ethereum, base, avalanche };
 }
