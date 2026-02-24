@@ -3,3 +3,11 @@ node_modules/
 out/
 .vercel
 .env*.local
+
+# ── Secret / credential files (Vaultfire Embris Protocol) ────────────────────
+.env
+.env.local
+.env.production
+.env.*.local
+*.key
+*.pem
