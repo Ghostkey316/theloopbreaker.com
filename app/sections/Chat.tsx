@@ -75,6 +75,7 @@ import {
 // Companion Brain imports
 import {
   tryLocalAnswer,
+  generateLocalFallback,
   detectAction,
   executeAction,
   learnFromExchange,
@@ -359,11 +360,40 @@ function AgentStatusBar({ isMobile }: { isMobile: boolean }) {
   const agentName = getCompanionAgentName();
   const stats = getBrainStats();
 
-  if (!created) return null;
-
   const tierColors: Record<string, string> = {
     bronze: '#CD7F32', silver: '#C0C0C0', gold: '#FFD700', platinum: '#E5E4E2',
   };
+
+  // Always show the status bar — show minimal version when companion not initialized
+  if (!created) {
+    return (
+      <div className="fade-in" style={{
+        padding: isMobile ? '8px 16px' : '8px 24px',
+        backgroundColor: 'rgba(249,115,22,0.03)',
+        borderBottom: '1px solid rgba(249,115,22,0.08)',
+        display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 14,
+        flexWrap: 'wrap', flexShrink: 0,
+        overflow: 'hidden',
+      }}>
+        {/* Flame icon */}
+        <svg width={14} height={14} viewBox="0 0 32 32" fill="none" style={{ flexShrink: 0 }}>
+          <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.5" />
+          <path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C" opacity="0.5" />
+        </svg>
+        <span style={{ fontSize: 10, color: '#52525B', fontWeight: 500 }}>Embris Agent</span>
+        <span style={{ fontSize: 10, color: '#3F3F46' }}>Wallet: Not Activated</span>
+        <span style={{ fontSize: 10, color: '#3F3F46' }}>No Bond</span>
+        {!isMobile && (
+          <span style={{ fontSize: 10, color: '#52525B', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
+            Brain: {stats.knowledgeEntries} topics
+            <span style={{ color: '#F97316', fontWeight: 500, cursor: 'default' }}>
+              ← Activate via Companion Agent button
+            </span>
+          </span>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="fade-in" style={{
@@ -1329,12 +1359,14 @@ export default function Chat() {
       } catch { /* fall through to API */ }
     }
 
-    // 2. Try local brain knowledge base
+    // 2. Try local brain knowledge base (handles contracts, greetings, protocol questions, etc.)
     const localAnswer = tryLocalAnswer(trimmedText);
-    if (localAnswer && !contractQuery) {
+    if (localAnswer) {
       // Local brain can answer — no API call needed
-      await simulateLocalStreaming(localAnswer, assistantMsg.id, controller.signal);
-      finishMessage(localAnswer, trimmedText, assistantMsg, userMsg, features, currentMemories);
+      // If there's contract context, append it to enrich the response
+      const enrichedAnswer = contractContext ? localAnswer + contractContext : localAnswer;
+      await simulateLocalStreaming(enrichedAnswer, assistantMsg.id, controller.signal);
+      finishMessage(enrichedAnswer, trimmedText, assistantMsg, userMsg, features, currentMemories);
       return;
     }
 
@@ -1362,15 +1394,12 @@ export default function Chat() {
       onDone: (fullText) => {
         finishMessage(fullText, trimmedText, assistantMsg, userMsg, features, currentMemories);
       },
-      onError: (error) => {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantMsg.id
-              ? { ...m, content: `Error: ${error}`, isStreaming: false }
-              : m
-          )
-        );
-        setIsLoading(false);
+      onError: async (error) => {
+        // API failed — use local brain fallback instead of showing raw error
+        console.warn('[Embris] API fallback triggered:', error);
+        const fallbackResponse = generateLocalFallback(trimmedText);
+        await simulateLocalStreaming(fallbackResponse, assistantMsg.id, controller.signal);
+        finishMessage(fallbackResponse, trimmedText, assistantMsg, userMsg, features, currentMemories);
       },
     });
   }, [isLoading, isListening, voiceEnabled, ttsSupported, embrisSpeaking, activeConvId, attachedImage, runBackgroundMemoryExtraction, runBackgroundSelfLearning, runBackgroundGoalExtraction]);

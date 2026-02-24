@@ -457,6 +457,13 @@ export async function streamChat({
   onError,
   signal,
 }: StreamChatParams): Promise<void> {
+  // If no API key is configured, immediately trigger the error handler
+  // so Chat.tsx can use the local brain fallback
+  if (!API_KEY || API_KEY.trim() === '') {
+    onError('No API key configured — using local brain');
+    return;
+  }
+
   const systemPrompt = buildSystemPrompt(memories || [], userMessage);
 
   const llmMessages = [
@@ -482,6 +489,7 @@ export async function streamChat({
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => '');
+      // Trigger error handler which will use local brain fallback
       onError(`Chat service unavailable (${response.status}): ${errorText}`);
       return;
     }
