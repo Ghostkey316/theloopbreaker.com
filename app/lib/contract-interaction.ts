@@ -82,7 +82,7 @@ export async function checkRegistrationOnChain(
   const registry = contracts.find(c => c.name === 'ERC8004IdentityRegistry');
   if (!registry) return { registered: false, agentName: null };
 
-  const rpc = CHAINS[chain].rpc;
+  const rpc = CHAINS[chain].rpcUrls.default.http[0];
   const addr = address.replace('0x', '').toLowerCase().padStart(64, '0');
   const calldata = SELECTORS.getAgent + addr;
 
@@ -119,7 +119,7 @@ export async function getAgentCount(chain: 'base' | 'avalanche' | 'ethereum'): P
   const registry = contracts.find(c => c.name === 'ERC8004IdentityRegistry');
   if (!registry) return null;
 
-  const rpc = CHAINS[chain].rpc;
+  const rpc = CHAINS[chain].rpcUrls.default.http[0];
   const result = await ethCall(rpc, registry.address, SELECTORS.getAgentCount);
   if (!result) return null;
   return decodeUint256(result);
@@ -129,7 +129,7 @@ export async function getAgentCount(chain: 'base' | 'avalanche' | 'ethereum'): P
  * Check if a contract is alive (has code deployed)
  */
 export async function checkContractAlive(chain: 'base' | 'avalanche' | 'ethereum', address: string): Promise<boolean> {
-  const rpc = CHAINS[chain].rpc;
+  const rpc = CHAINS[chain].rpcUrls.default.http[0];
   try {
     const code = (await jsonRpc(rpc, 'eth_getCode', [address, 'latest'])) as string;
     return code !== '0x' && code !== '0x0' && code.length > 2;
@@ -142,7 +142,7 @@ export async function checkContractAlive(chain: 'base' | 'avalanche' | 'ethereum
  * Get current block number for a chain
  */
 export async function getBlockNumber(chain: 'base' | 'avalanche' | 'ethereum'): Promise<number | null> {
-  const rpc = CHAINS[chain].rpc;
+  const rpc = CHAINS[chain].rpcUrls.default.http[0];
   try {
     const result = (await jsonRpc(rpc, 'eth_blockNumber')) as string;
     return parseInt(result, 16);

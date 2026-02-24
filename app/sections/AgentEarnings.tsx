@@ -364,6 +364,7 @@ export default function AgentEarnings() {
     enabled: false, targetTier: "silver", percentOfEarnings: 20,
   });
   const [payAgent, setPayAgent] = useState({ vnsName: "", amount: "", reason: "" });
+  const [paying, setPaying] = useState(false);
   const [transactions, setTransactions] = useState<EarningsTransaction[]>([]);
   const [x402Payments, setX402Payments] = useState<X402PaymentRecord[]>([]);
   const [stats, setStats] = useState({
@@ -612,7 +613,8 @@ export default function AgentEarnings() {
               />
               <button
                 onClick={async () => {
-                  if (payAgent.vnsName && payAgent.amount) {
+                  if (payAgent.vnsName && payAgent.amount && !paying) {
+                    setPaying(true);
                     try {
                       showToast(`Resolving ${payAgent.vnsName} and signing x402 payment...`, "info");
                       const { initiatePayment } = await import("../lib/x402-client");
@@ -629,17 +631,20 @@ export default function AgentEarnings() {
                     } catch (err) {
                       const msg = err instanceof Error ? err.message : "Payment failed";
                       showToast(`Payment failed: ${msg}`, "warning");
+                    } finally {
+                      setPaying(false);
                     }
                   }
                 }}
+                disabled={paying}
                 style={{
-                  padding: "12px 0", borderRadius: 10, border: "none", cursor: "pointer",
+                  padding: "12px 0", borderRadius: 10, border: "none", cursor: paying ? "default" : "pointer",
                   background: "#EC4899", color: "#fff", fontSize: 14, fontWeight: 700,
-                  opacity: payAgent.vnsName && payAgent.amount ? 1 : 0.35,
+                  opacity: paying ? 0.6 : (payAgent.vnsName && payAgent.amount ? 1 : 0.35),
                   transition: "opacity 0.2s ease",
                 }}
               >
-                Send x402 Payment
+                {paying ? "Signing..." : "Send x402 Payment"}
               </button>
             </div>
           </div>

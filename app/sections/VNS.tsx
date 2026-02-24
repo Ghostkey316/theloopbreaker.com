@@ -8,7 +8,10 @@ import {
   getIdentityTypeLabel, getIdentityTypeColor, getBondTierInfo, getBondTier,
   type VNSProfile, type VNSAvailability, type IdentityType, type VNSGasEstimate,
 } from "../lib/vns";
-import { getWalletAddress, isWalletCreated, getWalletPrivateKey } from "../lib/wallet";
+import { getWalletAddress, isWalletCreated } from "../lib/wallet";
+import { getSessionPK } from "../lib/auth";
+import { useWalletAuth } from "../lib/WalletAuthContext";
+import WalletGate from "../components/WalletGate";
 import DisclaimerBanner, { AlphaBanner } from "../components/DisclaimerBanner";
 
 /* ── Icons ── */
@@ -186,6 +189,7 @@ function AntiGamingRules() {
 
 /* ── Main VNS Component ── */
 export default function VNS() {
+  const { isUnlocked, address: contextAddress } = useWalletAuth();
   const [tab, setTab] = useState<'register' | 'lookup'>('register');
   const [nameInput, setNameInput] = useState('');
   const [lookupInput, setLookupInput] = useState('');
@@ -205,7 +209,8 @@ export default function VNS() {
   const [chain, setChain] = useState<'base' | 'avalanche' | 'ethereum'>('base');
   const [bondAmount, setBondAmount] = useState('0.01');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const walletAddress = typeof window !== 'undefined' ? getWalletAddress() : null;
+  // Prefer context address (always in sync with wallet unlock state), fall back to localStorage
+  const walletAddress = contextAddress || (typeof window !== 'undefined' ? getWalletAddress() : null);
 
   // Load initial data
   useEffect(() => {
@@ -218,6 +223,13 @@ export default function VNS() {
   const humanVNS = walletAddress ? getHumanVNSForAddress(walletAddress) : null;
   const companionVNS = walletAddress ? getCompanionVNSForAddress(walletAddress) : null;
   const agentVNSNames = walletAddress ? getAgentVNSNamesForAddress(walletAddress) : [];
+
+  // Cross-system integration: function to navigate to other sections
+  const navigateTo = (section: string) => {
+    if (typeof window !== 'undefined') {
+      (window as any).__setSection?.(section);
+    }
+  };
 
   // Real-time name validation + availability check
   useEffect(() => {
@@ -271,9 +283,9 @@ export default function VNS() {
   // Register handler
   const handleRegister = useCallback(async () => {
     if (!walletAddress || !validation?.valid || !availability?.available || ruleError) return;
-    const pk = getWalletPrivateKey();
+    const pk = getSessionPK();
     if (!pk) {
-      setResult({ success: false, message: 'Wallet is locked. Please unlock your wallet first.' });
+      setResult({ success: false, message: 'Wallet is locked. Please unlock your wallet to register on-chain.' });
       return;
     }
 
@@ -330,7 +342,8 @@ export default function VNS() {
     });
   };
 
-  const canRegister = validation?.valid && availability?.available && !ruleError && walletAddress && !registering;
+  // canRegister: all conditions met AND wallet is either not yet created (will prompt) or is unlocked
+  const canRegister = validation?.valid && availability?.available && !ruleError && walletAddress && !registering && (!isWalletCreated() || isUnlocked);
 
   return (
     <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 16px 80px" }}>
@@ -445,23 +458,43 @@ export default function VNS() {
           <div>
             <label style={label}>Identity Type</label>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <IdentityTypeCard
-                type="human"
-                selected={identityType === 'human'}
-                disabled={!!humanVNS}
-                disabledReason={humanVNS ? `Already registered: ${humanVNS}.vns` : undefined}
-                onClick={() => !humanVNS && setIdentityType('human')}
-              />
-              <IdentityTypeCard
-                type="companion"
-                selected={identityType === 'companion'}
-                disabled={!!companionVNS || !humanVNS}
-                disabledReason={
-                  companionVNS ? `Already registered: ${companionVNS}.vns` :
-                  !humanVNS ? 'Register a human identity first' : undefined
-                }
-                onClick={() => !companionVNS && humanVNS ? setIdentityType('companion') : undefined}
-              />
+              <div className="relative group">
+                <IdentityTypeCard
+                  type="human"
+                  selected={identityType === 'human'}
+                  disabled={!!humanVNS}
+                  disabledReason={humanVNS ? `Already registered: ${humanVNS}.vns` : undefined}
+                  onClick={() => !humanVNS && setIdentityType('human')}
+                />
+                {humanVNS && (
+                  <button 
+                    onClick={() => navigateTo('wallet')}
+                    className="absolute right-4 top-4 text-[10px] font-bold text-emerald-500 hover:text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded transition-colors"
+                  >
+                    View in Wallet
+                  </button>
+                )}
+              </div>
+              <div className="relative group">
+                <IdentityTypeCard
+                  type="companion"
+                  selected={identityType === 'companion'}
+                  disabled={!!companionVNS || !humanVNS}
+                  disabledReason={
+                    companionVNS ? `Already registered: ${companionVNS}.vns` :
+                    !humanVNS ? 'Register a human identity first' : undefined
+                  }
+                  onClick={() => !companionVNS && humanVNS ? setIdentityType('companion') : undefined}
+                />
+                {companionVNS && (
+                  <button 
+                    onClick={() => navigateTo('companion')}
+                    className="absolute right-4 top-4 text-[10px] font-bold text-orange-500 hover:text-orange-400 bg-orange-500/10 px-2 py-1 rounded transition-colors"
+                  >
+                    Chat with Companion
+                  </button>
+                )}
+              </div>
               <IdentityTypeCard
                 type="agent"
                 selected={identityType === 'agent'}
@@ -470,16 +503,24 @@ export default function VNS() {
               />
             </div>
             {agentVNSNames.length > 0 && identityType === 'agent' && (
-              <div style={{ marginTop: 8, padding: "8px 12px", borderRadius: 8, background: "rgba(139,92,246,0.06)" }}>
-                <div style={{ fontSize: 11, color: "#8B5CF6", marginBottom: 4 }}>Your agents:</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                  {agentVNSNames.map(n => (
-                    <span key={n} style={{
-                      fontSize: 11, padding: "2px 8px", borderRadius: 6,
-                      background: "rgba(139,92,246,0.1)", color: "#A78BFA",
-                    }}>{n}.vns</span>
-                  ))}
+              <div style={{ marginTop: 8, padding: "8px 12px", borderRadius: 8, background: "rgba(139,92,246,0.06)", display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: 11, color: "#8B5CF6", marginBottom: 4 }}>Your agents:</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                    {agentVNSNames.map(n => (
+                      <span key={n} style={{
+                        fontSize: 11, padding: "2px 8px", borderRadius: 6,
+                        background: "rgba(139,92,246,0.1)", color: "#A78BFA",
+                      }}>{n}.vns</span>
+                    ))}
+                  </div>
                 </div>
+                <button 
+                  onClick={() => navigateTo('hub')}
+                  className="text-[10px] font-bold text-purple-500 hover:text-purple-400 bg-purple-500/10 px-2 py-1 rounded transition-colors"
+                >
+                  Manage in Hub
+                </button>
               </div>
             )}
           </div>
@@ -626,19 +667,24 @@ export default function VNS() {
             </div>
           )}
 
-          {/* Register Button */}
-          <button
-            onClick={handleRegister}
-            disabled={!canRegister}
-            style={{
-              ...btnPrimary,
-              opacity: canRegister ? 1 : 0.4,
-              cursor: canRegister ? "pointer" : "not-allowed",
-            }}
+          {/* Register Button (Gated) */}
+          <WalletGate 
+            featureName="VNS Registration" 
+            featureDesc="You need an active wallet session to register your identity on-chain."
           >
-            {registering ? "Registering on-chain..." :
-             `Register ${nameInput || 'name'}.vns as ${getIdentityTypeLabel(identityType)}`}
-          </button>
+            <button
+              onClick={handleRegister}
+              disabled={!canRegister}
+              style={{
+                ...btnPrimary,
+                opacity: canRegister ? 1 : 0.4,
+                cursor: canRegister ? "pointer" : "not-allowed",
+              }}
+            >
+              {registering ? "Registering on-chain..." :
+               `Register ${nameInput || 'name'}.vns as ${getIdentityTypeLabel(identityType)}`}
+            </button>
+          </WalletGate>
 
           {/* Result */}
           {result && (

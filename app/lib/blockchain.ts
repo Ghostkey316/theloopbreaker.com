@@ -91,8 +91,8 @@ export async function checkChainConnectivity(chain: 'base' | 'avalanche' | 'ethe
   const start = Date.now();
   try {
     const [blockHex, chainHex] = await Promise.all([
-      jsonRpc(cfg.rpc, 'eth_blockNumber') as Promise<string>,
-      jsonRpc(cfg.rpc, 'eth_chainId') as Promise<string>,
+      jsonRpc(cfg.rpcUrls.default.http[0], 'eth_blockNumber') as Promise<string>,
+      jsonRpc(cfg.rpcUrls.default.http[0], 'eth_chainId') as Promise<string>,
     ]);
     return {
       success: true,
@@ -120,7 +120,7 @@ export async function checkAllChains(): Promise<Record<string, RPCResult>> {
 
 // ─── Contract existence check ─────────────────────────────────────────────────
 export async function checkContractAlive(chain: 'base' | 'avalanche' | 'ethereum', address: string): Promise<boolean> {
-  const rpc = CHAINS[chain].rpc;
+  const rpc = CHAINS[chain].rpcUrls.default.http[0];
   try {
     const code = (await jsonRpc(rpc, 'eth_getCode', [address, 'latest'])) as string;
     return code !== '0x' && code !== '0x0' && code.length > 2;
@@ -151,7 +151,7 @@ export interface GovernanceData {
 }
 
 export async function getGovernanceData(chain: 'base' | 'avalanche' | 'ethereum', address: string): Promise<GovernanceData> {
-  const rpc = CHAINS[chain].rpc;
+  const rpc = CHAINS[chain].rpcUrls.default.http[0];
   const isAlive = await checkContractAlive(chain, address);
   if (!isAlive) return { isAlive: false, proposalCount: null, threshold: null, ownerCount: null };
 
@@ -179,7 +179,7 @@ export interface BridgeStats {
 }
 
 export async function getTeleporterBridgeStats(chain: 'base' | 'avalanche' | 'ethereum', address: string): Promise<BridgeStats> {
-  const rpc = CHAINS[chain].rpc;
+  const rpc = CHAINS[chain].rpcUrls.default.http[0];
   const isAlive = await checkContractAlive(chain, address);
   if (!isAlive) return { isAlive: false, messageCount: null, nonce: null, paused: null };
 
@@ -203,7 +203,7 @@ export interface RegistryData {
 }
 
 export async function getRegistryData(chain: 'base' | 'avalanche' | 'ethereum', address: string): Promise<RegistryData> {
-  const rpc = CHAINS[chain].rpc;
+  const rpc = CHAINS[chain].rpcUrls.default.http[0];
   const isAlive = await checkContractAlive(chain, address);
   if (!isAlive) return { isAlive: false, entryCount: null };
 

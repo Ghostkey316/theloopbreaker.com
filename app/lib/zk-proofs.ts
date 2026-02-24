@@ -224,7 +224,7 @@ async function getVerifierContract(chain: ZKChain): Promise<string | null> {
   const preferred = contracts.find(c => c.name === 'ProductionBeliefAttestationVerifier') || contracts[0];
 
   try {
-    const rpc = CHAINS[chain].rpc;
+    const rpc = CHAINS[chain].rpcUrls.default.http[0];
     const resp = await fetch(rpc, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -605,12 +605,13 @@ export async function verifyProofByHash(proofHash: string, chain: ZKChain): Prom
     };
   }
 
-  // For external proofs, we trust the hash format + verifier contract existence
+  // For external proofs, verifier contract exists but we haven't done actual on-chain verification
+  // Mark as structurally valid with verifier available (not fully on-chain verified)
   return {
     valid: true,
     chain,
     verifiedAt: now,
-    onChainVerified: true,
+    onChainVerified: false, // Verifier exists but proof not submitted on-chain yet
     verifierContract,
   };
 }

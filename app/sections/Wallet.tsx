@@ -31,6 +31,12 @@ import {
   type TrustGateLevel,
 } from "../lib/trust-gate";
 import { getPaymentHistory, type X402PaymentRecord } from "../lib/x402-client";
+import {
+  isCompanionWalletCreated, getCompanionAddress,
+  getCompanionBalance, getCompanionUSDCBalance,
+  getCompanionBondStatus, getCompanionVNSName,
+  getCompanionAgentName, getCompanionStatus,
+} from "../lib/companion-agent";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -565,6 +571,143 @@ const mono = { fontFamily: "'Courier New', 'JetBrains Mono', monospace" };
 
 function isValidAddress(addr: string): boolean {
   return /^0x[a-fA-F0-9]{40}$/.test(addr);
+}
+
+// ─── Companion Wallet Card (shown alongside user's wallet) ──────────────────
+
+function CompanionWalletCard({ isMobile }: { isMobile: boolean }) {
+  const [compBalance, setCompBalance] = useState("0");
+  const [compUsdc, setCompUsdc] = useState("0.00");
+  const [compCopied, setCompCopied] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  const created = isCompanionWalletCreated();
+  const address = getCompanionAddress();
+  const bond = getCompanionBondStatus();
+  const vns = getCompanionVNSName();
+  const agentName = getCompanionAgentName();
+  const status = getCompanionStatus();
+
+  useEffect(() => {
+    if (!created || !address) return;
+    getCompanionBalance("base").then(setCompBalance).catch(() => {});
+    getCompanionUSDCBalance().then(setCompUsdc).catch(() => {});
+  }, [created, address]);
+
+  if (!created) return null;
+
+  const px = isMobile ? "16px" : "32px";
+  const truncAddr = address ? `${address.slice(0, 8)}...${address.slice(-6)}` : "";
+
+  return (
+    <div style={{ padding: `16px ${px}` }}>
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        style={{
+          width: "100%", padding: "14px 16px", borderRadius: 14,
+          backgroundColor: "rgba(249,115,22,0.04)",
+          border: "1px solid rgba(249,115,22,0.12)",
+          cursor: "pointer", textAlign: "left",
+          transition: "all 0.15s ease",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <svg width={16} height={16} viewBox="0 0 32 32" fill="none">
+              <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9" />
+              <path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C" />
+            </svg>
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "#F97316", marginBottom: 1 }}>
+                Companion Wallet
+              </p>
+              <p style={{ fontSize: 11, color: "#52525B", fontFamily: "'JetBrains Mono', monospace" }}>
+                {vns || `${agentName}.vns`} · {truncAddr}
+              </p>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {bond.active && (
+              <span style={{
+                fontSize: 9, padding: "2px 6px", borderRadius: 4,
+                backgroundColor: "rgba(34,197,94,0.1)",
+                color: "#22C55E", fontWeight: 700,
+              }}>
+                {bond.tier ? `${bond.tier.toUpperCase()} BOND` : 'BONDED'}
+              </span>
+            )}
+            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#52525B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+              style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.15s ease" }}>
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+        </div>
+
+        {expanded && (
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+            <div style={{ display: "flex", gap: 16, marginBottom: 10 }}>
+              <div>
+                <p style={{ fontSize: 9, color: "#52525B", marginBottom: 2, textTransform: "uppercase", letterSpacing: "0.05em" }}>ETH (Base)</p>
+                <p style={{ fontSize: 15, fontWeight: 700, color: "#F4F4F5", fontFamily: "'JetBrains Mono', monospace" }}>
+                  {parseFloat(compBalance).toFixed(6)}
+                </p>
+              </div>
+              <div>
+                <p style={{ fontSize: 9, color: "#52525B", marginBottom: 2, textTransform: "uppercase", letterSpacing: "0.05em" }}>USDC</p>
+                <p style={{ fontSize: 15, fontWeight: 700, color: "#F4F4F5", fontFamily: "'JetBrains Mono', monospace" }}>
+                  {compUsdc}
+                </p>
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 11, color: "#71717A", fontFamily: "'JetBrains Mono', monospace" }}>
+                {address}
+              </span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (address) navigator.clipboard.writeText(address).then(() => {
+                    setCompCopied(true);
+                    setTimeout(() => setCompCopied(false), 2000);
+                  });
+                }}
+                style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  color: compCopied ? "#22C55E" : "#52525B", padding: 2,
+                }}
+              >
+                {compCopied ? "✓" : "⧉"}
+              </button>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
+              {[
+                { label: "Wallet", active: true },
+                { label: "Bond", active: bond.active },
+                { label: "Identity", active: status.agentRegistered },
+                { label: "XMTP", active: status.xmtpPermission },
+                { label: "x402", active: status.spendingLimitUsd > 0 },
+                { label: "Monitor", active: status.monitoringEnabled },
+              ].map((cap) => (
+                <span
+                  key={cap.label}
+                  style={{
+                    fontSize: 9, padding: "2px 5px", borderRadius: 4,
+                    backgroundColor: cap.active ? "rgba(34,197,94,0.08)" : "rgba(255,255,255,0.03)",
+                    color: cap.active ? "#22C55E" : "#3F3F46",
+                    fontWeight: 500,
+                  }}
+                >
+                  {cap.label}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </button>
+    </div>
+  );
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -1563,6 +1706,9 @@ export default function Wallet() {
 
       {/* Divider */}
       <div style={{ height: 1, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)" }} />
+
+      {/* ── Companion Wallet Card ── */}
+      <CompanionWalletCard isMobile={isMobile} />
 
       {/* ── Asset List ── */}
       <div style={{ padding: `28px ${px} 0` }}>

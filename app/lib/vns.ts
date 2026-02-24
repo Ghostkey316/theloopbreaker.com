@@ -82,9 +82,9 @@ const PRIVACY_CONTRACT_ADDRESSES: Record<'base' | 'avalanche' | 'ethereum', stri
 };
 
 const RPC_URLS: Record<'base' | 'avalanche' | 'ethereum', string> = {
-  ethereum: CHAINS.ethereum.rpc,
-  base: CHAINS.base.rpc,
-  avalanche: CHAINS.avalanche.rpc,
+  ethereum: CHAINS.ethereum.rpcUrls.default.http[0],
+  base: CHAINS.base.rpcUrls.default.http[0],
+  avalanche: CHAINS.avalanche.rpcUrls.default.http[0],
 };
 
 const GET_AGENT_SELECTOR = '0xfb3551ff';

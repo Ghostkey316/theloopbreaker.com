@@ -81,20 +81,23 @@ export default function Bridge() {
 
   const loadData = async () => {
     setLoading(true);
-    const promises: Promise<unknown>[] = [
+    // Use named promise pattern to avoid fragile index-based access
+    const [baseRpc, avaxRpc, ethRpc] = await Promise.all([
       checkChainConnectivity("base"),
       checkChainConnectivity("avalanche"),
       checkChainConnectivity("ethereum"),
-    ];
-    if (BASE_BRIDGE) promises.push(getTeleporterBridgeStats("base", BASE_BRIDGE.address));
-    if (AVAX_BRIDGE) promises.push(getTeleporterBridgeStats("avalanche", AVAX_BRIDGE.address));
+    ]);
+    setBaseChain(baseRpc);
+    setAvaxChain(avaxRpc);
+    setEthChain(ethRpc);
 
-    const results = await Promise.all(promises);
-    setBaseChain(results[0] as RPCResult);
-    setAvaxChain(results[1] as RPCResult);
-    setEthChain(results[2] as RPCResult);
-    if (BASE_BRIDGE) setBaseBridge(results[3] as BridgeStats);
-    if (AVAX_BRIDGE) setAvaxBridge(results[BASE_BRIDGE ? 4 : 3] as BridgeStats);
+    // Fetch bridge stats separately with proper null checks
+    const [baseBridgeResult, avaxBridgeResult] = await Promise.all([
+      BASE_BRIDGE ? getTeleporterBridgeStats("base", BASE_BRIDGE.address) : Promise.resolve(null),
+      AVAX_BRIDGE ? getTeleporterBridgeStats("avalanche", AVAX_BRIDGE.address) : Promise.resolve(null),
+    ]);
+    if (baseBridgeResult) setBaseBridge(baseBridgeResult);
+    if (avaxBridgeResult) setAvaxBridge(avaxBridgeResult);
     setLoading(false);
   };
 

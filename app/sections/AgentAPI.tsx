@@ -330,7 +330,7 @@ export default function AgentAPI() {
       description: "Register a new AI agent on ERC8004IdentityRegistry using the verified ABI",
       code: `import { ethers } from "ethers";
 
-const provider = new ethers.JsonRpcProvider("${CHAINS.base.rpc}");
+const provider = new ethers.JsonRpcProvider("${CHAINS.base.rpcUrls.default.http[0]}");
 const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
 
 // Verified ABI — registerAgent(string, string, bytes32)
@@ -392,7 +392,7 @@ console.log("Bond staked:", receipt.hash);`,
       description: "Query an agent's on-chain identity and bond status",
       code: `from web3 import Web3
 
-w3 = Web3(Web3.HTTPProvider("${CHAINS.base.rpc}"))
+w3 = Web3(Web3.HTTPProvider("${CHAINS.base.rpcUrls.default.http[0]}"))
 
 # ERC8004IdentityRegistry — getAgent(address)
 # Selector: 0xfb3551ff
@@ -1320,12 +1320,12 @@ npm install ethers@6
                   background: chainKey === "base" ? "#3B82F6" : chainKey === "avalanche" ? "#EF4444" : "#627EEA",
                 }} />
                 <span style={{ fontSize: 15, fontWeight: 700, color: "#F4F4F5" }}>
-                  {chainKey === "base" ? "Base" : chainKey === "avalanche" ? "Avalanche" : "Ethereum"} (Chain ID: {chain.chainId})
+                  {chainKey === "base" ? "Base" : chainKey === "avalanche" ? "Avalanche" : "Ethereum"} (Chain ID: {chain.id})
                 </span>
                 <span style={{ fontSize: 11, color: "#52525B", marginLeft: "auto" }}>{chainContracts.length} contracts</span>
               </div>
               <div style={{ fontSize: 11, color: "#52525B", marginBottom: 10, fontFamily: "'SF Mono', monospace" }}>
-                RPC: {chain.rpc}
+                RPC: {chain.rpcUrls.default.http[0]}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {chainContracts.map(c => (
