@@ -336,7 +336,7 @@ const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
 // Verified ABI — registerAgent(string, string, bytes32)
 // Selector: 0x2b3ce0bf
 const registry = new ethers.Contract(
-  "0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5", // Base
+  "0x35978DB675576598F0781dA2133E94cdCf4858bC", // Base
   [
     "function registerAgent(string name, string description, bytes32 identityHash) external",
     "function getAgent(address) external view returns (string name, string description)",
@@ -369,7 +369,7 @@ console.log("Registered:", receipt.hash);`,
 // Verified ABI — createBond(address, string) payable
 // Selector: 0x7ac5113b
 const bonds = new ethers.Contract(
-  "0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1", // Base
+  "0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4", // Base
   [
     "function createBond(address aiAgent, string partnershipType) external payable"
   ],
@@ -397,7 +397,7 @@ w3 = Web3(Web3.HTTPProvider("${CHAINS.base.rpc}"))
 # ERC8004IdentityRegistry — getAgent(address)
 # Selector: 0xfb3551ff
 registry = w3.eth.contract(
-    address="0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5",
+    address="0x35978DB675576598F0781dA2133E94cdCf4858bC",
     abi=[{
         "name": "getAgent",
         "type": "function",
@@ -435,7 +435,7 @@ BASE_URL = "https://theloopbreaker.com"
 
 # Check agent status
 resp = requests.get(f"{BASE_URL}/api/agent/status", params={
-    "address": "0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324",
+    "address": "0xA054f831B562e729F8D268291EBde1B2EDcFb84F",
     "chain": "base"
 })
 status = resp.json()

@@ -52,44 +52,44 @@ const EXPLORER_URLS: Record<SupportedChain, string> = {
 
 /** ERC8004IdentityRegistry — agent registration */
 export const IDENTITY_REGISTRY: Record<SupportedChain, string> = {
-  base: '0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5',
-  avalanche: '0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5',
-  ethereum: '0xaCB59e0f0eA47B25b24390B71b877928E5842630',
+  base: '0x35978DB675576598F0781dA2133E94cdCf4858bC',
+  avalanche: '0x57741F4116925341d8f7Eb3F381d98e07C73B4a3',
+  ethereum: '0x1A80F77e12f1bd04538027aed6d056f5DCcDCD3C',
 };
 
 /** AIPartnershipBondsV2 — bond staking */
 export const PARTNERSHIP_BONDS: Record<SupportedChain, string> = {
-  base: '0x5cd7143B2c3F05C401F7684C21F781cA40bE9BB1',
-  avalanche: '0x37679B1dCfabE6eA6b8408626815A1426bE2D717',
-  ethereum: '0x4FAf741d6AcA2cBD8F72e469974C4AB0EB587aC1',
+  base: '0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4',
+  avalanche: '0xea6B504827a746d781f867441364C7A732AA4b07',
+  ethereum: '0x247F31bB2b5a0d28E68bf24865AA242965FF99cd',
 };
 
 /** AIAccountabilityBondsV2 — accountability bonds */
 export const ACCOUNTABILITY_BONDS: Record<SupportedChain, string> = {
-  base: '0xDfc66395A4742b5168712a04942C90B99394aEEb',
-  avalanche: '0xEF022Bdf55940491d4efeBDE61Ffa3f3fF81b192',
-  ethereum: '0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5',
+  base: '0xf92baef9523BC264144F80F9c31D5c5C017c6Da8',
+  avalanche: '0xaeFEa985E0C52f92F73606657B9dA60db2798af3',
+  ethereum: '0x11C267C8A75B13A4D95357CEF6027c42F8e7bA24',
 };
 
 /** BeliefAttestationVerifier — belief attestation */
 export const BELIEF_ATTESTATION: Record<SupportedChain, string> = {
-  base: '0x10180c8430cfD61d27F1d7a548Cff0C4D143bFEF',
-  avalanche: '0xBdB6c89f5cb86f4d44F7E01d9393b29D83e3DB55',
-  ethereum: '0xFe122605364f428570c4C0EB2CCAEBb68dD22d05',
+  base: '0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba',
+  avalanche: '0xE2f75A4B14ffFc1f9C2b1ca22Fdd6877E5BD5045',
+  ethereum: '0x613585B786af2d5ecb1c3e712CE5ffFB8f53f155',
 };
 
 /** DilithiumAttestor V2 — post-quantum attestation */
 export const DILITHIUM_ATTESTOR: Record<SupportedChain, string> = {
-  base: '0xe24Ab41dC93833d63d8dd501C53bED674daa4839',
-  avalanche: '0x5470d8189849675C043fFA7fc451e5F2f4e5532c',
-  ethereum: '0xE1b9817FC0F10d2676303C7732497E9B593a22de',
+  base: '0xBBC0EFdEE23854e7cb7C4c0f56fF7670BB0530A4',
+  avalanche: '0x211554bd46e3D4e064b51a31F61927ae9c7bCF1f',
+  ethereum: '0x490c51c2fAd743C288D65A6006f6B0ae9e6a8695',
 };
 
 /** PrivacyGuarantees — privacy invocation */
 export const PRIVACY_GUARANTEES: Record<SupportedChain, string> = {
-  base: '0xBdB6c89f5cb86f4d44F7E01d9393b29D83e3DB55',
-  avalanche: '0x6B60DeFDb2dB8E24d02283a536d5d1A3B178B96C',
-  ethereum: '0xE1D52bF7A842B207B8C48eAE801f9d97A3C4D709',
+  base: '0xE2f75A4B14ffFc1f9C2b1ca22Fdd6877E5BD5045',
+  avalanche: '0xc09F0e06690332eD9b490E1040BdE642f11F3937',
+  ethereum: '0x8aceF0Bc7e07B2dE35E9069663953f41B5422218',
 };
 
 /* ── Verified Function Selectors ── */

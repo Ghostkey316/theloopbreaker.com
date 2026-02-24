@@ -21,9 +21,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 /* ── Contract addresses ── */
 const REGISTRY: Record<string, string> = {
-  base: '0x63a3d64DfA31509DE763f6939BF586dc4C06d1D5',
-  avalanche: '0x0161c45ad09Fd8dEA6F4A7396fafa3ca1Cffc1b5',
-  ethereum: '0xaCB59e0f0eA47B25b24390B71b877928E5842630',
+  base: '0x35978DB675576598F0781dA2133E94cdCf4858bC',
+  avalanche: '0x57741F4116925341d8f7Eb3F381d98e07C73B4a3',
+  ethereum: '0x1A80F77e12f1bd04538027aed6d056f5DCcDCD3C',
 };
 
 const CHAIN_IDS: Record<string, number> = { ethereum: 1, base: 8453, avalanche: 43114 };
