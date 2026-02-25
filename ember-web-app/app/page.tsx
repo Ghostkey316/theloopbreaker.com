@@ -19,6 +19,7 @@ import TrustBadges from './sections/TrustBadges';
 import AgentEarnings from './sections/AgentEarnings';
 import AgentAPI from './sections/AgentAPI';
 import CompanionAgent from './sections/CompanionAgent';
+import Account from './sections/Account';
 import DisclaimerModal from './components/DisclaimerModal';
 import FooterDisclaimer from './components/FooterDisclaimer';
 import OnboardingModal from './components/OnboardingModal';
@@ -26,7 +27,7 @@ import ToastContainer from './components/Toast';
 import WalletGate from './components/WalletGate';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
-type Section = 'home' | 'chat' | 'wallet' | 'verify' | 'bridge' | 'sync' | 'trust' | 'analytics' | 'vns' | 'agent-hub' | 'marketplace' | 'zk-proofs' | 'trust-badges' | 'earnings' | 'agent-api' | 'companion-agent' | 'settings';
+type Section = 'home' | 'chat' | 'wallet' | 'verify' | 'bridge' | 'sync' | 'trust' | 'analytics' | 'vns' | 'agent-hub' | 'marketplace' | 'zk-proofs' | 'trust-badges' | 'earnings' | 'agent-api' | 'companion-agent' | 'account' | 'settings';
 
 // Skeleton placeholder for section loading
 function SectionSkeleton() {
@@ -199,6 +200,7 @@ export default function Page() {
         );
         case 'agent-api': return <AgentAPI />;
         case 'companion-agent': return <CompanionAgent />;
+        case 'account': return <Account />;
         default: return <Home />;
       }
     })();

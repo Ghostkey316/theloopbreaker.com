@@ -5,7 +5,7 @@ import { getUnreadCount } from "../lib/notifications";
 import { useWalletAuth } from "../lib/WalletAuthContext";
 import { isWalletCreated } from "../lib/wallet";
 
-type Section = "home" | "chat" | "wallet" | "verify" | "bridge" | "sync" | "trust" | "analytics" | "vns" | "agent-hub" | "marketplace" | "zk-proofs" | "trust-badges" | "earnings" | "agent-api" | "companion-agent" | "settings";
+type Section = "home" | "chat" | "wallet" | "verify" | "bridge" | "sync" | "trust" | "analytics" | "vns" | "agent-hub" | "marketplace" | "zk-proofs" | "trust-badges" | "earnings" | "agent-api" | "companion-agent" | "account" | "settings";
 
 const Icons: Record<string, (props: { size?: number; color?: string }) => React.ReactElement> = {
   home: ({ size = 18, color = "currentColor" }) => (
@@ -100,6 +100,7 @@ const NAV_ITEMS: { id: Section; label: string; iconKey: string; group?: string }
   { id: "home", label: "Home", iconKey: "home" },
   { id: "chat", label: "Chat", iconKey: "chat" },
   { id: "companion-agent", label: "Companion Agent", iconKey: "companionAgent" },
+  { id: "account", label: "Account", iconKey: "wallet" },
   { id: "wallet", label: "Embris Wallet", iconKey: "wallet" },
   { id: "vns", label: "VNS Identity", iconKey: "vns", group: "Identity" },
   { id: "agent-hub", label: "Embris Hub", iconKey: "agentHub", group: "Agents" },
