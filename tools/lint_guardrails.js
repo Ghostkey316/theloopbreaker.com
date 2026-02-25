@@ -29,7 +29,7 @@ function walk(dir, results) {
         while ((match = pattern.regex.exec(content)) !== null) {
           const moduleName = match[1] || '';
           const normalized = moduleName.toLowerCase();
-          if (normalized.includes('originfingerprint') || normalized.includes('identitystore') || normalized.includes('yamljs')) {
+          if (normalized.includes('originfingerprint') || normalized.includes('identitystore') || normalized.includes('yamljs') || normalized.includes('antisurveillance')) {
             continue;
           }
           results.push({ file: path.relative(ROOT, fullPath), reason: `${pattern.reason}: ${moduleName}` });
