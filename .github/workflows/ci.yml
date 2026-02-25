@@ -117,5 +117,7 @@ jobs:
 
       - name: Audit
         # Keep this at "high" so moderate ecosystem issues don't block dev.
+        # continue-on-error handles transient npm registry Cloudflare blocks.
+        continue-on-error: true
         run: npm audit --audit-level=high --omit=dev
 
