@@ -224,7 +224,7 @@ async function getVerifierContract(chain: ZKChain): Promise<string | null> {
   const preferred = contracts.find(c => c.name === 'ProductionBeliefAttestationVerifier') || contracts[0];
 
   try {
-    const rpc = CHAINS[chain].rpc;
+    const rpc = CHAINS[chain].rpcUrls.default.http[0];
     const resp = await fetch(rpc, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

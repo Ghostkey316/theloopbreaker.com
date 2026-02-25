@@ -18,6 +18,8 @@ import { formatContractDataForPrompt } from './knowledge-base';
 import { formatSessionSummariesForPrompt } from './conversation-summaries';
 import { formatGoalsForPrompt } from './goal-tracking';
 import { formatPersonalityForPrompt } from './personality-tuning';
+import { getBrainStats, getUserPreferences, getTopicInterests } from './companion-brain';
+import { getSoulContextForPrompt } from './companion-soul';
 import { isRegistered, shouldNudgeRegistration, getRegisteredWalletAddress } from './registration';
 import type { Memory } from './memory';
 
@@ -89,7 +91,7 @@ function getCompanionName(): string {
   return localStorage.getItem('vaultfire_companion_name') || 'Embris';
 }
 
-const API_URL = 'https://api.manus.im/api/llm-proxy/v1/chat/completions';
+const API_URL = process.env.NEXT_PUBLIC_LLM_API_URL || 'https://api.openai.com/v1/chat/completions';
 const API_KEY = process.env.NEXT_PUBLIC_OPENAI_API_KEY || '';
 
 // API_KEY is consumed by Chat.tsx for LLM-powered features (memory extraction, self-learning, etc.)
@@ -330,6 +332,39 @@ ${companionName !== 'Embris' ? `IMPORTANT: The user has named you "${companionNa
     }
   }
 
+  // 9. Companion soul context (identity, values, boundaries)
+  if (remainingBudget > 300) {
+    const soulBlock = getSoulContextForPrompt();
+    const soulTokens = estimateTokens(soulBlock);
+    if (soulTokens < remainingBudget) {
+      prompt += soulBlock;
+      remainingBudget -= soulTokens;
+    }
+  }
+
+  // 10. Companion brain context (learned preferences and interests)
+  if (remainingBudget > 300) {
+    const brainStats = getBrainStats();
+    const prefs = getUserPreferences();
+    const interests = getTopicInterests();
+    if (prefs.length > 0 || interests.length > 0 || brainStats.learnedInsights > 0) {
+      let brainBlock = '\n\n═══ COMPANION BRAIN (Self-Learned) ═══';
+      if (prefs.length > 0) {
+        brainBlock += '\nLearned user preferences: ' + prefs.slice(0, 10).map(p => `${p.key}: ${p.value}`).join(', ');
+      }
+      if (interests.length > 0) {
+        brainBlock += '\nUser interests: ' + interests.slice(0, 8).map(t => `${t.topic} (${t.sentiment}, mentioned ${t.mentionCount}x)`).join(', ');
+      }
+      brainBlock += `\nBrain stats: ${brainStats.knowledgeEntries} knowledge topics, ${brainStats.learnedInsights} learned insights, ${brainStats.memoriesCount} memories`;
+      brainBlock += '\nYou have a LOCAL BRAIN that learns from every conversation. You get smarter over time. Reference what you\'ve learned naturally.';
+      const tokens = estimateTokens(brainBlock);
+      if (tokens < remainingBudget) {
+        prompt += brainBlock;
+        remainingBudget -= tokens;
+      }
+    }
+  }
+
   // Closing instructions
   if (remainingBudget > 500) {
     prompt += SELF_LEARNING_INSTRUCTIONS;
@@ -433,6 +468,14 @@ export async function streamChat({
   onError,
   signal,
 }: StreamChatParams): Promise<void> {
+  // LOCAL BRAIN FIRST: If no API key is configured, immediately trigger
+  // the error handler so Chat.tsx can use the local brain fallback.
+  // The local brain is the PRIMARY intelligence — API is only for complex/novel queries.
+  if (!API_KEY || API_KEY.trim() === '') {
+    onError('No API key configured — using local brain');
+    return;
+  }
+
   const systemPrompt = buildSystemPrompt(memories || [], userMessage);
 
   const llmMessages = [
@@ -457,8 +500,10 @@ export async function streamChat({
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => '');
-      onError(`Chat service unavailable (${response.status}): ${errorText}`);
+      // API failed (401, 429, 500, etc.) — fall back to local brain.
+      // NEVER show raw error to user.
+      console.warn(`[Embris] API returned ${response.status} — falling back to local brain`);
+      onError(`API unavailable (${response.status})`);
       return;
     }
 
@@ -466,7 +511,7 @@ export async function streamChat({
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
-      onError('No response from Embris');
+      onError('Empty response — using local brain');
       return;
     }
 
@@ -475,7 +520,8 @@ export async function streamChat({
     onDone(content);
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') return;
-    const msg = error instanceof Error ? error.message : 'Connection failed';
-    onError(msg);
+    // Network error, timeout, etc. — fall back to local brain. NEVER show raw error.
+    console.warn('[Embris] API call failed:', error instanceof Error ? error.message : error);
+    onError('Connection failed — using local brain');
   }
 }

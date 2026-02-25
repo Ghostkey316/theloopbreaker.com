@@ -29,9 +29,9 @@ export type SupportedChain = 'base' | 'avalanche' | 'ethereum';
 
 /** RPC endpoints for each chain */
 const RPC_URLS: Record<SupportedChain, string> = {
-  ethereum: CHAINS.ethereum.rpc,
-  base: CHAINS.base.rpc,
-  avalanche: CHAINS.avalanche.rpc,
+  ethereum: CHAINS.ethereum.rpcUrls.default.http[0],
+  base: CHAINS.base.rpcUrls.default.http[0],
+  avalanche: CHAINS.avalanche.rpcUrls.default.http[0],
 };
 
 /** Chain IDs */

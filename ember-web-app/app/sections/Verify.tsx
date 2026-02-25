@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { ALL_CONTRACTS, CHAINS, type ContractInfo } from "../lib/contracts";
+import { ALL_CONTRACTS, CHAINS, type Contract } from "../lib/contracts";
 import { checkContractAlive } from "../lib/blockchain";
 import { SectionDisclaimer, AlphaBanner } from "../components/DisclaimerBanner";
 
@@ -22,7 +22,7 @@ function SearchIcon({ size = 14 }: { size?: number }) {
   return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>);
 }
 
-interface ContractRow extends ContractInfo {
+interface ContractRow extends Contract {
   alive: boolean | null;
   checking: boolean;
 }

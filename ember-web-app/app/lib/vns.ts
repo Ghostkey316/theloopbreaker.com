@@ -82,9 +82,9 @@ const PRIVACY_CONTRACT_ADDRESSES: Record<'base' | 'avalanche' | 'ethereum', stri
 };
 
 const RPC_URLS: Record<'base' | 'avalanche' | 'ethereum', string> = {
-  ethereum: CHAINS.ethereum.rpc,
-  base: CHAINS.base.rpc,
-  avalanche: CHAINS.avalanche.rpc,
+  ethereum: CHAINS.ethereum.rpcUrls.default.http[0],
+  base: CHAINS.base.rpcUrls.default.http[0],
+  avalanche: CHAINS.avalanche.rpcUrls.default.http[0],
 };
 
 const GET_AGENT_SELECTOR = '0xfb3551ff';
@@ -1377,7 +1377,7 @@ export async function getOnChainHubStats(): Promise<OnChainHubStats> {
 export async function getOnChainAgents(): Promise<RegisteredAgent[]> {
   // Known deployer/registrant addresses to scan
   const KNOWN_ADDRESSES = [
-    '0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324', // Vaultfire deployer
+    '0xA054f831B562e729F8D268291EBde1B2EDcFb84F', // Vaultfire deployer
   ];
 
   const agents: RegisteredAgent[] = [];

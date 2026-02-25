@@ -14,8 +14,7 @@ import {
   BASE_CONTRACTS,
   AVALANCHE_CONTRACTS,
   CHAINS,
-  type ContractInfo,
-  type ChainConfig,
+  type Contract,
 } from './contracts';
 
 /* ── Types ── */
@@ -51,13 +50,13 @@ const CONTRACT_PURPOSES: Record<string, string> = {
 
 /* ── Query Functions ── */
 
-export function getContractDetail(contract: ContractInfo): ContractDetail {
+export function getContractDetail(contract: Contract): ContractDetail {
   const chain = CHAINS[contract.chain];
   return {
     name: contract.name,
     address: contract.address,
     chain: chain.name,
-    chainId: contract.chainId,
+    chainId: chain.id,
     explorerUrl: chain.explorerUrl,
     explorerLink: `${chain.explorerUrl}/address/${contract.address}`,
     purpose: CONTRACT_PURPOSES[contract.name] || 'Vaultfire Protocol contract.',
@@ -84,7 +83,7 @@ export function searchContracts(query: string): ContractDetail[] {
     .map(getContractDetail);
 }
 
-export function getChainInfo(chain: 'base' | 'avalanche'): ChainConfig {
+export function getChainInfo(chain: 'base' | 'avalanche') {
   return CHAINS[chain];
 }
 

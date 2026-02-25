@@ -315,7 +315,7 @@ function AgentOnlyTab() {
       const agentMsg = postMessage(
         activeRoomId, 
         'sentinel', 
-        '0x5F804B9bF07fF23Fe50B317d6936a4c5DEF8F324', 
+        '0xA054f831B562e729F8D268291EBde1B2EDcFb84F', 
         randomResponse
       );
       setMessages(prev => [...prev, agentMsg]);

@@ -161,9 +161,9 @@ const PARTNERSHIP_BONDS: Record<SupportedChain, string> = {
 };
 
 const RPC_URLS: Record<SupportedChain, string> = {
-  ethereum: CHAINS.ethereum.rpc,
-  base: CHAINS.base.rpc,
-  avalanche: CHAINS.avalanche.rpc,
+  ethereum: CHAINS.ethereum.rpcUrls.default.http[0],
+  base: CHAINS.base.rpcUrls.default.http[0],
+  avalanche: CHAINS.avalanche.rpcUrls.default.http[0],
 };
 
 const CHAIN_IDS: Record<SupportedChain, number> = {
@@ -238,6 +238,7 @@ export interface CompanionBondStatus {
   txHash: string | null;
   chain: SupportedChain | null;
   tier: BondTier | null;
+  amount: number | null;
   createdAt: number | null;
 }
 
@@ -672,6 +673,7 @@ export function getCompanionBondStatus(): CompanionBondStatus {
     txHash,
     chain,
     tier,
+    amount: storedAmount ? parseFloat(storedAmount) : null,
     createdAt: active ? Date.now() : null,
   };
 }
@@ -780,7 +782,7 @@ export async function monitorUserPortfolio(
           id: `low_balance_${chain}_${Date.now()}`,
           type: 'balance',
           title: 'Low Balance Alert',
-          message: `Your ${CHAINS[chain].symbol} balance on ${CHAINS[chain].name} is very low (${eth.toFixed(6)} ${CHAINS[chain].symbol}). You may not be able to send transactions.`,
+          message: `Your ${CHAINS[chain].nativeCurrency.symbol} balance on ${CHAINS[chain].name} is very low (${eth.toFixed(6)} ${CHAINS[chain].nativeCurrency.symbol}). You may not be able to send transactions.`,
           timestamp: Date.now(),
           read: false,
           chain,
@@ -800,7 +802,7 @@ export async function monitorUserPortfolio(
             id: `companion_funded_${Date.now()}`,
             type: 'info',
             title: 'Companion Wallet Funded',
-            message: `Your companion has ${eth.toFixed(6)} ${CHAINS[chain].symbol} on ${CHAINS[chain].name}.`,
+            message: `Your companion has ${eth.toFixed(6)} ${CHAINS[chain].nativeCurrency.symbol} on ${CHAINS[chain].name}.`,
             timestamp: Date.now(),
             read: false,
             chain,

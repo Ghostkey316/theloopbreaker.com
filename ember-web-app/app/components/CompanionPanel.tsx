@@ -9,6 +9,8 @@
  * - Agent registration status
  * - Spending limits and permissions
  * - Alerts and monitoring
+ * - Brain Management (Memory viewer, Delete, Topic focus, Reset, Stats)
+ * - Connector System (GitHub, Web, Social, Email, Custom)
  * - Quick actions (fund, bond, register)
  *
  * It does NOT modify the visual style of the site.
@@ -46,6 +48,34 @@ import {
   type BondTier,
 } from '../lib/companion-agent';
 import { getWalletAddress, getWalletPrivateKey, isWalletUnlocked } from '../lib/wallet';
+import {
+  getBrainStats,
+  getBrainInsights,
+  getUserPreferences,
+  getTopicInterests,
+  deleteBrainInsight,
+  deleteUserPreference,
+  deleteTopicInterest,
+  setTopicFocus,
+  resetBrain,
+  type BrainStats,
+  type BrainInsight,
+  type UserPreference,
+  type TopicInterest,
+} from '../lib/companion-brain';
+import {
+  getConnectors,
+  toggleConnector,
+  type Connector,
+} from '../lib/companion-connectors';
+import {
+  getSoul,
+  getSoulSummary,
+  updateSoulTrait,
+  updateSoulNotes,
+  resetSoul,
+  type CompanionSoul,
+} from '../lib/companion-soul';
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
 
@@ -98,11 +128,35 @@ function CheckIcon({ size = 11 }: { size?: number }) {
   );
 }
 
-function FlameIcon({ size = 16 }: { size?: number }) {
+function BrainIcon({ size = 14 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-      <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9" />
-      <path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.78-3.88 2.5 2.5 0 0 1-2.42-4.71 2.5 2.5 0 0 1 1.43-4.76A2.5 2.5 0 0 1 9.5 2Z" />
+      <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.78-3.88 2.5 2.5 0 0 0 2.42-4.71 2.5 2.5 0 0 0-1.43-4.76A2.5 2.5 0 0 0 14.5 2Z" />
+    </svg>
+  );
+}
+
+function TrashIcon({ size = 12 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </svg>
+  );
+}
+
+function GlobeIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+    </svg>
+  );
+}
+
+function GithubIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
     </svg>
   );
 }
@@ -142,6 +196,22 @@ export default function CompanionPanel({ isOpen, onClose, isMobile }: CompanionP
   const [showRegisterSetup, setShowRegisterSetup] = useState(false);
   const [spendingLimitInput, setSpendingLimitInput] = useState('');
 
+  // Brain Management State
+  const [showBrainMgmt, setShowBrainMgmt] = useState(false);
+  const [brainStats, setBrainStatsState] = useState<BrainStats | null>(null);
+  const [brainInsights, setBrainInsightsState] = useState<BrainInsight[]>([]);
+  const [userPrefs, setUserPrefsState] = useState<UserPreference[]>([]);
+  const [topicInterests, setTopicInterestsState] = useState<TopicInterest[]>([]);
+
+  // Connector System State
+  const [showConnectors, setShowConnectors] = useState(false);
+  const [connectors, setConnectorsState] = useState<Connector[]>([]);
+
+  // Soul Viewer State
+  const [showSoulViewer, setShowSoulViewer] = useState(false);
+  const [soulData, setSoulData] = useState<CompanionSoul | null>(null);
+  const [soulNotesInput, setSoulNotesInput] = useState('');
+
   // Load status
   const refreshStatus = useCallback(async () => {
     const s = getCompanionStatus();
@@ -158,6 +228,20 @@ export default function CompanionPanel({ isOpen, onClose, isMobile }: CompanionP
         setUsdcBalance(usdc);
       } catch { /* silent */ }
     }
+
+    // Refresh brain data
+    setBrainStatsState(getBrainStats());
+    setBrainInsightsState(getBrainInsights());
+    setUserPrefsState(getUserPreferences());
+    setTopicInterestsState(getTopicInterests());
+
+    // Refresh connector data
+    setConnectorsState(getConnectors());
+
+    // Refresh soul data
+    const soul = getSoul();
+    setSoulData(soul);
+    setSoulNotesInput(soul.userNotes || '');
   }, []);
 
   useEffect(() => {
@@ -250,7 +334,7 @@ export default function CompanionPanel({ isOpen, onClose, isMobile }: CompanionP
     }
   }, [bondAmount, refreshStatus]);
 
-  // Register companion agent
+  // Register agent
   const handleRegister = useCallback(async () => {
     const userPK = getWalletPrivateKey();
     const userAddr = getWalletAddress();
@@ -258,14 +342,12 @@ export default function CompanionPanel({ isOpen, onClose, isMobile }: CompanionP
       setError('User wallet must be unlocked first');
       return;
     }
-    const name = companionNameInput.trim() || 'embris-companion';
     setLoading(true);
     setError('');
     try {
-      const result = await registerCompanionAgent(userPK, userAddr, name, 'base');
+      const result = await registerCompanionAgent(userPK, userAddr, 'base');
       if (result.success) {
-        setCompanionVNSName(`${name}.vns`);
-        setSuccess(`Companion registered as ${name}.vns! TX: ${result.txHash?.slice(0, 14)}...`);
+        setSuccess(`Agent registered on-chain! TX: ${result.txHash?.slice(0, 14)}...`);
         setShowRegisterSetup(false);
         await refreshStatus();
       } else {
@@ -276,637 +358,685 @@ export default function CompanionPanel({ isOpen, onClose, isMobile }: CompanionP
     } finally {
       setLoading(false);
     }
-  }, [companionNameInput, refreshStatus]);
+  }, [refreshStatus]);
 
-  // Update spending limit
-  const handleSetSpendingLimit = useCallback(() => {
-    const val = parseFloat(spendingLimitInput);
-    if (isNaN(val) || val < 0) {
-      setError('Enter a valid amount');
-      return;
-    }
-    setCompanionSpendingLimit(val);
-    setSuccess(`Spending limit set to $${val.toFixed(2)}`);
-    setSpendingLimitInput('');
+  // Brain Management Handlers
+  const handleDeleteInsight = (id: string) => {
+    deleteBrainInsight(id);
     refreshStatus();
-  }, [spendingLimitInput, refreshStatus]);
+  };
+
+  const handleDeleteTopic = (topic: string) => {
+    deleteTopicInterest(topic);
+    refreshStatus();
+  };
+
+  const handleResetBrain = () => {
+    if (confirm('Are you sure? This will delete all memories, topics, and learned preferences. Your companion will forget everything.')) {
+      resetBrain();
+      refreshStatus();
+      setSuccess('Companion brain reset successfully.');
+    }
+  };
+
+  // Soul Handlers
+  const handleSaveSoulNotes = () => {
+    updateSoulNotes(soulNotesInput);
+    refreshStatus();
+    setSuccess('Soul notes updated.');
+  };
+
+  const handleResetSoul = () => {
+    if (confirm('Reset the companion soul to defaults? Custom traits and notes will be lost.')) {
+      resetSoul();
+      refreshStatus();
+      setSuccess('Companion soul reset to defaults.');
+    }
+  };
+
+  // Connector Handlers
+  const handleToggleConnector = (id: string, enabled: boolean) => {
+    toggleConnector(id, enabled);
+    refreshStatus();
+  };
 
   if (!isOpen) return null;
 
-  const bondStatus = status ? status.bond : { active: false, txHash: null, chain: null, tier: null, createdAt: null };
-  const bondExplorerUrl = getCompanionBondExplorerUrl();
-  const regExplorerUrl = getCompanionRegistrationExplorerUrl();
-  const unreadAlerts = alerts.filter(a => !a.read).length;
+  const bondStatus = getCompanionBondStatus();
+  const regStatus = getCompanionRegistrationExplorerUrl();
 
   return (
-    <>
-      {/* Overlay for mobile */}
-      {isMobile && (
-        <div
+    <div style={{
+      position: isMobile ? 'fixed' : 'relative',
+      top: isMobile ? 0 : undefined,
+      right: isMobile ? 0 : undefined,
+      width: isMobile ? '100%' : 340,
+      height: isMobile ? '100%' : undefined,
+      flexShrink: 0,
+      backgroundColor: '#09090B',
+      borderLeft: '1px solid rgba(255,255,255,0.06)',
+      display: 'flex',
+      flexDirection: 'column',
+      zIndex: isMobile ? 100 : 10,
+      boxShadow: '-10px 0 30px rgba(0,0,0,0.5)',
+      animation: 'slideIn 0.3s ease-out',
+      overflow: 'hidden',
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: '16px 20px',
+        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: 'rgba(255,255,255,0.01)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: 10,
+            backgroundColor: 'rgba(249,115,22,0.1)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: '1px solid rgba(249,115,22,0.2)',
+          }}>
+            <BrainIcon size={18} />
+          </div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#F4F4F5' }}>Companion Agent</div>
+            <div style={{ fontSize: 10, color: '#52525B', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: status?.walletCreated ? '#22C55E' : '#EF4444' }} />
+              {status?.walletCreated ? 'ACTIVE & SECURE' : 'NOT INITIALIZED'}
+            </div>
+          </div>
+        </div>
+        <button
           onClick={onClose}
           style={{
-            position: 'fixed', inset: 0, zIndex: 40,
-            backgroundColor: 'rgba(0,0,0,0.6)',
+            backgroundColor: 'transparent', border: 'none', cursor: 'pointer',
+            color: '#52525B', padding: 4,
           }}
-        />
-      )}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
 
-      <div style={{
-        position: isMobile ? 'fixed' : 'relative',
-        top: isMobile ? 0 : undefined,
-        right: isMobile ? 0 : undefined,
-        bottom: isMobile ? 0 : undefined,
-        zIndex: isMobile ? 50 : undefined,
-        width: isMobile ? 300 : 280,
-        flexShrink: 0,
-        backgroundColor: '#0C0C0E',
-        borderLeft: '1px solid rgba(255,255,255,0.04)',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-      }}>
-        {/* Header */}
-        <div style={{
-          padding: '14px 12px 10px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          borderBottom: '1px solid rgba(255,255,255,0.03)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <FlameIcon size={14} />
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#F97316', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-              Companion Agent
-            </span>
+      {/* Content */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+        {error && (
+          <div style={{
+            padding: '10px 14px', borderRadius: 8, backgroundColor: 'rgba(239,68,68,0.1)',
+            border: '1px solid rgba(239,68,68,0.2)', color: '#EF4444', fontSize: 12, marginBottom: 16,
+          }}>
+            {error}
           </div>
-          <button
-            onClick={onClose}
-            style={{
-              width: 22, height: 22, borderRadius: 5, border: 'none',
-              cursor: 'pointer', backgroundColor: 'rgba(255,255,255,0.04)',
-              color: '#52525B', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 14,
-            }}
-          >
-            ×
-          </button>
-        </div>
+        )}
 
-        {/* Content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {/* Error/Success Messages */}
-          {error && (
-            <div style={{
-              padding: '8px 10px', borderRadius: 8,
-              backgroundColor: 'rgba(239,68,68,0.1)',
-              border: '1px solid rgba(239,68,68,0.2)',
-              fontSize: 11, color: '#EF4444', lineHeight: 1.4,
-            }}>
-              {error}
-              <button onClick={() => setError('')} style={{ float: 'right', background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: 11 }}>×</button>
-            </div>
-          )}
-          {success && (
-            <div style={{
-              padding: '8px 10px', borderRadius: 8,
-              backgroundColor: 'rgba(34,197,94,0.1)',
-              border: '1px solid rgba(34,197,94,0.2)',
-              fontSize: 11, color: '#22C55E', lineHeight: 1.4,
-            }}>
-              {success}
-              <button onClick={() => setSuccess('')} style={{ float: 'right', background: 'none', border: 'none', color: '#22C55E', cursor: 'pointer', fontSize: 11 }}>×</button>
-            </div>
-          )}
+        {success && (
+          <div style={{
+            padding: '10px 14px', borderRadius: 8, backgroundColor: 'rgba(34,197,94,0.1)',
+            border: '1px solid rgba(34,197,94,0.2)', color: '#22C55E', fontSize: 12, marginBottom: 16,
+          }}>
+            {success}
+          </div>
+        )}
 
-          {/* ── Not Created Yet ── */}
-          {!status?.walletCreated && !showSetup && (
-            <div style={{ textAlign: 'center', padding: '20px 8px' }}>
-              <FlameIcon size={28} />
-              <h4 style={{ fontSize: 14, fontWeight: 600, color: '#F4F4F5', marginTop: 12, marginBottom: 6 }}>
-                Activate Your Companion
-              </h4>
-              <p style={{ fontSize: 12, color: '#52525B', lineHeight: 1.5, marginBottom: 16 }}>
-                Your AI companion gets its own wallet, on-chain identity, and partnership bond with you. It&apos;s your homie in the Vaultfire ecosystem.
-              </p>
-              <button
-                onClick={() => setShowSetup(true)}
+        {!status?.walletCreated ? (
+          <div style={{
+            padding: '24px', textAlign: 'center', backgroundColor: 'rgba(255,255,255,0.02)',
+            borderRadius: 16, border: '1px dashed rgba(255,255,255,0.1)',
+          }}>
+            <div style={{
+              width: 48, height: 48, borderRadius: 16, backgroundColor: 'rgba(249,115,22,0.1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px',
+            }}>
+              <WalletIcon size={24} />
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: '#F4F4F5', marginBottom: 8 }}>Initialize Companion</h3>
+            <p style={{ fontSize: 12, color: '#A1A1AA', lineHeight: 1.6, marginBottom: 20 }}>
+              Create a secure on-chain identity for your AI companion. It will have its own wallet and can perform tasks autonomously.
+            </p>
+
+            <div style={{ textAlign: 'left', marginBottom: 20 }}>
+              <label style={{ fontSize: 11, color: '#52525B', marginBottom: 6, display: 'block' }}>COMPANION PASSWORD</label>
+              <input
+                type="password"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                placeholder="Minimum 6 characters"
                 style={{
-                  width: '100%', padding: '10px 16px', borderRadius: 10,
-                  backgroundColor: 'rgba(249,115,22,0.15)',
-                  border: '1px solid rgba(249,115,22,0.3)',
-                  color: '#F97316', fontSize: 13, fontWeight: 600,
-                  cursor: 'pointer', transition: 'all 0.15s ease',
+                  width: '100%', padding: '10px 12px', borderRadius: 8,
+                  backgroundColor: '#111113', border: '1px solid rgba(255,255,255,0.06)',
+                  color: '#F4F4F5', fontSize: 13, outline: 'none',
                 }}
-              >
-                Activate Companion
-              </button>
+              />
             </div>
-          )}
 
-          {/* ── Setup Flow ── */}
-          {!status?.walletCreated && showSetup && (
-            <div style={{ padding: '12px 4px' }}>
-              <h4 style={{ fontSize: 13, fontWeight: 600, color: '#F4F4F5', marginBottom: 8 }}>
-                {setupStep === 'creating' ? 'Creating...' : setupStep === 'done' ? 'Ready!' : 'Set Companion Password'}
-              </h4>
-              {setupStep === 'password' && (
-                <>
-                  <p style={{ fontSize: 11, color: '#52525B', marginBottom: 10, lineHeight: 1.5 }}>
-                    This password encrypts your companion&apos;s wallet. It&apos;s separate from your main wallet password.
-                  </p>
+            <button
+              onClick={handleCreateWallet}
+              disabled={loading}
+              style={{
+                width: '100%', padding: '12px', borderRadius: 8,
+                backgroundColor: '#F97316', color: '#FFFFFF', fontSize: 13, fontWeight: 700,
+                cursor: 'pointer', border: 'none', boxShadow: '0 4px 12px rgba(249,115,22,0.2)',
+              }}
+            >
+              {loading ? 'INITIALIZING...' : 'ACTIVATE COMPANION'}
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {/* Wallet Section */}
+            <div style={{
+              padding: '12px', borderRadius: 12,
+              backgroundColor: 'rgba(255,255,255,0.02)',
+              border: '1px solid rgba(255,255,255,0.04)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <WalletIcon size={14} />
+                  <span style={{ fontSize: 10, fontWeight: 600, color: '#52525B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Companion Wallet
+                  </span>
+                </div>
+                <div style={{
+                  width: 6, height: 6, borderRadius: '50%',
+                  backgroundColor: status.walletUnlocked ? '#22C55E' : '#EF4444',
+                }} />
+              </div>
+
+              {status.walletAddress && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  backgroundColor: '#111113', padding: '6px 10px', borderRadius: 8, marginBottom: 10,
+                }}>
+                  <code style={{ fontSize: 11, color: '#A1A1AA', fontFamily: "'JetBrains Mono', monospace" }}>
+                    {status.walletAddress.slice(0, 10)}...{status.walletAddress.slice(-8)}
+                  </code>
+                  <button
+                    onClick={handleCopy}
+                    style={{
+                      backgroundColor: 'transparent', border: 'none', cursor: 'pointer',
+                      color: copied ? '#22C55E' : '#52525B', padding: 2,
+                    }}
+                  >
+                    {copied ? <CheckIcon size={10} /> : <CopyIcon size={10} />}
+                  </button>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 9, color: '#52525B', marginBottom: 2 }}>ETH (Base)</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#F4F4F5', fontFamily: "'JetBrains Mono', monospace" }}>
+                    {parseFloat(balance).toFixed(6)}
+                  </div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 9, color: '#52525B', marginBottom: 2 }}>USDC</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#F4F4F5', fontFamily: "'JetBrains Mono', monospace" }}>
+                    {usdcBalance}
+                  </div>
+                </div>
+              </div>
+
+              {!status.walletUnlocked && (
+                <div style={{ marginTop: 8 }}>
                   <input
                     type="password"
                     value={passwordInput}
                     onChange={(e) => setPasswordInput(e.target.value)}
-                    placeholder="Companion password (6+ chars)"
+                    placeholder="Companion password"
                     style={{
-                      width: '100%', padding: '8px 10px', borderRadius: 8,
+                      width: '100%', padding: '6px 8px', borderRadius: 6,
                       backgroundColor: '#111113', border: '1px solid rgba(255,255,255,0.06)',
-                      color: '#F4F4F5', fontSize: 12, outline: 'none',
-                      marginBottom: 8,
+                      color: '#F4F4F5', fontSize: 11, outline: 'none', marginBottom: 6,
                     }}
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleCreateWallet(); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleUnlock(); }}
                   />
                   <button
-                    onClick={handleCreateWallet}
+                    onClick={handleUnlock}
                     disabled={loading}
                     style={{
-                      width: '100%', padding: '9px 16px', borderRadius: 8,
-                      backgroundColor: '#F97316', border: 'none',
-                      color: '#09090B', fontSize: 12, fontWeight: 600,
-                      cursor: loading ? 'default' : 'pointer',
-                      opacity: loading ? 0.6 : 1,
+                      width: '100%', padding: '6px', borderRadius: 6,
+                      backgroundColor: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.25)',
+                      color: '#F97316', fontSize: 11, fontWeight: 600, cursor: 'pointer',
                     }}
                   >
-                    {loading ? 'Creating...' : 'Create Companion Wallet'}
+                    {loading ? 'Unlocking...' : 'Unlock'}
                   </button>
-                </>
-              )}
-              {setupStep === 'creating' && (
-                <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                  <div style={{
-                    width: 24, height: 24, border: '2px solid rgba(249,115,22,0.3)',
-                    borderTopColor: '#F97316', borderRadius: '50%',
-                    animation: 'spin 0.8s linear infinite',
-                    margin: '0 auto 12px',
-                  }} />
-                  <p style={{ fontSize: 12, color: '#71717A' }}>Generating keypair & encrypting...</p>
-                </div>
-              )}
-              {setupStep === 'done' && (
-                <div style={{ textAlign: 'center', padding: '12px 0' }}>
-                  <div style={{ color: '#22C55E', marginBottom: 8 }}><CheckIcon size={20} /></div>
-                  <p style={{ fontSize: 12, color: '#22C55E', fontWeight: 500 }}>Companion activated!</p>
                 </div>
               )}
             </div>
-          )}
 
-          {/* ── Wallet Created — Show Dashboard ── */}
-          {status?.walletCreated && (
-            <>
-              {/* Wallet Card */}
+            {/* Alerts Section */}
+            {alerts.length > 0 && (
               <div style={{
-                padding: '10px', borderRadius: 10,
-                backgroundColor: 'rgba(249,115,22,0.06)',
+                padding: '12px', borderRadius: 12,
+                backgroundColor: 'rgba(249,115,22,0.05)',
                 border: '1px solid rgba(249,115,22,0.12)',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <WalletIcon size={12} />
-                    <span style={{ fontSize: 10, fontWeight: 600, color: '#F97316', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Companion Wallet
-                    </span>
-                  </div>
-                  <span style={{
-                    fontSize: 9, padding: '2px 5px', borderRadius: 4,
-                    backgroundColor: status.walletUnlocked ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
-                    color: status.walletUnlocked ? '#22C55E' : '#EF4444',
-                    fontWeight: 600,
-                  }}>
-                    {status.walletUnlocked ? 'UNLOCKED' : 'LOCKED'}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                  <BellIcon size={14} />
+                  <span style={{ fontSize: 10, fontWeight: 600, color: '#F97316', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Alerts ({alerts.filter(a => !a.read).length} unread)
                   </span>
                 </div>
-
-                {status.walletAddress && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
-                    <span style={{
-                      fontSize: 11, color: '#A1A1AA',
-                      fontFamily: "'JetBrains Mono', monospace",
+                <div style={{ maxHeight: 120, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {alerts.slice(0, 5).map(alert => (
+                    <div key={alert.id} style={{
+                      padding: '6px 8px', backgroundColor: '#111113', borderRadius: 6,
+                      display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6,
+                      opacity: alert.read ? 0.5 : 1,
                     }}>
-                      {status.walletAddress.slice(0, 8)}...{status.walletAddress.slice(-6)}
-                    </span>
-                    <button
-                      onClick={handleCopy}
-                      style={{
-                        background: 'none', border: 'none', cursor: 'pointer',
-                        color: copied ? '#22C55E' : '#52525B', padding: 2,
-                      }}
-                    >
-                      {copied ? <CheckIcon size={10} /> : <CopyIcon size={10} />}
-                    </button>
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 9, color: '#52525B', marginBottom: 2 }}>ETH (Base)</div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#F4F4F5', fontFamily: "'JetBrains Mono', monospace" }}>
-                      {parseFloat(balance).toFixed(6)}
-                    </div>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 9, color: '#52525B', marginBottom: 2 }}>USDC</div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#F4F4F5', fontFamily: "'JetBrains Mono', monospace" }}>
-                      {usdcBalance}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Unlock if locked */}
-                {!status.walletUnlocked && (
-                  <div style={{ marginTop: 8 }}>
-                    <input
-                      type="password"
-                      value={passwordInput}
-                      onChange={(e) => setPasswordInput(e.target.value)}
-                      placeholder="Companion password"
-                      style={{
-                        width: '100%', padding: '6px 8px', borderRadius: 6,
-                        backgroundColor: '#111113', border: '1px solid rgba(255,255,255,0.06)',
-                        color: '#F4F4F5', fontSize: 11, outline: 'none', marginBottom: 6,
-                      }}
-                      onKeyDown={(e) => { if (e.key === 'Enter') handleUnlock(); }}
-                    />
-                    <button
-                      onClick={handleUnlock}
-                      disabled={loading}
-                      style={{
-                        width: '100%', padding: '6px', borderRadius: 6,
-                        backgroundColor: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.25)',
-                        color: '#F97316', fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                      }}
-                    >
-                      {loading ? 'Unlocking...' : 'Unlock'}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Bond Status */}
-              <div style={{
-                padding: '10px', borderRadius: 10,
-                backgroundColor: bondStatus.active ? 'rgba(34,197,94,0.06)' : 'rgba(255,255,255,0.02)',
-                border: `1px solid ${bondStatus.active ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.04)'}`,
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <ShieldIcon size={12} />
-                    <span style={{ fontSize: 10, fontWeight: 600, color: bondStatus.active ? '#22C55E' : '#52525B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Partnership Bond
-                    </span>
-                  </div>
-                  {bondStatus.active && bondStatus.tier && (
-                    <span style={{
-                      fontSize: 9, padding: '2px 5px', borderRadius: 4,
-                      backgroundColor: `${TIER_COLORS[bondStatus.tier]}20`,
-                      color: TIER_COLORS[bondStatus.tier],
-                      fontWeight: 700, textTransform: 'uppercase',
-                    }}>
-                      {bondStatus.tier}
-                    </span>
-                  )}
-                </div>
-
-                {bondStatus.active ? (
-                  <div>
-                    <p style={{ fontSize: 11, color: '#A1A1AA', lineHeight: 1.5 }}>
-                      On-chain proof of your partnership with this companion.
-                    </p>
-                    {bondExplorerUrl && (
-                      <a
-                        href={bondExplorerUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 3,
-                          fontSize: 10, color: '#F97316', marginTop: 4, textDecoration: 'none',
-                        }}
-                      >
-                        <LinkIcon size={9} /> View on Explorer
-                      </a>
-                    )}
-                  </div>
-                ) : (
-                  <div>
-                    <p style={{ fontSize: 11, color: '#52525B', lineHeight: 1.5, marginBottom: 6 }}>
-                      No bond yet. Create one to prove your partnership on-chain.
-                    </p>
-                    {!showBondSetup ? (
-                      <button
-                        onClick={() => setShowBondSetup(true)}
-                        disabled={!isWalletUnlocked()}
-                        style={{
-                          width: '100%', padding: '6px', borderRadius: 6,
-                          backgroundColor: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)',
-                          color: '#22C55E', fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                          opacity: isWalletUnlocked() ? 1 : 0.5,
-                        }}
-                      >
-                        Create Bond
-                      </button>
-                    ) : (
                       <div>
-                        <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
-                          <input
-                            type="text"
-                            value={bondAmount}
-                            onChange={(e) => setBondAmount(e.target.value)}
-                            placeholder="ETH amount"
-                            style={{
-                              flex: 1, padding: '5px 8px', borderRadius: 6,
-                              backgroundColor: '#111113', border: '1px solid rgba(255,255,255,0.06)',
-                              color: '#F4F4F5', fontSize: 11, outline: 'none',
-                            }}
-                          />
-                          <button
-                            onClick={handleCreateBond}
-                            disabled={loading}
-                            style={{
-                              padding: '5px 10px', borderRadius: 6,
-                              backgroundColor: '#22C55E', border: 'none',
-                              color: '#09090B', fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                            }}
-                          >
-                            {loading ? '...' : 'Bond'}
-                          </button>
-                        </div>
-                        <p style={{ fontSize: 9, color: '#3F3F46' }}>
-                          Min 0.001 ETH. Bronze: 0.01+ · Silver: 0.05+ · Gold: 0.1+ · Platinum: 0.5+
-                        </p>
+                        <div style={{ fontSize: 10, fontWeight: 600, color: '#F4F4F5' }}>{alert.title}</div>
+                        <div style={{ fontSize: 9, color: '#A1A1AA', marginTop: 2 }}>{alert.message}</div>
                       </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Agent Registration */}
-              <div style={{
-                padding: '10px', borderRadius: 10,
-                backgroundColor: status.agentRegistered ? 'rgba(139,92,246,0.06)' : 'rgba(255,255,255,0.02)',
-                border: `1px solid ${status.agentRegistered ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.04)'}`,
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4 }}>
-                  <span style={{ fontSize: 10, fontWeight: 600, color: status.agentRegistered ? '#8B5CF6' : '#52525B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Agent Identity
-                  </span>
-                </div>
-
-                {status.agentRegistered ? (
-                  <div>
-                    <p style={{ fontSize: 12, color: '#F4F4F5', fontWeight: 500 }}>
-                      {status.vnsName || getCompanionAgentName() + '.vns'}
-                    </p>
-                    <p style={{ fontSize: 10, color: '#71717A' }}>
-                      Registered on {status.registeredChain || 'Base'}
-                    </p>
-                    {regExplorerUrl && (
-                      <a
-                        href={regExplorerUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 3,
-                          fontSize: 10, color: '#8B5CF6', marginTop: 3, textDecoration: 'none',
-                        }}
-                      >
-                        <LinkIcon size={9} /> View on Explorer
-                      </a>
-                    )}
-                  </div>
-                ) : (
-                  <div>
-                    <p style={{ fontSize: 11, color: '#52525B', lineHeight: 1.5, marginBottom: 6 }}>
-                      Register your companion on-chain with a .vns identity.
-                    </p>
-                    {!showRegisterSetup ? (
-                      <button
-                        onClick={() => setShowRegisterSetup(true)}
-                        disabled={!isWalletUnlocked()}
-                        style={{
-                          width: '100%', padding: '6px', borderRadius: 6,
-                          backgroundColor: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)',
-                          color: '#8B5CF6', fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                          opacity: isWalletUnlocked() ? 1 : 0.5,
-                        }}
-                      >
-                        Register Agent
-                      </button>
-                    ) : (
-                      <div>
-                        <input
-                          type="text"
-                          value={companionNameInput}
-                          onChange={(e) => setCompanionNameInput(e.target.value)}
-                          placeholder="embris-companion"
-                          style={{
-                            width: '100%', padding: '5px 8px', borderRadius: 6,
-                            backgroundColor: '#111113', border: '1px solid rgba(255,255,255,0.06)',
-                            color: '#F4F4F5', fontSize: 11, outline: 'none', marginBottom: 4,
-                          }}
-                        />
+                      {!alert.read && (
                         <button
-                          onClick={handleRegister}
-                          disabled={loading}
-                          style={{
-                            width: '100%', padding: '6px', borderRadius: 6,
-                            backgroundColor: '#8B5CF6', border: 'none',
-                            color: '#FFFFFF', fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                          }}
+                          onClick={() => { markAlertRead(alert.id); refreshStatus(); }}
+                          style={{ background: 'none', border: 'none', color: '#52525B', cursor: 'pointer', padding: 2, fontSize: 9, whiteSpace: 'nowrap' }}
                         >
-                          {loading ? 'Registering...' : 'Register on Base'}
+                          dismiss
                         </button>
-                        <p style={{ fontSize: 9, color: '#3F3F46', marginTop: 3 }}>
-                          3-32 chars, lowercase + hyphens. Gas paid by your wallet.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
+            )}
 
-              {/* Permissions & Settings */}
-              <div style={{
-                padding: '10px', borderRadius: 10,
-                backgroundColor: 'rgba(255,255,255,0.02)',
-                border: '1px solid rgba(255,255,255,0.04)',
-              }}>
-                <span style={{ fontSize: 10, fontWeight: 600, color: '#52525B', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 8 }}>
-                  Permissions
-                </span>
-
-                {/* Spending Limit */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span style={{ fontSize: 11, color: '#A1A1AA' }}>Spending Limit</span>
-                  <span style={{ fontSize: 11, color: '#F4F4F5', fontFamily: "'JetBrains Mono', monospace" }}>
-                    ${status.spendingLimitUsd.toFixed(2)}
+            {/* Brain Management Section */}
+            <div style={{
+              padding: '12px', borderRadius: 12,
+              backgroundColor: 'rgba(255,255,255,0.02)',
+              border: '1px solid rgba(255,255,255,0.04)',
+            }}>
+              <div 
+                onClick={() => setShowBrainMgmt(!showBrainMgmt)}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <BrainIcon size={14} />
+                  <span style={{ fontSize: 10, fontWeight: 600, color: '#52525B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Brain Management
                   </span>
                 </div>
-                <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
-                  <input
-                    type="text"
-                    value={spendingLimitInput}
-                    onChange={(e) => setSpendingLimitInput(e.target.value)}
-                    placeholder="USD limit"
-                    style={{
-                      flex: 1, padding: '4px 6px', borderRadius: 5,
-                      backgroundColor: '#111113', border: '1px solid rgba(255,255,255,0.06)',
-                      color: '#F4F4F5', fontSize: 10, outline: 'none',
-                    }}
-                  />
-                  <button
-                    onClick={handleSetSpendingLimit}
-                    style={{
-                      padding: '4px 8px', borderRadius: 5,
-                      backgroundColor: 'rgba(255,255,255,0.06)', border: 'none',
-                      color: '#A1A1AA', fontSize: 10, cursor: 'pointer',
-                    }}
-                  >
-                    Set
-                  </button>
-                </div>
-
-                {/* XMTP Toggle */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span style={{ fontSize: 11, color: '#A1A1AA' }}>XMTP Messaging</span>
-                  <button
-                    onClick={() => {
-                      const next = !getXMTPPermission();
-                      setXMTPPermission(next);
-                      refreshStatus();
-                    }}
-                    style={{
-                      padding: '2px 8px', borderRadius: 10,
-                      backgroundColor: status.xmtpPermission ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.06)',
-                      border: 'none',
-                      color: status.xmtpPermission ? '#22C55E' : '#52525B',
-                      fontSize: 10, fontWeight: 600, cursor: 'pointer',
-                    }}
-                  >
-                    {status.xmtpPermission ? 'ON' : 'OFF'}
-                  </button>
-                </div>
-
-                {/* Monitoring Toggle */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 11, color: '#A1A1AA' }}>Portfolio Monitoring</span>
-                  <button
-                    onClick={() => {
-                      const next = !isMonitoringEnabled();
-                      setMonitoringEnabled(next);
-                      refreshStatus();
-                    }}
-                    style={{
-                      padding: '2px 8px', borderRadius: 10,
-                      backgroundColor: status.monitoringEnabled ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.06)',
-                      border: 'none',
-                      color: status.monitoringEnabled ? '#22C55E' : '#52525B',
-                      fontSize: 10, fontWeight: 600, cursor: 'pointer',
-                    }}
-                  >
-                    {status.monitoringEnabled ? 'ON' : 'OFF'}
-                  </button>
-                </div>
+                <span style={{ fontSize: 10, color: '#52525B' }}>{showBrainMgmt ? '▼' : '▶'}</span>
               </div>
 
-              {/* Alerts */}
-              {alerts.length > 0 && (
-                <div style={{
-                  padding: '10px', borderRadius: 10,
-                  backgroundColor: 'rgba(255,255,255,0.02)',
-                  border: '1px solid rgba(255,255,255,0.04)',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
-                    <BellIcon size={11} />
-                    <span style={{ fontSize: 10, fontWeight: 600, color: '#52525B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Alerts
-                    </span>
-                    {unreadAlerts > 0 && (
-                      <span style={{
-                        fontSize: 9, padding: '1px 5px', borderRadius: 8,
-                        backgroundColor: 'rgba(249,115,22,0.2)', color: '#F97316', fontWeight: 700,
-                      }}>
-                        {unreadAlerts}
-                      </span>
-                    )}
+              {showBrainMgmt && brainStats && (
+                <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                    <div style={{ padding: 6, backgroundColor: '#111113', borderRadius: 6 }}>
+                      <div style={{ fontSize: 8, color: '#52525B' }}>MEMORIES</div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#F4F4F5' }}>{brainStats.memoriesCount}</div>
+                    </div>
+                    <div style={{ padding: 6, backgroundColor: '#111113', borderRadius: 6 }}>
+                      <div style={{ fontSize: 8, color: '#52525B' }}>TOPICS</div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#F4F4F5' }}>{brainStats.trackedTopics}</div>
+                    </div>
                   </div>
-                  {alerts.slice(0, 5).map((alert) => (
-                    <div
-                      key={alert.id}
-                      onClick={() => { markAlertRead(alert.id); setAlerts(getCompanionAlerts()); }}
-                      style={{
-                        padding: '6px 0',
-                        borderBottom: '1px solid rgba(255,255,255,0.02)',
-                        cursor: 'pointer',
-                        opacity: alert.read ? 0.5 : 1,
-                      }}
-                    >
-                      <p style={{ fontSize: 11, color: '#F4F4F5', fontWeight: alert.read ? 400 : 500, marginBottom: 1 }}>
-                        {alert.title}
-                      </p>
-                      <p style={{ fontSize: 10, color: '#52525B', lineHeight: 1.4 }}>
-                        {alert.message.slice(0, 80)}{alert.message.length > 80 ? '...' : ''}
-                      </p>
+
+                  {brainInsights.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: 9, color: '#52525B', marginBottom: 4 }}>LEARNED INSIGHTS</div>
+                      <div style={{ maxHeight: 100, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        {brainInsights.map(insight => (
+                          <div key={insight.id} style={{ 
+                            padding: 6, backgroundColor: '#111113', borderRadius: 6,
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                          }}>
+                            <span style={{ fontSize: 10, color: '#A1A1AA', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {insight.content}
+                            </span>
+                            <button 
+                              onClick={() => handleDeleteInsight(insight.id)}
+                              style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: 2 }}
+                            >
+                              <TrashIcon size={10} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Brain Age */}
+                  <div style={{ padding: 6, backgroundColor: '#111113', borderRadius: 6 }}>
+                    <div style={{ fontSize: 8, color: '#52525B' }}>BRAIN AGE</div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: '#F97316' }}>{brainStats.brainAge}</div>
+                  </div>
+
+                  {/* Topic Interests */}
+                  {topicInterests.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: 9, color: '#52525B', marginBottom: 4 }}>TRACKED TOPICS</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                        {topicInterests.slice(0, 10).map(topic => (
+                          <div key={topic.topic} style={{
+                            display: 'flex', alignItems: 'center', gap: 4,
+                            padding: '2px 6px', borderRadius: 4,
+                            backgroundColor: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.12)',
+                          }}>
+                            <span style={{ fontSize: 9, color: '#F97316' }}>{topic.topic}</span>
+                            <span style={{ fontSize: 8, color: '#52525B' }}>({topic.mentionCount})</span>
+                            <button
+                              onClick={() => handleDeleteTopic(topic.topic)}
+                              style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: 0, lineHeight: 1 }}
+                            >
+                              <TrashIcon size={8} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* User Preferences */}
+                  {userPrefs.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: 9, color: '#52525B', marginBottom: 4 }}>LEARNED PREFERENCES</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        {userPrefs.slice(0, 5).map(pref => (
+                          <div key={pref.key} style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            padding: '3px 6px', backgroundColor: '#111113', borderRadius: 4,
+                          }}>
+                            <span style={{ fontSize: 9, color: '#A1A1AA' }}>{pref.key.replace(/_/g, ' ')}: {pref.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleResetBrain}
+                    style={{
+                      width: '100%', padding: '6px', borderRadius: 6,
+                      backgroundColor: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
+                      color: '#EF4444', fontSize: 10, fontWeight: 600, cursor: 'pointer',
+                      marginTop: 4
+                    }}
+                  >
+                    Reset Companion Brain
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Connector System Section */}
+            <div style={{
+              padding: '12px', borderRadius: 12,
+              backgroundColor: 'rgba(255,255,255,0.02)',
+              border: '1px solid rgba(255,255,255,0.04)',
+            }}>
+              <div 
+                onClick={() => setShowConnectors(!showConnectors)}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <GlobeIcon size={14} />
+                  <span style={{ fontSize: 10, fontWeight: 600, color: '#52525B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    External Connectors
+                  </span>
+                </div>
+                <span style={{ fontSize: 10, color: '#52525B' }}>{showConnectors ? '▼' : '▶'}</span>
+              </div>
+
+              {showConnectors && (
+                <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <p style={{ fontSize: 10, color: '#A1A1AA', lineHeight: 1.4, marginBottom: 4 }}>
+                    Connect your companion to external services to enable autonomous research and internet tasks.
+                  </p>
+                  {connectors.map(connector => (
+                    <div key={connector.id} style={{ 
+                      padding: '8px 10px', backgroundColor: '#111113', borderRadius: 8,
+                      border: '1px solid rgba(255,255,255,0.04)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ color: connector.enabled ? '#F97316' : '#52525B' }}>
+                          {connector.type === 'github' ? <GithubIcon size={14} /> : <GlobeIcon size={14} />}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: '#F4F4F5' }}>{connector.name}</div>
+                          <div style={{ fontSize: 9, color: '#52525B' }}>{connector.status.toUpperCase()}</div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleToggleConnector(connector.id, !connector.enabled)}
+                        style={{
+                          width: 32, height: 18, borderRadius: 10,
+                          backgroundColor: connector.enabled ? '#F97316' : '#27272A',
+                          border: 'none', cursor: 'pointer', position: 'relative',
+                          transition: 'background-color 0.2s',
+                        }}
+                      >
+                        <div style={{
+                          position: 'absolute', top: 2, left: connector.enabled ? 16 : 2,
+                          width: 14, height: 14, borderRadius: '50%', backgroundColor: '#FFFFFF',
+                          transition: 'left 0.2s',
+                        }} />
+                      </button>
                     </div>
                   ))}
                 </div>
               )}
+            </div>
 
-              {/* Capabilities Summary */}
-              <div style={{
-                padding: '8px 10px', borderRadius: 8,
-                backgroundColor: 'rgba(255,255,255,0.01)',
-                border: '1px solid rgba(255,255,255,0.03)',
-              }}>
-                <span style={{ fontSize: 9, color: '#3F3F46', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Capabilities
-                </span>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginTop: 4 }}>
-                  {[
-                    { label: 'Wallet', active: status.walletCreated },
-                    { label: 'Bond', active: bondStatus.active },
-                    { label: 'Identity', active: status.agentRegistered },
-                    { label: 'XMTP', active: status.xmtpPermission },
-                    { label: 'x402', active: status.spendingLimitUsd > 0 },
-                    { label: 'Monitor', active: status.monitoringEnabled },
-                    { label: 'Offline', active: false },
-                  ].map((cap) => (
-                    <span
-                      key={cap.label}
+            {/* Soul Viewer Section */}
+            <div style={{
+              padding: '12px', borderRadius: 12,
+              backgroundColor: 'rgba(249,115,22,0.03)',
+              border: '1px solid rgba(249,115,22,0.08)',
+            }}>
+              <div 
+                onClick={() => setShowSoulViewer(!showSoulViewer)}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <svg width={14} height={14} viewBox="0 0 32 32" fill="none">
+                    <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9" />
+                    <path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C" />
+                  </svg>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: '#F97316', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Companion Soul
+                  </span>
+                </div>
+                <span style={{ fontSize: 10, color: '#52525B' }}>{showSoulViewer ? '▼' : '▶'}</span>
+              </div>
+
+              {showSoulViewer && soulData && (
+                <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {/* Soul motto */}
+                  <div style={{ padding: 8, backgroundColor: '#111113', borderRadius: 8, borderLeft: '2px solid #F97316' }}>
+                    <div style={{ fontSize: 9, color: '#52525B', marginBottom: 2 }}>MOTTO</div>
+                    <div style={{ fontSize: 11, color: '#E4E4E7', fontStyle: 'italic', lineHeight: 1.5 }}>
+                      &ldquo;{soulData.motto}&rdquo;
+                    </div>
+                  </div>
+
+                  {/* Soul stats grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+                    <div style={{ padding: 6, backgroundColor: '#111113', borderRadius: 6, textAlign: 'center' }}>
+                      <div style={{ fontSize: 8, color: '#52525B' }}>VALUES</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#F97316' }}>{soulData.values.length}</div>
+                    </div>
+                    <div style={{ padding: 6, backgroundColor: '#111113', borderRadius: 6, textAlign: 'center' }}>
+                      <div style={{ fontSize: 8, color: '#52525B' }}>TRAITS</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#F97316' }}>{soulData.traits.length}</div>
+                    </div>
+                    <div style={{ padding: 6, backgroundColor: '#111113', borderRadius: 6, textAlign: 'center' }}>
+                      <div style={{ fontSize: 8, color: '#52525B' }}>BOUNDS</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#F97316' }}>{soulData.boundaries.length}</div>
+                    </div>
+                  </div>
+
+                  {/* Core values */}
+                  <div>
+                    <div style={{ fontSize: 9, color: '#52525B', marginBottom: 4 }}>CORE VALUES</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {soulData.values.slice(0, 5).map(v => (
+                        <span key={v.name} style={{
+                          fontSize: 9, padding: '2px 6px', borderRadius: 4,
+                          backgroundColor: 'rgba(249,115,22,0.1)', color: '#F97316',
+                          border: '1px solid rgba(249,115,22,0.15)',
+                        }}>
+                          {v.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Personality traits */}
+                  <div>
+                    <div style={{ fontSize: 9, color: '#52525B', marginBottom: 4 }}>PERSONALITY</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {soulData.traits.slice(0, 5).map(t => (
+                        <div key={t.name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 10, color: '#A1A1AA', minWidth: 70 }}>{t.name}</span>
+                          <div style={{ flex: 1, height: 4, backgroundColor: '#1A1A1E', borderRadius: 2, overflow: 'hidden' }}>
+                            <div style={{ width: `${t.strength}%`, height: '100%', backgroundColor: '#F97316', borderRadius: 2, transition: 'width 0.3s ease' }} />
+                          </div>
+                          <span style={{ fontSize: 9, color: '#52525B', minWidth: 24, textAlign: 'right' }}>{t.strength}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Beliefs */}
+                  <div>
+                    <div style={{ fontSize: 9, color: '#52525B', marginBottom: 4 }}>BELIEFS</div>
+                    <div style={{ maxHeight: 80, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      {soulData.beliefs.map((b, i) => (
+                        <div key={i} style={{ fontSize: 10, color: '#A1A1AA', lineHeight: 1.4, paddingLeft: 8, borderLeft: '1px solid rgba(249,115,22,0.2)' }}>
+                          {b}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Loyalty statement */}
+                  <div style={{ padding: 8, backgroundColor: '#111113', borderRadius: 8 }}>
+                    <div style={{ fontSize: 9, color: '#52525B', marginBottom: 2 }}>LOYALTY</div>
+                    <div style={{ fontSize: 10, color: '#D4D4D8', lineHeight: 1.5 }}>
+                      {soulData.loyaltyStatement}
+                    </div>
+                  </div>
+
+                  {/* User notes */}
+                  <div>
+                    <div style={{ fontSize: 9, color: '#52525B', marginBottom: 4 }}>YOUR GUIDANCE (optional)</div>
+                    <textarea
+                      value={soulNotesInput}
+                      onChange={(e) => setSoulNotesInput(e.target.value)}
+                      placeholder="Add personal guidance for your companion's soul..."
                       style={{
-                        fontSize: 9, padding: '2px 5px', borderRadius: 4,
-                        backgroundColor: cap.active ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.03)',
-                        color: cap.active ? '#22C55E' : '#3F3F46',
-                        fontWeight: 500,
+                        width: '100%', padding: '6px 8px', borderRadius: 6,
+                        backgroundColor: '#111113', border: '1px solid rgba(255,255,255,0.06)',
+                        color: '#F4F4F5', fontSize: 11, outline: 'none', resize: 'vertical',
+                        minHeight: 48, maxHeight: 100, fontFamily: 'inherit', lineHeight: 1.5,
+                      }}
+                    />
+                    <button
+                      onClick={handleSaveSoulNotes}
+                      style={{
+                        marginTop: 4, width: '100%', padding: '5px', borderRadius: 6,
+                        backgroundColor: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.2)',
+                        color: '#F97316', fontSize: 10, fontWeight: 600, cursor: 'pointer',
                       }}
                     >
-                      {cap.label}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
-        </div>
+                      Save Guidance
+                    </button>
+                  </div>
 
-        {/* Footer */}
-        <div style={{
-          padding: '8px 12px',
-          borderTop: '1px solid rgba(255,255,255,0.03)',
-        }}>
-          <p style={{ fontSize: 9, color: '#27272A', lineHeight: 1.5, textAlign: 'center' }}>
-            Your loyal AI companion · Vaultfire Protocol
-          </p>
+                  {/* Attestation status */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: soulData.attestedOnChain ? '#22C55E' : '#3F3F46' }} />
+                      <span style={{ fontSize: 9, color: soulData.attestedOnChain ? '#22C55E' : '#52525B' }}>
+                        {soulData.attestedOnChain ? 'ATTESTED ON-CHAIN' : 'NOT YET ATTESTED'}
+                      </span>
+                    </div>
+                    <button
+                      onClick={handleResetSoul}
+                      style={{
+                        fontSize: 9, padding: '2px 6px', borderRadius: 4,
+                        backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)',
+                        color: '#EF4444', cursor: 'pointer',
+                      }}
+                    >
+                      Reset Soul
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Bond Status */}
+            <div style={{
+              padding: '10px', borderRadius: 10,
+              backgroundColor: bondStatus.active ? 'rgba(34,197,94,0.06)' : 'rgba(255,255,255,0.02)',
+              border: `1px solid ${bondStatus.active ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.04)'}`,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <ShieldIcon size={12} />
+                  <span style={{ fontSize: 10, fontWeight: 600, color: bondStatus.active ? '#22C55E' : '#52525B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Partnership Bond
+                  </span>
+                </div>
+                {bondStatus.active && bondStatus.tier && (
+                  <span style={{
+                    fontSize: 9, padding: '2px 5px', borderRadius: 4,
+                    backgroundColor: `${TIER_COLORS[bondStatus.tier]}20`,
+                    color: TIER_COLORS[bondStatus.tier],
+                    fontWeight: 700, textTransform: 'uppercase',
+                  }}>
+                    {bondStatus.tier}
+                  </span>
+                )}
+              </div>
+
+              {bondStatus.active ? (
+                <div>
+                  <p style={{ fontSize: 11, color: '#A1A1AA', lineHeight: 1.5 }}>
+                    Secured by {bondStatus.amount} ETH. Your companion is trusted with higher spending limits and deeper system access.
+                  </p>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowBondSetup(true)}
+                  style={{
+                    width: '100%', padding: '6px', borderRadius: 6,
+                    backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+                    color: '#A1A1AA', fontSize: 10, fontWeight: 600, cursor: 'pointer',
+                  }}
+                >
+                  Create Partnership Bond
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Footer / Status */}
+      <div style={{
+        padding: '12px 20px',
+        borderTop: '1px solid rgba(255,255,255,0.06)',
+        backgroundColor: 'rgba(255,255,255,0.01)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ fontSize: 10, color: '#52525B' }}>VAULTFIRE / EMBRIS V1.0</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#22C55E' }} />
+            <span style={{ fontSize: 10, color: '#22C55E', fontWeight: 600 }}>SYSTEM NOMINAL</span>
+          </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

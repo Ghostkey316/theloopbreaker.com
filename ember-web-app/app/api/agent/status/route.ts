@@ -10,24 +10,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-
-const REGISTRY: Record<string, string> = {
-  base: '0x35978DB675576598F0781dA2133E94cdCf4858bC',
-  avalanche: '0x57741F4116925341d8f7Eb3F381d98e07C73B4a3',
-  ethereum: '0x1A80F77e12f1bd04538027aed6d056f5DCcDCD3C',
-};
-
-const PARTNERSHIP_BONDS: Record<string, string> = {
-  base: '0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4',
-  avalanche: '0xea6B504827a746d781f867441364C7A732AA4b07',
-  ethereum: '0x247F31bB2b5a0d28E68bf24865AA242965FF99cd',
-};
-
-const RPC_URLS: Record<string, string> = {
-  ethereum: 'https://eth.llamarpc.com',
-  base: 'https://mainnet.base.org',
-  avalanche: 'https://api.avax.network/ext/bc/C/rpc',
-};
+import {
+  IDENTITY_REGISTRY,
+  PARTNERSHIP_BONDS,
+  RPC_URLS,
+  EXPLORER_URLS,
+  type SupportedChain,
+} from '../../../lib/contracts';
 
 function encodeAddress(address: string): string {
   return address.replace('0x', '').toLowerCase().padStart(64, '0');
@@ -89,7 +78,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const address = searchParams.get('address');
-    const chain = searchParams.get('chain') || 'base';
+    const chain = (searchParams.get('chain') || 'base') as SupportedChain;
 
     if (!address) {
       return NextResponse.json({ error: 'Missing required query param: address' }, { status: 400 });
@@ -100,7 +89,7 @@ export async function GET(request: NextRequest) {
     }
 
     const rpc = RPC_URLS[chain];
-    const registry = REGISTRY[chain];
+    const registry = IDENTITY_REGISTRY[chain];
 
     // Query on-chain identity: getAgent(address) → 0xfb3551ff
     const calldata = '0xfb3551ff' + encodeAddress(address);
@@ -154,7 +143,7 @@ export async function GET(request: NextRequest) {
       bondTier: registered ? bondTier : null,
       bondAmountEth: bondBalance,
       trustScore: Math.min(trustScore, 100),
-      explorerUrl: `${chain === 'base' ? 'https://basescan.org' : chain === 'avalanche' ? 'https://snowtrace.io' : 'https://etherscan.io'}/address/${address}`,
+      explorerUrl: `${EXPLORER_URLS[chain]}/address/${address}`,
     });
   } catch (e) {
     return NextResponse.json(

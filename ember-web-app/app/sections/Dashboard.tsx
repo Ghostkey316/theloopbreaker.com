@@ -99,6 +99,7 @@ export default function Dashboard() {
 
   const contractsWithStatus: ContractWithStatus[] = ALL_CONTRACTS.map((c) => ({
     ...c,
+    chainId: CHAINS[c.chain].id,
     alive: contractStatus[c.address] ?? null,
   }));
 
@@ -276,7 +277,7 @@ export default function Dashboard() {
             }}>
               <h2 style={{ fontSize: 11, fontWeight: 500, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.1em" }}>{title}</h2>
               <span style={{ fontSize: 10, color: "#3F3F46", ...monoStyle }}>
-                {CHAINS[chain].chainId}
+                {CHAINS[chain].id}
               </span>
             </div>
 

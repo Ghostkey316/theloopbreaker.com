@@ -20,8 +20,8 @@ function buildChainEntry(
     contractMap[c.name] = c.address;
   }
   return {
-    chainId: config.chainId,
-    rpc: config.rpc,
+    chainId: config.id,
+    rpc: config.rpcUrls.default.http[0],
     explorer: config.explorerUrl,
     contracts: contractMap,
   };
