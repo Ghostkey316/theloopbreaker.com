@@ -343,37 +343,52 @@ export default function TrustScore() {
           display: "flex", flexDirection: "column", alignItems: "center",
           marginBottom: 48,
         }}>
-          <div style={{ position: "relative", width: 140, height: 140 }}>
-            <svg width={140} height={140} viewBox="0 0 120 120" style={{ transform: "rotate(-90deg)" }}>
-              <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="8" />
+          <div className="breathe" style={{ position: "relative", width: 160, height: 160 }}>
+            {/* Ambient glow behind circle */}
+            <div style={{
+              position: 'absolute', inset: -20,
+              borderRadius: '50%',
+              background: `radial-gradient(circle, ${scoreColor}10 0%, transparent 70%)`,
+              pointerEvents: 'none',
+            }} />
+            <svg width={160} height={160} viewBox="0 0 120 120" style={{ transform: "rotate(-90deg)", position: 'relative', zIndex: 1 }}>
+              <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="6" />
               <circle
                 cx="60" cy="60" r="54" fill="none"
                 stroke={scoreColor}
-                strokeWidth="8"
+                strokeWidth="6"
                 strokeLinecap="round"
                 strokeDasharray={circumference}
                 strokeDashoffset={strokeDashoffset}
-                style={{ transition: "stroke-dashoffset 1.2s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.3s ease" }}
+                style={{
+                  transition: "stroke-dashoffset 1.2s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.3s ease",
+                  filter: `drop-shadow(0 0 8px ${scoreColor}40)`,
+                }}
               />
             </svg>
             <div style={{
               position: "absolute", inset: 0,
               display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+              zIndex: 2,
             }}>
               <span style={{
-                fontSize: 32, fontWeight: 700, color: scoreColor,
+                fontSize: 36, fontWeight: 800, color: scoreColor,
                 ...monoStyle, letterSpacing: "-0.04em",
                 transition: "color 0.3s ease",
+                textShadow: `0 0 20px ${scoreColor}30`,
               }}>
                 {metrics?.trustScore || 0}
               </span>
-              <span style={{ fontSize: 11, color: "#52525B", fontWeight: 500 }}>
+              <span style={{ fontSize: 11, color: "#52525B", fontWeight: 600 }}>
                 {`Grade: ${metrics?.grade || 'N/A'}`}
               </span>
             </div>
           </div>
-          <p style={{ fontSize: 12, color: "#3F3F46", marginTop: 12, lineHeight: 1.5 }}>
+          <p style={{ fontSize: 13, color: "#52525B", marginTop: 16, lineHeight: 1.5, fontWeight: 500 }}>
             Embris Trust Score
+          </p>
+          <p style={{ fontSize: 10, color: "#27272A", marginTop: 4, fontStyle: 'italic' }}>
+            Trust earned, not assumed. Verified on-chain.
           </p>
         </div>
       )}
@@ -482,10 +497,20 @@ export default function TrustScore() {
         </div>
       )}
 
-      <p style={{ fontSize: 11, color: "#27272A", lineHeight: 1.8 }}>
-        Trust score is calculated from live on-chain data including contract verification status,
-        chain availability, protocol maturity, and your registration status. Score updates in real-time.
-      </p>
+      {/* Accountability Statement */}
+      <div style={{
+        padding: '16px 20px', borderRadius: 12, marginBottom: 8,
+        background: 'linear-gradient(135deg, rgba(249,115,22,0.04) 0%, rgba(167,139,250,0.03) 100%)',
+        borderLeft: '3px solid #F97316',
+      }}>
+        <p style={{ fontSize: 12, color: '#A1A1AA', lineHeight: 1.8, marginBottom: 6 }}>
+          Trust score is calculated from live on-chain data including contract verification status,
+          chain availability, protocol maturity, and your registration status.
+        </p>
+        <p style={{ fontSize: 11, color: '#F97316', fontWeight: 600, fontStyle: 'italic' }}>
+          &ldquo;In the Vaultfire Protocol, trust is not a promise &mdash; it is a provable, on-chain fact.&rdquo;
+        </p>
+      </div>
 
       {/* Trust Score Simulator */}
       <TrustScoreSimulator currentScore={metrics?.trustScore ?? null} />

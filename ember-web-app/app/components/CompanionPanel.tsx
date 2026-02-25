@@ -826,146 +826,263 @@ export default function CompanionPanel({ isOpen, onClose, isMobile }: CompanionP
               )}
             </div>
 
-            {/* Soul Viewer Section */}
-            <div style={{
-              padding: '12px', borderRadius: 12,
-              backgroundColor: 'rgba(249,115,22,0.03)',
-              border: '1px solid rgba(249,115,22,0.08)',
+            {/* Soul Viewer Section — Enhanced */}
+            <div className="border-glow" style={{
+              padding: '14px', borderRadius: 14,
+              background: 'linear-gradient(135deg, rgba(249,115,22,0.04) 0%, rgba(167,139,250,0.03) 100%)',
+              border: '1px solid rgba(249,115,22,0.1)',
+              position: 'relative', overflow: 'hidden',
             }}>
+              {/* Ambient glow */}
+              <div style={{
+                position: 'absolute', top: -30, right: -30, width: 80, height: 80,
+                borderRadius: '50%', background: 'radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 70%)',
+                pointerEvents: 'none',
+              }} />
               <div 
                 onClick={() => setShowSoulViewer(!showSoulViewer)}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', position: 'relative', zIndex: 1 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <svg width={14} height={14} viewBox="0 0 32 32" fill="none">
-                    <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9" />
-                    <path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C" />
-                  </svg>
-                  <span style={{ fontSize: 10, fontWeight: 600, color: '#F97316', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Companion Soul
-                  </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div className="breathe" style={{
+                    width: 28, height: 28, borderRadius: '50%',
+                    background: 'linear-gradient(135deg, rgba(249,115,22,0.2), rgba(251,146,60,0.15))',
+                    border: '1px solid rgba(249,115,22,0.3)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <svg width={14} height={14} viewBox="0 0 32 32" fill="none">
+                      <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9" />
+                      <path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C" />
+                    </svg>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#F97316', letterSpacing: '-0.01em' }}>
+                      Companion Soul
+                    </span>
+                    <p style={{ fontSize: 9, color: '#52525B', marginTop: 1 }}>Identity · Values · Ethics</p>
+                  </div>
                 </div>
-                <span style={{ fontSize: 10, color: '#52525B' }}>{showSoulViewer ? '▼' : '▶'}</span>
+                <div style={{
+                  width: 20, height: 20, borderRadius: 6,
+                  backgroundColor: 'rgba(249,115,22,0.08)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'transform 0.2s ease',
+                  transform: showSoulViewer ? 'rotate(180deg)' : 'rotate(0deg)',
+                }}>
+                  <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2.5"><polyline points="6 9 12 15 18 9" /></svg>
+                </div>
               </div>
 
               {showSoulViewer && soulData && (
-                <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {/* Soul motto */}
-                  <div style={{ padding: 8, backgroundColor: '#111113', borderRadius: 8, borderLeft: '2px solid #F97316' }}>
-                    <div style={{ fontSize: 9, color: '#52525B', marginBottom: 2 }}>MOTTO</div>
-                    <div style={{ fontSize: 11, color: '#E4E4E7', fontStyle: 'italic', lineHeight: 1.5 }}>
+                <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 12, position: 'relative', zIndex: 1 }}>
+                  {/* Soul motto — premium card */}
+                  <div className="soul-pulse" style={{
+                    padding: '12px 14px', borderRadius: 10,
+                    background: 'linear-gradient(135deg, rgba(249,115,22,0.06) 0%, rgba(251,146,60,0.04) 100%)',
+                    borderLeft: '3px solid #F97316',
+                    position: 'relative',
+                  }}>
+                    <div style={{ fontSize: 8, color: '#F97316', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>MOTTO</div>
+                    <div className="mission-text" style={{ fontSize: 12, fontWeight: 600, lineHeight: 1.5 }}>
                       &ldquo;{soulData.motto}&rdquo;
                     </div>
                   </div>
 
-                  {/* Soul stats grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
-                    <div style={{ padding: 6, backgroundColor: '#111113', borderRadius: 6, textAlign: 'center' }}>
-                      <div style={{ fontSize: 8, color: '#52525B' }}>VALUES</div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#F97316' }}>{soulData.values.length}</div>
-                    </div>
-                    <div style={{ padding: 6, backgroundColor: '#111113', borderRadius: 6, textAlign: 'center' }}>
-                      <div style={{ fontSize: 8, color: '#52525B' }}>TRAITS</div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#F97316' }}>{soulData.traits.length}</div>
-                    </div>
-                    <div style={{ padding: 6, backgroundColor: '#111113', borderRadius: 6, textAlign: 'center' }}>
-                      <div style={{ fontSize: 8, color: '#52525B' }}>BOUNDS</div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#F97316' }}>{soulData.boundaries.length}</div>
-                    </div>
-                  </div>
-
-                  {/* Core values */}
-                  <div>
-                    <div style={{ fontSize: 9, color: '#52525B', marginBottom: 4 }}>CORE VALUES</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                      {soulData.values.slice(0, 5).map(v => (
-                        <span key={v.name} style={{
-                          fontSize: 9, padding: '2px 6px', borderRadius: 4,
-                          backgroundColor: 'rgba(249,115,22,0.1)', color: '#F97316',
-                          border: '1px solid rgba(249,115,22,0.15)',
-                        }}>
-                          {v.name}
-                        </span>
+                  {/* Soul Radial Visualization */}
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
+                    <div style={{ position: 'relative', width: 130, height: 130 }}>
+                      {/* Orbit rings */}
+                      {[50, 40, 28].map((r, i) => (
+                        <div key={i} style={{
+                          position: 'absolute',
+                          top: '50%', left: '50%',
+                          width: r * 2, height: r * 2,
+                          borderRadius: '50%',
+                          border: `1px solid rgba(249,115,22,${0.06 + i * 0.04})`,
+                          transform: 'translate(-50%, -50%)',
+                        }} />
                       ))}
-                    </div>
-                  </div>
-
-                  {/* Personality traits */}
-                  <div>
-                    <div style={{ fontSize: 9, color: '#52525B', marginBottom: 4 }}>PERSONALITY</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      {soulData.traits.slice(0, 5).map(t => (
-                        <div key={t.name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ fontSize: 10, color: '#A1A1AA', minWidth: 70 }}>{t.name}</span>
-                          <div style={{ flex: 1, height: 4, backgroundColor: '#1A1A1E', borderRadius: 2, overflow: 'hidden' }}>
-                            <div style={{ width: `${t.strength}%`, height: '100%', backgroundColor: '#F97316', borderRadius: 2, transition: 'width 0.3s ease' }} />
+                      {/* Center ember */}
+                      <div className="breathe" style={{
+                        position: 'absolute', top: '50%', left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        width: 36, height: 36, borderRadius: '50%',
+                        background: 'radial-gradient(circle, rgba(249,115,22,0.3) 0%, rgba(249,115,22,0.05) 70%)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <svg width={18} height={18} viewBox="0 0 32 32" fill="none">
+                          <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9" />
+                        </svg>
+                      </div>
+                      {/* Orbiting value nodes */}
+                      {soulData.values.slice(0, 6).map((v, i) => {
+                        const angle = (i / Math.min(soulData.values.length, 6)) * Math.PI * 2 - Math.PI / 2;
+                        const radius = 48;
+                        const x = 65 + Math.cos(angle) * radius;
+                        const y = 65 + Math.sin(angle) * radius;
+                        const colors = ['#F97316', '#A78BFA', '#22C55E', '#38BDF8', '#FBBF24', '#EC4899'];
+                        return (
+                          <div key={v.name} title={v.name} style={{
+                            position: 'absolute', left: x - 8, top: y - 8,
+                            width: 16, height: 16, borderRadius: '50%',
+                            backgroundColor: `${colors[i % colors.length]}20`,
+                            border: `1.5px solid ${colors[i % colors.length]}60`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'default',
+                          }}>
+                            <div style={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: colors[i % colors.length] }} />
                           </div>
-                          <span style={{ fontSize: 9, color: '#52525B', minWidth: 24, textAlign: 'right' }}>{t.strength}%</span>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 
-                  {/* Beliefs */}
+                  {/* Soul stats grid — enhanced */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+                    {[
+                      { label: 'VALUES', count: soulData.values.length, color: '#F97316' },
+                      { label: 'TRAITS', count: soulData.traits.length, color: '#A78BFA' },
+                      { label: 'BOUNDS', count: soulData.boundaries.length, color: '#22C55E' },
+                    ].map(item => (
+                      <div key={item.label} style={{
+                        padding: '8px 6px', borderRadius: 8, textAlign: 'center',
+                        backgroundColor: `${item.color}08`, border: `1px solid ${item.color}15`,
+                      }}>
+                        <div style={{ fontSize: 7, color: '#52525B', fontWeight: 600, letterSpacing: '0.08em' }}>{item.label}</div>
+                        <div style={{ fontSize: 16, fontWeight: 800, color: item.color, fontFamily: "'JetBrains Mono', monospace" }}>{item.count}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Core values — pill badges */}
                   <div>
-                    <div style={{ fontSize: 9, color: '#52525B', marginBottom: 4 }}>BELIEFS</div>
-                    <div style={{ maxHeight: 80, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <div style={{ fontSize: 8, color: '#52525B', fontWeight: 600, letterSpacing: '0.08em', marginBottom: 6 }}>CORE VALUES</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {soulData.values.map((v, i) => {
+                        const colors = ['#F97316', '#A78BFA', '#22C55E', '#38BDF8', '#FBBF24', '#EC4899', '#EF4444'];
+                        const c = colors[i % colors.length];
+                        return (
+                          <span key={v.name} title={v.description} style={{
+                            fontSize: 9, padding: '3px 8px', borderRadius: 6,
+                            backgroundColor: `${c}10`, color: c,
+                            border: `1px solid ${c}20`,
+                            fontWeight: 600, cursor: 'default',
+                          }}>
+                            {v.name}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Personality traits — enhanced bars */}
+                  <div>
+                    <div style={{ fontSize: 8, color: '#52525B', fontWeight: 600, letterSpacing: '0.08em', marginBottom: 6 }}>PERSONALITY</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {soulData.traits.map((t, i) => {
+                        const colors = ['#F97316', '#A78BFA', '#22C55E', '#38BDF8', '#FBBF24', '#EC4899', '#EF4444'];
+                        const c = colors[i % colors.length];
+                        return (
+                          <div key={t.name}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+                              <span style={{ fontSize: 10, color: '#D4D4D8', fontWeight: 500 }}>{t.name}</span>
+                              <span style={{ fontSize: 9, color: c, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>{t.strength}%</span>
+                            </div>
+                            <div className="soul-value-bar">
+                              <div className="soul-value-bar-fill" style={{ width: `${t.strength}%`, background: `linear-gradient(90deg, ${c}80, ${c})` }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Beliefs — enhanced */}
+                  <div>
+                    <div style={{ fontSize: 8, color: '#52525B', fontWeight: 600, letterSpacing: '0.08em', marginBottom: 6 }}>BELIEFS</div>
+                    <div style={{ maxHeight: 100, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
                       {soulData.beliefs.map((b, i) => (
-                        <div key={i} style={{ fontSize: 10, color: '#A1A1AA', lineHeight: 1.4, paddingLeft: 8, borderLeft: '1px solid rgba(249,115,22,0.2)' }}>
+                        <div key={i} style={{
+                          fontSize: 10, color: '#A1A1AA', lineHeight: 1.5, paddingLeft: 10,
+                          borderLeft: '2px solid rgba(249,115,22,0.2)',
+                          padding: '4px 8px 4px 10px',
+                          borderRadius: '0 6px 6px 0',
+                          backgroundColor: 'rgba(249,115,22,0.02)',
+                        }}>
                           {b}
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  {/* Loyalty statement */}
-                  <div style={{ padding: 8, backgroundColor: '#111113', borderRadius: 8 }}>
-                    <div style={{ fontSize: 9, color: '#52525B', marginBottom: 2 }}>LOYALTY</div>
-                    <div style={{ fontSize: 10, color: '#D4D4D8', lineHeight: 1.5 }}>
+                  {/* Loyalty statement — premium */}
+                  <div style={{
+                    padding: '10px 12px', borderRadius: 10,
+                    background: 'linear-gradient(135deg, rgba(167,139,250,0.04) 0%, rgba(34,197,94,0.03) 100%)',
+                    border: '1px solid rgba(167,139,250,0.1)',
+                  }}>
+                    <div style={{ fontSize: 8, color: '#A78BFA', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>LOYALTY</div>
+                    <div style={{ fontSize: 10, color: '#D4D4D8', lineHeight: 1.6 }}>
                       {soulData.loyaltyStatement}
                     </div>
                   </div>
 
                   {/* User notes */}
                   <div>
-                    <div style={{ fontSize: 9, color: '#52525B', marginBottom: 4 }}>YOUR GUIDANCE (optional)</div>
+                    <div style={{ fontSize: 8, color: '#52525B', fontWeight: 600, letterSpacing: '0.08em', marginBottom: 4 }}>YOUR GUIDANCE (optional)</div>
                     <textarea
                       value={soulNotesInput}
                       onChange={(e) => setSoulNotesInput(e.target.value)}
                       placeholder="Add personal guidance for your companion's soul..."
                       style={{
-                        width: '100%', padding: '6px 8px', borderRadius: 6,
-                        backgroundColor: '#111113', border: '1px solid rgba(255,255,255,0.06)',
+                        width: '100%', padding: '8px 10px', borderRadius: 8,
+                        backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
                         color: '#F4F4F5', fontSize: 11, outline: 'none', resize: 'vertical',
                         minHeight: 48, maxHeight: 100, fontFamily: 'inherit', lineHeight: 1.5,
+                        transition: 'border-color 0.2s ease',
                       }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(249,115,22,0.3)'; }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}
                     />
                     <button
                       onClick={handleSaveSoulNotes}
+                      className="vf-btn"
                       style={{
-                        marginTop: 4, width: '100%', padding: '5px', borderRadius: 6,
-                        backgroundColor: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.2)',
-                        color: '#F97316', fontSize: 10, fontWeight: 600, cursor: 'pointer',
+                        marginTop: 6, width: '100%', padding: '7px', borderRadius: 8,
+                        background: 'linear-gradient(135deg, rgba(249,115,22,0.15), rgba(249,115,22,0.08))',
+                        border: '1px solid rgba(249,115,22,0.25)',
+                        color: '#F97316', fontSize: 10, fontWeight: 700, cursor: 'pointer',
+                        letterSpacing: '0.02em',
                       }}
                     >
                       Save Guidance
                     </button>
                   </div>
 
-                  {/* Attestation status */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: soulData.attestedOnChain ? '#22C55E' : '#3F3F46' }} />
-                      <span style={{ fontSize: 9, color: soulData.attestedOnChain ? '#22C55E' : '#52525B' }}>
+                  {/* Attestation status — enhanced */}
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '8px 10px', borderRadius: 8,
+                    backgroundColor: soulData.attestedOnChain ? 'rgba(34,197,94,0.04)' : 'rgba(255,255,255,0.02)',
+                    border: `1px solid ${soulData.attestedOnChain ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.04)'}`,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div className={soulData.attestedOnChain ? 'breathe' : ''} style={{
+                        width: 7, height: 7, borderRadius: '50%',
+                        backgroundColor: soulData.attestedOnChain ? '#22C55E' : '#3F3F46',
+                        boxShadow: soulData.attestedOnChain ? '0 0 6px rgba(34,197,94,0.5)' : 'none',
+                      }} />
+                      <span style={{ fontSize: 9, color: soulData.attestedOnChain ? '#22C55E' : '#52525B', fontWeight: 600 }}>
                         {soulData.attestedOnChain ? 'ATTESTED ON-CHAIN' : 'NOT YET ATTESTED'}
                       </span>
                     </div>
                     <button
                       onClick={handleResetSoul}
                       style={{
-                        fontSize: 9, padding: '2px 6px', borderRadius: 4,
-                        backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)',
-                        color: '#EF4444', cursor: 'pointer',
+                        fontSize: 9, padding: '3px 8px', borderRadius: 6,
+                        backgroundColor: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.12)',
+                        color: '#EF4444', cursor: 'pointer', fontWeight: 600,
+                        transition: 'all 0.15s ease',
                       }}
                     >
                       Reset Soul

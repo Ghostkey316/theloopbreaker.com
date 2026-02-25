@@ -218,10 +218,12 @@ function SidebarIcon({ size = 16 }: { size?: number }) {
 /* Small Embris flame icon for chat responses */
 function EmbrisFlame() {
   return (
-    <svg width={16} height={16} viewBox="0 0 32 32" fill="none" style={{ flexShrink: 0, marginTop: 3 }}>
-      <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9" />
-      <path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C" />
-    </svg>
+    <div className="glow-pulse" style={{ flexShrink: 0, marginTop: 3 }}>
+      <svg width={16} height={16} viewBox="0 0 32 32" fill="none">
+        <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9" />
+        <path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C" />
+      </svg>
+    </div>
   );
 }
 
@@ -1812,10 +1814,17 @@ export default function Chat() {
               padding: isMobile ? '24px 16px' : '40px 24px',
             }}>
               <div style={{ textAlign: 'center' }}>
-                <svg width={28} height={28} viewBox="0 0 32 32" fill="none" style={{ marginBottom: 20, opacity: 0.7 }}>
-                  <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9" />
-                  <path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C" />
-                </svg>
+                <div className="breathe" style={{
+                  width: 56, height: 56, borderRadius: '50%', marginBottom: 20,
+                  background: 'radial-gradient(circle, rgba(249,115,22,0.15) 0%, rgba(249,115,22,0.03) 70%)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 0 30px rgba(249,115,22,0.1)',
+                }}>
+                  <svg width={28} height={28} viewBox="0 0 32 32" fill="none">
+                    <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9" />
+                    <path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C" />
+                  </svg>
+                </div>
                 <h3 style={{
                   fontSize: isMobile ? 20 : 24, fontWeight: 600, color: '#F4F4F5',
                   marginBottom: 8, letterSpacing: '-0.03em', lineHeight: 1.25,
@@ -1825,6 +1834,9 @@ export default function Chat() {
                     ? 'Your self-learning companion — I remember, reflect, grow, and track your goals'
                     : 'Your AI companion for Embris — register on-chain to unlock my full potential'
                   }
+                </p>
+                <p style={{ fontSize: 11, color: '#27272A', marginTop: 8, fontStyle: 'italic' }}>
+                  Morals over metrics. Privacy over surveillance. Freedom over control.
                 </p>
                 {voiceEnabled && (
                   <p style={{ fontSize: 12, color: '#F97316', marginTop: 8, opacity: 0.7 }}>
@@ -2216,9 +2228,12 @@ export default function Chat() {
               </button>
             </div>
             {!isMobile && (
-              <p style={{ fontSize: 11, color: '#27272A', marginTop: 8, textAlign: 'center', lineHeight: 1.5 }}>
-                Enter to send · Shift+Enter for new line{voiceEnabled ? ' · Click mic or tap to interrupt' : ''}
-              </p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 8 }}>
+                <p style={{ fontSize: 11, color: '#27272A', lineHeight: 1.5 }}>
+                  Enter to send · Shift+Enter for new line{voiceEnabled ? ' · Click mic or tap to interrupt' : ''}
+                </p>
+                <span style={{ fontSize: 9, color: '#1A1A1E', padding: '1px 5px', borderRadius: 3, backgroundColor: 'rgba(249,115,22,0.05)', border: '1px solid rgba(249,115,22,0.08)' }}>Vaultfire</span>
+              </div>
             )}
           </div>
         </div>

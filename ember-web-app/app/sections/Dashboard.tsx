@@ -135,6 +135,7 @@ export default function Dashboard() {
           <p style={{ fontSize: 12, color: "#52525B", marginTop: 4, lineHeight: 1.5 }}>
             {lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : "Loading on-chain data..."}
           </p>
+          <p style={{ fontSize: 10, color: '#27272A', marginTop: 2, fontStyle: 'italic' }}>Live protocol health — verified, not promised</p>
         </div>
         <button
           onClick={loadAll}

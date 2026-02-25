@@ -277,10 +277,17 @@ export default function Sidebar({ activeSection, onSectionChange, mobileForceOpe
           padding: "24px 18px 20px",
           display: "flex", alignItems: "center", gap: 10,
         }}>
-          <EmbrisLogo size={22} />
+          <div className="glow-pulse" style={{
+            width: 32, height: 32, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(249,115,22,0.12) 0%, transparent 70%)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+          }}>
+            <EmbrisLogo size={22} />
+          </div>
           <div>
             <h1 style={{
-              fontSize: 15, fontWeight: 600, color: "#F4F4F5",
+              fontSize: 15, fontWeight: 700, color: "#F4F4F5",
               margin: 0, letterSpacing: "-0.02em", lineHeight: 1.2,
             }}>Embris</h1>
             <p style={{
@@ -411,9 +418,14 @@ export default function Sidebar({ activeSection, onSectionChange, mobileForceOpe
           {/* Settings nav button */}
           <NavButton item={SETTINGS_ITEM} />
 
-          <p style={{ fontSize: 10, color: "#27272A", fontWeight: 400, letterSpacing: "0.01em", padding: "4px 14px 2px" }}>
-            v0.9.0 · Embris by Vaultfire
-          </p>
+          <div style={{ padding: '6px 14px 2px' }}>
+            <p style={{ fontSize: 10, color: '#27272A', fontWeight: 400, letterSpacing: '0.01em', marginBottom: 4 }}>
+              v0.9.0 · Embris by Vaultfire
+            </p>
+            <p style={{ fontSize: 8, color: '#1A1A1E', fontStyle: 'italic', lineHeight: 1.5 }}>
+              Morals over metrics
+            </p>
+          </div>
         </div>
       </>
     );
