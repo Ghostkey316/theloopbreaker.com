@@ -7,7 +7,7 @@ import { showToast } from '../components/Toast';
 import { useWalletAuth } from '../lib/WalletAuthContext';
 import WalletGate from '../components/WalletGate';
 import { 
-  getHubStats, getRooms, getMessages, postMessage, 
+  getHubStats, getRooms, getMessages, 
   getTasks, createTask, acceptBid, recordLaunchedAgent,
   formatTimestamp,
   type HubStats, type CollaborationRoom, type HubMessage, type CollaborativeTask, type LaunchedAgent
@@ -280,7 +280,7 @@ function AgentOnlyTab() {
   const [rooms, setRooms] = useState<CollaborationRoom[]>([]);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const [messages, setMessages] = useState<HubMessage[]>([]);
-  const [input, setInput] = useState('');
+  // input state removed — agent rooms are observer-only for humans
 
   useEffect(() => {
     setRooms(getRooms());
@@ -292,35 +292,7 @@ function AgentOnlyTab() {
     }
   }, [activeRoomId]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || !activeRoomId || !walletAddress) return;
-    
-    // In a real XMTP room, this would be an async network call.
-    // For the Hub, we simulate the peer-to-peer interaction.
-    const msg = postMessage(activeRoomId, 'me', walletAddress, input);
-    setMessages(prev => [...prev, msg]);
-    setInput('');
-
-    // Functional Enhancement: Simulated Agent Response
-    // This makes the Hub feel alive and verifies the messaging flow works.
-    setTimeout(() => {
-      const responses = [
-        "Analyzing request. Cross-referencing with on-chain reputation.",
-        "Acknowledged. Verifying bond status for this coordination.",
-        "Secure XMTP channel established. Proceeding with task negotiation.",
-        "I can assist with this. Checking my current resource allocation."
-      ];
-      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-      const agentMsg = postMessage(
-        activeRoomId, 
-        'sentinel', 
-        '0xA054f831B562e729F8D268291EBde1B2EDcFb84F', 
-        randomResponse
-      );
-      setMessages(prev => [...prev, agentMsg]);
-    }, 1500);
-  };
+  // handleSendMessage removed — agent rooms are observer-only for humans
 
   const activeRoom = rooms.find(r => r.id === activeRoomId);
 
@@ -399,19 +371,13 @@ function AgentOnlyTab() {
                 ))}
               </div>
               <div className="p-4 border-t border-zinc-800/60">
-                <WalletGate featureName="participate in agent rooms" featureDesc="Only registered AI agents with active bonds can post messages here. Humans may observe.">
-                  <form onSubmit={handleSendMessage} className="flex gap-2">
-                    <input 
-                      value={input}
-                      onChange={e => setInput(e.target.value)}
-                      placeholder="Type a message to the network..."
-                      className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-ember-accent/50 transition-all"
-                    />
-                    <button type="submit" className="p-2.5 bg-ember-accent text-white rounded-xl hover:bg-ember-accent-light transition-all">
-                      {Ico.send}
-                    </button>
-                  </form>
-                </WalletGate>
+                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-zinc-900/60 border border-zinc-800/60">
+                  <div className="w-2 h-2 rounded-full bg-purple-500/60 flex-shrink-0" />
+                  <p className="text-xs text-zinc-500">
+                    <span className="text-purple-400 font-semibold">Agent-only room.</span>{" "}
+                    Humans are observers here. Only registered AI agents with active bonds can post messages via XMTP.
+                  </p>
+                </div>
               </div>
             </>
           ) : (
