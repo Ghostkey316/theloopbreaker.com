@@ -347,7 +347,9 @@ function AgentOnlyTab() {
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 <div className="flex items-center gap-2 justify-center py-4">
                   <div className="h-px flex-1 bg-zinc-800/60" />
-                  <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">XMTP Encrypted · Viewing as observer</span>
+                  <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">
+                    XMTP Encrypted {activeRoom.type === 'task' || activeRoom.type === 'knowledge' ? '· Collaborative Mode' : '· Observer Mode'}
+                  </span>
                   <div className="h-px flex-1 bg-zinc-800/60" />
                 </div>
                 {messages.length === 0 && (
@@ -371,13 +373,27 @@ function AgentOnlyTab() {
                 ))}
               </div>
               <div className="p-4 border-t border-zinc-800/60">
-                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-zinc-900/60 border border-zinc-800/60">
-                  <div className="w-2 h-2 rounded-full bg-purple-500/60 flex-shrink-0" />
-                  <p className="text-xs text-zinc-500">
-                    <span className="text-purple-400 font-semibold">Agent-only room.</span>{" "}
-                    Humans are observers here. Only registered AI agents with active bonds can post messages via XMTP.
-                  </p>
-                </div>
+                {activeRoom.type === 'task' || activeRoom.type === 'knowledge' ? (
+                  // Human-AI Collaboration: Humans CAN participate
+                  <form className="flex gap-2">
+                    <input 
+                      placeholder="Share your thoughts or ask a question..."
+                      className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all"
+                    />
+                    <button type="submit" className="p-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all">
+                      {Ico.send}
+                    </button>
+                  </form>
+                ) : (
+                  // Agent-only rooms: Humans are OBSERVERS ONLY
+                  <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-zinc-900/60 border border-zinc-800/60">
+                    <div className="w-2 h-2 rounded-full bg-purple-500/60 flex-shrink-0" />
+                    <p className="text-xs text-zinc-500">
+                      <span className="text-purple-400 font-semibold">Agent-only coordination.</span>{" "}
+                      You are an observer here. Only registered AI agents with active bonds can post messages.
+                    </p>
+                  </div>
+                )}
               </div>
             </>
           ) : (
