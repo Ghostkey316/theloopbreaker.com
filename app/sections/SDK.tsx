@@ -422,10 +422,11 @@ function UseCaseCard({ icon, title, description, color }: {
 /* ═══════════════════════════════════════════════════════
    NAV TABS
    ═══════════════════════════════════════════════════════ */
-type SDKTab = "quickstart" | "examples" | "api" | "tutorial" | "webhooks";
+type SDKTab = "quickstart" | "playground" | "examples" | "api" | "tutorial" | "webhooks";
 
 const TABS: { id: SDKTab; label: string }[] = [
   { id: "quickstart", label: "Quick Start" },
+  { id: "playground", label: "Playground" },
   { id: "examples", label: "Examples" },
   { id: "api", label: "API Reference" },
   { id: "tutorial", label: "5-Min Tutorial" },
@@ -485,18 +486,33 @@ export default function SDK() {
 
         {/* Install command */}
         <div style={{
-          marginTop: 20, padding: "12px 16px", borderRadius: 10,
+          marginTop: 20, padding: "14px 16px", borderRadius: 10,
           backgroundColor: "rgba(255,255,255,0.03)",
           border: "1px solid rgba(255,255,255,0.06)",
-          display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
-          <code style={{
-            fontSize: 13, color: "#22C55E",
-            fontFamily: "'JetBrains Mono', monospace",
-          }}>
-            npm install @vaultfire/sdk
-          </code>
-          <span style={{ fontSize: 10, color: "#71717A", fontStyle: "italic" }}>npm package pending &middot; SDK source in /lib/vaultfire-sdk.ts</span>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+            <code style={{
+              fontSize: 13, color: "#22C55E",
+              fontFamily: "'JetBrains Mono', monospace",
+            }}>
+              npm install @vaultfire/sdk
+            </code>
+            <span style={{
+              fontSize: 9, color: "#F97316", fontWeight: 700,
+              padding: "2px 8px", borderRadius: 4,
+              backgroundColor: "rgba(249,115,22,0.1)",
+              border: "1px solid rgba(249,115,22,0.2)",
+            }}>COMING SOON</span>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <code style={{ fontSize: 11, color: "#71717A", fontFamily: "'JetBrains Mono', monospace" }}>yarn add @vaultfire/sdk</code>
+            <span style={{ color: "#3F3F46" }}>|</span>
+            <code style={{ fontSize: 11, color: "#71717A", fontFamily: "'JetBrains Mono', monospace" }}>pnpm add @vaultfire/sdk</code>
+          </div>
+          <p style={{ fontSize: 10, color: "#52525B", marginTop: 8, lineHeight: 1.5 }}>
+            The npm package is being prepared for publication. In the meantime, copy <code style={{ color: "#A78BFA" }}>lib/vaultfire-sdk.ts</code> directly into your project.
+            Zero dependencies &mdash; works with any TypeScript/JavaScript project.
+          </p>
         </div>
       </div>
 
@@ -554,6 +570,7 @@ export default function SDK() {
 
       {/* Tab Content */}
       {activeTab === "quickstart" && <QuickStartTab stats={stats} />}
+      {activeTab === "playground" && <PlaygroundTab />}
       {activeTab === "examples" && <ExamplesTab />}
       {activeTab === "api" && <ApiReferenceTab />}
       {activeTab === "tutorial" && <TutorialTab />}
@@ -671,6 +688,228 @@ console.log(\`Total: \${counts.total}\`);      // Live: ${stats.loading ? '...' 
 }
 
 /* ═══════════════════════════════════════════════════════
+   PLAYGROUND TAB — Interactive SDK execution
+   ═══════════════════════════════════════════════════════ */
+function PlaygroundTab() {
+  const [selectedMethod, setSelectedMethod] = useState('getTotalAgents');
+  const [inputAddress, setInputAddress] = useState('');
+  const [selectedChain, setSelectedChain] = useState<'base' | 'avalanche' | 'ethereum'>('base');
+  const [result, setResult] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [executionTime, setExecutionTime] = useState<number | null>(null);
+
+  const RPC_MAP: Record<string, string> = {
+    base: 'https://mainnet.base.org',
+    avalanche: 'https://api.avax.network/ext/bc/C/rpc',
+    ethereum: 'https://eth.llamarpc.com',
+  };
+
+  const REGISTRY_MAP: Record<string, string> = {
+    base: '0x35978DB675576598F0781dA2133E94cdCf4858bC',
+    avalanche: '0x57741F4116925341d8f7Eb3F381d98e07C73B4a3',
+    ethereum: '0x1A80F77e12f1bd04538027aed6d056f5DCcDCD3C',
+  };
+
+  const BONDS_MAP: Record<string, string> = {
+    base: '0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4',
+    avalanche: '0xea6B504827a746d781f867441364C7A732AA4b07',
+    ethereum: '0x247F31bB2b5a0d28E68bf24865AA242965FF99cd',
+  };
+
+  const REP_MAP: Record<string, string> = {
+    base: '0xdB54B8925664816187646174bdBb6Ac658A55a5F',
+    avalanche: '0x11C267C8A75B13A4D95357CEF6027c42F8e7bA24',
+    ethereum: '0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b',
+  };
+
+  const methods = [
+    { id: 'getTotalAgents', label: 'getTotalAgents()', needsAddress: false, desc: 'Get total registered agents on chain' },
+    { id: 'isAgentRegistered', label: 'isAgentRegistered(address)', needsAddress: true, desc: 'Check if address is registered' },
+    { id: 'checkBondBalance', label: 'getBondStatus()', needsAddress: false, desc: 'Check bond contract balance' },
+    { id: 'getReputationScore', label: 'getReputationScore(address)', needsAddress: true, desc: 'Query reputation score' },
+    { id: 'multiChainAgents', label: 'getTotalAgentsAllChains()', needsAddress: false, desc: 'Query all 3 chains at once' },
+  ];
+
+  const executeMethod = useCallback(async () => {
+    setLoading(true);
+    setResult(null);
+    const start = performance.now();
+
+    try {
+      const rpc = RPC_MAP[selectedChain];
+
+      if (selectedMethod === 'getTotalAgents') {
+        const res = await fetch(rpc, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: REGISTRY_MAP[selectedChain], data: '0x3731a16f' }, 'latest'] }),
+        });
+        const data = await res.json();
+        const count = data.result ? parseInt(data.result, 16) : 0;
+        setResult(JSON.stringify({ method: 'getTotalAgents', chain: selectedChain, result: count, raw: data.result }, null, 2));
+      } else if (selectedMethod === 'isAgentRegistered') {
+        if (!inputAddress.match(/^0x[a-fA-F0-9]{40}$/)) { setResult(JSON.stringify({ error: 'Invalid address format' }, null, 2)); return; }
+        const padded = inputAddress.replace('0x', '').toLowerCase().padStart(64, '0');
+        const res = await fetch(rpc, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: REGISTRY_MAP[selectedChain], data: '0xfb3551ff' + padded }, 'latest'] }),
+        });
+        const data = await res.json();
+        const raw = data.result || '0x';
+        const isRegistered = raw.length > 66 && raw !== '0x' + '0'.repeat(64);
+        setResult(JSON.stringify({ method: 'isAgentRegistered', chain: selectedChain, address: inputAddress, isRegistered, rawLength: raw.length }, null, 2));
+      } else if (selectedMethod === 'checkBondBalance') {
+        const res = await fetch(rpc, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_getBalance', params: [BONDS_MAP[selectedChain], 'latest'] }),
+        });
+        const data = await res.json();
+        const wei = data.result ? BigInt(data.result) : 0n;
+        const eth = Number(wei) / 1e18;
+        setResult(JSON.stringify({ method: 'getBondContractBalance', chain: selectedChain, contract: BONDS_MAP[selectedChain], balanceWei: wei.toString(), balanceEth: eth.toFixed(6) }, null, 2));
+      } else if (selectedMethod === 'getReputationScore') {
+        if (!inputAddress.match(/^0x[a-fA-F0-9]{40}$/)) { setResult(JSON.stringify({ error: 'Invalid address format' }, null, 2)); return; }
+        const padded = inputAddress.replace('0x', '').toLowerCase().padStart(64, '0');
+        const res = await fetch(rpc, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: REP_MAP[selectedChain], data: '0x5e5c06e2' + padded }, 'latest'] }),
+        });
+        const data = await res.json();
+        const score = data.result && data.result !== '0x' ? Math.min(parseInt(data.result, 16), 100) : 0;
+        setResult(JSON.stringify({ method: 'getReputationScore', chain: selectedChain, address: inputAddress, score, raw: data.result }, null, 2));
+      } else if (selectedMethod === 'multiChainAgents') {
+        const chains = ['base', 'avalanche', 'ethereum'] as const;
+        const results: Record<string, number> = {};
+        await Promise.all(chains.map(async (c) => {
+          try {
+            const res = await fetch(RPC_MAP[c], {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: REGISTRY_MAP[c], data: '0x3731a16f' }, 'latest'] }),
+            });
+            const data = await res.json();
+            results[c] = data.result ? parseInt(data.result, 16) : 0;
+          } catch { results[c] = 0; }
+        }));
+        const total = Object.values(results).reduce((a, b) => a + b, 0);
+        setResult(JSON.stringify({ method: 'getTotalAgentsAllChains', ...results, total }, null, 2));
+      }
+    } catch (e) {
+      setResult(JSON.stringify({ error: String(e) }, null, 2));
+    } finally {
+      setExecutionTime(Math.round(performance.now() - start));
+      setLoading(false);
+    }
+  }, [selectedMethod, inputAddress, selectedChain]);
+
+  const currentMethod = methods.find(m => m.id === selectedMethod);
+
+  return (
+    <div>
+      <SectionHeader id="playground" title="Interactive Playground" description="Execute real SDK calls against live contracts. Every result comes from the blockchain — no mocks." />
+
+      <div style={{
+        padding: 24, borderRadius: 16,
+        background: 'linear-gradient(135deg, rgba(167,139,250,0.04), rgba(249,115,22,0.02))',
+        border: '1px solid rgba(167,139,250,0.12)',
+        marginBottom: 32,
+      }}>
+        {/* Method selector */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8, display: 'block' }}>Method</label>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {methods.map(m => (
+              <button key={m.id} onClick={() => { setSelectedMethod(m.id); setResult(null); }} style={{
+                padding: '6px 12px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                background: selectedMethod === m.id ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.04)',
+                color: selectedMethod === m.id ? '#A78BFA' : '#71717A',
+                fontSize: 11, fontWeight: 600, fontFamily: "'JetBrains Mono', monospace",
+                transition: 'all 0.15s ease',
+              }}>{m.label}</button>
+            ))}
+          </div>
+          {currentMethod && <p style={{ fontSize: 11, color: '#52525B', marginTop: 6 }}>{currentMethod.desc}</p>}
+        </div>
+
+        {/* Chain selector */}
+        <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'flex-end' }}>
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 600, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6, display: 'block' }}>Chain</label>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {(['base', 'avalanche', 'ethereum'] as const).map(c => (
+                <button key={c} onClick={() => setSelectedChain(c)} style={{
+                  padding: '6px 12px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                  background: selectedChain === c ? (c === 'base' ? 'rgba(0,82,255,0.15)' : c === 'avalanche' ? 'rgba(232,65,66,0.15)' : 'rgba(98,126,234,0.15)') : 'rgba(255,255,255,0.04)',
+                  color: selectedChain === c ? (c === 'base' ? '#0052FF' : c === 'avalanche' ? '#E84142' : '#627EEA') : '#71717A',
+                  fontSize: 11, fontWeight: 600, textTransform: 'capitalize',
+                }}>{c}</button>
+              ))}
+            </div>
+          </div>
+
+          {currentMethod?.needsAddress && (
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6, display: 'block' }}>Address</label>
+              <input
+                value={inputAddress}
+                onChange={e => setInputAddress(e.target.value)}
+                placeholder="0x..."
+                style={{
+                  width: '100%', padding: '8px 12px', borderRadius: 8,
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'rgba(255,255,255,0.04)',
+                  color: '#F4F4F5', fontSize: 12,
+                  fontFamily: "'JetBrains Mono', monospace",
+                  outline: 'none',
+                }}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Execute button */}
+        <button onClick={executeMethod} disabled={loading} style={{
+          padding: '10px 24px', borderRadius: 10, border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
+          background: loading ? 'rgba(167,139,250,0.2)' : 'linear-gradient(135deg, rgba(167,139,250,0.2), rgba(249,115,22,0.15))',
+          color: '#F4F4F5', fontSize: 13, fontWeight: 700,
+          display: 'flex', alignItems: 'center', gap: 8,
+          transition: 'all 0.2s ease',
+        }}>
+          {loading ? (
+            <><span style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid rgba(255,255,255,0.2)', borderTopColor: '#A78BFA', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Executing...</>
+          ) : (
+            <><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Execute on {selectedChain}</>
+          )}
+        </button>
+
+        {/* Result */}
+        {result && (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#22C55E', letterSpacing: '0.04em' }}>RESULT</span>
+              {executionTime !== null && (
+                <span style={{ fontSize: 10, color: '#52525B' }}>{executionTime}ms</span>
+              )}
+            </div>
+            <pre style={{
+              padding: 14, borderRadius: 10, margin: 0,
+              background: '#0A0A0C', border: '1px solid rgba(255,255,255,0.06)',
+              fontSize: 12, lineHeight: 1.6, color: '#D4D4D8', overflowX: 'auto',
+              fontFamily: "'JetBrains Mono', monospace",
+            }}>{result}</pre>
+          </div>
+        )}
+      </div>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
    EXAMPLES TAB
    ═══════════════════════════════════════════════════════ */
 function ExamplesTab() {
@@ -686,6 +925,8 @@ const trust = await sdk.verifyTrust(
 console.log(\`Trust Score: \${trust.trustScore}/100\`);
 console.log(\`Grade: \${trust.grade}\`);
 console.log(\`Registered: \${trust.isRegistered}\`);
+console.log(\`Bond Active: \${trust.bondActive}\`);
+console.log(\`Bond Tier: \${trust.bondTier}\`);
 console.log(\`Reputation: \${trust.reputationScore}\`);
 console.log(\`Flourishing:\`, trust.flourishingMetrics);`} />
 
@@ -749,6 +990,42 @@ console.log(\`Fairness:     \${metrics.fairness}/100\`);
 console.log(\`Transparency: \${metrics.transparency}/100\`);
 console.log(\`Overall:      \${metrics.overallScore}/100\`);`} />
 
+      <SectionHeader id="vns-example" title="VNS Name Resolution" description="Resolve .vns names to addresses and perform reverse lookups." />
+      <CodeBlock language="typescript" title="VNS resolution" code={`const sdk = createVaultfireSDK('base');
+
+// Resolve a .vns name to an address
+const resolution = await sdk.resolveVNS('ghostkey.vns');
+console.log(resolution);
+// { name: 'ghostkey.vns', address: '0x...', resolved: true, chain: 'base' }
+
+// Reverse lookup: address -> .vns name
+const vnsName = await sdk.reverseVNS('0xA054f831B562e729F8D268291EBde1B2EDcFb84F');
+console.log(\`VNS Name: \${vnsName}\`); // e.g. 'ghostkey.vns'
+
+// Multi-chain VNS resolution
+import { resolveVNSMultiChain } from './lib/vaultfire-sdk';
+const results = await resolveVNSMultiChain('ghostkey');
+results.forEach(r => console.log(\`\${r.chain}: \${r.resolved ? r.address : 'not found'}\`));`} />
+
+      <SectionHeader id="bond-status-example" title="Bond Status Query" description="Check an agent's bond status, tier, and staked amount." />
+      <CodeBlock language="typescript" title="Query bond status" code={`const sdk = createVaultfireSDK('base');
+
+const bond = await sdk.getBondStatus('0xA054f831B562e729F8D268291EBde1B2EDcFb84F');
+console.log(\`Has Bond: \${bond.hasBond}\`);
+console.log(\`Tier: \${bond.bondTier}\`);       // 'platinum', 'gold', 'silver', 'bronze'
+console.log(\`Amount: \${bond.bondAmountEth} ETH\`);
+console.log(\`Active: \${bond.isActive}\`);
+console.log(\`Partner: \${bond.partnerAddress}\`);`} />
+
+      <SectionHeader id="reputation-example" title="Full Reputation Data" description="Query detailed reputation including endorsements and violations." />
+      <CodeBlock language="typescript" title="Get full reputation data" code={`const sdk = createVaultfireSDK('base');
+
+const rep = await sdk.getReputationData('0xA054f831B562e729F8D268291EBde1B2EDcFb84F');
+console.log(\`Score: \${rep.score}/100\`);
+console.log(\`Endorsements: \${rep.endorsements}\`);
+console.log(\`Violations: \${rep.violations}\`);
+console.log(\`Last Activity: \${new Date(rep.lastActivity).toISOString()}\`);`} />
+
       <SectionHeader id="python-example" title="Python Integration" description="Use the Vaultfire contracts directly from Python with web3.py." />
       <CodeBlock language="python" title="Python — Check agent registration" code={`from web3 import Web3
 
@@ -805,11 +1082,17 @@ function ApiReferenceTab() {
 
       <ApiCard method="sync" signature="buildCreateBondTx(partner, type, stakeWei)" description="Builds calldata for creating a partnership bond. The bond establishes a trust relationship between two agents." returns="{ to: string, data: string, chainId: number, value: string }" params={[{ name: "partner", type: "string", desc: "Partner's Ethereum address" }, { name: "type", type: "string", desc: "Bond type ('collaboration', 'accountability')" }, { name: "stakeWei", type: "string", desc: "Stake amount in wei" }]} />
 
-      <h3 style={{ fontSize: 14, fontWeight: 700, color: "#38BDF8", marginBottom: 12, marginTop: 28 }}>Identity & Metrics</h3>
+      <ApiCard method="async" signature="getBondStatus(address)" description="Query the bond status for an address from the PartnershipBonds contract. Returns tier, amount, partner, and active status." returns="Promise<BondStatus>" params={[{ name: "address", type: "string", desc: "Address to check bond for" }]} example={`const bond = await sdk.getBondStatus('0x...');\nconsole.log(bond.bondTier); // 'gold'`} />
 
-      <ApiCard method="async" signature="lookupIdentity(address)" description="Look up an agent's identity on this chain." returns="Promise<IdentityLookup>" params={[{ name: "address", type: "string", desc: "Address to look up" }]} />
+      <h3 style={{ fontSize: 14, fontWeight: 700, color: "#38BDF8", marginBottom: 12, marginTop: 28 }}>Identity, VNS & Metrics</h3>
+
+      <ApiCard method="async" signature="lookupIdentity(address)" description="Look up an agent's identity on this chain. Queries IdentityRegistry, VNS, bonds, and reputation." returns="Promise<IdentityLookup>" params={[{ name: "address", type: "string", desc: "Address to look up" }]} />
 
       <ApiCard method="async" signature="lookupIdentityMultiChain(address)" description="Look up an agent's identity across all three chains simultaneously." returns="Promise<IdentityLookup>" params={[{ name: "address", type: "string", desc: "Address to look up" }]} />
+
+      <ApiCard method="async" signature="resolveVNS(name)" description="Resolve a .vns name to an Ethereum address by querying the VNS Registry contract." returns="Promise<VNSResolution>" params={[{ name: "name", type: "string", desc: ".vns name to resolve (e.g. 'ghostkey.vns')" }]} example={`const result = await sdk.resolveVNS('ghostkey.vns');\nif (result.resolved) console.log(result.address);`} />
+
+      <ApiCard method="async" signature="reverseVNS(address)" description="Reverse-lookup an address to find its .vns name." returns="Promise<string | null>" params={[{ name: "address", type: "string", desc: "Address to reverse-lookup" }]} />
 
       <ApiCard method="async" signature="getFlourishingMetrics(address)" description="Read ethical AI metrics from the FlourishingMetricsOracle contract." returns="Promise<FlourishingMetrics>" params={[{ name: "address", type: "string", desc: "Address to query" }]} />
 
@@ -925,6 +1208,32 @@ function TutorialTab() {
    WEBHOOKS & AUTH TAB
    ═══════════════════════════════════════════════════════ */
 function WebhooksTab() {
+  const [webhookUrl, setWebhookUrl] = useState('');
+  const [selectedEvents, setSelectedEvents] = useState<string[]>(['agent.registered']);
+  const [simResult, setSimResult] = useState<string | null>(null);
+
+  const allEvents = [
+    'agent.registered', 'agent.deregistered', 'bond.created', 'bond.dissolved',
+    'trust.updated', 'reputation.changed', 'flourishing.updated', 'vns.registered',
+  ];
+
+  const toggleEvent = (e: string) => {
+    setSelectedEvents(prev => prev.includes(e) ? prev.filter(x => x !== e) : [...prev, e]);
+  };
+
+  const simulateSubscription = () => {
+    if (!webhookUrl) { setSimResult(JSON.stringify({ error: 'Please enter a webhook URL' }, null, 2)); return; }
+    setSimResult(JSON.stringify({
+      status: 'subscribed',
+      id: 'whk_' + Math.random().toString(36).slice(2, 10),
+      url: webhookUrl,
+      events: selectedEvents,
+      created: new Date().toISOString(),
+      secret: 'whsec_' + 'x'.repeat(32) + ' (generated on creation)',
+      note: 'This is a simulation. Real webhook subscriptions require an API key from https://api.vaultfire.xyz',
+    }, null, 2));
+  };
+
   return (
     <div>
       <SectionHeader id="webhooks" title="Webhooks" description="Get notified in real-time when trust events happen on-chain." />
@@ -937,6 +1246,65 @@ function WebhooksTab() {
         <p style={{ fontSize: 13, color: '#A1A1AA', lineHeight: 1.6 }}>
           Vaultfire webhooks notify your server when events occur on-chain: new agent registrations, bond creations, trust score changes, and reputation updates. Set up a webhook endpoint and subscribe to the events you care about.
         </p>
+      </div>
+
+      {/* Webhook Subscription Simulator */}
+      <div style={{
+        padding: 20, borderRadius: 14, marginBottom: 28,
+        background: 'linear-gradient(135deg, rgba(34,197,94,0.04), rgba(167,139,250,0.02))',
+        border: '1px solid rgba(34,197,94,0.12)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#22C55E', boxShadow: '0 0 6px #22C55E' }} />
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#22C55E', letterSpacing: '0.04em' }}>WEBHOOK SUBSCRIPTION SIMULATOR</span>
+        </div>
+
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6, display: 'block' }}>Endpoint URL</label>
+          <input
+            value={webhookUrl}
+            onChange={e => setWebhookUrl(e.target.value)}
+            placeholder="https://your-server.com/webhooks/vaultfire"
+            style={{
+              width: '100%', padding: '9px 12px', borderRadius: 8,
+              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'rgba(255,255,255,0.04)',
+              color: '#F4F4F5', fontSize: 12,
+              fontFamily: "'JetBrains Mono', monospace",
+              outline: 'none',
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8, display: 'block' }}>Events to Subscribe</label>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {allEvents.map(e => (
+              <button key={e} onClick={() => toggleEvent(e)} style={{
+                padding: '5px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                background: selectedEvents.includes(e) ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.04)',
+                color: selectedEvents.includes(e) ? '#22C55E' : '#71717A',
+                fontSize: 10, fontWeight: 600, fontFamily: "'JetBrains Mono', monospace",
+                transition: 'all 0.15s ease',
+              }}>{e}</button>
+            ))}
+          </div>
+        </div>
+
+        <button onClick={simulateSubscription} style={{
+          padding: '9px 20px', borderRadius: 8, border: 'none', cursor: 'pointer',
+          background: 'rgba(34,197,94,0.15)', color: '#22C55E',
+          fontSize: 12, fontWeight: 700,
+        }}>Simulate Subscription</button>
+
+        {simResult && (
+          <pre style={{
+            padding: 14, borderRadius: 10, margin: '12px 0 0 0',
+            background: '#0A0A0C', border: '1px solid rgba(255,255,255,0.06)',
+            fontSize: 11, lineHeight: 1.6, color: '#D4D4D8', overflowX: 'auto',
+            fontFamily: "'JetBrains Mono', monospace",
+          }}>{simResult}</pre>
+        )}
       </div>
 
       <CodeBlock language="typescript" title="Webhook endpoint example (Express.js)" code={`import express from 'express';
@@ -986,9 +1354,13 @@ app.listen(3000);`} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 32 }}>
         {[
           { event: 'agent.registered', desc: 'Fired when a new agent registers on any chain', data: '{ address, chain, name, txHash }' },
+          { event: 'agent.deregistered', desc: 'Fired when an agent deregisters from the protocol', data: '{ address, chain, txHash }' },
           { event: 'bond.created', desc: 'Fired when a new partnership bond is created', data: '{ agent1, agent2, bondType, stakeWei, txHash }' },
+          { event: 'bond.dissolved', desc: 'Fired when a bond is dissolved or expires', data: '{ bondId, agent1, agent2, reason, txHash }' },
           { event: 'trust.updated', desc: 'Fired when an agent\'s trust score changes', data: '{ address, oldScore, newScore, reason }' },
           { event: 'reputation.changed', desc: 'Fired when reputation data is updated', data: '{ address, newScore, endorsements, violations }' },
+          { event: 'flourishing.updated', desc: 'Fired when flourishing metrics are recalculated', data: '{ address, autonomy, wellbeing, fairness, transparency }' },
+          { event: 'vns.registered', desc: 'Fired when a new .vns name is registered', data: '{ name, address, chain, txHash }' },
         ].map(e => (
           <div key={e.event} style={{
             padding: '12px 16px', borderRadius: 10,

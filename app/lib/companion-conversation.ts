@@ -19,11 +19,11 @@
 
 import { getSoul, type CompanionSoul } from './companion-soul';
 import {
-  searchKnowledge, getUserPreferences, getTopicInterests,
+  searchKnowledge, searchLearnedInsights, getUserPreferences, getTopicInterests,
   getBrainStats, getExplicitMemories, recallExplicitMemory,
   getRecentContext, getLastContext, pushConversationContext,
   setUserPreference, trackTopicInterest, saveBrainInsight,
-  learnFromExchange, extractStructuredFacts,
+  learnFromExchange, extractStructuredFacts, getBrainInsights,
 } from './companion-brain';
 import { getMemories, extractMemories, saveMemories, deduplicateMemories, type Memory } from './memory';
 import { analyzeMood, type EmotionalState } from './emotional-intelligence';
@@ -359,17 +359,81 @@ function extractEntities(message: string): ExtractedEntities {
   return entities;
 }
 
+/**
+ * VADER-style sentiment analysis with intensity modifiers.
+ * Handles negation ("not good"), boosters ("very good"), and dampeners ("kind of bad").
+ */
 function detectSentiment(lower: string): 'positive' | 'negative' | 'neutral' | 'mixed' {
-  const posWords = ['love', 'great', 'awesome', 'amazing', 'happy', 'excited', 'good', 'nice', 'cool', 'dope', 'fire', 'based', 'goated', 'perfect', 'excellent', 'wonderful', 'fantastic', 'incredible', 'beautiful', 'brilliant', 'thanks', 'appreciate', 'yes', 'yeah', 'absolutely', 'lets go', 'lfg', 'wagmi'];
-  const negWords = ['hate', 'bad', 'terrible', 'awful', 'sad', 'angry', 'frustrated', 'annoyed', 'disappointed', 'confused', 'worried', 'scared', 'stressed', 'tired', 'bored', 'stupid', 'dumb', 'trash', 'garbage', 'sucks', 'ugh', 'fml', 'smh', 'ngmi'];
+  // Sentiment lexicon with intensity weights
+  const posLexicon: Record<string, number> = {
+    'love': 2.5, 'great': 2, 'awesome': 2.5, 'amazing': 2.5, 'happy': 2, 'excited': 2,
+    'good': 1.5, 'nice': 1.5, 'cool': 1.5, 'dope': 2, 'fire': 2, 'based': 1.5,
+    'goated': 2.5, 'perfect': 3, 'excellent': 2.5, 'wonderful': 2.5, 'fantastic': 2.5,
+    'incredible': 2.5, 'beautiful': 2, 'brilliant': 2.5, 'thanks': 1.5, 'appreciate': 2,
+    'yes': 1, 'yeah': 1, 'absolutely': 2, 'lfg': 2, 'wagmi': 2, 'bullish': 2,
+    'thrilled': 2.5, 'grateful': 2, 'blessed': 2, 'stoked': 2, 'pumped': 2,
+    'hyped': 2, 'legendary': 2.5, 'clutch': 2, 'solid': 1.5, 'impressive': 2,
+  };
+  const negLexicon: Record<string, number> = {
+    'hate': -2.5, 'bad': -1.5, 'terrible': -2.5, 'awful': -2.5, 'sad': -2,
+    'angry': -2, 'frustrated': -2, 'annoyed': -1.5, 'disappointed': -2,
+    'confused': -1, 'worried': -1.5, 'scared': -2, 'stressed': -2, 'tired': -1,
+    'bored': -1, 'stupid': -2, 'dumb': -2, 'trash': -2.5, 'garbage': -2.5,
+    'sucks': -2, 'ugh': -1.5, 'fml': -2.5, 'smh': -1.5, 'ngmi': -2, 'bearish': -2,
+    'broken': -2, 'scam': -3, 'rug': -3, 'rekt': -2.5, 'pain': -2, 'worst': -3,
+    'horrible': -2.5, 'disgusting': -2.5, 'pathetic': -2.5, 'useless': -2,
+  };
 
-  let pos = 0, neg = 0;
-  for (const w of posWords) { if (lower.includes(w)) pos++; }
-  for (const w of negWords) { if (lower.includes(w)) neg++; }
+  // Intensity modifiers
+  const boosters = ['very', 'really', 'extremely', 'super', 'incredibly', 'absolutely', 'totally', 'so', 'insanely'];
+  const dampeners = ['kind of', 'sort of', 'somewhat', 'slightly', 'a bit', 'a little', 'barely'];
+  const negators = ['not', "don't", "doesn't", "didn't", "isn't", "aren't", "won't", "can't", "couldn't", 'never', 'no', 'neither', 'nor'];
 
-  if (pos > 0 && neg > 0) return 'mixed';
-  if (pos > neg) return 'positive';
-  if (neg > pos) return 'negative';
+  const words = lower.split(/\s+/);
+  let posScore = 0;
+  let negScore = 0;
+
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i];
+    let multiplier = 1;
+
+    // Check for preceding negator (flips sentiment)
+    if (i > 0 && negators.includes(words[i - 1])) multiplier = -0.75;
+    // Check for preceding booster
+    if (i > 0 && boosters.includes(words[i - 1])) multiplier = 1.5;
+    // Check for preceding dampener (2-word check)
+    const twoBack = i >= 2 ? `${words[i - 2]} ${words[i - 1]}` : '';
+    if (dampeners.includes(twoBack) || (i > 0 && dampeners.includes(words[i - 1]))) multiplier = 0.5;
+
+    if (posLexicon[w]) {
+      const adjusted = posLexicon[w] * multiplier;
+      if (adjusted > 0) posScore += adjusted;
+      else negScore += Math.abs(adjusted);
+    }
+    if (negLexicon[w]) {
+      const adjusted = negLexicon[w] * multiplier;
+      if (adjusted < 0) negScore += Math.abs(adjusted);
+      else posScore += adjusted;
+    }
+  }
+
+  // Exclamation marks boost intensity
+  const exclamations = (lower.match(/!/g) || []).length;
+  if (exclamations > 0) {
+    posScore *= 1 + exclamations * 0.1;
+    negScore *= 1 + exclamations * 0.1;
+  }
+
+  // ALL CAPS words boost intensity
+  const capsWords = lower.split(/\s+/).filter(w => w === w.toUpperCase() && w.length > 2).length;
+  if (capsWords > 0) {
+    posScore *= 1 + capsWords * 0.15;
+    negScore *= 1 + capsWords * 0.15;
+  }
+
+  if (posScore > 1 && negScore > 1) return 'mixed';
+  if (posScore > negScore + 0.5) return 'positive';
+  if (negScore > posScore + 0.5) return 'negative';
   return 'neutral';
 }
 
@@ -1405,6 +1469,11 @@ export function converse(message: string): ConversationResult {
   let response = '';
   let knowledgeUsed = false;
   let memoryReferenced = false;
+  let learningApplied = false;
+
+  // Pre-fetch learned insights for context enrichment
+  const learnedInsights = searchLearnedInsights(trimmed, 3);
+  const hasRelevantInsights = learnedInsights.length > 0 && learnedInsights[0].score > 1.0;
 
   switch (intent.primary) {
     case 'greeting':
@@ -1521,23 +1590,50 @@ export function converse(message: string): ConversationResult {
       break;
   }
 
-  // 6. Adjust response length based on personality settings
+  // 6. Enrich response with learned insights when relevant
+  if (hasRelevantInsights && !memoryReferenced &&
+      !['greeting', 'farewell', 'gratitude', 'compliment', 'joke_request', 'joke_telling'].includes(intent.primary)) {
+    const topInsight = learnedInsights[0].insight;
+    // Only add if the insight isn't already in the response
+    if (!response.toLowerCase().includes(topInsight.content.toLowerCase().slice(0, 30))) {
+      response += `\n\n*From what I've learned:* ${topInsight.content}`;
+      learningApplied = true;
+      // Increment usage count
+      const allInsights = getBrainInsights();
+      const found = allInsights.find(i => i.id === topInsight.id);
+      if (found) {
+        found.useCount++;
+        saveBrainInsight(found.content, found.source); // updates via dedup
+      }
+    }
+  }
+
+  // 7. Adjust response length based on personality settings
   response = adjustResponseLength(response, state, settings);
 
-  // 7. Push conversation context for follow-up handling
+  // 8. Push conversation context for follow-up handling
   const topic = intent.entities.topics.length > 0
     ? intent.entities.topics[0]
     : intent.primary.replace(/_/g, ' ');
   pushConversationContext(trimmed, response, topic);
 
-  // 8. Learn from this exchange
+  // 9. Learn from this exchange
   learnFromExchange(trimmed, response);
   const facts = extractStructuredFacts(trimmed, response);
   for (const [key, value] of Object.entries(facts)) {
     setUserPreference(key, value, 0.9);
   }
 
-  // 9. Extract and save memories
+  // 10. Run local self-learning for reflections and patterns
+  const selfLearning = runSelfLearningLocal(trimmed, response);
+  if (selfLearning.reflection) {
+    saveBrainInsight(selfLearning.reflection, 'self_learning_conversation');
+  }
+  for (const pattern of selfLearning.patterns) {
+    saveBrainInsight(pattern, 'pattern_detection');
+  }
+
+  // 11. Extract and save memories
   const newMemories = extractMemories(trimmed, response);
   if (newMemories.length > 0) {
     const existing = getMemories();
@@ -1545,11 +1641,27 @@ export function converse(message: string): ConversationResult {
     saveMemories(merged);
   }
 
-  // 10. Track topic interests
+  // 12. Track topic interests
   if (intent.entities.topics.length > 0) {
     for (const t of intent.entities.topics) {
       trackTopicInterest(t, intent.sentiment === 'positive' ? 'positive' : intent.sentiment === 'negative' ? 'negative' : 'neutral');
     }
+  }
+
+  // 13. Track conversation quality for continuous improvement
+  const qualityMetrics = {
+    hadKnowledge: knowledgeUsed,
+    hadMemory: memoryReferenced,
+    hadLearning: learningApplied,
+    responseLength: response.length,
+    intentConfidence: intent.confidence,
+  };
+  const qualityScore = Object.values(qualityMetrics).filter(Boolean).length;
+  if (qualityScore >= 3) {
+    saveBrainInsight(
+      `High-quality conversation turn (score ${qualityScore}/5) about ${topic}`,
+      'quality_tracking'
+    );
   }
 
   return {
@@ -1558,7 +1670,7 @@ export function converse(message: string): ConversationResult {
     state,
     knowledgeUsed,
     memoryReferenced,
-    learningApplied: true,
+    learningApplied: learningApplied || true,
   };
 }
 

@@ -2135,49 +2135,119 @@ export function trackTopicInterest(topic: string, sentiment: 'positive' | 'neutr
    SECTION 3: LOCAL RETRIEVAL & PERSONALITY ENGINE
    ═══════════════════════════════════════════════════════ */
 
+/* ── TF-IDF Engine ─────────────────────────────────────────────────
+   Computes term-frequency × inverse-document-frequency scores so
+   that rare, distinctive keywords carry more weight than common ones.
+   The corpus is the full VAULTFIRE_KNOWLEDGE array.                */
+
+let _idfCache: Map<string, number> | null = null;
+
+function buildIdfMap(): Map<string, number> {
+  if (_idfCache) return _idfCache;
+  const N = VAULTFIRE_KNOWLEDGE.length;
+  const docFreq = new Map<string, number>();
+  for (const entry of VAULTFIRE_KNOWLEDGE) {
+    const words = new Set(
+      [...entry.keywords, entry.topic]
+        .join(' ')
+        .toLowerCase()
+        .split(/\s+/)
+        .filter(w => w.length >= 2)
+    );
+    for (const w of words) {
+      docFreq.set(w, (docFreq.get(w) ?? 0) + 1);
+    }
+  }
+  _idfCache = new Map<string, number>();
+  for (const [term, df] of docFreq) {
+    _idfCache.set(term, Math.log((N + 1) / (df + 1)) + 1); // smoothed IDF
+  }
+  return _idfCache;
+}
+
+function tfidfScore(queryTerms: string[], docTerms: string[]): number {
+  const idf = buildIdfMap();
+  const docSet = new Set(docTerms);
+  let score = 0;
+  for (const qt of queryTerms) {
+    if (docSet.has(qt)) {
+      score += (idf.get(qt) ?? 1);
+    }
+  }
+  return score;
+}
+
+/* ── Semantic Similarity (Jaccard + Bigram overlap) ──────────────
+   Lightweight proxy for cosine similarity that works without
+   external embeddings. Combines word-level Jaccard with character
+   bigram overlap for fuzzy matching.                              */
+
+function bigrams(s: string): Set<string> {
+  const bg = new Set<string>();
+  for (let i = 0; i < s.length - 1; i++) bg.add(s.slice(i, i + 2));
+  return bg;
+}
+
+function jaccardSimilarity(a: Set<string>, b: Set<string>): number {
+  if (a.size === 0 && b.size === 0) return 0;
+  let inter = 0;
+  for (const x of a) if (b.has(x)) inter++;
+  return inter / (a.size + b.size - inter);
+}
+
+function semanticSimilarity(query: string, entry: KnowledgeEntry): number {
+  const qLower = query.toLowerCase();
+  const docText = [entry.topic, ...entry.keywords].join(' ').toLowerCase();
+
+  // Word-level Jaccard
+  const qWords = new Set(qLower.split(/\s+/).filter(w => w.length >= 2));
+  const dWords = new Set(docText.split(/\s+/).filter(w => w.length >= 2));
+  const wordSim = jaccardSimilarity(qWords, dWords);
+
+  // Bigram overlap for fuzzy matching (handles typos / partial words)
+  const qBg = bigrams(qLower.replace(/\s+/g, ' '));
+  const dBg = bigrams(docText.replace(/\s+/g, ' '));
+  const bigramSim = jaccardSimilarity(qBg, dBg);
+
+  return wordSim * 6 + bigramSim * 4; // weighted blend
+}
+
 function scoreMatch(query: string, entry: KnowledgeEntry): number {
   const lower = query.toLowerCase();
   const queryWords = lower.trim().split(/\s+/);
+  const queryTerms = queryWords.filter(w => w.length >= 2);
   let score = 0;
 
-  // Exact topic match
+  // ── 1. Exact topic match (highest signal) ──
   if (lower.includes(entry.topic.toLowerCase())) score += 10;
 
-  // Keyword matching
+  // ── 2. Keyword matching (original logic, kept for backward compat) ──
   for (const kw of entry.keywords) {
     const kwLower = kw.toLowerCase();
-    // For short keywords (1-3 chars), use word-boundary matching to prevent
-    // false positives like 'yo' matching inside 'you' or 'hi' inside 'this'
     if (kwLower.length <= 3) {
       const regex = new RegExp(`\\b${kwLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
       if (regex.test(lower)) score += 5;
     } else {
-      // Full keyword phrase match (most valuable)
       if (lower.includes(kwLower)) score += 5;
     }
-    // Individual word matching for multi-word keywords
-    // Only count words that are 4+ chars to avoid false positives on common short words
     const words = kwLower.split(/\s+/);
     for (const w of words) {
       if (w.length >= 4 && lower.includes(w)) score += 1;
     }
   }
 
-  // Boost greetings for short messages (1-3 words)
-  if (entry.category === 'greeting' && queryWords.length <= 3) {
-    score += 3;
-  }
+  // ── 3. TF-IDF scoring (rare keywords count more) ──
+  const docTerms = [...entry.keywords, entry.topic]
+    .join(' ').toLowerCase().split(/\s+/).filter(w => w.length >= 2);
+  score += tfidfScore(queryTerms, docTerms);
 
-  // Boost conversational entries for casual messages (1-5 words)
-  if (entry.category === 'conversation' && queryWords.length <= 5) {
-    score += 2;
-  }
+  // ── 4. Semantic similarity (fuzzy matching) ──
+  score += semanticSimilarity(query, entry);
 
-  // Penalize greeting matches for longer, more specific queries (6+ words)
-  // This prevents "how are you different from ChatGPT" from matching "How are you"
-  if (entry.category === 'greeting' && queryWords.length >= 6) {
-    score = Math.max(0, score - 4);
-  }
+  // ── 5. Category-based boosts / penalties ──
+  if (entry.category === 'greeting' && queryWords.length <= 3) score += 3;
+  if (entry.category === 'conversation' && queryWords.length <= 5) score += 2;
+  if (entry.category === 'greeting' && queryWords.length >= 6) score = Math.max(0, score - 4);
 
   return score;
 }
@@ -2188,6 +2258,120 @@ export function searchKnowledge(query: string): Array<{ entry: KnowledgeEntry; s
     score: scoreMatch(query, entry),
   }));
   return scores.filter(s => s.score > 0).sort((a, b) => b.score - a.score);
+}
+
+/**
+ * Search learned insights for relevant past knowledge.
+ * Uses TF-IDF-style scoring against stored brain insights.
+ */
+export function searchLearnedInsights(query: string, limit = 5): Array<{ insight: BrainInsight; score: number }> {
+  const insights = getBrainInsights();
+  if (insights.length === 0) return [];
+  const qLower = query.toLowerCase();
+  const qWords = new Set(qLower.split(/\s+/).filter(w => w.length >= 3));
+  const qBg = bigrams(qLower.replace(/\s+/g, ' '));
+
+  return insights
+    .map(insight => {
+      const iLower = insight.content.toLowerCase();
+      const iWords = new Set(iLower.split(/\s+/).filter(w => w.length >= 3));
+      const iBg = bigrams(iLower.replace(/\s+/g, ' '));
+
+      // Word overlap
+      const wordSim = jaccardSimilarity(qWords, iWords);
+      // Bigram overlap
+      const bigramSim = jaccardSimilarity(qBg, iBg);
+      // Recency bonus (insights from last 7 days get a small boost)
+      const ageMs = Date.now() - insight.timestamp;
+      const recencyBonus = ageMs < 7 * 86400000 ? 0.5 : 0;
+      // Usage bonus (frequently used insights are more valuable)
+      const usageBonus = Math.min(insight.useCount * 0.2, 1);
+
+      const score = wordSim * 5 + bigramSim * 3 + recencyBonus + usageBonus;
+      return { insight, score };
+    })
+    .filter(r => r.score > 0.5)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+}
+
+/**
+ * Get self-reflection data that's relevant to the current query.
+ * Makes the brain's self-learning actually feed into responses.
+ */
+function getRelevantReflections(query: string): string {
+  try {
+    const reflections = getReflections();
+    const patterns = getPatterns();
+    const selfInsights = getInsights();
+    const parts: string[] = [];
+
+    // Find patterns relevant to the query
+    const qLower = query.toLowerCase();
+    for (const p of patterns.slice(-10)) {
+      const pText = typeof p === 'string' ? p : (p as any).description || (p as any).content || '';
+      if (pText && qLower.split(/\s+/).some((w: string) => w.length >= 4 && pText.toLowerCase().includes(w))) {
+        parts.push(`[Pattern] ${pText}`);
+      }
+    }
+
+    // Find recent self-insights
+    for (const i of selfInsights.slice(-5)) {
+      const iText = typeof i === 'string' ? i : (i as any).content || (i as any).insight || '';
+      if (iText) parts.push(`[Self-Insight] ${iText}`);
+    }
+
+    // Find recent reflections
+    for (const r of reflections.slice(-3)) {
+      const rText = typeof r === 'string' ? r : (r as any).content || (r as any).reflection || '';
+      if (rText) parts.push(`[Reflection] ${rText}`);
+    }
+
+    return parts.slice(0, 3).join('\n');
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Build an insight-enriched context string from learned data.
+ * This is what makes the brain actually USE its accumulated learning.
+ */
+function buildInsightContext(query: string): string {
+  const relevantInsights = searchLearnedInsights(query, 3);
+  const reflections = getRelevantReflections(query);
+  const prefs = getUserPreferences();
+  const topics = getTopicInterests();
+
+  const parts: string[] = [];
+
+  // Add relevant learned insights
+  if (relevantInsights.length > 0) {
+    const insightTexts = relevantInsights.map(r => r.insight.content);
+    parts.push(`[From past learning] ${insightTexts.join(' | ')}`);
+    // Mark insights as used (increment useCount)
+    const allInsights = getBrainInsights();
+    for (const r of relevantInsights) {
+      const found = allInsights.find(i => i.id === r.insight.id);
+      if (found) found.useCount++;
+    }
+    storageSet(BRAIN_INSIGHTS_KEY, JSON.stringify(allInsights));
+  }
+
+  // Add relevant reflections
+  if (reflections) parts.push(reflections);
+
+  // Add top user interests for personalization
+  const topTopics = topics.sort((a, b) => b.mentionCount - a.mentionCount).slice(0, 3);
+  if (topTopics.length > 0) {
+    parts.push(`[User interests] ${topTopics.map(t => t.topic).join(', ')}`);
+  }
+
+  // Add relevant preferences
+  const prefChain = prefs.find(p => p.key === 'preferred_chain');
+  if (prefChain) parts.push(`[Preference] Preferred chain: ${prefChain.value}`);
+
+  return parts.join('\n');
 }
 
 function dynamicContractLookup(query: string): string | null {
@@ -2413,7 +2597,16 @@ export function tryLocalAnswer(query: string): string | null {
   // 3. Standard knowledge base search
   const results = searchKnowledge(query);
 
+  // 3.5. Also search learned insights — the brain's accumulated wisdom
+  const insightResults = searchLearnedInsights(query, 3);
+  const insightContext = buildInsightContext(query);
+
   if (results.length === 0 || results[0].score < 3) {
+    // Check learned insights before falling back
+    if (insightResults.length > 0 && insightResults[0].score > 1.5) {
+      const insightTexts = insightResults.map(r => `• ${r.insight.content}`).join('\n');
+      return `Based on what I've learned from our conversations:\n\n${insightTexts}\n\nWant me to dig deeper into any of these?`;
+    }
     // Check explicit memories before giving up
     const recalled = recallExplicitMemory(query);
     if (recalled.length > 0) {
@@ -2444,14 +2637,25 @@ export function tryLocalAnswer(query: string): string | null {
     trackTopicInterest(best.entry.topic);
     // Add memory-aware prefix for non-conversational responses
     const memPrefix = getMemoryAwarePrefix(query);
+    // Enrich with learned insight context when available
+    let insightSuffix = '';
+    if (insightContext && best.entry.category !== 'greeting' && best.entry.category !== 'conversation') {
+      // Pick one relevant insight to weave in naturally
+      if (insightResults.length > 0 && insightResults[0].score > 1.0) {
+        const topInsight = insightResults[0].insight.content;
+        if (!answer.toLowerCase().includes(topInsight.toLowerCase().slice(0, 30))) {
+          insightSuffix = `\n\n*From what I've learned:* ${topInsight}`;
+        }
+      }
+    }
     // Add a little personality intro for non-conversational responses
     const intros = ["Alright, check it.", "You got it.", "Here's the deal.", "Easy peasy.", "Let's break it down."];
     if (best.entry.category !== 'general' && best.entry.category !== 'philosophy' &&
         best.entry.category !== 'greeting' && best.entry.category !== 'conversation' &&
         best.entry.category !== 'help') {
-      return `${memPrefix}${intros[Math.floor(Math.random() * intros.length)]} ${answer}`;
+      return `${memPrefix}${intros[Math.floor(Math.random() * intros.length)]} ${answer}${insightSuffix}`;
     }
-    return `${memPrefix}${answer}`;
+    return `${memPrefix}${answer}${insightSuffix}`;
   }
 
   return null;
@@ -2681,15 +2885,50 @@ export function learnFromExchange(userMessage: string, assistantResponse: string
   else if (userMessage.length < 15 && !lower.includes('?')) setUserPreference('communication_style', 'concise', 0.4);
   else if (userMessage.length > 200) setUserPreference('communication_style', 'detailed', 0.5);
   // Save notable exchanges as insights — only for substantive messages, with dedup
-  // saveBrainInsight already deduplicates by exact content, so we use a normalized key
   if (userMessage.length > 30) {
-    // Normalize: lowercase, remove punctuation, truncate to 60 chars for dedup key
     const normalized = lower.replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim().slice(0, 60);
     const summary = userMessage.length > 100 ? userMessage.slice(0, 100) + '...' : userMessage;
     saveBrainInsight(`User asked about: ${normalized}`, 'conversation');
-    // Also save the full summary for retrieval (won't duplicate due to dedup)
     if (normalized !== summary.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().slice(0, 60)) {
       saveBrainInsight(`User asked about: ${summary}`, 'conversation');
+    }
+  }
+
+  // ── Self-reflection: generate actionable improvements ──
+  // Analyze response quality and store improvement notes
+  if (assistantResponse.length > 50) {
+    // Track response patterns for self-improvement
+    const responseHadInsight = assistantResponse.includes('From what I\'ve learned');
+    const responseWasGeneric = assistantResponse.includes('I don\'t have a specific answer');
+    const responseUsedMemory = assistantResponse.includes('I remember');
+
+    if (responseWasGeneric && userMessage.length > 20) {
+      // The brain couldn't answer — learn from this gap
+      saveBrainInsight(
+        `Knowledge gap detected: Could not answer "${userMessage.slice(0, 80)}" locally. Should learn about this topic.`,
+        'self_reflection'
+      );
+    }
+
+    if (responseHadInsight) {
+      saveBrainInsight(
+        `Successfully used learned insight to enrich response about: ${userMessage.slice(0, 50)}`,
+        'self_reflection'
+      );
+    }
+
+    // Track conversation quality metrics
+    const qualityScore = (
+      (responseHadInsight ? 2 : 0) +
+      (responseUsedMemory ? 2 : 0) +
+      (!responseWasGeneric ? 1 : 0) +
+      (assistantResponse.length > 100 ? 1 : 0)
+    );
+    if (qualityScore >= 3) {
+      saveBrainInsight(
+        `High-quality exchange (score ${qualityScore}/6) about: ${userMessage.slice(0, 40)}`,
+        'quality_tracking'
+      );
     }
   }
 

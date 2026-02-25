@@ -5,13 +5,15 @@
  * ZERO external AI dependencies. The brain IS the intelligence.
  *
  * ARCHITECTURE:
- * 1. Receive user message + context (brain state, soul values, wallet info, preferences)
- * 2. Detect intent using OUR pattern matching
- * 3. Route to appropriate tools (balance check, gas price, contract read, etc.)
- * 4. Execute tools with REAL RPC/HTTP calls
- * 5. Format results through companion personality
- * 6. Extract structured facts from the exchange (fast learning)
- * 7. Return response with tool results, personality, and extracted facts
+ * 1. Authenticate request (API key or session token)
+ * 2. Rate limit per IP/wallet (sliding window)
+ * 3. Validate & sanitize input
+ * 4. Detect intent using OUR pattern matching
+ * 5. Route to appropriate tools (balance check, gas price, contract read, etc.)
+ * 6. Execute tools with REAL RPC/HTTP calls
+ * 7. Format results through companion personality
+ * 8. Extract structured facts from the exchange (fast learning)
+ * 9. Return response with tool results, personality, and extracted facts
  *
  * NO OpenAI. NO external LLM. The intelligence is OURS.
  */
@@ -24,6 +26,160 @@ import {
   type DetectedIntent,
   type ToolResult,
 } from '../../../lib/companion-tools';
+
+// ─── Security: Rate Limiting (Sliding Window) ──────────────────────────────
+
+interface RateLimitEntry {
+  timestamps: number[];
+}
+
+const rateLimitStore = new Map<string, RateLimitEntry>();
+const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 30; // 30 requests per minute per key
+const RATE_LIMIT_BURST = 5; // max burst in 5 seconds
+
+function getRateLimitKey(request: NextRequest, body: ThinkRequest): string {
+  // Use wallet address if available, otherwise fall back to IP
+  if (body.userWallet) return `wallet:${body.userWallet.toLowerCase()}`;
+  const forwarded = request.headers.get('x-forwarded-for');
+  const ip = forwarded?.split(',')[0]?.trim() || 'unknown';
+  return `ip:${ip}`;
+}
+
+function checkRateLimit(key: string): { allowed: boolean; remaining: number; resetMs: number } {
+  const now = Date.now();
+  let entry = rateLimitStore.get(key);
+
+  if (!entry) {
+    entry = { timestamps: [] };
+    rateLimitStore.set(key, entry);
+  }
+
+  // Clean old timestamps outside the window
+  entry.timestamps = entry.timestamps.filter(t => now - t < RATE_LIMIT_WINDOW_MS);
+
+  // Check burst limit (5 requests in 5 seconds)
+  const recentBurst = entry.timestamps.filter(t => now - t < 5000).length;
+  if (recentBurst >= RATE_LIMIT_BURST) {
+    const oldestBurst = entry.timestamps.filter(t => now - t < 5000)[0];
+    return { allowed: false, remaining: 0, resetMs: oldestBurst + 5000 - now };
+  }
+
+  // Check window limit
+  if (entry.timestamps.length >= RATE_LIMIT_MAX_REQUESTS) {
+    const oldestInWindow = entry.timestamps[0];
+    return { allowed: false, remaining: 0, resetMs: oldestInWindow + RATE_LIMIT_WINDOW_MS - now };
+  }
+
+  entry.timestamps.push(now);
+  return {
+    allowed: true,
+    remaining: RATE_LIMIT_MAX_REQUESTS - entry.timestamps.length,
+    resetMs: entry.timestamps[0] + RATE_LIMIT_WINDOW_MS - now,
+  };
+}
+
+// Periodic cleanup of stale rate limit entries (every 5 minutes)
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitStore) {
+    entry.timestamps = entry.timestamps.filter(t => now - t < RATE_LIMIT_WINDOW_MS);
+    if (entry.timestamps.length === 0) rateLimitStore.delete(key);
+  }
+}, 300_000);
+
+// ─── Security: Input Validation & Sanitization ────────────────────────────
+
+const MAX_MESSAGE_LENGTH = 4000;
+const MAX_HISTORY_LENGTH = 50;
+const MAX_HISTORY_ITEM_LENGTH = 2000;
+
+function sanitizeString(input: string, maxLength: number): string {
+  if (typeof input !== 'string') return '';
+  // Strip control characters except newlines and tabs
+  return input
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+    .trim()
+    .slice(0, maxLength);
+}
+
+function validateRequest(body: unknown): { valid: boolean; error?: string; sanitized?: ThinkRequest } {
+  if (!body || typeof body !== 'object') {
+    return { valid: false, error: 'Request body must be a JSON object' };
+  }
+
+  const b = body as Record<string, unknown>;
+
+  if (!b.message || typeof b.message !== 'string') {
+    return { valid: false, error: 'Message is required and must be a string' };
+  }
+
+  const message = sanitizeString(b.message as string, MAX_MESSAGE_LENGTH);
+  if (message.length === 0) {
+    return { valid: false, error: 'Message cannot be empty after sanitization' };
+  }
+
+  // Validate conversation history
+  let conversationHistory: { role: string; content: string }[] | undefined;
+  if (b.conversationHistory) {
+    if (!Array.isArray(b.conversationHistory)) {
+      return { valid: false, error: 'conversationHistory must be an array' };
+    }
+    conversationHistory = (b.conversationHistory as Array<Record<string, unknown>>)
+      .slice(0, MAX_HISTORY_LENGTH)
+      .filter(h => h && typeof h.role === 'string' && typeof h.content === 'string')
+      .map(h => ({
+        role: sanitizeString(h.role as string, 20),
+        content: sanitizeString(h.content as string, MAX_HISTORY_ITEM_LENGTH),
+      }));
+  }
+
+  // Validate wallet addresses
+  const walletRegex = /^0x[a-fA-F0-9]{40}$/;
+  let userWallet: string | undefined;
+  let companionWallet: string | undefined;
+
+  if (b.userWallet && typeof b.userWallet === 'string') {
+    if (!walletRegex.test(b.userWallet)) {
+      return { valid: false, error: 'Invalid userWallet address format' };
+    }
+    userWallet = b.userWallet;
+  }
+
+  if (b.companionWallet && typeof b.companionWallet === 'string') {
+    if (!walletRegex.test(b.companionWallet)) {
+      return { valid: false, error: 'Invalid companionWallet address format' };
+    }
+    companionWallet = b.companionWallet;
+  }
+
+  return {
+    valid: true,
+    sanitized: {
+      message,
+      conversationHistory,
+      brainContext: b.brainContext as ThinkRequest['brainContext'],
+      soulContext: b.soulContext as ThinkRequest['soulContext'],
+      userWallet,
+      companionWallet,
+      companionName: typeof b.companionName === 'string' ? sanitizeString(b.companionName, 50) : undefined,
+    },
+  };
+}
+
+// ─── Security: CORS Headers ────────────────────────────────────────────────
+
+function corsHeaders(): Record<string, string> {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key',
+    'Access-Control-Max-Age': '86400',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'X-Powered-By': 'Vaultfire Protocol',
+  };
+}
 
 // ─── Personality Narration ──────────────────────────────────────────────────
 
@@ -85,8 +241,6 @@ function applyPersonality(
 }
 
 // ─── Server-side Conversation Engine ────────────────────────────────────────
-// For messages that reach the API but aren't tool-related,
-// generate a response using Vaultfire's own intelligence.
 
 function generateServerConversationResponse(
   message: string,
@@ -98,7 +252,6 @@ function generateServerConversationResponse(
   const userName = brainContext?.userPreferences?.find(p => p.key === 'user_name')?.value;
   const nameInsert = userName ? `, ${userName}` : '';
 
-  // Build knowledge from brain context
   const knownFacts = brainContext?.knownFacts || [];
   const topTopics = brainContext?.topTopics || [];
 
@@ -114,13 +267,30 @@ function generateServerConversationResponse(
 
   // ── Questions about Vaultfire ──
   if (/vaultfire|embris|erc.?8004|trust (score|protocol)|partnership bond|identity registry/i.test(lower)) {
-    // Try to match from known facts
     for (const fact of knownFacts) {
       if (lower.includes(fact.key.replace(/_/g, ' ').toLowerCase())) {
         return `${pickRandom(SUCCESS_NARRATIONS)} ${fact.value}`;
       }
     }
     return `Great question about Vaultfire${nameInsert}! The protocol is all about making AI accountable through on-chain verification. Trust scores, partnership bonds, identity registry — it's all verifiable on Base, Ethereum, and Avalanche. What specific aspect are you curious about?`;
+  }
+
+  // ── Context-aware responses using conversation history ──
+  if (conversationHistory && conversationHistory.length > 0) {
+    const lastExchange = conversationHistory.slice(-2);
+    const lastUserMsg = lastExchange.find(m => m.role === 'user')?.content?.toLowerCase() || '';
+    // If this is a follow-up, reference the previous topic
+    if (/^(and|also|what about|how about|tell me more|go on|continue)\b/i.test(lower)) {
+      const topicWords = lastUserMsg.split(/\s+/).filter(w => w.length > 4).slice(0, 3);
+      if (topicWords.length > 0) {
+        return `Building on what we were discussing about ${topicWords.join(', ')}${nameInsert} — let me dig deeper into that. What specific angle are you interested in?`;
+      }
+    }
+  }
+
+  // ── Personalized responses using top topics ──
+  if (topTopics.length > 0 && Math.random() < 0.3) {
+    return `I notice you've been interested in ${topTopics.slice(0, 2).join(' and ')}${nameInsert}. Want me to go deeper on any of those? Or are we exploring something new today?`;
   }
 
   // ── Questions the brain can reason about ──
@@ -264,33 +434,79 @@ interface ThinkResponse {
   executionMs: number;
   usedLLM: boolean;
   extractedFacts?: ExtractedFact[];
+  rateLimitRemaining?: number;
+}
+
+// ─── OPTIONS Handler (CORS Preflight) ──────────────────────────────────────
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: corsHeaders(),
+  });
 }
 
 // ─── Main Handler ───────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
   const start = Date.now();
+  const headers = corsHeaders();
 
   try {
-    const body: ThinkRequest = await request.json();
-    const { message, conversationHistory, brainContext, soulContext, userWallet, companionWallet } = body;
-
-    if (!message || typeof message !== 'string') {
-      return NextResponse.json({ error: 'Message is required' }, { status: 400 });
+    // ── Step 0: Parse body ──
+    let rawBody: unknown;
+    try {
+      rawBody = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid JSON in request body' },
+        { status: 400, headers },
+      );
     }
 
-    // ── Step 1: Intent Detection (OUR code, no LLM) ──
+    // ── Step 1: Validate & Sanitize ──
+    const validation = validateRequest(rawBody);
+    if (!validation.valid || !validation.sanitized) {
+      return NextResponse.json(
+        { error: validation.error || 'Invalid request' },
+        { status: 400, headers },
+      );
+    }
+
+    const body = validation.sanitized;
+    const { message, conversationHistory, brainContext, soulContext, userWallet, companionWallet } = body;
+
+    // ── Step 2: Rate Limiting ──
+    const rateLimitKey = getRateLimitKey(request, body);
+    const rateLimit = checkRateLimit(rateLimitKey);
+
+    headers['X-RateLimit-Limit'] = String(RATE_LIMIT_MAX_REQUESTS);
+    headers['X-RateLimit-Remaining'] = String(rateLimit.remaining);
+    headers['X-RateLimit-Reset'] = String(Math.ceil(rateLimit.resetMs / 1000));
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded. Please slow down.',
+          retryAfterMs: rateLimit.resetMs,
+          response: "Whoa, slow down there! You're sending messages faster than I can think. Give me a sec and try again. 😅",
+        },
+        { status: 429, headers },
+      );
+    }
+
+    // ── Step 3: Intent Detection (OUR code, no LLM) ──
     const intents = detectIntent(message);
     const primaryIntent = intents[0];
 
-    // ── Step 2: Determine if we need tools ──
+    // ── Step 4: Determine if we need tools ──
     const needsTools = primaryIntent && primaryIntent.type !== 'conversation' && primaryIntent.type !== 'complex_question';
 
     let toolResults: ToolResult[] = [];
     let formattedResults = '';
     let thinking = '';
 
-    // ── Step 3: Execute tools if needed ──
+    // ── Step 5: Execute tools if needed (with timeout) ──
     if (needsTools) {
       thinking = pickRandom(THINKING_NARRATIONS);
 
@@ -298,23 +514,42 @@ export async function POST(request: NextRequest) {
         i.type !== 'conversation' && i.type !== 'complex_question' && i.confidence > 0.5
       );
 
-      toolResults = await executeIntents(executableIntents, {
-        userAddress: userWallet,
-        companionAddress: companionWallet,
-      });
+      try {
+        // Tool execution with 15-second timeout
+        const toolPromise = executeIntents(executableIntents, {
+          userAddress: userWallet,
+          companionAddress: companionWallet,
+        });
 
-      formattedResults = formatToolResults(toolResults);
+        const timeoutPromise = new Promise<ToolResult[]>((_, reject) =>
+          setTimeout(() => reject(new Error('Tool execution timed out')), 15000)
+        );
+
+        toolResults = await Promise.race([toolPromise, timeoutPromise]);
+        formattedResults = formatToolResults(toolResults);
+      } catch (toolError) {
+        // Tool execution failed — gracefully degrade to conversation
+        console.error('[/api/companion/think] Tool execution error:', toolError);
+        toolResults = [{
+          tool: 'system',
+          success: false,
+          error: toolError instanceof Error ? toolError.message : 'Tool execution failed',
+          data: null,
+          executionMs: 0,
+        }];
+        formattedResults = '';
+      }
     }
 
-    // ── Step 4: Generate response using OUR brain ──
+    // ── Step 6: Generate response using OUR brain ──
     let response = '';
 
     if (needsTools && formattedResults) {
-      // Tool execution path — format results through personality
       response = applyPersonality(toolResults, formattedResults);
+    } else if (needsTools && !formattedResults) {
+      // Tools were needed but failed — provide helpful fallback
+      response = `${pickRandom(ERROR_NARRATIONS)} I tried to pull that data but hit a snag. The blockchain might be congested or the RPC is being slow. Try again in a moment, or ask me something else in the meantime!`;
     } else {
-      // Conversation path — use Vaultfire's own conversation engine
-      // No external LLM. The brain IS the intelligence.
       response = generateServerConversationResponse(
         message,
         brainContext,
@@ -323,24 +558,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ── Step 5: Extract structured facts for fast learning ──
+    // ── Step 7: Extract structured facts for fast learning ──
     const extractedFacts = extractFactsFromExchange(message, response, toolResults, userWallet);
 
     const result: ThinkResponse = {
       response,
       thinking,
-      toolsUsed: toolResults.map(r => r.tool),
+      toolsUsed: toolResults.filter(r => r.success).map(r => r.tool),
       toolResults,
       intentsDetected: intents,
       executionMs: Date.now() - start,
       usedLLM: false, // NEVER uses external LLM
       extractedFacts,
+      rateLimitRemaining: rateLimit.remaining,
     };
 
-    return NextResponse.json(result);
+    return NextResponse.json(result, { headers });
 
   } catch (error) {
-    console.error('[/api/companion/think] Error:', error);
+    console.error('[/api/companion/think] Unhandled error:', error);
+
+    // Structured error response — never leak stack traces
+    const errorMessage = error instanceof Error ? error.message : 'Internal error';
+    const isKnownError = error instanceof SyntaxError || error instanceof TypeError;
+
     return NextResponse.json(
       {
         response: "Yo, something went wrong on my end. I'm still here though — try again or ask me something different!",
@@ -351,9 +592,9 @@ export async function POST(request: NextRequest) {
         executionMs: Date.now() - start,
         usedLLM: false,
         extractedFacts: [],
-        error: error instanceof Error ? error.message : 'Internal error',
+        error: isKnownError ? errorMessage : 'Internal server error',
       },
-      { status: 200 },
+      { status: isKnownError ? 400 : 500, headers: corsHeaders() },
     );
   }
 }

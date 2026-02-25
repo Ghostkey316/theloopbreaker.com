@@ -157,9 +157,11 @@ function CompanionAgentCard() {
 function InlineAgentDirectory({ agents, loading }: { agents: RegisteredAgent[]; loading: boolean }) {
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'chain' | 'type'>('name');
+  const [filterChain, setFilterChain] = useState<'all' | 'base' | 'avalanche' | 'ethereum'>('all');
   const [expanded, setExpanded] = useState(false);
 
   const filtered = agents.filter(a => {
+    if (filterChain !== 'all' && a.chain !== filterChain) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -174,8 +176,9 @@ function InlineAgentDirectory({ agents, loading }: { agents: RegisteredAgent[]; 
     return (a.identityType || '').localeCompare(b.identityType || '');
   });
 
-  const displayed = expanded ? filtered : filtered.slice(0, 5);
+  const displayed = expanded ? filtered : filtered.slice(0, 8);
   const chainColors: Record<string, string> = { base: 'text-blue-400 bg-blue-500/10', avalanche: 'text-red-400 bg-red-500/10', ethereum: 'text-purple-400 bg-purple-500/10' };
+  const chainCounts = { base: agents.filter(a => a.chain === 'base').length, avalanche: agents.filter(a => a.chain === 'avalanche').length, ethereum: agents.filter(a => a.chain === 'ethereum').length };
 
   return (
     <div className="rounded-2xl bg-zinc-900/40 border border-zinc-800/60 overflow-hidden">
@@ -200,8 +203,15 @@ function InlineAgentDirectory({ agents, loading }: { agents: RegisteredAgent[]; 
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search by name, address, chain, or type..."
-          className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-700 transition-all"
+          className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-700 transition-all mb-2"
         />
+        <div className="flex items-center gap-1.5">
+          {(['all', 'base', 'avalanche', 'ethereum'] as const).map(c => (
+            <button key={c} onClick={() => setFilterChain(c)} className={`text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md transition-all ${filterChain === c ? (c === 'base' ? 'bg-blue-500/15 text-blue-400' : c === 'avalanche' ? 'bg-red-500/15 text-red-400' : c === 'ethereum' ? 'bg-purple-500/15 text-purple-400' : 'bg-ember-accent/10 text-ember-accent') : 'text-zinc-600 hover:text-zinc-400'}`}>
+              {c === 'all' ? `All (${agents.length})` : `${c} (${chainCounts[c]})`}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="divide-y divide-zinc-800/40">
         {displayed.length === 0 && !loading && (
@@ -236,10 +246,92 @@ function InlineAgentDirectory({ agents, loading }: { agents: RegisteredAgent[]; 
           </div>
         ))}
       </div>
-      {filtered.length > 5 && (
+      {filtered.length > 8 && (
         <button onClick={() => setExpanded(!expanded)} className="w-full py-3 text-xs font-bold text-zinc-500 hover:text-zinc-300 transition-colors border-t border-zinc-800/40">
           {expanded ? 'Show less' : `Show all ${filtered.length} agents`}
         </button>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Trust Verification Panel
+   ───────────────────────────────────────────── */
+function TrustVerificationPanel() {
+  const [address, setAddress] = useState('');
+  const [chain, setChain] = useState<'base' | 'avalanche' | 'ethereum'>('base');
+  const [result, setResult] = useState<{ isRegistered: boolean; repScore: number; bondBalance: string; error?: string } | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const RPC: Record<string, string> = { base: 'https://mainnet.base.org', avalanche: 'https://api.avax.network/ext/bc/C/rpc', ethereum: 'https://eth.llamarpc.com' };
+  const REG: Record<string, string> = { base: '0x35978DB675576598F0781dA2133E94cdCf4858bC', avalanche: '0x57741F4116925341d8f7Eb3F381d98e07C73B4a3', ethereum: '0x1A80F77e12f1bd04538027aed6d056f5DCcDCD3C' };
+  const REP: Record<string, string> = { base: '0xdB54B8925664816187646174bdBb6Ac658A55a5F', avalanche: '0x11C267C8A75B13A4D95357CEF6027c42F8e7bA24', ethereum: '0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b' };
+  const BONDS: Record<string, string> = { base: '0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4', avalanche: '0xea6B504827a746d781f867441364C7A732AA4b07', ethereum: '0x247F31bB2b5a0d28E68bf24865AA242965FF99cd' };
+
+  const verify = useCallback(async () => {
+    if (!address.match(/^0x[a-fA-F0-9]{40}$/)) { setResult({ isRegistered: false, repScore: 0, bondBalance: '0', error: 'Invalid address' }); return; }
+    setLoading(true); setResult(null);
+    try {
+      const rpc = RPC[chain];
+      const padded = address.replace('0x', '').toLowerCase().padStart(64, '0');
+      const [regRes, repRes, bondRes] = await Promise.all([
+        fetch(rpc, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: REG[chain], data: '0xfb3551ff' + padded }, 'latest'] }) }).then(r => r.json()),
+        fetch(rpc, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'eth_call', params: [{ to: REP[chain], data: '0x5e5c06e2' + padded }, 'latest'] }) }).then(r => r.json()),
+        fetch(rpc, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 3, method: 'eth_getBalance', params: [BONDS[chain], 'latest'] }) }).then(r => r.json()),
+      ]);
+      const raw = regRes.result || '0x';
+      const isRegistered = raw.length > 66 && raw !== '0x' + '0'.repeat(64);
+      const repScore = repRes.result && repRes.result !== '0x' ? Math.min(parseInt(repRes.result, 16), 100) : 0;
+      const bondWei = bondRes.result ? BigInt(bondRes.result) : 0n;
+      const bondEth = (Number(bondWei) / 1e18).toFixed(6);
+      setResult({ isRegistered, repScore, bondBalance: bondEth });
+    } catch (e) {
+      setResult({ isRegistered: false, repScore: 0, bondBalance: '0', error: String(e) });
+    } finally { setLoading(false); }
+  }, [address, chain]);
+
+  return (
+    <div className="rounded-2xl bg-gradient-to-br from-purple-500/5 to-blue-500/5 border border-purple-500/10 p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_6px_rgba(168,85,247,0.5)]" />
+        <h3 className="text-sm font-bold text-purple-400 uppercase tracking-widest">Live Trust Verification</h3>
+      </div>
+      <p className="text-xs text-zinc-500 mb-4">Enter any address to verify its trust profile on-chain. Queries the IdentityRegistry, ReputationRegistry, and PartnershipBonds contracts in real-time.</p>
+      <div className="flex gap-2 mb-3">
+        {(['base', 'avalanche', 'ethereum'] as const).map(c => (
+          <button key={c} onClick={() => setChain(c)} className={`text-[9px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg transition-all ${chain === c ? (c === 'base' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/20' : c === 'avalanche' ? 'bg-red-500/15 text-red-400 border border-red-500/20' : 'bg-purple-500/15 text-purple-400 border border-purple-500/20') : 'text-zinc-600 hover:text-zinc-400 border border-transparent'}`}>
+            {c}
+          </button>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <input value={address} onChange={e => setAddress(e.target.value)} placeholder="0x..." onKeyDown={e => e.key === 'Enter' && verify()} className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-purple-500/30 transition-all font-mono text-xs" />
+        <button onClick={verify} disabled={loading} className="px-5 py-2.5 rounded-xl bg-purple-500/15 text-purple-400 text-xs font-bold hover:bg-purple-500/25 transition-all disabled:opacity-50">
+          {loading ? 'Verifying...' : 'Verify'}
+        </button>
+      </div>
+      {result && (
+        <div className="mt-4 p-4 rounded-xl bg-zinc-950/60 border border-zinc-800/60">
+          {result.error ? (
+            <p className="text-xs text-red-400">{result.error}</p>
+          ) : (
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <div className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Registered</div>
+                <div className={`text-sm font-bold ${result.isRegistered ? 'text-emerald-400' : 'text-zinc-500'}`}>{result.isRegistered ? 'Yes' : 'No'}</div>
+              </div>
+              <div>
+                <div className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Reputation</div>
+                <div className="text-sm font-bold text-white">{result.repScore}/100</div>
+              </div>
+              <div>
+                <div className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Bond Pool</div>
+                <div className="text-sm font-bold text-ember-accent">{result.bondBalance} ETH</div>
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
@@ -342,6 +434,9 @@ function OverviewTab({ stats, loading, agents, setTab }: { stats: HubStats | nul
 
       {/* Companion Agent Status */}
       <CompanionAgentCard />
+
+      {/* Live Trust Verification Panel */}
+      <TrustVerificationPanel />
 
       {/* Hub Zones */}
       <div className="space-y-3">

@@ -1,5 +1,6 @@
 import { Chain } from "viem";
 import { base, avalanche, mainnet } from "viem/chains";
+import { getABI } from './abis/abi-map';
 
 export const DEPLOYER_ADDRESS = "0xA054f831B562e729F8D268291EBde1B2EDcFb84F";
 
@@ -7,7 +8,7 @@ export interface Contract {
   name: string;
   address: `0x${string}`;
   chain: "base" | "avalanche" | "ethereum";
-  abi: any[];
+  abi: readonly any[];
 }
 
 export const CHAINS: Record<string, Chain & { explorerUrl: string }> = {
@@ -22,91 +23,91 @@ export const BASE_CONTRACTS: Contract[] = [
     name: "MissionEnforcement",
     address: "0x8568F4020FCD55915dB3695558dD6D2532599e56",
     chain: "base",
-    abi: [],
+    abi: getABI('MissionEnforcement'),
   },
   {
     name: "AntiSurveillance",
     address: "0x722E37A7D6f27896C688336AaaFb0dDA80D25E57",
     chain: "base",
-    abi: [],
+    abi: getABI('AntiSurveillance'),
   },
   {
     name: "PrivacyGuarantees",
     address: "0xE2f75A4B14ffFc1f9C2b1ca22Fdd6877E5BD5045",
     chain: "base",
-    abi: [],
+    abi: getABI('PrivacyGuarantees'),
   },
   {
     name: "ERC8004IdentityRegistry",
     address: "0x35978DB675576598F0781dA2133E94cdCf4858bC",
     chain: "base",
-    abi: [],
+    abi: getABI('ERC8004IdentityRegistry'),
   },
   {
     name: "BeliefAttestationVerifier",
     address: "0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba",
     chain: "base",
-    abi: [],
+    abi: getABI('BeliefAttestationVerifier'),
   },
   {
     name: "AIPartnershipBondsV2",
     address: "0xC574CF2a09B0B470933f0c6a3ef422e3fb25b4b4",
     chain: "base",
-    abi: [],
+    abi: getABI('AIPartnershipBondsV2'),
   },
   {
     name: "FlourishingMetricsOracle",
     address: "0x83dd216449B3F0574E39043ECFE275946fa492e9",
     chain: "base",
-    abi: [],
+    abi: getABI('FlourishingMetricsOracle'),
   },
   {
     name: "AIAccountabilityBondsV2",
     address: "0xf92baef9523BC264144F80F9c31D5c5C017c6Da8",
     chain: "base",
-    abi: [],
+    abi: getABI('AIAccountabilityBondsV2'),
   },
   {
     name: "ERC8004ReputationRegistry",
     address: "0xdB54B8925664816187646174bdBb6Ac658A55a5F",
     chain: "base",
-    abi: [],
+    abi: getABI('ERC8004ReputationRegistry'),
   },
   {
     name: "ERC8004ValidationRegistry",
     address: "0x54e00081978eE2C8d9Ada8e9975B0Bb543D06A55",
     chain: "base",
-    abi: [],
+    abi: getABI('ERC8004ValidationRegistry'),
   },
   {
     name: "VaultfireERC8004Adapter",
     address: "0xef3A944f4d7bb376699C83A29d7Cb42C90D9B6F0",
     chain: "base",
-    abi: [],
+    abi: getABI('VaultfireERC8004Adapter'),
   },
   {
     name: "MultisigGovernance",
     address: "0x8B8Ba34F8AAB800F0Ba8391fb1388c6EFb911F92",
     chain: "base",
-    abi: [],
+    abi: getABI('MultisigGovernance'),
   },
   {
     name: "ProductionBeliefAttestationVerifier",
     address: "0xa5CEC47B48999EB398707838E3A18dd20A1ae272",
     chain: "base",
-    abi: [],
+    abi: getABI('ProductionBeliefAttestationVerifier'),
   },
   {
     name: "DilithiumAttestor",
     address: "0xBBC0EFdEE23854e7cb7C4c0f56fF7670BB0530A4",
     chain: "base",
-    abi: [],
+    abi: getABI('DilithiumAttestor'),
   },
   {
     name: "VaultfireTeleporterBridge",
     address: "0x94F54c849692Cc64C35468D0A87D2Ab9D7Cb6Fb2",
     chain: "base",
-    abi: [],
+    abi: getABI('VaultfireTeleporterBridge'),
   },
 ];
 
@@ -116,91 +117,91 @@ export const AVALANCHE_CONTRACTS: Contract[] = [
     name: "MissionEnforcement",
     address: "0xcf64D815F5424B7937aB226bC733Ed35ab6CaDcB",
     chain: "avalanche",
-    abi: [],
+    abi: getABI('MissionEnforcement'),
   },
   {
     name: "AntiSurveillance",
     address: "0x281814eF92062DA8049Fe5c4743c4Aef19a17380",
     chain: "avalanche",
-    abi: [],
+    abi: getABI('AntiSurveillance'),
   },
   {
     name: "PrivacyGuarantees",
     address: "0xc09F0e06690332eD9b490E1040BdE642f11F3937",
     chain: "avalanche",
-    abi: [],
+    abi: getABI('PrivacyGuarantees'),
   },
   {
     name: "ERC8004IdentityRegistry",
     address: "0x57741F4116925341d8f7Eb3F381d98e07C73B4a3",
     chain: "avalanche",
-    abi: [],
+    abi: getABI('ERC8004IdentityRegistry'),
   },
   {
     name: "BeliefAttestationVerifier",
     address: "0x227e27e7776d3ee14128BC66216354495E113B19",
     chain: "avalanche",
-    abi: [],
+    abi: getABI('BeliefAttestationVerifier'),
   },
   {
     name: "AIPartnershipBondsV2",
     address: "0xea6B504827a746d781f867441364C7A732AA4b07",
     chain: "avalanche",
-    abi: [],
+    abi: getABI('AIPartnershipBondsV2'),
   },
   {
     name: "FlourishingMetricsOracle",
     address: "0x490c51c2fAd743C288D65A6006f6B0ae9e6a8695",
     chain: "avalanche",
-    abi: [],
+    abi: getABI('FlourishingMetricsOracle'),
   },
   {
     name: "AIAccountabilityBondsV2",
     address: "0xaeFEa985E0C52f92F73606657B9dA60db2798af3",
     chain: "avalanche",
-    abi: [],
+    abi: getABI('AIAccountabilityBondsV2'),
   },
   {
     name: "ERC8004ReputationRegistry",
     address: "0x11C267C8A75B13A4D95357CEF6027c42F8e7bA24",
     chain: "avalanche",
-    abi: [],
+    abi: getABI('ERC8004ReputationRegistry'),
   },
   {
     name: "ERC8004ValidationRegistry",
     address: "0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b",
     chain: "avalanche",
-    abi: [],
+    abi: getABI('ERC8004ValidationRegistry'),
   },
   {
     name: "VaultfireERC8004Adapter",
     address: "0x6B7dC022edC41EBE41400319C6fDcCeab05Ea053",
     chain: "avalanche",
-    abi: [],
+    abi: getABI('VaultfireERC8004Adapter'),
   },
   {
     name: "MultisigGovernance",
     address: "0xCc7300F39aF4cc2A924f82a5Facd7049436157Ee",
     chain: "avalanche",
-    abi: [],
+    abi: getABI('MultisigGovernance'),
   },
   {
     name: "ProductionBeliefAttestationVerifier",
     address: "0xb3d8063e67bdA1a869721D0F6c346f1Af0469D2F",
     chain: "avalanche",
-    abi: [],
+    abi: getABI('ProductionBeliefAttestationVerifier'),
   },
   {
     name: "DilithiumAttestor",
     address: "0x211554bd46e3D4e064b51a31F61927ae9c7bCF1f",
     chain: "avalanche",
-    abi: [],
+    abi: getABI('DilithiumAttestor'),
   },
   {
     name: "VaultfireTeleporterBridge",
     address: "0x0dF0523aF5aF2Aef180dB052b669Bea97fee3d31",
     chain: "avalanche",
-    abi: [],
+    abi: getABI('VaultfireTeleporterBridge'),
   },
 ];
 
@@ -210,91 +211,91 @@ export const ETHEREUM_CONTRACTS: Contract[] = [
     name: "MissionEnforcement",
     address: "0x0E777878C5b5248E1b52b09Ab5cdEb2eD6e7Da58",
     chain: "ethereum",
-    abi: [],
+    abi: getABI('MissionEnforcement'),
   },
   {
     name: "AntiSurveillance",
     address: "0xfDdd2B1597c87577543176AB7f49D587876563D2",
     chain: "ethereum",
-    abi: [],
+    abi: getABI('AntiSurveillance'),
   },
   {
     name: "PrivacyGuarantees",
     address: "0x8aceF0Bc7e07B2dE35E9069663953f41B5422218",
     chain: "ethereum",
-    abi: [],
+    abi: getABI('PrivacyGuarantees'),
   },
   {
     name: "ERC8004IdentityRegistry",
     address: "0x1A80F77e12f1bd04538027aed6d056f5DCcDCD3C",
     chain: "ethereum",
-    abi: [],
+    abi: getABI('ERC8004IdentityRegistry'),
   },
   {
     name: "BeliefAttestationVerifier",
     address: "0x613585B786af2d5ecb1c3e712CE5ffFB8f53f155",
     chain: "ethereum",
-    abi: [],
+    abi: getABI('BeliefAttestationVerifier'),
   },
   {
     name: "AIPartnershipBondsV2",
     address: "0x247F31bB2b5a0d28E68bf24865AA242965FF99cd",
     chain: "ethereum",
-    abi: [],
+    abi: getABI('AIPartnershipBondsV2'),
   },
   {
     name: "FlourishingMetricsOracle",
     address: "0x690411685278548157409FA7AC8279A5B1Fb6F78",
     chain: "ethereum",
-    abi: [],
+    abi: getABI('FlourishingMetricsOracle'),
   },
   {
     name: "AIAccountabilityBondsV2",
     address: "0x11C267C8A75B13A4D95357CEF6027c42F8e7bA24",
     chain: "ethereum",
-    abi: [],
+    abi: getABI('AIAccountabilityBondsV2'),
   },
   {
     name: "ERC8004ReputationRegistry",
     address: "0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b",
     chain: "ethereum",
-    abi: [],
+    abi: getABI('ERC8004ReputationRegistry'),
   },
   {
     name: "ERC8004ValidationRegistry",
     address: "0x6B7dC022edC41EBE41400319C6fDcCeab05Ea053",
     chain: "ethereum",
-    abi: [],
+    abi: getABI('ERC8004ValidationRegistry'),
   },
   {
     name: "VaultfireERC8004Adapter",
     address: "0xCc7300F39aF4cc2A924f82a5Facd7049436157Ee",
     chain: "ethereum",
-    abi: [],
+    abi: getABI('VaultfireERC8004Adapter'),
   },
   {
     name: "MultisigGovernance",
     address: "0x227e27e7776d3ee14128BC66216354495E113B19",
     chain: "ethereum",
-    abi: [],
+    abi: getABI('MultisigGovernance'),
   },
   {
     name: "ProductionBeliefAttestationVerifier",
     address: "0xea6B504827a746d781f867441364C7A732AA4b07",
     chain: "ethereum",
-    abi: [],
+    abi: getABI('ProductionBeliefAttestationVerifier'),
   },
   {
     name: "DilithiumAttestor",
     address: "0x490c51c2fAd743C288D65A6006f6B0ae9e6a8695",
     chain: "ethereum",
-    abi: [],
+    abi: getABI('DilithiumAttestor'),
   },
   {
     name: "TrustDataBridge",
     address: "0xb3d8063e67bdA1a869721D0F6c346f1Af0469D2F",
     chain: "ethereum",
-    abi: [],
+    abi: getABI('TrustDataBridge'),
   },
 ];
 
