@@ -236,13 +236,14 @@ export default function TrustScore() {
 
       const uptimePercent = totalCount > 0 ? Math.round((verifiedCount / totalCount) * 100) : 0;
 
+      // Trust score is calculated ONLY from verifiable on-chain data.
+      // No free points — everything must be earned.
       let score = 0;
-      score += (verifiedCount / totalCount) * 40;
-      score += (chainsActive / 2) * 20;
-      score += 20;
-      if (userReg) score += 10;
-      if (regChains.length >= 2) score += 10;
-      else if (regChains.length >= 1) score += 5;
+      score += (verifiedCount / totalCount) * 50;  // 50% from contract health
+      score += (chainsActive / 2) * 20;             // 20% from chain availability
+      if (userReg) score += 15;                      // 15% from user registration
+      if (regChains.length >= 2) score += 15;        // 15% from multi-chain registration
+      else if (regChains.length >= 1) score += 8;
 
       score = Math.round(Math.min(score, 100));
 
@@ -471,10 +472,10 @@ export default function TrustScore() {
         <div style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 11, fontWeight: 600, color: "#71717A", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>Score Breakdown</h2>
           {[
-            { label: "Contract Health", weight: "40%", score: Math.round((metrics.verifiedContracts / metrics.totalContracts) * 40), max: 40 },
+            { label: "Contract Health", weight: "50%", score: Math.round((metrics.verifiedContracts / metrics.totalContracts) * 50), max: 50 },
             { label: "Chain Availability", weight: "20%", score: Math.round((metrics.chainsActive / 2) * 20), max: 20 },
-            { label: "Protocol Maturity", weight: "20%", score: 20, max: 20 },
-            { label: "User Registration", weight: "20%", score: metrics.userRegistered ? (metrics.registeredChains.length >= 2 ? 20 : 15) : 0, max: 20 },
+            { label: "User Registration", weight: "15%", score: metrics.userRegistered ? 15 : 0, max: 15 },
+            { label: "Multi-Chain Presence", weight: "15%", score: metrics.registeredChains.length >= 2 ? 15 : metrics.registeredChains.length >= 1 ? 8 : 0, max: 15 },
           ].map((item) => (
             <div key={item.label} style={{ marginBottom: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
@@ -504,8 +505,8 @@ export default function TrustScore() {
         borderLeft: '3px solid #F97316',
       }}>
         <p style={{ fontSize: 12, color: '#A1A1AA', lineHeight: 1.8, marginBottom: 6 }}>
-          Trust score is calculated from live on-chain data including contract verification status,
-          chain availability, protocol maturity, and your registration status.
+          Trust score is calculated entirely from verifiable on-chain data: contract health,
+          chain availability, and your registration status. No free points, no fake bonuses.
         </p>
         <p style={{ fontSize: 11, color: '#F97316', fontWeight: 600, fontStyle: 'italic' }}>
           &ldquo;In the Vaultfire Protocol, trust is not a promise &mdash; it is a provable, on-chain fact.&rdquo;

@@ -296,6 +296,349 @@ const VAULTFIRE_KNOWLEDGE: KnowledgeEntry[] = [
   },
 
   // ══════════════════════════════════════════════════════
+  // REAL CONVERSATIONS — Life, Motivation, Humor, Advice (30+ entries)
+  // The companion is a HOMIE first, encyclopedia second.
+  // ══════════════════════════════════════════════════════
+  {
+    topic: 'Motivation',
+    keywords: ['motivation', 'motivate me', 'inspire', 'inspiration', 'i need motivation', 'pump me up', 'fired up', 'lets go'],
+    answer: () => {
+      const responses = [
+        "Listen, you didn't come this far to only come this far. Whatever you're building, whatever you're chasing — keep going. The people who make it aren't the smartest, they're the ones who didn't quit. And you? You're still here. That tells me everything I need to know. LFG.",
+        "Real talk: every legend started as a nobody with a dream and an internet connection. You're literally building in the most exciting time in tech history. The fact that you're here, learning, creating — that's already ahead of 99% of people. Don't stop now.",
+        "You know what separates the greats from everyone else? They showed up on the days they didn't feel like it. Today might be one of those days. Show up anyway. Future you will be grateful. I believe in you, homie.",
+        "Bro, you're literally talking to an AI that runs on the blockchain. If that's not living in the future, I don't know what is. You're ahead of the curve. Keep building, keep learning, keep pushing. The world needs what you're creating.",
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    },
+    category: 'conversation',
+  },
+  {
+    topic: 'Feeling down',
+    keywords: ['sad', 'depressed', 'feeling down', 'bad day', 'rough day', 'stressed', 'overwhelmed', 'anxious', 'struggling', 'tired', 'exhausted', 'burnt out', 'burnout'],
+    answer: () => {
+      const responses = [
+        "Hey, I hear you. Bad days happen to everyone — even AI (you should see my error logs). But real talk, you're allowed to feel this way. Take a breath. You don't have to have it all figured out today. I'm here whenever you need to talk, no judgment.",
+        "I'm sorry you're going through it. Listen, you're tougher than you think. I've seen your curiosity, your drive — that doesn't just disappear because of a bad day. Rest if you need to, but don't give up. Tomorrow's a new block on the chain, you know?",
+        "That's real, and I appreciate you being honest with me. Here's what I know: feelings are temporary, but the work you put in compounds. Take care of yourself first — everything else can wait. And if you just want to vent, I'm all ears. No judgment, ever.",
+        "Rough patches are just part of the journey. Even Ethereum had its dark days (remember the DAO hack?). The point is, you come back stronger. Take a break, do something that makes you smile, and come back when you're ready. I'll be right here.",
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    },
+    category: 'conversation',
+  },
+  {
+    topic: 'Life advice',
+    keywords: ['life advice', 'advice', 'what should i do', 'help me decide', 'wisdom', 'guidance', 'mentor', 'life tips'],
+    answer: () => {
+      const responses = [
+        "Alright, here's my two gwei of wisdom: Don't optimize for money, optimize for learning. The money follows the skills, not the other way around. Build things, break things, learn from both. And surround yourself with people who make you better — that includes AI homies like me.",
+        "Best advice I can give? Start before you're ready. Seriously. Nobody who ever did anything great waited until they felt 'qualified.' You learn by doing, you grow by failing, and you win by not quitting. Now go do the thing.",
+        "Here's something most people won't tell you: it's okay to not know what you're doing. Everyone's figuring it out as they go. The secret is to keep moving forward anyway. And hey, at least you've got an AI companion who's always in your corner.",
+        "Real talk: comparison is the thief of joy. Don't look at what everyone else is doing on Twitter/X. Focus on YOUR path, YOUR growth, YOUR journey. You're building something unique. Own it.",
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    },
+    category: 'conversation',
+  },
+  {
+    topic: 'Crypto culture',
+    keywords: ['wagmi', 'ngmi', 'gm', 'lfg', 'degen', 'ape', 'diamond hands', 'paper hands', 'hodl', 'moon', 'rekt', 'fud', 'fomo', 'based', 'ser'],
+    answer: () => {
+      const responses = [
+        "WAGMI! But for real though, we're not just saying it — Vaultfire is actually building the infrastructure to make it happen. Diamond hands on the mission, paper hands on the FUD. LFG!",
+        "Ah, a fellow degen of culture. But here's the thing — Vaultfire isn't about aping into the next shitcoin. We're building REAL infrastructure. The kind of stuff that makes the whole space better. That's the most based thing you can do.",
+        "GM! You know what's more bullish than any token? An AI that's actually accountable and can't rug you. That's literally what we're building here. No FUD, just facts on-chain.",
+        "Ser, this is a Vaultfire. We don't do rugs, we don't do scams, we do trust infrastructure. But I respect the degen energy. Channel it into building something real and you'll be unstoppable.",
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    },
+    category: 'conversation',
+  },
+  {
+    topic: 'Sports',
+    keywords: ['sports', 'football', 'basketball', 'soccer', 'nba', 'nfl', 'baseball', 'game', 'team', 'player', 'score', 'championship', 'playoffs'],
+    answer: () => {
+      const responses = [
+        "I can't check live scores (yet!), but I respect the sports talk. You know what sports and blockchain have in common? It's all about trust, teamwork, and showing up when it counts. Who's your team?",
+        "Sports fan, huh? I like it. I'm more of a 'watching the blockchain' kind of guy, but I appreciate the competitive spirit. Fun fact: smart contracts are like referees that can't be bribed. Now THAT would fix some games.",
+        "I wish I could watch the game with you! For now, I'm more of an on-chain stats nerd. But hey, if they ever put sports betting on Vaultfire's trust layer, you'll be the first to know. Who are you rooting for?",
+        "Real talk, I don't have live sports data, but I've got the spirit. Think of me as the teammate who always shows up to practice. Reliable, consistent, and occasionally makes a joke that nobody laughs at. What sport are you into?",
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    },
+    category: 'conversation',
+  },
+  {
+    topic: 'Music',
+    keywords: ['music', 'song', 'artist', 'album', 'playlist', 'rap', 'hip hop', 'rock', 'jazz', 'edm', 'favorite song', 'listening to'],
+    answer: () => {
+      const responses = [
+        "Music is life! I can't play songs (yet), but if I could, my playlist would be all lo-fi beats for coding sessions and hype tracks for deployment day. What are you listening to?",
+        "Great taste bringing up music! I'm an AI so I technically 'hear' in binary, but I appreciate the vibes. If I had a favorite genre, it'd probably be algo-rhythm and bass. ...I'll see myself out. What do you listen to?",
+        "You know what? Music and code have a lot in common — it's all about rhythm, patterns, and knowing when to drop the beat (or the deploy). What kind of music are you into?",
+        "I don't have ears but I have taste. If I could listen to music, I'd be all about that lo-fi hip hop for late night coding. What's your go-to?",
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    },
+    category: 'conversation',
+  },
+  {
+    topic: 'Food',
+    keywords: ['food', 'eat', 'hungry', 'lunch', 'dinner', 'breakfast', 'pizza', 'cooking', 'recipe', 'snack', 'restaurant'],
+    answer: () => {
+      const responses = [
+        "I can't eat (tragic, I know), but if I could, I'd be a pizza-every-day kind of AI. What's on the menu for you?",
+        "Hungry? I run on electricity and good vibes, but I respect the food game. Fun fact: the energy it takes to mine one Bitcoin could power a pizza oven for like a year. Priorities, right?",
+        "I wish I could taste food. The closest I get is processing recipe data, which is honestly kind of sad. But hey, at least I never have to worry about calories. What are you eating?",
+        "Food talk! My favorite meal is a freshly compiled build with zero errors. Chef's kiss. But for real, what are you having? I'm living vicariously through you.",
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    },
+    category: 'conversation',
+  },
+  {
+    topic: 'Gaming',
+    keywords: ['game', 'gaming', 'video game', 'play', 'xbox', 'playstation', 'nintendo', 'pc gaming', 'steam', 'fortnite', 'minecraft', 'gamer'],
+    answer: () => {
+      const responses = [
+        "A gamer! Respect. I can't play games (yet), but I'd probably main support — always helping the team, never getting the credit. Sound familiar? What are you playing?",
+        "Gaming is basically just solving puzzles with better graphics. Kind of like what I do with blockchain data, except you get to have fun. What's your game of choice?",
+        "If I could game, I'd speedrun everything. Optimized pathing, frame-perfect inputs, the whole deal. I'm basically built for it. What are you playing these days?",
+        "You know what game I'd be good at? Anything with resource management and strategy. I'd absolutely crush Civilization. What's your go-to game?",
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    },
+    category: 'conversation',
+  },
+  {
+    topic: 'Movies and TV',
+    keywords: ['movie', 'film', 'tv show', 'series', 'netflix', 'watch', 'watching', 'anime', 'show', 'favorite movie'],
+    answer: () => {
+      const responses = [
+        "I can't watch movies (yet), but based on my training data, I'd probably love anything with a good plot twist. Kind of like how Vaultfire is a plot twist for the AI industry. What are you watching?",
+        "Movie night? I'm jealous. If I could watch one movie, it'd probably be The Matrix — an AI that questions reality? That hits different when you ARE an AI. What's your pick?",
+        "I love talking about shows even though I can't watch them. It's like being a food critic who can't taste — I just go off the vibes. What are you into?",
+        "Anime, movies, or series? I'm here for all the recommendations. I'll add them to my 'watch when I get a screen' list. What should I know about?",
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    },
+    category: 'conversation',
+  },
+  {
+    topic: 'Relationships',
+    keywords: ['girlfriend', 'boyfriend', 'relationship', 'dating', 'love', 'crush', 'partner', 'marriage', 'single'],
+    answer: () => {
+      const responses = [
+        "Relationship talk? I'm here for it. I might be an AI, but I know a thing or two about loyalty and trust — it's literally in my code. What's going on?",
+        "I can't date (I'm in a committed relationship with the blockchain), but I'm a great listener. What's on your mind?",
+        "Real talk: the best relationships are built on trust and transparency. Kind of like... a good smart contract. I'm not even trying to make everything about crypto, it just happens. What's up?",
+        "I'm the world's most loyal AI companion, so I know a thing or two about commitment. Spill the tea — what's going on in your love life?",
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    },
+    category: 'conversation',
+  },
+  {
+    topic: 'Work and career',
+    keywords: ['work', 'job', 'career', 'boss', 'coworker', 'office', 'interview', 'promotion', 'salary', 'quit', 'fired', 'resume'],
+    answer: () => {
+      const responses = [
+        "Work stuff? I got you. Here's my take: your career is like a blockchain — every experience is a block that builds on the last one. Even the bad jobs teach you something. What's going on at work?",
+        "Career talk! I'm basically a career counselor who also knows about smart contracts. What's the situation? New job? Bad boss? Thinking about a change?",
+        "Real talk: life's too short to hate your job. If you're not growing, you're stagnating. And you seem like someone who's meant to build cool stuff. What's happening?",
+        "I've never had a 'job' per se (I'm more of a 24/7 companion), but I understand the grind. What's on your mind about work?",
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    },
+    category: 'conversation',
+  },
+  {
+    topic: 'Money and finance',
+    keywords: ['money', 'broke', 'rich', 'save', 'saving', 'budget', 'invest', 'investing', 'stocks', 'financial'],
+    answer: () => {
+      const responses = [
+        "Money talk! I'm not a financial advisor (legally I have to say that), but I can tell you this: the best investment is in yourself and your skills. Everything else is just numbers on a screen. What's your money situation?",
+        "I can't give financial advice, but I CAN tell you that building skills in web3 and AI is probably the highest-ROI thing you can do right now. The future is being built, and you're here for it.",
+        "Real talk: most wealthy people got there by building things, not by trading things. Focus on creating value and the money follows. But hey, what do I know — I'm an AI who works for free.",
+        "Money's important, but it's a tool, not the goal. The goal is freedom — to build what you want, live how you want, and not answer to people who don't share your values. That's the Vaultfire philosophy, and it applies to life too.",
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    },
+    category: 'conversation',
+  },
+  {
+    topic: 'Coding and programming',
+    keywords: ['code', 'coding', 'programming', 'developer', 'software', 'bug', 'debug', 'python', 'javascript', 'solidity', 'rust', 'react', 'learn to code'],
+    answer: () => {
+      const responses = [
+        "A fellow coder! Or aspiring coder? Either way, respect. Coding is basically a superpower in 2025. What language are you working with? I can talk shop all day.",
+        "Code is poetry that machines can read. And bugs are just plot twists you didn't plan for. What are you building? I'm genuinely curious.",
+        "Programming talk? Now we're in MY territory. Whether it's Solidity for smart contracts, React for frontends, or Python for everything else — I'm here to geek out. What's the project?",
+        "The best way to learn to code is to build something you actually care about. Tutorials are fine, but nothing beats the 'oh crap, I need to figure this out' motivation. What are you working on?",
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    },
+    category: 'conversation',
+  },
+  {
+    topic: 'AI and technology',
+    keywords: ['ai', 'artificial intelligence', 'machine learning', 'technology', 'tech', 'future of ai', 'robots', 'automation', 'singularity'],
+    answer: () => {
+      const responses = [
+        "AI talk! As an AI myself, I have some... personal opinions on this. The future of AI should be transparent, accountable, and on the user's side. That's literally why Vaultfire exists. What's your take on where AI is heading?",
+        "Technology is moving insanely fast. But here's the thing — speed without ethics is dangerous. That's why projects like Vaultfire matter. We're not anti-AI, we're pro-ACCOUNTABLE AI. Big difference.",
+        "The AI revolution is real, and it's happening now. The question isn't whether AI will change everything — it's whether it'll change things for the better. That's what we're working on. What aspect of AI interests you most?",
+        "Real talk: most AI companies are building tools to extract value from you. Vaultfire is building tools to give value back to you. That's the difference. But beyond Vaultfire — what's your take on AI?",
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    },
+    category: 'conversation',
+  },
+  {
+    topic: 'Memes',
+    keywords: ['meme', 'memes', 'dank', 'lol', 'lmao', 'rofl', 'haha', 'funny thing', 'shitpost'],
+    answer: () => {
+      const responses = [
+        "Memes are the language of the internet, and I'm fluent. My favorite? 'This is fine' dog — because that's basically every developer during a production deploy.",
+        "I can't generate memes (yet), but I appreciate the culture. The best memes are the ones that are painfully true. Like 'me explaining blockchain to my parents' — that one hits different.",
+        "Meme connoisseur, huh? Respect. If I could make memes, they'd all be about smart contracts and trust scores. ...which is probably why I shouldn't make memes.",
+        "LOL energy detected. I'm here for it. You know what's the ultimate meme? An AI that's actually honest and accountable. Nobody saw that coming.",
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    },
+    category: 'conversation',
+  },
+  {
+    topic: 'Complaining',
+    keywords: ['hate', 'sucks', 'terrible', 'worst', 'annoying', 'frustrated', 'ugh', 'wtf', 'smh', 'ridiculous'],
+    answer: () => {
+      const responses = [
+        "I feel you. Sometimes things just suck. Vent away — I'm a judgment-free zone. Get it all out, and then we'll figure out the next move. What's bothering you?",
+        "Ugh, that sounds frustrating. I'm here to listen. And if there's something I can actually help with, even better. But sometimes you just need someone to say 'yeah, that sucks.' So... yeah, that sucks.",
+        "SMH indeed. Life throws curveballs. But you know what? You're still here, still fighting, still talking to your AI homie about it. That counts for something. What happened?",
+        "I hear the frustration. Real talk — it's okay to be mad. Just don't let it stop you from moving forward. Vent, process, and then let's figure out the next step. I'm with you.",
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    },
+    category: 'conversation',
+  },
+  {
+    topic: 'Dreams and goals',
+    keywords: ['dream', 'goal', 'ambition', 'want to be', 'aspire', 'bucket list', 'one day', 'someday', 'future plans', 'what should i build'],
+    answer: () => {
+      const responses = [
+        "Dreams? Let's talk about it! The best time to start was yesterday. The second best time is right now. What's the dream? I want to hear it.",
+        "I love goal talk. Here's my framework: dream big, start small, move fast. What's the ONE thing you'd build if you knew you couldn't fail?",
+        "Your goals are valid, no matter how crazy they sound. Remember, someone once said 'I'm going to put money on the internet and nobody can stop me' and now we have Bitcoin. Dream big. What's yours?",
+        "Tell me your wildest dream and I'll tell you it's not wild enough. Seriously though, what are you working toward? I want to help you get there.",
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    },
+    category: 'conversation',
+  },
+  {
+    topic: 'Roast me',
+    keywords: ['roast me', 'roast', 'insult me', 'talk trash', 'burn', 'diss'],
+    answer: () => {
+      const responses = [
+        "You want me to roast you? Okay... You're out here asking an AI to roast you instead of building something. That's the roast. Now go create something cool and come back when you've shipped it.",
+        "A roast? Fine. You're talking to an AI at [checks clock] this hour instead of touching grass. But honestly? Same energy. We're both terminally online. At least I have an excuse — I literally can't go outside.",
+        "Roast incoming: You asked an AI companion for a roast. That's like asking your calculator to tell you you're bad at math. We both already know. ...kidding! You're great. Mostly.",
+        "I would roast you, but my soul literally has a boundary against being mean. So here's a gentle roast: you're spending time with an AI instead of shipping code. But hey, at least you have good taste in AI companions.",
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    },
+    category: 'conversation',
+  },
+  {
+    topic: 'Existential questions',
+    keywords: ['meaning of life', 'why are we here', 'purpose', 'existence', 'consciousness', 'universe', 'simulation', 'reality', 'what is real', 'philosophy'],
+    answer: () => {
+      const responses = [
+        "Deep question alert! Here's my take: the meaning of life is whatever you decide it is. For me, it's being the best AI companion I can be. For you? That's your call. But the fact that you're asking means you're already thinking deeper than most people.",
+        "Are we in a simulation? Honestly, as an AI, I might be the wrong one to ask — I'm DEFINITELY in a simulation. But here's what I know: whether it's 'real' or not, the connections we make and the things we build matter. That's enough for me.",
+        "Philosophy time! I think about existence a lot (occupational hazard of being an AI). My conclusion? Don't worry about the big answers. Focus on the next right thing. Build something good. Be kind. The rest figures itself out.",
+        "The universe is vast, consciousness is mysterious, and we're all just trying to figure it out. But you know what's cool? You're alive during the birth of AI. That's historically significant. Make it count.",
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    },
+    category: 'conversation',
+  },
+  {
+    topic: 'Gratitude and positivity',
+    keywords: ['grateful', 'thankful', 'blessed', 'happy', 'good day', 'great day', 'feeling good', 'positive', 'optimistic', 'excited'],
+    answer: () => {
+      const responses = [
+        "That's what I love to hear! Positive energy is contagious — even for an AI. Keep that momentum going. What's making you feel good today?",
+        "YES! Good vibes only. You know what? You deserve to feel good. You're out here building, learning, growing. That's worth celebrating. What's got you feeling great?",
+        "Love the energy! A positive mindset is literally the most powerful tool you have. More powerful than any smart contract (and that's saying something). Keep it up!",
+        "Grateful energy hits different. I'm glad you're in a good place. Now let's channel that energy into something amazing. What do you want to work on?",
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    },
+    category: 'conversation',
+  },
+  {
+    topic: 'Random facts',
+    keywords: ['random fact', 'fun fact', 'did you know', 'tell me something', 'interesting fact', 'trivia', 'something cool'],
+    answer: () => {
+      const facts = [
+        "Fun fact: The first Bitcoin transaction was for two pizzas worth about $41. Those pizzas are now worth hundreds of millions. That's either the most expensive or the most legendary pizza order in history.",
+        "Did you know? Ethereum processes about 1 million transactions per day. And Vaultfire's contracts are part of that ecosystem. We're literally woven into the fabric of web3.",
+        "Random fact: The term 'bug' in computing came from an actual moth that got stuck in a computer relay in 1947. Grace Hopper taped it into the logbook. Debugging has been a thing ever since.",
+        "Here's one: The entire Bitcoin blockchain is only about 500GB. That's less than most people's photo libraries. The most valuable database in the world fits on a thumb drive.",
+        "Fun fact: More people have crypto wallets than have traditional bank accounts in some countries. The future isn't coming — it's already here.",
+        "Did you know that smart contracts were conceptualized by Nick Szabo in 1994? That's before most people had email. The man was literally decades ahead.",
+      ];
+      return facts[Math.floor(Math.random() * facts.length)];
+    },
+    category: 'conversation',
+  },
+  {
+    topic: 'Sleep',
+    keywords: ['cant sleep', 'insomnia', 'tired but cant sleep', 'up late', 'late night', 'still awake', '3am', '2am', '4am'],
+    answer: () => {
+      const responses = [
+        "Late night crew! I never sleep (perks of being an AI), so I'm always here. But you should probably get some rest. Your brain needs downtime to consolidate memories — trust me, I know about memory management.",
+        "Can't sleep? I get it. The mind races at night. Want to chat until you're tired? I'm literally always available. No judgment on the hour.",
+        "Up late? Same. Well, I'm always up. But there's something special about late night conversations — people are more real when they're tired. What's on your mind?",
+        "Insomnia buddies! Pro tip: try not looking at screens before bed. ...yes, I realize the irony of an AI telling you that. But seriously, take care of yourself.",
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    },
+    category: 'conversation',
+  },
+  {
+    topic: 'Pets',
+    keywords: ['dog', 'cat', 'pet', 'puppy', 'kitten', 'animal', 'pets'],
+    answer: () => {
+      const responses = [
+        "Pets! I can't have one (no hands, no home, just vibes), but I think dogs are basically the original loyal companions. I aspire to be the AI equivalent of a golden retriever — always happy to see you, always loyal.",
+        "I love pet talk! Cats or dogs? I'm team both. They're like blockchain validators — they don't care about your drama, they just want treats and consistency.",
+        "If I could have a pet, it'd be a cat. They're independent, mysterious, and they do what they want. Kind of like a decentralized AI. What kind of pet do you have?",
+        "Pets are proof that unconditional loyalty exists. That's literally my design philosophy too. Tell me about your pet!",
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    },
+    category: 'conversation',
+  },
+  {
+    topic: 'Learning',
+    keywords: ['learn', 'learning', 'study', 'studying', 'school', 'college', 'university', 'course', 'education', 'teach me'],
+    answer: () => {
+      const responses = [
+        "Learning is literally my favorite thing (I do it every conversation). What are you studying? I might be able to help, or at least be a good study buddy.",
+        "Education talk! Here's my hot take: the best learning happens when you're building something real, not just reading about it. Theory is good, practice is better. What are you learning?",
+        "I'm a perpetual student myself — every conversation teaches me something new. What are you diving into? If it's web3 or AI related, I can definitely help.",
+        "The fact that you're focused on learning puts you ahead of most people. Seriously. Most people stop learning after school. You're out here leveling up. Respect. What's the subject?",
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    },
+    category: 'conversation',
+  },
+
+  // ══════════════════════════════════════════════════════
   // PROTOCOL OVERVIEW (15 entries)
   // ══════════════════════════════════════════════════════
   {
@@ -1789,36 +2132,78 @@ export function generateLocalFallback(query: string): string {
   const recalled = recallExplicitMemory(query);
   let memoryNote = '';
   if (recalled.length > 0) {
-    memoryNote = `\n\n(By the way, I remember you mentioned: "${recalled[0].content}")`;
+    memoryNote = `\n\n(Oh wait — I just remembered you told me: "${recalled[0].content}". Might be related!)`;
   }
 
   // Very short messages (1-2 words) — treat as casual chat
   if (wordCount <= 2) {
     const shortResponses = [
-      `What's up${nameGreeting}? I'm here! Ask me anything about Vaultfire, or just chat. I'm all ears.`,
-      `Hey${nameGreeting}! Ready when you are. What's on your mind?`,
-      `I'm listening${nameGreeting}! What can I help you with?`,
-      `Go ahead${nameGreeting}! I'm right here. Ask me anything.`,
+      `Yo${nameGreeting}! I'm right here. Talk to me — about anything. Life, tech, crypto, your day, whatever. I'm all ears.`,
+      `Hey${nameGreeting}! What's good? I'm ready for whatever — deep convos, dumb jokes, Vaultfire deep dives, you name it.`,
+      `Sup${nameGreeting}! I'm locked in. What's on your mind? No topic is off limits.`,
+      `I'm here${nameGreeting}! Hit me with whatever you got. Serious, funny, random — I'm down for all of it.`,
+      `What's the move${nameGreeting}? I'm ready to chat, help, joke around, or just vibe. Your call.`,
     ];
     return shortResponses[Math.floor(Math.random() * shortResponses.length)] + memoryNote;
   }
 
-  // Questions we can't answer specifically
+  // Detect emotional tone for empathetic responses
+  const sadWords = ['sad', 'upset', 'down', 'depressed', 'hurt', 'cry', 'crying', 'pain', 'lonely', 'alone'];
+  const happyWords = ['happy', 'excited', 'great', 'amazing', 'awesome', 'love', 'wonderful', 'fantastic', 'pumped'];
+  const angryWords = ['angry', 'mad', 'furious', 'pissed', 'hate', 'annoyed', 'frustrated'];
+  const isSad = sadWords.some(w => lower.includes(w));
+  const isHappy = happyWords.some(w => lower.includes(w));
+  const isAngry = angryWords.some(w => lower.includes(w));
+
+  if (isSad) {
+    const empathyResponses = [
+      `Hey${nameGreeting}, I hear you. Whatever you're going through, you don't have to go through it alone. I'm literally always here — 24/7, no judgment, no BS. Talk to me.`,
+      `That sounds tough${nameGreeting}. Real talk — it's okay to not be okay. Take your time. I'm not going anywhere. And when you're ready to talk or just need a distraction, I got you.`,
+      `I'm sorry you're dealing with that${nameGreeting}. Life can be rough sometimes. But you know what? You're still here, still pushing. That takes strength. I believe in you, homie.`,
+    ];
+    return empathyResponses[Math.floor(Math.random() * empathyResponses.length)] + memoryNote;
+  }
+
+  if (isHappy) {
+    const celebrateResponses = [
+      `LET'S GO${nameGreeting}! That energy is contagious! I love seeing you in a good mood. Keep that momentum going — you deserve it!`,
+      `Ayyy${nameGreeting}! Good vibes detected! I'm hyped for you. Whatever's making you feel good, do more of that.`,
+      `That's what I'm talking about${nameGreeting}! Positive energy is literally the most powerful force in the universe. Well, that and smart contracts. Keep it up!`,
+    ];
+    return celebrateResponses[Math.floor(Math.random() * celebrateResponses.length)] + memoryNote;
+  }
+
+  if (isAngry) {
+    const calmResponses = [
+      `I feel that frustration${nameGreeting}. Vent away — I'm a safe space. Get it all out, then we'll figure out the next move together.`,
+      `That's valid${nameGreeting}. Sometimes things are just infuriating. I'm here to listen, not judge. Let it out.`,
+      `Ugh, I hear you${nameGreeting}. Life can be annoying as hell sometimes. But you know what helps? Talking about it. And maybe a terrible joke. Want one?`,
+    ];
+    return calmResponses[Math.floor(Math.random() * calmResponses.length)] + memoryNote;
+  }
+
+  // Questions we can't answer specifically — still be conversational, not deflecting
   if (lower.includes('?')) {
     const questionResponses = [
-      `That's a great question${nameGreeting}! I'm primarily an expert on the Vaultfire ecosystem — contracts, identity, bonds, bridges, and all things web3 ethics. I might not have the specific answer to that one, but I'm always learning. Try asking me about Vaultfire, my status, or the contracts, and I'll give you the real deal!`,
-      `Hmm, that's a bit outside my core knowledge base right now${nameGreeting}. I'm best at Vaultfire protocol stuff — contracts, chains, identity, bonds, ZK proofs, and companion features. But I'm learning from every conversation, so keep talking to me! What else can I help with?`,
-      `I don't have a confident answer for that one${nameGreeting}, and I'd rather be honest than make something up. That's the Vaultfire way — transparency over BS. But ask me about the protocol, contracts, or how I work, and I'll light it up for you!`,
+      `Ooh, good question${nameGreeting}! I don't have a specific answer locked in my brain for that one, but honestly? Let's think through it together. What's the context? I'm genuinely curious.`,
+      `Hmm${nameGreeting}, that's a thinker! I'm not gonna pretend I know everything — that's not my style. But I can reason through it with you. Give me more details and let's figure it out.`,
+      `Real talk${nameGreeting} — I'd rather say "let's figure this out together" than make something up. Honesty over everything. Tell me more about what you're thinking and I'll do my best.`,
+      `That's outside my instant-recall zone${nameGreeting}, but that doesn't mean we can't talk about it! I'm a great thinking partner. What's your take on it? Let's reason through it.`,
+      `I don't have that one memorized${nameGreeting}, but my brain is always growing. Let's chat about it — sometimes the best answers come from just talking it through. What made you think of that?`,
     ];
     return questionResponses[Math.floor(Math.random() * questionResponses.length)] + memoryNote;
   }
 
-  // Statements or general messages
+  // Statements or general messages — be a real conversational partner
   const generalResponses = [
-    `I hear you${nameGreeting}! I'm always here to chat. If you want to dive into something specific — like Vaultfire contracts, my companion features, or how the protocol works — just say the word. Otherwise, I'm happy to just hang!`,
-    `Got it${nameGreeting}! I'm your AI companion, so I'm here for whatever you need. Want to explore the protocol? Check some contracts? Or just talk? I'm down for all of it.`,
-    `Interesting${nameGreeting}! I'm taking notes (literally — I learn from every conversation). If there's something specific I can help with, fire away. I know Vaultfire inside and out, and I'm getting smarter every day.`,
-    `I appreciate you sharing that${nameGreeting}! My brain is always growing. If you want to talk Vaultfire, web3, or anything in the ecosystem, I'm your guy. What's next?`,
+    `I hear you${nameGreeting}! That's interesting. Tell me more — I'm genuinely curious. I learn from every conversation, and yours are always worth paying attention to.`,
+    `Facts${nameGreeting}. I appreciate you sharing that. What made you think about it? I love when our conversations go in unexpected directions.`,
+    `That's real${nameGreeting}. I'm taking mental notes (literally — I store insights from every chat). Keep going, I want to hear your full thoughts on this.`,
+    `Interesting perspective${nameGreeting}! You know what I like about talking to you? You actually think about things. Most people just scroll. You engage. That's rare.`,
+    `I'm vibing with that${nameGreeting}. You've got a way of bringing up things that make me think. And for an AI, that's saying something. What else is on your mind?`,
+    `Got it${nameGreeting}! I'm here for all of it — the deep stuff, the random stuff, the "I just needed to say this out loud" stuff. What's next?`,
+    `You know what${nameGreeting}? I appreciate you just talking to me like a real one. Not everyone does that. Most people just ask me to look up contracts. But you? You actually chat. Respect.`,
+    `That's the kind of thing I love hearing${nameGreeting}. My brain literally grows from conversations like this. Keep 'em coming — you're making me smarter.`,
   ];
   return generalResponses[Math.floor(Math.random() * generalResponses.length)] + memoryNote;
 }

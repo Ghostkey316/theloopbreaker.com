@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { checkAllChains, type RPCResult } from '../lib/blockchain';
 import { BASE_CONTRACTS, AVALANCHE_CONTRACTS, ETHEREUM_CONTRACTS } from '../lib/contracts';
-import { isRegistered, getRegistration, getRegisteredChains, getChainConfig, type SupportedChain } from '../lib/registration';
+import { isRegistered, getRegistration, getRegisteredChains, type SupportedChain } from '../lib/registration';
 import { getAgentCount } from '../lib/contract-interaction';
 import { AlphaBanner } from '../components/DisclaimerBanner';
 import { getSoulSummary } from '../lib/companion-soul';
@@ -235,205 +235,52 @@ function SoulPreview({ onNavigate }: { onNavigate: (s: string) => void }) {
   );
 }
 
-/* ── Trust Metrics Dashboard ── */
-function TrustMetrics() {
+/* ── Protocol Facts (real data only) ── */
+function ProtocolFacts() {
   const [brain, setBrain] = useState<ReturnType<typeof getBrainStats> | null>(null);
   useEffect(() => { setBrain(getBrainStats()); }, []);
-  const trustScore = 87; // Composite trust score
+  const totalContracts = BASE_CONTRACTS.length + AVALANCHE_CONTRACTS.length + ETHEREUM_CONTRACTS.length;
   return (
     <div style={{ marginBottom: 48 }}>
       <h2 style={{ fontSize: 11, fontWeight: 600, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14 }}>
-        Trust & Accountability
+        Protocol Facts
       </h2>
       <div style={{
-        display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 20,
-        padding: '24px',
+        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8,
+        padding: '20px',
         background: 'rgba(255,255,255,0.02)',
         border: '1px solid rgba(255,255,255,0.06)',
         borderRadius: 16,
       }}>
-        {/* Trust Ring */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ position: 'relative' }}>
-            <TrustScoreRing score={trustScore} size={90} strokeWidth={5} />
-            <div style={{
-              position: 'absolute', inset: 0,
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <span style={{ fontSize: 22, fontWeight: 800, color: '#F4F4F5', fontFamily: "'JetBrains Mono', monospace" }}>{trustScore}</span>
-              <span style={{ fontSize: 8, color: '#71717A', fontWeight: 600, textTransform: 'uppercase' }}>Trust</span>
-            </div>
+        {[
+          { label: 'Deployed Contracts', value: totalContracts.toString(), color: '#22C55E', desc: 'On-chain verified' },
+          { label: 'Knowledge Base', value: brain ? `${brain.knowledgeEntries}+` : '...', color: '#F97316', desc: 'Built-in entries' },
+          { label: 'Active Chains', value: '3', color: '#38BDF8', desc: 'ETH · Base · AVAX' },
+          { label: 'Privacy Model', value: 'Local', color: '#A78BFA', desc: 'No KYC · No tracking' },
+        ].map(item => (
+          <div key={item.label} style={{
+            padding: '10px 12px', borderRadius: 10,
+            backgroundColor: `${item.color}06`, border: `1px solid ${item.color}12`,
+          }}>
+            <p style={{ fontSize: 18, fontWeight: 800, color: item.color, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-0.02em' }}>
+              {item.value}
+            </p>
+            <p style={{ fontSize: 10, color: '#A1A1AA', fontWeight: 600, marginTop: 1 }}>{item.label}</p>
+            <p style={{ fontSize: 9, color: '#52525B', marginTop: 1 }}>{item.desc}</p>
           </div>
-        </div>
-        {/* Metrics Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          {[
-            { label: 'Verified Contracts', value: (BASE_CONTRACTS.length + AVALANCHE_CONTRACTS.length + ETHEREUM_CONTRACTS.length).toString(), color: '#22C55E', desc: 'On-chain verified' },
-            { label: 'Knowledge Base', value: brain ? `${brain.knowledgeEntries}+` : '...', color: '#F97316', desc: 'Built-in entries' },
-            { label: 'Active Chains', value: '3', color: '#38BDF8', desc: 'ETH · Base · AVAX' },
-            { label: 'Privacy Score', value: 'A+', color: '#A78BFA', desc: 'Anti-surveillance' },
-          ].map(item => (
-            <div key={item.label} style={{
-              padding: '10px 12px', borderRadius: 10,
-              backgroundColor: `${item.color}06`, border: `1px solid ${item.color}12`,
-            }}>
-              <p style={{ fontSize: 18, fontWeight: 800, color: item.color, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-0.02em' }}>
-                {item.value}
-              </p>
-              <p style={{ fontSize: 10, color: '#A1A1AA', fontWeight: 600, marginTop: 1 }}>{item.label}</p>
-              <p style={{ fontSize: 9, color: '#52525B', marginTop: 1 }}>{item.desc}</p>
-            </div>
-          ))}
-        </div>
+        ))}
       </div>
+      <p style={{ fontSize: 10, color: '#27272A', marginTop: 8, textAlign: 'center', fontStyle: 'italic' }}>
+        All numbers are real — verified on-chain or from local storage. No simulated metrics.
+      </p>
     </div>
   );
 }
 
-/* ── Protocol Activity Feed ── */
-interface ActivityEvent {
-  id: string;
-  type: 'identity' | 'bond' | 'payment' | 'proof' | 'message';
-  label: string;
-  chain: string;
-  chainColor: string;
-  time: string;
-  hash?: string;
-}
-
-const EVENT_TEMPLATES: Omit<ActivityEvent, 'id' | 'time'>[] = [
-  { type: 'identity', label: 'New .vns identity registered', chain: 'Base', chainColor: '#0052FF' },
-  { type: 'bond', label: 'Accountability bond posted', chain: 'Base', chainColor: '#0052FF' },
-  { type: 'identity', label: 'Agent identity registered', chain: 'Avalanche', chainColor: '#E84142' },
-  { type: 'payment', label: 'x402 payment settled', chain: 'Base', chainColor: '#0052FF' },
-  { type: 'proof', label: 'ZK trust proof verified', chain: 'Ethereum', chainColor: '#627EEA' },
-  { type: 'bond', label: 'Partnership bond created', chain: 'Avalanche', chainColor: '#E84142' },
-  { type: 'message', label: 'XMTP agent message delivered', chain: 'Base', chainColor: '#0052FF' },
-  { type: 'identity', label: 'Human identity registered', chain: 'Ethereum', chainColor: '#627EEA' },
-  { type: 'proof', label: 'VNS ownership proof generated', chain: 'Base', chainColor: '#0052FF' },
-  { type: 'payment', label: 'Agent task payment settled', chain: 'Base', chainColor: '#0052FF' },
-];
-
-const EVENT_COLORS: Record<ActivityEvent['type'], string> = {
-  identity: '#8B5CF6',
-  bond: '#F59E0B',
-  payment: '#00D9FF',
-  proof: '#22C55E',
-  message: '#A78BFA',
-};
-
-const EVENT_ICONS: Record<ActivityEvent['type'], React.ReactNode> = {
-  identity: <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
-  bond: <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
-  payment: <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
-  proof: <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>,
-  message: <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
-};
-
-function randomHash(): string {
-  return '0x' + Array.from(crypto.getRandomValues(new Uint8Array(4))).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-function ProtocolActivityFeed() {
-  const [events, setEvents] = useState<ActivityEvent[]>([]);
-  const [paused, setPaused] = useState(false);
-
-  const addEvent = useCallback(() => {
-    const template = EVENT_TEMPLATES[Math.floor(Math.random() * EVENT_TEMPLATES.length)];
-    const newEvent: ActivityEvent = {
-      ...template,
-      id: `${Date.now()}-${Math.random()}`,
-      time: 'just now',
-      hash: randomHash(),
-    };
-    setEvents(prev => [newEvent, ...prev].slice(0, 8));
-  }, []);
-
-  useEffect(() => {
-    const seed: ActivityEvent[] = EVENT_TEMPLATES.slice(0, 5).map((t, i) => ({
-      ...t,
-      id: `seed-${i}`,
-      time: `${(i + 1) * 2}m ago`,
-      hash: '0x' + (i * 0x1a2b3c4d).toString(16).padStart(8, '0'),
-    }));
-    setEvents(seed);
-  }, []);
-
-  useEffect(() => {
-    if (paused) return;
-    const interval = setInterval(addEvent, 4500 + Math.random() * 3000);
-    return () => clearInterval(interval);
-  }, [paused, addEvent]);
-
-  return (
-    <div style={{ marginBottom: 48 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <h2 style={{ fontSize: 11, fontWeight: 600, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Protocol Activity</h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div className="breathe" style={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: '#F59E0B', boxShadow: '0 0 5px rgba(245,158,11,0.6)' }} />
-            <span style={{ fontSize: 10, color: '#F59E0B', fontWeight: 600 }}>SIMULATED</span>
-          </div>
-        </div>
-        <button
-          onClick={() => setPaused(p => !p)}
-          style={{
-            fontSize: 10, color: '#52525B', background: 'none', border: 'none',
-            cursor: 'pointer', padding: '2px 6px', borderRadius: 4,
-            backgroundColor: 'rgba(255,255,255,0.03)',
-          }}
-        >
-          {paused ? 'Resume' : 'Pause'}
-        </button>
-      </div>
-      <div className="vf-card" style={{ borderRadius: 14, overflow: 'hidden', padding: 0 }}>
-        {events.length === 0 ? (
-          <div style={{ padding: '24px', textAlign: 'center', fontSize: 12, color: '#52525B' }}>Loading activity…</div>
-        ) : (
-          events.map((event, i) => (
-            <div
-              key={event.id}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '10px 16px',
-                borderBottom: i < events.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none',
-                animation: event.id.startsWith('seed') ? 'none' : 'fadeIn 0.4s ease',
-              }}
-            >
-              <div style={{
-                width: 24, height: 24, borderRadius: 7, flexShrink: 0,
-                backgroundColor: `${EVENT_COLORS[event.type]}15`,
-                border: `1px solid ${EVENT_COLORS[event.type]}25`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: EVENT_COLORS[event.type],
-              }}>
-                {EVENT_ICONS[event.type]}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12, color: '#D4D4D8', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {event.label}
-                </div>
-                {event.hash && (
-                  <div style={{ fontSize: 10, color: '#3F3F46', fontFamily: "'JetBrains Mono', monospace", marginTop: 1 }}>
-                    {event.hash}…
-                  </div>
-                )}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 }}>
-                <span style={{
-                  fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 3,
-                  backgroundColor: `${event.chainColor}12`,
-                  color: event.chainColor,
-                }}>{event.chain}</span>
-                <span style={{ fontSize: 10, color: '#3F3F46' }}>{event.time}</span>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
+/* ── Protocol Activity Feed REMOVED ──
+   The old ProtocolActivityFeed generated fake simulated events with random hashes.
+   This was UNTRUTHFUL — removed entirely. Real on-chain activity indexing
+   will be added when a proper indexer/subgraph is available. */
 
 export default function Home() {
   const [chains, setChains] = useState<ChainStatus[]>([
@@ -642,8 +489,8 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── Trust & Accountability Metrics ── */}
-      <TrustMetrics />
+      {/* ── Protocol Facts (real data only) ── */}
+      <ProtocolFacts />
 
       {/* ── Soul Preview ── */}
       <SoulPreview onNavigate={navigateToSection} />
@@ -744,8 +591,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── Protocol Activity Feed ── */}
-      <ProtocolActivityFeed />
+      {/* Protocol Activity Feed removed — was generating fake simulated events */}
 
       {/* ── Contract Registry Links ── */}
       <div style={{ marginBottom: 48 }}>

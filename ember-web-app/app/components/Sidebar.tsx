@@ -5,7 +5,7 @@ import { getUnreadCount } from "../lib/notifications";
 import { useWalletAuth } from "../lib/WalletAuthContext";
 import { isWalletCreated } from "../lib/wallet";
 
-type Section = "home" | "chat" | "wallet" | "verify" | "bridge" | "sync" | "trust" | "analytics" | "vns" | "agent-hub" | "marketplace" | "zk-proofs" | "trust-badges" | "earnings" | "agent-api" | "settings";
+type Section = "home" | "chat" | "wallet" | "verify" | "bridge" | "sync" | "trust" | "analytics" | "vns" | "agent-hub" | "marketplace" | "zk-proofs" | "trust-badges" | "earnings" | "agent-api" | "companion-agent" | "settings";
 
 const Icons: Record<string, (props: { size?: number; color?: string }) => React.ReactElement> = {
   home: ({ size = 18, color = "currentColor" }) => (
@@ -58,6 +58,12 @@ const Icons: Record<string, (props: { size?: number; color?: string }) => React.
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   ),
+  companionAgent: ({ size = 18, color = "currentColor" }) => (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill={color} opacity="0.9" />
+      <path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill={color} opacity="0.6" />
+    </svg>
+  ),
   agentHub: ({ size = 18, color = "currentColor" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
       <rect x="4" y="4" width="16" height="16" rx="2" /><path d="M9 9h6v6H9z" /><path d="M9 1v3" /><path d="M15 1v3" /><path d="M9 20v3" /><path d="M15 20v3" /><path d="M20 9h3" /><path d="M20 14h3" /><path d="M1 9h3" /><path d="M1 14h3" />
@@ -92,7 +98,8 @@ const Icons: Record<string, (props: { size?: number; color?: string }) => React.
 
 const NAV_ITEMS: { id: Section; label: string; iconKey: string; group?: string }[] = [
   { id: "home", label: "Home", iconKey: "home" },
-  { id: "chat", label: "Companion", iconKey: "chat" },
+  { id: "chat", label: "Chat", iconKey: "chat" },
+  { id: "companion-agent", label: "Companion Agent", iconKey: "companionAgent" },
   { id: "wallet", label: "Embris Wallet", iconKey: "wallet" },
   { id: "vns", label: "VNS Identity", iconKey: "vns", group: "Identity" },
   { id: "agent-hub", label: "Embris Hub", iconKey: "agentHub", group: "Agents" },
