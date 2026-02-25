@@ -3259,3 +3259,541 @@ export function setTopicFocus(topic: string, boost: boolean): void {
     reduceTopicFocus(topic);
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════
+   SECTION 10: INTENT CLASSIFICATION ENGINE (v2.0 NEW)
+   ═══════════════════════════════════════════════════════
+   Categorizes user queries into intents for smarter routing.
+   Replaces the old "just search keywords" approach with a
+   multi-signal classifier that considers context, history,
+   and linguistic patterns. */
+
+export type IntentType =
+  | 'action'       // User wants to DO something (check balance, send tokens, etc.)
+  | 'knowledge'    // User wants to LEARN something about Vaultfire
+  | 'chat'         // Casual conversation, small talk
+  | 'emotional'    // User expressing emotions, needs empathy
+  | 'meta'         // Questions about the companion itself
+  | 'memory'       // Memory operations (remember, recall, forget)
+  | 'creative'     // Jokes, stories, brainstorming
+  | 'followup';    // Follow-up to previous conversation
+
+export interface IntentClassification {
+  primary: IntentType;
+  secondary: IntentType | null;
+  confidence: number;  // 0-1
+  signals: string[];   // What triggered this classification
+}
+
+const ACTION_PATTERNS = [
+  /^(?:check|show|get|fetch|pull|look up|lookup|find|verify|resolve)\b/i,
+  /(?:check|show|get|what(?:'s| is)) (?:my |the |our )?(?:balance|wallet|bond|status|score|tier)/i,
+  /(?:send|transfer|bridge|swap|stake|register|deploy|launch|create|activate)\b/i,
+  /how (?:do i|can i|to) (?:check|send|create|register|bridge|stake)/i,
+];
+
+const KNOWLEDGE_PATTERNS = [
+  /^(?:what is|what are|what does|how does|explain|tell me about|describe|define)\b/i,
+  /^(?:why|when|where|who) (?:is|are|does|did|was|were)\b/i,
+  /(?:contract|protocol|erc-?8004|vaultfire|embris|vns|bridge|teleporter|zk|x402|xmtp)\b/i,
+  /(?:how (?:does|do) .+ work)/i,
+];
+
+const EMOTIONAL_PATTERNS = [
+  /(?:sad|depressed|down|upset|hurt|cry|crying|lonely|alone|anxious|stressed|overwhelmed|exhausted|burnt out|scared|worried|afraid)\b/i,
+  /(?:happy|excited|amazing|awesome|love|wonderful|fantastic|pumped|grateful|blessed|thrilled)\b/i,
+  /(?:angry|mad|furious|pissed|hate|annoyed|frustrated|rage)\b/i,
+  /(?:i feel|i'm feeling|feeling)\b/i,
+];
+
+const META_PATTERNS = [
+  /(?:who are you|what are you|your (?:name|status|brain|soul|wallet|bond)|about yourself|tell me about you)\b/i,
+  /(?:are you (?:alive|real|conscious|sentient|thinking)|do you (?:feel|think|dream|have feelings))\b/i,
+  /(?:how smart|your knowledge|your memory|brain stats|what do you know)\b/i,
+];
+
+const MEMORY_PATTERNS = [
+  /^(?:remember|save|store|note|keep in mind|don't forget|dont forget)\b/i,
+  /(?:what do you remember|recall|my memories|what have i told you|do you remember)\b/i,
+  /(?:forget|delete|remove|erase) (?:that|this|my|the)\b/i,
+];
+
+const CREATIVE_PATTERNS = [
+  /(?:joke|tell me a joke|funny|make me laugh|humor|roast|hype|motivate|inspire|brainstorm|idea|story)\b/i,
+  /(?:catchphrase|quote|wisdom|drop some|hit me with)\b/i,
+  /(?:debate|argue|challenge|unpopular opinion|hot take)\b/i,
+];
+
+const FOLLOWUP_PATTERNS = [
+  /^(?:what about|how about|and what about|tell me more|more about|elaborate|explain more|go deeper|can you explain)/i,
+  /^(?:what do you mean|what does that mean|why is that|how does that work|how so)/i,
+  /^(?:that|this|it|those|these)\b/i,
+  /^(?:ok but|yeah but|and|also|plus|what else|anything else)/i,
+];
+
+export function classifyIntent(query: string): IntentClassification {
+  const lower = query.toLowerCase().trim();
+  const signals: string[] = [];
+  const scores: Record<IntentType, number> = {
+    action: 0, knowledge: 0, chat: 0, emotional: 0,
+    meta: 0, memory: 0, creative: 0, followup: 0,
+  };
+
+  for (const p of ACTION_PATTERNS) {
+    if (p.test(lower)) { scores.action += 3; signals.push('action_pattern'); }
+  }
+  for (const p of KNOWLEDGE_PATTERNS) {
+    if (p.test(lower)) { scores.knowledge += 3; signals.push('knowledge_pattern'); }
+  }
+  for (const p of EMOTIONAL_PATTERNS) {
+    if (p.test(lower)) { scores.emotional += 4; signals.push('emotional_pattern'); }
+  }
+  for (const p of META_PATTERNS) {
+    if (p.test(lower)) { scores.meta += 3; signals.push('meta_pattern'); }
+  }
+  for (const p of MEMORY_PATTERNS) {
+    if (p.test(lower)) { scores.memory += 5; signals.push('memory_pattern'); }
+  }
+  for (const p of CREATIVE_PATTERNS) {
+    if (p.test(lower)) { scores.creative += 3; signals.push('creative_pattern'); }
+  }
+  for (const p of FOLLOWUP_PATTERNS) {
+    if (p.test(lower)) { scores.followup += 4; signals.push('followup_pattern'); }
+  }
+
+  // Length-based heuristics
+  const wordCount = lower.split(/\s+/).length;
+  if (wordCount <= 2) { scores.chat += 2; signals.push('short_message'); }
+  if (wordCount >= 20) { scores.knowledge += 1; signals.push('long_message'); }
+  if (lower.includes('?')) { scores.knowledge += 1; signals.push('question_mark'); }
+  if ((lower.match(/!/g) || []).length >= 2) { scores.emotional += 1; signals.push('exclamation_marks'); }
+
+  // Context-based: if last exchange was recent, boost followup
+  const lastCtx = getLastContext();
+  if (lastCtx && (Date.now() - lastCtx.timestamp) < 5 * 60 * 1000) {
+    if (wordCount <= 5 && scores.followup > 0) {
+      scores.followup += 2;
+      signals.push('recent_context_followup');
+    }
+  }
+
+  // Default to chat if nothing scores
+  if (Object.values(scores).every(s => s === 0)) {
+    scores.chat = 1;
+    signals.push('default_chat');
+  }
+
+  const sorted = Object.entries(scores)
+    .sort(([, a], [, b]) => b - a)
+    .filter(([, s]) => s > 0);
+
+  const primary = (sorted[0]?.[0] || 'chat') as IntentType;
+  const secondary = sorted.length > 1 ? sorted[1][0] as IntentType : null;
+  const maxScore = sorted[0]?.[1] || 1;
+  const totalScore = sorted.reduce((sum, [, s]) => sum + s, 0);
+  const confidence = Math.min(1, maxScore / Math.max(totalScore * 0.6, 1));
+
+  return { primary, secondary, confidence, signals };
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   SECTION 11: MULTI-TURN REASONING CHAINS (v2.0 NEW)
+   ═══════════════════════════════════════════════════════
+   Tracks reasoning across conversation turns so the brain
+   can build on previous conclusions, not just topics. */
+
+export interface ReasoningStep {
+  turn: number;
+  query: string;
+  intent: IntentType;
+  conclusion: string;
+  confidence: number;
+  timestamp: number;
+  dataUsed: string[];
+}
+
+export interface ReasoningChain {
+  id: string;
+  topic: string;
+  steps: ReasoningStep[];
+  startedAt: number;
+  lastUpdated: number;
+}
+
+const REASONING_CHAIN_KEY = 'embris_reasoning_chain_v1';
+let _activeChain: ReasoningChain | null = null;
+
+function loadReasoningChain(): ReasoningChain | null {
+  try {
+    const raw = storageGet(REASONING_CHAIN_KEY);
+    if (raw) {
+      const chain = JSON.parse(raw) as ReasoningChain;
+      // Expire chains older than 30 minutes
+      if (Date.now() - chain.lastUpdated > 30 * 60 * 1000) return null;
+      return chain;
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
+function saveReasoningChain(chain: ReasoningChain): void {
+  try { storageSet(REASONING_CHAIN_KEY, JSON.stringify(chain)); } catch { /* ignore */ }
+}
+
+export function startReasoningChain(
+  topic: string,
+  query: string,
+  intent: IntentType,
+  conclusion: string,
+  confidence: number,
+  dataUsed: string[] = []
+): ReasoningChain {
+  const chain: ReasoningChain = {
+    id: `rc_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    topic,
+    steps: [{ turn: 1, query, intent, conclusion, confidence, timestamp: Date.now(), dataUsed }],
+    startedAt: Date.now(),
+    lastUpdated: Date.now(),
+  };
+  _activeChain = chain;
+  saveReasoningChain(chain);
+  return chain;
+}
+
+export function addReasoningStep(
+  query: string,
+  intent: IntentType,
+  conclusion: string,
+  confidence: number,
+  dataUsed: string[] = []
+): void {
+  if (!_activeChain) _activeChain = loadReasoningChain();
+  if (!_activeChain) return;
+
+  _activeChain.steps.push({
+    turn: _activeChain.steps.length + 1,
+    query, intent, conclusion, confidence,
+    timestamp: Date.now(), dataUsed,
+  });
+  _activeChain.lastUpdated = Date.now();
+
+  if (_activeChain.steps.length > 20) {
+    _activeChain.steps = _activeChain.steps.slice(-15);
+  }
+  saveReasoningChain(_activeChain);
+}
+
+export function getActiveReasoningChain(): ReasoningChain | null {
+  if (!_activeChain) _activeChain = loadReasoningChain();
+  return _activeChain;
+}
+
+export function getReasoningSummary(): string {
+  const chain = getActiveReasoningChain();
+  if (!chain || chain.steps.length === 0) return '';
+  return chain.steps.slice(-3).map(s =>
+    `[Turn ${s.turn}] ${s.intent}: "${s.query.slice(0, 50)}" → ${s.conclusion.slice(0, 80)}`
+  ).join('\n');
+}
+
+export function clearReasoningChain(): void {
+  _activeChain = null;
+  try { storageSet(REASONING_CHAIN_KEY, ''); } catch { /* ignore */ }
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   SECTION 12: CONFIDENCE SCORING & SCORED ANSWERS (v2.0 NEW)
+   ═══════════════════════════════════════════════════════
+   Every answer now comes with a confidence score so the
+   UI can display confidence indicators and the system
+   can decide when to fall back to the API. */
+
+export interface ScoredAnswer {
+  answer: string;
+  confidence: number;     // 0-1
+  source: 'knowledge' | 'memory' | 'insight' | 'reasoning' | 'personality' | 'api';
+  intent: IntentClassification;
+  suggestions?: ProactiveSuggestion[];
+  dataRefs?: string[];    // On-chain data referenced in the answer
+}
+
+function calculateAnswerConfidence(
+  matchScore: number,
+  intent: IntentClassification,
+  hasMemoryContext: boolean,
+  hasInsightContext: boolean,
+): number {
+  let confidence = Math.min(0.5, matchScore / 20);
+  confidence += intent.confidence * 0.2;
+  if (hasMemoryContext) confidence += 0.1;
+  if (hasInsightContext) confidence += 0.1;
+  // Cap at 0.95 — epistemic humility
+  return Math.min(0.95, Math.max(0.05, confidence));
+}
+
+/**
+ * Enhanced tryLocalAnswer that returns a ScoredAnswer with confidence,
+ * intent classification, proactive suggestions, and reasoning chain tracking.
+ * Use this instead of tryLocalAnswer when you need the full metadata.
+ */
+export function tryLocalAnswerWithScore(query: string): ScoredAnswer | null {
+  const intent = classifyIntent(query);
+  const localAnswer = tryLocalAnswer(query);
+
+  if (!localAnswer) {
+    return null;
+  }
+
+  // Determine match score from knowledge search for confidence calculation
+  const results = searchKnowledge(query);
+  const matchScore = results.length > 0 ? results[0].score : 0;
+
+  const insightResults = searchLearnedInsights(query, 3);
+  const recalled = recallExplicitMemory(query);
+
+  const confidence = calculateAnswerConfidence(
+    matchScore,
+    intent,
+    recalled.length > 0,
+    insightResults.length > 0,
+  );
+
+  // Track reasoning chain
+  const topic = results.length > 0 ? results[0].entry.topic : intent.primary;
+  const chain = getActiveReasoningChain();
+  if (chain && chain.topic === topic) {
+    addReasoningStep(query, intent.primary, localAnswer.slice(0, 100), confidence);
+  } else {
+    startReasoningChain(topic, query, intent.primary, localAnswer.slice(0, 100), confidence);
+  }
+
+  // Generate proactive suggestions
+  const suggestions = generateProactiveSuggestions();
+
+  return {
+    answer: localAnswer,
+    confidence,
+    source: matchScore >= 3 ? 'knowledge' : recalled.length > 0 ? 'memory' : insightResults.length > 0 ? 'insight' : 'personality',
+    intent,
+    suggestions,
+    dataRefs: [],
+  };
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   SECTION 13: PROACTIVE SUGGESTIONS ENGINE (v2.0 NEW)
+   ═══════════════════════════════════════════════════════
+   Analyzes conversation patterns and user state to suggest
+   next actions. Makes the companion feel alive and helpful. */
+
+export interface ProactiveSuggestion {
+  text: string;
+  action: string;
+  priority: number;  // 1-10
+  reason: string;
+}
+
+export function generateProactiveSuggestions(): ProactiveSuggestion[] {
+  const suggestions: ProactiveSuggestion[] = [];
+  const prefs = getUserPreferences();
+  const topics = getTopicInterests();
+  const insights = getBrainInsights();
+
+  const companionCreated = isCompanionWalletCreated();
+  const bond = getCompanionBondStatus();
+  const registered = isRegistered();
+
+  if (!registered) {
+    suggestions.push({
+      text: 'Register your wallet to unlock full companion features!',
+      action: 'navigate_wallet',
+      priority: 9,
+      reason: 'User has not registered on-chain yet',
+    });
+  }
+
+  if (!companionCreated) {
+    suggestions.push({
+      text: 'Activate your companion agent for an on-chain AI partner!',
+      action: 'activate_companion',
+      priority: 8,
+      reason: 'Companion wallet not created',
+    });
+  }
+
+  if (companionCreated && !bond.active) {
+    suggestions.push({
+      text: 'Form a partnership bond to strengthen our trust on-chain!',
+      action: 'create_bond',
+      priority: 7,
+      reason: 'Companion exists but no bond',
+    });
+  }
+
+  if (bond.active && bond.tier && ['bronze', 'silver'].includes(bond.tier)) {
+    suggestions.push({
+      text: `Upgrade from ${bond.tier} to the next tier for more capabilities!`,
+      action: 'upgrade_bond',
+      priority: 5,
+      reason: `Current bond tier: ${bond.tier}`,
+    });
+  }
+
+  const topTopics = topics.sort((a, b) => b.mentionCount - a.mentionCount).slice(0, 3);
+  for (const t of topTopics) {
+    if (t.topic === 'vns' && t.mentionCount >= 3) {
+      suggestions.push({
+        text: 'You seem interested in VNS — want to register a .vns name?',
+        action: 'navigate_vns',
+        priority: 4,
+        reason: `Topic "vns" mentioned ${t.mentionCount} times`,
+      });
+    }
+    if (t.topic === 'bridge' && t.mentionCount >= 3) {
+      suggestions.push({
+        text: 'Ready to try cross-chain trust portability? Check out the Bridge!',
+        action: 'navigate_bridge',
+        priority: 4,
+        reason: `Topic "bridge" mentioned ${t.mentionCount} times`,
+      });
+    }
+  }
+
+  if (insights.length > 20 && !prefs.find(p => p.key === 'explored_brain')) {
+    suggestions.push({
+      text: "I've learned a lot! Check my Brain Management to see what I know.",
+      action: 'navigate_brain',
+      priority: 3,
+      reason: `${insights.length} brain insights accumulated`,
+    });
+  }
+
+  return suggestions.sort((a, b) => b.priority - a.priority).slice(0, 3);
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   SECTION 14: ON-CHAIN DATA INTEGRATION (v2.0 NEW)
+   ═══════════════════════════════════════════════════════
+   Weaves live on-chain data into knowledge answers.
+   The brain can now reference real contract addresses,
+   chain stats, and protocol data in its responses. */
+
+/**
+ * Build a rich on-chain context string for the API prompt.
+ * This gives the LLM real data to work with instead of hallucinating.
+ */
+export function buildOnChainContext(): string {
+  const parts: string[] = [];
+
+  // Contract counts per chain
+  parts.push(`Vaultfire has ${ALL_CONTRACTS.length} total deployed contracts:`);
+  parts.push(`- Base: ${BASE_CONTRACTS.length} contracts`);
+  parts.push(`- Avalanche: ${AVALANCHE_CONTRACTS.length} contracts`);
+  parts.push(`- Ethereum: ${ETHEREUM_CONTRACTS.length} contracts`);
+
+  // Companion state
+  try {
+    const companionAddr = getCompanionAddress();
+    const bond = getCompanionBondStatus();
+    const vnsName = getCompanionVNSName();
+    const agentName = getCompanionAgentName();
+
+    if (companionAddr) {
+      parts.push(`Companion agent: ${agentName || 'Embris'} at ${companionAddr.slice(0, 8)}...${companionAddr.slice(-6)}`);
+    }
+    if (bond.active) {
+      parts.push(`Partnership bond: Active (${bond.tier || 'unknown'} tier)`);
+    }
+    if (vnsName) {
+      parts.push(`VNS name: ${vnsName}`);
+    }
+  } catch { /* companion data not available */ }
+
+  // User registration
+  const registered = isRegistered();
+  parts.push(`User registration: ${registered ? 'Registered on-chain' : 'Not yet registered'}`);
+
+  // Brain stats
+  const stats = getBrainStats();
+  parts.push(`Brain: ${stats.knowledgeEntries} knowledge entries, ${stats.learnedInsights} learned insights, ${stats.memoriesCount} memories`);
+
+  // Top topics
+  if (stats.topTopics.length > 0) {
+    parts.push(`User interests: ${stats.topTopics.map(t => t.topic).join(', ')}`);
+  }
+
+  // Known user facts
+  if (stats.knownFacts.length > 0) {
+    for (const fact of stats.knownFacts) {
+      parts.push(`Known fact: ${fact.key} = ${fact.value}`);
+    }
+  }
+
+  return parts.join('\n');
+}
+
+/**
+ * Build a system prompt enriched with on-chain context for the API fallback.
+ * This is the "real data" injection that makes LLM responses grounded in truth.
+ */
+export function buildEnrichedSystemPrompt(basePrompt: string): string {
+  const onChainCtx = buildOnChainContext();
+  const reasoningSummary = getReasoningSummary();
+  const recentCtx = getRecentContext().slice(-3);
+
+  let enriched = basePrompt;
+
+  enriched += `\n\n## LIVE ON-CHAIN DATA (use this, do not hallucinate):\n${onChainCtx}`;
+
+  if (reasoningSummary) {
+    enriched += `\n\n## REASONING CHAIN (recent conversation logic):\n${reasoningSummary}`;
+  }
+
+  if (recentCtx.length > 0) {
+    enriched += `\n\n## RECENT CONVERSATION CONTEXT:\n`;
+    for (const ctx of recentCtx) {
+      enriched += `User: ${ctx.userMessage.slice(0, 100)}\nAssistant: ${ctx.assistantResponse.slice(0, 150)}\n`;
+    }
+  }
+
+  return enriched;
+}
+
+/**
+ * Enhanced learnFromExchange that also tracks intent and updates reasoning chain.
+ * Call this INSTEAD of learnFromExchange when you have intent data available.
+ */
+export function learnFromExchangeWithIntent(
+  userMessage: string,
+  assistantResponse: string,
+  intent?: IntentClassification,
+  confidence?: number,
+): void {
+  // Call the original learning function
+  learnFromExchange(userMessage, assistantResponse);
+
+  // Additionally track intent patterns for self-improvement
+  if (intent) {
+    saveBrainInsight(
+      `Intent classified as "${intent.primary}" (confidence: ${Math.round((intent.confidence || 0) * 100)}%) for: "${userMessage.slice(0, 60)}"`,
+      'intent_tracking'
+    );
+  }
+
+  // Update reasoning chain with the completed exchange
+  if (confidence !== undefined) {
+    const results = searchKnowledge(userMessage);
+    const topic = results.length > 0 ? results[0].entry.topic : intent?.primary || 'general';
+    addReasoningStep(
+      userMessage,
+      intent?.primary || 'chat',
+      assistantResponse.slice(0, 100),
+      confidence,
+    );
+  }
+}

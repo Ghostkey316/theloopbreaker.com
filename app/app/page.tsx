@@ -1,0 +1,290 @@
+'use client';
+
+import { useState, useEffect, useRef, useCallback } from 'react';
+import Sidebar from './components/Sidebar';
+import Home from './sections/Home';
+import Chat from './sections/Chat';
+import Wallet from './sections/Wallet';
+import Verify from './sections/Verify';
+import Bridge from './sections/Bridge';
+import Settings from './sections/Settings';
+import Sync from './sections/Sync';
+import TrustScore from './sections/TrustScore';
+import Analytics from './sections/Analytics';
+import VNS from './sections/VNS';
+import AgentHub from './sections/AgentHub';
+import AgentMarketplace from './sections/AgentMarketplace';
+import ZKProofs from './sections/ZKProofs';
+import TrustBadges from './sections/TrustBadges';
+import AgentEarnings from './sections/AgentEarnings';
+import AgentAPI from './sections/AgentAPI';
+import CompanionAgent from './sections/CompanionAgent';
+import Account from './sections/Account';
+import SDK from './sections/SDK';
+import Swap from './sections/Swap';
+import DisclaimerModal from './components/DisclaimerModal';
+import FooterDisclaimer from './components/FooterDisclaimer';
+import OnboardingModal from './components/OnboardingModal';
+import ToastContainer from './components/Toast';
+import WalletGate from './components/WalletGate';
+import { ErrorBoundary } from './components/ErrorBoundary';
+
+type Section = 'home' | 'chat' | 'wallet' | 'verify' | 'bridge' | 'sync' | 'trust' | 'analytics' | 'vns' | 'agent-hub' | 'marketplace' | 'zk-proofs' | 'trust-badges' | 'earnings' | 'agent-api' | 'companion-agent' | 'account' | 'settings' | 'sdk' | 'swap';
+
+// Skeleton placeholder for section loading
+function SectionSkeleton() {
+  return (
+    <div style={{ padding: '48px 40px', maxWidth: 720, margin: '0 auto' }}>
+      {/* Title skeleton */}
+      <div className="skeleton skeleton-title" style={{ width: '40%', marginBottom: 8 }} />
+      <div className="skeleton skeleton-text-sm" style={{ width: '60%', marginBottom: 40 }} />
+
+      {/* Stats row */}
+      <div style={{ display: 'flex', gap: 16, marginBottom: 32 }}>
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="skeleton-card" style={{ flex: 1, height: 80, padding: 20 }}>
+            <div className="skeleton skeleton-text-sm" style={{ width: '50%', marginBottom: 12 }} />
+            <div className="skeleton skeleton-text-lg" style={{ width: '30%' }} />
+          </div>
+        ))}
+      </div>
+
+      {/* Content rows */}
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+          <div className="skeleton skeleton-circle" style={{ width: 8, height: 8, flexShrink: 0 }} />
+          <div className="skeleton skeleton-text" style={{ flex: 1 }} />
+          <div className="skeleton skeleton-text" style={{ width: '20%' }} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Chat skeleton
+function ChatSkeleton() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '24px' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 680, margin: '0 auto', width: '100%' }}>
+        {[1, 2, 3].map((i) => (
+          <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <div className="skeleton skeleton-circle" style={{ width: 26, height: 26, flexShrink: 0 }} />
+            <div style={{ flex: 1 }}>
+              <div className="skeleton skeleton-text" style={{ width: '80%', marginBottom: 8 }} />
+              <div className="skeleton skeleton-text" style={{ width: '60%', marginBottom: 8 }} />
+              <div className="skeleton skeleton-text" style={{ width: '40%' }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function Page() {
+  const [activeSection, setActiveSection] = useState<Section>('home');
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [displayedSection, setDisplayedSection] = useState<Section>('home');
+  const [showSkeleton, setShowSkeleton] = useState(false);
+  const transitionTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skeletonTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Touch/swipe state for mobile sidebar
+  const touchStartX = useRef<number | null>(null);
+  const [sidebarSwipeOpen, setSidebarSwipeOpen] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  const handleSectionChange = useCallback((section: string) => {
+    const newSection = section as Section;
+    if (newSection === activeSection) return;
+
+    // Clear any pending timeouts
+    if (transitionTimeout.current) clearTimeout(transitionTimeout.current);
+    if (skeletonTimeout.current) clearTimeout(skeletonTimeout.current);
+
+    // Start exit animation
+    setIsTransitioning(true);
+
+    // Show skeleton briefly for heavier sections
+    const heavySections = ['analytics', 'trust', 'verify', 'bridge', 'agent-hub', 'marketplace', 'zk-proofs', 'vns', 'trust-badges', 'earnings', 'agent-api', 'companion-agent', 'swap'];
+    if (heavySections.includes(newSection)) {
+      skeletonTimeout.current = setTimeout(() => {
+        setShowSkeleton(false);
+      }, 400);
+    }
+
+    transitionTimeout.current = setTimeout(() => {
+      setDisplayedSection(newSection);
+      setActiveSection(newSection);
+      setIsTransitioning(false);
+      setShowSkeleton(false);
+    }, 150);
+  }, [activeSection]);
+
+  // Swipe-to-open sidebar on mobile
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (!isMobile) return;
+    const touch = e.touches[0];
+    // Only trigger from left edge (first 20px)
+    if (touch.clientX < 20) {
+      touchStartX.current = touch.clientX;
+    }
+  }, [isMobile]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!isMobile || touchStartX.current === null) return;
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - touchStartX.current;
+    if (deltaX > 60) {
+      setSidebarSwipeOpen(true);
+    }
+    touchStartX.current = null;
+  }, [isMobile]);
+
+  const goToWallet = useCallback(() => handleSectionChange('wallet'), [handleSectionChange]);
+
+  // Expose navigation globally so sections can trigger cross-section navigation
+  useEffect(() => {
+    (window as unknown as { __setSection?: (s: string) => void }).__setSection = handleSectionChange;
+    return () => {
+      delete (window as unknown as { __setSection?: (s: string) => void }).__setSection;
+    };
+  }, [handleSectionChange]);
+
+  const renderSection = () => {
+    if (showSkeleton) {
+      return displayedSection === 'chat' ? <ChatSkeleton /> : <SectionSkeleton />;
+    }
+
+    const sectionContent = (() => {
+      switch (displayedSection) {
+        case 'home': return <Home />;
+        case 'chat': return (
+          <WalletGate featureName="Embris" featureDesc="Chat with your AI companion. Your wallet is your identity — no account needed." onGoToWallet={goToWallet}>
+            <Chat />
+          </WalletGate>
+        );
+        case 'wallet': return <Wallet />;
+        case 'verify': return <Verify />;
+        case 'bridge': return (
+          <WalletGate featureName="Cross-Chain Bridge" featureDesc="Bridge trust data across chains. Requires a connected wallet to sign transactions." onGoToWallet={goToWallet}>
+            <Bridge />
+          </WalletGate>
+        );
+        case 'settings': return <Settings />;
+        case 'sync': return <Sync />;
+        case 'trust': return <TrustScore />;
+        case 'analytics': return <Analytics />;
+        case 'vns': return (
+          <WalletGate featureName="VNS Identity" featureDesc="Register your .vns name on-chain. Requires a connected wallet to sign the transaction." onGoToWallet={goToWallet}>
+            <VNS />
+          </WalletGate>
+        );
+        case 'agent-hub': return (
+          <WalletGate featureName="Embris Hub" featureDesc="Explore and manage agents. Connect your wallet to see your agent status." onGoToWallet={goToWallet}>
+            <AgentHub />
+          </WalletGate>
+        );
+        case 'marketplace': return <AgentMarketplace />;
+        case 'zk-proofs': return <ZKProofs />;
+        case 'trust-badges': return <TrustBadges />;
+        case 'earnings': return (
+          <WalletGate featureName="Agent Earnings" featureDesc="View and withdraw your on-chain earnings. Requires a connected wallet." onGoToWallet={goToWallet}>
+            <AgentEarnings />
+          </WalletGate>
+        );
+        case 'agent-api': return <AgentAPI />;
+        case 'companion-agent': return <CompanionAgent />;
+        case 'account': return <Account />;
+        case 'sdk': return <SDK />;
+        case 'swap': return (
+          <WalletGate featureName="DEX Swap" featureDesc="Swap tokens in-app using ParaSwap aggregation. Requires a connected wallet." onGoToWallet={goToWallet}>
+            <Swap />
+          </WalletGate>
+        );
+        default: return <Home />;
+      }
+    })();
+
+    return (
+      <ErrorBoundary key={displayedSection} sectionName={displayedSection}>
+        {sectionContent}
+      </ErrorBoundary>
+    );
+  };
+
+  const isChat = displayedSection === 'chat';
+
+  return (
+    <>
+      <DisclaimerModal />
+      <OnboardingModal />
+      <ToastContainer />
+
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          /* Use dvh (dynamic viewport height) for Safari — accounts for browser chrome */
+          height: '100dvh',
+          backgroundColor: '#09090B',
+          overflow: 'hidden',
+          /* Prevent horizontal overflow on mobile */
+          maxWidth: '100vw',
+          overscrollBehavior: 'none',
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+          <Sidebar
+            activeSection={activeSection}
+            onSectionChange={handleSectionChange}
+            mobileForceOpen={sidebarSwipeOpen}
+            onMobileClose={() => setSidebarSwipeOpen(false)}
+          />
+          <main
+            style={{
+              flex: 1,
+              overflowY: isChat ? 'hidden' : 'auto',
+              overflowX: 'hidden',
+              backgroundColor: '#09090B',
+              /* Mobile: account for the top nav bar height */
+              paddingTop: isMobile ? 52 : 0,
+              /* Mobile: account for iPhone home indicator / safe area */
+              paddingBottom: isMobile ? 'env(safe-area-inset-bottom)' : 0,
+              width: '100%',
+              minWidth: 0,
+              display: isChat ? 'flex' : 'block',
+              flexDirection: 'column',
+              /* Safari momentum scrolling */
+              WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'],
+            }}
+          >
+            {/* Page transition wrapper */}
+            <div
+              key={displayedSection}
+              className={isTransitioning ? 'page-exit' : 'page-enter'}
+              style={{
+                height: isChat ? '100%' : 'auto',
+                display: isChat ? 'flex' : 'block',
+                flexDirection: 'column',
+              }}
+            >
+              {renderSection()}
+            </div>
+          </main>
+        </div>
+
+        {!isChat && <FooterDisclaimer />}
+      </div>
+    </>
+  );
+}

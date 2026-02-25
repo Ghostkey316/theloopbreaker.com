@@ -58,10 +58,13 @@ import {
   deleteTopicInterest,
   setTopicFocus,
   resetBrain,
+  generateProactiveSuggestions,
+  getActiveReasoningChain,
   type BrainStats,
   type BrainInsight,
   type UserPreference,
   type TopicInterest,
+  type ProactiveSuggestion,
 } from '../lib/companion-brain';
 import {
   getConnectors,
@@ -212,6 +215,10 @@ export default function CompanionPanel({ isOpen, onClose, isMobile }: CompanionP
   const [soulData, setSoulData] = useState<CompanionSoul | null>(null);
   const [soulNotesInput, setSoulNotesInput] = useState('');
 
+  // v2.0: Proactive suggestions and reasoning chain
+  const [suggestions, setSuggestions] = useState<ProactiveSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
   // Load status
   const refreshStatus = useCallback(async () => {
     const s = getCompanionStatus();
@@ -242,6 +249,12 @@ export default function CompanionPanel({ isOpen, onClose, isMobile }: CompanionP
     const soul = getSoul();
     setSoulData(soul);
     setSoulNotesInput(soul.userNotes || '');
+
+    // v2.0: Refresh proactive suggestions
+    try {
+      const sugg = generateProactiveSuggestions();
+      setSuggestions(sugg);
+    } catch { /* ignore */ }
   }, []);
 
   useEffect(() => {
@@ -647,6 +660,49 @@ export default function CompanionPanel({ isOpen, onClose, isMobile }: CompanionP
               </div>
             )}
 
+            {/* v2.0: Proactive Suggestions Panel */}
+            {suggestions.length > 0 && (
+              <div style={{
+                padding: '12px', borderRadius: 12,
+                backgroundColor: 'rgba(34,197,94,0.04)',
+                border: '1px solid rgba(34,197,94,0.12)',
+              }}>
+                <div
+                  onClick={() => setShowSuggestions(!showSuggestions)}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', marginBottom: showSuggestions ? 8 : 0 }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#22C55E', boxShadow: '0 0 6px #22C55E60' }} />
+                    <span style={{ fontSize: 10, fontWeight: 600, color: '#22C55E', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Suggested Actions ({suggestions.length})
+                    </span>
+                  </div>
+                  <span style={{ fontSize: 10, color: '#52525B' }}>{showSuggestions ? '▼' : '▶'}</span>
+                </div>
+                {showSuggestions && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {suggestions.map((s, i) => (
+                      <div key={i} style={{
+                        padding: '8px 10px', backgroundColor: '#111113', borderRadius: 8,
+                        border: '1px solid rgba(34,197,94,0.08)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+                      }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 11, color: '#F4F4F5', fontWeight: 500 }}>{s.text}</div>
+                          <div style={{ fontSize: 9, color: '#52525B', marginTop: 2 }}>Priority: {s.priority}/10</div>
+                        </div>
+                        <div style={{
+                          width: 6, height: 6, borderRadius: '50%',
+                          backgroundColor: s.priority >= 8 ? '#EF4444' : s.priority >= 5 ? '#F97316' : '#22C55E',
+                          flexShrink: 0,
+                        }} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Brain Management Section */}
             <div style={{
               padding: '12px', borderRadius: 12,
@@ -668,6 +724,7 @@ export default function CompanionPanel({ isOpen, onClose, isMobile }: CompanionP
 
               {showBrainMgmt && brainStats && (
                 <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {/* v2.0: Enhanced 4-column stats grid */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                     <div style={{ padding: 6, backgroundColor: '#111113', borderRadius: 6 }}>
                       <div style={{ fontSize: 8, color: '#52525B' }}>MEMORIES</div>
@@ -677,7 +734,32 @@ export default function CompanionPanel({ isOpen, onClose, isMobile }: CompanionP
                       <div style={{ fontSize: 8, color: '#52525B' }}>TOPICS</div>
                       <div style={{ fontSize: 12, fontWeight: 600, color: '#F4F4F5' }}>{brainStats.trackedTopics}</div>
                     </div>
+                    <div style={{ padding: 6, backgroundColor: '#111113', borderRadius: 6 }}>
+                      <div style={{ fontSize: 8, color: '#52525B' }}>KNOWLEDGE</div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#22C55E' }}>{brainStats.knowledgeEntries}</div>
+                    </div>
+                    <div style={{ padding: 6, backgroundColor: '#111113', borderRadius: 6 }}>
+                      <div style={{ fontSize: 8, color: '#52525B' }}>LEARN RATE</div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#A78BFA' }}>{brainStats.learningRate.toFixed(1)}x</div>
+                    </div>
                   </div>
+                  {/* v2.0: Active reasoning chain display */}
+                  {(() => {
+                    try {
+                      const chain = getActiveReasoningChain();
+                      if (chain && chain.steps.length > 0) {
+                        return (
+                          <div style={{ padding: 8, backgroundColor: 'rgba(167,139,250,0.06)', borderRadius: 8, border: '1px solid rgba(167,139,250,0.12)' }}>
+                            <div style={{ fontSize: 8, color: '#A78BFA', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Active Reasoning Chain</div>
+                            <div style={{ fontSize: 9, color: '#71717A' }}>Topic: <span style={{ color: '#F4F4F5' }}>{chain.topic}</span></div>
+                            <div style={{ fontSize: 9, color: '#71717A' }}>Steps: <span style={{ color: '#F4F4F5' }}>{chain.steps.length}</span> turns</div>
+                            <div style={{ fontSize: 9, color: '#71717A' }}>Last confidence: <span style={{ color: chain.steps[chain.steps.length-1]?.confidence >= 0.7 ? '#22C55E' : '#F97316' }}>{Math.round((chain.steps[chain.steps.length-1]?.confidence || 0) * 100)}%</span></div>
+                          </div>
+                        );
+                      }
+                    } catch { /* ignore */ }
+                    return null;
+                  })()}
 
                   {brainInsights.length > 0 && (
                     <div>
@@ -1307,7 +1389,7 @@ export default function CompanionPanel({ isOpen, onClose, isMobile }: CompanionP
         backgroundColor: 'rgba(255,255,255,0.01)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontSize: 10, color: '#52525B' }}>VAULTFIRE / EMBRIS V1.0</div>
+          <div style={{ fontSize: 10, color: '#52525B' }}>VAULTFIRE / EMBRIS V2.0</div>
           {(() => {
             // Dynamic system health check
             const brainOk = typeof getBrainStats === 'function';

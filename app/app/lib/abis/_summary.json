@@ -1,0 +1,92 @@
+{
+  "total": 45,
+  "success": 41,
+  "failed": 4,
+  "unique_contracts": [
+    "MissionEnforcement",
+    "AntiSurveillance",
+    "PrivacyGuarantees",
+    "ERC8004IdentityRegistry",
+    "AIPartnershipBondsV2",
+    "FlourishingMetricsOracle",
+    "AIAccountabilityBondsV2",
+    "ERC8004ValidationRegistry",
+    "VaultfireERC8004Adapter",
+    "MultisigGovernance",
+    "ProductionBeliefAttestationVerifier",
+    "VaultfireTeleporterBridge",
+    "BeliefAttestationVerifier",
+    "ERC8004ReputationRegistry",
+    "DilithiumAttestor",
+    "TrustDataBridge"
+  ],
+  "contracts": {
+    "base_MissionEnforcement": 26,
+    "base_AntiSurveillance": 17,
+    "base_PrivacyGuarantees": 16,
+    "base_ERC8004IdentityRegistry": 54,
+    "base_AIPartnershipBondsV2": 102,
+    "base_FlourishingMetricsOracle": 44,
+    "base_AIAccountabilityBondsV2": 109,
+    "base_ERC8004ValidationRegistry": 47,
+    "base_VaultfireERC8004Adapter": 17,
+    "base_MultisigGovernance": 41,
+    "base_ProductionBeliefAttestationVerifier": 47,
+    "base_VaultfireTeleporterBridge": 63,
+    "avalanche_MissionEnforcement": 26,
+    "avalanche_AntiSurveillance": 17,
+    "avalanche_PrivacyGuarantees": 16,
+    "avalanche_ERC8004IdentityRegistry": 54,
+    "avalanche_BeliefAttestationVerifier": 10,
+    "avalanche_AIPartnershipBondsV2": 102,
+    "avalanche_FlourishingMetricsOracle": 44,
+    "avalanche_AIAccountabilityBondsV2": 109,
+    "avalanche_ERC8004ReputationRegistry": 37,
+    "avalanche_VaultfireERC8004Adapter": 17,
+    "avalanche_MultisigGovernance": 41,
+    "avalanche_ProductionBeliefAttestationVerifier": 47,
+    "avalanche_DilithiumAttestor": 11,
+    "avalanche_VaultfireTeleporterBridge": 63,
+    "ethereum_MissionEnforcement": 26,
+    "ethereum_AntiSurveillance": 17,
+    "ethereum_PrivacyGuarantees": 16,
+    "ethereum_ERC8004IdentityRegistry": 54,
+    "ethereum_BeliefAttestationVerifier": 10,
+    "ethereum_AIPartnershipBondsV2": 102,
+    "ethereum_FlourishingMetricsOracle": 44,
+    "ethereum_AIAccountabilityBondsV2": 109,
+    "ethereum_ERC8004ReputationRegistry": 37,
+    "ethereum_ERC8004ValidationRegistry": 47,
+    "ethereum_VaultfireERC8004Adapter": 17,
+    "ethereum_MultisigGovernance": 41,
+    "ethereum_ProductionBeliefAttestationVerifier": 47,
+    "ethereum_DilithiumAttestor": 11,
+    "ethereum_TrustDataBridge": 50
+  },
+  "failures": [
+    {
+      "chain": "base",
+      "name": "BeliefAttestationVerifier",
+      "address": "0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba",
+      "error": "HTTPSConnectionPool(host='api.etherscan.io', port=443): Max retries exceeded with url: /v2/api?chainid=8453&module=contract&action=getabi&address=0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba&apikey=1454RE5RZPP2MMMKC8G3M3REGRF8TF2WCI (Caused by SSLError(SSLZeroReturnError(6, 'TLS/SSL connection has been closed (EOF) (_ssl.c:992)')))"
+    },
+    {
+      "chain": "base",
+      "name": "ERC8004ReputationRegistry",
+      "address": "0xdB54B8925664816187646174bdBb6Ac658A55a5F",
+      "error": "HTTPSConnectionPool(host='api.etherscan.io', port=443): Max retries exceeded with url: /v2/api?chainid=8453&module=contract&action=getabi&address=0xdB54B8925664816187646174bdBb6Ac658A55a5F&apikey=1454RE5RZPP2MMMKC8G3M3REGRF8TF2WCI (Caused by SSLError(SSLZeroReturnError(6, 'TLS/SSL connection has been closed (EOF) (_ssl.c:992)')))"
+    },
+    {
+      "chain": "base",
+      "name": "DilithiumAttestor",
+      "address": "0xBBC0EFdEE23854e7cb7C4c0f56fF7670BB0530A4",
+      "error": "HTTPSConnectionPool(host='api.etherscan.io', port=443): Max retries exceeded with url: /v2/api?chainid=8453&module=contract&action=getabi&address=0xBBC0EFdEE23854e7cb7C4c0f56fF7670BB0530A4&apikey=1454RE5RZPP2MMMKC8G3M3REGRF8TF2WCI (Caused by SSLError(SSLZeroReturnError(6, 'TLS/SSL connection has been closed (EOF) (_ssl.c:992)')))"
+    },
+    {
+      "chain": "avalanche",
+      "name": "ERC8004ValidationRegistry",
+      "address": "0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b",
+      "error": "HTTPSConnectionPool(host='api.etherscan.io', port=443): Max retries exceeded with url: /v2/api?chainid=43114&module=contract&action=getabi&address=0x0d41Eb399f52BD03fef7eCd5b165d51AA1fAd87b&apikey=1454RE5RZPP2MMMKC8G3M3REGRF8TF2WCI (Caused by SSLError(SSLZeroReturnError(6, 'TLS/SSL connection has been closed (EOF) (_ssl.c:992)')))"
+    }
+  ]
+}

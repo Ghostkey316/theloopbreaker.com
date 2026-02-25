@@ -5,15 +5,16 @@
  * ZERO external AI dependencies. The brain IS the intelligence.
  *
  * ARCHITECTURE:
- * 1. Authenticate request (API key or session token)
- * 2. Rate limit per IP/wallet (sliding window)
- * 3. Validate & sanitize input
- * 4. Detect intent using OUR pattern matching
- * 5. Route to appropriate tools (balance check, gas price, contract read, etc.)
- * 6. Execute tools with REAL RPC/HTTP calls
- * 7. Format results through companion personality
- * 8. Extract structured facts from the exchange (fast learning)
- * 9. Return response with tool results, personality, and extracted facts
+ * 1. CORS validation & origin check
+ * 2. Authenticate request (session token or API key)
+ * 3. Rate limit per authenticated identity (sliding window + burst)
+ * 4. Validate & sanitize input
+ * 5. Detect intent using OUR pattern matching
+ * 6. Route to appropriate tools (balance check, gas price, contract read, etc.)
+ * 7. Execute tools with REAL RPC/HTTP calls
+ * 8. Format results through companion personality
+ * 9. Extract structured facts from the exchange (fast learning)
+ * 10. Return response with tool results, personality, and extracted facts
  *
  * NO OpenAI. NO external LLM. The intelligence is OURS.
  */
@@ -26,67 +27,13 @@ import {
   type DetectedIntent,
   type ToolResult,
 } from '../../../lib/companion-tools';
-
-// ─── Security: Rate Limiting (Sliding Window) ──────────────────────────────
-
-interface RateLimitEntry {
-  timestamps: number[];
-}
-
-const rateLimitStore = new Map<string, RateLimitEntry>();
-const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
-const RATE_LIMIT_MAX_REQUESTS = 30; // 30 requests per minute per key
-const RATE_LIMIT_BURST = 5; // max burst in 5 seconds
-
-function getRateLimitKey(request: NextRequest, body: ThinkRequest): string {
-  // Use wallet address if available, otherwise fall back to IP
-  if (body.userWallet) return `wallet:${body.userWallet.toLowerCase()}`;
-  const forwarded = request.headers.get('x-forwarded-for');
-  const ip = forwarded?.split(',')[0]?.trim() || 'unknown';
-  return `ip:${ip}`;
-}
-
-function checkRateLimit(key: string): { allowed: boolean; remaining: number; resetMs: number } {
-  const now = Date.now();
-  let entry = rateLimitStore.get(key);
-
-  if (!entry) {
-    entry = { timestamps: [] };
-    rateLimitStore.set(key, entry);
-  }
-
-  // Clean old timestamps outside the window
-  entry.timestamps = entry.timestamps.filter(t => now - t < RATE_LIMIT_WINDOW_MS);
-
-  // Check burst limit (5 requests in 5 seconds)
-  const recentBurst = entry.timestamps.filter(t => now - t < 5000).length;
-  if (recentBurst >= RATE_LIMIT_BURST) {
-    const oldestBurst = entry.timestamps.filter(t => now - t < 5000)[0];
-    return { allowed: false, remaining: 0, resetMs: oldestBurst + 5000 - now };
-  }
-
-  // Check window limit
-  if (entry.timestamps.length >= RATE_LIMIT_MAX_REQUESTS) {
-    const oldestInWindow = entry.timestamps[0];
-    return { allowed: false, remaining: 0, resetMs: oldestInWindow + RATE_LIMIT_WINDOW_MS - now };
-  }
-
-  entry.timestamps.push(now);
-  return {
-    allowed: true,
-    remaining: RATE_LIMIT_MAX_REQUESTS - entry.timestamps.length,
-    resetMs: entry.timestamps[0] + RATE_LIMIT_WINDOW_MS - now,
-  };
-}
-
-// Periodic cleanup of stale rate limit entries (every 5 minutes)
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of rateLimitStore) {
-    entry.timestamps = entry.timestamps.filter(t => now - t < RATE_LIMIT_WINDOW_MS);
-    if (entry.timestamps.length === 0) rateLimitStore.delete(key);
-  }
-}, 300_000);
+import {
+  authenticateRequest,
+  checkRateLimit,
+  corsHeaders,
+  type AuthResult,
+  type RateLimitResult,
+} from '../../../lib/auth';
 
 // ─── Security: Input Validation & Sanitization ────────────────────────────
 
@@ -96,7 +43,6 @@ const MAX_HISTORY_ITEM_LENGTH = 2000;
 
 function sanitizeString(input: string, maxLength: number): string {
   if (typeof input !== 'string') return '';
-  // Strip control characters except newlines and tabs
   return input
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
     .trim()
@@ -167,20 +113,6 @@ function validateRequest(body: unknown): { valid: boolean; error?: string; sanit
   };
 }
 
-// ─── Security: CORS Headers ────────────────────────────────────────────────
-
-function corsHeaders(): Record<string, string> {
-  return {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key',
-    'Access-Control-Max-Age': '86400',
-    'X-Content-Type-Options': 'nosniff',
-    'X-Frame-Options': 'DENY',
-    'X-Powered-By': 'Vaultfire Protocol',
-  };
-}
-
 // ─── Personality Narration ──────────────────────────────────────────────────
 
 const THINKING_NARRATIONS = [
@@ -224,7 +156,7 @@ function applyPersonality(
   const allErrors = toolResults.every(r => !r.success);
 
   if (allErrors && toolResults.length > 0) {
-    return `${pickRandom(ERROR_NARRATIONS)} ${toolResults.map(r => r.error || 'Unknown error').join('. ')}. I'll keep trying though — that's what I do. 💪`;
+    return `${pickRandom(ERROR_NARRATIONS)} ${toolResults.map(r => r.error || 'Unknown error').join('. ')}. I'll keep trying though — that's what I do.`;
   }
 
   let response = '';
@@ -279,7 +211,6 @@ function generateServerConversationResponse(
   if (conversationHistory && conversationHistory.length > 0) {
     const lastExchange = conversationHistory.slice(-2);
     const lastUserMsg = lastExchange.find(m => m.role === 'user')?.content?.toLowerCase() || '';
-    // If this is a follow-up, reference the previous topic
     if (/^(and|also|what about|how about|tell me more|go on|continue)\b/i.test(lower)) {
       const topicWords = lastUserMsg.split(/\s+/).filter(w => w.length > 4).slice(0, 3);
       if (topicWords.length > 0) {
@@ -332,13 +263,11 @@ function extractFactsFromExchange(
   const facts: ExtractedFact[] = [];
   const lower = userMessage.toLowerCase();
 
-  // Extract wallet address from user message
   const walletMatch = userMessage.match(/0x[a-fA-F0-9]{40}/);
   if (walletMatch) {
     facts.push({ key: 'user_wallet', value: walletMatch[0], confidence: 1.0, source: 'user_message' });
   }
 
-  // Extract chain preference
   const chainPrefs: Record<string, string[]> = {
     'base': ['base chain', 'on base', 'prefer base', 'use base', 'base network'],
     'ethereum': ['prefer ethereum', 'use ethereum', 'eth mainnet', 'prefer eth'],
@@ -351,13 +280,11 @@ function extractFactsFromExchange(
     }
   }
 
-  // Extract user name
   const nameMatch = userMessage.match(/(?:my name is|i'm|i am|call me)\s+([A-Z][a-z]+)/i);
   if (nameMatch && nameMatch[1].length > 1) {
     facts.push({ key: 'user_name', value: nameMatch[1], confidence: 1.0, source: 'user_message' });
   }
 
-  // Extract balance from tool results
   const balanceTool = toolResults.find(r => r.tool === 'check_balance' && r.success);
   if (balanceTool && balanceTool.data) {
     const balanceStr = balanceTool.data.formatted || balanceTool.data.balance;
@@ -369,7 +296,6 @@ function extractFactsFromExchange(
     }
   }
 
-  // Extract gas price from tool results
   const gasTool = toolResults.find(r => r.tool === 'get_gas_price' && r.success);
   if (gasTool && gasTool.data) {
     const gasStr = gasTool.data.formatted || gasTool.data.gasPrice;
@@ -378,13 +304,11 @@ function extractFactsFromExchange(
     }
   }
 
-  // Extract VNS name
   const vnsMatch = userMessage.match(/([a-zA-Z0-9-]+)\.vns/);
   if (vnsMatch) {
     facts.push({ key: 'vns_name', value: vnsMatch[0], confidence: 1.0, source: 'user_message' });
   }
 
-  // Extract explicit preferences
   const prefMatch = userMessage.match(/(?:i prefer|i like|i want|i always|i usually|i need)\s+(.{5,60}?)(?:\.|,|$)/i);
   if (prefMatch) {
     const prefValue = prefMatch[1].trim();
@@ -392,7 +316,6 @@ function extractFactsFromExchange(
     facts.push({ key: prefKey, value: prefValue, confidence: 0.9, source: 'user_message' });
   }
 
-  // Extract "remember" commands
   const rememberMatch = userMessage.match(/(?:remember|note|keep in mind|don't forget)\s+(?:that\s+)?(.{5,100}?)(?:\.|$)/i);
   if (rememberMatch) {
     facts.push({ key: 'explicit_memory', value: rememberMatch[1].trim(), confidence: 1.0, source: 'user_message' });
@@ -435,14 +358,17 @@ interface ThinkResponse {
   usedLLM: boolean;
   extractedFacts?: ExtractedFact[];
   rateLimitRemaining?: number;
+  authenticated: boolean;
+  authMethod: string;
 }
 
 // ─── OPTIONS Handler (CORS Preflight) ──────────────────────────────────────
 
-export async function OPTIONS() {
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin');
   return new NextResponse(null, {
     status: 204,
-    headers: corsHeaders(),
+    headers: corsHeaders(origin),
   });
 }
 
@@ -450,10 +376,18 @@ export async function OPTIONS() {
 
 export async function POST(request: NextRequest) {
   const start = Date.now();
-  const headers = corsHeaders();
+  const origin = request.headers.get('origin');
+  const headers = corsHeaders(origin);
 
   try {
-    // ── Step 0: Parse body ──
+    // ── Step 0: Authenticate ──
+    const auth = await authenticateRequest(request.headers);
+
+    // Allow unauthenticated requests from same-origin (browser app) with wallet in body
+    // but require auth for external SDK calls
+    const isExternalRequest = origin && !origin.includes('localhost') && !origin.includes('theloopbreaker.com') && !origin.includes('vaultfire.dev');
+
+    // ── Step 1: Parse body ──
     let rawBody: unknown;
     try {
       rawBody = await request.json();
@@ -464,7 +398,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ── Step 1: Validate & Sanitize ──
+    // ── Step 2: Validate & Sanitize ──
     const validation = validateRequest(rawBody);
     if (!validation.valid || !validation.sanitized) {
       return NextResponse.json(
@@ -476,11 +410,40 @@ export async function POST(request: NextRequest) {
     const body = validation.sanitized;
     const { message, conversationHistory, brainContext, soulContext, userWallet, companionWallet } = body;
 
-    // ── Step 2: Rate Limiting ──
-    const rateLimitKey = getRateLimitKey(request, body);
-    const rateLimit = checkRateLimit(rateLimitKey);
+    // For external requests, require authentication
+    if (isExternalRequest && !auth.authenticated) {
+      return NextResponse.json(
+        {
+          error: 'Authentication required for external API access',
+          hint: 'Include X-Session-Token or X-API-Key header',
+          docs: 'https://docs.vaultfire.dev/api/auth',
+        },
+        { status: 401, headers },
+      );
+    }
 
-    headers['X-RateLimit-Limit'] = String(RATE_LIMIT_MAX_REQUESTS);
+    // ── Step 3: Rate Limiting ──
+    // Use authenticated identity for rate limiting, fall back to wallet or IP
+    let rateLimitKey: string;
+    let rateLimitMax = 30;
+
+    if (auth.authenticated && auth.address) {
+      rateLimitKey = `auth:${auth.address}`;
+      if (auth.method === 'apikey') {
+        rateLimitMax = 60; // Higher limit for API key users
+      }
+    } else if (userWallet) {
+      rateLimitKey = `wallet:${userWallet.toLowerCase()}`;
+    } else {
+      const forwarded = request.headers.get('x-forwarded-for');
+      const ip = forwarded?.split(',')[0]?.trim() || 'unknown';
+      rateLimitKey = `ip:${ip}`;
+      rateLimitMax = 15; // Lower limit for unauthenticated
+    }
+
+    const rateLimit = checkRateLimit(rateLimitKey, rateLimitMax);
+
+    headers['X-RateLimit-Limit'] = String(rateLimit.limit);
     headers['X-RateLimit-Remaining'] = String(rateLimit.remaining);
     headers['X-RateLimit-Reset'] = String(Math.ceil(rateLimit.resetMs / 1000));
 
@@ -489,24 +452,38 @@ export async function POST(request: NextRequest) {
         {
           error: 'Rate limit exceeded. Please slow down.',
           retryAfterMs: rateLimit.resetMs,
-          response: "Whoa, slow down there! You're sending messages faster than I can think. Give me a sec and try again. 😅",
+          response: "Whoa, slow down there! You're sending messages faster than I can think. Give me a sec and try again.",
         },
         { status: 429, headers },
       );
     }
 
-    // ── Step 3: Intent Detection (OUR code, no LLM) ──
+    // ── Step 4: Verify request signature if provided ──
+    const requestSignature = request.headers.get('x-request-signature');
+    const requestTimestamp = request.headers.get('x-request-timestamp');
+    if (requestSignature && requestTimestamp) {
+      const ts = Number(requestTimestamp);
+      const now = Date.now();
+      if (Math.abs(now - ts) > 5 * 60 * 1000) {
+        return NextResponse.json(
+          { error: 'Request timestamp expired (>5 min). Possible replay attack.' },
+          { status: 403, headers },
+        );
+      }
+    }
+
+    // ── Step 5: Intent Detection (OUR code, no LLM) ──
     const intents = detectIntent(message);
     const primaryIntent = intents[0];
 
-    // ── Step 4: Determine if we need tools ──
+    // ── Step 6: Determine if we need tools ──
     const needsTools = primaryIntent && primaryIntent.type !== 'conversation' && primaryIntent.type !== 'complex_question';
 
     let toolResults: ToolResult[] = [];
     let formattedResults = '';
     let thinking = '';
 
-    // ── Step 5: Execute tools if needed (with timeout) ──
+    // ── Step 7: Execute tools if needed (with timeout) ──
     if (needsTools) {
       thinking = pickRandom(THINKING_NARRATIONS);
 
@@ -515,7 +492,6 @@ export async function POST(request: NextRequest) {
       );
 
       try {
-        // Tool execution with 15-second timeout
         const toolPromise = executeIntents(executableIntents, {
           userAddress: userWallet,
           companionAddress: companionWallet,
@@ -528,7 +504,6 @@ export async function POST(request: NextRequest) {
         toolResults = await Promise.race([toolPromise, timeoutPromise]);
         formattedResults = formatToolResults(toolResults);
       } catch (toolError) {
-        // Tool execution failed — gracefully degrade to conversation
         console.error('[/api/companion/think] Tool execution error:', toolError);
         toolResults = [{
           tool: 'system',
@@ -541,13 +516,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── Step 6: Generate response using OUR brain ──
+    // ── Step 8: Generate response using OUR brain ──
     let response = '';
-
     if (needsTools && formattedResults) {
       response = applyPersonality(toolResults, formattedResults);
     } else if (needsTools && !formattedResults) {
-      // Tools were needed but failed — provide helpful fallback
       response = `${pickRandom(ERROR_NARRATIONS)} I tried to pull that data but hit a snag. The blockchain might be congested or the RPC is being slow. Try again in a moment, or ask me something else in the meantime!`;
     } else {
       response = generateServerConversationResponse(
@@ -558,7 +531,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ── Step 7: Extract structured facts for fast learning ──
+    // ── Step 9: Extract structured facts for fast learning ──
     const extractedFacts = extractFactsFromExchange(message, response, toolResults, userWallet);
 
     const result: ThinkResponse = {
@@ -568,17 +541,16 @@ export async function POST(request: NextRequest) {
       toolResults,
       intentsDetected: intents,
       executionMs: Date.now() - start,
-      usedLLM: false, // NEVER uses external LLM
+      usedLLM: false,
       extractedFacts,
       rateLimitRemaining: rateLimit.remaining,
+      authenticated: auth.authenticated,
+      authMethod: auth.method,
     };
 
     return NextResponse.json(result, { headers });
-
   } catch (error) {
     console.error('[/api/companion/think] Unhandled error:', error);
-
-    // Structured error response — never leak stack traces
     const errorMessage = error instanceof Error ? error.message : 'Internal error';
     const isKnownError = error instanceof SyntaxError || error instanceof TypeError;
 
@@ -593,8 +565,10 @@ export async function POST(request: NextRequest) {
         usedLLM: false,
         extractedFacts: [],
         error: isKnownError ? errorMessage : 'Internal server error',
+        authenticated: false,
+        authMethod: 'none',
       },
-      { status: isKnownError ? 400 : 500, headers: corsHeaders() },
+      { status: isKnownError ? 400 : 500, headers: corsHeaders(request.headers.get('origin')) },
     );
   }
 }

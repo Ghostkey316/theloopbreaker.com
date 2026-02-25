@@ -1,0 +1,917 @@
+@import "tailwindcss";
+
+/* ─── Tailwind v4 Theme Configuration ─────────────────────────────────────── */
+
+@theme {
+  /* Ember/Fire color palette */
+  --color-ember-bg: #0A0A0C;
+  --color-ember-surface: #1A1A1E;
+  --color-ember-surface-light: #2A2A2E;
+  --color-ember-text: #ECEDEE;
+  --color-ember-text-muted: #9BA1A6;
+  --color-ember-accent: #FF6B35;
+  --color-ember-accent-dark: #E55A24;
+  --color-ember-accent-light: #FF8C5A;
+  --color-base-accent: #00D9FF;
+  --color-avalanche-accent: #E84142;
+
+  /* Zinc palette (used by AgentHub Tailwind classes) */
+  --color-zinc-50: #fafafa;
+  --color-zinc-100: #f4f4f5;
+  --color-zinc-200: #e4e4e7;
+  --color-zinc-300: #d4d4d8;
+  --color-zinc-400: #a1a1aa;
+  --color-zinc-500: #71717a;
+  --color-zinc-600: #52525b;
+  --color-zinc-700: #3f3f46;
+  --color-zinc-800: #27272a;
+  --color-zinc-900: #18181b;
+  --color-zinc-950: #09090b;
+
+  /* Emerald */
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+
+  /* Blue */
+  --color-blue-400: #60a5fa;
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2563eb;
+
+  /* Purple */
+  --color-purple-400: #c084fc;
+  --color-purple-500: #a855f7;
+
+  /* Orange */
+  --color-orange-500: #f97316;
+
+  /* Font families */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+
+  /* Animation keyframes */
+  --animate-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-spin: spin 1s linear infinite;
+  --animate-fade-in: fade-in 0.5s ease forwards;
+  --animate-slide-in-from-bottom-2: slide-in-from-bottom-2 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-slide-in-from-right-4: slide-in-from-right-4 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ─── Keyframe Definitions ─────────────────────────────────────────────────── */
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-in-from-bottom-2 {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-from-right-4 {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ─── Premium Ember Animations ────────────────────────────────────────────── */
+
+@keyframes emberFloat {
+  0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+  10% { opacity: 0.8; }
+  90% { opacity: 0.3; }
+  100% { transform: translateY(-120px) translateX(20px) scale(0.3); opacity: 0; }
+}
+
+@keyframes emberGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(249,115,22,0.15), 0 0 60px rgba(249,115,22,0.05); }
+  50% { box-shadow: 0 0 30px rgba(249,115,22,0.25), 0 0 80px rgba(249,115,22,0.1); }
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.05); opacity: 1; }
+}
+
+@keyframes soulOrbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes soulPulse {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.02); filter: brightness(1.15); }
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes trustRing {
+  0% { stroke-dashoffset: 283; }
+  100% { stroke-dashoffset: var(--trust-offset, 70); }
+}
+
+@keyframes glowPulse {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(249,115,22,0.3)); }
+  50% { filter: drop-shadow(0 0 12px rgba(249,115,22,0.6)); }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes ripple {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+@keyframes borderGlow {
+  0%, 100% { border-color: rgba(249,115,22,0.15); }
+  50% { border-color: rgba(249,115,22,0.35); }
+}
+
+@keyframes subtleFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* ─── Ember Particle Classes ──────────────────────────────────────────────── */
+
+.ember-particle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: emberFloat linear forwards;
+  will-change: transform, opacity;
+}
+
+.ember-glow {
+  animation: emberGlow 3s ease-in-out infinite;
+}
+
+.breathe {
+  animation: breathe 4s ease-in-out infinite;
+}
+
+.soul-orbit {
+  animation: soulOrbit 20s linear infinite;
+}
+
+.soul-pulse {
+  animation: soulPulse 3s ease-in-out infinite;
+}
+
+.gradient-shift {
+  background-size: 200% 200%;
+  animation: gradientShift 6s ease infinite;
+}
+
+.trust-ring-animate {
+  animation: trustRing 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.glow-pulse {
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
+.border-glow {
+  animation: borderGlow 3s ease-in-out infinite;
+}
+
+.subtle-float {
+  animation: subtleFloat 3s ease-in-out infinite;
+}
+
+/* ─── Premium Card Styles ─────────────────────────────────────────────────── */
+
+.vf-card {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vf-card:hover {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(249,115,22,0.15);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(249,115,22,0.05);
+  transform: translateY(-1px);
+}
+
+.vf-card-glow {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.vf-card-glow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(249,115,22,0.03), transparent);
+  transition: left 0.6s ease;
+}
+
+.vf-card-glow:hover::before {
+  left: 100%;
+}
+
+/* ─── Mission Banner ──────────────────────────────────────────────────────── */
+
+.mission-text {
+  background: linear-gradient(135deg, #F97316, #FB923C, #FBBF24, #F97316);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradientShift 8s ease infinite;
+}
+
+/* ─── Trust Score Ring ────────────────────────────────────────────────────── */
+
+.trust-score-ring {
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+
+.trust-score-ring circle.track {
+  fill: none;
+  stroke: rgba(255,255,255,0.04);
+  stroke-width: 4;
+}
+
+.trust-score-ring circle.value {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 283;
+  transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── Base Layer ───────────────────────────────────────────────────────────── */
+/* CRITICAL: Use @layer base so these NEVER override Tailwind utility classes   */
+
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* Prevent horizontal overflow on mobile */
+    overflow-x: hidden;
+  }
+
+  body {
+    background-color: #0A0A0C;
+    color: #ECEDEE;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+    padding: 0;
+    /* Prevent horizontal overflow on mobile */
+    overflow-x: hidden;
+    max-width: 100vw;
+    /* Safari momentum scrolling */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  input, select, textarea {
+    font-family: inherit;
+    color: inherit;
+  }
+
+  /* Prevent Safari auto-zoom on focus — font-size must be >= 16px on mobile */
+  @media (max-width: 768px) {
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+  }
+
+  button {
+    -webkit-tap-highlight-color: transparent;
+    cursor: pointer;
+  }
+
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  ::selection {
+    background-color: rgba(255, 107, 53, 0.3);
+    color: #F4F4F5;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgba(249, 115, 22, 0.5);
+    outline-offset: 2px;
+  }
+
+  /* Prevent text size adjustment on orientation change in Safari */
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+}
+
+/* ─── Page Transitions ─────────────────────────────────────────────────────── */
+
+.page-enter {
+  animation: fadeInUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.page-exit {
+  animation: fade-in 0.15s ease reverse forwards;
+  pointer-events: none;
+}
+
+/* ─── animate-in utilities — used by AgentHub ─────────────────────────────── */
+
+.animate-in {
+  animation-fill-mode: both;
+  animation-duration: 0.5s;
+}
+
+.fade-in {
+  animation-name: fade-in;
+}
+
+.slide-in-from-bottom-2 {
+  animation-name: slide-in-from-bottom-2;
+}
+
+.slide-in-from-right-4 {
+  animation-name: slide-in-from-right-4;
+}
+
+.duration-300 {
+  animation-duration: 0.3s !important;
+}
+
+.duration-500 {
+  animation-duration: 0.5s !important;
+}
+
+/* ─── Skeleton Loading ─────────────────────────────────────────────────────── */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0.07) 50%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+.skeleton-title {
+  height: 28px;
+  border-radius: 6px;
+}
+
+.skeleton-text {
+  height: 14px;
+  border-radius: 4px;
+}
+
+.skeleton-text-sm {
+  height: 12px;
+  border-radius: 4px;
+}
+
+.skeleton-text-lg {
+  height: 20px;
+  border-radius: 4px;
+}
+
+.skeleton-circle {
+  border-radius: 50%;
+}
+
+.skeleton-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+}
+
+/* ─── Scrollbar Styling ────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.14);
+}
+
+/* ─── Responsive text wrapping ─────────────────────────────────────────────── */
+
+p, span, h1, h2, h3, h4, h5, h6 {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  /* Prevent text from causing horizontal overflow */
+  max-width: 100%;
+}
+
+/* ─── Smooth Transitions ───────────────────────────────────────────────────── */
+
+.transition-all {
+  transition: all 0.2s ease;
+}
+
+.transition-colors {
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+/* ─── Appearance None ──────────────────────────────────────────────────────── */
+
+.appearance-none {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* ─── Resize None ──────────────────────────────────────────────────────────── */
+
+.resize-none {
+  resize: none;
+}
+
+/* ─── Shadow utilities ─────────────────────────────────────────────────────── */
+
+.shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.2);
+}
+
+.shadow-xl {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+}
+
+/* ─── Backdrop blur ────────────────────────────────────────────────────────── */
+
+.backdrop-blur-sm {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.backdrop-blur-md {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ─── Mobile-specific safe area utilities ──────────────────────────────────── */
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* ─── Prevent iOS bounce/overscroll on fixed elements ──────────────────────── */
+
+.no-bounce {
+  overscroll-behavior: none;
+}
+
+/* ─── Safari-specific fixes ───────────────────────────────────────────────── */
+
+/* Flexbox gap fallback for older Safari (pre-14.1) */
+@supports not (gap: 1px) {
+  .flex-gap-fallback > * + * {
+    margin-left: 8px;
+  }
+  .flex-gap-fallback-col > * + * {
+    margin-top: 8px;
+  }
+}
+
+/* Ensure backdrop-filter always has -webkit prefix */
+[style*="backdrop-filter"] {
+  -webkit-backdrop-filter: inherit;
+}
+
+/* Safari animation performance */
+@media not all and (min-resolution: 0.001dpcm) {
+  @supports (-webkit-appearance: none) {
+    .page-enter,
+    .page-exit,
+    .fade-in,
+    .animate-in {
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+    }
+  }
+}
+
+/* Safari smooth scrolling fix */
+.scroll-smooth {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Companion panel slide-in animation */
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Voice mode animations */
+@keyframes embrisSpeakPulse {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.3); opacity: 0.1; }
+}
+
+@keyframes voiceWave {
+  0%, 100% { height: 4px; }
+  50% { height: 14px; }
+}
+
+.voice-wave-bar {
+  animation: voiceWave 0.8s ease-in-out infinite;
+}
+
+/* Typing indicator */
+@keyframes typingBounce {
+  0%, 100% { transform: translateY(0); opacity: 0.3; }
+  50% { transform: translateY(-4px); opacity: 0.8; }
+}
+
+.typing-dot {
+  animation: typingBounce 1.2s ease-in-out infinite;
+}
+
+.typing-indicator-enter {
+  animation: fadeInUp 0.3s ease forwards;
+}
+
+/* Voice mic active pulse */
+.voice-mic-active {
+  animation: embrisSpeakPulse 1.5s ease-in-out infinite;
+}
+
+/* Message enter animation */
+@keyframes messageSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.message-enter {
+  animation: messageSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ─── Premium Button Micro-interactions ───────────────────────────────────── */
+
+.vf-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vf-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(255,255,255,0.1), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.vf-btn:hover::after {
+  opacity: 1;
+}
+
+.vf-btn:active {
+  transform: scale(0.98);
+}
+
+/* ─── Soul Viewer Styles ──────────────────────────────────────────────────── */
+
+.soul-value-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.06);
+  overflow: hidden;
+  position: relative;
+}
+
+.soul-value-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.soul-value-bar-fill::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: -1px;
+  bottom: -1px;
+  width: 8px;
+  border-radius: 50%;
+  background: inherit;
+  filter: blur(3px);
+}
+
+/* ─── Ambient Background Gradient ─────────────────────────────────────────── */
+
+.ambient-bg {
+  position: relative;
+}
+
+.ambient-bg::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(ellipse at 30% 20%, rgba(249,115,22,0.04) 0%, transparent 50%),
+              radial-gradient(ellipse at 70% 80%, rgba(167,139,250,0.03) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─── Stagger Animation Delays ────────────────────────────────────────────── */
+
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.3s; }
+.stagger-7 { animation-delay: 0.35s; }
+.stagger-8 { animation-delay: 0.4s; }
+
+
+/* ─── Prose Styling for Chat Messages ────────────────────────────────────── */
+
+.prose-embris a {
+  color: #F97316;
+  text-decoration: underline;
+  text-decoration-color: rgba(249,115,22,0.3);
+  text-underline-offset: 2px;
+  transition: text-decoration-color 0.15s ease;
+}
+
+.prose-embris a:hover {
+  text-decoration-color: #F97316;
+}
+
+/* ─── Section Header Accent Line ─────────────────────────────────────────── */
+
+.section-accent {
+  position: relative;
+  padding-left: 16px;
+}
+
+.section-accent::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #F97316, rgba(249,115,22,0.2));
+}
+
+/* ─── Companion Alive Indicator ──────────────────────────────────────────── */
+
+.companion-alive {
+  position: relative;
+}
+
+.companion-alive::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22C55E;
+  border: 2px solid #09090B;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* ─── Premium Focus Ring ─────────────────────────────────────────────────── */
+
+.focus-ember:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(249,115,22,0.4), 0 0 0 4px rgba(249,115,22,0.1);
+}
+
+/* ─── Reduced Motion Preference ──────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .breathe,
+  .glow-pulse,
+  .soul-pulse,
+  .border-glow,
+  .ember-glow,
+  .soul-orbit,
+  .subtle-float,
+  .gradient-shift,
+  .ember-particle,
+  .voice-wave-bar,
+  .typing-dot,
+  .vf-btn::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ─── Sidebar Group Styles ───────────────────────────────────────────────── */
+
+.sidebar-group-items {
+  overflow: hidden;
+  transition: max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+}
+
+.sidebar-group-items.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+.sidebar-group-items.expanded {
+  max-height: 500px;
+  opacity: 1;
+}
+
+.sidebar-item-active {
+  position: relative;
+}
+
+.sidebar-item-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  border-radius: 1px;
+  background: #F97316;
+  box-shadow: 0 0 8px rgba(249,115,22,0.3);
+}
+
+/* ─── SDK Code Block Styles ─────────────────────────────────────────────── */
+
+.sdk-code-block {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 16px;
+  font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-x: auto;
+  color: #A1A1AA;
+  position: relative;
+}
+
+.sdk-code-block .keyword { color: #C084FC; }
+.sdk-code-block .string { color: #34D399; }
+.sdk-code-block .function { color: #60A5FA; }
+.sdk-code-block .comment { color: #52525B; font-style: italic; }
+.sdk-code-block .type { color: #FBBF24; }
+.sdk-code-block .number { color: #F97316; }
+
+/* ─── Premium Glass Effect ──────────────────────────────────────────────── */
+
+.glass-panel {
+  background: rgba(255,255,255,0.02);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+}
+
+.glass-panel-hover:hover {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(249,115,22,0.12);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+/* ─── Gradient Text Utilities ───────────────────────────────────────────── */
+
+.text-gradient-ember {
+  background: linear-gradient(135deg, #F97316, #FBBF24);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-purple {
+  background: linear-gradient(135deg, #A78BFA, #C084FC);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-multi {
+  background: linear-gradient(135deg, #F97316, #A78BFA, #22C55E);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradientShift 6s ease infinite;
+}
+
+/* ─── Loading Spinner ───────────────────────────────────────────────────── */
+
+.spinner-ember {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(249,115,22,0.2);
+  border-top-color: #F97316;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+/* ─── Tooltip ───────────────────────────────────────────────────────────── */
+
+.tooltip-ember {
+  position: relative;
+}
+
+.tooltip-ember::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  padding: 6px 10px;
+  background: #18181B;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  font-size: 11px;
+  color: #A1A1AA;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 100;
+}
+
+.tooltip-ember:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ─── Print Styles ───────────────────────────────────────────────────────── */
+
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+  .breathe, .glow-pulse, .ember-particle, .soul-orbit {
+    animation: none !important;
+  }
+}

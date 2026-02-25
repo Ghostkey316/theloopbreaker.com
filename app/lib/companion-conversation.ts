@@ -24,6 +24,10 @@ import {
   getRecentContext, getLastContext, pushConversationContext,
   setUserPreference, trackTopicInterest, saveBrainInsight,
   learnFromExchange, extractStructuredFacts, getBrainInsights,
+  // v2.0 new capabilities
+  classifyIntent, tryLocalAnswerWithScore, generateProactiveSuggestions,
+  buildEnrichedSystemPrompt, learnFromExchangeWithIntent,
+  type IntentClassification, type ScoredAnswer, type ProactiveSuggestion,
 } from './companion-brain';
 import { getMemories, extractMemories, saveMemories, deduplicateMemories, type Memory } from './memory';
 import { analyzeMood, type EmotionalState } from './emotional-intelligence';
@@ -1432,6 +1436,11 @@ export interface ConversationResult {
   knowledgeUsed: boolean;
   memoryReferenced: boolean;
   learningApplied: boolean;
+  // v2.0 additions
+  confidence?: number;
+  brainIntent?: IntentClassification;
+  suggestions?: ProactiveSuggestion[];
+  source?: 'knowledge' | 'memory' | 'insight' | 'reasoning' | 'personality' | 'api';
 }
 
 /**
@@ -1464,6 +1473,10 @@ export function converse(message: string): ConversationResult {
 
   // 4. Get personality settings
   const settings = getPersonalitySettings();
+
+  // 4.5. v2.0: Run brain intent classifier and scored answer
+  const brainIntent = classifyIntent(trimmed);
+  const scoredAnswer = tryLocalAnswerWithScore(trimmed);
 
   // 5. Generate response based on intent
   let response = '';
@@ -1617,8 +1630,8 @@ export function converse(message: string): ConversationResult {
     : intent.primary.replace(/_/g, ' ');
   pushConversationContext(trimmed, response, topic);
 
-  // 9. Learn from this exchange
-  learnFromExchange(trimmed, response);
+  // 9. Learn from this exchange (v2.0: with intent tracking)
+  learnFromExchangeWithIntent(trimmed, response, brainIntent, scoredAnswer?.confidence);
   const facts = extractStructuredFacts(trimmed, response);
   for (const [key, value] of Object.entries(facts)) {
     setUserPreference(key, value, 0.9);
@@ -1671,6 +1684,11 @@ export function converse(message: string): ConversationResult {
     knowledgeUsed,
     memoryReferenced,
     learningApplied: learningApplied || true,
+    // v2.0 metadata
+    confidence: scoredAnswer?.confidence,
+    brainIntent,
+    suggestions: scoredAnswer?.suggestions,
+    source: scoredAnswer?.source,
   };
 }
 
@@ -1836,4 +1854,69 @@ export function extractGoalsLocal(userMessage: string): {
   }
 
   return { newGoals, updates };
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   SECTION 8: v2.0 CONVERSATION ENGINE ENHANCEMENTS
+   ═══════════════════════════════════════════════════════
+   New exports for the enhanced conversation pipeline.
+   These integrate with the brain's new capabilities. */
+
+/**
+ * Get an enriched system prompt for the API fallback.
+ * Includes live on-chain data, reasoning chain, and conversation context.
+ */
+export function getEnrichedSystemPrompt(basePrompt: string): string {
+  return buildEnrichedSystemPrompt(basePrompt);
+}
+
+/**
+ * Get current proactive suggestions based on user state.
+ * Used by CompanionPanel to show contextual action buttons.
+ */
+export function getProactiveSuggestions(): ProactiveSuggestion[] {
+  return generateProactiveSuggestions();
+}
+
+/**
+ * Classify the intent of a message using the v2.0 brain classifier.
+ * Returns full IntentClassification with confidence and signals.
+ */
+export function classifyMessageIntent(message: string): IntentClassification {
+  return classifyIntent(message);
+}
+
+/**
+ * Enhanced converse that tries the scored brain answer first,
+ * then falls back to the conversation engine if confidence is too low.
+ * This is the PREFERRED entry point for v2.0.
+ */
+export function converseWithBrain(message: string): ConversationResult {
+  const trimmed = message.trim();
+  if (!trimmed) {
+    return converse(message);
+  }
+
+  // Try scored brain answer first
+  const scored = tryLocalAnswerWithScore(trimmed);
+
+  // If brain is highly confident (>= 0.6), use its answer directly
+  // but still run the conversation engine for metadata
+  if (scored && scored.confidence >= 0.6) {
+    const result = converse(message);
+    // Override response with the high-confidence brain answer
+    return {
+      ...result,
+      response: scored.answer,
+      confidence: scored.confidence,
+      source: scored.source,
+      brainIntent: scored.intent,
+      suggestions: scored.suggestions,
+      knowledgeUsed: true,
+    };
+  }
+
+  // Otherwise use the full conversation engine (which also runs the brain internally)
+  return converse(message);
 }

@@ -1,6 +1,6 @@
 {
   "total": 45,
-  "success": 41,
+  "success": 45,
   "failed": 4,
   "unique_contracts": [
     "MissionEnforcement",
@@ -61,7 +61,11 @@
     "ethereum_MultisigGovernance": 41,
     "ethereum_ProductionBeliefAttestationVerifier": 47,
     "ethereum_DilithiumAttestor": 11,
-    "ethereum_TrustDataBridge": 50
+    "ethereum_TrustDataBridge": 50,
+    "avalanche_ERC8004ValidationRegistry": 173,
+    "base_BeliefAttestationVerifier": 28,
+    "base_DilithiumAttestor": 27,
+    "base_ERC8004ReputationRegistry": 152
   },
   "failures": [
     {

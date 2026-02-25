@@ -17,6 +17,11 @@ import { ProductionBeliefAttestationVerifier_ABI } from './ProductionBeliefAttes
 import { DilithiumAttestor_ABI } from './DilithiumAttestor';
 import { VaultfireTeleporterBridge_ABI } from './VaultfireTeleporterBridge';
 import { TrustDataBridge_ABI } from './TrustDataBridge';
+// v2.0: Chain-specific ABI imports for the 4 previously missing ABIs (41→45)
+import { BeliefAttestationVerifier_base_ABI } from './base_BeliefAttestationVerifier';
+import { DilithiumAttestor_base_ABI } from './base_DilithiumAttestor';
+import { ERC8004ReputationRegistry_base_ABI } from './base_ERC8004ReputationRegistry';
+import { ERC8004ValidationRegistry_avalanche_ABI } from './avalanche_ERC8004ValidationRegistry';
 
 /** Lookup table: contract name → ABI array */
 export const ABI_MAP: Record<string, readonly any[]> = {
@@ -36,6 +41,11 @@ export const ABI_MAP: Record<string, readonly any[]> = {
   DilithiumAttestor: DilithiumAttestor_ABI,
   VaultfireTeleporterBridge: VaultfireTeleporterBridge_ABI,
   TrustDataBridge: TrustDataBridge_ABI,
+  // v2.0: Chain-specific overrides for contracts with different ABIs per chain
+  'BeliefAttestationVerifier_base': BeliefAttestationVerifier_base_ABI,
+  'DilithiumAttestor_base': DilithiumAttestor_base_ABI,
+  'ERC8004ReputationRegistry_base': ERC8004ReputationRegistry_base_ABI,
+  'ERC8004ValidationRegistry_avalanche': ERC8004ValidationRegistry_avalanche_ABI,
 };
 
 /** Get ABI for a contract by name. Returns empty array if not found. */
