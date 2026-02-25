@@ -609,6 +609,44 @@ export default function CompanionPanel({ isOpen, onClose, isMobile }: CompanionP
               )}
             </div>
 
+            {/* Alerts Section */}
+            {alerts.length > 0 && (
+              <div style={{
+                padding: '12px', borderRadius: 12,
+                backgroundColor: 'rgba(249,115,22,0.05)',
+                border: '1px solid rgba(249,115,22,0.12)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                  <BellIcon size={14} />
+                  <span style={{ fontSize: 10, fontWeight: 600, color: '#F97316', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Alerts ({alerts.filter(a => !a.read).length} unread)
+                  </span>
+                </div>
+                <div style={{ maxHeight: 120, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {alerts.slice(0, 5).map(alert => (
+                    <div key={alert.id} style={{
+                      padding: '6px 8px', backgroundColor: '#111113', borderRadius: 6,
+                      display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6,
+                      opacity: alert.read ? 0.5 : 1,
+                    }}>
+                      <div>
+                        <div style={{ fontSize: 10, fontWeight: 600, color: '#F4F4F5' }}>{alert.title}</div>
+                        <div style={{ fontSize: 9, color: '#A1A1AA', marginTop: 2 }}>{alert.message}</div>
+                      </div>
+                      {!alert.read && (
+                        <button
+                          onClick={() => { markAlertRead(alert.id); refreshStatus(); }}
+                          style={{ background: 'none', border: 'none', color: '#52525B', cursor: 'pointer', padding: 2, fontSize: 9, whiteSpace: 'nowrap' }}
+                        >
+                          dismiss
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Brain Management Section */}
             <div style={{
               padding: '12px', borderRadius: 12,
@@ -659,6 +697,54 @@ export default function CompanionPanel({ isOpen, onClose, isMobile }: CompanionP
                             >
                               <TrashIcon size={10} />
                             </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Brain Age */}
+                  <div style={{ padding: 6, backgroundColor: '#111113', borderRadius: 6 }}>
+                    <div style={{ fontSize: 8, color: '#52525B' }}>BRAIN AGE</div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: '#F97316' }}>{brainStats.brainAge}</div>
+                  </div>
+
+                  {/* Topic Interests */}
+                  {topicInterests.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: 9, color: '#52525B', marginBottom: 4 }}>TRACKED TOPICS</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                        {topicInterests.slice(0, 10).map(topic => (
+                          <div key={topic.topic} style={{
+                            display: 'flex', alignItems: 'center', gap: 4,
+                            padding: '2px 6px', borderRadius: 4,
+                            backgroundColor: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.12)',
+                          }}>
+                            <span style={{ fontSize: 9, color: '#F97316' }}>{topic.topic}</span>
+                            <span style={{ fontSize: 8, color: '#52525B' }}>({topic.mentionCount})</span>
+                            <button
+                              onClick={() => handleDeleteTopic(topic.topic)}
+                              style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: 0, lineHeight: 1 }}
+                            >
+                              <TrashIcon size={8} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* User Preferences */}
+                  {userPrefs.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: 9, color: '#52525B', marginBottom: 4 }}>LEARNED PREFERENCES</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        {userPrefs.slice(0, 5).map(pref => (
+                          <div key={pref.key} style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            padding: '3px 6px', backgroundColor: '#111113', borderRadius: 4,
+                          }}>
+                            <span style={{ fontSize: 9, color: '#A1A1AA' }}>{pref.key.replace(/_/g, ' ')}: {pref.value}</span>
                           </div>
                         ))}
                       </div>

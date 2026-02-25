@@ -137,3 +137,135 @@ export function getEnabledConnectors(): Connector[] {
 export function canPerformTask(type: ConnectorType): boolean {
   return getConnectors().some(c => c.type === type && c.enabled && c.status === 'connected');
 }
+
+/**
+ * Get connector config value
+ */
+export function getConnectorConfig(id: string, key: string): string | undefined {
+  const connectors = getConnectors();
+  const connector = connectors.find(c => c.id === id);
+  return connector?.config?.[key];
+}
+
+/**
+ * Set connector config value
+ */
+export function setConnectorConfig(id: string, key: string, value: string): void {
+  const connectors = getConnectors();
+  const index = connectors.findIndex(c => c.id === id);
+  if (index !== -1) {
+    if (!connectors[index].config) connectors[index].config = {};
+    connectors[index].config![key] = value;
+    saveConnectors(connectors);
+  }
+}
+
+/**
+ * Execute a connector task. Returns a result string.
+ * Currently provides simulated responses — real API integration
+ * will be added when backend endpoints are available.
+ * The connector must be enabled and connected to execute.
+ */
+export interface ConnectorTaskResult {
+  success: boolean;
+  message: string;
+  data?: Record<string, unknown>;
+}
+
+export async function executeConnectorTask(
+  connectorId: string,
+  task: string,
+  params?: Record<string, string>
+): Promise<ConnectorTaskResult> {
+  const connectors = getConnectors();
+  const connector = connectors.find(c => c.id === connectorId);
+
+  if (!connector) {
+    return { success: false, message: `Connector '${connectorId}' not found.` };
+  }
+
+  if (!connector.enabled || connector.status !== 'connected') {
+    return {
+      success: false,
+      message: `The ${connector.name} connector is not enabled. Enable it in the Companion Panel to use this feature.`,
+    };
+  }
+
+  // Update lastUsed timestamp
+  const idx = connectors.findIndex(c => c.id === connectorId);
+  if (idx !== -1) {
+    connectors[idx].lastUsed = Date.now();
+    saveConnectors(connectors);
+  }
+
+  // Simulated task execution per connector type
+  // These will be replaced with real API calls when backend is ready
+  switch (connector.type) {
+    case 'github':
+      return {
+        success: true,
+        message: `GitHub connector is active. Task: "${task}". Full GitHub API integration (repos, issues, PRs) is coming soon. The connector is ready and waiting for the backend endpoint.`,
+        data: { connector: 'github', task, timestamp: Date.now() },
+      };
+
+    case 'web':
+      return {
+        success: true,
+        message: `Web Browser connector is active. Task: "${task}". Web search and browsing integration is coming soon. The connector is ready and waiting for the backend endpoint.`,
+        data: { connector: 'web', task, timestamp: Date.now() },
+      };
+
+    case 'social':
+      return {
+        success: true,
+        message: `${connector.name} connector is active. Task: "${task}". Social media integration is coming soon. The connector is ready and waiting for the backend endpoint.`,
+        data: { connector: connector.id, task, timestamp: Date.now() },
+      };
+
+    case 'email':
+      return {
+        success: true,
+        message: `Email connector is active. Task: "${task}". Email integration is coming soon. The connector is ready and waiting for the backend endpoint.`,
+        data: { connector: 'email', task, timestamp: Date.now() },
+      };
+
+    case 'custom':
+      return {
+        success: true,
+        message: `Custom API connector is active. Task: "${task}". Configure your API endpoint in the connector settings. Full custom API integration is coming soon.`,
+        data: { connector: 'custom', task, params, timestamp: Date.now() },
+      };
+
+    default:
+      return { success: false, message: `Unknown connector type: ${connector.type}` };
+  }
+}
+
+/**
+ * Get a human-readable status summary for all connectors
+ */
+export function getConnectorsSummary(): string {
+  const connectors = getConnectors();
+  const enabled = connectors.filter(c => c.enabled);
+  const disabled = connectors.filter(c => !c.enabled);
+
+  let summary = `**Connectors Status:**\n`;
+  summary += `Active: ${enabled.length} | Inactive: ${disabled.length}\n\n`;
+
+  if (enabled.length > 0) {
+    summary += `**Active Connectors:**\n`;
+    for (const c of enabled) {
+      const lastUsed = c.lastUsed ? new Date(c.lastUsed).toLocaleDateString() : 'never';
+      summary += `• ${c.name} — ${c.status} (last used: ${lastUsed})\n`;
+    }
+  }
+
+  if (disabled.length > 0) {
+    summary += `\n**Available (not enabled):**\n`;
+    for (const c of disabled) {
+      summary += `• ${c.name} — ${c.description}\n`;
+    }
+  }
+
+  return summary;
+}
