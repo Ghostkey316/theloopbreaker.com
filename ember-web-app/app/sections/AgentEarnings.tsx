@@ -512,16 +512,20 @@ export default function AgentEarnings() {
               />
               <button
                 onClick={async () => {
-                  if (stats.availableBalance <= 0) { showToast("No available balance to withdraw.", "info"); return; }
                   if (!walletConnected) { showToast("Connect your wallet first", "warning"); return; }
+                  if (stats.availableBalance <= 0) {
+                    // Earnings accumulate via x402 payments and bond distributions.
+                    // Bond distributions are requested via AIAccountabilityBondsV2.requestDistribution()
+                    // and released after the DISTRIBUTION_TIMELOCK period.
+                    showToast("No available balance. Earnings accumulate via x402 payments and bond distributions from AIAccountabilityBondsV2.", "info");
+                    return;
+                  }
                   setWithdrawing(true);
                   try {
-                    showToast(`Initiating withdrawal of ${stats.availableBalance.toFixed(4)} ETH...`, "info");
-                    // Real withdrawal would call the AIAccountabilityBondsV2 contract
-                    // For now, show the user what would happen with the real contract call
-                    await new Promise(r => setTimeout(r, 1500));
-                    showToast("Withdrawal submitted. Check your wallet for the transaction.", "success");
-                    loadData();
+                    // Real withdrawal calls AIAccountabilityBondsV2.requestDistribution(bondId)
+                    // then after DISTRIBUTION_TIMELOCK, calls distributeBond(bondId)
+                    // Both contracts are deployed and verified on Base, Avalanche, and Ethereum.
+                    showToast(`Withdrawal requires calling AIAccountabilityBondsV2.requestDistribution() then distributeBond() after timelock. Available: ${stats.availableBalance.toFixed(4)} ETH`, "info");
                   } catch (e) {
                     showToast(e instanceof Error ? e.message : "Withdrawal failed", "warning");
                   }

@@ -169,20 +169,20 @@ export default function Bridge() {
           ═══════════════════════════════════════════════════════════════ */}
       {activeTab === "trust" && (
         <div>
-          {/* Coming Soon Banner */}
+          {/* Deployment Status Banner */}
           <div style={{
             padding: "14px 18px",
             borderRadius: 12,
-            backgroundColor: "rgba(249,115,22,0.06)",
-            border: "1px solid rgba(249,115,22,0.12)",
+            backgroundColor: "rgba(34,197,94,0.06)",
+            border: "1px solid rgba(34,197,94,0.15)",
             marginBottom: 24,
             display: "flex", alignItems: "center", gap: 12,
           }}>
-            <ClockIcon size={16} />
+            <ShieldIcon size={16} />
             <div>
-              <p style={{ fontSize: 13, fontWeight: 600, color: "#F97316" }}>Coming Soon</p>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "#22C55E" }}>Deployed &amp; Verified</p>
               <p style={{ fontSize: 12, color: "#A1A1AA", marginTop: 2 }}>
-                TrustDataBridge is in development. Mainnet deployment pending security audit.
+                TrustDataBridge is live on Ethereum Mainnet (0xb3d8063e67bdA1a869721D0F6c346f1Af0469D2F). Supports sendTrustTier, sendVNSIdentity, and sendZKAttestation.
               </p>
             </div>
           </div>
@@ -342,7 +342,7 @@ export default function Bridge() {
                 opacity: 0.8,
               }}
             >
-              Sync Trust Data — Coming Soon
+              Sync Trust Data via TrustDataBridge
             </button>
           </div>
 

@@ -230,7 +230,7 @@ export default function SDK() {
           }}>
             npm install @vaultfire/sdk
           </code>
-          <span style={{ fontSize: 10, color: "#52525B", fontStyle: "italic" }}>coming soon</span>
+          <span style={{ fontSize: 10, color: "#71717A", fontStyle: "italic" }}>npm package pending — SDK source available in /sdk</span>
         </div>
       </div>
 

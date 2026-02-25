@@ -811,21 +811,38 @@ function LaunchpadTab() {
 
   const handleVNS = async () => {
     setLoading(true);
-    // Real validation of name availability before finalizing
     const name = form.name.toLowerCase().trim();
     if (name.length < 3) {
       showToast('Name too short', 'warning');
       setLoading(false);
       return;
     }
-    
-    // Simulate final on-chain verification and record-keeping
-    setTimeout(() => {
-      setTxs(prev => ({ ...prev, vns: prev.identity || '0x...' }));
-      showToast(`${name}.vns is now yours!`, 'success');
+    if (!walletAddress || !privateKey) {
+      showToast('Wallet not unlocked. Please unlock your wallet first.', 'warning');
       setLoading(false);
-      nextStep();
-    }, 1500);
+      return;
+    }
+    try {
+      // Real on-chain VNS registration via ERC8004IdentityRegistry
+      const result = await registerVNSName(walletAddress, privateKey, name, 'agent', form.chain, {
+        description: form.description,
+        specializations: [form.specialization],
+        capabilities: form.capabilities,
+        bondAmountEth: form.bondAmount,
+      });
+      if (result.success) {
+        setTxs(prev => ({ ...prev, vns: result.txHash || prev.identity || '0x...' }));
+        showToast(`${name}.vns registered on-chain!`, 'success');
+        nextStep();
+      } else {
+        showToast(result.message, 'warning');
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'VNS registration failed';
+      showToast(msg, 'warning');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLaunch = () => {
