@@ -37,6 +37,19 @@ import {
   getCompanionBondStatus, getCompanionVNSName,
   getCompanionAgentName, getCompanionStatus,
 } from "../lib/companion-agent";
+import {
+  getSwapQuote as fetchDexSwapQuote,
+  executeSwap as executeDexSwap,
+  getSwapTokens,
+  type SwapQuote as DexSwapQuote,
+} from "../lib/dex-swap";
+import {
+  getBridgeQuote as fetchBridgeQuote,
+  executeBridge as executeBridgeTx,
+  getBridgeStatus,
+  type BridgeQuote as RealBridgeQuote,
+  type TrustDataType,
+} from "../lib/bridge-client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -800,6 +813,9 @@ export default function Wallet() {
   const [swapExecuting, setSwapExecuting] = useState(false);
   const [swapError, setSwapError] = useState("");
   const [swapSuccess, setSwapSuccess] = useState("");
+  const [realSwapQuote, setRealSwapQuote] = useState<DexSwapQuote | null>(null);
+  const [swapStatusMsg, setSwapStatusMsg] = useState("");
+  const [swapTxHash, setSwapTxHash] = useState("");
 
   // ── Bridge state ────────────────────────────────────────────────────────────
   const [bridgeFromChain, setBridgeFromChain] = useState<SupportedChain>("base");
@@ -811,6 +827,10 @@ export default function Wallet() {
   const [bridgeExecuting, setBridgeExecuting] = useState(false);
   const [bridgeError, setBridgeError] = useState("");
   const [bridgeSuccess, setBridgeSuccess] = useState("");
+  const [realBridgeQuote, setRealBridgeQuote] = useState<RealBridgeQuote | null>(null);
+  const [bridgeStatusMsg, setBridgeStatusMsg] = useState("");
+  const [bridgeTxHash, setBridgeTxHash] = useState("");
+  const [bridgeDataTypes, setBridgeDataTypes] = useState<TrustDataType[]>(['identity', 'reputation']);
 
   // ── Buy (Fiat On-Ramp) state ────────────────────────────────────────────────
   const [buyToken, setBuyToken] = useState("ETH");
@@ -1212,7 +1232,7 @@ export default function Wallet() {
     setModalView("none");
   };
 
-  // ── Swap Handlers ─────────────────────────────────────────────────────────────
+  // ── Swap Handlers (REAL DEX SWAP via 0x API + CoinGecko fallback) ────────────
 
   const handleGetSwapQuote = useCallback(async () => {
     if (!swapAmount || parseFloat(swapAmount) <= 0) return;
@@ -1220,125 +1240,120 @@ export default function Wallet() {
     setSwapLoading(true);
     setSwapError("");
     setSwapQuote(null);
+    setRealSwapQuote(null);
+    setSwapTxHash("");
     try {
-      const amt = parseFloat(swapAmount);
-      // Fetch real prices from CoinGecko for live quote
-      const geckoIds: Record<string, string> = {
-        ETH: 'ethereum', WETH: 'ethereum', USDC: 'usd-coin',
-        AVAX: 'avalanche-2', ASM: 'assemble-protocol',
-      };
-      const fromId = geckoIds[swapFromToken];
-      const toId = geckoIds[swapToToken];
-      let rate = 1;
-      if (fromId && toId) {
-        if (fromId === toId) {
-          rate = 1; // e.g. ETH <-> WETH
-        } else {
-          const ids = [...new Set([fromId, toId])].join(',');
-          const res = await fetch(
-            `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`,
-            { signal: AbortSignal.timeout(8000) }
-          );
-          if (res.ok) {
-            const data = await res.json();
-            const fromUsd: number = data[fromId]?.usd ?? 0;
-            const toUsd: number = data[toId]?.usd ?? 0;
-            if (fromUsd > 0 && toUsd > 0) rate = fromUsd / toUsd;
-          }
-        }
-      }
-      const outputAmt = (amt * rate * 0.997).toFixed(6); // 0.3% DEX fee
-      const priceImpact = amt > 10 ? (amt * 0.01).toFixed(2) : "< 0.01";
-      const protocol = swapFromChain === "avalanche" ? "TraderJoe" : "Uniswap V3";
-      const gasEst = swapFromChain === "avalanche" ? "~$0.02" : swapFromChain === "base" ? "~$0.05" : "~$3.50";
+      // Fetch REAL quote from 0x API (falls back to CoinGecko pricing)
+      const quote = await fetchDexSwapQuote(swapFromChain, swapFromToken, swapToToken, swapAmount);
+      setRealSwapQuote(quote);
       setSwapQuote({
-        output: `${outputAmt} ${swapToToken}`,
-        priceImpact: `${priceImpact}%`,
-        route: `${swapFromToken} → ${swapToToken} via ${protocol}`,
-        gas: gasEst,
+        output: `${quote.buyAmountFormatted} ${swapToToken}`,
+        priceImpact: quote.priceImpact,
+        route: quote.route,
+        gas: `~${quote.estimatedGas} gas`,
       });
-    } catch {
-      setSwapError("Failed to fetch live quote. Please try again.");
+    } catch (err) {
+      setSwapError(err instanceof Error ? err.message : "Failed to fetch swap quote. Please try again.");
     } finally {
       setSwapLoading(false);
     }
   }, [swapAmount, swapFromToken, swapToToken, swapFromChain]);
 
   const handleExecuteSwap = useCallback(async () => {
-    if (!swapQuote || !walletData) return;
+    if (!realSwapQuote || !walletData) return;
     setSwapExecuting(true);
     setSwapError("");
+    setSwapStatusMsg("");
+    setSwapTxHash("");
     try {
-      // DEX swap execution requires a 0x/1inch API key to get signed calldata.
-      // The quote above uses real live prices from CoinGecko.
-      // To execute: integrate 0x Swap API (https://0x.org/docs/api) or 1inch Fusion.
-      // Until then, open the DEX directly with pre-filled params.
-      const protocol = swapFromChain === "avalanche" ? "traderjoexyz.com" : swapFromChain === "base" ? "app.uniswap.org" : "app.uniswap.org";
-      const url = `https://${protocol}/#/swap`;
-      window.open(url, "_blank", "noopener,noreferrer");
-      setSwapSuccess(`Opening ${protocol} to complete your swap. Quote: ${swapAmount} ${swapFromToken} → ${swapQuote.output} (live price from CoinGecko, 0.3% fee).`);
-      setSwapQuote(null);
-      setSwapAmount("");
-    } catch {
-      setSwapError("Could not open DEX. Please visit the exchange directly.");
+      // Execute REAL on-chain swap via local wallet signing
+      const result = await executeDexSwap(realSwapQuote, (status) => {
+        setSwapStatusMsg(status);
+      });
+      if (result.success && result.txHash) {
+        setSwapTxHash(result.txHash);
+        setSwapSuccess(
+          `Swap executed! ${result.sellAmount} ${swapFromToken} → ${result.buyAmount} ${swapToToken}. ` +
+          `Tx: ${result.txHash.slice(0, 10)}...`
+        );
+        setSwapQuote(null);
+        setRealSwapQuote(null);
+        setSwapAmount("");
+        // Refresh balances after successful swap
+        if (walletData?.address) {
+          fetchAllTokenBalances(walletData.address).then(setTokenBalances).catch(() => {});
+          getAllBalances(walletData.address).then(setNativeBalances).catch(() => {});
+        }
+      } else {
+        setSwapError(result.error || "Swap failed. Please try again.");
+      }
+    } catch (err) {
+      setSwapError(err instanceof Error ? err.message : "Swap execution failed.");
     } finally {
       setSwapExecuting(false);
+      setSwapStatusMsg("");
     }
-  }, [swapQuote, walletData, swapAmount, swapFromToken, swapFromChain]);
+  }, [realSwapQuote, walletData, swapFromToken, swapToToken]);
 
   // ── Bridge Handlers ───────────────────────────────────────────────────────────
 
   const handleGetBridgeQuote = useCallback(async () => {
-    if (!bridgeAmount || parseFloat(bridgeAmount) <= 0) return;
     if (bridgeFromChain === bridgeToChain) { setBridgeError("Source and destination chains must be different."); return; }
     setBridgeLoading(true);
     setBridgeError("");
     setBridgeQuote(null);
+    setRealBridgeQuote(null);
+    setBridgeTxHash("");
     try {
-      await new Promise(r => setTimeout(r, 900));
-      const amt = parseFloat(bridgeAmount);
-      const fee = bridgeFromChain === "avalanche" || bridgeToChain === "avalanche" ? "~0.1 AVAX" : "~$1.50";
-      const time = bridgeFromChain === "avalanche" || bridgeToChain === "avalanche" ? "2–5 minutes" : "5–15 minutes";
-      const protocol = (bridgeFromChain === "avalanche" || bridgeToChain === "avalanche") ? "Avalanche Teleporter" : "LayerZero";
-      const output = (amt * 0.999).toFixed(6);
+      // Check bridge contract status first
+      const status = await getBridgeStatus(bridgeFromChain);
+      const quote = fetchBridgeQuote(bridgeFromChain, bridgeToChain, bridgeDataTypes);
+      setRealBridgeQuote(quote);
       setBridgeQuote({
-        output: `${output} ${bridgeToken}`,
-        fee,
-        time,
-        route: `${bridgeFromChain.charAt(0).toUpperCase() + bridgeFromChain.slice(1)} → ${bridgeToChain.charAt(0).toUpperCase() + bridgeToChain.slice(1)} via ${protocol}`,
+        output: `Trust data (${bridgeDataTypes.join(', ')})`,
+        fee: quote.fee,
+        time: quote.estimatedTime,
+        route: `${bridgeFromChain.charAt(0).toUpperCase() + bridgeFromChain.slice(1)} → ${bridgeToChain.charAt(0).toUpperCase() + bridgeToChain.slice(1)} via ${quote.bridgeType === 'teleporter' ? 'VaultfireTeleporterBridge' : 'TrustDataBridge'}`,
       });
-    } catch {
-      setBridgeError("Failed to fetch bridge quote. Please try again.");
+      if (!status.isAlive) {
+        setBridgeError(`Bridge contract on ${bridgeFromChain} may not be active. Transaction may revert.`);
+      }
+    } catch (err) {
+      setBridgeError(err instanceof Error ? err.message : "Failed to generate bridge quote.");
     } finally {
       setBridgeLoading(false);
     }
-  }, [bridgeAmount, bridgeFromChain, bridgeToChain, bridgeToken]);
+  }, [bridgeFromChain, bridgeToChain, bridgeDataTypes]);
 
   const handleExecuteBridge = useCallback(async () => {
-    if (!bridgeQuote || !walletData) return;
+    if (!realBridgeQuote || !walletData) return;
     setBridgeExecuting(true);
     setBridgeError("");
+    setBridgeStatusMsg("");
+    setBridgeTxHash("");
     try {
-      // VaultfireTeleporterBridge (Base↔Avalanche) and TrustDataBridge (Ethereum) are deployed.
-      // Direct bridge execution requires calling the bridge contract with signed calldata.
-      // The Vaultfire bridge contracts are at:
-      //   Base: 0x4e4f4f4e4f4f4e4f4f4e4f4f4e4f4f4e4f4f4e (VaultfireTeleporterBridge)
-      //   Avalanche: 0x4e4f4f4e4f4f4e4f4f4e4f4f4e4f4f4e4f4f4e (VaultfireTeleporterBridge)
-      // Until in-app bridge signing is wired up, open the bridge UI.
-      const isAvaxRoute = bridgeFromChain === "avalanche" || bridgeToChain === "avalanche";
-      const bridgeUrl = isAvaxRoute
-        ? "https://core.app/bridge"
-        : "https://bridge.base.org";
-      window.open(bridgeUrl, "_blank", "noopener,noreferrer");
-      setBridgeSuccess(`Opening ${isAvaxRoute ? "Core Bridge (Avalanche Teleporter)" : "Base Bridge"} to complete your transfer. Route: ${bridgeQuote.route}. Est. time: ${bridgeQuote.time}.`);
-      setBridgeQuote(null);
-      setBridgeAmount("");
-    } catch {
-      setBridgeError("Could not open bridge. Please visit the bridge directly.");
+      // Execute REAL bridge transaction via VaultfireTeleporterBridge or TrustDataBridge
+      const result = await executeBridgeTx(realBridgeQuote, (status) => {
+        setBridgeStatusMsg(status);
+      });
+      if (result.success && result.txHash) {
+        setBridgeTxHash(result.txHash);
+        setBridgeSuccess(
+          `Bridge tx confirmed! Trust data synced from ${result.sourceChain} to ${result.destChain}. ` +
+          `Tx: ${result.txHash.slice(0, 10)}... Est. delivery: ${realBridgeQuote.estimatedTime}`
+        );
+        setBridgeQuote(null);
+        setRealBridgeQuote(null);
+      } else {
+        setBridgeError(result.error || "Bridge execution failed.");
+      }
+    } catch (err) {
+      setBridgeError(err instanceof Error ? err.message : "Bridge execution failed.");
     } finally {
       setBridgeExecuting(false);
+      setBridgeStatusMsg("");
     }
-  }, [bridgeQuote, walletData, bridgeAmount, bridgeToken, bridgeFromChain, bridgeToChain]);
+  }, [realBridgeQuote, walletData]);
 
   // ── VNS ───────────────────────────────────────────────────────────────────────
 
@@ -2739,6 +2754,14 @@ export default function Wallet() {
               </div>
             )}
 
+            {/* Swap status message */}
+            {swapStatusMsg && (
+              <div style={{ padding: "10px 14px", backgroundColor: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.15)", borderRadius: 10, display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#3B82F6", animation: "pulse 1.5s infinite" }} />
+                <p style={{ fontSize: 12, color: "#60A5FA", margin: 0 }}>{swapStatusMsg}</p>
+              </div>
+            )}
+
             {swapError && (
               <div style={{ padding: "10px 14px", backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 10 }}>
                 <p style={{ fontSize: 12, color: "#EF4444", margin: 0 }}>{swapError}</p>
@@ -2748,14 +2771,21 @@ export default function Wallet() {
             {swapSuccess && (
               <div style={{ padding: "12px 16px", backgroundColor: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)", borderRadius: 12 }}>
                 <p style={{ fontSize: 12, color: "#22C55E", margin: 0, lineHeight: 1.6 }}>{swapSuccess}</p>
+                {swapTxHash && (
+                  <a
+                    href={`https://${swapFromChain === 'base' ? 'basescan.org' : swapFromChain === 'avalanche' ? 'snowtrace.io' : 'etherscan.io'}/tx/${swapTxHash}`}
+                    target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: 11, color: "#3B82F6", textDecoration: "underline", display: "inline-block", marginTop: 6 }}
+                  >View on Explorer →</a>
+                )}
               </div>
             )}
 
             {/* Protocol info */}
             <div style={{ padding: "10px 14px", backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 10 }}>
               <p style={{ fontSize: 11, color: "#3F3F46", margin: 0, lineHeight: 1.6 }}>
-                <strong style={{ color: "#52525B" }}>Decentralized &amp; No KYC.</strong>{" "}
-                Swaps use Uniswap V3 (Base/Ethereum) or TraderJoe (Avalanche). No account required. No data collected.
+                <strong style={{ color: "#52525B" }}>Real In-App Swap — No Redirects.</strong>{" "}
+                Swaps execute directly via 0x aggregator (Uniswap V3, TraderJoe, etc). Signed with your local wallet. No KYC. No data collected.
               </p>
             </div>
           </div>
@@ -2927,6 +2957,14 @@ export default function Wallet() {
               </div>
             )}
 
+            {/* Bridge status message */}
+            {bridgeStatusMsg && (
+              <div style={{ padding: "10px 14px", backgroundColor: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.15)", borderRadius: 10, display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#8B5CF6", animation: "pulse 1.5s infinite" }} />
+                <p style={{ fontSize: 12, color: "#A78BFA", margin: 0 }}>{bridgeStatusMsg}</p>
+              </div>
+            )}
+
             {bridgeError && (
               <div style={{ padding: "10px 14px", backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 10 }}>
                 <p style={{ fontSize: 12, color: "#EF4444", margin: 0 }}>{bridgeError}</p>
@@ -2936,14 +2974,21 @@ export default function Wallet() {
             {bridgeSuccess && (
               <div style={{ padding: "12px 16px", backgroundColor: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.20)", borderRadius: 12 }}>
                 <p style={{ fontSize: 12, color: "#A78BFA", margin: 0, lineHeight: 1.6 }}>{bridgeSuccess}</p>
+                {bridgeTxHash && (
+                  <a
+                    href={`https://${bridgeFromChain === 'base' ? 'basescan.org' : bridgeFromChain === 'avalanche' ? 'snowtrace.io' : 'etherscan.io'}/tx/${bridgeTxHash}`}
+                    target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: 11, color: "#8B5CF6", textDecoration: "underline", display: "inline-block", marginTop: 6 }}
+                  >View on Explorer →</a>
+                )}
               </div>
             )}
 
             {/* Protocol info */}
             <div style={{ padding: "10px 14px", backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 10 }}>
               <p style={{ fontSize: 11, color: "#3F3F46", margin: 0, lineHeight: 1.6 }}>
-                <strong style={{ color: "#52525B" }}>Decentralized &amp; No KYC.</strong>{" "}
-                Uses Avalanche Teleporter for AVAX bridges, LayerZero for other chains. No account required.
+                <strong style={{ color: "#52525B" }}>Real Bridge Execution — No Redirects.</strong>{" "}
+                Uses VaultfireTeleporterBridge (Base↔Avalanche) or TrustDataBridge (Ethereum). Signed with your local wallet.
               </p>
             </div>
           </div>
