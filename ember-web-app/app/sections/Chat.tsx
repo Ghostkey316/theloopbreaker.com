@@ -72,6 +72,19 @@ import {
   executeContractQuery,
 } from '../lib/contract-interaction';
 
+// Companion Engine imports (execution layer with real tools)
+import {
+  detectExecutableTasks,
+  executeTask,
+  filterResultThroughPersonality,
+  detectTask,
+  callThinkAPI,
+  recordEngineCall,
+  recordLocalBrainHandled,
+  type ExecutionTask,
+  type EngineResult,
+} from '../lib/companion-engine';
+
 // Companion Brain imports
 import {
   tryLocalAnswer,
@@ -1358,7 +1371,34 @@ export default function Chat() {
           finishMessage(finalText, trimmedText, assistantMsg, userMsg, features, currentMemories);
           return;
         }
-      } catch { /* fall through to API */ }
+      } catch { /* fall through to execution engine */ }
+    }
+
+    // 1.5. EXECUTION ENGINE: Check if the brain should invoke real tools
+    // The local brain decides what tools to use; the engine executes them
+    const executableTasks = detectExecutableTasks(trimmedText);
+    if (executableTasks.length > 0) {
+      try {
+        let executionResponse = '';
+        for (const task of executableTasks) {
+          // Show narration while executing
+          if (task.narration) {
+            executionResponse += task.narration + '\n\n';
+          }
+          // Execute the task
+          const toolResult = await executeTask(task);
+          // Filter result through personality and soul
+          const personalityResponse = filterResultThroughPersonality(toolResult, '');
+          executionResponse += personalityResponse + '\n\n';
+        }
+        // Stream the execution response
+        await simulateLocalStreaming(executionResponse.trim(), assistantMsg.id, controller.signal);
+        finishMessage(executionResponse.trim(), trimmedText, assistantMsg, userMsg, features, currentMemories);
+        return;
+      } catch (e) {
+        // Execution engine failed — fall through to local brain
+        console.warn('[Embris] Execution engine error:', e);
+      }
     }
 
     // 2. Try local brain knowledge base (handles contracts, greetings, protocol questions, etc.)
@@ -1372,7 +1412,45 @@ export default function Chat() {
       return;
     }
 
-    // 3. Fall back to API for complex/novel queries
+    // 3. Try Vaultfire's /api/companion/think for tasks and complex questions
+    const taskDetection = detectTask(trimmedText);
+    if (taskDetection.isTask && taskDetection.confidence > 0.6) {
+      try {
+        // Show thinking narration
+        const thinkingMsg = '🔥 Let me work on that...';
+        setMessages((prev) =>
+          prev.map((m) => m.id === assistantMsg.id ? { ...m, content: thinkingMsg } : m)
+        );
+
+        const walletAddr = getWalletAddress();
+        const companionAddr = getCompanionAddress();
+        const companionName = getCompanionAgentName();
+        const convHistory = getConversationMessages(activeConvId);
+
+        const engineResult = await callThinkAPI(trimmedText, {
+          conversationHistory: convHistory.slice(-8).map(m => ({ role: m.role, content: m.content })),
+          userWallet: walletAddr || undefined,
+          companionWallet: companionAddr || undefined,
+          companionName: companionName || undefined,
+        });
+
+        recordEngineCall(engineResult);
+
+        if (engineResult.response) {
+          const fullResponse = engineResult.thinking
+            ? `${engineResult.thinking}\n\n${engineResult.response}`
+            : engineResult.response;
+          await simulateLocalStreaming(fullResponse, assistantMsg.id, controller.signal);
+          finishMessage(fullResponse, trimmedText, assistantMsg, userMsg, features, currentMemories);
+          return;
+        }
+      } catch (e) {
+        console.warn('[Embris] Think API error:', e);
+        // Fall through to streamChat
+      }
+    }
+
+    // 4. Fall back to streamChat for complex/novel queries the brain and engine can't handle
     const history = getConversationMessages(activeConvId);
     const userContent = contractContext ? trimmedText + contractContext : trimmedText;
     const llmMessages = [
