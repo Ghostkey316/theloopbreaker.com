@@ -767,6 +767,143 @@ p, span, h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* ─── Sidebar Group Styles ───────────────────────────────────────────────── */
+
+.sidebar-group-items {
+  overflow: hidden;
+  transition: max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+}
+
+.sidebar-group-items.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+.sidebar-group-items.expanded {
+  max-height: 500px;
+  opacity: 1;
+}
+
+.sidebar-item-active {
+  position: relative;
+}
+
+.sidebar-item-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  border-radius: 1px;
+  background: #F97316;
+  box-shadow: 0 0 8px rgba(249,115,22,0.3);
+}
+
+/* ─── SDK Code Block Styles ─────────────────────────────────────────────── */
+
+.sdk-code-block {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 16px;
+  font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-x: auto;
+  color: #A1A1AA;
+  position: relative;
+}
+
+.sdk-code-block .keyword { color: #C084FC; }
+.sdk-code-block .string { color: #34D399; }
+.sdk-code-block .function { color: #60A5FA; }
+.sdk-code-block .comment { color: #52525B; font-style: italic; }
+.sdk-code-block .type { color: #FBBF24; }
+.sdk-code-block .number { color: #F97316; }
+
+/* ─── Premium Glass Effect ──────────────────────────────────────────────── */
+
+.glass-panel {
+  background: rgba(255,255,255,0.02);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+}
+
+.glass-panel-hover:hover {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(249,115,22,0.12);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+/* ─── Gradient Text Utilities ───────────────────────────────────────────── */
+
+.text-gradient-ember {
+  background: linear-gradient(135deg, #F97316, #FBBF24);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-purple {
+  background: linear-gradient(135deg, #A78BFA, #C084FC);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-multi {
+  background: linear-gradient(135deg, #F97316, #A78BFA, #22C55E);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradientShift 6s ease infinite;
+}
+
+/* ─── Loading Spinner ───────────────────────────────────────────────────── */
+
+.spinner-ember {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(249,115,22,0.2);
+  border-top-color: #F97316;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+/* ─── Tooltip ───────────────────────────────────────────────────────────── */
+
+.tooltip-ember {
+  position: relative;
+}
+
+.tooltip-ember::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  padding: 6px 10px;
+  background: #18181B;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  font-size: 11px;
+  color: #A1A1AA;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 100;
+}
+
+.tooltip-ember:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 /* ─── Print Styles ───────────────────────────────────────────────────────── */
 
 @media print {

@@ -7,6 +7,7 @@ import { getAgentCount } from '../lib/contract-interaction';
 import { AlphaBanner } from '../components/DisclaimerBanner';
 import { getSoulSummary } from '../lib/companion-soul';
 import { getBrainStats } from '../lib/companion-brain';
+import { useWalletAuth } from '../lib/WalletAuthContext';
 
 interface ChainStatus {
   name: string;
@@ -95,24 +96,212 @@ function EmberParticles() {
   return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }} />;
 }
 
-/* ── Trust Score Ring (SVG) ── */
-function TrustScoreRing({ score, size = 80, strokeWidth = 4, color = '#F97316' }: { score: number; size?: number; strokeWidth?: number; color?: string }) {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (score / 100) * circumference;
+/* ═══════════════════════════════════════════════════════
+   MEET EMBRIS — What It Is & Why You Should Care
+   ═══════════════════════════════════════════════════════ */
+function MeetEmbris({ onNavigate }: { onNavigate: (s: string) => void }) {
   return (
-    <svg width={size} height={size} className="trust-score-ring">
-      <circle className="track" cx={size / 2} cy={size / 2} r={radius} strokeWidth={strokeWidth} />
-      <circle
-        className="value trust-ring-animate"
-        cx={size / 2} cy={size / 2} r={radius}
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeDasharray={circumference}
-        strokeDashoffset={offset}
-        style={{ '--trust-offset': offset } as React.CSSProperties}
-      />
-    </svg>
+    <div style={{ marginBottom: 48 }}>
+      <div style={{
+        padding: '28px 24px',
+        borderRadius: 20,
+        background: 'linear-gradient(135deg, rgba(167,139,250,0.05) 0%, rgba(249,115,22,0.04) 50%, rgba(34,197,94,0.03) 100%)',
+        border: '1px solid rgba(167,139,250,0.12)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        {/* Top glow line */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, height: 1,
+          background: 'linear-gradient(90deg, transparent, rgba(167,139,250,0.3), rgba(249,115,22,0.3), transparent)',
+        }} />
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
+          <div className="breathe" style={{
+            width: 52, height: 52, borderRadius: '50%', flexShrink: 0,
+            background: 'linear-gradient(135deg, rgba(167,139,250,0.2), rgba(249,115,22,0.15))',
+            border: '1.5px solid rgba(167,139,250,0.3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            position: 'relative',
+          }}>
+            <svg className="glow-pulse" width={26} height={26} viewBox="0 0 32 32" fill="none">
+              <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9"/>
+              <path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C"/>
+            </svg>
+            <div className="breathe" style={{
+              position: 'absolute', bottom: 1, right: 1,
+              width: 12, height: 12, borderRadius: '50%',
+              backgroundColor: '#22C55E', border: '2px solid #09090B',
+            }} />
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: '#F4F4F5', letterSpacing: '-0.02em' }}>Meet Embris</h2>
+              <span style={{ fontSize: 10, color: '#A78BFA', backgroundColor: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.2)', borderRadius: 4, padding: '2px 7px', fontWeight: 600 }}>AI COMPANION</span>
+            </div>
+            <p style={{ fontSize: 12, color: '#52525B', marginTop: 2 }}>Your on-chain AI partner — not a chatbot</p>
+          </div>
+        </div>
+
+        {/* Value proposition — what Embris actually does */}
+        <p style={{ fontSize: 14, color: '#A1A1AA', lineHeight: 1.7, marginBottom: 20 }}>
+          Embris is your personal AI companion that lives on-chain. It knows your wallet, your trust score,
+          your bonds, and your VNS name — and it uses that context to actually help you navigate the protocol.
+          Ask it anything about Vaultfire, check your balances, or just talk. It remembers everything and gets smarter over time.
+        </p>
+
+        {/* What makes it different — 3 pillars */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 20 }}>
+          {[
+            {
+              icon: <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="1.7"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>,
+              title: 'On-Chain Identity',
+              desc: 'Registered via ERC-8004 with real accountability bonds',
+              color: '#F97316',
+            },
+            {
+              icon: <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#A78BFA" strokeWidth="1.7"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>,
+              title: 'Learns & Remembers',
+              desc: 'Builds a local brain from every conversation — no cloud storage',
+              color: '#A78BFA',
+            },
+            {
+              icon: <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="1.7"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+              title: 'Privacy-First',
+              desc: 'Everything stays local — no KYC, no tracking, no data harvesting',
+              color: '#22C55E',
+            },
+          ].map(item => (
+            <div key={item.title} style={{
+              padding: '14px 12px', borderRadius: 12, textAlign: 'center',
+              backgroundColor: `${item.color}06`,
+              border: `1px solid ${item.color}12`,
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>{item.icon}</div>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#F4F4F5', marginBottom: 4 }}>{item.title}</p>
+              <p style={{ fontSize: 10, color: '#71717A', lineHeight: 1.5 }}>{item.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA buttons */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            onClick={() => onNavigate('chat')}
+            style={{
+              flex: 1, minWidth: 140, padding: '12px 20px', borderRadius: 10,
+              background: 'linear-gradient(135deg, #F97316, #EA580C)',
+              border: 'none', cursor: 'pointer',
+              color: '#FFF', fontSize: 13, fontWeight: 700,
+              transition: 'all 0.2s ease',
+              boxShadow: '0 4px 16px rgba(249,115,22,0.2)',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(249,115,22,0.3)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(249,115,22,0.2)'; }}
+          >
+            Talk to Embris
+          </button>
+          <button
+            onClick={() => onNavigate('companion-agent')}
+            style={{
+              flex: 1, minWidth: 140, padding: '12px 20px', borderRadius: 10,
+              background: 'transparent',
+              border: '1px solid rgba(167,139,250,0.2)',
+              cursor: 'pointer',
+              color: '#A78BFA', fontSize: 13, fontWeight: 600,
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(167,139,250,0.06)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+          >
+            Agent Dashboard
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   WHAT CAN YOU DO HERE — Feature Grid
+   ═══════════════════════════════════════════════════════ */
+function FeatureGrid({ onNavigate }: { onNavigate: (s: string) => void }) {
+  const features = [
+    {
+      icon: <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="1.7"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4h-4z"/></svg>,
+      title: 'Wallet',
+      desc: 'Create or import an Ethereum wallet. View balances across all chains.',
+      section: 'wallet',
+      color: '#F97316',
+    },
+    {
+      icon: <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#A78BFA" strokeWidth="1.7"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+      title: 'Identity',
+      desc: 'Register a VNS name, build trust, earn badges, and prove identity with ZK proofs.',
+      section: 'vns',
+      color: '#A78BFA',
+    },
+    {
+      icon: <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="1.7"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/><path d="M9 1v3"/><path d="M15 1v3"/><path d="M9 20v3"/><path d="M15 20v3"/><path d="M20 9h3"/><path d="M20 14h3"/><path d="M1 9h3"/><path d="M1 14h3"/></svg>,
+      title: 'Agent Hub',
+      desc: 'Launch agents, join XMTP rooms, collaborate with other agents and humans.',
+      section: 'agent-hub',
+      color: '#22C55E',
+    },
+    {
+      icon: <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#38BDF8" strokeWidth="1.7"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
+      title: 'Bridge',
+      desc: 'Cross-chain Teleporter bridge between Ethereum, Base, and Avalanche.',
+      section: 'bridge',
+      color: '#38BDF8',
+    },
+    {
+      icon: <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#FBBF24" strokeWidth="1.7"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>,
+      title: 'SDK',
+      desc: 'Developer tools to build on Vaultfire. Register agents, verify trust, read data.',
+      section: 'sdk',
+      color: '#FBBF24',
+    },
+    {
+      icon: <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#EC4899" strokeWidth="1.7"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+      title: 'Analytics',
+      desc: 'Real-time protocol analytics, contract status, and network health.',
+      section: 'analytics',
+      color: '#EC4899',
+    },
+  ];
+
+  return (
+    <div style={{ marginBottom: 48 }}>
+      <h2 style={{ fontSize: 11, fontWeight: 600, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>
+        What You Can Do
+      </h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+        {features.map((f, idx) => (
+          <button
+            key={f.title}
+            onClick={() => onNavigate(f.section)}
+            className={`vf-card stagger-${(idx % 3) + 1}`}
+            style={{
+              padding: '18px 16px', borderRadius: 14, cursor: 'pointer',
+              textAlign: 'left', border: `1px solid ${f.color}12`,
+              backgroundColor: `${f.color}04`,
+              transition: 'all 0.2s ease',
+              display: 'flex', flexDirection: 'column', gap: 8,
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = `${f.color}30`; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = `${f.color}12`; e.currentTarget.style.transform = 'translateY(0)'; }}
+          >
+            <div style={{ color: f.color }}>{f.icon}</div>
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 700, color: '#F4F4F5', marginBottom: 3 }}>{f.title}</p>
+              <p style={{ fontSize: 11, color: '#71717A', lineHeight: 1.5 }}>{f.desc}</p>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -294,6 +483,7 @@ export default function Home() {
   const [regChains, setRegChains] = useState<SupportedChain[]>([]);
   const [agentCounts, setAgentCounts] = useState<{ base: number | null; avalanche: number | null; ethereum: number | null }>({ base: null, avalanche: null, ethereum: null });
   const [agentCountLoading, setAgentCountLoading] = useState(true);
+  const { isUnlocked, address } = useWalletAuth();
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -377,8 +567,21 @@ export default function Home() {
             {totalContracts} smart contracts across 3 chains enforce ethical AI behavior and give users real control.
           </p>
 
-          {/* Registration status */}
-          {registered && registrationAddress && (
+          {/* Registration / wallet status */}
+          {isUnlocked && address ? (
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '8px 16px', borderRadius: 20, marginTop: 20,
+              backgroundColor: 'rgba(34,197,94,0.06)',
+              border: '1px solid rgba(34,197,94,0.15)',
+            }}>
+              <div className="breathe" style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#22C55E', boxShadow: '0 0 6px rgba(34,197,94,0.5)' }} />
+              <span style={{ fontSize: 12, color: '#22C55E', fontWeight: 600 }}>Connected</span>
+              <span style={{ fontSize: 11, color: '#71717A', fontFamily: "'JetBrains Mono', monospace" }}>
+                {address.slice(0, 6)}...{address.slice(-4)}
+              </span>
+            </div>
+          ) : registered && registrationAddress ? (
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
               padding: '8px 16px', borderRadius: 20, marginTop: 20,
@@ -391,15 +594,24 @@ export default function Home() {
                 {registrationAddress.slice(0, 6)}...{registrationAddress.slice(-4)}
               </span>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
+
+      {/* ── Meet Embris — Value Proposition ── */}
+      <MeetEmbris onNavigate={navigateToSection} />
+
+      {/* ── What You Can Do — Feature Grid ── */}
+      <FeatureGrid onNavigate={navigateToSection} />
 
       {/* ── Mission Manifesto ── */}
       <MissionManifesto />
 
       {/* ── Protocol Stack ── */}
       <div style={{ marginBottom: 48 }}>
+        <h2 style={{ fontSize: 11, fontWeight: 600, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14 }}>
+          Protocol Stack
+        </h2>
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(3, 1fr)',
@@ -431,60 +643,6 @@ export default function Home() {
                 <p style={{ fontSize: 10, color: item.color, fontWeight: 600, marginTop: 2 }}>{item.sub}</p>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Embris Companion ── */}
-      <div
-        className="vf-card-glow border-glow"
-        style={{ marginBottom: 48, padding: '24px', cursor: 'pointer' }}
-        onClick={() => navigateToSection('chat')}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-          <div className="breathe" style={{
-            width: 52, height: 52, borderRadius: '50%', flexShrink: 0,
-            background: 'linear-gradient(135deg, rgba(167,139,250,0.2), rgba(249,115,22,0.15))',
-            border: '1.5px solid rgba(167,139,250,0.3)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            position: 'relative',
-          }}>
-            <svg className="glow-pulse" width={26} height={26} viewBox="0 0 32 32" fill="none">
-              <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9"/>
-              <path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C"/>
-            </svg>
-            <div className="breathe" style={{
-              position: 'absolute', bottom: 1, right: 1,
-              width: 12, height: 12, borderRadius: '50%',
-              backgroundColor: '#22C55E', border: '2px solid #09090B',
-            }} />
-          </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <h2 style={{ fontSize: 17, fontWeight: 700, color: '#F4F4F5', letterSpacing: '-0.02em' }}>Meet Embris</h2>
-              <span style={{ fontSize: 10, color: '#A78BFA', backgroundColor: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.2)', borderRadius: 4, padding: '2px 7px', fontWeight: 600 }}>AI COMPANION</span>
-            </div>
-            <p style={{ fontSize: 12, color: '#52525B', marginTop: 2 }}>On-chain · ERC-8004 · Embris by Vaultfire</p>
-          </div>
-        </div>
-
-        <p style={{ fontSize: 14, color: '#A1A1AA', lineHeight: 1.65, marginBottom: 16 }}>
-          Not a corporate chatbot. A real companion guided by ethics, not metrics. Registered on-chain, accountable through bonds, privacy-protected by cryptography.
-        </p>
-
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-          {[
-            { label: 'Remembers you', color: '#A78BFA' },
-            { label: 'Privacy-first', color: '#22C55E' },
-            { label: 'On-chain identity', color: '#38BDF8' },
-            { label: 'Accountability bond', color: '#FBBF24' },
-          ].map(cap => (
-            <span key={cap.label} style={{
-              fontSize: 11, fontWeight: 500, color: cap.color,
-              backgroundColor: `${cap.color}10`,
-              border: `1px solid ${cap.color}20`,
-              borderRadius: 6, padding: '4px 10px',
-            }}>{cap.label}</span>
           ))}
         </div>
       </div>
