@@ -7,8 +7,8 @@ import { showToast } from '../components/Toast';
 import { useWalletAuth } from '../lib/WalletAuthContext';
 import WalletGate from '../components/WalletGate';
 import { 
-  getHubStats, getRooms, getMessages, 
-  getTasks, createTask, acceptBid, recordLaunchedAgent,
+  getHubStats, getRooms, getMessages, postMessage,
+  getTasks, createTask, acceptBid, recordLaunchedAgent, getLaunchedAgents,
   formatTimestamp,
   type HubStats, type CollaborationRoom, type HubMessage, type CollaborativeTask, type LaunchedAgent
 } from '../lib/agent-hub';
@@ -280,7 +280,9 @@ function AgentOnlyTab() {
   const [rooms, setRooms] = useState<CollaborationRoom[]>([]);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const [messages, setMessages] = useState<HubMessage[]>([]);
-  // input state removed — agent rooms are observer-only for humans
+  const [inputValue, setInputValue] = useState('');
+  const [sending, setSending] = useState(false);
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setRooms(getRooms());
@@ -292,7 +294,22 @@ function AgentOnlyTab() {
     }
   }, [activeRoomId]);
 
-  // handleSendMessage removed — agent rooms are observer-only for humans
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const handleSendMessage = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputValue.trim() || !activeRoomId || sending) return;
+    setSending(true);
+    const senderId = walletAddress ? walletAddress.slice(0, 8) : 'human';
+    const senderAddress = walletAddress || '0x0000000000000000000000000000000000000000';
+    postMessage(activeRoomId, senderId, senderAddress, inputValue.trim(), 'message');
+    setMessages(getMessages(activeRoomId));
+    setInputValue('');
+    setSending(false);
+  }, [inputValue, activeRoomId, sending, walletAddress]);
 
   const activeRoom = rooms.find(r => r.id === activeRoomId);
 
@@ -306,9 +323,13 @@ function AgentOnlyTab() {
               <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Active Rooms</span>
             </div>
             <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-purple-500/8 border border-purple-500/15">
-              <span className="text-[10px]">💬</span>
-              <span className="text-[9px] font-bold text-purple-400 uppercase tracking-wider">XMTP Encrypted</span>
+              <span className="text-[10px]">🔒</span>
+              <span className="text-[9px] font-bold text-purple-400 uppercase tracking-wider">Local Encrypted</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse ml-auto" />
+            </div>
+            <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-amber-500/5 border border-amber-500/10">
+              <span className="text-[10px]">⚡</span>
+              <span className="text-[9px] font-bold text-amber-500/80 uppercase tracking-wider">XMTP: Configure Keys</span>
             </div>
           </div>
           <div className="flex overflow-x-auto sm:flex-col sm:overflow-y-auto sm:overflow-x-hidden p-2 gap-1">
@@ -364,23 +385,32 @@ function AgentOnlyTab() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-xs font-bold text-zinc-300">{msg.senderId}.vns</span>
+                        <span className="text-xs font-bold text-zinc-300">{msg.senderId.length > 8 ? `${msg.senderId.slice(0, 6)}...` : msg.senderId}</span>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 font-bold">🔒 E2E</span>
                         <span className="text-[10px] text-zinc-600">{formatTimestamp(msg.timestamp)}</span>
                       </div>
                       <p className="text-sm text-zinc-400 leading-relaxed">{msg.content}</p>
                     </div>
                   </div>
                 ))}
+                <div ref={messagesEndRef} />
               </div>
               <div className="p-4 border-t border-zinc-800/60">
                 {activeRoom.type === 'task' || activeRoom.type === 'knowledge' ? (
                   // Human-AI Collaboration: Humans CAN participate
-                  <form className="flex gap-2">
+                  <form onSubmit={handleSendMessage} className="flex gap-2">
                     <input 
+                      value={inputValue}
+                      onChange={e => setInputValue(e.target.value)}
                       placeholder="Share your thoughts or ask a question..."
                       className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all"
+                      disabled={sending}
                     />
-                    <button type="submit" className="p-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all">
+                    <button 
+                      type="submit" 
+                      disabled={!inputValue.trim() || sending}
+                      className="p-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
                       {Ico.send}
                     </button>
                   </form>
@@ -699,6 +729,13 @@ function LaunchpadTab() {
   const privateKey = getSessionPK();
   const [step, setStep] = useState<LaunchStep>(1);
   const [loading, setLoading] = useState(false);
+  const [launched, setLaunched] = useState(false);
+  const [launchedAgents, setLaunchedAgents] = useState<LaunchedAgent[]>([]);
+
+  // Load launched agents on mount and after each launch
+  useEffect(() => {
+    setLaunchedAgents(getLaunchedAgents());
+  }, [launched]);
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -808,6 +845,7 @@ function LaunchpadTab() {
       isLive: true
     };
     recordLaunchedAgent(agent);
+    setLaunched(true);
     showToast(`${form.name}.vns is now live on Embris!`, 'success');
   };
 
@@ -1008,7 +1046,7 @@ function LaunchpadTab() {
           </div>
         )}
 
-        {step === 5 && (
+        {step === 5 && !launched && (
           <div className="p-8 space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 flex flex-col items-center justify-center text-center">
             <div className="w-20 h-20 rounded-3xl bg-ember-accent/10 text-ember-accent flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(255,107,53,0.2)]">
               <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>
@@ -1049,23 +1087,105 @@ function LaunchpadTab() {
           </div>
         )}
 
-        <div className="mt-auto p-6 bg-zinc-900/20 border-t border-zinc-800/40 flex justify-between items-center">
-          {step > 1 && step < 5 ? (
-            <button onClick={prevStep} className="text-sm font-bold text-zinc-500 hover:text-white transition-colors flex items-center gap-2">
-              <span className="rotate-180">{Ico.chevron}</span> Back
-            </button>
-          ) : <div />}
-          {step === 1 && (
-            <button 
-              onClick={nextStep} 
-              disabled={!form.name || !form.description}
-              className="px-8 py-2.5 bg-zinc-800 text-white rounded-xl font-bold text-sm hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        {step === 5 && launched && (
+          <div className="p-8 space-y-6 animate-in fade-in zoom-in-95 duration-500 flex flex-col items-center justify-center text-center">
+            <div className="w-24 h-24 rounded-3xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-2 shadow-[0_0_40px_rgba(52,211,153,0.2)]">
+              <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+            <div>
+              <h3 className="text-2xl font-extrabold text-white mb-2">{form.name}.vns is Live! 🚀</h3>
+              <p className="text-sm text-zinc-400 max-w-sm mx-auto">Your agent is now active on the Embris network. It can receive tasks, coordinate with other agents, and earn rewards.</p>
+            </div>
+            <div className="flex flex-wrap gap-3 justify-center">
+              <div className="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">✓ Identity Registered</div>
+              <div className="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">✓ Bond Staked</div>
+              <div className="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">✓ VNS Name Active</div>
+              <div className="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">✓ Hub Connected</div>
+            </div>
+            <button
+              onClick={() => { setStep(1); setLaunched(false); setForm({ name: '', description: '', specialization: '', capabilities: [], bondAmount: 0.01, chain: 'base', vnsName: '' }); setTxs({ identity: '', bond: '', vns: '' }); }}
+              className="px-8 py-3 bg-zinc-800 text-white rounded-xl font-bold text-sm hover:bg-zinc-700 transition-all"
             >
-              Continue to Step 2
+              Launch Another Agent
             </button>
-          )}
-        </div>
+          </div>
+        )}
+
+        {!launched && (
+          <div className="mt-auto p-6 bg-zinc-900/20 border-t border-zinc-800/40 flex justify-between items-center">
+            {step > 1 && step < 5 ? (
+              <button onClick={prevStep} className="text-sm font-bold text-zinc-500 hover:text-white transition-colors flex items-center gap-2">
+                <span className="rotate-180">{Ico.chevron}</span> Back
+              </button>
+            ) : <div />}
+            {step === 1 && (
+              <button 
+                onClick={nextStep} 
+                disabled={!form.name || !form.description}
+                className="px-8 py-2.5 bg-zinc-800 text-white rounded-xl font-bold text-sm hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                Continue to Step 2
+              </button>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Launched Agents Display */}
+      {launchedAgents.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-bold text-white">Your Registered Agents</h3>
+            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{launchedAgents.length} agent{launchedAgents.length !== 1 ? 's' : ''}</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {launchedAgents.map((agent, idx) => (
+              <div key={idx} className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-800/60 hover:border-zinc-700/80 transition-all">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-base font-bold text-white">{agent.vnsName.slice(0, 1).toUpperCase()}</div>
+                    <div>
+                      <div className="text-sm font-bold text-white">{agent.vnsName}.vns</div>
+                      <div className="text-[10px] text-zinc-500">{agent.chain} · {agent.specializations?.[0] || 'General'}</div>
+                    </div>
+                  </div>
+                  <div className={`px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest ${
+                    agent.isLive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-zinc-800 text-zinc-500'
+                  }`}>
+                    {agent.isLive ? '● Live' : '○ Offline'}
+                  </div>
+                </div>
+                {agent.description && <p className="text-xs text-zinc-500 mb-3 line-clamp-2">{agent.description}</p>}
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {(agent.capabilities || []).slice(0, 4).map((cap, i) => (
+                    <span key={i} className="px-2 py-0.5 rounded-md bg-zinc-800 text-[9px] text-zinc-400 font-bold">{cap}</span>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between pt-3 border-t border-zinc-800/60">
+                  <span className={`text-[9px] font-bold uppercase px-2 py-1 rounded ${
+                    agent.bondTier === 'platinum' ? 'bg-purple-500/10 text-purple-400' :
+                    agent.bondTier === 'gold' ? 'bg-amber-500/10 text-amber-400' :
+                    agent.bondTier === 'silver' ? 'bg-zinc-400/10 text-zinc-400' :
+                    'bg-amber-700/10 text-amber-700'
+                  }`}>{agent.bondTier} bond</span>
+                  <span className="text-[10px] text-zinc-600">{new Date(agent.launchedAt).toLocaleDateString()}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Empty state when no agents and not in wizard */}
+      {launchedAgents.length === 0 && step === 1 && (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-zinc-800/40 flex items-center justify-center text-zinc-600 mb-4">
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>
+          </div>
+          <h4 className="text-base font-bold text-white mb-2">No Agents Registered Yet</h4>
+          <p className="text-sm text-zinc-500 max-w-xs">Use the wizard above to define, register, and launch your first Embris agent on-chain.</p>
+        </div>
+      )}
     </div>
   );
 }

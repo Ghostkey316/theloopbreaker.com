@@ -5,13 +5,14 @@
  * This is NOT an OpenAI wrapper — this is OUR intelligence pipeline.
  *
  * ARCHITECTURE:
- * 1. Receive user message + context (brain state, soul values, wallet info)
+ * 1. Receive user message + context (brain state, soul values, wallet info, preferences)
  * 2. Detect intent using OUR pattern matching (no LLM needed)
  * 3. Route to appropriate tools (balance check, gas price, contract read, etc.)
  * 4. Execute tools with REAL RPC/HTTP calls
  * 5. Format results through companion personality
- * 6. Optionally use LLM as ONE tool for complex NLU (not as the brain)
- * 7. Return response with tool results and personality
+ * 6. Extract structured facts from the exchange (fast learning)
+ * 7. Optionally use LLM as ONE tool for complex NLU (not as the brain)
+ * 8. Return response with tool results, personality, and extracted facts
  *
  * The LOCAL BRAIN is primary. This API extends the brain's capabilities
  * with server-side tool execution that can't run in the browser.
@@ -103,6 +104,96 @@ function buildSoulContext(soul: any): string {
   return ctx;
 }
 
+// ─── Fast Fact Extraction (server-side) ─────────────────────────────────────
+// Extracts structured facts from the exchange to send back to the client
+// so the client can immediately update the brain without another round-trip.
+
+interface ExtractedFact {
+  key: string;
+  value: string;
+  confidence: number;
+  source: 'user_message' | 'tool_result' | 'assistant_response';
+}
+
+function extractFactsFromExchange(
+  userMessage: string,
+  assistantResponse: string,
+  toolResults: ToolResult[],
+  userWallet?: string,
+): ExtractedFact[] {
+  const facts: ExtractedFact[] = [];
+  const lower = userMessage.toLowerCase();
+
+  // Extract wallet address from user message
+  const walletMatch = userMessage.match(/0x[a-fA-F0-9]{40}/);
+  if (walletMatch) {
+    facts.push({ key: 'user_wallet', value: walletMatch[0], confidence: 1.0, source: 'user_message' });
+  }
+
+  // Extract chain preference
+  const chainPrefs: Record<string, string[]> = {
+    'base': ['base chain', 'on base', 'prefer base', 'use base', 'base network', 'base mainnet'],
+    'ethereum': ['prefer ethereum', 'use ethereum', 'eth mainnet', 'prefer eth'],
+    'avalanche': ['prefer avalanche', 'use avalanche', 'prefer avax', 'on avax'],
+  };
+  for (const [chain, phrases] of Object.entries(chainPrefs)) {
+    if (phrases.some(p => lower.includes(p))) {
+      facts.push({ key: 'preferred_chain', value: chain, confidence: 1.0, source: 'user_message' });
+      break;
+    }
+  }
+
+  // Extract user name
+  const nameMatch = userMessage.match(/(?:my name is|i'm|i am|call me|they call me)\s+([A-Z][a-z]+)/i);
+  if (nameMatch && nameMatch[1].length > 1) {
+    facts.push({ key: 'user_name', value: nameMatch[1], confidence: 1.0, source: 'user_message' });
+  }
+
+  // Extract balance from tool results (cache for future reference)
+  const balanceTool = toolResults.find(r => r.tool === 'check_balance' && r.success);
+  if (balanceTool && balanceTool.data) {
+    const balanceStr = balanceTool.data.formatted || balanceTool.data.balance;
+    if (balanceStr) {
+      facts.push({ key: 'last_known_balance', value: String(balanceStr), confidence: 0.95, source: 'tool_result' });
+    }
+    // Also record which chain was checked
+    if (balanceTool.data.chain) {
+      facts.push({ key: 'last_checked_chain', value: String(balanceTool.data.chain), confidence: 0.9, source: 'tool_result' });
+    }
+  }
+
+  // Extract gas price from tool results
+  const gasTool = toolResults.find(r => r.tool === 'get_gas_price' && r.success);
+  if (gasTool && gasTool.data) {
+    const gasStr = gasTool.data.formatted || gasTool.data.gasPrice;
+    if (gasStr) {
+      facts.push({ key: 'last_gas_price', value: String(gasStr), confidence: 0.8, source: 'tool_result' });
+    }
+  }
+
+  // Extract VNS name from user message
+  const vnsMatch = userMessage.match(/([a-zA-Z0-9-]+)\.vns/);
+  if (vnsMatch) {
+    facts.push({ key: 'vns_name', value: vnsMatch[0], confidence: 1.0, source: 'user_message' });
+  }
+
+  // Extract explicit preferences
+  const prefMatch = userMessage.match(/(?:i prefer|i like|i want|i always|i usually|i need)\s+(.{5,60}?)(?:\.|,|$)/i);
+  if (prefMatch) {
+    const prefValue = prefMatch[1].trim();
+    const prefKey = `pref_${prefValue.slice(0, 20).replace(/\s+/g, '_').toLowerCase()}`;
+    facts.push({ key: prefKey, value: prefValue, confidence: 0.9, source: 'user_message' });
+  }
+
+  // Extract "remember" commands
+  const rememberMatch = userMessage.match(/(?:remember|note|keep in mind|don't forget)\s+(?:that\s+)?(.{5,100}?)(?:\.|$)/i);
+  if (rememberMatch) {
+    facts.push({ key: 'explicit_memory', value: rememberMatch[1].trim(), confidence: 1.0, source: 'user_message' });
+  }
+
+  return facts;
+}
+
 // ─── Request/Response Types ─────────────────────────────────────────────────
 
 interface ThinkRequest {
@@ -113,6 +204,8 @@ interface ThinkRequest {
     learnedInsights: number;
     memoriesCount: number;
     topTopics: string[];
+    userPreferences?: { key: string; value: string }[];
+    knownFacts?: { key: string; value: string; confidence: number }[];
   };
   soulContext?: {
     name: string;
@@ -133,6 +226,7 @@ interface ThinkResponse {
   intentsDetected: DetectedIntent[];
   executionMs: number;
   usedLLM: boolean;
+  extractedFacts?: ExtractedFact[];
 }
 
 // ─── Main Handler ───────────────────────────────────────────────────────────
@@ -193,12 +287,31 @@ export async function POST(request: NextRequest) {
       // Complex question — use LLM as a TOOL (not the brain)
       const soulCtx = buildSoulContext(soulContext);
       
-      // Build context from brain knowledge
+      // Build context from brain knowledge + preferences
       let fullContext = soulCtx;
       if (brainContext) {
         fullContext += `\n\nYour brain has ${brainContext.knowledgeEntries} knowledge entries, ${brainContext.learnedInsights} learned insights, and ${brainContext.memoriesCount} memories.`;
-        if (brainContext.topTopics.length > 0) {
+        if (brainContext.topTopics && brainContext.topTopics.length > 0) {
           fullContext += ` User's top interests: ${brainContext.topTopics.join(', ')}.`;
+        }
+        // Include known facts so the LLM can reference them
+        if (brainContext.knownFacts && brainContext.knownFacts.length > 0) {
+          fullContext += `\n\nKnown facts about this user:`;
+          for (const fact of brainContext.knownFacts) {
+            const label = fact.key.replace(/_/g, ' ');
+            fullContext += `\n- ${label}: ${fact.value}`;
+          }
+        }
+        // Include user preferences
+        if (brainContext.userPreferences && brainContext.userPreferences.length > 0) {
+          const chainPref = brainContext.userPreferences.find(p => p.key === 'preferred_chain');
+          if (chainPref) {
+            fullContext += `\n- User prefers ${chainPref.value} chain — default to this when suggesting features.`;
+          }
+          const userName = brainContext.userPreferences.find(p => p.key === 'user_name');
+          if (userName) {
+            fullContext += `\n- User's name is ${userName.value} — address them by name occasionally.`;
+          }
         }
       }
       fullContext += `\n\nRespond naturally with your personality. Keep it real, never corporate. Be helpful and knowledgeable.`;
@@ -228,6 +341,24 @@ export async function POST(request: NextRequest) {
       
       if (brainContext) {
         fullContext += `\n\nBrain stats: ${brainContext.knowledgeEntries} knowledge entries, ${brainContext.learnedInsights} insights, ${brainContext.memoriesCount} memories.`;
+        // Include known facts for personalization
+        if (brainContext.knownFacts && brainContext.knownFacts.length > 0) {
+          fullContext += `\n\nWhat I know about this user:`;
+          for (const fact of brainContext.knownFacts) {
+            const label = fact.key.replace(/_/g, ' ');
+            fullContext += `\n- ${label}: ${fact.value}`;
+          }
+        }
+        if (brainContext.userPreferences && brainContext.userPreferences.length > 0) {
+          const userName = brainContext.userPreferences.find(p => p.key === 'user_name');
+          if (userName) {
+            fullContext += `\n- Address the user as ${userName.value} occasionally.`;
+          }
+          const chainPref = brainContext.userPreferences.find(p => p.key === 'preferred_chain');
+          if (chainPref) {
+            fullContext += `\n- User prefers ${chainPref.value} — mention it when relevant.`;
+          }
+        }
       }
       fullContext += `\n\nThis is casual conversation. Be yourself — funny, real, loyal. Keep it natural.`;
 
@@ -247,6 +378,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // ── Step 5: Extract structured facts for fast learning ──
+    const extractedFacts = extractFactsFromExchange(message, response, toolResults, userWallet);
+
     const result: ThinkResponse = {
       response,
       thinking,
@@ -255,6 +389,7 @@ export async function POST(request: NextRequest) {
       intentsDetected: intents,
       executionMs: Date.now() - start,
       usedLLM,
+      extractedFacts,
     };
 
     return NextResponse.json(result);
@@ -270,6 +405,7 @@ export async function POST(request: NextRequest) {
         intentsDetected: [],
         executionMs: Date.now() - start,
         usedLLM: false,
+        extractedFacts: [],
         error: error instanceof Error ? error.message : 'Internal error',
       },
       { status: 200 }, // Return 200 so the client gets a friendly message

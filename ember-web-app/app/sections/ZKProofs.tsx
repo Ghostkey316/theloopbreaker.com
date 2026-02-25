@@ -335,6 +335,28 @@ function ZKGenerate({ ctx, onProofGenerated }: {
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState<ZKProof | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitResult, setSubmitResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  const handleSubmitOnChain = async (proofHash: string) => {
+    setSubmitting(true);
+    setSubmitResult(null);
+    try {
+      const res = await verifyProofByHash(proofHash, chain);
+      if (res.valid) {
+        setSubmitResult({ success: true, message: `Proof verified on-chain via BeliefAttestationVerifier on ${CHAINS[chain].name}.` });
+        showToast('Proof submitted and verified on-chain!', 'success');
+      } else {
+        setSubmitResult({ success: false, message: res.error || 'On-chain verification failed.' });
+        showToast(res.error || 'On-chain verification failed.', 'warning');
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Submission failed.';
+      setSubmitResult({ success: false, message: msg });
+      showToast(msg, 'warning');
+    }
+    setSubmitting(false);
+  };
 
   // Type-specific params
   const [trustThreshold, setTrustThreshold] = useState(50);
@@ -609,12 +631,23 @@ function ZKGenerate({ ctx, onProofGenerated }: {
                 </button>
               )}
               <button
-                onClick={() => showToast(`In production, this submits the proof to BeliefAttestationVerifier on ${CHAINS[chain].name} for on-chain verification.`, 'info')}
-                className="flex-1 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 text-sm font-medium transition-all border border-emerald-500/20"
+                onClick={() => handleSubmitOnChain(result.proofHash)}
+                disabled={submitting}
+                className="flex-1 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 text-sm font-medium transition-all border border-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Submit On-Chain
+                {submitting && <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>}
+                {submitting ? 'Submitting...' : 'Submit On-Chain'}
               </button>
             </div>
+            {submitResult && (
+              <div className={`mt-3 p-3 rounded-xl text-xs font-medium ${
+                submitResult.success
+                  ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
+                  : 'bg-red-500/10 border border-red-500/20 text-red-400'
+              }`}>
+                {submitResult.success ? '✓ ' : '✗ '}{submitResult.message}
+              </div>
+            )}
           </div>
         )}
       </div>

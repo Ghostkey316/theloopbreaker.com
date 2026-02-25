@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { getBrainStats, getExplicitMemories, type BrainStats } from '../lib/companion-brain';
+import { getBrainStats, getExplicitMemories, getUserPreferences, type BrainStats } from '../lib/companion-brain';
 import {
   getCompanionAddress,
   getCompanionBondStatus, getCompanionVNSName,
@@ -202,6 +202,7 @@ export default function CompanionAgent() {
   const [growthStats, setGrowthStats] = useState<{ totalConversations: number; totalReflections: number; totalPatterns: number } | null>(null);
   const [explicitMemCount, setExplicitMemCount] = useState(0);
   const [goals, setGoals] = useState<any[]>([]);
+  const [userPrefs, setUserPrefs] = useState<{ key: string; value: unknown; confidence: number; lastUpdated: number }[]>([]);
   const [toolStatus, setToolStatus] = useState<Record<string, 'ready' | 'executing' | 'error'>>({
     balance: 'ready',
     gas: 'ready',
@@ -222,6 +223,7 @@ export default function CompanionAgent() {
     try { setGrowthStats(getGrowthStats()); } catch { /* */ }
     try { setExplicitMemCount(getExplicitMemories().length); } catch { /* */ }
     try { setGoals(getGoals()); } catch { /* */ }
+    try { setUserPrefs(getUserPreferences()); } catch { /* */ }
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -387,24 +389,90 @@ export default function CompanionAgent() {
       {/* ── Brain Stats ── */}
       <SectionHeader title="Brain" subtitle={brain ? `${brain.brainAge} · Learning from every conversation` : 'Loading...'} />
       {brain && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 32 }}>
-          <StatCard label="Knowledge Base" value={`${brain.knowledgeEntries}`} color="#F97316" desc="Built-in entries" icon={
-            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-          } />
-          <StatCard label="Learned Insights" value={`${brain.learnedInsights}`} color="#22C55E" desc="From our conversations" icon={
-            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="21" x2="15" y2="21"/></svg>
-          } />
-          <StatCard label="Memories" value={`${brain.memoriesCount}`} color="#38BDF8" desc="Long-term memory bank" icon={
-            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 7h10M7 12h10M7 17h6"/></svg>
-          } />
-          <StatCard label="Explicit Memories" value={`${explicitMemCount}`} color="#A78BFA" desc="Things you asked me to remember" icon={
-            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-          } />
-          <StatCard label="Topics Tracked" value={`${brain.trackedTopics}`} color="#F59E0B" desc="Your interests" />
-          <StatCard label="Conversations" value={`${growthStats?.totalConversations || brain.totalConversations || 0}`} color="#EC4899" desc="Total exchanges" />
-          <StatCard label="Reflections" value={`${brain.reflectionsCount}`} color="#14B8A6" desc="Self-reflections" />
-          <StatCard label="Patterns" value={`${brain.patternsCount}`} color="#8B5CF6" desc="Behavioral patterns" />
-        </div>
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
+            <StatCard label="Knowledge Base" value={`${brain.knowledgeEntries}`} color="#F97316" desc="Built-in entries" icon={
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            } />
+            <StatCard label="Learned Insights" value={`${brain.learnedInsights}`} color="#22C55E" desc="From our conversations" icon={
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="21" x2="15" y2="21"/></svg>
+            } />
+            <StatCard label="Memories" value={`${brain.memoriesCount}`} color="#38BDF8" desc="Long-term memory bank" icon={
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 7h10M7 12h10M7 17h6"/></svg>
+            } />
+            <StatCard label="Explicit Memories" value={`${explicitMemCount}`} color="#A78BFA" desc="Things you asked me to remember" icon={
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            } />
+            <StatCard label="Topics Tracked" value={`${brain.trackedTopics}`} color="#F59E0B" desc="Your interests" />
+            <StatCard label="Conversations" value={`${growthStats?.totalConversations || brain.totalConversations || 0}`} color="#EC4899" desc="Total exchanges" />
+            <StatCard label="Reflections" value={`${brain.reflectionsCount}`} color="#14B8A6" desc="Self-reflections" />
+            <StatCard label="Patterns" value={`${brain.patternsCount}`} color="#8B5CF6" desc="Behavioral patterns" />
+          </div>
+
+          {/* ── Learning Speed Stats ── */}
+          <div style={{
+            padding: '16px 20px', borderRadius: 12, marginBottom: 16,
+            background: 'linear-gradient(135deg, rgba(34,197,94,0.05) 0%, rgba(56,189,248,0.04) 100%)',
+            border: '1px solid rgba(34,197,94,0.12)',
+          }}>
+            <p style={{ fontSize: 11, color: '#22C55E', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 12px 0' }}>
+              ⚡ Fast Learning Engine
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ fontSize: 22, fontWeight: 800, color: '#22C55E', margin: 0, fontFamily: "'JetBrains Mono', monospace" }}>
+                  {typeof brain.learningRate === 'number' ? `${brain.learningRate}%` : 'N/A'}
+                </p>
+                <p style={{ fontSize: 10, color: '#71717A', margin: '2px 0 0' }}>Learning Rate</p>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ fontSize: 22, fontWeight: 800, color: '#38BDF8', margin: 0, fontFamily: "'JetBrains Mono', monospace" }}>
+                  {brain.knownFacts?.length || 0}
+                </p>
+                <p style={{ fontSize: 10, color: '#71717A', margin: '2px 0 0' }}>Known Facts</p>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ fontSize: 22, fontWeight: 800, color: '#A78BFA', margin: 0, fontFamily: "'JetBrains Mono', monospace" }}>
+                  {userPrefs.length}
+                </p>
+                <p style={{ fontSize: 10, color: '#71717A', margin: '2px 0 0' }}>Preferences Learned</p>
+              </div>
+            </div>
+          </div>
+
+          {/* ── User Preferences Learned ── */}
+          {userPrefs.length > 0 && (
+            <div style={{
+              padding: '16px 20px', borderRadius: 12, marginBottom: 32,
+              background: 'rgba(255,255,255,0.02)',
+              border: '1px solid rgba(255,255,255,0.06)',
+            }}>
+              <p style={{ fontSize: 11, color: '#A1A1AA', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 12px 0' }}>
+                What I Know About You
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {userPrefs.slice(0, 8).map(pref => (
+                  <div key={pref.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <span style={{ fontSize: 11, color: '#71717A', textTransform: 'capitalize' }}>
+                      {pref.key.replace(/_/g, ' ')}
+                    </span>
+                    <span style={{ fontSize: 11, color: '#D4D4D8', fontWeight: 500, maxWidth: '55%', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {String(pref.value)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {userPrefs.length === 0 && (
+            <div style={{ marginBottom: 32 }}>
+              <p style={{ fontSize: 11, color: '#52525B', textAlign: 'center', padding: '8px 0' }}>
+                Tell me your name, preferred chain, or wallet address — I'll remember it instantly.
+              </p>
+            </div>
+          )}
+        </>
       )}
 
       {/* ── Soul Traits ── */}

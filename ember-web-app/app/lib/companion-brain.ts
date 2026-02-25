@@ -2213,9 +2213,89 @@ export function generateLocalFallback(query: string): string {
    SECTION 4: POST-CONVERSATION LEARNING
    ═══════════════════════════════════════════════════════ */
 
-export function learnFromExchange(userMessage: string, assistantResponse: string): void {
+/**
+ * Extract structured facts from a conversation exchange and store them immediately.
+ * This is the fast-learning engine — one mention = one learned fact.
+ */
+export function extractStructuredFacts(userMessage: string, assistantResponse: string): Record<string, string> {
+  const extracted: Record<string, string> = {};
   const lower = userMessage.toLowerCase();
 
+  // Extract wallet addresses mentioned by user
+  const walletMatch = userMessage.match(/0x[a-fA-F0-9]{40}/);
+  if (walletMatch) {
+    extracted['user_wallet'] = walletMatch[0];
+    setUserPreference('user_wallet', walletMatch[0], 1.0);
+    saveBrainInsight(`User's wallet address: ${walletMatch[0]}`, 'fact_extraction');
+  }
+
+  // Extract chain preference — one mention = permanent preference
+  const chainPrefs: Record<string, string[]> = {
+    'base': ['base chain', 'on base', 'prefer base', 'use base', 'base network', 'base mainnet'],
+    'ethereum': ['prefer ethereum', 'use ethereum', 'eth mainnet', 'prefer eth'],
+    'avalanche': ['prefer avalanche', 'use avalanche', 'prefer avax', 'on avax'],
+  };
+  for (const [chain, phrases] of Object.entries(chainPrefs)) {
+    if (phrases.some(p => lower.includes(p))) {
+      extracted['preferred_chain'] = chain;
+      setUserPreference('preferred_chain', chain, 1.0);
+      saveBrainInsight(`User prefers ${chain} chain`, 'fact_extraction');
+      trackTopicInterest(chain, 'positive');
+      break;
+    }
+  }
+
+  // Extract user name — one mention = remembered forever
+  const nameMatch = userMessage.match(/(?:my name is|i'm|i am|call me|they call me)\s+([A-Z][a-z]+)/i);
+  if (nameMatch && nameMatch[1].length > 1) {
+    extracted['user_name'] = nameMatch[1];
+    setUserPreference('user_name', nameMatch[1], 1.0);
+    saveBrainInsight(`User's name is ${nameMatch[1]}`, 'fact_extraction');
+  }
+
+  // Extract balance data from assistant response (cache it so we don't re-check)
+  const balanceMatch = assistantResponse.match(/([0-9]+\.?[0-9]*) (ETH|AVAX)/);
+  if (balanceMatch && (lower.includes('balance') || lower.includes('my wallet'))) {
+    const amount = balanceMatch[1];
+    const symbol = balanceMatch[2];
+    extracted['last_balance'] = `${amount} ${symbol}`;
+    setUserPreference('last_known_balance', `${amount} ${symbol}`, 0.9);
+    saveBrainInsight(`User's last known balance: ${amount} ${symbol}`, 'tool_result');
+  }
+
+  // Extract VNS name preferences
+  const vnsMatch = userMessage.match(/([a-zA-Z0-9-]+)\.vns/);
+  if (vnsMatch) {
+    extracted['vns_name'] = vnsMatch[0];
+    setUserPreference('vns_name', vnsMatch[0], 1.0);
+    saveBrainInsight(`User's VNS name: ${vnsMatch[0]}`, 'fact_extraction');
+  }
+
+  // Extract explicit "I prefer" / "I like" / "I want" preferences
+  const prefMatch = userMessage.match(/(?:i prefer|i like|i want|i always|i usually|i need)\s+(.{5,60}?)(?:\.|,|$)/i);
+  if (prefMatch) {
+    const prefValue = prefMatch[1].trim();
+    extracted['user_preference_statement'] = prefValue;
+    const prefKey = `pref_${prefValue.slice(0, 20).replace(/\s+/g, '_').toLowerCase()}`;
+    setUserPreference(prefKey, prefValue, 0.9);
+    saveBrainInsight(`User preference: ${prefValue}`, 'fact_extraction');
+  }
+
+  // Extract "remember" commands
+  const rememberMatch = userMessage.match(/(?:remember|note|keep in mind|don't forget)\s+(?:that\s+)?(.{5,100}?)(?:\.|$)/i);
+  if (rememberMatch) {
+    const memContent = rememberMatch[1].trim();
+    extracted['explicit_memory'] = memContent;
+    saveBrainInsight(`User asked me to remember: ${memContent}`, 'explicit_memory');
+  }
+
+  return extracted;
+}
+
+export function learnFromExchange(userMessage: string, assistantResponse: string): void {
+  const lower = userMessage.toLowerCase();
+  // FAST LEARNING: Extract structured facts immediately
+  extractStructuredFacts(userMessage, assistantResponse);
   // Track topics mentioned
   const topicKeywords: Record<string, string[]> = {
     'contracts': ['contract', 'deployed', 'address'],
@@ -2281,6 +2361,8 @@ export interface BrainStats {
   totalConversations: number;
   brainAge: string;
   topTopics: TopicInterest[];
+  learningRate: number;
+  knownFacts: { key: string; value: string; confidence: number }[];
 }
 
 export function getBrainStats(): BrainStats {
@@ -2314,6 +2396,12 @@ export function getBrainStats(): BrainStats {
     ageDays < 30 ? `${Math.floor(ageDays / 7)} weeks old` :
     `${Math.floor(ageDays / 30)} months old`;
 
+  const learningRate = totalConversations > 0
+    ? Math.round((insights.length / totalConversations) * 10) / 10
+    : 0;
+  const knownFacts = prefs
+    .filter(p => ['user_name', 'user_wallet', 'preferred_chain', 'vns_name', 'last_known_balance'].includes(p.key))
+    .map(p => ({ key: p.key, value: String(p.value), confidence: p.confidence }));
   return {
     knowledgeEntries: VAULTFIRE_KNOWLEDGE.length,
     learnedInsights: insights.length,
@@ -2326,6 +2414,8 @@ export function getBrainStats(): BrainStats {
     totalConversations,
     brainAge,
     topTopics: topics.sort((a, b) => b.mentionCount - a.mentionCount).slice(0, 5),
+    learningRate,
+    knownFacts,
   };
 }
 

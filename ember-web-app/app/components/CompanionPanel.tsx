@@ -1140,6 +1140,166 @@ export default function CompanionPanel({ isOpen, onClose, isMobile }: CompanionP
         )}
       </div>
 
+      {/* Bond Setup Modal */}
+      {showBondSetup && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+        }}>
+          <div style={{
+            width: '100%', maxWidth: 380, borderRadius: 20,
+            backgroundColor: '#111', border: '1px solid rgba(255,255,255,0.08)',
+            overflow: 'hidden', boxShadow: '0 24px 60px rgba(0,0,0,0.8)',
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              padding: '18px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{
+                  width: 32, height: 32, borderRadius: 8,
+                  backgroundColor: 'rgba(249,115,22,0.12)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <ShieldIcon size={16} />
+                </div>
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#F4F4F5', margin: 0 }}>Create Partnership Bond</p>
+                  <p style={{ fontSize: 10, color: '#71717A', margin: 0 }}>Stake ETH on AIPartnershipBondsV2 · Base</p>
+                </div>
+              </div>
+              <button
+                onClick={() => { setShowBondSetup(false); setError(''); }}
+                style={{
+                  width: 28, height: 28, borderRadius: 6, border: 'none',
+                  backgroundColor: 'rgba(255,255,255,0.04)', color: '#71717A',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 16, lineHeight: 1,
+                }}
+              >×</button>
+            </div>
+            {/* Modal Body */}
+            <div style={{ padding: '20px' }}>
+              {/* What is a bond */}
+              <div style={{
+                padding: '12px', borderRadius: 10, marginBottom: 16,
+                backgroundColor: 'rgba(249,115,22,0.05)',
+                border: '1px solid rgba(249,115,22,0.12)',
+              }}>
+                <p style={{ fontSize: 11, color: '#A1A1AA', lineHeight: 1.6, margin: 0 }}>
+                  A Partnership Bond stakes ETH on-chain to give your companion higher trust, spending limits, and deeper access. The bond is held in the <span style={{ color: '#F97316', fontWeight: 600 }}>AIPartnershipBondsV2</span> contract on Base.
+                </p>
+              </div>
+              {/* Bond Amount */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: 10, color: '#71717A', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 8 }}>
+                  Bond Amount (ETH)
+                </label>
+                <input
+                  type="number"
+                  step="0.001"
+                  min="0.001"
+                  value={bondAmount}
+                  onChange={e => setBondAmount(e.target.value)}
+                  style={{
+                    width: '100%', padding: '10px 12px', borderRadius: 8,
+                    backgroundColor: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    color: '#F4F4F5', fontSize: 14, fontWeight: 700,
+                    outline: 'none', boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+              {/* Quick amounts */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 16 }}>
+                {[0.01, 0.05, 0.1, 0.5].map(amt => {
+                  const tier = amt >= 0.5 ? 'platinum' : amt >= 0.1 ? 'gold' : amt >= 0.05 ? 'silver' : 'bronze';
+                  const selected = parseFloat(bondAmount) === amt;
+                  return (
+                    <button
+                      key={amt}
+                      onClick={() => setBondAmount(amt.toString())}
+                      style={{
+                        padding: '8px 4px', borderRadius: 8,
+                        backgroundColor: selected ? `${TIER_COLORS[tier as keyof typeof TIER_COLORS]}20` : 'rgba(255,255,255,0.03)',
+                        border: `1px solid ${selected ? TIER_COLORS[tier as keyof typeof TIER_COLORS] : 'rgba(255,255,255,0.06)'}`,
+                        color: selected ? TIER_COLORS[tier as keyof typeof TIER_COLORS] : '#71717A',
+                        fontSize: 10, fontWeight: 700, cursor: 'pointer',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                      }}
+                    >
+                      <span>{amt}</span>
+                      <span style={{ fontSize: 9, textTransform: 'uppercase', opacity: 0.8 }}>{tier}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {/* Tier indicator */}
+              {(() => {
+                const amt = parseFloat(bondAmount) || 0;
+                const tier = amt >= 0.5 ? 'platinum' : amt >= 0.1 ? 'gold' : amt >= 0.05 ? 'silver' : 'bronze';
+                const tierColor = TIER_COLORS[tier as keyof typeof TIER_COLORS] || '#F97316';
+                return (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '8px 12px', borderRadius: 8, marginBottom: 16,
+                    backgroundColor: `${tierColor}10`,
+                    border: `1px solid ${tierColor}25`,
+                  }}>
+                    <span style={{ fontSize: 11, color: '#A1A1AA' }}>Bond Tier</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: tierColor, textTransform: 'uppercase' }}>{tier}</span>
+                  </div>
+                );
+              })()}
+              {/* Error/Success messages */}
+              {error && (
+                <div style={{
+                  padding: '10px 12px', borderRadius: 8, marginBottom: 12,
+                  backgroundColor: 'rgba(239,68,68,0.08)',
+                  border: '1px solid rgba(239,68,68,0.2)',
+                }}>
+                  <p style={{ fontSize: 11, color: '#EF4444', margin: 0 }}>{error}</p>
+                </div>
+              )}
+              {success && (
+                <div style={{
+                  padding: '10px 12px', borderRadius: 8, marginBottom: 12,
+                  backgroundColor: 'rgba(34,197,94,0.08)',
+                  border: '1px solid rgba(34,197,94,0.2)',
+                }}>
+                  <p style={{ fontSize: 11, color: '#22C55E', margin: 0 }}>{success}</p>
+                </div>
+              )}
+              {/* Create Bond Button */}
+              <button
+                onClick={handleCreateBond}
+                disabled={loading}
+                style={{
+                  width: '100%', padding: '12px', borderRadius: 10, border: 'none',
+                  backgroundColor: loading ? 'rgba(249,115,22,0.4)' : '#F97316',
+                  color: 'white', fontSize: 13, fontWeight: 700,
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  transition: 'background-color 0.2s',
+                }}
+              >
+                {loading && (
+                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ animation: 'spin 1s linear infinite' }}>
+                    <circle cx="12" cy="12" r="10" strokeOpacity={0.25} />
+                    <path d="M4 12a8 8 0 018-8" />
+                  </svg>
+                )}
+                {loading ? 'Creating Bond...' : `Stake ${bondAmount} ETH Bond`}
+              </button>
+              <p style={{ fontSize: 10, color: '#52525B', textAlign: 'center', marginTop: 8 }}>
+                This sends a real transaction to Base mainnet. Make sure you have ETH in your wallet.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Footer / Status */}
       <div style={{
         padding: '12px 20px',

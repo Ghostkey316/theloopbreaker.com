@@ -483,7 +483,7 @@ export async function toolLLMReasoning(prompt: string, context: string): Promise
     const res = await fetch(apiUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'text/plain',
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({

@@ -25,7 +25,7 @@ import { getCompanionAddress, getCompanionBondStatus } from './companion-agent';
 import { getWalletAddress } from './wallet';
 import { getGoals, addGoal, updateGoalStatus } from './goal-tracking';
 import { getSoul } from './companion-soul';
-import { getBrainStats, getTopicInterests } from './companion-brain';
+import { getBrainStats, getTopicInterests, getUserPreferences, setUserPreference, saveBrainInsight } from './companion-brain';
 import { PARTNERSHIP_BONDS, IDENTITY_REGISTRY, RPC_URLS, type SupportedChain } from './contracts';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -52,6 +52,7 @@ export interface EngineResult {
   usedLLM: boolean;
   cached: boolean;
   error?: string;
+  extractedFacts?: { key: string; value: string; confidence: number; source: string }[];
 }
 
 export interface TaskDetection {
@@ -140,16 +141,19 @@ export async function callThinkAPI(
   const start = Date.now();
 
   try {
-    // Gather brain context
+    // Gather brain context (including preferences and known facts for personalization)
     let brainContext;
     try {
       const stats = getBrainStats();
       const interests = getTopicInterests();
+      const prefs = getUserPreferences();
       brainContext = {
         knowledgeEntries: stats.knowledgeEntries,
         learnedInsights: stats.learnedInsights,
         memoriesCount: stats.memoriesCount,
         topTopics: interests.slice(0, 5).map(t => t.topic),
+        userPreferences: prefs.slice(0, 10).map(p => ({ key: p.key, value: String(p.value) })),
+        knownFacts: stats.knownFacts,
       };
     } catch { /* brain not available */ }
 
@@ -182,6 +186,20 @@ export async function callThinkAPI(
 
     const data = await res.json();
 
+    // Apply extracted facts to local brain immediately (fast learning)
+    if (data.extractedFacts && Array.isArray(data.extractedFacts)) {
+      try {
+        for (const fact of data.extractedFacts) {
+          if (fact.key && fact.value) {
+            setUserPreference(fact.key, fact.value, fact.confidence || 0.8);
+            if (fact.key === 'explicit_memory') {
+              saveBrainInsight(`Remembered: ${fact.value}`, 'explicit_memory');
+            }
+          }
+        }
+      } catch { /* ignore brain update errors */ }
+    }
+
     return {
       response: data.response || '',
       thinking: data.thinking || '',
@@ -190,6 +208,7 @@ export async function callThinkAPI(
       usedLLM: data.usedLLM || false,
       cached: false,
       error: data.error,
+      extractedFacts: data.extractedFacts || [],
     };
   } catch (error) {
     return {
