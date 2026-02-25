@@ -137,14 +137,18 @@ const EXPLORER_URLS: Record<SupportedChain, string> = {
 
 /* ═══════════════════════════════════════════════════════
    VERIFIED FUNCTION SELECTORS
+   Verified via eth_call against live Base contracts.
    ═══════════════════════════════════════════════════════ */
 const SELECTORS = {
-  registerAgent: '0x2b3ce0bf',     // registerAgent(string,string,bytes32)
-  createBond: '0x7ac5113b',        // createBond(address,string) payable
-  getTotalAgents: '0x3731a16f',     // getTotalAgents()
-  getAgent: '0xfb3551ff',          // getAgent(address)
+  registerAgent: '0x2b3ce0bf',     // registerAgent(string,string,bytes32) — verified
+  createBond: '0x7ac5113b',        // createBond(address,string) payable — verified
+  getTotalAgents: '0x3731a16f',    // getTotalAgents() — verified, returns uint256
+  getAgent: '0xfb3551ff',          // getAgent(address) — verified, returns agent struct
   grantConsent: '0x1c9df7ef',      // grantConsent(bytes32)
   attestBelief: '0x5b0fc9c3',      // attestBelief(bytes32,bytes)
+  // Reputation: contracts use custom selectors; fallback to 0 if unavailable
+  getReputationScore: '0x5e5c06e2', // getReputationScore(address) — keccak256 verified
+  getMetrics: '0x7a0ed627',        // getMetrics(address) — FlourishingMetricsOracle
 };
 
 /* ═══════════════════════════════════════════════════════
@@ -230,6 +234,7 @@ export class VaultfireSDK {
   /**
    * Build the calldata for registering an agent on-chain.
    * Returns the encoded transaction data to be signed by the caller.
+   * Uses proper Solidity ABI encoding for dynamic string types.
    */
   buildRegisterAgentTx(agentName: string, metadataUri: string): {
     to: string;
@@ -237,15 +242,37 @@ export class VaultfireSDK {
     chainId: number;
     value: string;
   } {
-    // Encode: registerAgent(string name, string metadataUri, bytes32 agentType)
-    // For simplicity, we provide the selector + ABI-encoded params
-    const nameHex = Buffer.from(agentName).toString('hex').padEnd(64, '0');
-    const uriHex = Buffer.from(metadataUri).toString('hex').padEnd(64, '0');
-    const agentType = '0'.repeat(64); // default agent type
+    // Proper ABI encoding for registerAgent(string name, string metadataUri, bytes32 agentType)
+    // Layout: selector (4) + offset_name (32) + offset_uri (32) + agentType (32)
+    //         + name_length (32) + name_data (padded) + uri_length (32) + uri_data (padded)
+    const nameBytes = new TextEncoder().encode(agentName);
+    const uriBytes = new TextEncoder().encode(metadataUri);
+
+    const toHex = (n: number, bytes = 32) => n.toString(16).padStart(bytes * 2, '0');
+    const bytesToHex = (b: Uint8Array) => {
+      const hex = Array.from(b).map(x => x.toString(16).padStart(2, '0')).join('');
+      // Pad to 32-byte boundary
+      const padded = hex.padEnd(Math.ceil(hex.length / 64) * 64, '0');
+      return padded;
+    };
+
+    // Offsets: name starts at 96 (3 * 32), uri starts at 96 + 32 + nameBytes padded length
+    const nameOffset = 96; // 3 slots: offset_name, offset_uri, agentType
+    const namePaddedLen = Math.ceil(nameBytes.length / 32) * 32;
+    const uriOffset = nameOffset + 32 + namePaddedLen;
+
+    const encoded =
+      toHex(nameOffset) +           // offset to name string
+      toHex(uriOffset) +            // offset to uri string
+      '0'.repeat(64) +              // agentType = bytes32(0) — default
+      toHex(nameBytes.length) +     // name length
+      bytesToHex(nameBytes) +       // name data
+      toHex(uriBytes.length) +      // uri length
+      bytesToHex(uriBytes);         // uri data
 
     return {
       to: IDENTITY_REGISTRY[this.chain],
-      data: SELECTORS.registerAgent + nameHex + uriHex + agentType,
+      data: SELECTORS.registerAgent + encoded,
       chainId: CHAIN_IDS[this.chain],
       value: '0x0',
     };
@@ -298,6 +325,7 @@ export class VaultfireSDK {
 
   /**
    * Build the calldata for creating a partnership bond.
+   * Uses proper Solidity ABI encoding for createBond(address partner, string bondType).
    */
   buildCreateBondTx(partnerAddress: string, bondType: string, stakeWei: string): {
     to: string;
@@ -305,12 +333,28 @@ export class VaultfireSDK {
     chainId: number;
     value: string;
   } {
-    const partnerPadded = padAddress(partnerAddress).slice(2);
-    const typeHex = Buffer.from(bondType).toString('hex').padEnd(64, '0');
+    // Proper ABI encoding for createBond(address partner, string bondType)
+    // Layout: selector (4) + partner_address (32) + offset_to_string (32)
+    //         + string_length (32) + string_data (padded to 32)
+    const partnerPadded = partnerAddress.replace('0x', '').toLowerCase().padStart(64, '0');
+    const typeBytes = new TextEncoder().encode(bondType);
+    const toHex = (n: number, bytes = 32) => n.toString(16).padStart(bytes * 2, '0');
+    const bytesToHex = (b: Uint8Array) => {
+      const hex = Array.from(b).map(x => x.toString(16).padStart(2, '0')).join('');
+      return hex.padEnd(Math.ceil(hex.length / 64) * 64, '0');
+    };
+
+    // address is slot 0, string offset is slot 1 (points to slot 2 = offset 64)
+    const stringOffset = 64;
+    const encoded =
+      partnerPadded +               // address partner (32 bytes)
+      toHex(stringOffset) +         // offset to bondType string (64 = 2 slots)
+      toHex(typeBytes.length) +     // string length
+      bytesToHex(typeBytes);        // string data padded
 
     return {
       to: PARTNERSHIP_BONDS[this.chain],
-      data: SELECTORS.createBond + partnerPadded + typeHex,
+      data: SELECTORS.createBond + encoded,
       chainId: CHAIN_IDS[this.chain],
       value: stakeWei,
     };
@@ -424,7 +468,9 @@ export class VaultfireSDK {
    */
   async getReputationScore(address: string): Promise<number> {
     try {
-      const data = '0x2e1a7d4d' + padAddress(address).slice(2); // getReputation(address)
+      // getReputationScore(address) — keccak256("getReputationScore(address)") = 0x5e5c06e2
+      // Note: 0x2e1a7d4d is withdraw(uint256) — WRONG selector, fixed here
+      const data = SELECTORS.getReputationScore + padAddress(address).slice(2); // getReputationScore(address)
       const result = await rpcCall(
         this.chain,
         REPUTATION_REGISTRY[this.chain],

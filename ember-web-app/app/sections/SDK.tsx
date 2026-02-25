@@ -4,8 +4,164 @@
  * Professional developer docs with code examples, API reference,
  * and a "Register your agent in 5 minutes" tutorial.
  */
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AlphaBanner } from "../components/DisclaimerBanner";
+
+/* ═══════════════════════════════════════════════════════
+   LIVE CONTRACT EXPLORER WIDGET
+   Lets developers query real on-chain data directly from the docs.
+   Like Stripe's API explorer — but for the Vaultfire Protocol.
+   ═══════════════════════════════════════════════════════ */
+const IDENTITY_REGISTRY_BASE = '0x35978DB675576598F0781dA2133E94cdCf4858bC';
+
+function LiveContractExplorer() {
+  const [address, setAddress] = useState('');
+  const [result, setResult] = useState<null | { isRegistered: boolean; totalAgents: number; error?: string }>(null);
+  const [loading, setLoading] = useState(false);
+  const [totalAgents, setTotalAgents] = useState<number | null>(null);
+
+  // Fetch total agents on mount
+  useEffect(() => {
+    async function fetchTotal() {
+      try {
+        const res = await fetch('https://mainnet.base.org', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0', id: 1, method: 'eth_call',
+            params: [{ to: IDENTITY_REGISTRY_BASE, data: '0x3731a16f' }, 'latest'],
+          }),
+        });
+        const data = await res.json();
+        if (data.result && data.result !== '0x') {
+          setTotalAgents(parseInt(data.result, 16));
+        }
+      } catch { /* ignore */ }
+    }
+    fetchTotal();
+  }, []);
+
+  const checkAddress = useCallback(async () => {
+    if (!address || !address.match(/^0x[a-fA-F0-9]{40}$/)) {
+      setResult({ isRegistered: false, totalAgents: totalAgents || 0, error: 'Please enter a valid 0x address' });
+      return;
+    }
+    setLoading(true);
+    setResult(null);
+    try {
+      const padded = address.replace('0x', '').toLowerCase().padStart(64, '0');
+      const res = await fetch('https://mainnet.base.org', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0', id: 1, method: 'eth_call',
+          params: [{ to: IDENTITY_REGISTRY_BASE, data: '0xfb3551ff' + padded }, 'latest'],
+        }),
+      });
+      const data = await res.json();
+      const raw = data.result || '0x';
+      const isRegistered = raw.length > 66 && raw !== '0x' + '0'.repeat(64);
+      setResult({ isRegistered, totalAgents: totalAgents || 0 });
+    } catch (e) {
+      setResult({ isRegistered: false, totalAgents: totalAgents || 0, error: String(e) });
+    } finally {
+      setLoading(false);
+    }
+  }, [address, totalAgents]);
+
+  return (
+    <div style={{
+      marginTop: 32, padding: 20, borderRadius: 14,
+      background: 'rgba(249,115,22,0.03)',
+      border: '1px solid rgba(249,115,22,0.12)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+        <div style={{
+          width: 8, height: 8, borderRadius: '50%',
+          backgroundColor: '#22C55E',
+          boxShadow: '0 0 6px #22C55E',
+          animation: 'pulse 2s infinite',
+        }} />
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#F97316', letterSpacing: '0.04em' }}>LIVE CONTRACT EXPLORER</span>
+        {totalAgents !== null && (
+          <span style={{
+            marginLeft: 'auto', fontSize: 11, color: '#71717A',
+            backgroundColor: 'rgba(255,255,255,0.04)',
+            padding: '2px 8px', borderRadius: 4,
+          }}>
+            {totalAgents} agent{totalAgents !== 1 ? 's' : ''} registered on Base
+          </span>
+        )}
+      </div>
+      <p style={{ fontSize: 12, color: '#71717A', marginBottom: 14, lineHeight: 1.5 }}>
+        Query the live ERC8004IdentityRegistry on Base. Enter any address to check if it&apos;s registered.
+      </p>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input
+          value={address}
+          onChange={e => setAddress(e.target.value)}
+          placeholder="0xYourAddress..."
+          style={{
+            flex: 1, padding: '9px 12px', borderRadius: 8,
+            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'rgba(255,255,255,0.04)',
+            color: '#F4F4F5', fontSize: 12,
+            fontFamily: "'JetBrains Mono', monospace",
+            outline: 'none',
+          }}
+          onKeyDown={e => e.key === 'Enter' && checkAddress()}
+        />
+        <button
+          onClick={checkAddress}
+          disabled={loading}
+          style={{
+            padding: '9px 16px', borderRadius: 8,
+            border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
+            background: loading ? 'rgba(249,115,22,0.3)' : 'rgba(249,115,22,0.15)',
+            color: '#F97316', fontSize: 12, fontWeight: 600,
+            transition: 'all 0.15s ease',
+          }}
+        >
+          {loading ? 'Querying...' : 'Check'}
+        </button>
+      </div>
+      {result && (
+        <div style={{
+          marginTop: 12, padding: '10px 14px', borderRadius: 8,
+          background: result.error ? 'rgba(239,68,68,0.06)' :
+            result.isRegistered ? 'rgba(34,197,94,0.06)' : 'rgba(255,255,255,0.03)',
+          border: `1px solid ${result.error ? 'rgba(239,68,68,0.15)' :
+            result.isRegistered ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.06)'}`,
+        }}>
+          {result.error ? (
+            <span style={{ fontSize: 12, color: '#EF4444' }}>⚠️ {result.error}</span>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 16 }}>{result.isRegistered ? '✅' : '❌'}</span>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 600, color: result.isRegistered ? '#22C55E' : '#F4F4F5', margin: 0 }}>
+                  {result.isRegistered ? 'Registered Agent' : 'Not Registered'}
+                </p>
+                <p style={{ fontSize: 11, color: '#71717A', margin: 0 }}>
+                  {result.isRegistered
+                    ? `This address is registered on the Vaultfire Protocol (Base)`
+                    : `This address has not registered on the ERC8004IdentityRegistry`}
+                </p>
+              </div>
+              <a
+                href={`https://basescan.org/address/${address}`}
+                target="_blank" rel="noopener noreferrer"
+                style={{ marginLeft: 'auto', fontSize: 11, color: '#0052FF', textDecoration: 'none' }}
+              >
+                BaseScan ↗
+              </a>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 /* ═══════════════════════════════════════════════════════
    CODE BLOCK WITH COPY
@@ -174,13 +330,12 @@ export default function SDK() {
   const [activeTab, setActiveTab] = useState<SDKTab>("quickstart");
   const [isMobile, setIsMobile] = useState(false);
 
-  useState(() => {
-    if (typeof window !== "undefined") {
-      setIsMobile(window.innerWidth < 768);
-      const handler = () => setIsMobile(window.innerWidth < 768);
-      window.addEventListener("resize", handler);
-    }
-  });
+  useEffect(() => {
+    setIsMobile(window.innerWidth < 768);
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
   const px = isMobile ? 20 : 40;
 
@@ -335,6 +490,9 @@ console.log(\`Avalanche: \${counts.avalanche}\`);
 console.log(\`Ethereum: \${counts.ethereum}\`);
 console.log(\`Total: \${counts.total}\`);`}
       />
+
+      {/* Live Contract Explorer */}
+      <LiveContractExplorer />
 
       {/* Contract addresses reference */}
       <div style={{
