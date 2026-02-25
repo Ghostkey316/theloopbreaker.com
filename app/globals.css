@@ -331,3 +331,91 @@ p, span, h1, h2, h3, h4, h5, h6 {
 .no-bounce {
   overscroll-behavior: none;
 }
+
+/* ─── Safari-specific fixes ───────────────────────────────────────────────── */
+
+/* Flexbox gap fallback for older Safari (pre-14.1) */
+@supports not (gap: 1px) {
+  .flex-gap-fallback > * + * {
+    margin-left: 8px;
+  }
+  .flex-gap-fallback-col > * + * {
+    margin-top: 8px;
+  }
+}
+
+/* Ensure backdrop-filter always has -webkit prefix */
+[style*="backdrop-filter"] {
+  -webkit-backdrop-filter: inherit;
+}
+
+/* Safari animation performance */
+@media not all and (min-resolution: 0.001dpcm) {
+  @supports (-webkit-appearance: none) {
+    .page-enter,
+    .page-exit,
+    .fade-in,
+    .animate-in {
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+    }
+  }
+}
+
+/* Safari smooth scrolling fix */
+.scroll-smooth {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Companion panel slide-in animation */
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Voice mode animations */
+@keyframes embrisSpeakPulse {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.3); opacity: 0.1; }
+}
+
+@keyframes voiceWave {
+  0%, 100% { height: 4px; }
+  50% { height: 14px; }
+}
+
+.voice-wave-bar {
+  animation: voiceWave 0.8s ease-in-out infinite;
+}
+
+/* Typing indicator */
+@keyframes typingBounce {
+  0%, 100% { transform: translateY(0); opacity: 0.3; }
+  50% { transform: translateY(-4px); opacity: 0.8; }
+}
+
+.typing-dot {
+  animation: typingBounce 1.2s ease-in-out infinite;
+}
+
+.typing-indicator-enter {
+  animation: fadeInUp 0.3s ease forwards;
+}
+
+/* Voice mic active pulse */
+.voice-mic-active {
+  animation: embrisSpeakPulse 1.5s ease-in-out infinite;
+}
+
+/* Message enter animation */
+@keyframes messageSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.message-enter {
+  animation: messageSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

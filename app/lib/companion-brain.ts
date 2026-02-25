@@ -633,7 +633,7 @@ function dynamicCompanionStatus(): string {
 export function tryLocalAnswer(query: string): string | null {
   const results = searchKnowledge(query);
 
-  if (results.length === 0 || results[0].score < 4) {
+  if (results.length === 0 || results[0].score < 3) {
     return null; // Not confident enough, fall through to generateLocalFallback
   }
 

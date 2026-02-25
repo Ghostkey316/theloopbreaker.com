@@ -19,6 +19,7 @@ import { formatSessionSummariesForPrompt } from './conversation-summaries';
 import { formatGoalsForPrompt } from './goal-tracking';
 import { formatPersonalityForPrompt } from './personality-tuning';
 import { getBrainStats, getUserPreferences, getTopicInterests } from './companion-brain';
+import { getSoulContextForPrompt } from './companion-soul';
 import { isRegistered, shouldNudgeRegistration, getRegisteredWalletAddress } from './registration';
 import type { Memory } from './memory';
 
@@ -331,7 +332,17 @@ ${companionName !== 'Embris' ? `IMPORTANT: The user has named you "${companionNa
     }
   }
 
-  // 9. Companion brain context (learned preferences and interests)
+  // 9. Companion soul context (identity, values, boundaries)
+  if (remainingBudget > 300) {
+    const soulBlock = getSoulContextForPrompt();
+    const soulTokens = estimateTokens(soulBlock);
+    if (soulTokens < remainingBudget) {
+      prompt += soulBlock;
+      remainingBudget -= soulTokens;
+    }
+  }
+
+  // 10. Companion brain context (learned preferences and interests)
   if (remainingBudget > 300) {
     const brainStats = getBrainStats();
     const prefs = getUserPreferences();
@@ -457,8 +468,9 @@ export async function streamChat({
   onError,
   signal,
 }: StreamChatParams): Promise<void> {
-  // If no API key is configured, immediately trigger the error handler
-  // so Chat.tsx can use the local brain fallback
+  // LOCAL BRAIN FIRST: If no API key is configured, immediately trigger
+  // the error handler so Chat.tsx can use the local brain fallback.
+  // The local brain is the PRIMARY intelligence — API is only for complex/novel queries.
   if (!API_KEY || API_KEY.trim() === '') {
     onError('No API key configured — using local brain');
     return;
@@ -488,9 +500,10 @@ export async function streamChat({
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => '');
-      // Trigger error handler which will use local brain fallback
-      onError(`Chat service unavailable (${response.status}): ${errorText}`);
+      // API failed (401, 429, 500, etc.) — fall back to local brain.
+      // NEVER show raw error to user.
+      console.warn(`[Embris] API returned ${response.status} — falling back to local brain`);
+      onError(`API unavailable (${response.status})`);
       return;
     }
 
@@ -498,7 +511,7 @@ export async function streamChat({
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
-      onError('No response from Embris');
+      onError('Empty response — using local brain');
       return;
     }
 
@@ -507,7 +520,8 @@ export async function streamChat({
     onDone(content);
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') return;
-    const msg = error instanceof Error ? error.message : 'Connection failed';
-    onError(msg);
+    // Network error, timeout, etc. — fall back to local brain. NEVER show raw error.
+    console.warn('[Embris] API call failed:', error instanceof Error ? error.message : error);
+    onError('Connection failed — using local brain');
   }
 }

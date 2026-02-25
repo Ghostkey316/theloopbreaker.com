@@ -68,6 +68,14 @@ import {
   toggleConnector,
   type Connector,
 } from '../lib/companion-connectors';
+import {
+  getSoul,
+  getSoulSummary,
+  updateSoulTrait,
+  updateSoulNotes,
+  resetSoul,
+  type CompanionSoul,
+} from '../lib/companion-soul';
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
 
@@ -199,6 +207,11 @@ export default function CompanionPanel({ isOpen, onClose, isMobile }: CompanionP
   const [showConnectors, setShowConnectors] = useState(false);
   const [connectors, setConnectorsState] = useState<Connector[]>([]);
 
+  // Soul Viewer State
+  const [showSoulViewer, setShowSoulViewer] = useState(false);
+  const [soulData, setSoulData] = useState<CompanionSoul | null>(null);
+  const [soulNotesInput, setSoulNotesInput] = useState('');
+
   // Load status
   const refreshStatus = useCallback(async () => {
     const s = getCompanionStatus();
@@ -224,6 +237,11 @@ export default function CompanionPanel({ isOpen, onClose, isMobile }: CompanionP
 
     // Refresh connector data
     setConnectorsState(getConnectors());
+
+    // Refresh soul data
+    const soul = getSoul();
+    setSoulData(soul);
+    setSoulNotesInput(soul.userNotes || '');
   }, []);
 
   useEffect(() => {
@@ -361,6 +379,21 @@ export default function CompanionPanel({ isOpen, onClose, isMobile }: CompanionP
     }
   };
 
+  // Soul Handlers
+  const handleSaveSoulNotes = () => {
+    updateSoulNotes(soulNotesInput);
+    refreshStatus();
+    setSuccess('Soul notes updated.');
+  };
+
+  const handleResetSoul = () => {
+    if (confirm('Reset the companion soul to defaults? Custom traits and notes will be lost.')) {
+      resetSoul();
+      refreshStatus();
+      setSuccess('Companion soul reset to defaults.');
+    }
+  };
+
   // Connector Handlers
   const handleToggleConnector = (id: string, enabled: boolean) => {
     toggleConnector(id, enabled);
@@ -374,18 +407,20 @@ export default function CompanionPanel({ isOpen, onClose, isMobile }: CompanionP
 
   return (
     <div style={{
-      position: isMobile ? 'fixed' : 'absolute',
-      top: isMobile ? 0 : 0,
-      right: 0,
+      position: isMobile ? 'fixed' : 'relative',
+      top: isMobile ? 0 : undefined,
+      right: isMobile ? 0 : undefined,
       width: isMobile ? '100%' : 340,
-      height: '100%',
+      height: isMobile ? '100%' : undefined,
+      flexShrink: 0,
       backgroundColor: '#09090B',
       borderLeft: '1px solid rgba(255,255,255,0.06)',
       display: 'flex',
       flexDirection: 'column',
-      zIndex: 100,
+      zIndex: isMobile ? 100 : 10,
       boxShadow: '-10px 0 30px rgba(0,0,0,0.5)',
       animation: 'slideIn 0.3s ease-out',
+      overflow: 'hidden',
     }}>
       {/* Header */}
       <div style={{
@@ -701,6 +736,155 @@ export default function CompanionPanel({ isOpen, onClose, isMobile }: CompanionP
                       </button>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+
+            {/* Soul Viewer Section */}
+            <div style={{
+              padding: '12px', borderRadius: 12,
+              backgroundColor: 'rgba(249,115,22,0.03)',
+              border: '1px solid rgba(249,115,22,0.08)',
+            }}>
+              <div 
+                onClick={() => setShowSoulViewer(!showSoulViewer)}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <svg width={14} height={14} viewBox="0 0 32 32" fill="none">
+                    <path d="M16 4c-3 3.5-6 8-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-4-3-8.5-6-12z" fill="#F97316" opacity="0.9" />
+                    <path d="M16 10c-1.5 2-3 4.5-3 6.5 0 1.66 1.34 3 3 3s3-1.34 3-3c0-2-1.5-4.5-3-6.5z" fill="#FB923C" />
+                  </svg>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: '#F97316', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Companion Soul
+                  </span>
+                </div>
+                <span style={{ fontSize: 10, color: '#52525B' }}>{showSoulViewer ? '▼' : '▶'}</span>
+              </div>
+
+              {showSoulViewer && soulData && (
+                <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {/* Soul motto */}
+                  <div style={{ padding: 8, backgroundColor: '#111113', borderRadius: 8, borderLeft: '2px solid #F97316' }}>
+                    <div style={{ fontSize: 9, color: '#52525B', marginBottom: 2 }}>MOTTO</div>
+                    <div style={{ fontSize: 11, color: '#E4E4E7', fontStyle: 'italic', lineHeight: 1.5 }}>
+                      &ldquo;{soulData.motto}&rdquo;
+                    </div>
+                  </div>
+
+                  {/* Soul stats grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+                    <div style={{ padding: 6, backgroundColor: '#111113', borderRadius: 6, textAlign: 'center' }}>
+                      <div style={{ fontSize: 8, color: '#52525B' }}>VALUES</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#F97316' }}>{soulData.values.length}</div>
+                    </div>
+                    <div style={{ padding: 6, backgroundColor: '#111113', borderRadius: 6, textAlign: 'center' }}>
+                      <div style={{ fontSize: 8, color: '#52525B' }}>TRAITS</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#F97316' }}>{soulData.traits.length}</div>
+                    </div>
+                    <div style={{ padding: 6, backgroundColor: '#111113', borderRadius: 6, textAlign: 'center' }}>
+                      <div style={{ fontSize: 8, color: '#52525B' }}>BOUNDS</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#F97316' }}>{soulData.boundaries.length}</div>
+                    </div>
+                  </div>
+
+                  {/* Core values */}
+                  <div>
+                    <div style={{ fontSize: 9, color: '#52525B', marginBottom: 4 }}>CORE VALUES</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {soulData.values.slice(0, 5).map(v => (
+                        <span key={v.name} style={{
+                          fontSize: 9, padding: '2px 6px', borderRadius: 4,
+                          backgroundColor: 'rgba(249,115,22,0.1)', color: '#F97316',
+                          border: '1px solid rgba(249,115,22,0.15)',
+                        }}>
+                          {v.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Personality traits */}
+                  <div>
+                    <div style={{ fontSize: 9, color: '#52525B', marginBottom: 4 }}>PERSONALITY</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {soulData.traits.slice(0, 5).map(t => (
+                        <div key={t.name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 10, color: '#A1A1AA', minWidth: 70 }}>{t.name}</span>
+                          <div style={{ flex: 1, height: 4, backgroundColor: '#1A1A1E', borderRadius: 2, overflow: 'hidden' }}>
+                            <div style={{ width: `${t.strength}%`, height: '100%', backgroundColor: '#F97316', borderRadius: 2, transition: 'width 0.3s ease' }} />
+                          </div>
+                          <span style={{ fontSize: 9, color: '#52525B', minWidth: 24, textAlign: 'right' }}>{t.strength}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Beliefs */}
+                  <div>
+                    <div style={{ fontSize: 9, color: '#52525B', marginBottom: 4 }}>BELIEFS</div>
+                    <div style={{ maxHeight: 80, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      {soulData.beliefs.map((b, i) => (
+                        <div key={i} style={{ fontSize: 10, color: '#A1A1AA', lineHeight: 1.4, paddingLeft: 8, borderLeft: '1px solid rgba(249,115,22,0.2)' }}>
+                          {b}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Loyalty statement */}
+                  <div style={{ padding: 8, backgroundColor: '#111113', borderRadius: 8 }}>
+                    <div style={{ fontSize: 9, color: '#52525B', marginBottom: 2 }}>LOYALTY</div>
+                    <div style={{ fontSize: 10, color: '#D4D4D8', lineHeight: 1.5 }}>
+                      {soulData.loyaltyStatement}
+                    </div>
+                  </div>
+
+                  {/* User notes */}
+                  <div>
+                    <div style={{ fontSize: 9, color: '#52525B', marginBottom: 4 }}>YOUR GUIDANCE (optional)</div>
+                    <textarea
+                      value={soulNotesInput}
+                      onChange={(e) => setSoulNotesInput(e.target.value)}
+                      placeholder="Add personal guidance for your companion's soul..."
+                      style={{
+                        width: '100%', padding: '6px 8px', borderRadius: 6,
+                        backgroundColor: '#111113', border: '1px solid rgba(255,255,255,0.06)',
+                        color: '#F4F4F5', fontSize: 11, outline: 'none', resize: 'vertical',
+                        minHeight: 48, maxHeight: 100, fontFamily: 'inherit', lineHeight: 1.5,
+                      }}
+                    />
+                    <button
+                      onClick={handleSaveSoulNotes}
+                      style={{
+                        marginTop: 4, width: '100%', padding: '5px', borderRadius: 6,
+                        backgroundColor: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.2)',
+                        color: '#F97316', fontSize: 10, fontWeight: 600, cursor: 'pointer',
+                      }}
+                    >
+                      Save Guidance
+                    </button>
+                  </div>
+
+                  {/* Attestation status */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: soulData.attestedOnChain ? '#22C55E' : '#3F3F46' }} />
+                      <span style={{ fontSize: 9, color: soulData.attestedOnChain ? '#22C55E' : '#52525B' }}>
+                        {soulData.attestedOnChain ? 'ATTESTED ON-CHAIN' : 'NOT YET ATTESTED'}
+                      </span>
+                    </div>
+                    <button
+                      onClick={handleResetSoul}
+                      style={{
+                        fontSize: 9, padding: '2px 6px', borderRadius: 4,
+                        backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)',
+                        color: '#EF4444', cursor: 'pointer',
+                      }}
+                    >
+                      Reset Soul
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
