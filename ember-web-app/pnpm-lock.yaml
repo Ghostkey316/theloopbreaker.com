@@ -20,6 +20,9 @@ importers:
       qrcode:
         specifier: ^1.5.4
         version: 1.5.4
+      viem:
+        specifier: ^2.46.3
+        version: 2.46.3(typescript@5.9.3)
     devDependencies:
       '@types/node':
         specifier: ^25.3.0
@@ -2074,8 +2077,8 @@ packages:
   uri-js@4.4.1:
     resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
 
-  viem@2.46.2:
-    resolution: {integrity: sha512-w8Qv5Vyo7TfXcH3vgmxRa1NRvzJCDy2aSGSRsJn3503nC/qVbgEQ+n3aj/CkqWXbloudZh97h5o5aQrQSVGy0w==}
+  viem@2.46.3:
+    resolution: {integrity: sha512-2LJS+Hyh2sYjHXQtzfv1kU9pZx9dxFzvoU/ZKIcn0FNtOU0HQuIICuYdWtUDFHaGXbAdVo8J1eCvmjkL9JVGwg==}
     peerDependencies:
       typescript: '>=5.0.4'
     peerDependenciesMeta:
@@ -2690,7 +2693,7 @@ snapshots:
     dependencies:
       '@xmtp/content-type-primitives': 3.0.1
       '@xmtp/node-sdk': 5.3.0
-      viem: 2.46.2(typescript@5.9.3)
+      viem: 2.46.3(typescript@5.9.3)
     transitivePeerDependencies:
       - bufferutil
       - typescript
@@ -4303,7 +4306,7 @@ snapshots:
     dependencies:
       punycode: 2.3.1
 
-  viem@2.46.2(typescript@5.9.3):
+  viem@2.46.3(typescript@5.9.3):
     dependencies:
       '@noble/curves': 1.9.1
       '@noble/hashes': 1.8.0
