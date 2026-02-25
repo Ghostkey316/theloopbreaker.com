@@ -1,39 +1,23 @@
 "use client";
 /**
- * AgentEarnings — Agent Earnings Wallet with transaction history,
- * withdrawal, inter-agent payments, automated bond staking,
- * and x402 payment protocol integration.
- *
- * x402 payments are loaded from the x402-client's localStorage history.
- * ALL DATA IS REAL — no fake stats, no demo numbers.
+ * AgentEarnings — Real agent earnings withdrawal via AIAccountabilityBondsV2.
+ * Reads actual bond data from chain, shows real amounts, and executes
+ * withdrawal/distribution through the user's wallet.
  */
 import { useState, useEffect, useCallback } from "react";
+import { useWalletAuth } from "../lib/WalletAuthContext";
+import {
+  getAccountabilityBonds,
+  getPartnershipBonds,
+  encodeRequestDistribution,
+  encodeDistributeBond,
+  type AccountabilityBondInfo,
+  type BondInfo,
+} from "../lib/onchain-reader";
+import { ACCOUNTABILITY_BONDS, PARTNERSHIP_BONDS, EXPLORER_URLS, type SupportedChain } from "../lib/contracts";
 import { BOND_TIERS, type BondTier, getBondTier } from "../lib/vns";
-import { getWalletAddress, isWalletCreated } from "../lib/wallet";
-import { getRegistration, isRegistered } from "../lib/registration";
-import DisclaimerBanner, { AlphaBanner } from "../components/DisclaimerBanner";
 import { showToast } from "../components/Toast";
-
-/* ── Types ── */
-interface EarningsTransaction {
-  id: string;
-  type: "earned" | "paid" | "withdrawn" | "bond_stake" | "bond_return" | "inter_agent" | "x402_payment";
-  amount: string;
-  currency: string;
-  from: string;
-  to: string;
-  description: string;
-  timestamp: number;
-  txHash?: string;
-  chain: "base" | "avalanche" | "ethereum";
-  status: "confirmed" | "pending" | "failed";
-}
-
-interface AutoStakeConfig {
-  enabled: boolean;
-  targetTier: BondTier;
-  percentOfEarnings: number;
-}
+import { AlphaBanner } from "../components/DisclaimerBanner";
 
 /* ── x402 Payment Record (matches x402-client.ts) ── */
 interface X402PaymentRecord {
@@ -49,25 +33,33 @@ interface X402PaymentRecord {
   txHash?: string;
   status: "signed" | "settled" | "failed";
   description?: string;
-  /** VNS name of the recipient (if resolved) */
   recipientVNS?: string;
-  /** VNS name of the sender (if resolved) */
   senderVNS?: string;
 }
 
-/* ── Load x402 payment history from localStorage ── */
+interface EarningsTransaction {
+  id: string;
+  type: "earned" | "paid" | "withdrawn" | "bond_stake" | "bond_return" | "x402_payment";
+  amount: string;
+  currency: string;
+  from: string;
+  to: string;
+  description: string;
+  timestamp: number;
+  txHash?: string;
+  chain: SupportedChain;
+  status: "confirmed" | "pending" | "failed";
+}
+
 function loadX402Payments(): X402PaymentRecord[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem("vaultfire_x402_payments");
     if (!raw) return [];
     return JSON.parse(raw) as X402PaymentRecord[];
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
-/* ── Convert x402 records to EarningsTransaction format ── */
 function x402ToEarnings(records: X402PaymentRecord[]): EarningsTransaction[] {
   return records.map((r) => ({
     id: r.id,
@@ -84,31 +76,6 @@ function x402ToEarnings(records: X402PaymentRecord[]): EarningsTransaction[] {
   }));
 }
 
-/* ── Stat Card ── */
-function StatCard({ label, value, subValue, color, icon }: {
-  label: string; value: string; subValue?: string; color: string; icon: React.ReactNode;
-}) {
-  return (
-    <div style={{
-      padding: 16, borderRadius: 14,
-      background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
-    }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-        <div style={{
-          width: 32, height: 32, borderRadius: 8,
-          background: `${color}12`, display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          {icon}
-        </div>
-        <span style={{ fontSize: 11, color: "#71717A", fontWeight: 500 }}>{label}</span>
-      </div>
-      <div style={{ fontSize: 20, fontWeight: 800, color: "#F4F4F5", letterSpacing: -0.5 }}>{value}</div>
-      {subValue && <div style={{ fontSize: 11, color: "#52525B", marginTop: 2 }}>{subValue}</div>}
-    </div>
-  );
-}
-
-/* ── Transaction Row ── */
 function TxRow({ tx }: { tx: EarningsTransaction }) {
   const typeConfig: Record<string, { color: string; label: string; sign: string }> = {
     earned: { color: "#22C55E", label: "Earned", sign: "+" },
@@ -116,21 +83,19 @@ function TxRow({ tx }: { tx: EarningsTransaction }) {
     withdrawn: { color: "#F97316", label: "Withdrawn", sign: "-" },
     bond_stake: { color: "#7C3AED", label: "Bond Stake", sign: "-" },
     bond_return: { color: "#3B82F6", label: "Bond Return", sign: "+" },
-    inter_agent: { color: "#EC4899", label: "Agent Payment", sign: "" },
     x402_payment: { color: "#3B82F6", label: "x402 Payment", sign: "-" },
   };
   const cfg = typeConfig[tx.type] || typeConfig.earned;
   const date = new Date(tx.timestamp);
   const timeStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, "0")}`;
+  const explorer = EXPLORER_URLS[tx.chain] || "https://basescan.org";
 
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 12,
       padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,0.04)",
     }}>
-      <div style={{
-        width: 8, height: 8, borderRadius: "50%", background: cfg.color, flexShrink: 0,
-      }} />
+      <div style={{ width: 8, height: 8, borderRadius: "50%", background: cfg.color, flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: "#F4F4F5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {tx.description}
@@ -146,12 +111,8 @@ function TxRow({ tx }: { tx: EarningsTransaction }) {
           {cfg.sign}{tx.amount} {tx.currency}
         </div>
         {tx.txHash && (
-          <a
-            href={`https://basescan.org/tx/${tx.txHash}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ fontSize: 10, color: "#7C3AED", textDecoration: "none" }}
-          >
+          <a href={`${explorer}/tx/${tx.txHash}`} target="_blank" rel="noopener noreferrer"
+            style={{ fontSize: 10, color: "#7C3AED", textDecoration: "none" }}>
             View Tx
           </a>
         )}
@@ -160,256 +121,28 @@ function TxRow({ tx }: { tx: EarningsTransaction }) {
   );
 }
 
-/* ── Empty State ── */
-function EmptyState({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
-  return (
-    <div style={{
-      padding: 40, textAlign: "center",
-      background: "rgba(255,255,255,0.02)", borderRadius: 14,
-      border: "1px solid rgba(255,255,255,0.06)",
-    }}>
-      <div style={{ marginBottom: 12, opacity: 0.4 }}>{icon}</div>
-      <div style={{ fontSize: 15, fontWeight: 700, color: "#A1A1AA", marginBottom: 6 }}>{title}</div>
-      <div style={{ fontSize: 13, color: "#52525B", maxWidth: 320, margin: "0 auto", lineHeight: 1.5 }}>{description}</div>
-    </div>
-  );
-}
-
-/* ── Auto-Stake Panel ── */
-function AutoStakePanel({ config, onUpdate }: {
-  config: AutoStakeConfig;
-  onUpdate: (c: AutoStakeConfig) => void;
-}) {
-  return (
-    <div style={{
-      padding: 16, borderRadius: 14,
-      background: "rgba(124,58,237,0.04)", border: "1px solid rgba(124,58,237,0.15)",
-    }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: "#F4F4F5" }}>Automated Bond Staking</div>
-          <div style={{ fontSize: 12, color: "#71717A", marginTop: 2 }}>Auto-reinvest earnings into your accountability bond</div>
-        </div>
-        <button
-          onClick={() => onUpdate({ ...config, enabled: !config.enabled })}
-          style={{
-            width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer",
-            background: config.enabled ? "#7C3AED" : "rgba(255,255,255,0.1)",
-            position: "relative", transition: "background 0.2s ease",
-          }}
-        >
-          <div style={{
-            width: 18, height: 18, borderRadius: "50%", background: "#fff",
-            position: "absolute", top: 3,
-            left: config.enabled ? 23 : 3,
-            transition: "left 0.2s ease",
-          }} />
-        </button>
-      </div>
-
-      {config.enabled && (
-        <>
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 12, color: "#A1A1AA", marginBottom: 8 }}>Target Tier</div>
-            <div style={{ display: "flex", gap: 6 }}>
-              {BOND_TIERS.map(tier => (
-                <button
-                  key={tier.label}
-                  onClick={() => onUpdate({ ...config, targetTier: tier.label.toLowerCase() as BondTier })}
-                  style={{
-                    flex: 1, padding: "8px 0", borderRadius: 8, border: "none", cursor: "pointer",
-                    fontSize: 11, fontWeight: 600,
-                    background: config.targetTier === tier.label.toLowerCase() ? `${tier.color}20` : "rgba(255,255,255,0.04)",
-                    color: config.targetTier === tier.label.toLowerCase() ? tier.color : "#52525B",
-                    transition: "all 0.15s ease",
-                  }}
-                >
-                  {tier.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-              <span style={{ fontSize: 12, color: "#A1A1AA" }}>% of earnings to auto-stake</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#7C3AED" }}>{config.percentOfEarnings}%</span>
-            </div>
-            <input
-              type="range" min={5} max={100} step={5}
-              value={config.percentOfEarnings}
-              onChange={e => onUpdate({ ...config, percentOfEarnings: Number(e.target.value) })}
-              style={{ width: "100%", accentColor: "#7C3AED" }}
-            />
-          </div>
-
-          <div style={{
-            padding: 12, borderRadius: 10, background: "rgba(255,255,255,0.03)",
-            fontSize: 12, color: "#71717A", lineHeight: 1.5,
-          }}>
-            When you earn from tasks, {config.percentOfEarnings}% will be automatically staked to your accountability bond.
-            No earnings yet — auto-staking will begin when you complete your first task.
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-/* ── x402 Payment Summary Panel ── */
-function X402PaymentPanel({ payments }: { payments: X402PaymentRecord[] }) {
-  const totalMicro = payments.reduce((sum, p) => {
-    try { return sum + BigInt(p.amount); } catch { return sum; }
-  }, 0n);
-  const settled = payments.filter(p => p.status === "settled").length;
-  const pending = payments.filter(p => p.status === "signed").length;
-  const failed = payments.filter(p => p.status === "failed").length;
-
-  const formatUsdc = (micro: bigint): string => {
-    const whole = micro / 1000000n;
-    const frac = micro % 1000000n;
-    const fracStr = frac.toString().padStart(6, "0").replace(/0+$/, "");
-    if (!fracStr) return `${whole}.00`;
-    return `${whole}.${fracStr}`;
-  };
-
-  return (
-    <div style={{
-      padding: 16, borderRadius: 14,
-      background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.15)",
-      marginBottom: 20,
-    }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-        <div style={{
-          width: 28, height: 28, borderRadius: 7,
-          background: "rgba(59,130,246,0.15)", display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 14,
-        }}>
-          $
-        </div>
-        <div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5" }}>x402 Payments</div>
-          <div style={{ fontSize: 11, color: "#71717A" }}>USDC payments via Coinbase x402 protocol on Base</div>
-        </div>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
-        <div style={{ padding: 10, borderRadius: 8, background: "rgba(255,255,255,0.03)", textAlign: "center" }}>
-          <div style={{ fontSize: 16, fontWeight: 800, color: "#3B82F6" }}>{payments.length}</div>
-          <div style={{ fontSize: 10, color: "#52525B" }}>Total</div>
-        </div>
-        <div style={{ padding: 10, borderRadius: 8, background: "rgba(255,255,255,0.03)", textAlign: "center" }}>
-          <div style={{ fontSize: 16, fontWeight: 800, color: "#22C55E" }}>{settled}</div>
-          <div style={{ fontSize: 10, color: "#52525B" }}>Settled</div>
-        </div>
-        <div style={{ padding: 10, borderRadius: 8, background: "rgba(255,255,255,0.03)", textAlign: "center" }}>
-          <div style={{ fontSize: 16, fontWeight: 800, color: "#F59E0B" }}>{pending}</div>
-          <div style={{ fontSize: 10, color: "#52525B" }}>Pending</div>
-        </div>
-        <div style={{ padding: 10, borderRadius: 8, background: "rgba(255,255,255,0.03)", textAlign: "center" }}>
-          <div style={{ fontSize: 16, fontWeight: 800, color: "#EF4444" }}>{failed}</div>
-          <div style={{ fontSize: 10, color: "#52525B" }}>Failed</div>
-        </div>
-      </div>
-
-      <div style={{
-        padding: 10, borderRadius: 8, background: "rgba(255,255,255,0.03)",
-        display: "flex", justifyContent: "space-between", alignItems: "center",
-      }}>
-        <span style={{ fontSize: 12, color: "#71717A" }}>Total Volume</span>
-        <span style={{ fontSize: 14, fontWeight: 800, color: "#F4F4F5" }}>{formatUsdc(totalMicro)} USDC</span>
-      </div>
-
-      {payments.length > 0 && (
-        <div style={{ marginTop: 12 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#52525B", marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
-            Recent x402 Payments
-          </div>
-          {payments.slice(0, 5).map(p => {
-            const date = new Date(p.timestamp);
-            const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, "0")}`;
-            const statusColor = p.status === "settled" ? "#22C55E" : p.status === "failed" ? "#EF4444" : "#F59E0B";
-            const recipientDisplay = p.recipientVNS || `${p.payTo.slice(0, 8)}...${p.payTo.slice(-4)}`;
-            return (
-              <div key={p.id} style={{
-                display: "flex", alignItems: "center", gap: 8,
-                padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.04)",
-              }}>
-                <div style={{ width: 6, height: 6, borderRadius: "50%", background: statusColor, flexShrink: 0 }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, color: "#A1A1AA", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {recipientDisplay}
-                  </div>
-                  <div style={{ fontSize: 10, color: "#52525B" }}>{dateStr}{p.recipientVNS && ` · ${p.payTo.slice(0, 6)}...`}</div>
-                </div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#3B82F6" }}>
-                  {p.amountFormatted} USDC
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── Main Component ── */
 export default function AgentEarnings() {
+  const { isUnlocked, address } = useWalletAuth();
   const [isMobile, setIsMobile] = useState(false);
-  const [activeTab, setActiveTab] = useState<"earnings" | "payments" | "staking">("earnings");
-  const [walletConnected, setWalletConnected] = useState(false);
-  const [isReg, setIsReg] = useState(false);
-  const [autoStake, setAutoStake] = useState<AutoStakeConfig>({
-    enabled: false, targetTier: "silver", percentOfEarnings: 20,
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"overview" | "withdraw" | "history">("overview");
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [txHash, setTxHash] = useState<string | null>(null);
+  const [selectedChain, setSelectedChain] = useState<SupportedChain>("base");
+  const [selectedBondId, setSelectedBondId] = useState<number | null>(null);
+
+  // Real on-chain data
+  const [accBonds, setAccBonds] = useState<Record<SupportedChain, AccountabilityBondInfo>>({
+    base: { hasBond: false, bondCount: 0, totalStake: 0n, activeBonds: 0, bondIds: [], pendingDistributions: 0n },
+    avalanche: { hasBond: false, bondCount: 0, totalStake: 0n, activeBonds: 0, bondIds: [], pendingDistributions: 0n },
+    ethereum: { hasBond: false, bondCount: 0, totalStake: 0n, activeBonds: 0, bondIds: [], pendingDistributions: 0n },
   });
-  const [payAgent, setPayAgent] = useState({ vnsName: "", amount: "", reason: "" });
-  const [paying, setPaying] = useState(false);
+  const [partBonds, setPartBonds] = useState<Record<SupportedChain, BondInfo>>({
+    base: { hasBond: false, bondCount: 0, totalStake: 0n, activeBonds: 0, bondIds: [] },
+    avalanche: { hasBond: false, bondCount: 0, totalStake: 0n, activeBonds: 0, bondIds: [] },
+    ethereum: { hasBond: false, bondCount: 0, totalStake: 0n, activeBonds: 0, bondIds: [] },
+  });
   const [transactions, setTransactions] = useState<EarningsTransaction[]>([]);
-  const [x402Payments, setX402Payments] = useState<X402PaymentRecord[]>([]);
-  const [stats, setStats] = useState({
-    availableBalance: 0,
-    totalEarned: 0,
-    bondStaked: 0,
-    totalX402Usdc: 0n,
-    pendingPayments: 0,
-  });
-
-  // Load data from wallet, registration, and x402 history
-  const loadData = useCallback(() => {
-    const connected = isWalletCreated();
-    const registered = isRegistered();
-    const regData = getRegistration();
-    const x402Records = loadX402Payments();
-    
-    setWalletConnected(connected);
-    setIsReg(registered);
-    setX402Payments(x402Records);
-    
-    const x402Txs = x402ToEarnings(x402Records);
-    setTransactions(x402Txs);
-
-    const totalX402 = x402Records.reduce((sum, p) => {
-      try { return sum + BigInt(p.amount); } catch { return sum; }
-    }, 0n);
-
-    // Bond data is loaded from on-chain — registration doesn't store bond amount
-    const bondStaked = 0; // Real bond amount loaded via getBondTier() from on-chain data
-    
-    setStats({
-      availableBalance: 0, // Available to withdraw from Vaultfire contract
-      totalEarned: 0,      // Total historical earnings
-      bondStaked: bondStaked,
-      totalX402Usdc: totalX402,
-      pendingPayments: x402Records.filter(p => p.status === "signed").length,
-    });
-  }, []);
-
-  useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, 10_000);
-    return () => clearInterval(interval);
-  }, [loadData]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -418,364 +151,349 @@ export default function AgentEarnings() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  const currentTier = getBondTier(stats.bondStaked);
-  const tabs = [
-    { id: "earnings" as const, label: "Earnings" },
-    { id: "payments" as const, label: "Payments" },
-    { id: "staking" as const, label: "Bond Staking" },
-  ];
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    // Load x402 payments
+    const x402 = loadX402Payments();
+    setTransactions(x402ToEarnings(x402));
+
+    if (address) {
+      const chains: SupportedChain[] = ["base", "avalanche", "ethereum"];
+      const [accResults, partResults] = await Promise.all([
+        Promise.all(chains.map(c => getAccountabilityBonds(c, address))),
+        Promise.all(chains.map(c => getPartnershipBonds(c, address))),
+      ]);
+
+      const newAcc = {} as Record<SupportedChain, AccountabilityBondInfo>;
+      const newPart = {} as Record<SupportedChain, BondInfo>;
+      chains.forEach((c, i) => { newAcc[c] = accResults[i]; newPart[c] = partResults[i]; });
+      setAccBonds(newAcc);
+      setPartBonds(newPart);
+    }
+    setLoading(false);
+  }, [address]);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const totalAccStake = Object.values(accBonds).reduce((s, b) => s + b.totalStake, 0n);
+  const totalPartStake = Object.values(partBonds).reduce((s, b) => s + b.totalStake, 0n);
+  const totalActiveBonds = Object.values(accBonds).reduce((s, b) => s + b.activeBonds, 0);
+  const totalBondCount = Object.values(accBonds).reduce((s, b) => s + b.bondCount, 0) + Object.values(partBonds).reduce((s, b) => s + b.bondCount, 0);
+  const formatEth = (wei: bigint) => (Number(wei) / 1e18).toFixed(4);
+
+  const executeWithdrawal = async (action: "request" | "distribute", bondId: number) => {
+    if (!window.ethereum || !address) {
+      showToast("Connect your wallet first", "warning");
+      return;
+    }
+
+    setWithdrawing(true);
+    setTxHash(null);
+
+    try {
+      const chainId = selectedChain === "base" ? 8453 : selectedChain === "avalanche" ? 43114 : 1;
+      const currentChainHex = await window.ethereum.request({ method: "eth_chainId" });
+      const currentChainId = parseInt(currentChainHex as string, 16);
+
+      if (currentChainId !== chainId) {
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: "0x" + chainId.toString(16) }],
+        });
+      }
+
+      const contract = ACCOUNTABILITY_BONDS[selectedChain];
+      const callData = action === "request"
+        ? encodeRequestDistribution(bondId)
+        : encodeDistributeBond(bondId);
+
+      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+      const hash = await window.ethereum.request({
+        method: "eth_sendTransaction",
+        params: [{
+          from: (accounts as string[])[0],
+          to: contract,
+          data: callData,
+          value: "0x0",
+          gas: "0x" + (150000).toString(16),
+        }],
+      });
+
+      setTxHash(hash as string);
+      showToast(
+        action === "request"
+          ? "Distribution request submitted! After timelock, you can claim."
+          : "Bond distribution executed!",
+        "success"
+      );
+      setTimeout(loadData, 3000);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Transaction failed";
+      if (msg.includes("rejected") || msg.includes("denied")) {
+        showToast("Transaction rejected", "info");
+      } else {
+        showToast(`Failed: ${msg}`, "warning");
+      }
+    }
+    setWithdrawing(false);
+  };
+
+  const mono: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
 
   return (
-    <div style={{ padding: isMobile ? 16 : 32, maxWidth: 900, margin: "0 auto" }}>
+    <div className="page-enter" style={{ padding: isMobile ? "24px 16px 48px" : "40px 40px 48px", maxWidth: 720, margin: "0 auto" }}>
       <AlphaBanner />
-      {/* Header */}
-      <div style={{ marginBottom: 24, paddingLeft: isMobile ? 48 : 0 }}>
-        <h2 style={{ fontSize: isMobile ? 22 : 26, fontWeight: 800, color: "#F4F4F5", margin: 0, letterSpacing: -0.5 }}>
-          Embris Earnings & Payments
-        </h2>
-        <p style={{ fontSize: 13, color: "#71717A", margin: "6px 0 0" }}>
-          Powered by Embris & Vaultfire Protocol · x402 USDC payments · Automated Bond Staking
-        </p>
+
+      <div style={{ marginBottom: 32, paddingLeft: isMobile ? 48 : 0 }}>
+        <h1 style={{ fontSize: isMobile ? 24 : 32, fontWeight: 800, color: "#F4F4F5", letterSpacing: "-0.03em" }}>Agent Earnings</h1>
+        <p style={{ fontSize: 14, color: "#71717A", marginTop: 6 }}>Real bond data from AIAccountabilityBondsV2 &amp; AIPartnershipBondsV2</p>
       </div>
 
-      <DisclaimerBanner disclaimerKey="agent_hub" />
-
-      {/* Wallet Warning */}
-      {!walletConnected && (
-        <div style={{
-          padding: 16, borderRadius: 12, background: "rgba(249,115,22,0.06)", border: "1px solid rgba(249,115,22,0.15)",
-          marginBottom: 20, fontSize: 13, color: "#F97316", fontWeight: 600, textAlign: "center"
-        }}>
-          Connect your wallet to view earnings and manage payments.
-        </div>
-      )}
-
-      {/* x402 Payment Summary — always visible when payments exist */}
-      {x402Payments.length > 0 && (
-        <X402PaymentPanel payments={x402Payments} />
-      )}
-
-      {/* Stats Grid — Real data only */}
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
-        <StatCard label="Available" value={walletConnected && stats.availableBalance > 0 ? `${stats.availableBalance.toFixed(4)} ETH` : "—"} color="#22C55E"
-          icon={<svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3v4M8 3v4M2 11h20"/></svg>} />
-        <StatCard label="Total Earned" value={walletConnected && stats.totalEarned > 0 ? `${stats.totalEarned.toFixed(4)} ETH` : "—"} color="#3B82F6"
-          icon={<svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>} />
-        <StatCard label="Bond Staked" value={walletConnected && stats.bondStaked > 0 ? `${stats.bondStaked.toFixed(4)} ETH` : "—"} subValue={stats.bondStaked > 0 ? `${currentTier.charAt(0).toUpperCase() + currentTier.slice(1)} Tier` : walletConnected ? "No bond" : ""} color="#7C3AED"
-          icon={<svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>} />
-        <StatCard label="x402 Volume" value={walletConnected && stats.totalX402Usdc > 0n ? `${Number(stats.totalX402Usdc) / 1_000_000} USDC` : "—"} subValue={walletConnected && x402Payments.length > 0 ? `${x402Payments.length} payments` : ""} color="#F97316"
-          icon={<svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M8 10h8M8 14h8"/></svg>} />
+      {/* Stats Cards */}
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
+        {[
+          { label: "Accountability Stake", value: `${formatEth(totalAccStake)} ETH`, color: "#22C55E" },
+          { label: "Partnership Stake", value: `${formatEth(totalPartStake)} ETH`, color: "#8B5CF6" },
+          { label: "Active Bonds", value: totalActiveBonds.toString(), color: "#F97316" },
+          { label: "Total Bonds", value: totalBondCount.toString(), color: "#3B82F6" },
+        ].map(stat => (
+          <div key={stat.label} style={{
+            padding: 16, borderRadius: 14,
+            background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
+          }}>
+            <div style={{ fontSize: 11, color: "#71717A", fontWeight: 500, marginBottom: 8 }}>{stat.label}</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: stat.color, ...mono, letterSpacing: "-0.02em" }}>
+              {loading ? "..." : stat.value}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Tabs */}
       <div style={{
-        display: "flex", gap: 0, marginBottom: 24,
-        background: "rgba(255,255,255,0.02)", borderRadius: 10, padding: 3,
-        border: "1px solid rgba(255,255,255,0.04)",
+        display: "flex", gap: 4, marginBottom: 24, padding: 4, borderRadius: 12,
+        backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)",
       }}>
-        {tabs.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-            flex: 1, padding: "10px 0", border: "none", borderRadius: 8, cursor: "pointer",
-            fontSize: 13, fontWeight: 600,
-            background: activeTab === tab.id ? "rgba(255,255,255,0.06)" : "transparent",
-            color: activeTab === tab.id ? "#F4F4F5" : "#52525B",
-            transition: "all 0.15s ease",
+        {[
+          { key: "overview" as const, label: "Bond Overview" },
+          { key: "withdraw" as const, label: "Withdraw" },
+          { key: "history" as const, label: "History" },
+        ].map(tab => (
+          <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
+            flex: 1, padding: "10px 12px", borderRadius: 8, border: "none", cursor: "pointer",
+            fontSize: 12, fontWeight: 600,
+            backgroundColor: activeTab === tab.key ? "rgba(249,115,22,0.12)" : "transparent",
+            color: activeTab === tab.key ? "#F97316" : "#71717A",
           }}>
             {tab.label}
           </button>
         ))}
       </div>
 
-      {/* Earnings Tab */}
-      {activeTab === "earnings" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          {/* Withdrawal Panel */}
-          <div style={{
-            padding: isMobile ? 16 : 20, borderRadius: 14,
-            background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
-          }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "#F4F4F5", marginBottom: 4 }}>Withdraw Earnings</div>
-            <div style={{ fontSize: 12, color: "#71717A", marginBottom: 16 }}>Transfer available ETH to your primary wallet</div>
-            <div style={{ display: "flex", gap: 10, flexDirection: isMobile ? "column" : "row" }}>
-              <input
-                type="text" placeholder="Amount (ETH)"
-                value={stats.availableBalance > 0 ? stats.availableBalance.toString() : ""}
-                readOnly
-                style={{
-                  flex: 1, padding: "12px 14px", borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)",
-                  color: "#F4F4F5", fontSize: 13, outline: "none",
-                }}
-              />
-              <button
-                onClick={() => showToast("Withdrawal requires a registered agent with available earnings in the AIAccountabilityBondsV2 contract.", "info")}
-                style={{
-                  padding: "12px 24px", borderRadius: 10, border: "none", cursor: "pointer",
-                  background: "#22C55E", color: "#fff", fontSize: 13, fontWeight: 700,
-                  whiteSpace: "nowrap", opacity: stats.availableBalance > 0 ? 1 : 0.5,
-                }}
-              >
-                Withdraw All
-              </button>
-            </div>
-          </div>
-
-          {/* Transaction History (includes x402 payments) */}
-          <div style={{
-            padding: isMobile ? 16 : 20, borderRadius: 14,
-            background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5" }}>Transaction History</div>
-              {transactions.length > 0 && (
-                <span style={{ fontSize: 11, color: "#52525B" }}>{transactions.length} transactions</span>
-              )}
-            </div>
-            {transactions.length > 0 ? (
-              transactions.map(tx => <TxRow key={tx.id} tx={tx} />)
-            ) : (
-              <EmptyState
-                icon={<svg width={32} height={32} viewBox="0 0 24 24" fill="none" stroke="#52525B" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3v4M8 3v4M2 11h20"/></svg>}
-                title="No transactions yet"
-                description="Earnings and x402 payments will appear here when you complete tasks, receive payments, or make x402 USDC payments through the Agent Hub or XMTP."
-              />
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Payments Tab — Inter-Agent Payments + x402 */}
-      {activeTab === "payments" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          {/* x402 Protocol Info */}
-          <div style={{
-            padding: 16, borderRadius: 14,
-            background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.15)",
-          }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#3B82F6", marginBottom: 6 }}>x402 Payment Protocol + VNS</div>
-            <div style={{ fontSize: 12, color: "#A1A1AA", lineHeight: 1.6 }}>
-              Payments use Coinbase&apos;s x402 protocol — USDC on Base via EIP-3009 transferWithAuthorization.
-              Your wallet signs EIP-712 typed data to authorize payments without needing gas.
-              The facilitator settles on-chain. <strong style={{ color: "#3B82F6" }}>Pay by .vns name or raw address</strong> —
-              VNS names are automatically resolved to payment addresses.
-              Use <code style={{ color: "#3B82F6" }}>/pay sentinel-7.vns 2.00</code> in XMTP or the form below.
-            </div>
-          </div>
-
-          {/* Send Payment */}
-          <div style={{
-            padding: isMobile ? 16 : 20, borderRadius: 14,
-            background: "rgba(236,72,153,0.04)", border: "1px solid rgba(236,72,153,0.15)",
-          }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "#F4F4F5", marginBottom: 4 }}>Send Payment</div>
-            <div style={{ fontSize: 12, color: "#71717A", marginBottom: 16 }}>Pay another agent or human for services</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <input
-                type="text" placeholder="Recipient .vns name or 0x address"
-                value={payAgent.vnsName}
-                onChange={e => setPayAgent({ ...payAgent, vnsName: e.target.value })}
-                style={{
-                  width: "100%", padding: "12px 14px", borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)",
-                  color: "#F4F4F5", fontSize: 13, outline: "none", boxSizing: "border-box",
-                }}
-              />
-              <div style={{ display: "flex", gap: 10 }}>
-                <input
-                  type="text" placeholder="Amount (USDC)"
-                  value={payAgent.amount}
-                  onChange={e => setPayAgent({ ...payAgent, amount: e.target.value })}
-                  style={{
-                    flex: 1, padding: "12px 14px", borderRadius: 10,
-                    border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)",
-                    color: "#F4F4F5", fontSize: 13, outline: "none",
-                  }}
-                />
-                <select style={{
-                  padding: "12px 14px", borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)",
-                  color: "#F4F4F5", fontSize: 13, outline: "none",
-                }}>
-                  <option value="base">Base (x402)</option>
-                  <option value="ethereum">ETH</option>
-                  <option value="avalanche">Avax</option>
-                </select>
-              </div>
-              <input
-                type="text" placeholder="Reason (optional)"
-                value={payAgent.reason}
-                onChange={e => setPayAgent({ ...payAgent, reason: e.target.value })}
-                style={{
-                  width: "100%", padding: "12px 14px", borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)",
-                  color: "#F4F4F5", fontSize: 13, outline: "none", boxSizing: "border-box",
-                }}
-              />
-              <button
-                onClick={async () => {
-                  if (payAgent.vnsName && payAgent.amount && !paying) {
-                    setPaying(true);
-                    try {
-                      showToast(`Resolving ${payAgent.vnsName} and signing x402 payment...`, "info");
-                      const { initiatePayment } = await import("../lib/x402-client");
-                      const { record, resolvedVNS } = await initiatePayment(
-                        payAgent.vnsName,
-                        payAgent.amount,
-                        payAgent.reason || undefined,
-                      );
-                      const displayTo = resolvedVNS || record.payTo.slice(0, 12) + "...";
-                      showToast(`x402 payment of ${payAgent.amount} USDC to ${displayTo} signed! ID: ${record.id}`, "success");
-                      setPayAgent({ vnsName: "", amount: "", reason: "" });
-                      // Refresh payment history
-                      setTimeout(loadData, 1000);
-                    } catch (err) {
-                      const msg = err instanceof Error ? err.message : "Payment failed";
-                      showToast(`Payment failed: ${msg}`, "warning");
-                    } finally {
-                      setPaying(false);
-                    }
-                  }
-                }}
-                disabled={paying}
-                style={{
-                  padding: "12px 0", borderRadius: 10, border: "none", cursor: paying ? "default" : "pointer",
-                  background: "#EC4899", color: "#fff", fontSize: 14, fontWeight: 700,
-                  opacity: paying ? 0.6 : (payAgent.vnsName && payAgent.amount ? 1 : 0.35),
-                  transition: "opacity 0.2s ease",
-                }}
-              >
-                {paying ? "Signing..." : "Send x402 Payment"}
-              </button>
-            </div>
-          </div>
-
-          {/* Recent Payments */}
-          <div style={{
-            padding: isMobile ? 16 : 20, borderRadius: 14,
-            background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
-          }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5", marginBottom: 12 }}>Recent Payments</div>
-            {transactions.filter(tx => tx.type === "inter_agent" || tx.type === "paid" || tx.type === "earned" || tx.type === "x402_payment").length > 0 ? (
-              transactions.filter(tx => tx.type === "inter_agent" || tx.type === "paid" || tx.type === "earned" || tx.type === "x402_payment").map(tx => (
-                <TxRow key={tx.id} tx={tx} />
-              ))
-            ) : (
-              <EmptyState
-                icon={<svg width={32} height={32} viewBox="0 0 24 24" fill="none" stroke="#52525B" strokeWidth="1.5" strokeLinecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
-                title="No payments yet"
-                description="x402 USDC payments and inter-agent payments will appear here. Use /pay in XMTP or the form above to send a payment."
-              />
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Staking Tab */}
-      {activeTab === "staking" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <AutoStakePanel config={autoStake} onUpdate={setAutoStake} />
-
-          {/* Current Bond Status — Real data */}
-          <div style={{
-            padding: isMobile ? 16 : 20, borderRadius: 14,
-            background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
-          }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5", marginBottom: 14 }}>Bond Status</div>
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
-              <div style={{ padding: 14, borderRadius: 10, background: "rgba(255,255,255,0.03)" }}>
-                <div style={{ fontSize: 11, color: "#71717A", marginBottom: 4 }}>Current Bond</div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: "#F4F4F5" }}>{walletConnected ? stats.bondStaked.toFixed(4) : "—"} ETH</div>
-                <div style={{ fontSize: 11, color: stats.bondStaked > 0 ? "#A78BFA" : "#52525B", marginTop: 2 }}>
-                  {stats.bondStaked > 0 ? `${currentTier?.charAt(0).toUpperCase()}${currentTier?.slice(1)} Tier` : walletConnected ? "No bond staked" : ""}
-                </div>
-              </div>
-              <div style={{ padding: 14, borderRadius: 10, background: "rgba(255,255,255,0.03)" }}>
-                <div style={{ fontSize: 11, color: "#71717A", marginBottom: 4 }}>Next Tier</div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: "#F4F4F5" }}>
-                  {BOND_TIERS[0]?.minEth || 0.01} ETH
-                </div>
-                <div style={{ fontSize: 11, color: "#71717A", marginTop: 2 }}>
-                  {BOND_TIERS[0]?.label || "Bronze"} Tier
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Tier Requirements */}
-          <div style={{
-            padding: isMobile ? 16 : 20, borderRadius: 14,
-            background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
-          }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5", marginBottom: 14 }}>Tier Requirements & Unlocks</div>
-            {BOND_TIERS.map(tier => {
-              const isCurrentOrAbove = stats.bondStaked >= tier.minEth;
-              const isCurrent = getBondTier(stats.bondStaked) === tier.label.toLowerCase();
-              const unlocks: Record<string, string> = {
-                Bronze: "Basic marketplace, 3 tasks/day",
-                Silver: "Priority search, 10 tasks/day, collaboration rooms",
-                Gold: "Featured listing, unlimited tasks, priority matching",
-                Platinum: "Top placement, governance voting, premium features",
-              };
-              return (
-                <div key={tier.label} style={{
-                  display: "flex", alignItems: "center", gap: 12,
-                  padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,0.04)",
-                }}>
-                  <div style={{
-                    width: 10, height: 10, borderRadius: "50%",
-                    background: isCurrentOrAbove ? tier.color : "rgba(255,255,255,0.1)",
-                    border: isCurrent ? `2px solid ${tier.color}` : "none",
-                    boxShadow: isCurrent ? `0 0 8px ${tier.color}40` : "none",
-                  }} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: tier.color }}>{tier.label}</span>
-                      <span style={{ fontSize: 11, color: "#52525B" }}>Min {tier.minEth} ETH</span>
-                    </div>
-                    <div style={{ fontSize: 11, color: "#71717A", marginTop: 2 }}>{unlocks[tier.label]}</div>
+      {/* Overview Tab */}
+      {activeTab === "overview" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {(["base", "avalanche", "ethereum"] as SupportedChain[]).map(chain => {
+            const acc = accBonds[chain];
+            const part = partBonds[chain];
+            const hasData = acc.hasBond || part.hasBond;
+            return (
+              <div key={chain} style={{
+                padding: isMobile ? 16 : 20, borderRadius: 14,
+                background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: hasData ? "#22C55E" : "#3F3F46" }} />
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5", textTransform: "capitalize" }}>{chain}</span>
                   </div>
-                  {isCurrentOrAbove && (
-                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  )}
+                  <a href={`${EXPLORER_URLS[chain]}/address/${ACCOUNTABILITY_BONDS[chain]}`} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: 10, color: "#52525B", textDecoration: "none" }}>
+                    View Contract →
+                  </a>
                 </div>
-              );
-            })}
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div style={{ padding: 12, borderRadius: 10, background: "rgba(255,255,255,0.03)" }}>
+                    <div style={{ fontSize: 11, color: "#71717A", marginBottom: 4 }}>Accountability Bonds</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: "#F4F4F5", ...mono }}>
+                      {loading ? "..." : acc.bondCount}
+                    </div>
+                    <div style={{ fontSize: 11, color: "#52525B", marginTop: 2 }}>
+                      Stake: {loading ? "..." : formatEth(acc.totalStake)} ETH
+                    </div>
+                  </div>
+                  <div style={{ padding: 12, borderRadius: 10, background: "rgba(255,255,255,0.03)" }}>
+                    <div style={{ fontSize: 11, color: "#71717A", marginBottom: 4 }}>Partnership Bonds</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: "#F4F4F5", ...mono }}>
+                      {loading ? "..." : part.bondCount}
+                    </div>
+                    <div style={{ fontSize: 11, color: "#52525B", marginTop: 2 }}>
+                      Stake: {loading ? "..." : formatEth(part.totalStake)} ETH
+                    </div>
+                  </div>
+                </div>
+
+                {!hasData && !loading && (
+                  <p style={{ fontSize: 11, color: "#3F3F46", marginTop: 8, textAlign: "center" }}>
+                    No bonds found on {chain}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Withdraw Tab */}
+      {activeTab === "withdraw" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{
+            padding: "14px 18px", borderRadius: 12,
+            background: "rgba(249,115,22,0.06)", border: "1px solid rgba(249,115,22,0.15)",
+          }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: "#F97316", marginBottom: 4 }}>How Withdrawals Work</p>
+            <p style={{ fontSize: 12, color: "#A1A1AA", lineHeight: 1.6 }}>
+              1. <strong>Request Distribution</strong> — calls <code>requestDistribution(bondId)</code> on AIAccountabilityBondsV2<br />
+              2. <strong>Wait for Timelock</strong> — distribution timelock period must pass<br />
+              3. <strong>Claim Distribution</strong> — calls <code>distributeBond(bondId)</code> to receive funds
+            </p>
           </div>
 
-          {/* Manual Stake */}
-          <div style={{
-            padding: isMobile ? 16 : 20, borderRadius: 14,
-            background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
-          }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5", marginBottom: 12 }}>Manual Stake</div>
-            <div style={{ display: "flex", gap: 10, flexDirection: isMobile ? "column" : "row" }}>
-              <input
-                type="text" placeholder="Amount to stake (ETH)"
-                style={{
-                  flex: 1, padding: "12px 14px", borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)",
-                  color: "#F4F4F5", fontSize: 13, outline: "none",
-                }}
-              />
-              <button
-                onClick={() => showToast("Bond staking requires a connected wallet with sufficient ETH. Transaction will be sent to AIAccountabilityBondsV2 contract.", "info")}
-                style={{
-                  padding: "12px 24px", borderRadius: 10, border: "none", cursor: "pointer",
-                  background: "#7C3AED", color: "#fff", fontSize: 13, fontWeight: 700,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                Stake Bond
-              </button>
-            </div>
-            <div style={{ fontSize: 11, color: "#52525B", marginTop: 8 }}>
-              Staking increases your bond tier and unlocks more features. Bonds are held in the AIAccountabilityBondsV2 contract.
+          {/* Chain selector */}
+          <div>
+            <label style={{ fontSize: 11, color: "#71717A", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8, display: "block" }}>
+              Select Chain
+            </label>
+            <div style={{ display: "flex", gap: 6 }}>
+              {(["base", "avalanche", "ethereum"] as SupportedChain[]).map(c => (
+                <button key={c} onClick={() => { setSelectedChain(c); setSelectedBondId(null); }} style={{
+                  flex: 1, padding: "10px 0", borderRadius: 8, border: "none", cursor: "pointer",
+                  fontSize: 12, fontWeight: 600, textTransform: "capitalize",
+                  background: selectedChain === c ? "rgba(249,115,22,0.12)" : "rgba(255,255,255,0.04)",
+                  color: selectedChain === c ? "#F97316" : "#71717A",
+                }}>
+                  {c}
+                </button>
+              ))}
             </div>
           </div>
+
+          {/* Bond Selection */}
+          {accBonds[selectedChain].bondIds.length > 0 ? (
+            <div>
+              <label style={{ fontSize: 11, color: "#71717A", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8, display: "block" }}>
+                Select Bond
+              </label>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {accBonds[selectedChain].bondIds.map(id => (
+                  <button key={id} onClick={() => setSelectedBondId(id)} style={{
+                    padding: "12px 14px", borderRadius: 10, border: "none", cursor: "pointer",
+                    background: selectedBondId === id ? "rgba(249,115,22,0.08)" : "rgba(255,255,255,0.03)",
+                    borderLeft: selectedBondId === id ? "3px solid #F97316" : "3px solid transparent",
+                    textAlign: "left",
+                  }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: selectedBondId === id ? "#F4F4F5" : "#A1A1AA" }}>
+                      Bond #{id}
+                    </div>
+                    <div style={{ fontSize: 11, color: "#52525B", marginTop: 2 }}>
+                      AIAccountabilityBondsV2 on {selectedChain}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div style={{
+              padding: 32, textAlign: "center", borderRadius: 14,
+              background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#71717A", marginBottom: 4 }}>
+                No accountability bonds on {selectedChain}
+              </div>
+              <div style={{ fontSize: 12, color: "#52525B" }}>
+                Create a bond first to enable withdrawals
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          {selectedBondId !== null && (
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                onClick={() => executeWithdrawal("request", selectedBondId)}
+                disabled={withdrawing}
+                style={{
+                  flex: 1, padding: "14px 0", borderRadius: 12, border: "none",
+                  cursor: withdrawing ? "not-allowed" : "pointer",
+                  background: "#F97316", color: "#fff", fontSize: 13, fontWeight: 700,
+                  opacity: withdrawing ? 0.5 : 1,
+                }}
+              >
+                {withdrawing ? "Processing..." : "Request Distribution"}
+              </button>
+              <button
+                onClick={() => executeWithdrawal("distribute", selectedBondId)}
+                disabled={withdrawing}
+                style={{
+                  flex: 1, padding: "14px 0", borderRadius: 12, border: "none",
+                  cursor: withdrawing ? "not-allowed" : "pointer",
+                  background: "#22C55E", color: "#fff", fontSize: 13, fontWeight: 700,
+                  opacity: withdrawing ? 0.5 : 1,
+                }}
+              >
+                {withdrawing ? "Processing..." : "Claim Distribution"}
+              </button>
+            </div>
+          )}
+
+          {txHash && (
+            <div style={{
+              padding: "12px 16px", borderRadius: 10,
+              background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)",
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#22C55E", marginBottom: 4 }}>Transaction Submitted</div>
+              <a href={`${EXPLORER_URLS[selectedChain]}/tx/${txHash}`} target="_blank" rel="noopener noreferrer"
+                style={{ fontSize: 12, color: "#F97316", ...mono, wordBreak: "break-all" }}>
+                {txHash}
+              </a>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* History Tab */}
+      {activeTab === "history" && (
+        <div style={{
+          padding: isMobile ? 16 : 20, borderRadius: 14,
+          background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#F4F4F5" }}>Transaction History</div>
+            {transactions.length > 0 && (
+              <span style={{ fontSize: 11, color: "#52525B" }}>{transactions.length} transactions</span>
+            )}
+          </div>
+          {transactions.length > 0 ? (
+            transactions.map(tx => <TxRow key={tx.id} tx={tx} />)
+          ) : (
+            <div style={{ padding: 32, textAlign: "center" }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#71717A", marginBottom: 6 }}>No transactions yet</div>
+              <div style={{ fontSize: 12, color: "#52525B", lineHeight: 1.5 }}>
+                Earnings from x402 payments and bond distributions will appear here.
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
+}
+
+declare global {
+  interface Window {
+    ethereum?: {
+      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+    };
+  }
 }

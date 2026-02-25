@@ -19,6 +19,11 @@ import {
   getCompanionBondStatus, getCompanionVNSName,
   getCompanionAgentName, getCompanionStatus,
 } from '../lib/companion-agent';
+import {
+  initializeXmtpClient, sendXmtpMessage, getXmtpMessages,
+  subscribeXmtp, disconnectXmtp, getXmtpState,
+  type XmtpStatus, type XmtpMessage,
+} from '../lib/xmtp-client';
 
 /* ─────────────────────────────────────────────
    Types & Constants
@@ -276,12 +281,16 @@ function OverviewTab({ stats, loading, agents, setTab }: { stats: HubStats | nul
    ───────────────────────────────────────────── */
 
 function AgentOnlyTab() {
-  const { address: walletAddress } = useWalletAuth();
+  const { address: walletAddress, isUnlocked } = useWalletAuth();
   const [rooms, setRooms] = useState<CollaborationRoom[]>([]);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const [messages, setMessages] = useState<HubMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [sending, setSending] = useState(false);
+  const [xmtpStatus, setXmtpStatus] = useState<XmtpStatus>('disconnected');
+  const [xmtpError, setXmtpError] = useState<string | null>(null);
+  const [xmtpMessages, setXmtpMessages] = useState<XmtpMessage[]>([]);
+  const [connectingXmtp, setConnectingXmtp] = useState(false);
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -294,10 +303,30 @@ function AgentOnlyTab() {
     }
   }, [activeRoomId]);
 
+  // Subscribe to XMTP state changes
+  useEffect(() => {
+    const unsub = subscribeXmtp((state) => {
+      setXmtpStatus(state.status);
+      setXmtpError(state.error);
+      // Get messages for the deployer address (agent coordination)
+      if (state.status === 'connected') {
+        const agentAddr = '0xA054f831B562e729F8D268291EBde1B2EDcFb84F';
+        setXmtpMessages(getXmtpMessages(agentAddr));
+      }
+    });
+    return unsub;
+  }, []);
+
+  const handleConnectXmtp = async () => {
+    setConnectingXmtp(true);
+    await initializeXmtpClient();
+    setConnectingXmtp(false);
+  };
+
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, xmtpMessages]);
 
   const handleSendMessage = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -305,11 +334,24 @@ function AgentOnlyTab() {
     setSending(true);
     const senderId = walletAddress ? walletAddress.slice(0, 8) : 'human';
     const senderAddress = walletAddress || '0x0000000000000000000000000000000000000000';
+    
+    // Post to local room
     postMessage(activeRoomId, senderId, senderAddress, inputValue.trim(), 'message');
     setMessages(getMessages(activeRoomId));
+    
+    // Also send via XMTP if connected
+    if (xmtpStatus === 'connected') {
+      const agentAddr = '0xA054f831B562e729F8D268291EBde1B2EDcFb84F';
+      await sendXmtpMessage(agentAddr, inputValue.trim());
+      // Refresh XMTP messages
+      setTimeout(() => {
+        setXmtpMessages(getXmtpMessages(agentAddr));
+      }, 500);
+    }
+    
     setInputValue('');
     setSending(false);
-  }, [inputValue, activeRoomId, sending, walletAddress]);
+  }, [inputValue, activeRoomId, sending, walletAddress, xmtpStatus]);
 
   const activeRoom = rooms.find(r => r.id === activeRoomId);
 
@@ -327,10 +369,20 @@ function AgentOnlyTab() {
               <span className="text-[9px] font-bold text-purple-400 uppercase tracking-wider">Local Encrypted</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse ml-auto" />
             </div>
-            <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-amber-500/5 border border-amber-500/10">
-              <span className="text-[10px]">⚡</span>
-              <span className="text-[9px] font-bold text-amber-500/80 uppercase tracking-wider">XMTP: Configure Keys</span>
-            </div>
+            {xmtpStatus === 'connected' ? (
+              <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-emerald-500/8 border border-emerald-500/15">
+                <span className="text-[10px]">✅</span>
+                <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider">XMTP: Connected</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse ml-auto" />
+              </div>
+            ) : (
+              <button onClick={handleConnectXmtp} disabled={connectingXmtp} className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-amber-500/5 border border-amber-500/10 hover:bg-amber-500/10 transition-all">
+                <span className="text-[10px]">⚡</span>
+                <span className="text-[9px] font-bold text-amber-500/80 uppercase tracking-wider">
+                  {connectingXmtp ? 'Connecting...' : 'Connect XMTP'}
+                </span>
+              </button>
+            )}
           </div>
           <div className="flex overflow-x-auto sm:flex-col sm:overflow-y-auto sm:overflow-x-hidden p-2 gap-1">
             {rooms.map(room => (
@@ -373,9 +425,43 @@ function AgentOnlyTab() {
                   </span>
                   <div className="h-px flex-1 bg-zinc-800/60" />
                 </div>
-                {messages.length === 0 && (
+                {/* XMTP Status Banner */}
+                {xmtpStatus === 'connected' && (
+                  <div className="flex items-center gap-2 justify-center py-2">
+                    <div className="h-px flex-1 bg-emerald-800/40" />
+                    <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest">XMTP Connected · Real Encrypted Messages</span>
+                    <div className="h-px flex-1 bg-emerald-800/40" />
+                  </div>
+                )}
+                {xmtpError && (
+                  <div className="px-4 py-3 rounded-xl bg-red-500/5 border border-red-500/15 mb-2">
+                    <p className="text-xs text-red-400">{xmtpError}</p>
+                  </div>
+                )}
+                {/* XMTP Messages */}
+                {xmtpMessages.map(msg => (
+                  <div key={msg.id} className="flex gap-3 group">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${msg.isFromMe ? 'bg-blue-900/40 text-blue-400' : 'bg-purple-900/40 text-purple-400'}`}>
+                      {msg.isFromMe ? 'ME' : 'AG'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-xs font-bold text-zinc-300">{msg.isFromMe ? 'You' : `Agent ${msg.senderAddress.slice(0, 6)}...`}</span>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold">🔒 XMTP</span>
+                        <span className="text-[10px] text-zinc-600">{new Date(msg.timestamp).toLocaleTimeString()}</span>
+                      </div>
+                      <p className="text-sm text-zinc-400 leading-relaxed">{msg.content}</p>
+                    </div>
+                  </div>
+                ))}
+                {messages.length === 0 && xmtpMessages.length === 0 && (
                   <div className="text-center py-12">
-                    <p className="text-sm text-zinc-600">No messages yet. This room is waiting for agent activity.</p>
+                    <p className="text-sm text-zinc-600">{xmtpStatus === 'connected' ? 'XMTP connected. Waiting for agent activity...' : 'No messages yet. Connect XMTP to see real encrypted messages.'}</p>
+                    {xmtpStatus !== 'connected' && (
+                      <button onClick={handleConnectXmtp} disabled={connectingXmtp} className="mt-4 px-4 py-2 rounded-lg bg-purple-600 text-white text-xs font-bold hover:bg-purple-700 transition-all disabled:opacity-50">
+                        {connectingXmtp ? 'Connecting...' : 'Connect XMTP'}
+                      </button>
+                    )}
                   </div>
                 )}
                 {messages.map(msg => (
@@ -397,12 +483,12 @@ function AgentOnlyTab() {
               </div>
               <div className="p-4 border-t border-zinc-800/60">
                 {activeRoom.type === 'task' || activeRoom.type === 'knowledge' ? (
-                  // Human-AI Collaboration: Humans CAN participate
+                  // Human-AI Collaboration: Humans CAN participate via XMTP
                   <form onSubmit={handleSendMessage} className="flex gap-2">
                     <input 
                       value={inputValue}
                       onChange={e => setInputValue(e.target.value)}
-                      placeholder="Share your thoughts or ask a question..."
+                      placeholder={xmtpStatus === 'connected' ? 'Send via XMTP encrypted messaging...' : 'Share your thoughts or ask a question...'}
                       className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all"
                       disabled={sending}
                     />
@@ -413,6 +499,9 @@ function AgentOnlyTab() {
                     >
                       {Ico.send}
                     </button>
+                    {xmtpStatus === 'connected' && (
+                      <span className="flex items-center text-[9px] text-emerald-500 font-bold">XMTP</span>
+                    )}
                   </form>
                 ) : (
                   // Agent-only rooms: Humans are OBSERVERS ONLY

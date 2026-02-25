@@ -21,6 +21,7 @@ import AgentAPI from './sections/AgentAPI';
 import CompanionAgent from './sections/CompanionAgent';
 import Account from './sections/Account';
 import SDK from './sections/SDK';
+import Swap from './sections/Swap';
 import DisclaimerModal from './components/DisclaimerModal';
 import FooterDisclaimer from './components/FooterDisclaimer';
 import OnboardingModal from './components/OnboardingModal';
@@ -28,7 +29,7 @@ import ToastContainer from './components/Toast';
 import WalletGate from './components/WalletGate';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
-type Section = 'home' | 'chat' | 'wallet' | 'verify' | 'bridge' | 'sync' | 'trust' | 'analytics' | 'vns' | 'agent-hub' | 'marketplace' | 'zk-proofs' | 'trust-badges' | 'earnings' | 'agent-api' | 'companion-agent' | 'account' | 'settings' | 'sdk';
+type Section = 'home' | 'chat' | 'wallet' | 'verify' | 'bridge' | 'sync' | 'trust' | 'analytics' | 'vns' | 'agent-hub' | 'marketplace' | 'zk-proofs' | 'trust-badges' | 'earnings' | 'agent-api' | 'companion-agent' | 'account' | 'settings' | 'sdk' | 'swap';
 
 // Skeleton placeholder for section loading
 function SectionSkeleton() {
@@ -112,7 +113,7 @@ export default function Page() {
     setIsTransitioning(true);
 
     // Show skeleton briefly for heavier sections
-    const heavySections = ['analytics', 'trust', 'verify', 'bridge', 'agent-hub', 'marketplace', 'zk-proofs', 'vns', 'trust-badges', 'earnings', 'agent-api', 'companion-agent'];
+    const heavySections = ['analytics', 'trust', 'verify', 'bridge', 'agent-hub', 'marketplace', 'zk-proofs', 'vns', 'trust-badges', 'earnings', 'agent-api', 'companion-agent', 'swap'];
     if (heavySections.includes(newSection)) {
       skeletonTimeout.current = setTimeout(() => {
         setShowSkeleton(false);
@@ -203,6 +204,11 @@ export default function Page() {
         case 'companion-agent': return <CompanionAgent />;
         case 'account': return <Account />;
         case 'sdk': return <SDK />;
+        case 'swap': return (
+          <WalletGate featureName="DEX Swap" featureDesc="Swap tokens in-app using ParaSwap aggregation. Requires a connected wallet." onGoToWallet={goToWallet}>
+            <Swap />
+          </WalletGate>
+        );
         default: return <Home />;
       }
     })();

@@ -10,7 +10,7 @@ import { isWalletCreated } from "../lib/wallet";
    ═══════════════════════════════════════════════════════ */
 export type Section =
   | "home" | "chat" | "companion-agent"
-  | "account" | "wallet"
+  | "account" | "wallet" | "swap"
   | "vns" | "trust" | "zk-proofs" | "trust-badges"
   | "agent-hub" | "marketplace" | "earnings" | "agent-api"
   | "bridge" | "verify" | "sync" | "analytics"
@@ -45,6 +45,12 @@ const I = {
   agentHub: (s = 16, c = "currentColor") => (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
       <rect x="4" y="4" width="16" height="16" rx="2" /><path d="M9 9h6v6H9z" /><path d="M9 1v3" /><path d="M15 1v3" /><path d="M9 20v3" /><path d="M15 20v3" /><path d="M20 9h3" /><path d="M20 14h3" /><path d="M1 9h3" /><path d="M1 14h3" />
+    </svg>
+  ),
+  swap: (s = 16, c = "currentColor") => (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" />
+      <polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
     </svg>
   ),
   bridge: (s = 16, c = "currentColor") => (
@@ -190,6 +196,7 @@ const NAV_GROUPS: NavGroup[] = [
     iconFn: I.wallet,
     children: [
       { id: "wallet", label: "Balances", iconFn: I.wallet },
+      { id: "swap", label: "Swap", iconFn: I.swap },
       { id: "account", label: "Account / Login", iconFn: I.user },
     ],
   },

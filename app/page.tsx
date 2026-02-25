@@ -18,6 +18,10 @@ import ZKProofs from './sections/ZKProofs';
 import TrustBadges from './sections/TrustBadges';
 import AgentEarnings from './sections/AgentEarnings';
 import AgentAPI from './sections/AgentAPI';
+import CompanionAgent from './sections/CompanionAgent';
+import Account from './sections/Account';
+import SDK from './sections/SDK';
+import Swap from './sections/Swap';
 import DisclaimerModal from './components/DisclaimerModal';
 import FooterDisclaimer from './components/FooterDisclaimer';
 import OnboardingModal from './components/OnboardingModal';
@@ -25,7 +29,7 @@ import ToastContainer from './components/Toast';
 import WalletGate from './components/WalletGate';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
-type Section = 'home' | 'chat' | 'wallet' | 'verify' | 'bridge' | 'sync' | 'trust' | 'analytics' | 'vns' | 'agent-hub' | 'marketplace' | 'zk-proofs' | 'trust-badges' | 'earnings' | 'agent-api' | 'settings';
+type Section = 'home' | 'chat' | 'wallet' | 'verify' | 'bridge' | 'sync' | 'trust' | 'analytics' | 'vns' | 'agent-hub' | 'marketplace' | 'zk-proofs' | 'trust-badges' | 'earnings' | 'agent-api' | 'companion-agent' | 'account' | 'settings' | 'sdk' | 'swap';
 
 // Skeleton placeholder for section loading
 function SectionSkeleton() {
@@ -109,7 +113,7 @@ export default function Page() {
     setIsTransitioning(true);
 
     // Show skeleton briefly for heavier sections
-    const heavySections = ['analytics', 'trust', 'verify', 'bridge', 'agent-hub', 'marketplace', 'zk-proofs', 'vns', 'trust-badges', 'earnings', 'agent-api'];
+    const heavySections = ['analytics', 'trust', 'verify', 'bridge', 'agent-hub', 'marketplace', 'zk-proofs', 'vns', 'trust-badges', 'earnings', 'agent-api', 'companion-agent', 'swap'];
     if (heavySections.includes(newSection)) {
       skeletonTimeout.current = setTimeout(() => {
         setShowSkeleton(false);
@@ -169,7 +173,11 @@ export default function Page() {
         );
         case 'wallet': return <Wallet />;
         case 'verify': return <Verify />;
-        case 'bridge': return <Bridge />;
+        case 'bridge': return (
+          <WalletGate featureName="Cross-Chain Bridge" featureDesc="Bridge trust data across chains. Requires a connected wallet to sign transactions." onGoToWallet={goToWallet}>
+            <Bridge />
+          </WalletGate>
+        );
         case 'settings': return <Settings />;
         case 'sync': return <Sync />;
         case 'trust': return <TrustScore />;
@@ -179,7 +187,11 @@ export default function Page() {
             <VNS />
           </WalletGate>
         );
-        case 'agent-hub': return <AgentHub />;
+        case 'agent-hub': return (
+          <WalletGate featureName="Embris Hub" featureDesc="Explore and manage agents. Connect your wallet to see your agent status." onGoToWallet={goToWallet}>
+            <AgentHub />
+          </WalletGate>
+        );
         case 'marketplace': return <AgentMarketplace />;
         case 'zk-proofs': return <ZKProofs />;
         case 'trust-badges': return <TrustBadges />;
@@ -189,6 +201,14 @@ export default function Page() {
           </WalletGate>
         );
         case 'agent-api': return <AgentAPI />;
+        case 'companion-agent': return <CompanionAgent />;
+        case 'account': return <Account />;
+        case 'sdk': return <SDK />;
+        case 'swap': return (
+          <WalletGate featureName="DEX Swap" featureDesc="Swap tokens in-app using ParaSwap aggregation. Requires a connected wallet." onGoToWallet={goToWallet}>
+            <Swap />
+          </WalletGate>
+        );
         default: return <Home />;
       }
     })();

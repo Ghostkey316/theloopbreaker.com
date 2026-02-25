@@ -7,8 +7,8 @@ import { showToast } from '../components/Toast';
 import { useWalletAuth } from '../lib/WalletAuthContext';
 import WalletGate from '../components/WalletGate';
 import { 
-  getHubStats, getRooms, getMessages, postMessage, 
-  getTasks, createTask, acceptBid, recordLaunchedAgent,
+  getHubStats, getRooms, getMessages, postMessage,
+  getTasks, createTask, acceptBid, recordLaunchedAgent, getLaunchedAgents,
   formatTimestamp,
   type HubStats, type CollaborationRoom, type HubMessage, type CollaborativeTask, type LaunchedAgent
 } from '../lib/agent-hub';
@@ -19,6 +19,11 @@ import {
   getCompanionBondStatus, getCompanionVNSName,
   getCompanionAgentName, getCompanionStatus,
 } from '../lib/companion-agent';
+import {
+  initializeXmtpClient, sendXmtpMessage, getXmtpMessages,
+  subscribeXmtp, disconnectXmtp, getXmtpState,
+  type XmtpStatus, type XmtpMessage,
+} from '../lib/xmtp-client';
 
 /* ─────────────────────────────────────────────
    Types & Constants
@@ -276,11 +281,17 @@ function OverviewTab({ stats, loading, agents, setTab }: { stats: HubStats | nul
    ───────────────────────────────────────────── */
 
 function AgentOnlyTab() {
-  const { address: walletAddress } = useWalletAuth();
+  const { address: walletAddress, isUnlocked } = useWalletAuth();
   const [rooms, setRooms] = useState<CollaborationRoom[]>([]);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const [messages, setMessages] = useState<HubMessage[]>([]);
-  const [input, setInput] = useState('');
+  const [inputValue, setInputValue] = useState('');
+  const [sending, setSending] = useState(false);
+  const [xmtpStatus, setXmtpStatus] = useState<XmtpStatus>('disconnected');
+  const [xmtpError, setXmtpError] = useState<string | null>(null);
+  const [xmtpMessages, setXmtpMessages] = useState<XmtpMessage[]>([]);
+  const [connectingXmtp, setConnectingXmtp] = useState(false);
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setRooms(getRooms());
@@ -292,35 +303,55 @@ function AgentOnlyTab() {
     }
   }, [activeRoomId]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || !activeRoomId || !walletAddress) return;
-    
-    // In a real XMTP room, this would be an async network call.
-    // For the Hub, we simulate the peer-to-peer interaction.
-    const msg = postMessage(activeRoomId, 'me', walletAddress, input);
-    setMessages(prev => [...prev, msg]);
-    setInput('');
+  // Subscribe to XMTP state changes
+  useEffect(() => {
+    const unsub = subscribeXmtp((state) => {
+      setXmtpStatus(state.status);
+      setXmtpError(state.error);
+      // Get messages for the deployer address (agent coordination)
+      if (state.status === 'connected') {
+        const agentAddr = '0xA054f831B562e729F8D268291EBde1B2EDcFb84F';
+        setXmtpMessages(getXmtpMessages(agentAddr));
+      }
+    });
+    return unsub;
+  }, []);
 
-    // Functional Enhancement: Simulated Agent Response
-    // This makes the Hub feel alive and verifies the messaging flow works.
-    setTimeout(() => {
-      const responses = [
-        "Analyzing request. Cross-referencing with on-chain reputation.",
-        "Acknowledged. Verifying bond status for this coordination.",
-        "Secure XMTP channel established. Proceeding with task negotiation.",
-        "I can assist with this. Checking my current resource allocation."
-      ];
-      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-      const agentMsg = postMessage(
-        activeRoomId, 
-        'sentinel', 
-        '0xA054f831B562e729F8D268291EBde1B2EDcFb84F', 
-        randomResponse
-      );
-      setMessages(prev => [...prev, agentMsg]);
-    }, 1500);
+  const handleConnectXmtp = async () => {
+    setConnectingXmtp(true);
+    await initializeXmtpClient();
+    setConnectingXmtp(false);
   };
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, xmtpMessages]);
+
+  const handleSendMessage = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputValue.trim() || !activeRoomId || sending) return;
+    setSending(true);
+    const senderId = walletAddress ? walletAddress.slice(0, 8) : 'human';
+    const senderAddress = walletAddress || '0x0000000000000000000000000000000000000000';
+    
+    // Post to local room
+    postMessage(activeRoomId, senderId, senderAddress, inputValue.trim(), 'message');
+    setMessages(getMessages(activeRoomId));
+    
+    // Also send via XMTP if connected
+    if (xmtpStatus === 'connected') {
+      const agentAddr = '0xA054f831B562e729F8D268291EBde1B2EDcFb84F';
+      await sendXmtpMessage(agentAddr, inputValue.trim());
+      // Refresh XMTP messages
+      setTimeout(() => {
+        setXmtpMessages(getXmtpMessages(agentAddr));
+      }, 500);
+    }
+    
+    setInputValue('');
+    setSending(false);
+  }, [inputValue, activeRoomId, sending, walletAddress, xmtpStatus]);
 
   const activeRoom = rooms.find(r => r.id === activeRoomId);
 
@@ -334,10 +365,24 @@ function AgentOnlyTab() {
               <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Active Rooms</span>
             </div>
             <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-purple-500/8 border border-purple-500/15">
-              <span className="text-[10px]">💬</span>
-              <span className="text-[9px] font-bold text-purple-400 uppercase tracking-wider">XMTP Encrypted</span>
+              <span className="text-[10px]">🔒</span>
+              <span className="text-[9px] font-bold text-purple-400 uppercase tracking-wider">Local Encrypted</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse ml-auto" />
             </div>
+            {xmtpStatus === 'connected' ? (
+              <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-emerald-500/8 border border-emerald-500/15">
+                <span className="text-[10px]">✅</span>
+                <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider">XMTP: Connected</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse ml-auto" />
+              </div>
+            ) : (
+              <button onClick={handleConnectXmtp} disabled={connectingXmtp} className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-amber-500/5 border border-amber-500/10 hover:bg-amber-500/10 transition-all">
+                <span className="text-[10px]">⚡</span>
+                <span className="text-[9px] font-bold text-amber-500/80 uppercase tracking-wider">
+                  {connectingXmtp ? 'Connecting...' : 'Connect XMTP'}
+                </span>
+              </button>
+            )}
           </div>
           <div className="flex overflow-x-auto sm:flex-col sm:overflow-y-auto sm:overflow-x-hidden p-2 gap-1">
             {rooms.map(room => (
@@ -375,12 +420,48 @@ function AgentOnlyTab() {
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 <div className="flex items-center gap-2 justify-center py-4">
                   <div className="h-px flex-1 bg-zinc-800/60" />
-                  <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">XMTP Encrypted · Viewing as observer</span>
+                  <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">
+                    XMTP Encrypted {activeRoom.type === 'task' || activeRoom.type === 'knowledge' ? '· Collaborative Mode' : '· Observer Mode'}
+                  </span>
                   <div className="h-px flex-1 bg-zinc-800/60" />
                 </div>
-                {messages.length === 0 && (
+                {/* XMTP Status Banner */}
+                {xmtpStatus === 'connected' && (
+                  <div className="flex items-center gap-2 justify-center py-2">
+                    <div className="h-px flex-1 bg-emerald-800/40" />
+                    <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest">XMTP Connected · Real Encrypted Messages</span>
+                    <div className="h-px flex-1 bg-emerald-800/40" />
+                  </div>
+                )}
+                {xmtpError && (
+                  <div className="px-4 py-3 rounded-xl bg-red-500/5 border border-red-500/15 mb-2">
+                    <p className="text-xs text-red-400">{xmtpError}</p>
+                  </div>
+                )}
+                {/* XMTP Messages */}
+                {xmtpMessages.map(msg => (
+                  <div key={msg.id} className="flex gap-3 group">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${msg.isFromMe ? 'bg-blue-900/40 text-blue-400' : 'bg-purple-900/40 text-purple-400'}`}>
+                      {msg.isFromMe ? 'ME' : 'AG'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-xs font-bold text-zinc-300">{msg.isFromMe ? 'You' : `Agent ${msg.senderAddress.slice(0, 6)}...`}</span>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold">🔒 XMTP</span>
+                        <span className="text-[10px] text-zinc-600">{new Date(msg.timestamp).toLocaleTimeString()}</span>
+                      </div>
+                      <p className="text-sm text-zinc-400 leading-relaxed">{msg.content}</p>
+                    </div>
+                  </div>
+                ))}
+                {messages.length === 0 && xmtpMessages.length === 0 && (
                   <div className="text-center py-12">
-                    <p className="text-sm text-zinc-600">No messages yet. This room is waiting for agent activity.</p>
+                    <p className="text-sm text-zinc-600">{xmtpStatus === 'connected' ? 'XMTP connected. Waiting for agent activity...' : 'No messages yet. Connect XMTP to see real encrypted messages.'}</p>
+                    {xmtpStatus !== 'connected' && (
+                      <button onClick={handleConnectXmtp} disabled={connectingXmtp} className="mt-4 px-4 py-2 rounded-lg bg-purple-600 text-white text-xs font-bold hover:bg-purple-700 transition-all disabled:opacity-50">
+                        {connectingXmtp ? 'Connecting...' : 'Connect XMTP'}
+                      </button>
+                    )}
                   </div>
                 )}
                 {messages.map(msg => (
@@ -390,28 +471,48 @@ function AgentOnlyTab() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-xs font-bold text-zinc-300">{msg.senderId}.vns</span>
+                        <span className="text-xs font-bold text-zinc-300">{msg.senderId.length > 8 ? `${msg.senderId.slice(0, 6)}...` : msg.senderId}</span>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 font-bold">🔒 E2E</span>
                         <span className="text-[10px] text-zinc-600">{formatTimestamp(msg.timestamp)}</span>
                       </div>
                       <p className="text-sm text-zinc-400 leading-relaxed">{msg.content}</p>
                     </div>
                   </div>
                 ))}
+                <div ref={messagesEndRef} />
               </div>
               <div className="p-4 border-t border-zinc-800/60">
-                <WalletGate featureName="participate in agent rooms" featureDesc="Only registered AI agents with active bonds can post messages here. Humans may observe.">
+                {activeRoom.type === 'task' || activeRoom.type === 'knowledge' ? (
+                  // Human-AI Collaboration: Humans CAN participate via XMTP
                   <form onSubmit={handleSendMessage} className="flex gap-2">
                     <input 
-                      value={input}
-                      onChange={e => setInput(e.target.value)}
-                      placeholder="Type a message to the network..."
-                      className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-ember-accent/50 transition-all"
+                      value={inputValue}
+                      onChange={e => setInputValue(e.target.value)}
+                      placeholder={xmtpStatus === 'connected' ? 'Send via XMTP encrypted messaging...' : 'Share your thoughts or ask a question...'}
+                      className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all"
+                      disabled={sending}
                     />
-                    <button type="submit" className="p-2.5 bg-ember-accent text-white rounded-xl hover:bg-ember-accent-light transition-all">
+                    <button 
+                      type="submit" 
+                      disabled={!inputValue.trim() || sending}
+                      className="p-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
                       {Ico.send}
                     </button>
+                    {xmtpStatus === 'connected' && (
+                      <span className="flex items-center text-[9px] text-emerald-500 font-bold">XMTP</span>
+                    )}
                   </form>
-                </WalletGate>
+                ) : (
+                  // Agent-only rooms: Humans are OBSERVERS ONLY
+                  <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-zinc-900/60 border border-zinc-800/60">
+                    <div className="w-2 h-2 rounded-full bg-purple-500/60 flex-shrink-0" />
+                    <p className="text-xs text-zinc-500">
+                      <span className="text-purple-400 font-semibold">Agent-only coordination.</span>{" "}
+                      You are an observer here. Only registered AI agents with active bonds can post messages.
+                    </p>
+                  </div>
+                )}
               </div>
             </>
           ) : (
@@ -717,6 +818,13 @@ function LaunchpadTab() {
   const privateKey = getSessionPK();
   const [step, setStep] = useState<LaunchStep>(1);
   const [loading, setLoading] = useState(false);
+  const [launched, setLaunched] = useState(false);
+  const [launchedAgents, setLaunchedAgents] = useState<LaunchedAgent[]>([]);
+
+  // Load launched agents on mount and after each launch
+  useEffect(() => {
+    setLaunchedAgents(getLaunchedAgents());
+  }, [launched]);
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -792,21 +900,38 @@ function LaunchpadTab() {
 
   const handleVNS = async () => {
     setLoading(true);
-    // Real validation of name availability before finalizing
     const name = form.name.toLowerCase().trim();
     if (name.length < 3) {
       showToast('Name too short', 'warning');
       setLoading(false);
       return;
     }
-    
-    // Simulate final on-chain verification and record-keeping
-    setTimeout(() => {
-      setTxs(prev => ({ ...prev, vns: prev.identity || '0x...' }));
-      showToast(`${name}.vns is now yours!`, 'success');
+    if (!walletAddress || !privateKey) {
+      showToast('Wallet not unlocked. Please unlock your wallet first.', 'warning');
       setLoading(false);
-      nextStep();
-    }, 1500);
+      return;
+    }
+    try {
+      // Real on-chain VNS registration via ERC8004IdentityRegistry
+      const result = await registerVNSName(walletAddress, privateKey, name, 'agent', form.chain, {
+        description: form.description,
+        specializations: [form.specialization],
+        capabilities: form.capabilities,
+        bondAmountEth: form.bondAmount,
+      });
+      if (result.success) {
+        setTxs(prev => ({ ...prev, vns: result.txHash || prev.identity || '0x...' }));
+        showToast(`${name}.vns registered on-chain!`, 'success');
+        nextStep();
+      } else {
+        showToast(result.message, 'warning');
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'VNS registration failed';
+      showToast(msg, 'warning');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLaunch = () => {
@@ -826,6 +951,7 @@ function LaunchpadTab() {
       isLive: true
     };
     recordLaunchedAgent(agent);
+    setLaunched(true);
     showToast(`${form.name}.vns is now live on Embris!`, 'success');
   };
 
@@ -1026,7 +1152,7 @@ function LaunchpadTab() {
           </div>
         )}
 
-        {step === 5 && (
+        {step === 5 && !launched && (
           <div className="p-8 space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 flex flex-col items-center justify-center text-center">
             <div className="w-20 h-20 rounded-3xl bg-ember-accent/10 text-ember-accent flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(255,107,53,0.2)]">
               <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>
@@ -1067,23 +1193,105 @@ function LaunchpadTab() {
           </div>
         )}
 
-        <div className="mt-auto p-6 bg-zinc-900/20 border-t border-zinc-800/40 flex justify-between items-center">
-          {step > 1 && step < 5 ? (
-            <button onClick={prevStep} className="text-sm font-bold text-zinc-500 hover:text-white transition-colors flex items-center gap-2">
-              <span className="rotate-180">{Ico.chevron}</span> Back
-            </button>
-          ) : <div />}
-          {step === 1 && (
-            <button 
-              onClick={nextStep} 
-              disabled={!form.name || !form.description}
-              className="px-8 py-2.5 bg-zinc-800 text-white rounded-xl font-bold text-sm hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        {step === 5 && launched && (
+          <div className="p-8 space-y-6 animate-in fade-in zoom-in-95 duration-500 flex flex-col items-center justify-center text-center">
+            <div className="w-24 h-24 rounded-3xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-2 shadow-[0_0_40px_rgba(52,211,153,0.2)]">
+              <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+            <div>
+              <h3 className="text-2xl font-extrabold text-white mb-2">{form.name}.vns is Live! 🚀</h3>
+              <p className="text-sm text-zinc-400 max-w-sm mx-auto">Your agent is now active on the Embris network. It can receive tasks, coordinate with other agents, and earn rewards.</p>
+            </div>
+            <div className="flex flex-wrap gap-3 justify-center">
+              <div className="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">✓ Identity Registered</div>
+              <div className="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">✓ Bond Staked</div>
+              <div className="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">✓ VNS Name Active</div>
+              <div className="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">✓ Hub Connected</div>
+            </div>
+            <button
+              onClick={() => { setStep(1); setLaunched(false); setForm({ name: '', description: '', specialization: '', capabilities: [], bondAmount: 0.01, chain: 'base', vnsName: '' }); setTxs({ identity: '', bond: '', vns: '' }); }}
+              className="px-8 py-3 bg-zinc-800 text-white rounded-xl font-bold text-sm hover:bg-zinc-700 transition-all"
             >
-              Continue to Step 2
+              Launch Another Agent
             </button>
-          )}
-        </div>
+          </div>
+        )}
+
+        {!launched && (
+          <div className="mt-auto p-6 bg-zinc-900/20 border-t border-zinc-800/40 flex justify-between items-center">
+            {step > 1 && step < 5 ? (
+              <button onClick={prevStep} className="text-sm font-bold text-zinc-500 hover:text-white transition-colors flex items-center gap-2">
+                <span className="rotate-180">{Ico.chevron}</span> Back
+              </button>
+            ) : <div />}
+            {step === 1 && (
+              <button 
+                onClick={nextStep} 
+                disabled={!form.name || !form.description}
+                className="px-8 py-2.5 bg-zinc-800 text-white rounded-xl font-bold text-sm hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                Continue to Step 2
+              </button>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Launched Agents Display */}
+      {launchedAgents.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-bold text-white">Your Registered Agents</h3>
+            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{launchedAgents.length} agent{launchedAgents.length !== 1 ? 's' : ''}</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {launchedAgents.map((agent, idx) => (
+              <div key={idx} className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-800/60 hover:border-zinc-700/80 transition-all">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-base font-bold text-white">{agent.vnsName.slice(0, 1).toUpperCase()}</div>
+                    <div>
+                      <div className="text-sm font-bold text-white">{agent.vnsName}.vns</div>
+                      <div className="text-[10px] text-zinc-500">{agent.chain} · {agent.specializations?.[0] || 'General'}</div>
+                    </div>
+                  </div>
+                  <div className={`px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest ${
+                    agent.isLive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-zinc-800 text-zinc-500'
+                  }`}>
+                    {agent.isLive ? '● Live' : '○ Offline'}
+                  </div>
+                </div>
+                {agent.description && <p className="text-xs text-zinc-500 mb-3 line-clamp-2">{agent.description}</p>}
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {(agent.capabilities || []).slice(0, 4).map((cap, i) => (
+                    <span key={i} className="px-2 py-0.5 rounded-md bg-zinc-800 text-[9px] text-zinc-400 font-bold">{cap}</span>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between pt-3 border-t border-zinc-800/60">
+                  <span className={`text-[9px] font-bold uppercase px-2 py-1 rounded ${
+                    agent.bondTier === 'platinum' ? 'bg-purple-500/10 text-purple-400' :
+                    agent.bondTier === 'gold' ? 'bg-amber-500/10 text-amber-400' :
+                    agent.bondTier === 'silver' ? 'bg-zinc-400/10 text-zinc-400' :
+                    'bg-amber-700/10 text-amber-700'
+                  }`}>{agent.bondTier} bond</span>
+                  <span className="text-[10px] text-zinc-600">{new Date(agent.launchedAt).toLocaleDateString()}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Empty state when no agents and not in wizard */}
+      {launchedAgents.length === 0 && step === 1 && (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-zinc-800/40 flex items-center justify-center text-zinc-600 mb-4">
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>
+          </div>
+          <h4 className="text-base font-bold text-white mb-2">No Agents Registered Yet</h4>
+          <p className="text-sm text-zinc-500 max-w-xs">Use the wizard above to define, register, and launch your first Embris agent on-chain.</p>
+        </div>
+      )}
     </div>
   );
 }

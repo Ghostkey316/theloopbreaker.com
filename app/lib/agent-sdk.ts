@@ -15,7 +15,7 @@
  * grantConsent(bytes32)                 → 0x1c9df7ef
  * getTotalAgents()                      → 0x3731a16f
  * getAgent(address)                     → 0xfb3551ff
- * attestBelief(bytes32,bytes)           → 0x5b0fc9c3 (BeliefAttestationVerifier)
+ * attestBelief(bytes32,bytes)           → 0xdfd17bd9 (DilithiumAttestor — NOT BeliefAttestationVerifier)
  * ─────────────────────────────────────────────────────────────────────────
  *
  * @module agent-sdk
@@ -71,14 +71,14 @@ export const ACCOUNTABILITY_BONDS: Record<SupportedChain, string> = {
   ethereum: '0x11C267C8A75B13A4D95357CEF6027c42F8e7bA24',
 };
 
-/** BeliefAttestationVerifier — belief attestation */
+/** BeliefAttestationVerifier — ZK proof verification (verifyProof only, NOT attestBelief) */
 export const BELIEF_ATTESTATION: Record<SupportedChain, string> = {
   base: '0xD9bF6D92a1D9ee44a48c38481c046a819CBdf2ba',
-  avalanche: '0xE2f75A4B14ffFc1f9C2b1ca22Fdd6877E5BD5045',
+  avalanche: '0x227e27e7776d3ee14128BC66216354495E113B19', // Fixed: was incorrectly pointing to PrivacyGuarantees on Base
   ethereum: '0x613585B786af2d5ecb1c3e712CE5ffFB8f53f155',
 };
 
-/** DilithiumAttestor V2 — post-quantum attestation */
+/** DilithiumAttestor V2 — post-quantum attestation. Use for attestBelief(bytes32,bytes) → 0xdfd17bd9 */
 export const DILITHIUM_ATTESTOR: Record<SupportedChain, string> = {
   base: '0xBBC0EFdEE23854e7cb7C4c0f56fF7670BB0530A4',
   avalanche: '0x211554bd46e3D4e064b51a31F61927ae9c7bCF1f',
@@ -114,11 +114,15 @@ const SELECTORS = {
  * Use with ethers.Contract for type-safe interactions.
  */
 export const IDENTITY_REGISTRY_ABI = [
-  'function registerAgent(string name, string description, bytes32 identityHash) external',
-  'function getAgent(address agent) external view returns (string name, string description)',
+  // Verified on-chain: registerAgent(string agentURI, string agentType, bytes32 capabilitiesHash) → 0x2b3ce0bf
+  'function registerAgent(string agentURI, string agentType, bytes32 capabilitiesHash) external',
+  // getAgent returns (string agentURI, bool active, string agentType, uint256 registeredAt)
+  'function getAgent(address agentAddress) external view returns (string agentURI, bool active, string agentType, uint256 registeredAt)',
   'function getTotalAgents() external view returns (uint256)',
   'function owner() external view returns (address)',
-  'function isRegistered(address agent) external view returns (bool)',
+  // isAgentActive exists on-chain; isRegistered does NOT exist
+  'function isAgentActive(address agentAddress) external view returns (bool)',
+  'function agents(address) external view returns (address agentAddress, string agentURI, uint256 registeredAt, bool active, string agentType, bytes32 capabilitiesHash)',
 ] as const;
 
 /**
@@ -127,17 +131,33 @@ export const IDENTITY_REGISTRY_ABI = [
  */
 export const PARTNERSHIP_BONDS_ABI = [
   'function createBond(address aiAgent, string partnershipType) external payable',
-  'function getBond(uint256 bondId) external view returns (address creator, address aiAgent, string partnershipType, uint256 amount, uint256 createdAt, bool active)',
-  'function getBondCount() external view returns (uint256)',
-  'function totalBonded() external view returns (uint256)',
+  // getBond returns a tuple — use bonds(uint256) for direct struct access
+  'function getBond(uint256 bondId) external view returns (tuple(uint256 bondId, address human, address aiAgent, string partnershipType, uint256 stakeAmount, uint256 createdAt, uint256 distributionRequestedAt, bool distributionPending, bool active) bond)',
+  'function bonds(uint256) external view returns (uint256 bondId, address human, address aiAgent, string partnershipType, uint256 stakeAmount, uint256 createdAt, uint256 distributionRequestedAt, bool distributionPending, bool active)',
+  // getBondCount/totalBonded do NOT exist on-chain; use nextBondId and totalActiveBondValue
+  'function nextBondId() external view returns (uint256)',
+  'function totalActiveBondValue() external view returns (uint256)',
+  'function getBondsByParticipant(address participant) external view returns (uint256[])',
 ] as const;
 
 /**
  * BeliefAttestationVerifier ABI — verified from BaseScan.
+ * NOTE: This contract only exposes verifyProof(). attestBelief() lives on DilithiumAttestor.
  */
 export const BELIEF_ATTESTATION_ABI = [
-  'function attestBelief(bytes32 beliefHash, bytes signature) external',
-  'function verifyAttestation(address agent, bytes32 beliefHash) external view returns (bool)',
+  'function verifyProof(bytes proofBytes, uint256[] publicInputs) external view returns (bool)',
+  'function getProofSystemId() external view returns (string)',
+  'function getPublicInputsCount() external view returns (uint256)',
+] as const;
+
+/**
+ * DilithiumAttestor ABI — verified from BaseScan.
+ * This is the correct contract for attestBelief(bytes32,bytes) → 0xdfd17bd9
+ */
+export const DILITHIUM_ATTESTOR_ABI = [
+  'function attestBelief(bytes32 beliefHash, bytes zkProofBundle) external',
+  'function attestedBeliefs(bytes32) external view returns (bool)',
+  'function isBeliefSovereign(bytes32 beliefHash) external view returns (bool)',
 ] as const;
 
 /**
@@ -632,13 +652,13 @@ export async function attestBelief(
 ): Promise<SDKResult> {
   try {
     const rpc = RPC_URLS[chain];
-    const attestor = BELIEF_ATTESTATION[chain];
+    // attestBelief lives on DilithiumAttestor, NOT BeliefAttestationVerifier
+    const attestor = DILITHIUM_ATTESTOR[chain];
     const chainId = CHAIN_IDS[chain];
     const explorerBase = EXPLORER_URLS[chain];
-
-    // attestBelief(bytes32 beliefHash, bytes signature)
-    // Selector: 0x5b0fc9c3
-    const ATTEST_SELECTOR = '0x5b0fc9c3';
+    // attestBelief(bytes32 beliefHash, bytes zkProofBundle)
+    // Selector: 0xdfd17bd9 (verified on-chain)
+    const ATTEST_SELECTOR = '0xdfd17bd9';
     const beliefHashHex = encodeBytes32(params.beliefHash);
     // bytes is dynamic — offset pointer then length-prefixed data
     const sigBytes = params.signature.replace('0x', '');
