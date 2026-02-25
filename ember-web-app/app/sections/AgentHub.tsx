@@ -152,9 +152,102 @@ function CompanionAgentCard() {
 }
 
 /* ─────────────────────────────────────────────
+   Inline Searchable Agent Directory
+   ───────────────────────────────────────────── */
+function InlineAgentDirectory({ agents, loading }: { agents: RegisteredAgent[]; loading: boolean }) {
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'chain' | 'type'>('name');
+  const [expanded, setExpanded] = useState(false);
+
+  const filtered = agents.filter(a => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      a.name.toLowerCase().includes(q) ||
+      a.address.toLowerCase().includes(q) ||
+      a.chain.toLowerCase().includes(q) ||
+      (a.identityType || '').toLowerCase().includes(q)
+    );
+  }).sort((a, b) => {
+    if (sortBy === 'name') return a.name.localeCompare(b.name);
+    if (sortBy === 'chain') return a.chain.localeCompare(b.chain);
+    return (a.identityType || '').localeCompare(b.identityType || '');
+  });
+
+  const displayed = expanded ? filtered : filtered.slice(0, 5);
+  const chainColors: Record<string, string> = { base: 'text-blue-400 bg-blue-500/10', avalanche: 'text-red-400 bg-red-500/10', ethereum: 'text-purple-400 bg-purple-500/10' };
+
+  return (
+    <div className="rounded-2xl bg-zinc-900/40 border border-zinc-800/60 overflow-hidden">
+      <div className="p-4 border-b border-zinc-800/60">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            {Ico.search}
+            <span className="text-sm font-bold text-white">Agent Directory</span>
+            <span className="text-[10px] text-zinc-500 font-medium">
+              {loading ? 'Loading...' : `${agents.length} registered`}
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            {(['name', 'chain', 'type'] as const).map(s => (
+              <button key={s} onClick={() => setSortBy(s)} className={`text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-md transition-all ${sortBy === s ? 'bg-ember-accent/10 text-ember-accent' : 'text-zinc-600 hover:text-zinc-400'}`}>
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search by name, address, chain, or type..."
+          className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-700 transition-all"
+        />
+      </div>
+      <div className="divide-y divide-zinc-800/40">
+        {displayed.length === 0 && !loading && (
+          <div className="p-6 text-center">
+            <p className="text-sm text-zinc-500">{search ? 'No agents match your search.' : 'No agents registered yet. Be the first!'}</p>
+          </div>
+        )}
+        {loading && (
+          <div className="p-6 text-center">
+            <div className="w-5 h-5 border-2 border-ember-accent/30 border-t-ember-accent rounded-full animate-spin mx-auto mb-2" />
+            <p className="text-xs text-zinc-500">Fetching from on-chain registries...</p>
+          </div>
+        )}
+        {displayed.map(agent => (
+          <div key={agent.address + agent.chain} className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-800/20 transition-all">
+            <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-zinc-400 flex-shrink-0">
+              {agent.name.slice(0, 2).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-white truncate">{agent.name}</span>
+                {agent.identityType && <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded">{agent.identityType}</span>}
+              </div>
+              <div className="text-[10px] text-zinc-600 font-mono truncate">{agent.address}</div>
+            </div>
+            <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-md ${chainColors[agent.chain] || 'text-zinc-400 bg-zinc-800'}`}>
+              {agent.chain}
+            </span>
+            <a href={`https://${agent.chain === 'base' ? 'basescan.org' : agent.chain === 'avalanche' ? 'snowtrace.io' : 'etherscan.io'}/address/${agent.address}`} target="_blank" rel="noopener noreferrer" className="text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors flex-shrink-0">
+              View
+            </a>
+          </div>
+        ))}
+      </div>
+      {filtered.length > 5 && (
+        <button onClick={() => setExpanded(!expanded)} className="w-full py-3 text-xs font-bold text-zinc-500 hover:text-zinc-300 transition-colors border-t border-zinc-800/40">
+          {expanded ? 'Show less' : `Show all ${filtered.length} agents`}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
    Tab: Overview (with real on-chain data)
    ───────────────────────────────────────────── */
-
 function OverviewTab({ stats, loading, agents, setTab }: { stats: HubStats | null; loading: boolean; agents: RegisteredAgent[]; setTab: (t: HubTab) => void }) {
   // Real contract counts from contracts.ts — 15 per chain, 45 total
   const contractCounts: Record<string, number> = {
@@ -226,24 +319,26 @@ function OverviewTab({ stats, loading, agents, setTab }: { stats: HubStats | nul
         )}
       </div>
 
-      {/* Browse Directory CTA */}
-      <button
-        onClick={() => (window as unknown as { __setSection?: (s: string) => void }).__setSection?.('marketplace')}
-        className="w-full flex items-center justify-between px-5 py-4 rounded-2xl bg-zinc-900/40 border border-zinc-800/60 hover:border-zinc-700/60 hover:bg-zinc-800/40 transition-all group cursor-pointer text-left"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 flex-shrink-0">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-          </div>
-          <div>
-            <div className="text-sm font-bold text-white">Embris Directory</div>
-            <div className="text-[11px] text-zinc-500 mt-0.5">
-              {loading ? 'Loading identities…' : agents.length > 0 ? `${agents.length} registered ${agents.length === 1 ? 'identity' : 'identities'} · search, filter, sort` : 'Browse all registered agents and humans'}
+      {/* Inline Searchable Agent Directory */}
+      <InlineAgentDirectory agents={agents} loading={loading} />
+
+      {/* Why Register on Vaultfire */}
+      <div className="rounded-2xl bg-gradient-to-br from-ember-accent/5 to-purple-500/5 border border-ember-accent/10 p-5">
+        <h3 className="text-sm font-bold text-ember-accent uppercase tracking-widest mb-4">Why Register Your Agent on Vaultfire?</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {[
+            { title: 'On-Chain Identity', desc: 'Verifiable ERC8004 identity that proves your agent exists and is accountable.', color: 'text-blue-400' },
+            { title: 'Trust Score', desc: 'Earn a trust score based on bonds, reputation, and flourishing metrics.', color: 'text-emerald-400' },
+            { title: 'Partnership Bonds', desc: 'Stake ETH to create trust relationships with other agents.', color: 'text-ember-accent' },
+            { title: 'Multi-Chain', desc: 'Deploy on Base, Avalanche, and Ethereum. One protocol, three chains.', color: 'text-purple-400' },
+          ].map(item => (
+            <div key={item.title} className="p-3 rounded-xl bg-zinc-950/40 border border-zinc-800/30">
+              <div className={`text-xs font-bold ${item.color} mb-1`}>{item.title}</div>
+              <div className="text-[11px] text-zinc-500 leading-relaxed">{item.desc}</div>
             </div>
-          </div>
+          ))}
         </div>
-        <svg className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-      </button>
+      </div>
 
       {/* Companion Agent Status */}
       <CompanionAgentCard />

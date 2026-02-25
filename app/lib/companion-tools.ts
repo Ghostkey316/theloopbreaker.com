@@ -124,10 +124,15 @@ async function rpcCall(rpcUrl: string, method: string, params: unknown[] = []): 
 function formatWei(hexWei: string): string {
   try {
     const wei = BigInt(hexWei);
-    const eth = Number(wei) / 1e18;
-    if (eth === 0) return '0.0000';
-    if (eth < 0.0001) return '< 0.0001';
-    return eth.toFixed(4);
+    if (wei === 0n) return '0.0000';
+    // Use BigInt arithmetic to avoid precision loss for large balances
+    const ethWhole = wei / BigInt(1e18);
+    const remainder = wei % BigInt(1e18);
+    // Get 4 decimal places without floating point precision loss
+    const decimals = String(remainder * 10000n / BigInt(1e18)).padStart(4, '0').slice(0, 4);
+    const result = `${ethWhole}.${decimals}`;
+    if (result === '0.0000' && wei > 0n) return '< 0.0001';
+    return result;
   } catch {
     return '0.0000';
   }
@@ -468,52 +473,17 @@ export async function toolWebSearch(query: string): Promise<ToolResult> {
   }
 }
 
-// ─── TOOL 9: LLM REASONING (tool, not brain) ───────────────────────────────
+// ─── TOOL 9: DEPRECATED — Vaultfire uses its own brain now ──────────────────
+// No external LLM. The intelligence is OURS.
 
-export async function toolLLMReasoning(prompt: string, context: string): Promise<ToolResult> {
+export async function toolLLMReasoning(_prompt: string, _context: string): Promise<ToolResult> {
   const start = Date.now();
-  try {
-    const apiKey = process.env.OPENAI_API_KEY || process.env.NEXT_PUBLIC_OPENAI_API_KEY || '';
-    const apiUrl = process.env.LLM_API_URL || process.env.NEXT_PUBLIC_LLM_API_URL || 'https://api.openai.com/v1/chat/completions';
-
-    if (!apiKey) {
-      return { tool: 'llm_reasoning', success: false, data: null, executionMs: Date.now() - start, error: 'No API key configured' };
-    }
-
-    const res = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4.1-mini',
-        messages: [
-          { role: 'system', content: context },
-          { role: 'user', content: prompt },
-        ],
-        max_tokens: 2048,
-        stream: false,
-      }),
-      signal: AbortSignal.timeout(30000),
-    });
-
-    if (!res.ok) {
-      return { tool: 'llm_reasoning', success: false, data: null, executionMs: Date.now() - start, error: `LLM API returned ${res.status}` };
-    }
-
-    const data = await res.json();
-    const content = data.choices?.[0]?.message?.content;
-
-    return {
-      tool: 'llm_reasoning',
-      success: !!content,
-      data: { response: content || '' },
-      executionMs: Date.now() - start,
-    };
-  } catch (e) {
-    return { tool: 'llm_reasoning', success: false, data: null, executionMs: Date.now() - start, error: String(e) };
-  }
+  return {
+    tool: 'llm_reasoning',
+    success: true,
+    data: { response: 'Vaultfire uses its own conversation engine. No external AI needed.' },
+    executionMs: Date.now() - start,
+  };
 }
 
 // ─── INTENT DETECTION ───────────────────────────────────────────────────────
@@ -528,6 +498,9 @@ export type IntentType =
   | 'tx_history'
   | 'web_search'
   | 'complex_question'
+  | 'trust_score'
+  | 'agent_info'
+  | 'total_agents'
   | 'conversation';
 
 export interface DetectedIntent {
@@ -647,6 +620,32 @@ export function detectIntent(message: string): DetectedIntent[] {
       params: { query: queryMatch ? queryMatch[1] : message },
     });
   }
+  // Vaultfire: Trust score lookup
+  if (/(?:trust|score|grade|reputation|flourish|vaultfire|verify|check trust)/i.test(lower)) {
+    const addrMatch = lower.match(/0x[a-fA-F0-9]{40}/);
+    intents.push({
+      type: 'trust_score',
+      confidence: 0.9,
+      params: { address: addrMatch ? addrMatch[0] : '' },
+    });
+  }
+  // Vaultfire: Agent info lookup
+  if (/(?:agent info|is (?:this |it )?registered|lookup agent|agent details|who is this agent)/i.test(lower)) {
+    const addrMatch = lower.match(/0x[a-fA-F0-9]{40}/);
+    intents.push({
+      type: 'agent_info',
+      confidence: 0.88,
+      params: { address: addrMatch ? addrMatch[0] : '' },
+    });
+  }
+  // Vaultfire: Total agents count
+  if (/(?:how many agents|total agents|agent count|agents registered|how many (?:ai )?agents)/i.test(lower)) {
+    intents.push({
+      type: 'total_agents',
+      confidence: 0.92,
+      params: {},
+    });
+  }
 
   // If no specific intent detected, it's either a complex question or conversation
   if (intents.length === 0) {
@@ -732,11 +731,31 @@ export async function executeIntents(
       case 'web_search':
         results.push(await toolWebSearch(intent.params.query));
         break;
+      case 'trust_score': {
+        const addr = intent.params.address || context.userAddress || '';
+        if (addr) {
+          results.push(await toolGetTrustScore(addr));
+        } else {
+          results.push({ tool: 'get_trust_score', success: false, data: null, executionMs: 0, error: 'No address provided. Please include an address like 0x...' });
+        }
+        break;
+      }
+      case 'agent_info': {
+        const addr = intent.params.address || context.userAddress || '';
+        if (addr) {
+          results.push(await toolGetAgentInfo(addr));
+        } else {
+          results.push({ tool: 'get_agent_info', success: false, data: null, executionMs: 0, error: 'No address provided. Please include an address like 0x...' });
+        }
+        break;
+      }
+      case 'total_agents':
+        results.push(await toolGetTotalAgents());
+        break;
       default:
         break;
     }
   }
-
   return results;
 }
 
@@ -838,10 +857,223 @@ export function formatToolResults(results: ToolResult[]): string {
         formatted += `_Fetched in ${result.executionMs}ms_\n`;
         break;
       }
+      case 'get_trust_score': {
+        formatted += formatVaultfireToolResult(result);
+        break;
+      }
+      case 'get_agent_info': {
+        formatted += formatVaultfireToolResult(result);
+        break;
+      }
+      case 'get_total_agents': {
+        formatted += formatVaultfireToolResult(result);
+        break;
+      }
       default:
         formatted += `\n[${result.tool}]: ${JSON.stringify(result.data)}\n`;
     }
   }
-
   return formatted;
+}
+
+// ─── TOOL 10: GET TRUST SCORE (Vaultfire-specific) ──────────────────────────────
+
+const VAULTFIRE_IDENTITY_BASE = '0x35978DB675576598F0781dA2133E94cdCf4858bC';
+const VAULTFIRE_REPUTATION_BASE = '0xdB54B8925664816187646174bdBb6Ac658A55a5F';
+const VAULTFIRE_FLOURISHING_BASE = '0x83dd216449B3F0574E39043ECFE275946fa492e9';
+
+export async function toolGetTrustScore(address: string): Promise<ToolResult> {
+  const start = Date.now();
+  try {
+    if (!address || !address.startsWith('0x')) {
+      return { tool: 'get_trust_score', success: false, data: null, executionMs: Date.now() - start, error: 'Invalid address' };
+    }
+
+    // Check if registered on ERC8004IdentityRegistry
+    const getAgentData = '0xfb3551ff' + address.replace('0x', '').toLowerCase().padStart(64, '0');
+    const [agentResult, totalAgents] = await Promise.all([
+      rpcCall(RPC_URLS.base, 'eth_call', [{ to: VAULTFIRE_IDENTITY_BASE, data: getAgentData }, 'latest']),
+      rpcCall(RPC_URLS.base, 'eth_call', [{ to: VAULTFIRE_IDENTITY_BASE, data: '0x3731a16f' }, 'latest']),
+    ]);
+
+    const isRegistered = agentResult && agentResult.length > 66 && agentResult !== '0x' + '0'.repeat(64);
+    const totalCount = totalAgents ? parseInt(totalAgents, 16) : 0;
+
+    // Try to get reputation score (0x5e5c06e2 = getReputationScore(address))
+    let reputationScore = 0;
+    try {
+      const repData = '0x5e5c06e2' + address.replace('0x', '').toLowerCase().padStart(64, '0');
+      const repResult = await rpcCall(RPC_URLS.base, 'eth_call', [{ to: VAULTFIRE_REPUTATION_BASE, data: repData }, 'latest']);
+      if (repResult && repResult !== '0x') {
+        reputationScore = Math.min(parseInt(repResult, 16), 100);
+      }
+    } catch { /* contract may not have data */ }
+
+    // Try to get flourishing metrics (0x7a0ed627 = getMetrics(address))
+    let flourishingScore = 0;
+    try {
+      const metData = '0x7a0ed627' + address.replace('0x', '').toLowerCase().padStart(64, '0');
+      const metResult = await rpcCall(RPC_URLS.base, 'eth_call', [{ to: VAULTFIRE_FLOURISHING_BASE, data: metData }, 'latest']);
+      if (metResult && metResult.length > 66) {
+        const a = parseInt(metResult.slice(2, 66), 16);
+        const w = parseInt(metResult.slice(66, 130), 16);
+        const f = parseInt(metResult.slice(130, 194), 16);
+        const t = parseInt(metResult.slice(194, 258), 16);
+        flourishingScore = Math.min(Math.round((a + w + f + t) / 4), 100);
+      }
+    } catch { /* contract may not have data */ }
+
+    const trustScore = Math.round(reputationScore * 0.4 + flourishingScore * 0.6);
+    const grade = trustScore >= 90 ? 'A+' : trustScore >= 80 ? 'A' : trustScore >= 70 ? 'B+' :
+      trustScore >= 60 ? 'B' : trustScore >= 50 ? 'C' : trustScore >= 40 ? 'D' : 'F';
+
+    return {
+      tool: 'get_trust_score',
+      success: true,
+      data: {
+        address,
+        isRegistered,
+        trustScore,
+        grade,
+        reputationScore,
+        flourishingScore,
+        totalAgentsOnBase: totalCount,
+        explorerLink: `https://basescan.org/address/${address}`,
+      },
+      executionMs: Date.now() - start,
+    };
+  } catch (e) {
+    return { tool: 'get_trust_score', success: false, data: null, executionMs: Date.now() - start, error: String(e) };
+  }
+}
+
+// ─── TOOL 11: GET AGENT INFO (Vaultfire-specific) ──────────────────────────
+
+export async function toolGetAgentInfo(address: string): Promise<ToolResult> {
+  const start = Date.now();
+  try {
+    if (!address || !address.startsWith('0x')) {
+      return { tool: 'get_agent_info', success: false, data: null, executionMs: Date.now() - start, error: 'Invalid address' };
+    }
+
+    const getAgentData = '0xfb3551ff' + address.replace('0x', '').toLowerCase().padStart(64, '0');
+    const agentResult = await rpcCall(RPC_URLS.base, 'eth_call', [{ to: VAULTFIRE_IDENTITY_BASE, data: getAgentData }, 'latest']);
+
+    const isRegistered = agentResult && agentResult.length > 66 && agentResult !== '0x' + '0'.repeat(64);
+
+    // Try to decode agent name from ABI-encoded result (first string field)
+    let agentName = 'Unknown';
+    if (isRegistered && agentResult.length > 130) {
+      try {
+        // ABI-encoded struct: first field is usually a string offset
+        const nameOffset = parseInt(agentResult.slice(2, 66), 16) * 2;
+        const nameLen = parseInt(agentResult.slice(2 + nameOffset, 66 + nameOffset), 16);
+        if (nameLen > 0 && nameLen < 200) {
+          const nameHex = agentResult.slice(66 + nameOffset, 66 + nameOffset + nameLen * 2);
+          agentName = Buffer.from(nameHex, 'hex').toString('utf8').replace(/\0/g, '').trim() || 'Unknown';
+        }
+      } catch { /* decoding failed, use Unknown */ }
+    }
+
+    return {
+      tool: 'get_agent_info',
+      success: true,
+      data: {
+        address,
+        isRegistered,
+        agentName: isRegistered ? agentName : null,
+        registryAddress: VAULTFIRE_IDENTITY_BASE,
+        chain: 'base',
+        explorerLink: `https://basescan.org/address/${address}`,
+        registryLink: `https://basescan.org/address/${VAULTFIRE_IDENTITY_BASE}`,
+      },
+      executionMs: Date.now() - start,
+    };
+  } catch (e) {
+    return { tool: 'get_agent_info', success: false, data: null, executionMs: Date.now() - start, error: String(e) };
+  }
+}
+
+// ─── TOOL 12: GET TOTAL AGENTS (Vaultfire-specific) ────────────────────────
+
+export async function toolGetTotalAgents(): Promise<ToolResult> {
+  const start = Date.now();
+  try {
+    const chains = [
+      { name: 'base', rpc: RPC_URLS.base, registry: VAULTFIRE_IDENTITY_BASE },
+      { name: 'avalanche', rpc: RPC_URLS.avalanche, registry: '0x57741F4116925341d8f7Eb3F381d98e07C73B4a3' },
+      { name: 'ethereum', rpc: RPC_URLS.ethereum, registry: '0x1A80F77e12f1bd04538027aed6d056f5DCcDCD3C' },
+    ];
+
+    const results = await Promise.all(
+      chains.map(async (c) => {
+        try {
+          const result = await rpcCall(c.rpc, 'eth_call', [{ to: c.registry, data: '0x3731a16f' }, 'latest']);
+          return { chain: c.name, count: result ? parseInt(result, 16) : 0 };
+        } catch {
+          return { chain: c.name, count: 0 };
+        }
+      })
+    );
+
+    const total = results.reduce((sum, r) => sum + r.count, 0);
+
+    return {
+      tool: 'get_total_agents',
+      success: true,
+      data: { chains: results, total },
+      executionMs: Date.now() - start,
+    };
+  } catch (e) {
+    return { tool: 'get_total_agents', success: false, data: null, executionMs: Date.now() - start, error: String(e) };
+  }
+}
+
+// ─── FORMAT TOOL RESULTS for Vaultfire-specific tools ──────────────────────────────
+export function formatVaultfireToolResult(result: ToolResult): string {
+  switch (result.tool) {
+    case 'get_trust_score': {
+      const d = result.data;
+      if (!d.isRegistered) {
+        return `\n**Trust Score** for \`${d.address.slice(0, 10)}...${d.address.slice(-6)}\`:\n` +
+          `- Status: **Not registered** on Vaultfire Protocol\n` +
+          `- Trust Score: N/A (register first via the Identity section)\n` +
+          `- Total agents on Base: ${d.totalAgentsOnBase}\n` +
+          `[View on BaseScan](${d.explorerLink})\n`;
+      }
+      return `\n**Trust Score** for \`${d.address.slice(0, 10)}...${d.address.slice(-6)}\`:\n` +
+        `- **Score: ${d.trustScore}/100 (Grade: ${d.grade})**\n` +
+        `- Reputation: ${d.reputationScore}/100\n` +
+        `- Flourishing: ${d.flourishingScore}/100\n` +
+        `- Status: ✅ Registered on Vaultfire\n` +
+        `[View on BaseScan](${d.explorerLink})\n` +
+        `_Fetched in ${result.executionMs}ms_\n`;
+    }
+    case 'get_agent_info': {
+      const d = result.data;
+      if (!d.isRegistered) {
+        return `\n**Agent Info** for \`${d.address.slice(0, 10)}...${d.address.slice(-6)}\`:\n` +
+          `- Status: **Not registered** on Vaultfire\n` +
+          `- To register, go to the **Identity** section and click Register.\n`;
+      }
+      return `\n**Agent Info** for \`${d.address.slice(0, 10)}...${d.address.slice(-6)}\`:\n` +
+        `- Status: ✅ **Registered**\n` +
+        `- Name: ${d.agentName || 'Unknown'}\n` +
+        `- Chain: ${d.chain}\n` +
+        `[View on BaseScan](${d.explorerLink})\n` +
+        `_Fetched in ${result.executionMs}ms_\n`;
+    }
+    case 'get_total_agents': {
+      const d = result.data;
+      let out = `\n**Vaultfire Protocol — Registered Agents:**\n`;
+      for (const c of d.chains) {
+        out += `- **${c.chain}**: ${c.count} agent${c.count !== 1 ? 's' : ''}\n`;
+      }
+      out += `- **Total across all chains**: ${d.total}\n`;
+      out += `_Fetched in ${result.executionMs}ms_\n`;
+      return out;
+    }
+    default:
+      return '';
+  }
 }

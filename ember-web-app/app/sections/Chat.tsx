@@ -1,9 +1,9 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { streamChat, API_KEY } from '../lib/stream-chat';
+// Vaultfire's own conversation engine — ZERO external AI
+import { converse, extractMemoriesLocal, runSelfLearningLocal, extractGoalsLocal, generateSessionSummaryLocal } from '../lib/companion-conversation';
 import {
   extractMemories,
-  extractMemoriesWithAI,
   getMemories,
   saveMemories,
   clearChatHistory,
@@ -12,7 +12,6 @@ import {
   type Memory,
 } from '../lib/memory';
 import {
-  runSelfLearning,
   getGrowthStats,
 } from '../lib/self-learning';
 import { getWalletAddress } from '../lib/wallet';
@@ -27,11 +26,9 @@ import {
 } from '../lib/proactive-suggestions';
 import {
   updateCurrentSession,
-  generateSessionSummary,
 } from '../lib/conversation-summaries';
 import {
   getGoals,
-  extractGoalsFromMessage,
   processGoalExtraction,
 } from '../lib/goal-tracking';
 import {
@@ -1087,12 +1084,13 @@ export default function Chat() {
   }, []);
 
   const runBackgroundMemoryExtraction = useCallback(
-    async (userText: string, assistantText: string, currentMemories: Memory[]) => {
+    (userText: string, assistantText: string, currentMemories: Memory[]) => {
       if (!isRegistered()) return;
       try {
-        const aiMemories = await extractMemoriesWithAI(userText, assistantText, currentMemories, API_KEY);
-        if (aiMemories.length > 0) {
-          const merged = deduplicateMemories([...currentMemories, ...aiMemories]);
+        // Use Vaultfire's own local memory extraction — no external AI
+        const localMemories = extractMemoriesLocal(userText, assistantText, currentMemories);
+        if (localMemories.length > 0) {
+          const merged = deduplicateMemories([...currentMemories, ...localMemories]);
           saveMemories(merged);
           setMemoriesState(merged);
         }
@@ -1102,17 +1100,18 @@ export default function Chat() {
   );
 
   const runBackgroundSelfLearning = useCallback(
-    async (userText: string, assistantText: string) => {
+    (userText: string, assistantText: string) => {
       if (!isRegistered()) return;
       try {
-        const result = await runSelfLearning(userText, assistantText, API_KEY);
+        // Use Vaultfire's own local self-learning — no external AI
+        const result = runSelfLearningLocal(userText, assistantText);
         const stats = getGrowthStats();
         const mems = getMemories();
         setGrowthStats({ conversations: stats.totalConversations, memories: mems.length });
         setMemoriesState(mems);
         if (process.env.NODE_ENV === 'development') {
-          if (result.reflection) console.log('[Embris Self-Learning] Reflection:', result.reflection.content);
-          if (result.corrected) console.log('[Embris Self-Learning] Self-corrections:', result.corrections);
+          if (result.reflection) console.log('[Embris Self-Learning] Reflection:', result.reflection);
+          if (result.patterns.length > 0) console.log('[Embris Self-Learning] Patterns:', result.patterns);
         }
       } catch { /* silent fail */ }
     },
@@ -1120,11 +1119,11 @@ export default function Chat() {
   );
 
   const runBackgroundGoalExtraction = useCallback(
-    async (userText: string) => {
+    (userText: string) => {
       if (!isRegistered()) return;
       try {
-        const existingGoals = getGoals();
-        const result = await extractGoalsFromMessage(userText, existingGoals, API_KEY);
+        // Use Vaultfire's own local goal extraction — no external AI
+        const result = extractGoalsLocal(userText);
         if (result.newGoals.length > 0 || result.updates.length > 0) {
           processGoalExtraction(result);
           const updatedGoals = getGoals();
@@ -1412,11 +1411,10 @@ export default function Chat() {
       return;
     }
 
-    // 3. Try Vaultfire's /api/companion/think for tasks and complex questions
+    // 3. Try Vaultfire's /api/companion/think for tool-based tasks (balance, gas, contracts)
     const taskDetection = detectTask(trimmedText);
     if (taskDetection.isTask && taskDetection.confidence > 0.6) {
       try {
-        // Show thinking narration
         const thinkingMsg = '🔥 Let me work on that...';
         setMessages((prev) =>
           prev.map((m) => m.id === assistantMsg.id ? { ...m, content: thinkingMsg } : m)
@@ -1446,42 +1444,26 @@ export default function Chat() {
         }
       } catch (e) {
         console.warn('[Embris] Think API error:', e);
-        // Fall through to streamChat
+        // Fall through to conversation engine
       }
     }
 
-    // 4. Fall back to streamChat for complex/novel queries the brain and engine can't handle
-    const history = getConversationMessages(activeConvId);
-    const userContent = contractContext ? trimmedText + contractContext : trimmedText;
-    const llmMessages = [
-      ...history.slice(-20).map((m) => ({ role: m.role, content: m.content })),
-      { role: 'user', content: userContent },
-    ];
-
-    await streamChat({
-      messages: llmMessages,
-      memories: currentMemories,
-      userMessage: trimmedText,
-      signal: controller.signal,
-      onToken: (token) => {
-        streamingRef.current += token;
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantMsg.id ? { ...m, content: streamingRef.current } : m
-          )
-        );
-      },
-      onDone: (fullText) => {
-        finishMessage(fullText, trimmedText, assistantMsg, userMsg, features, currentMemories);
-      },
-      onError: async (error) => {
-        // API failed — use local brain fallback instead of showing raw error
-        console.warn('[Embris] API fallback triggered:', error);
-        const fallbackResponse = generateLocalFallback(trimmedText);
-        await simulateLocalStreaming(fallbackResponse, assistantMsg.id, controller.signal);
-        finishMessage(fallbackResponse, trimmedText, assistantMsg, userMsg, features, currentMemories);
-      },
-    });
+    // 4. VAULTFIRE CONVERSATION ENGINE — Our own intelligence, ZERO external AI
+    // The brain thinks, the soul guides, the conversation engine speaks.
+    try {
+      const conversationResult = converse(trimmedText);
+      const fullResponse = contractContext
+        ? conversationResult.response + '\n\n' + contractContext
+        : conversationResult.response;
+      await simulateLocalStreaming(fullResponse, assistantMsg.id, controller.signal);
+      finishMessage(fullResponse, trimmedText, assistantMsg, userMsg, features, currentMemories);
+    } catch (e) {
+      console.warn('[Embris] Conversation engine error:', e);
+      // Ultimate fallback — the brain's own fallback generator
+      const fallbackResponse = generateLocalFallback(trimmedText);
+      await simulateLocalStreaming(fallbackResponse, assistantMsg.id, controller.signal);
+      finishMessage(fallbackResponse, trimmedText, assistantMsg, userMsg, features, currentMemories);
+    }
   }, [isLoading, isListening, voiceEnabled, ttsSupported, embrisSpeaking, activeConvId, attachedImage, runBackgroundMemoryExtraction, runBackgroundSelfLearning, runBackgroundGoalExtraction]);
 
   // Helper: simulate streaming for local brain answers
@@ -1557,8 +1539,9 @@ export default function Chat() {
     if (!activeConvId) return;
     if (registered && messages.length >= 4) {
       try {
+        // Use Vaultfire's own local session summary — no external AI
         const chatMessages = messages.map(m => ({ role: m.role, content: m.content }));
-        await generateSessionSummary(chatMessages, API_KEY);
+        generateSessionSummaryLocal(chatMessages);
       } catch { /* silent fail */ }
     }
     stopSpeaking();

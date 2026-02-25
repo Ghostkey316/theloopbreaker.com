@@ -59,9 +59,24 @@ interface ConversationContext {
   timestamp: number;
 }
 
-// In-memory only — resets on page refresh (session-scoped)
-let _recentContext: ConversationContext[] = [];
+// Persisted to localStorage — survives page refresh for cross-session continuity
+const CONTEXT_STORAGE_KEY = 'embris_conversation_context_v1';
 const MAX_CONTEXT = 10;
+
+function loadPersistedContext(): ConversationContext[] {
+  try {
+    const raw = storageGet(CONTEXT_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as ConversationContext[];
+      // Only keep context from the last 24 hours to avoid stale context
+      const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+      return parsed.filter(c => c.timestamp > cutoff).slice(-MAX_CONTEXT);
+    }
+  } catch { /* ignore parse errors — start fresh */ }
+  return [];
+}
+
+let _recentContext: ConversationContext[] = loadPersistedContext();
 
 export function pushConversationContext(userMsg: string, asstMsg: string, topic: string): void {
   _recentContext.push({
@@ -71,18 +86,20 @@ export function pushConversationContext(userMsg: string, asstMsg: string, topic:
     timestamp: Date.now(),
   });
   if (_recentContext.length > MAX_CONTEXT) _recentContext.shift();
+  // Persist to localStorage for cross-session memory
+  try {
+    storageSet(CONTEXT_STORAGE_KEY, JSON.stringify(_recentContext));
+  } catch { /* storage quota exceeded — degrade gracefully */ }
 }
-
 export function getRecentContext(): ConversationContext[] {
   return _recentContext;
 }
-
 export function getLastContext(): ConversationContext | null {
   return _recentContext.length > 0 ? _recentContext[_recentContext.length - 1] : null;
 }
-
 export function clearConversationContext(): void {
   _recentContext = [];
+  try { storageSet(CONTEXT_STORAGE_KEY, '[]'); } catch { /* ignore */ }
 }
 
 
@@ -2655,16 +2672,25 @@ export function learnFromExchange(userMessage: string, assistantResponse: string
     setUserPreference('user_name', nameMatch[1]);
   }
 
-  // Learn communication style
-  if (lower.includes('!')) setUserPreference('communication_style', 'enthusiastic', 0.1);
-  if (lower.includes('?')) setUserPreference('communication_style', 'inquisitive', 0.1);
-  if (userMessage.length < 20) setUserPreference('communication_style', 'concise', 0.1);
-  if (userMessage.length > 200) setUserPreference('communication_style', 'detailed', 0.1);
-
-  // Save notable exchanges as insights
-  if (userMessage.length > 20) {
+  // Learn communication style — use higher confidence to avoid flip-flopping
+  // Only update if the signal is strong (multiple indicators)
+  const exclamations = (userMessage.match(/!/g) || []).length;
+  const questions = (userMessage.match(/\?/g) || []).length;
+  if (exclamations >= 2) setUserPreference('communication_style', 'enthusiastic', 0.6);
+  else if (questions >= 2) setUserPreference('communication_style', 'inquisitive', 0.5);
+  else if (userMessage.length < 15 && !lower.includes('?')) setUserPreference('communication_style', 'concise', 0.4);
+  else if (userMessage.length > 200) setUserPreference('communication_style', 'detailed', 0.5);
+  // Save notable exchanges as insights — only for substantive messages, with dedup
+  // saveBrainInsight already deduplicates by exact content, so we use a normalized key
+  if (userMessage.length > 30) {
+    // Normalize: lowercase, remove punctuation, truncate to 60 chars for dedup key
+    const normalized = lower.replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim().slice(0, 60);
     const summary = userMessage.length > 100 ? userMessage.slice(0, 100) + '...' : userMessage;
-    saveBrainInsight(`User asked about: ${summary}`, 'conversation');
+    saveBrainInsight(`User asked about: ${normalized}`, 'conversation');
+    // Also save the full summary for retrieval (won't duplicate due to dedup)
+    if (normalized !== summary.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().slice(0, 60)) {
+      saveBrainInsight(`User asked about: ${summary}`, 'conversation');
+    }
   }
 
   // Update conversation context

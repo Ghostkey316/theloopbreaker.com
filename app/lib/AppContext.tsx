@@ -19,8 +19,9 @@ import {
 } from './companion-agent';
 import { getBrainStats } from './companion-brain';
 import { getSoulSummary } from './companion-soul';
-import { getWalletAddress } from './wallet';
+import { getWalletAddress, isWalletUnlocked } from './wallet';
 import { isRegistered } from './registration';
+import { getXMTPState, type XMTPState } from './xmtp-browser';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -51,15 +52,26 @@ export interface SoulStatus {
   age: string;
 }
 
+export interface XMTPStatus {
+  connectionStatus: string;
+  isRealXMTP: boolean;
+  conversationCount: number;
+  messageCount: number;
+}
+
 export interface AppState {
   // User state
   userWalletAddress: string | null;
   userRegistered: boolean;
+  walletUnlocked: boolean;
 
   // Companion state
   companion: CompanionStatus;
   brain: BrainStatus;
   soul: SoulStatus;
+
+  // XMTP state
+  xmtp: XMTPStatus;
 
   // Actions
   refreshCompanionState: () => void;
@@ -69,6 +81,13 @@ export interface AppState {
 const defaultState: AppState = {
   userWalletAddress: null,
   userRegistered: false,
+  walletUnlocked: false,
+  xmtp: {
+    connectionStatus: 'disconnected',
+    isRealXMTP: false,
+    conversationCount: 0,
+    messageCount: 0,
+  },
   companion: {
     walletCreated: false,
     walletAddress: null,
@@ -108,14 +127,28 @@ export function useAppContext() {
 export function AppContextProvider({ children }: { children: ReactNode }) {
   const [userWalletAddress, setUserWalletAddress] = useState<string | null>(null);
   const [userRegistered, setUserRegistered] = useState(false);
+  const [walletUnlocked, setWalletUnlocked] = useState(false);
   const [companion, setCompanion] = useState<CompanionStatus>(defaultState.companion);
   const [brain, setBrain] = useState<BrainStatus>(defaultState.brain);
   const [soul, setSoul] = useState<SoulStatus>(defaultState.soul);
+  const [xmtp, setXmtp] = useState<XMTPStatus>(defaultState.xmtp);
 
   const refreshCompanionState = useCallback(() => {
     // User state
     setUserWalletAddress(getWalletAddress());
     setUserRegistered(isRegistered());
+    setWalletUnlocked(isWalletUnlocked());
+
+    // XMTP state
+    try {
+      const xs = getXMTPState();
+      setXmtp({
+        connectionStatus: xs.status,
+        isRealXMTP: xs.isRealXMTP,
+        conversationCount: xs.conversationCount,
+        messageCount: xs.messageCount,
+      });
+    } catch { /* ignore if not initialized */ }
 
     // Companion state
     const bondStatus = getCompanionBondStatus();
@@ -185,9 +218,11 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider value={{
       userWalletAddress,
       userRegistered,
+      walletUnlocked,
       companion,
       brain,
       soul,
+      xmtp,
       refreshCompanionState,
       navigateToSection,
     }}>

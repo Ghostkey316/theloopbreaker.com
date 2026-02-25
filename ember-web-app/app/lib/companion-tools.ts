@@ -473,53 +473,17 @@ export async function toolWebSearch(query: string): Promise<ToolResult> {
   }
 }
 
-// ─── TOOL 9: LLM REASONING (tool, not brain) ───────────────────────────────
+// ─── TOOL 9: DEPRECATED — Vaultfire uses its own brain now ──────────────────
+// No external LLM. The intelligence is OURS.
 
-export async function toolLLMReasoning(prompt: string, context: string): Promise<ToolResult> {
+export async function toolLLMReasoning(_prompt: string, _context: string): Promise<ToolResult> {
   const start = Date.now();
-  try {
-    // Only use server-side env var — never expose NEXT_PUBLIC_ API keys in server routes
-    const apiKey = process.env.OPENAI_API_KEY || '';
-    const apiUrl = process.env.LLM_API_URL || process.env.NEXT_PUBLIC_LLM_API_URL || 'https://api.openai.com/v1/chat/completions';
-
-    if (!apiKey) {
-      return { tool: 'llm_reasoning', success: false, data: null, executionMs: Date.now() - start, error: 'No API key configured' };
-    }
-
-    const res = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4.1-mini',
-        messages: [
-          { role: 'system', content: context },
-          { role: 'user', content: prompt },
-        ],
-        max_tokens: 2048,
-        stream: false,
-      }),
-      signal: AbortSignal.timeout(30000),
-    });
-
-    if (!res.ok) {
-      return { tool: 'llm_reasoning', success: false, data: null, executionMs: Date.now() - start, error: `LLM API returned ${res.status}` };
-    }
-
-    const data = await res.json();
-    const content = data.choices?.[0]?.message?.content;
-
-    return {
-      tool: 'llm_reasoning',
-      success: !!content,
-      data: { response: content || '' },
-      executionMs: Date.now() - start,
-    };
-  } catch (e) {
-    return { tool: 'llm_reasoning', success: false, data: null, executionMs: Date.now() - start, error: String(e) };
-  }
+  return {
+    tool: 'llm_reasoning',
+    success: true,
+    data: { response: 'Vaultfire uses its own conversation engine. No external AI needed.' },
+    executionMs: Date.now() - start,
+  };
 }
 
 // ─── INTENT DETECTION ───────────────────────────────────────────────────────

@@ -1300,7 +1300,7 @@ export default function CompanionPanel({ isOpen, onClose, isMobile }: CompanionP
           </div>
         </div>
       )}
-      {/* Footer / Status */}
+      {/* Footer / Status — Dynamic system health */}
       <div style={{
         padding: '12px 20px',
         borderTop: '1px solid rgba(255,255,255,0.06)',
@@ -1308,10 +1308,23 @@ export default function CompanionPanel({ isOpen, onClose, isMobile }: CompanionP
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ fontSize: 10, color: '#52525B' }}>VAULTFIRE / EMBRIS V1.0</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#22C55E' }} />
-            <span style={{ fontSize: 10, color: '#22C55E', fontWeight: 600 }}>SYSTEM NOMINAL</span>
-          </div>
+          {(() => {
+            // Dynamic system health check
+            const brainOk = typeof getBrainStats === 'function';
+            const soulOk = soulData !== null && soulData.traits.length > 0;
+            const walletOk = isCompanionWalletCreated();
+            const allGood = brainOk && soulOk;
+            const statusText = allGood
+              ? (walletOk ? 'ALL SYSTEMS NOMINAL' : 'BRAIN + SOUL ACTIVE')
+              : brainOk ? 'BRAIN ACTIVE · SOUL LOADING' : 'INITIALIZING...';
+            const statusColor = allGood ? '#22C55E' : brainOk ? '#FBBF24' : '#F97316';
+            return (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: statusColor, boxShadow: `0 0 6px ${statusColor}60` }} />
+                <span style={{ fontSize: 10, color: statusColor, fontWeight: 600 }}>{statusText}</span>
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>

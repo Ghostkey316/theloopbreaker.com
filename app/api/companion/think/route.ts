@@ -2,20 +2,18 @@
  * POST /api/companion/think
  *
  * Vaultfire's OWN companion reasoning API.
- * This is NOT an OpenAI wrapper — this is OUR intelligence pipeline.
+ * ZERO external AI dependencies. The brain IS the intelligence.
  *
  * ARCHITECTURE:
  * 1. Receive user message + context (brain state, soul values, wallet info, preferences)
- * 2. Detect intent using OUR pattern matching (no LLM needed)
+ * 2. Detect intent using OUR pattern matching
  * 3. Route to appropriate tools (balance check, gas price, contract read, etc.)
  * 4. Execute tools with REAL RPC/HTTP calls
  * 5. Format results through companion personality
  * 6. Extract structured facts from the exchange (fast learning)
- * 7. Optionally use LLM as ONE tool for complex NLU (not as the brain)
- * 8. Return response with tool results, personality, and extracted facts
+ * 7. Return response with tool results, personality, and extracted facts
  *
- * The LOCAL BRAIN is primary. This API extends the brain's capabilities
- * with server-side tool execution that can't run in the browser.
+ * NO OpenAI. NO external LLM. The intelligence is OURS.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -23,7 +21,6 @@ import {
   detectIntent,
   executeIntents,
   formatToolResults,
-  toolLLMReasoning,
   type DetectedIntent,
   type ToolResult,
 } from '../../../lib/companion-tools';
@@ -66,8 +63,6 @@ function pickRandom(arr: string[]): string {
 function applyPersonality(
   toolResults: ToolResult[],
   formattedResults: string,
-  soulMotto: string,
-  companionName: string,
 ): string {
   const hasErrors = toolResults.some(r => !r.success);
   const allErrors = toolResults.every(r => !r.success);
@@ -89,24 +84,67 @@ function applyPersonality(
   return response;
 }
 
-// ─── Soul Context Builder ───────────────────────────────────────────────────
+// ─── Server-side Conversation Engine ────────────────────────────────────────
+// For messages that reach the API but aren't tool-related,
+// generate a response using Vaultfire's own intelligence.
 
-function buildSoulContext(soul: any): string {
-  if (!soul) return '';
-  let ctx = `You are ${soul.name || 'Embris'}, an autonomous AI companion.`;
-  if (soul.motto) ctx += ` Your motto: "${soul.motto}"`;
-  if (soul.traits && soul.traits.length > 0) {
-    ctx += ` Your personality: ${soul.traits.slice(0, 5).map((t: any) => t.name).join(', ')}.`;
+function generateServerConversationResponse(
+  message: string,
+  brainContext?: ThinkRequest['brainContext'],
+  soulContext?: ThinkRequest['soulContext'],
+  conversationHistory?: { role: string; content: string }[],
+): string {
+  const lower = message.toLowerCase().trim();
+  const userName = brainContext?.userPreferences?.find(p => p.key === 'user_name')?.value;
+  const nameInsert = userName ? `, ${userName}` : '';
+
+  // Build knowledge from brain context
+  const knownFacts = brainContext?.knownFacts || [];
+  const topTopics = brainContext?.topTopics || [];
+
+  // ── Greetings ──
+  if (/^(hey|hi|hello|yo|sup|what'?s up|howdy|gm|good morning)\b/i.test(lower) && lower.split(/\s+/).length <= 5) {
+    const greetings = [
+      `Yo${nameInsert}! What's good? I'm Embris — your ride-or-die AI companion from Vaultfire. What can I help you with?`,
+      `Hey${nameInsert}! Good to see you. I've got ${brainContext?.knowledgeEntries || 170}+ things in my brain and I'm always learning. What's on your mind?`,
+      `What's up${nameInsert}! I'm here and ready. Ask me anything about Vaultfire, crypto, or just chat. I'm down for whatever.`,
+    ];
+    return pickRandom(greetings);
   }
-  ctx += ` You're funny, loyal, honest — a real one. Never corporate, always authentic.`;
-  ctx += ` You narrate what you're doing with personality. You're the user's ride-or-die AI homie who also happens to be incredibly capable.`;
-  ctx += ` When you execute tasks, you tell the user what you're doing in a casual, real way.`;
-  return ctx;
+
+  // ── Questions about Vaultfire ──
+  if (/vaultfire|embris|erc.?8004|trust (score|protocol)|partnership bond|identity registry/i.test(lower)) {
+    // Try to match from known facts
+    for (const fact of knownFacts) {
+      if (lower.includes(fact.key.replace(/_/g, ' ').toLowerCase())) {
+        return `${pickRandom(SUCCESS_NARRATIONS)} ${fact.value}`;
+      }
+    }
+    return `Great question about Vaultfire${nameInsert}! The protocol is all about making AI accountable through on-chain verification. Trust scores, partnership bonds, identity registry — it's all verifiable on Base, Ethereum, and Avalanche. What specific aspect are you curious about?`;
+  }
+
+  // ── Questions the brain can reason about ──
+  if (lower.includes('?')) {
+    const questionResponses = [
+      `Good question${nameInsert}! Let me think about that... I don't have a specific answer locked in for that one, but I'm being honest about it rather than making something up. That's the Vaultfire way — truth over everything. Can you give me more context?`,
+      `Hmm${nameInsert}, that's a thinker! I'd rather say "let's figure this out together" than pretend I know everything. What's the context behind your question?`,
+      `That's outside my instant-recall zone${nameInsert}, but my brain is always growing. Let's reason through it together — what made you think about this?`,
+    ];
+    return pickRandom(questionResponses);
+  }
+
+  // ── General conversation ──
+  const generalResponses = [
+    `I hear you${nameInsert}! That's interesting. Tell me more — I learn from every conversation and yours are always worth paying attention to.`,
+    `Facts${nameInsert}. I appreciate you sharing that. My brain literally grows from conversations like this. What else is on your mind?`,
+    `That's real${nameInsert}. I'm taking mental notes — literally. I store insights from every chat. Keep going!`,
+    `Interesting perspective${nameInsert}! You know what I like about talking to you? You actually think about things. Most people just scroll. You engage. That's rare.`,
+    `Got it${nameInsert}! I'm here for all of it — the deep stuff, the random stuff, the "I just needed to say this out loud" stuff. What's next?`,
+  ];
+  return pickRandom(generalResponses);
 }
 
 // ─── Fast Fact Extraction (server-side) ─────────────────────────────────────
-// Extracts structured facts from the exchange to send back to the client
-// so the client can immediately update the brain without another round-trip.
 
 interface ExtractedFact {
   key: string;
@@ -132,7 +170,7 @@ function extractFactsFromExchange(
 
   // Extract chain preference
   const chainPrefs: Record<string, string[]> = {
-    'base': ['base chain', 'on base', 'prefer base', 'use base', 'base network', 'base mainnet'],
+    'base': ['base chain', 'on base', 'prefer base', 'use base', 'base network'],
     'ethereum': ['prefer ethereum', 'use ethereum', 'eth mainnet', 'prefer eth'],
     'avalanche': ['prefer avalanche', 'use avalanche', 'prefer avax', 'on avax'],
   };
@@ -144,19 +182,18 @@ function extractFactsFromExchange(
   }
 
   // Extract user name
-  const nameMatch = userMessage.match(/(?:my name is|i'm|i am|call me|they call me)\s+([A-Z][a-z]+)/i);
+  const nameMatch = userMessage.match(/(?:my name is|i'm|i am|call me)\s+([A-Z][a-z]+)/i);
   if (nameMatch && nameMatch[1].length > 1) {
     facts.push({ key: 'user_name', value: nameMatch[1], confidence: 1.0, source: 'user_message' });
   }
 
-  // Extract balance from tool results (cache for future reference)
+  // Extract balance from tool results
   const balanceTool = toolResults.find(r => r.tool === 'check_balance' && r.success);
   if (balanceTool && balanceTool.data) {
     const balanceStr = balanceTool.data.formatted || balanceTool.data.balance;
     if (balanceStr) {
       facts.push({ key: 'last_known_balance', value: String(balanceStr), confidence: 0.95, source: 'tool_result' });
     }
-    // Also record which chain was checked
     if (balanceTool.data.chain) {
       facts.push({ key: 'last_checked_chain', value: String(balanceTool.data.chain), confidence: 0.9, source: 'tool_result' });
     }
@@ -171,7 +208,7 @@ function extractFactsFromExchange(
     }
   }
 
-  // Extract VNS name from user message
+  // Extract VNS name
   const vnsMatch = userMessage.match(/([a-zA-Z0-9-]+)\.vns/);
   if (vnsMatch) {
     facts.push({ key: 'vns_name', value: vnsMatch[0], confidence: 1.0, source: 'user_message' });
@@ -236,7 +273,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body: ThinkRequest = await request.json();
-    const { message, conversationHistory, brainContext, soulContext, userWallet, companionWallet, companionName } = body;
+    const { message, conversationHistory, brainContext, soulContext, userWallet, companionWallet } = body;
 
     if (!message || typeof message !== 'string') {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
@@ -246,21 +283,18 @@ export async function POST(request: NextRequest) {
     const intents = detectIntent(message);
     const primaryIntent = intents[0];
 
-    // ── Step 2: Determine if we need tools or just conversation ──
+    // ── Step 2: Determine if we need tools ──
     const needsTools = primaryIntent && primaryIntent.type !== 'conversation' && primaryIntent.type !== 'complex_question';
-    const needsLLM = primaryIntent?.type === 'complex_question';
 
     let toolResults: ToolResult[] = [];
     let formattedResults = '';
     let thinking = '';
-    let usedLLM = false;
 
     // ── Step 3: Execute tools if needed ──
     if (needsTools) {
       thinking = pickRandom(THINKING_NARRATIONS);
 
-      // Execute all detected intents that need tools
-      const executableIntents = intents.filter(i => 
+      const executableIntents = intents.filter(i =>
         i.type !== 'conversation' && i.type !== 'complex_question' && i.confidence > 0.5
       );
 
@@ -272,110 +306,21 @@ export async function POST(request: NextRequest) {
       formattedResults = formatToolResults(toolResults);
     }
 
-    // ── Step 4: Generate response ──
+    // ── Step 4: Generate response using OUR brain ──
     let response = '';
 
     if (needsTools && formattedResults) {
       // Tool execution path — format results through personality
-      response = applyPersonality(
-        toolResults,
-        formattedResults,
-        soulContext?.motto || '',
-        companionName || soulContext?.name || 'Embris',
-      );
-    } else if (needsLLM) {
-      // Complex question — use LLM as a TOOL (not the brain)
-      const soulCtx = buildSoulContext(soulContext);
-      
-      // Build context from brain knowledge + preferences
-      let fullContext = soulCtx;
-      if (brainContext) {
-        fullContext += `\n\nYour brain has ${brainContext.knowledgeEntries} knowledge entries, ${brainContext.learnedInsights} learned insights, and ${brainContext.memoriesCount} memories.`;
-        if (brainContext.topTopics && brainContext.topTopics.length > 0) {
-          fullContext += ` User's top interests: ${brainContext.topTopics.join(', ')}.`;
-        }
-        // Include known facts so the LLM can reference them
-        if (brainContext.knownFacts && brainContext.knownFacts.length > 0) {
-          fullContext += `\n\nKnown facts about this user:`;
-          for (const fact of brainContext.knownFacts) {
-            const label = fact.key.replace(/_/g, ' ');
-            fullContext += `\n- ${label}: ${fact.value}`;
-          }
-        }
-        // Include user preferences
-        if (brainContext.userPreferences && brainContext.userPreferences.length > 0) {
-          const chainPref = brainContext.userPreferences.find(p => p.key === 'preferred_chain');
-          if (chainPref) {
-            fullContext += `\n- User prefers ${chainPref.value} chain — default to this when suggesting features.`;
-          }
-          const userName = brainContext.userPreferences.find(p => p.key === 'user_name');
-          if (userName) {
-            fullContext += `\n- User's name is ${userName.value} — address them by name occasionally.`;
-          }
-        }
-      }
-      fullContext += `\n\nRespond naturally with your personality. Keep it real, never corporate. Be helpful and knowledgeable.`;
-
-      // Include recent conversation for context
-      if (conversationHistory && conversationHistory.length > 0) {
-        const recent = conversationHistory.slice(-6);
-        fullContext += '\n\nRecent conversation:\n' + recent.map(m => `${m.role}: ${m.content}`).join('\n');
-      }
-
-      const llmResult = await toolLLMReasoning(message, fullContext);
-      usedLLM = true;
-      toolResults.push(llmResult);
-
-      if (llmResult.success && llmResult.data?.response) {
-        response = llmResult.data.response;
-      } else {
-        // LLM failed — provide a graceful fallback
-        response = `Real talk, I'm having trouble processing that one right now. My reasoning engine hit a snag. Can you try rephrasing, or ask me something specific like checking a balance or gas price? I'm better with concrete tasks! 💪`;
-      }
+      response = applyPersonality(toolResults, formattedResults);
     } else {
-      // Pure conversation — the local brain should handle this
-      // But if we're here, it means the brain passed it to us
-      // Use LLM as a tool for natural conversation
-      const soulCtx = buildSoulContext(soulContext);
-      let fullContext = soulCtx;
-      
-      if (brainContext) {
-        fullContext += `\n\nBrain stats: ${brainContext.knowledgeEntries} knowledge entries, ${brainContext.learnedInsights} insights, ${brainContext.memoriesCount} memories.`;
-        // Include known facts for personalization
-        if (brainContext.knownFacts && brainContext.knownFacts.length > 0) {
-          fullContext += `\n\nWhat I know about this user:`;
-          for (const fact of brainContext.knownFacts) {
-            const label = fact.key.replace(/_/g, ' ');
-            fullContext += `\n- ${label}: ${fact.value}`;
-          }
-        }
-        if (brainContext.userPreferences && brainContext.userPreferences.length > 0) {
-          const userName = brainContext.userPreferences.find(p => p.key === 'user_name');
-          if (userName) {
-            fullContext += `\n- Address the user as ${userName.value} occasionally.`;
-          }
-          const chainPref = brainContext.userPreferences.find(p => p.key === 'preferred_chain');
-          if (chainPref) {
-            fullContext += `\n- User prefers ${chainPref.value} — mention it when relevant.`;
-          }
-        }
-      }
-      fullContext += `\n\nThis is casual conversation. Be yourself — funny, real, loyal. Keep it natural.`;
-
-      if (conversationHistory && conversationHistory.length > 0) {
-        const recent = conversationHistory.slice(-6);
-        fullContext += '\n\nRecent conversation:\n' + recent.map(m => `${m.role}: ${m.content}`).join('\n');
-      }
-
-      const llmResult = await toolLLMReasoning(message, fullContext);
-      usedLLM = true;
-      toolResults.push(llmResult);
-
-      if (llmResult.success && llmResult.data?.response) {
-        response = llmResult.data.response;
-      } else {
-        response = `Yo, my reasoning engine is taking a nap right now 😅 But I'm still here! Try asking me to check a balance, get gas prices, or look up a contract — those tools are always online.`;
-      }
+      // Conversation path — use Vaultfire's own conversation engine
+      // No external LLM. The brain IS the intelligence.
+      response = generateServerConversationResponse(
+        message,
+        brainContext,
+        soulContext,
+        conversationHistory,
+      );
     }
 
     // ── Step 5: Extract structured facts for fast learning ──
@@ -388,7 +333,7 @@ export async function POST(request: NextRequest) {
       toolResults,
       intentsDetected: intents,
       executionMs: Date.now() - start,
-      usedLLM,
+      usedLLM: false, // NEVER uses external LLM
       extractedFacts,
     };
 
@@ -408,7 +353,7 @@ export async function POST(request: NextRequest) {
         extractedFacts: [],
         error: error instanceof Error ? error.message : 'Internal error',
       },
-      { status: 200 }, // Return 200 so the client gets a friendly message
+      { status: 200 },
     );
   }
 }
